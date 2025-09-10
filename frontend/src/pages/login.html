@@ -149,7 +149,7 @@
       // Check for session expired parameter
       const urlParams = new URLSearchParams(window.location.search);
       if (urlParams.get('session') === 'expired' || urlParams.get('timeout') === 'true') {
-        const sessionAlert = document.getElementById('session-expired-alert');
+        const sessionAlert = document.querySelector('#session-expired-alert');
         if (sessionAlert) {
           sessionAlert.style.display = 'block';
         }
@@ -236,11 +236,11 @@
         window.location.href = '/';
       };
 
-      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      document.querySelector('#loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        const username = document.querySelector('#username').value;
+        const password = document.querySelector('#password').value;
 
         try {
           // Check if v2 API should be used

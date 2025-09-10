@@ -433,6 +433,7 @@
         margin-bottom: 4px;
         display: -webkit-box;
         -webkit-line-clamp: 1;
+        line-clamp: 1;
         -webkit-box-orient: vertical;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -1122,7 +1123,7 @@
       // Globale Modal-Funktionen direkt definieren
       window.showModal = function (modalId) {
         console.info('showModal called with:', modalId);
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           console.info('Modal element found, showing it');
           modal.style.display = 'flex';
@@ -1132,7 +1133,7 @@
       };
 
       window.hideModal = function (modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.style.display = 'none';
         } else {
@@ -1272,7 +1273,7 @@
               showSection('dashboard');
             } else {
               // Fallback if function not available
-              const dashboardSection = document.getElementById('dashboard-section');
+              const dashboardSection = document.querySelector('#dashboard-section');
               if (dashboardSection) {
                 // Hide all sections
                 document.querySelectorAll('.content-section').forEach((section) => {
@@ -1322,7 +1323,7 @@
         console.info('[Performance] DOMContentLoaded event fired');
         const pageStartTime = performance.now();
         // Event-Listener für das Schließen des Mitarbeiter-Modals (neu mit data-action)
-        const employeeModal = document.getElementById('employee-modal');
+        const employeeModal = document.querySelector('#employee-modal');
 
         // Handler für alle Buttons mit data-action="close-employee-modal"
         document.querySelectorAll('[data-action="close-employee-modal"]').forEach((button) => {
@@ -1345,8 +1346,8 @@
         // Neue dedizierte Funktionen für Active Status Dropdown (Aktiv/Inaktiv)
         window.toggleActiveStatusDropdown = function () {
           console.info('toggleActiveStatusDropdown called');
-          const dropdown = document.getElementById('employee-active-status-dropdown');
-          const display = document.getElementById('employee-active-status-display');
+          const dropdown = document.querySelector('#employee-active-status-dropdown');
+          const display = document.querySelector('#employee-active-status-display');
 
           if (dropdown && display) {
             // Close all other dropdowns first
@@ -1377,9 +1378,9 @@
 
         window.selectActiveStatusOption = function (value, text) {
           console.info('selectActiveStatusOption called:', value, text);
-          const hiddenInput = document.getElementById('employee-active-status-select');
-          const display = document.getElementById('employee-active-status-display');
-          const dropdown = document.getElementById('employee-active-status-dropdown');
+          const hiddenInput = document.querySelector('#employee-active-status-select');
+          const display = document.querySelector('#employee-active-status-display');
+          const dropdown = document.querySelector('#employee-active-status-dropdown');
 
           if (hiddenInput && display && dropdown) {
             hiddenInput.value = value;
@@ -1396,8 +1397,8 @@
         // Global click handler to close dropdown when clicking outside
         document.addEventListener('click', function (e) {
           if (!e.target.closest('#employeeActiveStatusWrapper')) {
-            const dropdown = document.getElementById('employee-active-status-dropdown');
-            const display = document.getElementById('employee-active-status-display');
+            const dropdown = document.querySelector('#employee-active-status-dropdown');
+            const display = document.querySelector('#employee-active-status-display');
             if (dropdown && display) {
               dropdown.classList.remove('active', 'show');
               display.classList.remove('active');
@@ -1431,7 +1432,7 @@
         }
 
         // Employee form submit handler
-        const employeeForm = document.getElementById('create-employee-form');
+        const employeeForm = document.querySelector('#create-employee-form');
         if (employeeForm) {
           employeeForm.addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -1449,9 +1450,9 @@
             });
 
             // Get dropdown values
-            data.departmentId = document.getElementById('employee-department-select')?.value || null;
-            data.teamId = document.getElementById('employee-team-select')?.value || null;
-            data.isActive = document.getElementById('employee-active-status-select')?.value === '1';
+            data.departmentId = document.querySelector('#employee-department-select')?.value || null;
+            data.teamId = document.querySelector('#employee-team-select')?.value || null;
+            data.isActive = document.querySelector('#employee-active-status-select')?.value === '1';
 
             console.info('Submitting employee data:', data, 'Mode:', mode);
 
@@ -1487,7 +1488,7 @@
                 showSuccess(mode === 'edit' ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
 
                 // Close modal
-                document.getElementById('employee-modal').style.display = 'none';
+                document.querySelector('#employee-modal').style.display = 'none';
 
                 // Reset form
                 employeeForm.reset();
@@ -1511,8 +1512,8 @@
 
         // Function to show new employee modal
         window.showNewEmployeeModal = function () {
-          const modal = document.getElementById('employee-modal');
-          const form = document.getElementById('create-employee-form');
+          const modal = document.querySelector('#employee-modal');
+          const form = document.querySelector('#create-employee-form');
 
           if (modal && form) {
             // Reset form
@@ -1537,7 +1538,7 @@
             if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
 
             // Reset submit button
-            const submitBtn = document.getElementById('employee-submit-btn');
+            const submitBtn = document.querySelector('#employee-submit-btn');
             if (submitBtn) {
               submitBtn.innerHTML = '<i class="fas fa-save"></i> <span>Mitarbeiter erstellen</span>';
             }
@@ -1618,8 +1619,8 @@
       // Using the same pattern as chat.html that works!
       function toggleDropdown(dropdownId) {
         console.info('toggleDropdown called for:', dropdownId);
-        const dropdown = document.getElementById(dropdownId + '-dropdown');
-        const display = document.getElementById(dropdownId + '-display');
+        const dropdown = document.querySelector(dropdownId + '-dropdown');
+        const display = document.querySelector(dropdownId + '-display');
 
         if (dropdown && display) {
           // Close all other dropdowns
@@ -1651,12 +1652,12 @@
       function selectDropdownOption(dropdownId, value, text) {
         console.info('selectDropdownOption called:', dropdownId, value, text);
         // Try both ID formats for compatibility
-        let hiddenInput = document.getElementById(dropdownId + '-select');
+        let hiddenInput = document.querySelector(dropdownId + '-select');
         if (!hiddenInput) {
-          hiddenInput = document.getElementById(dropdownId + 'Select');
+          hiddenInput = document.querySelector(dropdownId + 'Select');
         }
-        const display = document.getElementById(dropdownId + '-display');
-        const dropdown = document.getElementById(dropdownId + '-dropdown');
+        const display = document.querySelector(dropdownId + '-display');
+        const dropdown = document.querySelector(dropdownId + '-dropdown');
 
         if (hiddenInput && display && dropdown) {
           hiddenInput.value = value;
@@ -1672,8 +1673,8 @@
 
           // Spezielle Logik für Employee Status Dropdown
           if (dropdownId === 'employee-status') {
-            const startDateInput = document.getElementById('availability-start-date');
-            const endDateInput = document.getElementById('availability-end-date');
+            const startDateInput = document.querySelector('#availability-start-date');
+            const endDateInput = document.querySelector('#availability-end-date');
 
             if (startDateInput && endDateInput) {
               if (value === 'available') {
@@ -1726,7 +1727,7 @@
             const documents = data.documents || data;
             console.info(`Loaded ${documents.length} documents`);
 
-            const tbody = document.getElementById('documents-table-body');
+            const tbody = document.querySelector('#documents-table-body');
             if (tbody) {
               tbody.innerHTML = documents
                 .map((doc) => {
@@ -1822,13 +1823,13 @@
 
           // Modal-Felder befüllen
           console.info('Looking for modal elements...');
-          const modal = document.getElementById('employee-status-modal');
+          const modal = document.querySelector('#employee-status-modal');
           console.info('Modal found:', !!modal);
 
-          const employeeIdInput = document.getElementById('status-employee-id');
-          const employeeName = document.getElementById('status-employee-name');
-          const statusDropdown = document.getElementById('employee-status-dropdown');
-          const statusDisplay = document.getElementById('employee-status-display');
+          const employeeIdInput = document.querySelector('#status-employee-id');
+          const employeeName = document.querySelector('#status-employee-name');
+          const statusDropdown = document.querySelector('#employee-status-dropdown');
+          const statusDisplay = document.querySelector('#employee-status-display');
 
           console.info('Elements found:', {
             employeeIdInput: !!employeeIdInput,
@@ -1857,7 +1858,7 @@
           } else {
             console.error('Employee name input not found! Element might not exist in DOM.');
             // Try to recover by checking if modal exists
-            const modalCheck = document.getElementById('employee-status-modal');
+            const modalCheck = document.querySelector('#employee-status-modal');
             if (!modalCheck) {
               console.error('Modal itself not found! Cannot proceed.');
               alert('Ein Fehler ist aufgetreten. Bitte laden Sie die Seite neu.');
@@ -1883,8 +1884,8 @@
           }
 
           // Datumsfelder initial setzen
-          const startDateInput = document.getElementById('availability-start-date');
-          const endDateInput = document.getElementById('availability-end-date');
+          const startDateInput = document.querySelector('#availability-start-date');
+          const endDateInput = document.querySelector('#availability-end-date');
 
           if (startDateInput && endDateInput) {
             if (currentStatus === 'available') {
@@ -1919,7 +1920,7 @@
 
             // Form zurücksetzen - NACH dem Setzen der Werte!
             // Das war das Problem - form.reset() löscht alle Werte
-            const form = document.getElementById('employee-status-form');
+            const form = document.querySelector('#employee-status-form');
             if (form) {
               // Nur die Date-Felder und Notes zurücksetzen, nicht alle Felder
               const startDate = form.querySelector('input[name="start_date"]');
@@ -1943,13 +1944,13 @@
 
       // Employee Status Form Submit Handler
       document.addEventListener('DOMContentLoaded', () => {
-        const statusForm = document.getElementById('employee-status-form');
+        const statusForm = document.querySelector('#employee-status-form');
         if (statusForm) {
           statusForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const formData = new FormData(statusForm);
-            const employeeId = document.getElementById('status-employee-id').value;
+            const employeeId = document.querySelector('#status-employee-id').value;
             const token = localStorage.getItem('token');
 
             // Get the status and map "unavailable" to "other" for v2 API
@@ -2131,7 +2132,7 @@
       // Modal functions redefined for redundancy
       function showModal(modalId) {
         console.info('Inline showModal called with:', modalId);
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           console.info('Modal element found in inline function, showing it');
           modal.style.display = 'flex';
@@ -2142,7 +2143,7 @@
 
       function hideModal(modalId) {
         console.info('hideModal called for:', modalId);
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           console.info('Modal element found in hideModal, hiding it');
           modal.style.display = 'none';
@@ -2163,7 +2164,7 @@
         try {
           // Check cache first
           if (departmentsCache && Date.now() - departmentsCacheTime < CACHE_DURATION) {
-            const dropdown = document.getElementById('employeeDepartment-dropdown');
+            const dropdown = document.querySelector('#employeeDepartment-dropdown');
             if (dropdown && departmentsCache) {
               updateDepartmentDropdown(dropdown, departmentsCache);
             }
@@ -2186,7 +2187,7 @@
           departmentsCache = departments;
           departmentsCacheTime = Date.now();
 
-          const dropdown = document.getElementById('employeeDepartment-dropdown');
+          const dropdown = document.querySelector('#employeeDepartment-dropdown');
 
           if (dropdown && departments) {
             updateDepartmentDropdown(dropdown, departments);
@@ -2215,14 +2216,14 @@
             const textNode = document.createTextNode(dept.name);
             const iconElement = document.createElement('i');
             iconElement.className = 'fas fa-building';
-            optionDiv.appendChild(iconElement);
-            optionDiv.appendChild(document.createTextNode(' '));
-            optionDiv.appendChild(textNode);
-            dropdown.appendChild(optionDiv);
+            optionDiv.append(iconElement);
+            optionDiv.append(document.createTextNode(' '));
+            optionDiv.append(textNode);
+            dropdown.append(optionDiv);
           });
 
           // Setup event delegation for dropdown clicks
-          const dropdownEl = document.getElementById('employee-department-dropdown');
+          const dropdownEl = document.querySelector('#employee-department-dropdown');
           if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
             dropdownEl.setAttribute('data-listener-attached', 'true');
             dropdownEl.addEventListener('click', (event) => {
@@ -2256,12 +2257,12 @@
           const apiClient = new ApiClient();
 
           // Get selected department to filter teams
-          const selectedDeptId = document.getElementById('employeeDepartmentSelect')?.value;
+          const selectedDeptId = document.querySelector('#employeeDepartmentSelect')?.value;
 
           const response = await apiClient.get('/teams');
           // API v2 returns { success: true, data: [...] }
           const allTeams = response.data || response;
-          const dropdown = document.getElementById('employeeTeam-dropdown');
+          const dropdown = document.querySelector('#employeeTeam-dropdown');
 
           if (dropdown && allTeams) {
             // Filter teams by department if one is selected
@@ -2288,14 +2289,14 @@
               const textNode = document.createTextNode(teamDisplay);
               const iconElement = document.createElement('i');
               iconElement.className = 'fas fa-users';
-              optionDiv.appendChild(iconElement);
-              optionDiv.appendChild(document.createTextNode(' '));
-              optionDiv.appendChild(textNode);
-              dropdown.appendChild(optionDiv);
+              optionDiv.append(iconElement);
+              optionDiv.append(document.createTextNode(' '));
+              optionDiv.append(textNode);
+              dropdown.append(optionDiv);
             });
 
             // Setup event delegation for dropdown clicks
-            const dropdownEl = document.getElementById('employee-team-dropdown');
+            const dropdownEl = document.querySelector('#employee-team-dropdown');
             if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
               dropdownEl.setAttribute('data-listener-attached', 'true');
               dropdownEl.addEventListener('click', (event) => {
@@ -2320,7 +2321,7 @@
 
       function showEmployeeModal() {
         console.info('showEmployeeModal function called');
-        const modal = document.getElementById('employee-modal');
+        const modal = document.querySelector('#employee-modal');
         if (modal) {
           console.info('employee-modal found, showing directly');
           modal.style.display = 'flex';
@@ -2351,7 +2352,7 @@
 
       function showDocumentModal() {
         console.info('Document upload modal requested');
-        const modal = document.getElementById('document-modal');
+        const modal = document.querySelector('#document-modal');
         if (modal) {
           console.info('Modal found, showing it');
           modal.style.display = 'flex';
@@ -2401,7 +2402,7 @@
       window.addEventListener('click', function (event) {
         const modals = ['employee-modal', 'document-modal', 'team-modal'];
         modals.forEach((modalId) => {
-          const modal = document.getElementById(modalId);
+          const modal = document.querySelector(modalId);
           if (event.target == modal) {
             console.info(`Clicked outside of ${modalId}, closing it`);
             modal.style.display = 'none';
@@ -2451,7 +2452,7 @@
           }
 
           console.info('Processed employees:', employees); // Debug
-          const tableBody = document.getElementById('employees-table-body');
+          const tableBody = document.querySelector('#employees-table-body');
 
           if (!tableBody) {
             console.error('employees-table-body not found');
@@ -2572,11 +2573,11 @@
                 </a>
               </td>
             `;
-            tableBody.appendChild(row);
+            tableBody.append(row);
           });
         } catch (error) {
           console.error('Error loading employees:', error);
-          const tableBody = document.getElementById('employees-table-body');
+          const tableBody = document.querySelector('#employees-table-body');
           if (tableBody) {
             tableBody.innerHTML = `
               <tr>
@@ -2637,7 +2638,7 @@
           console.info('Employee data loaded:', employee);
 
           // Open the employee modal
-          const modal = document.getElementById('employee-modal');
+          const modal = document.querySelector('#employee-modal');
           if (modal) {
             modal.style.display = 'flex';
 
@@ -2648,7 +2649,7 @@
             }
 
             // Fill the form with employee data
-            const form = document.getElementById('create-employee-form');
+            const form = document.querySelector('#create-employee-form');
             if (form) {
               // Store employee ID for update
               form.dataset.employeeId = employeeId;
@@ -3790,10 +3791,10 @@
 
       // Show/hide floating button based on section
       document.addEventListener('DOMContentLoaded', function () {
-        const floatingBtnEmployee = document.getElementById('floating-add-employee');
-        const floatingBtnTeam = document.getElementById('floating-add-team');
-        const floatingBtnMachine = document.getElementById('floating-add-machine');
-        const floatingBtnArea = document.getElementById('floating-add-area');
+        const floatingBtnEmployee = document.querySelector('#floating-add-employee');
+        const floatingBtnTeam = document.querySelector('#floating-add-team');
+        const floatingBtnMachine = document.querySelector('#floating-add-machine');
+        const floatingBtnArea = document.querySelector('#floating-add-area');
 
         // Function to check which section is active
         function updateFloatingButton() {

@@ -107,6 +107,12 @@ interface SurveyUpdateData {
     order_position?: number;
     options?: string[];
   }[];
+  assignments?: {
+    type: 'all_users' | 'department' | 'team' | 'user';
+    department_id?: number | null;
+    team_id?: number | null;
+    user_id?: number | null;
+  }[];
 }
 
 interface SurveyFilters {
@@ -258,7 +264,7 @@ export async function getAllSurveysByTenant(
   const offset = (page - 1) * limit;
 
   let query = `
-      SELECT 
+      SELECT
         s.*,
         u.first_name as creator_first_name,
         u.last_name as creator_last_name,
@@ -311,7 +317,20 @@ export async function getAllSurveysByTenantForEmployee(
   }
 
   const { department_id: departmentId } = userInfo[0];
-  const teamId: number | null = null; // No team_id in users table currently
+
+  // Get employee's team IDs from user_teams table
+  const [userTeams] = await typedQuery<RowDataPacket[]>(
+    `SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?`,
+    [employeeUserId, tenantId],
+  );
+
+  const teamIds: number[] = userTeams.map((team) => team.team_id as number);
+
+  // Build the query with dynamic team IDs
+  const teamCondition =
+    teamIds.length > 0 ?
+      `(sa.assignment_type = 'team' AND sa.team_id IN (${teamIds.map(() => '?').join(',')}))`
+    : `(sa.assignment_type = 'team' AND 1=0)`; // Never match if no teams
 
   let query = `
       SELECT DISTINCT
@@ -332,15 +351,15 @@ export async function getAllSurveysByTenantForEmployee(
         -- Employee can see surveys assigned to their department
         (sa.assignment_type = 'department' AND sa.department_id = ?)
         OR
-        -- Employee can see surveys assigned to their team
-        (sa.assignment_type = 'team' AND sa.team_id = ?)
+        -- Employee can see surveys assigned to their teams
+        ${teamCondition}
         OR
         -- Employee can see surveys assigned directly to them
         (sa.assignment_type = 'user' AND sa.user_id = ?)
       )
     `;
 
-  const params: unknown[] = [tenantId, departmentId, teamId, employeeUserId];
+  const params: unknown[] = [tenantId, departmentId, ...teamIds, employeeUserId];
 
   if (status) {
     query += ' AND s.status = ?';
@@ -413,7 +432,7 @@ export async function getAllSurveysByTenantForAdmin(
 export async function getSurveyById(surveyId: number, tenantId: number): Promise<DbSurvey | null> {
   const [surveys] = await typedQuery<DbSurvey[]>(
     `
-      SELECT s.*, 
+      SELECT s.*,
         u.first_name as creator_first_name,
         u.last_name as creator_last_name
       FROM surveys s
@@ -558,6 +577,33 @@ export async function updateSurvey(
       }
     }
 
+    // Update assignments if provided
+    if (surveyData.assignments !== undefined) {
+      // Delete existing assignments
+      await connection.query('DELETE FROM survey_assignments WHERE survey_id = ?', [surveyId]);
+
+      // Add new assignments
+      if (surveyData.assignments.length > 0) {
+        for (const assignment of surveyData.assignments) {
+          await connection.query(
+            `
+              INSERT INTO survey_assignments (
+                tenant_id, survey_id, assignment_type, department_id, team_id, user_id
+              ) VALUES (?, ?, ?, ?, ?, ?)
+            `,
+            [
+              tenantId,
+              surveyId,
+              assignment.type,
+              assignment.department_id ?? null,
+              assignment.team_id ?? null,
+              assignment.user_id ?? null,
+            ],
+          );
+        }
+      }
+    }
+
     await connection.commit();
     return true;
   } catch (error: unknown) {
@@ -642,7 +688,7 @@ export async function getSurveyStatistics(
     // Get basic statistics
     const [stats] = await typedQuery<RowDataPacket[]>(
       `
-        SELECT 
+        SELECT
           COUNT(DISTINCT sr.id) as total_responses,
           COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_responses,
           MIN(sr.started_at) as first_response,
@@ -741,7 +787,7 @@ export async function getSurveyStatistics(
         // Get text responses
         const [textResponses] = await typedQuery<RowDataPacket[]>(
           `
-            SELECT 
+            SELECT
               sa.answer_text,
               sr.user_id,
               u.first_name,
@@ -763,7 +809,7 @@ export async function getSurveyStatistics(
         // Get numeric statistics
         const [numericStats] = await typedQuery<RowDataPacket[]>(
           `
-            SELECT 
+            SELECT
               AVG(sa.answer_number) as average,
               MIN(sa.answer_number) as min,
               MAX(sa.answer_number) as max,

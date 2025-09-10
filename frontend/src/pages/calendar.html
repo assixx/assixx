@@ -479,7 +479,7 @@
       window.DashboardUI = {
         openModal: function (modalId) {
           console.info('DashboardUI.openModal called for:', modalId);
-          const modal = document.getElementById(modalId);
+          const modal = document.querySelector(modalId);
           console.info('Modal element found:', !!modal);
           if (modal) {
             // Entferne zuerst die inline styles
@@ -492,7 +492,7 @@
           }
         },
         closeModal: function (modalId) {
-          const modal = document.getElementById(modalId);
+          const modal = document.querySelector(modalId);
           if (modal) {
             modal.classList.remove('active');
             // Entferne inline styles nach Animation
@@ -514,10 +514,10 @@
           if (!container) {
             container = document.createElement('div');
             container.className = 'toast-container';
-            document.body.appendChild(container);
+            document.body.append(container);
           }
 
-          container.appendChild(toast);
+          container.append(toast);
 
           // Nach 3 Sekunden ausblenden
           setTimeout(function () {
@@ -567,21 +567,21 @@
     <!-- MutationObserver zum Schutz der Header-Struktur -->
     <script>
       window.addEventListener('DOMContentLoaded', function () {
-        const userInfoDiv = document.getElementById('user-info');
+        const userInfoDiv = document.querySelector('#user-info');
 
         if (userInfoDiv) {
           // Speichere Referenzen zu den Original-Elementen
-          const originalAvatar = document.getElementById('user-avatar');
-          const originalUserName = document.getElementById('user-name');
-          const originalRoleIndicator = document.getElementById('role-indicator');
+          const originalAvatar = document.querySelector('#user-avatar');
+          const originalUserName = document.querySelector('#user-name');
+          const originalRoleIndicator = document.querySelector('#role-indicator');
 
           const observer = new MutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
               if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
                 // Prüfe ob alle 3 Elemente vorhanden sind
-                const currentAvatar = document.getElementById('user-avatar');
-                const currentUserName = document.getElementById('user-name');
-                const currentRoleIndicator = document.getElementById('role-indicator');
+                const currentAvatar = document.querySelector('#user-avatar');
+                const currentUserName = document.querySelector('#user-name');
+                const currentRoleIndicator = document.querySelector('#role-indicator');
 
                 if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
                   console.info('[Calendar] Restoring user-info elements');
@@ -592,20 +592,20 @@
                   newAvatar.id = 'user-avatar';
                   newAvatar.src = '/assets/images/default-avatar.svg';
                   newAvatar.alt = 'Avatar';
-                  userInfoDiv.appendChild(newAvatar);
+                  userInfoDiv.append(newAvatar);
 
                   // Username wiederherstellen
                   const newUserName = originalUserName ? originalUserName.cloneNode(true) : document.createElement('span');
                   newUserName.id = 'user-name';
                   newUserName.textContent = newUserName.textContent || 'Lade...';
-                  userInfoDiv.appendChild(newUserName);
+                  userInfoDiv.append(newUserName);
 
                   // Role Badge wiederherstellen
                   const newRoleIndicator = originalRoleIndicator ? originalRoleIndicator.cloneNode(true) : document.createElement('span');
                   newRoleIndicator.id = 'role-indicator';
                   newRoleIndicator.className = 'role-badge admin';
                   newRoleIndicator.textContent = newRoleIndicator.textContent || 'Admin';
-                  userInfoDiv.appendChild(newRoleIndicator);
+                  userInfoDiv.append(newRoleIndicator);
                 }
               }
             });

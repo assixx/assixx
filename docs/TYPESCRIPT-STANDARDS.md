@@ -188,11 +188,11 @@ const isActive = isEnabled || isForced;  // Beide sind boolean
 
 ```typescript
 // ❌ FALSCH - Unsafe casting
-const btn = document.getElementById('btn') as HTMLButtonElement;
+const btn = document.querySelector('btn') as HTMLButtonElement;
 btn.click();  // Crash wenn null!
 
 // ✅ RICHTIG - Mit null check
-const btn = document.getElementById('btn') as HTMLButtonElement | null;
+const btn = document.querySelector('btn') as HTMLButtonElement | null;
 if (btn !== null) {
   btn.click();
 }
@@ -570,17 +570,17 @@ if (token !== null) {
 
 ```typescript
 // ❌ FALSCH - Unsafe type assertion
-const button = document.getElementById("btn") as HTMLButtonElement;
+const button = document.querySelector("btn") as HTMLButtonElement;
 button.textContent = "Click";  // Crash wenn null!
 
 // ✅ RICHTIG - Mit null check
-const button = document.getElementById("btn") as HTMLButtonElement | null;
+const button = document.querySelector("btn") as HTMLButtonElement | null;
 if (button !== null) {
   button.textContent = "Click";  // textContent ist hier string
 }
 
 // 🚀 NOCH BESSER - instanceof check
-const element = document.getElementById("btn");
+const element = document.querySelector("btn");
 if (element instanceof HTMLButtonElement) {
   // Nach instanceof ist textContent IMMER string, nie null
   element.textContent = "Click";  // Kein ?? oder || nötig!

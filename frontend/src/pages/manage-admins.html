@@ -973,8 +973,8 @@
     <script>
       // Toggle Dropdown
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -990,10 +990,10 @@
 
       // Select Option
       function selectOption(type, value, text) {
-        document.getElementById(type + 'Display').querySelector('span').textContent = text;
-        document.getElementById(type + 'Value').value = value;
-        document.getElementById(type + 'Display').classList.remove('active');
-        document.getElementById(type + 'Dropdown').classList.remove('active');
+        document.querySelector(type + 'Display').querySelector('span').textContent = text;
+        document.querySelector(type + 'Value').value = value;
+        document.querySelector(type + 'Display').classList.remove('active');
+        document.querySelector(type + 'Dropdown').classList.remove('active');
       }
 
       // Click outside to close
@@ -1006,7 +1006,7 @@
 
       // Permissions Modal Functions
       function closePermissionsModal() {
-        document.getElementById('permissionsModal').classList.remove('active');
+        document.querySelector('#permissionsModal').classList.remove('active');
       }
 
       function switchPermTab(tab) {
@@ -1025,8 +1025,8 @@
         }
 
         // Update tab content
-        document.getElementById('departmentsTab').style.display = tab === 'departments' ? 'block' : 'none';
-        document.getElementById('groupsTab').style.display = tab === 'groups' ? 'block' : 'none';
+        document.querySelector('#departmentsTab').style.display = tab === 'departments' ? 'block' : 'none';
+        document.querySelector('#groupsTab').style.display = tab === 'groups' ? 'block' : 'none';
       }
 
       function selectAllDepartments() {

@@ -1481,8 +1481,8 @@
     <script>
       // Dropdown Functions
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1497,9 +1497,9 @@
       }
 
       function selectOption(type, value, text) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
-        const hiddenInput = document.getElementById(type + 'Select');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
+        const hiddenInput = document.querySelector(type + 'Select');
 
         display.querySelector('span').textContent = text;
         display.classList.remove('active');

@@ -654,26 +654,26 @@
 
       function setupEventListeners() {
         // Profile form submission
-        document.getElementById('profile-form').addEventListener('submit', function (e) {
+        document.querySelector('#profile-form').addEventListener('submit', function (e) {
           e.preventDefault();
           updateProfile();
         });
 
         // Password form submission
-        document.getElementById('password-form').addEventListener('submit', function (e) {
+        document.querySelector('#password-form').addEventListener('submit', function (e) {
           e.preventDefault();
           changePassword();
         });
 
         // Avatar upload
-        document.getElementById('avatar-upload').addEventListener('change', function (e) {
+        document.querySelector('#avatar-upload').addEventListener('change', function (e) {
           if (e.target.files && e.target.files[0]) {
             uploadAvatar(e.target.files[0]);
           }
         });
 
         // Password strength checker
-        document.getElementById('new_password').addEventListener('input', function (e) {
+        document.querySelector('#new_password').addEventListener('input', function (e) {
           checkPasswordStrength(e.target.value);
         });
       }
@@ -685,11 +685,11 @@
 
         // Add active to selected tab and content
         event.target.classList.add('active');
-        document.getElementById(tabName + '-content').classList.add('active');
+        document.querySelector(tabName + '-content').classList.add('active');
       }
 
       function triggerFileUpload() {
-        document.getElementById('avatar-upload').click();
+        document.querySelector('#avatar-upload').click();
       }
 
       async function loadUserProfile() {
@@ -719,28 +719,28 @@
 
       function populateProfile(user) {
         // Update header
-        document.getElementById('profile-name').textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
-        document.getElementById('profile-role').textContent = getRoleDisplayName(user.role);
+        document.querySelector('#profile-name').textContent = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+        document.querySelector('#profile-role').textContent = getRoleDisplayName(user.role);
 
         // Update avatar
         updateAvatar(user);
 
         // Populate form fields
-        document.getElementById('username').value = user.username || '';
-        document.getElementById('email').value = user.email || '';
-        document.getElementById('first_name').value = user.first_name || '';
-        document.getElementById('last_name').value = user.last_name || '';
-        document.getElementById('age').value = user.age || '';
-        document.getElementById('employee_id').value = user.employee_id || '';
-        document.getElementById('iban').value = user.iban || '';
-        document.getElementById('company').value = user.company || '';
-        document.getElementById('notes').value = user.notes || '';
+        document.querySelector('#username').value = user.username || '';
+        document.querySelector('#email').value = user.email || '';
+        document.querySelector('#first_name').value = user.first_name || '';
+        document.querySelector('#last_name').value = user.last_name || '';
+        document.querySelector('#age').value = user.age || '';
+        document.querySelector('#employee_id').value = user.employee_id || '';
+        document.querySelector('#iban').value = user.iban || '';
+        document.querySelector('#company').value = user.company || '';
+        document.querySelector('#notes').value = user.notes || '';
       }
 
       function updateAvatar(user) {
-        const avatarContainer = document.getElementById('avatar-container');
-        const avatarImage = document.getElementById('avatar-image');
-        const avatarInitials = document.getElementById('avatar-initials');
+        const avatarContainer = document.querySelector('#avatar-container');
+        const avatarImage = document.querySelector('#avatar-image');
+        const avatarInitials = document.querySelector('#avatar-initials');
 
         if (user.profile_picture) {
           avatarImage.src = user.profile_picture;
@@ -780,14 +780,14 @@
           const formData = new FormData();
 
           // Collect form data
-          formData.append('email', document.getElementById('email').value);
-          formData.append('first_name', document.getElementById('first_name').value);
-          formData.append('last_name', document.getElementById('last_name').value);
-          formData.append('age', document.getElementById('age').value);
-          formData.append('employee_id', document.getElementById('employee_id').value);
-          formData.append('iban', document.getElementById('iban').value);
-          formData.append('company', document.getElementById('company').value);
-          formData.append('notes', document.getElementById('notes').value);
+          formData.append('email', document.querySelector('#email').value);
+          formData.append('first_name', document.querySelector('#first_name').value);
+          formData.append('last_name', document.querySelector('#last_name').value);
+          formData.append('age', document.querySelector('#age').value);
+          formData.append('employee_id', document.querySelector('#employee_id').value);
+          formData.append('iban', document.querySelector('#iban').value);
+          formData.append('company', document.querySelector('#company').value);
+          formData.append('notes', document.querySelector('#notes').value);
 
           const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
           const endpoint = useV2Users ? '/api/v2/users/me/profile' : '/api/users/profile/update';
@@ -814,9 +814,9 @@
       }
 
       async function changePassword() {
-        const currentPassword = document.getElementById('current_password').value;
-        const newPassword = document.getElementById('new_password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
+        const currentPassword = document.querySelector('#current_password').value;
+        const newPassword = document.querySelector('#new_password').value;
+        const confirmPassword = document.querySelector('#confirm_password').value;
 
         if (newPassword !== confirmPassword) {
           showAlert('Passwörter stimmen nicht überein', 'error');
@@ -847,7 +847,7 @@
 
           if (response.ok) {
             showAlert('Passwort erfolgreich geändert', 'success');
-            document.getElementById('password-form').reset();
+            document.querySelector('#password-form').reset();
           } else {
             const error = await response.json();
             showAlert(error.message || 'Fehler beim Ändern des Passworts', 'error');
@@ -903,7 +903,7 @@
       }
 
       function checkPasswordStrength(password) {
-        const strengthBar = document.getElementById('password-strength-bar');
+        const strengthBar = document.querySelector('#password-strength-bar');
         let strength = 0;
         let className = '';
 

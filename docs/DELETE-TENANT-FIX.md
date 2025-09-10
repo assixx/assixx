@@ -1103,7 +1103,7 @@ run();
 ```typescript
 // frontend/src/pages/root-profile.html - deleteTenant function
 async function deleteTenant() {
-  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  const confirmBtn = document.querySelector('confirmDeleteBtn');
   confirmBtn.disabled = true;
   confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
 
@@ -1170,8 +1170,8 @@ function showDeletionStatusModal(queueId) {
       const status = data.data;
 
       if (status) {
-        document.getElementById('deletion-progress').style.width = status.progress + '%';
-        document.getElementById('deletion-status').textContent = status.current_step || 'Verarbeite...';
+        document.querySelector('deletion-progress').style.width = status.progress + '%';
+        document.querySelector('deletion-status').textContent = status.current_step || 'Verarbeite...';
 
         if (status.status === 'completed') {
           clearInterval(statusInterval);

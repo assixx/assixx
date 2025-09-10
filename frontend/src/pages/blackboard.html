@@ -865,10 +865,10 @@
         currentZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
 
         // Update display
-        document.getElementById('zoomLevel').textContent = currentZoom + '%';
+        document.querySelector('#zoomLevel').textContent = currentZoom + '%';
 
         // Apply CSS zoom property instead of transform
-        const container = document.getElementById('blackboardContainer');
+        const container = document.querySelector('#blackboardContainer');
         container.style.zoom = currentZoom + '%';
 
         // Store in localStorage
@@ -884,11 +884,11 @@
         }
 
         // Zoom button event listeners
-        document.getElementById('zoomInBtn').addEventListener('click', function () {
+        document.querySelector('#zoomInBtn').addEventListener('click', function () {
           updateZoom(currentZoom + zoomStep);
         });
 
-        document.getElementById('zoomOutBtn').addEventListener('click', function () {
+        document.querySelector('#zoomOutBtn').addEventListener('click', function () {
           updateZoom(currentZoom - zoomStep);
         });
 
@@ -908,9 +908,9 @@
           }
         });
 
-        const filterToggle = document.getElementById('filterToggle');
-        const filterContent = document.getElementById('filterContent');
-        const filterToggleIcon = document.getElementById('filterToggleIcon');
+        const filterToggle = document.querySelector('#filterToggle');
+        const filterContent = document.querySelector('#filterContent');
+        const filterToggleIcon = document.querySelector('#filterToggleIcon');
 
         filterToggle.addEventListener('click', function () {
           if (filterContent.style.display === 'none' || filterContent.style.display === '') {
@@ -925,7 +925,7 @@
 
       // Modal Functions
       function showModal(modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.style.display = 'flex';
           setTimeout(() => {
@@ -935,7 +935,7 @@
       }
 
       function hideModal(modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.classList.remove('active');
           setTimeout(() => {
@@ -959,10 +959,10 @@
           if (!container) {
             container = document.createElement('div');
             container.className = 'toast-container';
-            document.body.appendChild(container);
+            document.body.append(container);
           }
 
-          container.appendChild(toast);
+          container.append(toast);
 
           // Nach 3 Sekunden ausblenden
           setTimeout(function () {

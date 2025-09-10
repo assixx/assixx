@@ -204,10 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Event Listeners for forms
   const createEmployeeForm = document.querySelector('#create-employee-form');
-  // const uploadDocumentForm = document.getElementById('document-upload-form') as HTMLFormElement;
+  // const uploadDocumentForm = document.querySelector('document-upload-form') as HTMLFormElement;
   const departmentForm = document.querySelector('#department-form');
   const teamForm = document.querySelector('#team-form');
-  // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement | null; // Not used - handled by unified-navigation
+  // const logoutBtn = document.querySelector('logout-btn') as HTMLButtonElement | null; // Not used - handled by unified-navigation
 
   // Buttons für Mitarbeiter-Modal
   const newEmployeeBtn = document.querySelector('#new-employee-button');

@@ -149,7 +149,7 @@
       const token = localStorage.getItem('token');
 
       async function checkAuth() {
-        const resultDiv = document.getElementById('authResult');
+        const resultDiv = document.querySelector('#authResult');
 
         if (!token) {
           resultDiv.className = 'result error';
@@ -174,7 +174,7 @@
       }
 
       async function checkFeatureStatus() {
-        const resultDiv = document.getElementById('featureResult');
+        const resultDiv = document.querySelector('#featureResult');
 
         try {
           // Direkte Datenbank-Abfrage über API
@@ -210,8 +210,8 @@
       }
 
       async function loadSurveys() {
-        const resultDiv = document.getElementById('surveysResult');
-        const listDiv = document.getElementById('surveysList');
+        const resultDiv = document.querySelector('#surveysResult');
+        const listDiv = document.querySelector('#surveysList');
 
         try {
           const response = await fetch('/api/surveys', {
@@ -255,7 +255,7 @@
       }
 
       async function createTestSurvey() {
-        const resultDiv = document.getElementById('createResult');
+        const resultDiv = document.querySelector('#createResult');
 
         const surveyData = {
           title: 'Test Survey ' + new Date().toLocaleString(),
@@ -311,7 +311,7 @@
       }
 
       async function loadTemplates() {
-        const resultDiv = document.getElementById('templatesResult');
+        const resultDiv = document.querySelector('#templatesResult');
 
         try {
           const response = await fetch('/api/surveys/templates', {

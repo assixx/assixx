@@ -128,7 +128,7 @@ sidebar.style.setProperty('width', '70px', 'important');
 const profilePicture = this.userProfileData?.profile_picture || '/assets/images/default-avatar.svg';
 
 // 2. Update nach Profil-Load
-const headerAvatar = document.getElementById('user-avatar') as HTMLImageElement;
+const headerAvatar = document.querySelector('user-avatar') as HTMLImageElement;
 if (headerAvatar && profilePic) {
   headerAvatar.src = profilePic;
 }

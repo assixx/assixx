@@ -244,24 +244,28 @@
 
       .modal-content,
       .modal-container {
-        backdrop-filter: blur(20px) saturate(500%);
-        background: hsla(0, 0%, 8%, 0.84);
+        backdrop-filter: blur(20px) saturate(180%);
+        background: #121212c4;
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        max-height: 90vh;
-        max-width: 900px;
-        overflow-y: auto;
-        padding: 24px;
+        box-shadow:
+          0 8px 32px #0006,
+          inset 0 1px #ffffff1a;
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh !important;
+        max-width: 1150px;
+        overflow: auto;
+        transform: translateY(0);
         width: 90%;
       }
 
       .modal-header {
+        align-items: center;
+        background: #ffffff05;
         display: flex;
         justify-content: space-between;
-        align-items: center;
         padding: var(--spacing-lg);
-        border-bottom: 1px solid var(--border-color);
       }
 
       .modal-title {
@@ -287,6 +291,9 @@
 
       .modal-content form {
         padding: var(--spacing-lg);
+        flex: 1;
+        max-height: calc(85vh - 120px);
+        overflow-y: auto;
       }
 
       .modal-content .form-actions {
@@ -327,6 +334,7 @@
         align-items: center;
         justify-content: center;
         font-weight: 600;
+        font-size: 14px;
       }
 
       .question-actions {
@@ -334,29 +342,102 @@
         gap: var(--spacing-xs);
       }
 
-      .question-action {
+      .question-action,
+      .remove-question {
         background: rgba(255, 255, 255, 0.1);
         border: none;
         color: var(--text-secondary);
         padding: var(--spacing-xs);
         border-radius: 50%;
         cursor: pointer;
-
         width: 32px;
         height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: all 0.2s ease;
       }
 
-      .question-action:hover {
-        background: rgba(255, 255, 255, 0.2);
-        color: var(--text-primary);
+      .question-action:hover,
+      .remove-question:hover {
+        background: rgba(244, 67, 54, 0.3);
+        color: #ff5252;
+        transform: scale(1.1);
       }
 
       .question-action.delete:hover {
         background: rgba(244, 67, 54, 0.2);
         color: #f44336;
+      }
+
+      .remove-question svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* Utility Classes */
+      .u-hidden {
+        display: none !important;
+      }
+
+      /* Checkbox Styles */
+      .checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        user-select: none;
+        gap: 12px;
+        padding: 10px;
+      }
+
+      .checkbox-label input[type='checkbox'] {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .checkbox-custom {
+        width: 20px;
+        height: 20px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        position: relative;
+        transition: all 0.3s ease;
+      }
+
+      .checkbox-label input[type='checkbox']:checked + .checkbox-custom {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+      }
+
+      .checkbox-custom::after {
+        content: '';
+        position: absolute;
+        display: none;
+        left: 6px;
+        top: 2px;
+        width: 5px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+      }
+
+      .checkbox-label input[type='checkbox']:checked + .checkbox-custom::after {
+        display: block;
+      }
+
+      .checkbox-label:hover .checkbox-custom {
+        border-color: var(--primary-color);
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      .checkbox-text {
+        color: var(--text-primary);
+        font-size: 14px;
+        font-weight: 500;
       }
 
       /* Form Elements */
@@ -544,12 +625,14 @@
       }
 
       /* Templates Section */
+      .drafts-section,
       .templates-section {
         margin-top: var(--spacing-xl);
         padding-top: var(--spacing-xl);
         border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 
+      .drafts-header,
       .templates-header {
         display: flex;
         justify-content: space-between;
@@ -557,6 +640,7 @@
         margin-bottom: var(--spacing-lg);
       }
 
+      .drafts-title,
       .templates-title {
         font-size: 1.5rem;
         font-weight: 600;
@@ -739,9 +823,13 @@
               </div>
 
               <!-- Draft Surveys -->
-              <h2 style="margin-top: var(--spacing-xl); border-top: 1px solid hsla(0, 0%, 100%, 0.1)">Entwürfe</h2>
-              <div id="draftSurveys" class="surveys-grid">
-                <!-- Draft surveys will be loaded here -->
+              <div class="drafts-section">
+                <div class="drafts-header">
+                  <h2 class="drafts-title">Entwürfe</h2>
+                </div>
+                <div id="draftSurveys" class="surveys-grid">
+                  <!-- Draft surveys will be loaded here -->
+                </div>
               </div>
 
               <!-- Templates Section -->
@@ -811,23 +899,23 @@
           <div class="form-group">
             <label class="form-label">Zielgruppe</label>
             <div class="custom-dropdown">
-              <div class="dropdown-display" id="assignmentDropdownDisplay" onclick="toggleDropdown('assignmentDropdown')">
+              <div class="dropdown-display" id="assignmentDropdownDisplay" onclick="surveyAdmin.toggleDropdown('assignmentDropdown')">
                 <span>Ganze Firma</span>
                 <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
               <div class="dropdown-options" id="assignmentDropdownDropdown">
-                <div class="dropdown-option" onclick="selectAssignmentOption('all_users', 'Ganze Firma')">Ganze Firma</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('department', 'Abteilung')">Abteilung</div>
-                <div class="dropdown-option" onclick="selectAssignmentOption('team', 'Team')">Team</div>
+                <div class="dropdown-option" onclick="surveyAdmin.selectAssignmentOption('all_users', 'Ganze Firma')">Ganze Firma</div>
+                <div class="dropdown-option" onclick="surveyAdmin.selectAssignmentOption('department', 'Abteilung')">Abteilung</div>
+                <div class="dropdown-option" onclick="surveyAdmin.selectAssignmentOption('team', 'Team')">Team</div>
               </div>
               <input type="hidden" id="assignmentType" value="all_users" />
             </div>
           </div>
 
           <!-- Department Selection (hidden by default) -->
-          <div class="form-group" id="departmentSelection" class="u-hidden">
+          <div class="form-group u-hidden" id="departmentSelection">
             <label class="form-label">Abteilungen auswählen</label>
             <select
               id="departmentSelect"
@@ -843,7 +931,7 @@
           </div>
 
           <!-- Team Selection (hidden by default) -->
-          <div class="form-group" id="teamSelection" class="u-hidden">
+          <div class="form-group u-hidden" id="teamSelection">
             <label class="form-label">Teams auswählen</label>
             <select
               id="teamSelect"
@@ -863,7 +951,7 @@
             <div id="questionsList">
               <!-- Questions will be added here -->
             </div>
-            <button type="button" class="btn btn-secondary" onclick="addQuestion()">
+            <button type="button" class="btn btn-secondary" onclick="surveyAdmin.addQuestion()">
               <i class="fas fa-plus"></i>
               Frage hinzufügen
             </button>
@@ -871,11 +959,11 @@
 
           <div class="action-buttons">
             <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
-            <button type="button" class="btn btn-primary" onclick="saveSurvey('draft')">
+            <button type="button" class="btn btn-primary" onclick="surveyAdmin.saveSurvey('draft')">
               <i class="fas fa-save"></i>
               Als Entwurf speichern
             </button>
-            <button type="button" class="btn btn-success" onclick="saveSurvey('active')">
+            <button type="button" class="btn btn-success" onclick="surveyAdmin.saveSurvey('active')">
               <i class="fas fa-paper-plane"></i>
               Umfrage starten
             </button>
@@ -885,973 +973,22 @@
     </div>
 
     <!-- Floating Add Button -->
-    <button class="add-survey-btn" onclick="showCreateModal()">+</button>
+    <button class="add-survey-btn" onclick="surveyAdmin.showCreateModal()">+</button>
 
     <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
+
+    <!-- Survey Admin Module -->
+    <script type="module" src="/scripts/survey-admin.ts"></script>
+
     <script type="module">
       import { modalManager } from '/scripts/utils/modal-manager.ts';
 
       // Make modalManager available globally
       window.modalManager = modalManager;
-
-      // Wait for both DOM and other scripts to load
-      window.addEventListener('load', function () {
-        // Register survey modal template
-        if (window.registerSurveyModalTemplate) {
-          window.registerSurveyModalTemplate();
-        }
-
-        if (window.loadSurveys) {
-          window.loadSurveys();
-        }
-        if (window.loadTemplates) {
-          window.loadTemplates();
-        }
-      });
-    </script>
-    <script type="module">
-      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
-
-      let currentSurveyId = null;
-      let questionCounter = 0;
-
-      // Register the survey modal template with the modal manager
-      window.registerSurveyModalTemplate = function () {
-        // Get the existing modal HTML
-        const surveyModal = document.getElementById('surveyModal');
-        if (surveyModal && window.modalManager) {
-          // Clone the modal to preserve it
-          const modalClone = surveyModal.cloneNode(true);
-
-          // Add modal-overlay class to the modal
-          modalClone.classList.add('modal-overlay');
-
-          // Register the template
-          window.modalManager.registerTemplate('surveyModal', modalClone.outerHTML);
-
-          // Remove the original modal from DOM
-          surveyModal.remove();
-        }
-      };
-
-      // Custom dropdown functions
-      window.toggleDropdown = function (dropdownId) {
-        const dropdown = document.getElementById(dropdownId + 'Dropdown');
-        const display = document.getElementById(dropdownId + 'Display');
-
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-options').forEach((d) => {
-          if (d !== dropdown) {
-            d.classList.remove('active');
-          }
-        });
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d !== display) {
-            d.classList.remove('active');
-          }
-        });
-
-        dropdown.classList.toggle('active');
-        display.classList.toggle('active');
-      };
-
-      window.selectAssignmentOption = function (value, text) {
-        document.getElementById('assignmentType').value = value;
-        document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = text;
-        document.getElementById('assignmentDropdownDropdown').classList.remove('active');
-        document.getElementById('assignmentDropdownDisplay').classList.remove('active');
-      };
-
-      window.selectQuestionType = function (questionId, type, text) {
-        document.getElementById(questionId + '_typeValue').value = type;
-        document.getElementById(questionId + '_typeDisplay').querySelector('span').textContent = text;
-        document.getElementById(questionId + '_typeDropdown').classList.remove('active');
-        document.getElementById(questionId + '_typeDisplay').classList.remove('active');
-        handleQuestionTypeChange(questionId, type);
-      };
-
-      // Select assignment option (target group)
-      window.selectAssignmentOption = async function (type, text) {
-        document.getElementById('assignmentType').value = type;
-        document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = text;
-        document.getElementById('assignmentDropdownDropdown').classList.remove('active');
-        document.getElementById('assignmentDropdownDisplay').classList.remove('active');
-
-        // Show/hide department selection
-        const departmentSelection = document.getElementById('departmentSelection');
-        const teamSelection = document.getElementById('teamSelection');
-
-        if (type === 'department') {
-          departmentSelection.style.display = 'block';
-          teamSelection.style.display = 'none';
-          await loadUserDepartments();
-        } else if (type === 'team') {
-          departmentSelection.style.display = 'none';
-          teamSelection.style.display = 'block';
-          await loadUserTeams();
-        } else {
-          departmentSelection.style.display = 'none';
-          teamSelection.style.display = 'none';
-        }
-      };
-
-      // Load departments that the admin has access to
-      async function loadUserDepartments() {
-        try {
-          // First get the current user info
-          const userResponse = await fetch('/api/user/profile', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (!userResponse.ok) {
-            throw new Error('Failed to load user profile');
-          }
-
-          const userData = await userResponse.json();
-
-          // Log to debug
-          console.log('User profile response:', userData);
-
-          // The response is wrapped with success/data structure
-          const userId = userData.data?.id;
-          let departments = [];
-
-          if (!userId) {
-            console.error('User ID not found in profile response');
-            // Skip permissions check and load all departments
-            const allDeptsResponse = await fetch('/api/departments', {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-              },
-            });
-            if (allDeptsResponse.ok) {
-              departments = await allDeptsResponse.json();
-            }
-          } else {
-            // Try to get admin permissions, but don't fail if it's not available
-            // Skip this for regular admins to avoid unnecessary 403 errors
-            try {
-              // First check if we should even try the permissions endpoint
-              // Regular admins will just load all departments directly
-              const permissionsResponse = await fetch(`/api/admin-permissions/${userId}`, {
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-              });
-
-              if (permissionsResponse.ok) {
-                const permissionsData = await permissionsResponse.json();
-                console.info('Admin permissions response:', permissionsData);
-
-                // Handle the wrapped response structure
-                const permData = permissionsData.data || permissionsData;
-
-                if (permData.hasAllAccess) {
-                  // Admin has all access - load all departments
-                  console.info('Admin has all access, loading all departments');
-                  const allDeptsResponse = await fetch('/api/departments', {
-                    headers: {
-                      Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
-                  });
-                  if (allDeptsResponse.ok) {
-                    departments = await allDeptsResponse.json();
-                  }
-                } else if (permData.departments && permData.departments.length > 0) {
-                  // Admin has specific departments
-                  console.info('Admin has specific departments:', permData.departments);
-                  departments = permData.departments;
-                }
-              } else if (permissionsResponse.status === 403) {
-                // 403 means user doesn't have permission to access this endpoint
-                // This is expected for regular admins - just load all departments they can see
-                console.info('Admin permissions endpoint returned 403 - loading available departments');
-              }
-            } catch (permError) {
-              console.info('Could not fetch admin permissions, will load available departments');
-            }
-
-            // If no departments found from permissions, load all available departments
-            // (This is the normal flow for most admins)
-            if (departments.length === 0) {
-              const allDeptsResponse = await fetch('/api/departments', {
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-              });
-              if (allDeptsResponse.ok) {
-                const allDepartments = await allDeptsResponse.json();
-                console.info('All departments loaded:', allDepartments);
-                departments = allDepartments;
-              }
-            }
-          } // End of else block (when userId exists)
-
-          if (departments.length > 0) {
-            displayDepartmentOptions(departments);
-          } else {
-            document.getElementById('departmentSelect').innerHTML = '<option disabled>Keine Abteilungen verfügbar</option>';
-          }
-        } catch (error) {
-          console.error('Error loading departments:', error);
-          document.getElementById('departmentSelect').innerHTML = '<option disabled>Fehler beim Laden der Abteilungen</option>';
-        }
-      }
-
-      // Display department options in select
-      function displayDepartmentOptions(departments) {
-        const select = document.getElementById('departmentSelect');
-        select.innerHTML = '';
-
-        // Debug: log first department to see structure
-        if (departments.length > 0) {
-          console.info('First department structure:', departments[0]);
-        }
-
-        departments.forEach((dept) => {
-          const option = document.createElement('option');
-          option.value = dept.id.toString();
-
-          // Just show the department name without description for now
-          option.textContent = dept.name || 'Unnamed Department';
-
-          select.appendChild(option);
-        });
-      }
-
-      // Load teams that the user has access to
-      async function loadUserTeams() {
-        try {
-          const response = await fetch('/api/teams', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (!response.ok) {
-            console.error('Failed to load teams');
-            return;
-          }
-
-          const teams = await response.json();
-          const select = document.getElementById('teamSelect');
-
-          // Clear existing options
-          select.innerHTML = '';
-
-          // Add team options
-          teams.forEach((team) => {
-            const option = document.createElement('option');
-            option.value = team.id.toString();
-            option.textContent = team.name || 'Unnamed Team';
-            select.appendChild(option);
-          });
-        } catch (error) {
-          console.error('Error loading teams:', error);
-          showAlert('Fehler beim Laden der Teams');
-        }
-      }
-
-      // Close dropdowns when clicking outside
-      document.addEventListener('click', function (event) {
-        if (!event.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-options').forEach((d) => {
-            d.classList.remove('active');
-          });
-          document.querySelectorAll('.dropdown-display').forEach((d) => {
-            d.classList.remove('active');
-          });
-        }
-      });
-
-      // Load surveys
-      window.loadSurveys = async function () {
-        try {
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-          const endpoint = useV2 ? '/api/v2/surveys' : '/api/surveys';
-
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            // Handle v2 API response structure
-            const surveys = useV2 && result.success ? result.data : result.data || result.surveys || result;
-            // Ensure surveys is an array
-            if (Array.isArray(surveys)) {
-              displaySurveys(surveys);
-            } else {
-              console.error('Invalid surveys data format:', surveys);
-              displaySurveys([]);
-            }
-          }
-        } catch (error) {
-          console.error('Error loading surveys:', error);
-        }
-      };
-
-      // Display surveys
-      function displaySurveys(surveys) {
-        const activeSurveys = surveys.filter((s) => s.status === 'active');
-        const draftSurveys = surveys.filter((s) => s.status === 'draft');
-
-        const activeContainer = document.getElementById('activeSurveys');
-        const draftContainer = document.getElementById('draftSurveys');
-
-        activeContainer.innerHTML =
-          activeSurveys.length > 0
-            ? activeSurveys.map((survey) => createSurveyCard(survey)).join('')
-            : `<div class="empty-state">
-                <div class="empty-state-icon">📋</div>
-                <h3 class="empty-state-title">Keine aktiven Umfragen</h3>
-                <p>Es gibt aktuell keine aktiven Umfragen. Erstellen Sie eine neue Umfrage über den Plus-Button.</p>
-              </div>`;
-
-        draftContainer.innerHTML =
-          draftSurveys.length > 0
-            ? draftSurveys.map((survey) => createSurveyCard(survey)).join('')
-            : `<div class="empty-state">
-                <div class="empty-state-icon">📄</div>
-                <h3 class="empty-state-title">Keine Entwürfe</h3>
-                <p>Es gibt aktuell keine Umfrage-Entwürfe.</p>
-              </div>`;
-      }
-
-      // Helper function to convert Buffer to text
-      function getTextFromBuffer(value) {
-        if (typeof value === 'string') {
-          return value;
-        }
-        if (value && value.type === 'Buffer' && Array.isArray(value.data)) {
-          return String.fromCharCode.apply(null, value.data);
-        }
-        if (value && typeof value === 'object') {
-          return ''; // Return empty string for other objects
-        }
-        return value || '';
-      }
-
-      // Create survey card
-      function createSurveyCard(survey) {
-        const responseRate = survey.responseCount > 0 ? Math.round((survey.completedCount / survey.responseCount) * 100) : 0;
-        const isDraft = survey.status === 'draft';
-        const onClickAction = isDraft ? 'editSurvey' : 'viewResults';
-
-        return `
-                <div class="survey-card" onclick="${onClickAction}(${survey.id})">
-                    <div class="survey-card-header">
-                        <h3 class="survey-card-title">${getTextFromBuffer(survey.title)}</h3>
-                        <span class="survey-status ${survey.status}">${getStatusText(survey.status)}</span>
-                    </div>
-                    <p class="survey-card-description">${getTextFromBuffer(survey.description) || 'Keine Beschreibung'}</p>
-                    <div class="survey-stats">
-                        <div class="survey-stat">
-                            <span class="survey-stat-value">${survey.responseCount || 0}</span>
-                            <span class="survey-stat-label">Antworten</span>
-                        </div>
-                        <div class="survey-stat">
-                            <span class="survey-stat-value">${responseRate}%</span>
-                            <span class="survey-stat-label">Abschlussrate</span>
-                        </div>
-                    </div>
-                    <div class="survey-actions">
-                        ${
-                          // Only show edit button if no responses yet
-                          survey.responseCount === 0 || survey.responseCount === null || survey.responseCount === undefined
-                            ? `
-                        <button class="survey-action-btn" onclick="event.stopPropagation(); editSurvey(${survey.id})">
-                            <i class="fas fa-edit"></i>
-                            Bearbeiten
-                        </button>
-                        `
-                            : ''
-                        }
-                        ${
-                          !isDraft
-                            ? `
-                        <button class="survey-action-btn" onclick="event.stopPropagation(); viewResults(${survey.id})">
-                            <i class="fas fa-chart-bar"></i>
-                            Ergebnisse
-                        </button>
-                        `
-                            : ''
-                        }
-                        <button class="survey-action-btn" onclick="event.stopPropagation(); deleteSurvey(${survey.id})">
-                            <i class="fas fa-trash"></i>
-                            Löschen
-                        </button>
-                    </div>
-                </div>
-            `;
-      }
-
-      // Load templates
-      window.loadTemplates = async function () {
-        try {
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-          const endpoint = useV2 ? '/api/v2/surveys/templates' : '/api/surveys/templates';
-
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            // Handle v2 API response structure
-            const templates = useV2 && result.success ? result.data : result.data || result.templates || result;
-            // Ensure templates is an array
-            if (Array.isArray(templates)) {
-              displayTemplates(templates);
-            } else {
-              console.error('Invalid templates data format:', templates);
-              displayTemplates([]);
-            }
-          }
-        } catch (error) {
-          console.error('Error loading templates:', error);
-        }
-      };
-
-      // Display templates
-      function displayTemplates(templates) {
-        const container = document.getElementById('surveyTemplates');
-        container.innerHTML =
-          templates && templates.length > 0
-            ? templates
-                .map(
-                  (template) => `
-                    <div class="template-card" onclick="createFromTemplate(${template.id})">
-                        <h4 class="template-name">${template.name}</h4>
-                        <p class="template-description">${template.description}</p>
-                    </div>
-                `,
-                )
-                .join('')
-            : `<div class="empty-state">
-                <div class="empty-state-icon">📑</div>
-                <h3 class="empty-state-title">Keine Vorlagen</h3>
-                <p>Es sind noch keine Umfrage-Vorlagen verfügbar.</p>
-              </div>`;
-      }
-
-      // Create from template
-      window.createFromTemplate = async function (templateId) {
-        if (confirm('Möchten Sie eine neue Umfrage basierend auf dieser Vorlage erstellen?')) {
-          try {
-            const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-            // v2 uses different endpoint structure
-            const endpoint = useV2 ? `/api/v2/surveys/templates/${templateId}` : `/api/surveys/from-template/${templateId}`;
-
-            const response = await fetch(endpoint, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-              },
-            });
-
-            if (response.ok) {
-              const result = await response.json();
-              showSuccessAlert('Umfrage wurde aus Vorlage erstellt');
-              loadSurveys();
-            }
-          } catch (error) {
-            console.error('Error creating from template:', error);
-            showErrorAlert('Fehler beim Erstellen der Umfrage');
-          }
-        }
-      };
-
-      // Show create modal
-      window.showCreateModal = function () {
-        currentSurveyId = null;
-
-        // Show modal using modal manager
-        window.modalManager.show('surveyModal', {
-          onOpen: () => {
-            document.getElementById('modalTitle').textContent = 'Neue Umfrage erstellen';
-            document.getElementById('surveyForm').reset();
-            document.getElementById('questionsList').innerHTML = '';
-            questionCounter = 0;
-
-            // Reset assignment type to "Ganze Firma"
-            document.getElementById('assignmentType').value = 'all_users';
-            document.getElementById('assignmentDropdownDisplay').querySelector('span').textContent = 'Ganze Firma';
-            document.getElementById('departmentSelection').style.display = 'none';
-            document.getElementById('teamSelection').style.display = 'none';
-
-            // Set default dates: today at 00:00 and 14 days later at 00:00
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const endDate = new Date(today);
-            endDate.setDate(endDate.getDate() + 14);
-
-            // Format dates for datetime-local input
-            const formatDate = (date) => {
-              const year = date.getFullYear();
-              const month = String(date.getMonth() + 1).padStart(2, '0');
-              const day = String(date.getDate()).padStart(2, '0');
-              return `${year}-${month}-${day}T00:00`;
-            };
-
-            document.getElementById('startDate').value = formatDate(today);
-            document.getElementById('endDate').value = formatDate(endDate);
-
-            addQuestion(); // Add first question by default
-          },
-        });
-      };
-
-      // Close modal
-      window.closeModal = function () {
-        window.modalManager.hide('surveyModal');
-      };
-
-      // Add question
-      window.addQuestion = function () {
-        questionCounter++;
-        const questionId = `question_${questionCounter}`;
-        const questionHtml = `
-                <div class="question-item" id="${questionId}">
-                    <div class="question-header">
-                        <span class="question-number">${questionCounter}</span>
-                        <div class="question-actions">
-                            <button type="button" class="question-action delete" onclick="removeQuestion('${questionId}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <input type="text" class="form-control" placeholder="Fragetext eingeben (min. 5 Zeichen)..." required minlength="5" maxlength="500">
-                    </div>
-                    <div class="form-group">
-                        <div class="custom-dropdown">
-                            <div class="dropdown-display" id="${questionId}_typeDisplay" onclick="toggleDropdown('${questionId}_type')">
-                                <span>Textantwort</span>
-                                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                            </div>
-                            <div class="dropdown-options" id="${questionId}_typeDropdown">
-                                <div class="dropdown-option" onclick="selectQuestionType('${questionId}', 'text', 'Textantwort')">Textantwort</div>
-                                <div class="dropdown-option" onclick="selectQuestionType('${questionId}', 'single_choice', 'Einzelauswahl')">Einzelauswahl</div>
-                                <div class="dropdown-option" onclick="selectQuestionType('${questionId}', 'multiple_choice', 'Mehrfachauswahl')">Mehrfachauswahl</div>
-                                <div class="dropdown-option" onclick="selectQuestionType('${questionId}', 'rating', 'Bewertung (1-5)')">Bewertung (1-5)</div>
-                                <div class="dropdown-option" onclick="selectQuestionType('${questionId}', 'yes_no', 'Ja/Nein')">Ja/Nein</div>
-                                <div class="dropdown-option" onclick="selectQuestionType('${questionId}', 'number', 'Zahl')">Zahl</div>
-                                <div class="dropdown-option" onclick="selectQuestionType('${questionId}', 'date', 'Datum')">Datum</div>
-                            </div>
-                            <input type="hidden" id="${questionId}_typeValue" value="text" />
-                        </div>
-                    </div>
-                    <div class="options-container" id="${questionId}_options" class="u-hidden">
-                        <!-- Options will be added here for choice questions -->
-                    </div>
-                    <div class="checkbox-group">
-                        <input type="checkbox" id="${questionId}_required" checked>
-                        <label for="${questionId}_required">Pflichtfrage</label>
-                    </div>
-                </div>
-            `;
-        document.getElementById('questionsList').insertAdjacentHTML('beforeend', questionHtml);
-      };
-
-      // Handle question type change
-      function handleQuestionTypeChange(questionId, type) {
-        const optionsContainer = document.getElementById(`${questionId}_options`);
-
-        if (type === 'single_choice' || type === 'multiple_choice') {
-          optionsContainer.style.display = 'block';
-          optionsContainer.innerHTML = `
-                    <div id="${questionId}_option_list">
-                        <div class="option-item">
-                            <input type="text" class="option-input" placeholder="Option 1">
-                            <button type="button" class="remove-option" onclick="removeOption(this)">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="option-item">
-                            <input type="text" class="option-input" placeholder="Option 2">
-                            <button type="button" class="remove-option" onclick="removeOption(this)">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <button type="button" class="add-option-btn" onclick="addOption('${questionId}')">
-                        <i class="fas fa-plus"></i>
-                        Option hinzufügen
-                    </button>
-                `;
-        } else {
-          optionsContainer.style.display = 'none';
-          optionsContainer.innerHTML = '';
-        }
-      }
-
-      // Add option
-      function addOption(questionId) {
-        const optionList = document.getElementById(`${questionId}_option_list`);
-        const optionCount = optionList.children.length + 1;
-        const optionHtml = `
-                <div class="option-item">
-                    <input type="text" class="option-input" placeholder="Option ${optionCount}">
-                    <button type="button" class="remove-option" onclick="removeOption(this)">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `;
-        optionList.insertAdjacentHTML('beforeend', optionHtml);
-      }
-
-      // Remove option
-      window.removeOption = function (button) {
-        button.parentElement.remove();
-      };
-
-      // Remove question
-      window.removeQuestion = function (questionId) {
-        document.getElementById(questionId).remove();
-        updateQuestionNumbers();
-      };
-
-      // Update question numbers
-      window.updateQuestionNumbers = function () {
-        const questions = document.querySelectorAll('.question-item');
-        questions.forEach((question, index) => {
-          question.querySelector('.question-number').textContent = index + 1;
-        });
-      };
-
-      // Save survey
-      window.saveSurvey = async function (status) {
-        const assignmentType = document.getElementById('assignmentType').value;
-        const assignments = [];
-
-        // Handle different assignment types
-        if (assignmentType === 'all_users') {
-          assignments.push({ type: 'all_users' });
-        } else if (assignmentType === 'department') {
-          // Get selected departments from select element
-          const select = document.getElementById('departmentSelect');
-          const selectedDepts = Array.from(select.selectedOptions).map((option) => parseInt(option.value));
-
-          if (selectedDepts.length === 0) {
-            showAlert('Bitte wählen Sie mindestens eine Abteilung aus');
-            return;
-          }
-
-          selectedDepts.forEach((deptId) => {
-            assignments.push({
-              type: 'department',
-              departmentId: deptId,
-            });
-          });
-        } else if (assignmentType === 'team') {
-          // Get selected teams from select element
-          const select = document.getElementById('teamSelect');
-          const selectedTeams = Array.from(select.selectedOptions).map((option) => parseInt(option.value));
-
-          if (selectedTeams.length === 0) {
-            showAlert('Bitte wählen Sie mindestens ein Team aus');
-            return;
-          }
-
-          selectedTeams.forEach((teamId) => {
-            assignments.push({
-              type: 'team',
-              teamId: teamId,
-            });
-          });
-        }
-
-        // Validate survey title
-        const title = document.getElementById('surveyTitle').value.trim();
-        if (title.length < 3 || title.length > 255) {
-          showAlert('Der Umfragetitel muss zwischen 3 und 255 Zeichen lang sein');
-          return;
-        }
-
-        const surveyData = {
-          title: title,
-          description: document.getElementById('surveyDescription').value,
-          isAnonymous: document.getElementById('isAnonymous').checked,
-          isMandatory: document.getElementById('isMandatory').checked,
-          startDate: document.getElementById('startDate').value || null,
-          endDate: document.getElementById('endDate').value || null,
-          status: status,
-          questions: getQuestionsData(),
-          assignments: assignments,
-        };
-
-        // Validate questions
-        if (surveyData.questions.length === 0) {
-          showAlert('Bitte fügen Sie mindestens eine Frage hinzu');
-          return;
-        }
-
-        // Validate each question
-        for (let i = 0; i < surveyData.questions.length; i++) {
-          const question = surveyData.questions[i];
-          if (question.questionText.length < 5 || question.questionText.length > 500) {
-            showAlert(`Frage ${i + 1}: Der Fragetext muss zwischen 5 und 500 Zeichen lang sein`);
-            return;
-          }
-
-          // Validate options for choice questions
-          if (question.questionType === 'single_choice' || question.questionType === 'multiple_choice') {
-            if (!question.options || question.options.length < 2) {
-              showAlert(`Frage ${i + 1}: Auswahlfragen benötigen mindestens 2 Optionen`);
-              return;
-            }
-          }
-        }
-
-        try {
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-          const url = currentSurveyId
-            ? useV2
-              ? `/api/v2/surveys/${currentSurveyId}`
-              : `/api/surveys/${currentSurveyId}`
-            : useV2
-              ? '/api/v2/surveys'
-              : '/api/surveys';
-          const method = currentSurveyId ? 'PUT' : 'POST';
-
-          const response = await fetch(url, {
-            method: method,
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(surveyData),
-          });
-
-          if (response.ok) {
-            showSuccessAlert('Umfrage erfolgreich gespeichert');
-            closeModal();
-            loadSurveys();
-          } else {
-            const error = await response.json();
-            // Handle different error response formats
-            const errorMessage = error.message || error.error || 'Unbekannter Fehler';
-            console.error('Server error:', error);
-            showErrorAlert('Fehler: ' + errorMessage);
-          }
-        } catch (error) {
-          console.error('Error saving survey:', error);
-          showErrorAlert('Fehler beim Speichern der Umfrage');
-        }
-      };
-
-      // Get questions data
-      window.getQuestionsData = function () {
-        const questions = [];
-        const questionElements = document.querySelectorAll('.question-item');
-
-        questionElements.forEach((element, index) => {
-          const questionText = element.querySelector('input[type="text"]').value.trim();
-          const questionTypeInput = element.querySelector('input[type="hidden"][id$="_typeValue"]');
-          const questionType = questionTypeInput ? questionTypeInput.value : 'text';
-          const isRequired = element.querySelector('input[type="checkbox"]').checked;
-
-          const question = {
-            questionText: questionText,
-            questionType: questionType,
-            isRequired: isRequired,
-            orderPosition: index + 1,
-          };
-
-          // Get options for choice questions
-          if (questionType === 'single_choice' || questionType === 'multiple_choice') {
-            const options = [];
-            element.querySelectorAll('.option-input').forEach((input) => {
-              if (input.value.trim()) {
-                options.push(input.value.trim());
-              }
-            });
-            question.options = options;
-          }
-
-          questions.push(question);
-        });
-
-        return questions;
-      };
-
-      // Get status text
-      window.getStatusText = function (status) {
-        const statusTexts = {
-          draft: 'Entwurf',
-          active: 'Aktiv',
-          closed: 'Geschlossen',
-          archived: 'Archiviert',
-        };
-        return statusTexts[status] || status;
-      };
-
-      // View survey
-      window.viewSurvey = function (surveyId) {
-        window.location.href = `/survey-details?id=${surveyId}`;
-      };
-
-      // Edit survey
-      window.editSurvey = async function (surveyId) {
-        // Load survey data and populate form
-        try {
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
-
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            // Handle v2 API response structure
-            const survey = useV2 && result.success ? result.data : result.data || result.survey || result;
-
-            // Check if survey has responses - prevent editing if it does
-            if (survey.responseCount > 0) {
-              showAlert('Diese Umfrage kann nicht bearbeitet werden, da bereits Antworten vorliegen.', 'warning');
-              return;
-            }
-
-            currentSurveyId = surveyId;
-
-            // Show modal using modal manager
-            window.modalManager.show('surveyModal', {
-              onOpen: () => {
-                document.getElementById('modalTitle').textContent = 'Umfrage bearbeiten';
-                populateSurveyForm(survey);
-              },
-            });
-          }
-        } catch (error) {
-          console.error('Error loading survey:', error);
-          showErrorAlert('Fehler beim Laden der Umfrage');
-        }
-      };
-
-      // View results
-      window.viewResults = function (surveyId) {
-        window.location.href = `/survey-results?id=${surveyId}`;
-      };
-
-      // Delete survey
-      window.deleteSurvey = async function (surveyId) {
-        if (await showConfirm('Möchten Sie diese Umfrage wirklich löschen?')) {
-          try {
-            const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-            const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
-
-            const response = await fetch(endpoint, {
-              method: 'DELETE',
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-              },
-            });
-
-            if (response.ok) {
-              showSuccessAlert('Umfrage erfolgreich gelöscht');
-              loadSurveys();
-            }
-          } catch (error) {
-            console.error('Error deleting survey:', error);
-            showErrorAlert('Fehler beim Löschen der Umfrage');
-          }
-        }
-      };
-
-      // Populate survey form (for editing)
-      window.populateSurveyForm = function (survey) {
-        // Handle title (might be Buffer)
-        document.getElementById('surveyTitle').value = getTextFromBuffer(survey.title);
-
-        // Handle description (might be Buffer)
-        document.getElementById('surveyDescription').value = getTextFromBuffer(survey.description);
-
-        // Handle boolean fields (might be strings)
-        document.getElementById('isAnonymous').checked =
-          survey.isAnonymous === '1' || survey.isAnonymous === 1 || survey.isAnonymous === true;
-
-        document.getElementById('isMandatory').checked =
-          survey.isMandatory === '1' || survey.isMandatory === 1 || survey.isMandatory === true;
-        document.getElementById('startDate').value = survey.startDate ? new Date(survey.startDate).toISOString().slice(0, 16) : '';
-        document.getElementById('endDate').value = survey.endDate ? new Date(survey.endDate).toISOString().slice(0, 16) : '';
-
-        // Clear existing questions
-        document.getElementById('questionsList').innerHTML = '';
-        questionCounter = 0;
-
-        // Add questions
-        survey.questions.forEach((question) => {
-          addQuestion();
-          const questionElement = document.querySelector('.question-item:last-child');
-          // Set question text
-          questionElement.querySelector('input[type="text"]').value = getTextFromBuffer(question.questionText);
-
-          // Set question type using custom dropdown
-          const typeInput = questionElement.querySelector('input[type="hidden"][id$="_typeValue"]');
-          if (typeInput) {
-            typeInput.value = question.questionType;
-            // Update dropdown display
-            const typeDisplay = questionElement.querySelector('[id$="_typeDisplay"] span');
-            if (typeDisplay) {
-              const typeLabels = {
-                text: 'Textantwort',
-                single_choice: 'Einzelauswahl',
-                multiple_choice: 'Mehrfachauswahl',
-                rating: 'Bewertung (1-5)',
-                yes_no: 'Ja/Nein',
-                number: 'Zahl',
-                date: 'Datum',
-              };
-              typeDisplay.textContent = typeLabels[question.questionType] || 'Textantwort';
-            }
-          }
-
-          // Set required checkbox
-          const requiredCheckbox = questionElement.querySelector('input[type="checkbox"]');
-          if (requiredCheckbox) {
-            requiredCheckbox.checked = question.is_required === '1' || question.is_required === 1 || question.is_required === true;
-          }
-
-          // Handle options
-          if (question.options && question.options.length > 0) {
-            handleQuestionTypeChange(`question_${questionCounter}`, question.questionType);
-            const optionsList = questionElement.querySelector(`#question_${questionCounter}_option_list`);
-            optionsList.innerHTML = '';
-
-            question.options.forEach((option) => {
-              // Handle option text (might be string or object)
-              const optionText = typeof option === 'string' ? option : option.option_text || '';
-
-              const optionHtml = `
-                            <div class="option-item">
-                                <input type="text" class="option-input" value="${optionText}">
-                                <button type="button" class="remove-option" onclick="removeOption(this)">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        `;
-              optionsList.insertAdjacentHTML('beforeend', optionHtml);
-            });
-          }
-        });
-      };
     </script>
   </body>
 </html>

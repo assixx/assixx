@@ -205,7 +205,7 @@ async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResp
 ```typescript
 // Edit Handler für CRUD Update
 private setupEditButton(): void {
-  const editBtn = document.getElementById('editShiftsBtn');
+  const editBtn = document.querySelector('editShiftsBtn');
   editBtn?.addEventListener('click', async () => {
     if (!this.currentPlanId) {
       showErrorAlert('Kein Schichtplan zum Bearbeiten vorhanden');
@@ -228,8 +228,8 @@ private setupEditButton(): void {
 
 // Zeige Edit-Button wenn Plan existiert
 private updateActionButtons(): void {
-  const editBtn = document.getElementById('editShiftsBtn') as HTMLButtonElement;
-  const saveBtn = document.getElementById('saveShiftsBtn') as HTMLButtonElement;
+  const editBtn = document.querySelector('editShiftsBtn') as HTMLButtonElement;
+  const saveBtn = document.querySelector('saveShiftsBtn') as HTMLButtonElement;
 
   if (this.currentPlanId) {
     editBtn.style.display = 'inline-block';

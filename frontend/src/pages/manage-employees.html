@@ -744,7 +744,7 @@
       }
 
       function renderEmployees(employees) {
-        const container = document.getElementById('employeeTableContent');
+        const container = document.querySelector('#employeeTableContent');
 
         if (employees.length === 0) {
           container.innerHTML = `
@@ -831,8 +831,8 @@
 
       // Modal functions
       async function showEmployeeModal() {
-        document.getElementById('modalTitle').textContent = 'Neuer Mitarbeiter';
-        const form = document.getElementById('employee-form');
+        document.querySelector('#modalTitle').textContent = 'Neuer Mitarbeiter';
+        const form = document.querySelector('#employee-form');
         form.reset();
 
         // Clear any stored employee ID
@@ -844,8 +844,8 @@
         }
 
         // Show confirmation fields for new employees
-        document.getElementById('email-confirm-group').style.display = 'block';
-        document.getElementById('password-confirm-group').style.display = 'block';
+        document.querySelector('#email-confirm-group').style.display = 'block';
+        document.querySelector('#password-confirm-group').style.display = 'block';
 
         // Make password and confirmations required for new employees
         form.password.setAttribute('required', 'required');
@@ -853,19 +853,19 @@
         form.passwordConfirm.setAttribute('required', 'required');
 
         // Clear any error messages
-        document.getElementById('email-error').style.display = 'none';
-        document.getElementById('password-error').style.display = 'none';
+        document.querySelector('#email-error').style.display = 'none';
+        document.querySelector('#password-error').style.display = 'none';
 
         // Load departments and teams
         await loadDepartments();
         await loadTeams();
 
-        document.getElementById('employee-modal').classList.add('active');
+        document.querySelector('#employee-modal').classList.add('active');
       }
 
       function closeEmployeeModal() {
-        const modal = document.getElementById('employee-modal');
-        const form = document.getElementById('employee-form');
+        const modal = document.querySelector('#employee-modal');
+        const form = document.querySelector('#employee-form');
 
         // Clear form and any stored data
         form.reset();
@@ -877,13 +877,13 @@
       async function editEmployee(id) {
         try {
           const emp = await apiClient.get(`/users/${id}`);
-          document.getElementById('modalTitle').textContent = 'Mitarbeiter bearbeiten';
+          document.querySelector('#modalTitle').textContent = 'Mitarbeiter bearbeiten';
 
-          const form = document.getElementById('employee-form');
+          const form = document.querySelector('#employee-form');
 
           // Hide confirmation fields for editing
-          document.getElementById('email-confirm-group').style.display = 'none';
-          document.getElementById('password-confirm-group').style.display = 'none';
+          document.querySelector('#email-confirm-group').style.display = 'none';
+          document.querySelector('#password-confirm-group').style.display = 'none';
 
           // Remove required from password and confirmations for editing
           form.password.removeAttribute('required');
@@ -960,7 +960,7 @@
           }
 
           form.dataset.employeeId = id;
-          document.getElementById('employee-modal').classList.add('active');
+          document.querySelector('#employee-modal').classList.add('active');
         } catch (error) {
           console.error('Error loading employee:', error);
         }
@@ -990,14 +990,14 @@
       async function loadDepartments() {
         try {
           const departments = await apiClient.get('/departments');
-          const select = document.getElementById('employee-department-select');
+          const select = document.querySelector('#employee-department-select');
           if (select && departments) {
             select.innerHTML = '<option value="">Keine Abteilung</option>';
             departments.forEach((dept) => {
               const option = document.createElement('option');
               option.value = dept.id;
               option.textContent = dept.name;
-              select.appendChild(option);
+              select.append(option);
             });
           }
         } catch (error) {
@@ -1008,14 +1008,14 @@
       async function loadTeams() {
         try {
           const teams = await apiClient.get('/teams');
-          const select = document.getElementById('employee-team-select');
+          const select = document.querySelector('#employee-team-select');
           if (select && teams) {
             select.innerHTML = '<option value="">Kein Team</option>';
             teams.forEach((team) => {
               const option = document.createElement('option');
               option.value = team.id;
               option.textContent = team.name;
-              select.appendChild(option);
+              select.append(option);
             });
           }
         } catch (error) {
@@ -1026,7 +1026,7 @@
       // DISABLED - Form submit handler is now in manage-employees.ts to avoid duplicate requests
       // The TypeScript file handles all form submission through the saveEmployee function
       /*
-      document.getElementById('employee-form').addEventListener('submit', async (e) => {
+      document.querySelector('employee-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const formData = new FormData(e.target);
@@ -1037,18 +1037,18 @@
         if (!employeeId) {
           // Check email confirmation
           if (data.email !== data.emailConfirm) {
-            document.getElementById('email-error').style.display = 'block';
+            document.querySelector('email-error').style.display = 'block';
             return;
           } else {
-            document.getElementById('email-error').style.display = 'none';
+            document.querySelector('email-error').style.display = 'none';
           }
 
           // Check password confirmation
           if (data.password !== data.passwordConfirm) {
-            document.getElementById('password-error').style.display = 'block';
+            document.querySelector('password-error').style.display = 'block';
             return;
           } else {
-            document.getElementById('password-error').style.display = 'none';
+            document.querySelector('password-error').style.display = 'none';
           }
         }
 
@@ -1174,7 +1174,7 @@
 
       // Close modal on outside click
       window.addEventListener('click', (e) => {
-        const modal = document.getElementById('employee-modal');
+        const modal = document.querySelector('#employee-modal');
         if (e.target === modal) {
           closeEmployeeModal();
         }
@@ -1186,9 +1186,9 @@
         const emailConfirm = e.target.value;
 
         if (emailConfirm && email !== emailConfirm) {
-          document.getElementById('email-error').style.display = 'block';
+          document.querySelector('#email-error').style.display = 'block';
         } else {
-          document.getElementById('email-error').style.display = 'none';
+          document.querySelector('#email-error').style.display = 'none';
         }
       });
 
@@ -1198,9 +1198,9 @@
         const passwordConfirm = e.target.value;
 
         if (passwordConfirm && password !== passwordConfirm) {
-          document.getElementById('password-error').style.display = 'block';
+          document.querySelector('#password-error').style.display = 'block';
         } else {
-          document.getElementById('password-error').style.display = 'none';
+          document.querySelector('#password-error').style.display = 'none';
         }
       });
 

@@ -25,10 +25,10 @@ Mehrere Scripts manipulierten gleichzeitig das `user-info` Element:
 
 ```javascript
 window.addEventListener('DOMContentLoaded', function () {
-  const userInfoDiv = document.getElementById('user-info');
-  const userAvatar = document.getElementById('user-avatar');
-  const userName = document.getElementById('user-name');
-  const roleIndicator = document.getElementById('role-indicator');
+  const userInfoDiv = document.querySelector('user-info');
+  const userAvatar = document.querySelector('user-avatar');
+  const userName = document.querySelector('user-name');
+  const roleIndicator = document.querySelector('role-indicator');
 
   if (userInfoDiv) {
     const observer = new MutationObserver(function (mutations) {
@@ -66,7 +66,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
 ```typescript
 // Check if user-info has been overwritten
-const userInfoDiv = document.getElementById('user-info');
+const userInfoDiv = document.querySelector('user-info');
 if (userInfoDiv && userInfoDiv.children.length === 0) {
   console.info('[Blackboard] Restoring user-info structure...');
   userInfoDiv.innerHTML = `
@@ -141,21 +141,21 @@ Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge ko
 
 ```javascript
 window.addEventListener('DOMContentLoaded', function () {
-  const userInfoDiv = document.getElementById('user-info');
+  const userInfoDiv = document.querySelector('user-info');
 
   if (userInfoDiv) {
     // Speichere Referenzen zu den Original-Elementen
-    const originalAvatar = document.getElementById('user-avatar');
-    const originalUserName = document.getElementById('user-name');
-    const originalRoleIndicator = document.getElementById('role-indicator');
+    const originalAvatar = document.querySelector('user-avatar');
+    const originalUserName = document.querySelector('user-name');
+    const originalRoleIndicator = document.querySelector('role-indicator');
 
     const observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
         if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
           // Prüfe ob alle 3 Elemente vorhanden sind
-          const currentAvatar = document.getElementById('user-avatar');
-          const currentUserName = document.getElementById('user-name');
-          const currentRoleIndicator = document.getElementById('role-indicator');
+          const currentAvatar = document.querySelector('user-avatar');
+          const currentUserName = document.querySelector('user-name');
+          const currentRoleIndicator = document.querySelector('role-indicator');
 
           if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
             console.info('[Calendar] Restoring user-info elements');

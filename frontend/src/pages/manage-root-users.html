@@ -634,8 +634,8 @@
     <script>
       // Toggle Dropdown
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -651,10 +651,10 @@
 
       // Select Option
       function selectOption(type, value, text) {
-        document.getElementById(type + 'Display').querySelector('span').textContent = text;
-        document.getElementById(type + 'Value').value = value;
-        document.getElementById(type + 'Display').classList.remove('active');
-        document.getElementById(type + 'Dropdown').classList.remove('active');
+        document.querySelector(type + 'Display').querySelector('span').textContent = text;
+        document.querySelector(type + 'Value').value = value;
+        document.querySelector(type + 'Display').classList.remove('active');
+        document.querySelector(type + 'Dropdown').classList.remove('active');
       }
 
       // Click outside to close
@@ -667,17 +667,17 @@
 
       // Modal Functions
       function showAddRootModal() {
-        document.getElementById('modalTitle').textContent = 'Root User hinzufügen';
-        document.getElementById('rootForm').reset();
-        document.getElementById('positionDropdownDisplay').querySelector('span').textContent = 'Position auswählen...';
-        document.getElementById('passwordGroup').style.display = 'block';
-        document.getElementById('passwordConfirmGroup').style.display = 'block';
-        document.getElementById('activeStatusGroup').style.display = 'none';
-        document.getElementById('rootModal').classList.add('active');
+        document.querySelector('#modalTitle').textContent = 'Root User hinzufügen';
+        document.querySelector('#rootForm').reset();
+        document.querySelector('#positionDropdownDisplay').querySelector('span').textContent = 'Position auswählen...';
+        document.querySelector('#passwordGroup').style.display = 'block';
+        document.querySelector('#passwordConfirmGroup').style.display = 'block';
+        document.querySelector('#activeStatusGroup').style.display = 'none';
+        document.querySelector('#rootModal').classList.add('active');
       }
 
       function closeRootModal() {
-        document.getElementById('rootModal').classList.remove('active');
+        document.querySelector('#rootModal').classList.remove('active');
       }
     </script>
 

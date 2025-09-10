@@ -126,8 +126,8 @@ async function saveKontischichtPattern() {
 #### 3.2 Save Button Logic
 
 ```typescript
-document.getElementById('saveScheduleBtn').addEventListener('click', () => {
-  const isKontischichtMode = document.getElementById('shift-kontischicht').checked;
+document.querySelector('saveScheduleBtn').addEventListener('click', () => {
+  const isKontischichtMode = document.querySelector('shift-kontischicht').checked;
 
   if (isKontischichtMode) {
     // Speichert als Rotation (custom pattern)

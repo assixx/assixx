@@ -357,13 +357,13 @@
 
               if (response.ok) {
                 const tenants = await response.json();
-                const select = document.getElementById('tenant-select');
+                const select = document.querySelector('#tenant-select');
 
                 tenants.forEach((tenant) => {
                   const option = document.createElement('option');
                   option.value = tenant.id;
                   option.textContent = `${tenant.company_name} (${tenant.subdomain})`;
-                  select.appendChild(option);
+                  select.append(option);
                 });
               }
             } catch (error) {
@@ -374,14 +374,14 @@
 
           // Features für Tenant laden
           async function loadTenantFeatures() {
-            const tenantId = document.getElementById('tenant-select').value;
+            const tenantId = document.querySelector('#tenant-select').value;
             if (!tenantId) {
-              document.getElementById('features-container').style.display = 'none';
+              document.querySelector('#features-container').style.display = 'none';
               return;
             }
 
             currentTenantId = tenantId;
-            document.getElementById('features-container').style.display = 'block';
+            document.querySelector('#features-container').style.display = 'block';
 
             try {
               const response = await fetch(`/features/tenant/${tenantId}`, {
@@ -401,7 +401,7 @@
 
           // Features anzeigen
           function displayFeatures(features) {
-            const tbody = document.getElementById('features-table-body');
+            const tbody = document.querySelector('#features-table-body');
             tbody.innerHTML = '';
 
             features.forEach((feature) => {
@@ -426,13 +426,13 @@
                         }
                     </td>
                 `;
-              tbody.appendChild(row);
+              tbody.append(row);
             });
           }
 
           // Feature-Select befüllen
           function populateFeatureSelect(features) {
-            const select = document.getElementById('feature-select');
+            const select = document.querySelector('#feature-select');
             select.innerHTML = '<option value="">Bitte wählen...</option>';
 
             const inactiveFeatures = features.filter((f) => !f.status || f.status === 'disabled' || f.status === 'expired');
@@ -441,32 +441,32 @@
               const option = document.createElement('option');
               option.value = feature.code;
               option.textContent = `${feature.name} (€${feature.base_price})`;
-              select.appendChild(option);
+              select.append(option);
             });
           }
 
           // Feature aktivieren Form anzeigen
           function showActivateForm(featureCode) {
-            document.getElementById('feature-select').value = featureCode;
-            document.getElementById('activate-feature-form').scrollIntoView({ behavior: 'smooth' });
+            document.querySelector('#feature-select').value = featureCode;
+            document.querySelector('#activate-feature-form').scrollIntoView({ behavior: 'smooth' });
           }
 
           // Feature aktivieren
-          document.getElementById('activate-feature-form').addEventListener('submit', async (e) => {
+          document.querySelector('#activate-feature-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const featureCode = document.getElementById('feature-select').value;
+            const featureCode = document.querySelector('#feature-select').value;
             if (!featureCode) {
               showError('Bitte ein Feature auswählen');
               return;
             }
 
             const options = {
-              validFrom: document.getElementById('valid-from').value,
-              validUntil: document.getElementById('valid-until').value || null,
-              trialDays: parseInt(document.getElementById('trial-days').value) || 0,
-              usageLimit: parseInt(document.getElementById('usage-limit').value) || null,
-              customPrice: parseFloat(document.getElementById('custom-price').value) || null,
+              validFrom: document.querySelector('#valid-from').value,
+              validUntil: document.querySelector('#valid-until').value || null,
+              trialDays: parseInt(document.querySelector('#trial-days').value) || 0,
+              usageLimit: parseInt(document.querySelector('#usage-limit').value) || null,
+              customPrice: parseFloat(document.querySelector('#custom-price').value) || null,
             };
 
             try {
@@ -486,7 +486,7 @@
               if (response.ok) {
                 showSuccess('Feature erfolgreich aktiviert');
                 loadTenantFeatures();
-                document.getElementById('activate-feature-form').reset();
+                document.querySelector('#activate-feature-form').reset();
               } else {
                 const error = await response.json();
                 showError(`Fehler: ${error.error}`);
@@ -532,7 +532,7 @@
           // Initialisierung
           document.addEventListener('DOMContentLoaded', () => {
             // Heute als Standard für "Gültig ab"
-            document.getElementById('valid-from').value = new Date().toISOString().split('T')[0];
+            document.querySelector('#valid-from').value = new Date().toISOString().split('T')[0];
 
             loadTenants();
           });
@@ -545,7 +545,7 @@
               <i class="fas fa-exclamation-circle"></i>
               <span>${message}</span>
             `;
-            document.body.appendChild(notification);
+            document.body.append(notification);
 
             setTimeout(() => {
               notification.classList.add('show');
@@ -554,7 +554,7 @@
             setTimeout(() => {
               notification.classList.remove('show');
               setTimeout(() => {
-                document.body.removeChild(notification);
+                notification.remove();
               }, 300);
             }, 4000);
           }
@@ -566,7 +566,7 @@
               <i class="fas fa-check-circle"></i>
               <span>${message}</span>
             `;
-            document.body.appendChild(notification);
+            document.body.append(notification);
 
             setTimeout(() => {
               notification.classList.add('show');
@@ -575,7 +575,7 @@
             setTimeout(() => {
               notification.classList.remove('show');
               setTimeout(() => {
-                document.body.removeChild(notification);
+                notification.remove();
               }, 300);
             }, 3000);
           }
@@ -587,7 +587,7 @@
               <i class="fas fa-info-circle"></i>
               <span>${message}</span>
             `;
-            document.body.appendChild(notification);
+            document.body.append(notification);
 
             setTimeout(() => {
               notification.classList.add('show');
@@ -596,7 +596,7 @@
             setTimeout(() => {
               notification.classList.remove('show');
               setTimeout(() => {
-                document.body.removeChild(notification);
+                notification.remove();
               }, 300);
             }, 3500);
           }

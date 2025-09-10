@@ -746,8 +746,8 @@
     <script>
       // Custom Dropdown Functions
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -763,9 +763,9 @@
       }
 
       function selectOption(type, value, text) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
-        const input = document.getElementById('filter-' + type);
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
+        const input = document.querySelector('filter-' + type);
 
         // Update display text
         display.querySelector('span').textContent = text;
@@ -796,8 +796,8 @@
 
       // Delete Modal Functions
       function closeDeleteLogsModal() {
-        const modal = document.getElementById('deleteLogsModal');
-        const confirmInput = document.getElementById('deleteLogsConfirmation');
+        const modal = document.querySelector('#deleteLogsModal');
+        const confirmInput = document.querySelector('#deleteLogsConfirmation');
 
         if (modal && confirmInput) {
           modal.classList.remove('active');
@@ -807,11 +807,11 @@
 
       // Enable delete button validation
       document.addEventListener('DOMContentLoaded', () => {
-        const deleteConfirmInput = document.getElementById('deleteLogsConfirmation');
-        const passwordInput = document.getElementById('deleteLogsPassword');
+        const deleteConfirmInput = document.querySelector('#deleteLogsConfirmation');
+        const passwordInput = document.querySelector('#deleteLogsPassword');
 
         function updateDeleteButtonState() {
-          const confirmBtn = document.getElementById('confirmDeleteLogsBtn');
+          const confirmBtn = document.querySelector('#confirmDeleteLogsBtn');
           if (!confirmBtn) return;
 
           const confirmValue = deleteConfirmInput?.value || '';

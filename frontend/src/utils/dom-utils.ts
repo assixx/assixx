@@ -50,7 +50,7 @@ export function $all(selector: string, parent: Document | HTMLElement = document
 }
 
 /**
- * Type-safe getElementById
+ * Type-safe querySelector
  * @param id - Element ID (without #)
  * @throws Error if element not found
  */
@@ -63,7 +63,7 @@ export function $id(id: string): HTMLElement {
 }
 
 /**
- * Type-safe getElementById that returns null if not found
+ * Type-safe querySelector that returns null if not found
  * @param id - Element ID (without #)
  */
 export function $$id(id: string): HTMLElement | null {

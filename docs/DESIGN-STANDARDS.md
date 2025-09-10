@@ -1360,7 +1360,7 @@ function showSuccessMessage() {
 ```javascript
 // Modal anzeigen
 function showModal(modalId) {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector(modalId);
   if (modal) {
     modal.style.display = 'flex';
   }
@@ -1368,7 +1368,7 @@ function showModal(modalId) {
 
 // Modal verstecken
 function hideModal(modalId) {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector(modalId);
   if (modal) {
     modal.style.display = 'none';
   }
@@ -1387,8 +1387,8 @@ window.addEventListener('click', function (event) {
 ```javascript
 // Toggle Dropdown
 function toggleDropdown(type) {
-  const display = document.getElementById(type + 'Display');
-  const dropdown = document.getElementById(type + 'Dropdown');
+  const display = document.querySelector(type + 'Display');
+  const dropdown = document.querySelector(type + 'Dropdown');
 
   // Alle anderen schließen
   document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1404,10 +1404,10 @@ function toggleDropdown(type) {
 
 // Option auswählen
 function selectOption(value, text) {
-  document.getElementById('myDropdownDisplay').querySelector('span').textContent = text;
-  document.getElementById('myDropdownValue').value = value;
-  document.getElementById('myDropdownDisplay').classList.remove('active');
-  document.getElementById('myDropdownDropdown').classList.remove('active');
+  document.querySelector('myDropdownDisplay').querySelector('span').textContent = text;
+  document.querySelector('myDropdownValue').value = value;
+  document.querySelector('myDropdownDisplay').classList.remove('active');
+  document.querySelector('myDropdownDropdown').classList.remove('active');
 }
 
 // Click-Outside-to-Close

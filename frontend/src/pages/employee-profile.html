@@ -486,7 +486,7 @@
 
         // Ausgewählten Tab aktivieren
         document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
-        document.getElementById(tabId).classList.add('active');
+        document.querySelector(tabId).classList.add('active');
       }
 
       // Zurück-Funktion
@@ -583,46 +583,46 @@
       // Benutzerdaten anzeigen
       function fillUserData(userData) {
         // Profil-Header
-        document.getElementById('profile-name').textContent = `${userData.first_name} ${userData.last_name}`;
-        document.getElementById('profile-position').textContent = userData.position || 'Keine Position angegeben';
+        document.querySelector('#profile-name').textContent = `${userData.first_name} ${userData.last_name}`;
+        document.querySelector('#profile-position').textContent = userData.position || 'Keine Position angegeben';
 
         if (userData.department_name) {
-          document.getElementById('profile-department').textContent = userData.department_name;
+          document.querySelector('#profile-department').textContent = userData.department_name;
         } else {
-          document.getElementById('profile-department').textContent = 'Keine Abteilung zugewiesen';
+          document.querySelector('#profile-department').textContent = 'Keine Abteilung zugewiesen';
         }
 
         // Profilbild
         if (userData.profile_picture) {
-          document.getElementById('profile-image').innerHTML =
+          document.querySelector('#profile-image').innerHTML =
             `<img src="/${userData.profile_picture}" alt="${userData.first_name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
         } else {
-          document.getElementById('profile-image').textContent = `${userData.first_name.charAt(0)}${userData.last_name.charAt(0)}`;
+          document.querySelector('#profile-image').textContent = `${userData.first_name.charAt(0)}${userData.last_name.charAt(0)}`;
         }
 
         // Persönliche Informationen
-        document.getElementById('first_name').value = userData.first_name || '';
-        document.getElementById('last_name').value = userData.last_name || '';
-        document.getElementById('email').value = userData.email || '';
-        document.getElementById('phone').value = userData.phone || '';
-        document.getElementById('address').value = userData.address || '';
-        document.getElementById('birthday').value = userData.birthday || '';
-        document.getElementById('emergency_contact').value = userData.emergency_contact || '';
+        document.querySelector('#first_name').value = userData.first_name || '';
+        document.querySelector('#last_name').value = userData.last_name || '';
+        document.querySelector('#email').value = userData.email || '';
+        document.querySelector('#phone').value = userData.phone || '';
+        document.querySelector('#address').value = userData.address || '';
+        document.querySelector('#birthday').value = userData.birthday || '';
+        document.querySelector('#emergency_contact').value = userData.emergency_contact || '';
 
         // Arbeitsinformationen
-        document.getElementById('employee_id').value = userData.employee_id || '';
-        document.getElementById('position').value = userData.position || '';
-        document.getElementById('department').value = userData.department_name || '';
-        document.getElementById('hire_date').value = userData.hire_date || '';
-        document.getElementById('notes').value = userData.notes || '';
+        document.querySelector('#employee_id').value = userData.employee_id || '';
+        document.querySelector('#position').value = userData.position || '';
+        document.querySelector('#department').value = userData.department_name || '';
+        document.querySelector('#hire_date').value = userData.hire_date || '';
+        document.querySelector('#notes').value = userData.notes || '';
 
         // Einstellungen
-        document.getElementById('username').value = userData.username || '';
+        document.querySelector('#username').value = userData.username || '';
       }
 
       // Dokumente anzeigen
       function displayDocuments(documents) {
-        const tableBody = document.getElementById('document-table-body');
+        const tableBody = document.querySelector('#document-table-body');
         tableBody.innerHTML = '';
 
         if (documents.length === 0) {
@@ -644,16 +644,16 @@
                     </td>
                 `;
 
-          tableBody.appendChild(row);
+          tableBody.append(row);
         });
 
         // Dokument-Suche einrichten
-        document.getElementById('document-search').addEventListener('input', (e) => {
+        document.querySelector('#document-search').addEventListener('input', (e) => {
           const searchTerm = e.target.value.toLowerCase();
-          const rows = tableBody.getElementsByTagName('tr');
+          const rows = tableBody.querySelectorAll('tr');
 
           for (let i = 0; i < rows.length; i++) {
-            const fileName = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
+            const fileName = rows[i].querySelectorAll('td')[0].textContent.toLowerCase();
 
             if (fileName.includes(searchTerm)) {
               rows[i].style.display = '';
@@ -666,7 +666,7 @@
 
       // Teams anzeigen
       function displayTeams(teams) {
-        const teamsContainer = document.getElementById('teams');
+        const teamsContainer = document.querySelector('#teams');
 
         if (!teams || teams.length === 0) {
           teamsContainer.textContent = 'Keine Teams zugewiesen';
@@ -682,7 +682,7 @@
           badge.style.marginBottom = '5px';
           badge.textContent = team.name;
 
-          teamsContainer.appendChild(badge);
+          teamsContainer.append(badge);
         });
       }
 
@@ -707,7 +707,7 @@
             const fileName = contentDisposition.split('filename=')[1] || 'document.pdf';
 
             a.download = fileName;
-            document.body.appendChild(a);
+            document.body.append(a);
             a.click();
             window.URL.revokeObjectURL(url);
           } else {
@@ -727,7 +727,7 @@
       }
 
       // Event-Listener für Formulare
-      document.getElementById('personal-info-form').addEventListener('submit', async (e) => {
+      document.querySelector('#personal-info-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         try {
@@ -781,11 +781,11 @@
         }
       });
 
-      document.getElementById('settings-form').addEventListener('submit', async (e) => {
+      document.querySelector('#settings-form').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const newPassword = document.getElementById('new_password').value;
-        const confirmPassword = document.getElementById('confirm_password').value;
+        const newPassword = document.querySelector('#new_password').value;
+        const confirmPassword = document.querySelector('#confirm_password').value;
 
         // Passwortvalidierung
         if (newPassword && newPassword !== confirmPassword) {
@@ -794,8 +794,8 @@
         }
 
         // Notification-Einstellungen
-        const notifyDocuments = document.getElementById('notify_documents').checked;
-        const notifyMessages = document.getElementById('notify_messages').checked;
+        const notifyDocuments = document.querySelector('#notify_documents').checked;
+        const notifyMessages = document.querySelector('#notify_messages').checked;
 
         try {
           const response = await fetch('/users/profile/settings', {
@@ -818,8 +818,8 @@
             showSuccess(result.message);
 
             // Passwortfelder zurücksetzen
-            document.getElementById('new_password').value = '';
-            document.getElementById('confirm_password').value = '';
+            document.querySelector('#new_password').value = '';
+            document.querySelector('#confirm_password').value = '';
           } else {
             const error = await response.json();
             showError(`Fehler: ${error.message}`);
@@ -838,7 +838,7 @@
           <i class="fas fa-exclamation-circle"></i>
           <span>${message}</span>
         `;
-        document.body.appendChild(notification);
+        document.body.append(notification);
 
         setTimeout(() => {
           notification.classList.add('show');
@@ -847,7 +847,7 @@
         setTimeout(() => {
           notification.classList.remove('show');
           setTimeout(() => {
-            document.body.removeChild(notification);
+            notification.remove();
           }, 300);
         }, 4000);
       }
@@ -859,7 +859,7 @@
           <i class="fas fa-check-circle"></i>
           <span>${message}</span>
         `;
-        document.body.appendChild(notification);
+        document.body.append(notification);
 
         setTimeout(() => {
           notification.classList.add('show');
@@ -868,7 +868,7 @@
         setTimeout(() => {
           notification.classList.remove('show');
           setTimeout(() => {
-            document.body.removeChild(notification);
+            notification.remove();
           }, 300);
         }, 3000);
       }
@@ -880,7 +880,7 @@
           <i class="fas fa-info-circle"></i>
           <span>${message}</span>
         `;
-        document.body.appendChild(notification);
+        document.body.append(notification);
 
         setTimeout(() => {
           notification.classList.add('show');
@@ -889,7 +889,7 @@
         setTimeout(() => {
           notification.classList.remove('show');
           setTimeout(() => {
-            document.body.removeChild(notification);
+            notification.remove();
           }, 300);
         }, 3500);
       }

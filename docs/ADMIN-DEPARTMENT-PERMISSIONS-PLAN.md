@@ -1,8 +1,8 @@
 # 🎯 Implementierungsplan: Admin-Abteilungszuweisungen
 
-**Erstellt:** 16.06.2025  
-**Status:** Genehmigt - Bereit zur Implementierung  
-**Priorität:** HOCH  
+**Erstellt:** 16.06.2025
+**Status:** Genehmigt - Bereit zur Implementierung
+**Priorität:** HOCH
 **Geschätzte Dauer:** 2-3 Tage
 
 ## 📋 Übersicht
@@ -274,8 +274,8 @@ class DepartmentGroupService {
 ```javascript
 // In signup.js
 function handleRoleChange() {
-  const role = document.getElementById('role').value;
-  const permissionsSection = document.getElementById('departmentPermissionsSection');
+  const role = document.querySelector('role').value;
+  const permissionsSection = document.querySelector('departmentPermissionsSection');
 
   if (role === 'admin' && currentUser.role === 'root') {
     permissionsSection.style.display = 'block';
@@ -287,8 +287,8 @@ function handleRoleChange() {
 
 function handlePermissionTypeChange() {
   const type = document.querySelector('input[name="permissionType"]:checked').value;
-  const departmentContainer = document.getElementById('departmentSelectContainer');
-  const groupContainer = document.getElementById('groupSelectContainer');
+  const departmentContainer = document.querySelector('departmentSelectContainer');
+  const groupContainer = document.querySelector('groupSelectContainer');
 
   departmentContainer.style.display = type === 'specific' ? 'block' : 'none';
   groupContainer.style.display = type === 'groups' ? 'block' : 'none';
@@ -437,7 +437,7 @@ async function loadDepartmentBadge() {
     const response = await fetch('/api/admin-permissions/my-departments');
     const data = await response.json();
 
-    const badge = document.getElementById('departmentBadge');
+    const badge = document.querySelector('departmentBadge');
     const badgeSpan = badge.querySelector('.badge');
 
     if (data.hasAllAccess) {

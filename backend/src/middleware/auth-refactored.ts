@@ -324,7 +324,7 @@ export const authenticateToken: AuthenticationMiddleware = async function (
 
               // Countdown and redirect
               let seconds = 5;
-              const countdownEl = document.getElementById('countdown');
+              const countdownEl = document.querySelector('countdown');
 
               const interval = setInterval(() => {
                 seconds--;

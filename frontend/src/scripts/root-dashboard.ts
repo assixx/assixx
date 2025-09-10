@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Elemente aus dem DOM holen
   const createAdminForm = document.querySelector<CreateAdminForm>('#create-admin-form');
-  // const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
+  // const logoutBtn = document.querySelector('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
   const dashboardContent = document.querySelector<HTMLElement>('#dashboard-data');
 
   // Event-Listener hinzufügen

@@ -820,8 +820,8 @@
 
       // Display surveys
       async function displaySurveys(surveys) {
-        const pendingContainer = document.getElementById('pendingSurveys');
-        const completedContainer = document.getElementById('completedSurveys');
+        const pendingContainer = document.querySelector('#pendingSurveys');
+        const completedContainer = document.querySelector('#completedSurveys');
 
         pendingContainer.innerHTML = '';
         completedContainer.innerHTML = '';
@@ -834,9 +834,9 @@
           console.info(`Survey ${survey.id} - Response check:`, responseCheck);
 
           if (responseCheck.responded) {
-            completedContainer.appendChild(createSurveyCard(survey, true));
+            completedContainer.append(createSurveyCard(survey, true));
           } else {
-            pendingContainer.appendChild(createSurveyCard(survey, false));
+            pendingContainer.append(createSurveyCard(survey, false));
           }
         }
 
@@ -986,8 +986,8 @@
 
       // Display survey form
       function displaySurveyForm() {
-        document.getElementById('modalTitle').textContent = getQuestionText(currentSurvey.title);
-        const container = document.getElementById('questionsContainer');
+        document.querySelector('#modalTitle').textContent = getQuestionText(currentSurvey.title);
+        const container = document.querySelector('#questionsContainer');
         container.innerHTML = '';
 
         console.info('Current Survey:', currentSurvey); // Debug
@@ -996,11 +996,11 @@
         currentSurvey.questions.forEach((question, index) => {
           console.info('Question:', question); // Debug
           const questionEl = createQuestionElement(question, index);
-          container.appendChild(questionEl);
+          container.append(questionEl);
         });
 
         updateProgress();
-        document.getElementById('surveyModal').style.display = 'flex';
+        document.querySelector('#surveyModal').style.display = 'flex';
       }
 
       // Create question element
@@ -1166,11 +1166,11 @@
       window.selectRating = function selectRating(questionId, value) {
         // Clear previous selection
         for (let i = 1; i <= 5; i++) {
-          document.getElementById(`rating_${questionId}_${i}`).classList.remove('selected');
+          document.querySelector(`rating_${questionId}_${i}`).classList.remove('selected');
         }
 
         // Set new selection
-        document.getElementById(`rating_${questionId}_${value}`).classList.add('selected');
+        document.querySelector(`rating_${questionId}_${value}`).classList.add('selected');
         updateAnswer(questionId, value, 'number');
       };
 
@@ -1180,12 +1180,12 @@
         const answeredQuestions = Object.keys(answers).length;
         const percentage = (answeredQuestions / totalQuestions) * 100;
 
-        document.getElementById('progressBar').style.width = `${percentage}%`;
-        document.getElementById('progressText').textContent = `${answeredQuestions} von ${totalQuestions} Fragen beantwortet`;
+        document.querySelector('#progressBar').style.width = `${percentage}%`;
+        document.querySelector('#progressText').textContent = `${answeredQuestions} von ${totalQuestions} Fragen beantwortet`;
       }
 
       // Submit survey
-      document.getElementById('surveyForm').addEventListener('submit', async (e) => {
+      document.querySelector('#surveyForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // Convert answers to array format
@@ -1402,7 +1402,7 @@
 
       // Close response modal
       window.closeResponseModal = function () {
-        const modal = document.getElementById('responseModal');
+        const modal = document.querySelector('#responseModal');
         if (modal) {
           modal.remove();
         }
@@ -1410,7 +1410,7 @@
 
       // Close modal
       window.closeModal = function closeModal() {
-        document.getElementById('surveyModal').style.display = 'none';
+        document.querySelector('#surveyModal').style.display = 'none';
         currentSurvey = null;
         answers = {};
       };
@@ -1429,7 +1429,7 @@
             </div>
           </div>
         `;
-        document.body.appendChild(overlay);
+        document.body.append(overlay);
 
         // Remove after animation
         setTimeout(() => {

@@ -340,7 +340,7 @@ class ModalManager {
   }
 
   show(modalId: string): void {
-    const modal = document.getElementById(modalId);
+    const modal = document.querySelector(modalId);
     if (modal) {
       modal.classList.remove('u-hidden');
       modal.classList.add('u-flex');
@@ -348,7 +348,7 @@ class ModalManager {
   }
 
   hide(modalId: string): void {
-    const modal = document.getElementById(modalId);
+    const modal = document.querySelector(modalId);
     if (modal) {
       modal.classList.remove('u-flex');
       modal.classList.add('u-hidden');
@@ -473,7 +473,7 @@ export { DropdownManager };
 <!-- ALT -->
 <script>
   function showModal(modalId) {
-    document.getElementById(modalId).style.display = 'block';
+    document.querySelector(modalId).style.display = 'block';
   }
 </script>
 

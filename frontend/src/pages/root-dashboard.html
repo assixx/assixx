@@ -718,8 +718,8 @@
 
       // Custom Dropdown Functions
       function toggleDropdown(dropdownId) {
-        const display = document.getElementById(dropdownId + 'Display');
-        const options = document.getElementById(dropdownId + 'Dropdown');
+        const display = document.querySelector(dropdownId + 'Display');
+        const options = document.querySelector(dropdownId + 'Dropdown');
 
         if (display && options) {
           display.classList.toggle('active');
@@ -740,9 +740,9 @@
       }
 
       function selectOption(dropdownId, value, text) {
-        const display = document.getElementById(dropdownId + 'Display');
-        const options = document.getElementById(dropdownId + 'Dropdown');
-        const input = document.getElementById(dropdownId + 'Value');
+        const display = document.querySelector(dropdownId + 'Display');
+        const options = document.querySelector(dropdownId + 'Dropdown');
+        const input = document.querySelector(dropdownId + 'Value');
 
         if (display && input) {
           display.querySelector('span').textContent = text;

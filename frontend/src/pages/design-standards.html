@@ -1044,8 +1044,8 @@
     <script>
       // Dropdown Functions
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1060,8 +1060,8 @@
       }
 
       function selectOption(type, value, text) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         display.querySelector('span').textContent = text;
         display.classList.remove('active');
@@ -1070,14 +1070,14 @@
 
       // Modal Functions
       function showModal(modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.style.display = 'flex';
         }
       }
 
       function hideModal(modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.style.display = 'none';
         }
@@ -1114,7 +1114,7 @@
 
       // Füge alle 3 Role Badges als Muster hinzu (nach dem die Navigation geladen wurde)
       setTimeout(() => {
-        const roleIndicator = document.getElementById('role-indicator');
+        const roleIndicator = document.querySelector('#role-indicator');
         if (roleIndicator) {
           // Ersetze einzelnes Badge mit allen 3 als Muster
           const badgesHtml = `

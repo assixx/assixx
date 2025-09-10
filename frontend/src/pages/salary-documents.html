@@ -361,7 +361,7 @@
         <script>
           document.addEventListener('DOMContentLoaded', () => {
             // Logout-Button Event-Handler
-            const logoutBtn = document.getElementById('logout-btn');
+            const logoutBtn = document.querySelector('#logout-btn');
             if (logoutBtn) {
               logoutBtn.addEventListener('click', function () {
                 if (confirm('Möchten Sie sich wirklich abmelden?')) {
@@ -399,13 +399,13 @@
 
             // Ausgewählten Tab aktivieren
             document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
-            document.getElementById(tabId).classList.add('active');
-            document.getElementById(tabId).style.display = 'block';
+            document.querySelector(tabId).classList.add('active');
+            document.querySelector(tabId).style.display = 'block';
           }
 
           async function loadSalaryDocuments(archived = false) {
             const containerId = archived ? 'archived-documents-grid' : 'current-documents-grid';
-            const container = document.getElementById(containerId);
+            const container = document.querySelector(containerId);
 
             if (!container) return;
 
@@ -515,7 +515,7 @@
                             </div>
                         `;
 
-                  container.appendChild(card);
+                  container.append(card);
                 });
 
                 // Event-Listener für Download-Buttons hinzufügen
@@ -573,7 +573,7 @@
             }
 
             // Progress-Container finden
-            const progressContainer = document.getElementById(`progress-${documentId}`);
+            const progressContainer = document.querySelector(`progress-${documentId}`);
             const progressBar = progressContainer.querySelector('.download-progress-bar');
 
             // Button-Text und Zustand speichern
@@ -628,9 +628,9 @@
                     a.style.display = 'none';
                     a.href = url;
                     a.download = `gehaltsdokument-${documentId}.pdf`;
-                    document.body.appendChild(a);
+                    document.body.append(a);
                     a.click();
-                    document.body.removeChild(a);
+                    a.remove();
                   }
 
                   // URL-Objekt später freigeben

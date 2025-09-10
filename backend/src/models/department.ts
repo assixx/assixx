@@ -116,7 +116,7 @@ export async function findAllDepartments(
     const query = `
         SELECT d.*, 
           u.username as manager_name,
-          (SELECT COUNT(*) FROM users WHERE department_id = d.id AND tenant_id = d.tenant_id) as employee_count,
+          (SELECT COUNT(*) FROM users WHERE department_id = d.id AND tenant_id = d.tenant_id AND is_active = 1 AND is_archived = 0) as employee_count,
           (SELECT COUNT(*) FROM teams WHERE department_id = d.id) as team_count
         FROM departments d
         LEFT JOIN users u ON d.manager_id = u.id

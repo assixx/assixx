@@ -387,7 +387,7 @@
       }
 
       function renderDetails() {
-        const contentArea = document.getElementById('content-area');
+        const contentArea = document.querySelector('#content-area');
 
         if (!surveyData) {
           showError('Keine Daten verfügbar');
@@ -542,7 +542,7 @@
       }
 
       function showError(message) {
-        const contentArea = document.getElementById('content-area');
+        const contentArea = document.querySelector('#content-area');
         const safeMessage = escapeHtml(message);
         contentArea.innerHTML = `
                 <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">

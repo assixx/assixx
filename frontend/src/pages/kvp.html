@@ -1139,7 +1139,7 @@
                   class="u-hidden"
                   onchange="handlePhotoSelection(this)"
                 />
-                <div class="upload-box" onclick="document.getElementById('kvpPhotos').click()">
+                <div class="upload-box" onclick="document.querySelector('kvpPhotos').click()">
                   <i class="fas fa-camera"></i>
                   <p>Klicken Sie hier, um Fotos auszuwählen</p>
                   <p class="small text-muted">oder ziehen Sie Dateien hierher</p>
@@ -1164,8 +1164,8 @@
     <script>
       // Toggle Dropdown
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1181,54 +1181,54 @@
 
       // Select Status
       function selectStatus(value, text) {
-        document.getElementById('statusDisplay').querySelector('span').textContent = text;
-        document.getElementById('statusFilterValue').value = value;
-        document.getElementById('statusDisplay').classList.remove('active');
-        document.getElementById('statusDropdown').classList.remove('active');
+        document.querySelector('#statusDisplay').querySelector('span').textContent = text;
+        document.querySelector('#statusFilterValue').value = value;
+        document.querySelector('#statusDisplay').classList.remove('active');
+        document.querySelector('#statusDropdown').classList.remove('active');
 
         // Trigger filter event
         const event = new Event('change');
-        document.getElementById('statusFilterValue').dispatchEvent(event);
+        document.querySelector('#statusFilterValue').dispatchEvent(event);
       }
 
       // Select Category
       function selectCategory(value, text) {
-        document.getElementById('categoryDisplay').querySelector('span').textContent = text;
-        document.getElementById('categoryFilterValue').value = value;
-        document.getElementById('categoryDisplay').classList.remove('active');
-        document.getElementById('categoryDropdown').classList.remove('active');
+        document.querySelector('#categoryDisplay').querySelector('span').textContent = text;
+        document.querySelector('#categoryFilterValue').value = value;
+        document.querySelector('#categoryDisplay').classList.remove('active');
+        document.querySelector('#categoryDropdown').classList.remove('active');
 
         // Trigger filter event
         const event = new Event('change');
-        document.getElementById('categoryFilterValue').dispatchEvent(event);
+        document.querySelector('#categoryFilterValue').dispatchEvent(event);
       }
 
       // Select Department
       function selectDepartment(value, text) {
-        document.getElementById('departmentDisplay').querySelector('span').textContent = text;
-        document.getElementById('departmentFilterValue').value = value;
-        document.getElementById('departmentDisplay').classList.remove('active');
-        document.getElementById('departmentDropdown').classList.remove('active');
+        document.querySelector('#departmentDisplay').querySelector('span').textContent = text;
+        document.querySelector('#departmentFilterValue').value = value;
+        document.querySelector('#departmentDisplay').classList.remove('active');
+        document.querySelector('#departmentDropdown').classList.remove('active');
 
         // Trigger filter event
         const event = new Event('change');
-        document.getElementById('departmentFilterValue').dispatchEvent(event);
+        document.querySelector('#departmentFilterValue').dispatchEvent(event);
       }
 
       // Select KVP Category
       function selectKvpCategory(value, text) {
-        document.getElementById('kvpCategoryDisplay').querySelector('span').textContent = text;
-        document.getElementById('kvpCategoryValue').value = value;
-        document.getElementById('kvpCategoryDisplay').classList.remove('active');
-        document.getElementById('kvpCategoryDropdown').classList.remove('active');
+        document.querySelector('#kvpCategoryDisplay').querySelector('span').textContent = text;
+        document.querySelector('#kvpCategoryValue').value = value;
+        document.querySelector('#kvpCategoryDisplay').classList.remove('active');
+        document.querySelector('#kvpCategoryDropdown').classList.remove('active');
       }
 
       // Select KVP Priority
       function selectKvpPriority(value, text) {
-        document.getElementById('kvpPriorityDisplay').querySelector('span').textContent = text;
-        document.getElementById('kvpPriorityValue').value = value;
-        document.getElementById('kvpPriorityDisplay').classList.remove('active');
-        document.getElementById('kvpPriorityDropdown').classList.remove('active');
+        document.querySelector('#kvpPriorityDisplay').querySelector('span').textContent = text;
+        document.querySelector('#kvpPriorityValue').value = value;
+        document.querySelector('#kvpPriorityDisplay').classList.remove('active');
+        document.querySelector('#kvpPriorityDropdown').classList.remove('active');
       }
 
       // Click outside to close
@@ -1241,26 +1241,26 @@
 
       // Simple modal functions as fallback
       window.showCreateModal = function () {
-        const modal = document.getElementById('createKvpModal');
+        const modal = document.querySelector('#createKvpModal');
         if (modal) {
           modal.classList.add('active');
         }
       };
 
       window.hideCreateModal = function () {
-        const modal = document.getElementById('createKvpModal');
+        const modal = document.querySelector('#createKvpModal');
         if (modal) {
           modal.classList.remove('active');
           // Clear selected photos when closing modal
           selectedPhotos = [];
           window.selectedPhotos = selectedPhotos;
-          const preview = document.getElementById('photoPreview');
+          const preview = document.querySelector('#photoPreview');
           if (preview) preview.innerHTML = '';
         }
       };
 
       // Click outside modal to close
-      document.getElementById('createKvpModal')?.addEventListener('click', function (e) {
+      document.querySelector('#createKvpModal')?.addEventListener('click', function (e) {
         if (e.target === this) {
           window.hideCreateModal();
         }
@@ -1295,14 +1295,14 @@
       function displayPhotoPreview(file, index) {
         const reader = new FileReader();
         reader.onload = function (e) {
-          const preview = document.getElementById('photoPreview');
+          const preview = document.querySelector('#photoPreview');
           const item = document.createElement('div');
           item.className = 'photo-preview-item';
           item.innerHTML = `
             <img src="${e.target.result}" alt="Vorschau">
             <button class="remove-photo" onclick="removePhoto(${index})" type="button">&times;</button>
           `;
-          preview.appendChild(item);
+          preview.append(item);
         };
         reader.readAsDataURL(file);
       }
@@ -1314,7 +1314,7 @@
       }
 
       function refreshPhotoPreview() {
-        const preview = document.getElementById('photoPreview');
+        const preview = document.querySelector('#photoPreview');
         preview.innerHTML = '';
         selectedPhotos.forEach((file, index) => {
           displayPhotoPreview(file, index);

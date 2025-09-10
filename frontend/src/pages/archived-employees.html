@@ -193,8 +193,8 @@
             console.info(`Loaded ${employees.length} archived employees`);
 
             // Tabelle aktualisieren
-            const tableBody = document.getElementById('archived-employees-table');
-            const emptyMessage = document.getElementById('empty-archive-message');
+            const tableBody = document.querySelector('#archived-employees-table');
+            const emptyMessage = document.querySelector('#empty-archive-message');
 
             if (employees.length === 0) {
               // Leere Nachricht anzeigen
@@ -259,10 +259,10 @@
 
       // Bestätigungsmodal für endgültiges Löschen
       window.confirmDelete = function (employeeId, employeeName) {
-        const modal = document.getElementById('confirm-modal');
-        const modalTitle = document.getElementById('confirm-modal-title');
-        const modalBody = document.getElementById('confirm-modal-body');
-        const confirmButton = document.getElementById('confirm-modal-ok');
+        const modal = document.querySelector('#confirm-modal');
+        const modalTitle = document.querySelector('#confirm-modal-title');
+        const modalBody = document.querySelector('#confirm-modal-body');
+        const confirmButton = document.querySelector('#confirm-modal-ok');
 
         modalTitle.textContent = 'Mitarbeiter endgültig löschen';
         modalBody.innerHTML = `
@@ -303,7 +303,7 @@
 
       // Modal ausblenden
       function hideModal(modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.style.display = 'none';
         }

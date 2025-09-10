@@ -931,8 +931,8 @@
       async function loadUserInfo() {
         try {
           const userData = await apiClient.get('/users/me');
-          const userName = document.getElementById('user-name');
-          const userAvatar = document.getElementById('user-avatar');
+          const userName = document.querySelector('#user-name');
+          const userAvatar = document.querySelector('#user-avatar');
 
           // Display first and last name
           const displayName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.username || 'Benutzer';
@@ -949,7 +949,7 @@
           console.error('Error loading user info:', error);
           // Fallback to local storage
           const user = JSON.parse(localStorage.getItem('user') || '{}');
-          const userName = document.getElementById('user-name');
+          const userName = document.querySelector('#user-name');
           userName.textContent = user.username || 'Benutzer';
         }
       }
@@ -968,7 +968,7 @@
           // User info is now handled by loadUserInfo()
 
           // Update welcome message
-          document.getElementById('employee-name').textContent = `${payload.first_name || payload.username}`;
+          document.querySelector('#employee-name').textContent = `${payload.first_name || payload.username}`;
 
           // Redirect if not employee (but allow admins and root viewing as employee)
           const isAdminAsEmployee = payload.role === 'admin' && payload.activeRole === 'employee';
@@ -1016,17 +1016,17 @@
           const user = await apiClient.get('/users/me');
 
           // employee-id element was removed, skip it
-          const deptElement = document.getElementById('employee-department');
+          const deptElement = document.querySelector('#employee-department');
           if (deptElement) {
             deptElement.textContent = user.departmentName || 'Nicht zugewiesen';
           }
 
-          const teamElement = document.getElementById('employee-team');
+          const teamElement = document.querySelector('#employee-team');
           if (teamElement) {
             teamElement.textContent = user.teamName || user.team_name || 'Kein Team';
           }
 
-          const posElement = document.getElementById('employee-position');
+          const posElement = document.querySelector('#employee-position');
           if (posElement) {
             posElement.textContent = user.position || 'Mitarbeiter';
           }
@@ -1038,12 +1038,12 @@
       async function loadDocumentCount() {
         try {
           // This would be an API call to get document count
-          document.getElementById('document-count').textContent = '12';
-          document.getElementById('new-documents-count').textContent = '3';
+          document.querySelector('#document-count').textContent = '12';
+          document.querySelector('#new-documents-count').textContent = '3';
 
           // Update badge visibility
           const newDocsCount = 3;
-          const badge = document.getElementById('new-documents-badge');
+          const badge = document.querySelector('#new-documents-badge');
           if (newDocsCount > 0) {
             badge.textContent = `${newDocsCount} neue`;
             badge.style.display = 'inline-block';
@@ -1058,13 +1058,13 @@
       async function loadDashboardStats() {
         try {
           // Simulated data - replace with actual API calls
-          document.getElementById('unread-announcements-count').textContent = '2';
-          document.getElementById('next-appointment').textContent = 'Morgen 14:00';
-          document.getElementById('kvp-points').textContent = '125';
+          document.querySelector('#unread-announcements-count').textContent = '2';
+          document.querySelector('#next-appointment').textContent = 'Morgen 14:00';
+          document.querySelector('#kvp-points').textContent = '125';
 
           // Update badges
           const unreadCount = 2;
-          const announcementsBadge = document.getElementById('unread-announcements-badge');
+          const announcementsBadge = document.querySelector('#unread-announcements-badge');
           if (unreadCount > 0) {
             announcementsBadge.textContent = `${unreadCount} neue`;
             announcementsBadge.style.display = 'inline-block';
@@ -1106,7 +1106,7 @@
             },
           ];
 
-          const activityList = document.getElementById('activity-list');
+          const activityList = document.querySelector('#activity-list');
           activityList.innerHTML = activities
             .map(
               (activity) => `
@@ -1124,7 +1124,7 @@
             .join('');
         } catch (error) {
           console.error('Error loading activity:', error);
-          document.getElementById('activity-list').innerHTML = '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
+          document.querySelector('#activity-list').innerHTML = '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
         }
       }
 

@@ -347,10 +347,10 @@
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Elemente auswählen
-    const navUsername = document.getElementById('nav-username');
-    const navRole = document.getElementById('nav-role');
-    const navProfilePic = document.getElementById('nav-profile-pic');
-    const logoutBtn = document.getElementById('logout-btn');
+    const navUsername = document.querySelector('#nav-username');
+    const navRole = document.querySelector('#nav-role');
+    const navProfilePic = document.querySelector('#nav-profile-pic');
+    const logoutBtn = document.querySelector('#logout-btn');
     const navLinks = document.querySelectorAll('.nav-link');
 
     // Aktuelle Seite hervorheben
@@ -414,7 +414,7 @@
               img.src = `/${userData.profile_picture}`;
               img.alt = userData.username || '';
               navProfilePic.innerHTML = ''; // Clear existing content
-              navProfilePic.appendChild(img);
+              navProfilePic.append(img);
             } else {
               const initials = getInitials(userData.first_name, userData.last_name);
               navProfilePic.textContent = initials;

@@ -811,7 +811,7 @@
                 </div>
                 <div class="profile-picture-actions">
                   <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
-                  <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
+                  <button class="btn btn-primary" onclick="document.querySelector('profile-picture-input').click()">
                     <i class="fas fa-camera"></i>
                     Bild ändern
                   </button>
@@ -953,9 +953,9 @@
             const profilePicture = user.profilePictureUrl || user.profile_picture || '';
 
             // Fill form fields
-            document.getElementById('email').value = user.email || '';
-            document.getElementById('first_name').value = firstName;
-            document.getElementById('last_name').value = lastName;
+            document.querySelector('#email').value = user.email || '';
+            document.querySelector('#first_name').value = firstName;
+            document.querySelector('#last_name').value = lastName;
 
             // Load profile picture if exists
             if (profilePicture) {
@@ -963,7 +963,7 @@
               // Header wird automatisch durch header-user-info.ts aktualisiert
             } else {
               // Show initials if no profile picture
-              const container = document.getElementById('profile-picture-display');
+              const container = document.querySelector('#profile-picture-display');
               if (container) {
                 const firstInitial = firstName.charAt(0).toUpperCase() || '';
                 const lastInitial = lastName.charAt(0).toUpperCase() || '';
@@ -987,7 +987,7 @@
       // Initialize all event listeners when DOM is ready
       function initializeEventListeners() {
         // Profile form submission
-        const profileForm = document.getElementById('profile-form');
+        const profileForm = document.querySelector('#profile-form');
         if (profileForm) {
           profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -1026,13 +1026,13 @@
         }
 
         // Password form submission
-        const passwordForm = document.getElementById('password-form');
+        const passwordForm = document.querySelector('#password-form');
         if (passwordForm) {
           passwordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const newPassword = document.getElementById('new_password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
+            const newPassword = document.querySelector('#new_password').value;
+            const confirmPassword = document.querySelector('#confirm_password').value;
 
             if (newPassword !== confirmPassword) {
               showMessage('Die Passwörter stimmen nicht überein', 'error');
@@ -1074,7 +1074,7 @@
         }
 
         // Profile picture upload
-        const pictureInput = document.getElementById('profile-picture-input');
+        const pictureInput = document.querySelector('#profile-picture-input');
         if (pictureInput) {
           pictureInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -1110,7 +1110,7 @@
         }
 
         // Remove profile picture
-        const removePictureBtn = document.getElementById('remove-picture-btn');
+        const removePictureBtn = document.querySelector('#remove-picture-btn');
         if (removePictureBtn) {
           removePictureBtn.addEventListener('click', async () => {
             if (!confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) return;
@@ -1127,11 +1127,11 @@
               });
 
               if (response.ok) {
-                const container = document.getElementById('profile-picture-display');
+                const container = document.querySelector('#profile-picture-display');
                 if (container) {
                   // Get current user data to restore initials
-                  const firstName = document.getElementById('first_name').value || '';
-                  const lastName = document.getElementById('last_name').value || '';
+                  const firstName = document.querySelector('#first_name').value || '';
+                  const lastName = document.querySelector('#last_name').value || '';
                   const firstInitial = firstName.charAt(0).toUpperCase() || '';
                   const lastInitial = lastName.charAt(0).toUpperCase() || '';
                   const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
@@ -1139,7 +1139,7 @@
                   container.classList.add('avatar-initials');
                   container.innerHTML = initials;
                 }
-                document.getElementById('remove-picture-btn').style.display = 'none';
+                document.querySelector('#remove-picture-btn').style.display = 'none';
                 showMessage('Profilbild erfolgreich entfernt', 'success');
               } else {
                 showMessage('Fehler beim Entfernen des Profilbilds', 'error');
@@ -1154,7 +1154,7 @@
 
       // Display profile picture
       function displayProfilePicture(url) {
-        const container = document.getElementById('profile-picture-display');
+        const container = document.querySelector('#profile-picture-display');
         if (container) {
           container.classList.remove('avatar-initials');
           container.innerHTML = ''; // Clear existing content
@@ -1164,9 +1164,9 @@
           img.src = url;
           img.alt = 'Profilbild';
           img.className = 'profile-picture';
-          container.appendChild(img);
+          container.append(img);
 
-          const removeBtn = document.getElementById('remove-picture-btn');
+          const removeBtn = document.querySelector('#remove-picture-btn');
           if (removeBtn) {
             removeBtn.style.display = 'block';
           }
@@ -1175,7 +1175,7 @@
 
       // Show success/error messages
       function showMessage(message, type) {
-        const container = document.getElementById('message-container');
+        const container = document.querySelector('#message-container');
         if (container) {
           container.innerHTML = `
                 <div class="alert alert-${type}">
@@ -1204,7 +1204,7 @@
             </div>
           </div>
         `;
-        document.body.appendChild(overlay);
+        document.body.append(overlay);
 
         // Remove after animation - immer 2 Sekunden
         setTimeout(() => {
@@ -1215,7 +1215,7 @@
       // Logout
       // Wait for navigation to load before attaching logout handler
       setTimeout(() => {
-        const logoutBtn = document.getElementById('logout-btn');
+        const logoutBtn = document.querySelector('#logout-btn');
         if (logoutBtn) {
           logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('token');
@@ -1251,8 +1251,8 @@
 
           console.info('Processed approvals:', approvals);
 
-          const approvalSection = document.getElementById('approvalSection');
-          const approvalList = document.getElementById('approvalList');
+          const approvalSection = document.querySelector('#approvalSection');
+          const approvalList = document.querySelector('#approvalList');
 
           if (approvals.length > 0) {
             approvalSection.style.display = 'block';
@@ -1391,7 +1391,7 @@
 
       // Set initial placeholder while loading
       function setInitialPlaceholder() {
-        const container = document.getElementById('profile-picture-display');
+        const container = document.querySelector('#profile-picture-display');
         if (container && !container.innerHTML.trim()) {
           // Get user info from token if available
           const token = localStorage.getItem('token');
@@ -1427,10 +1427,10 @@
           loadPendingApprovals();
 
           // Enable delete button only when user types "LÖSCHEN"
-          const deleteConfirmInput = document.getElementById('deleteConfirmation');
+          const deleteConfirmInput = document.querySelector('#deleteConfirmation');
           if (deleteConfirmInput) {
             deleteConfirmInput.addEventListener('input', (e) => {
-              const confirmBtn = document.getElementById('confirmDeleteBtn');
+              const confirmBtn = document.querySelector('#confirmDeleteBtn');
               if (confirmBtn) {
                 confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
               }
@@ -1438,7 +1438,7 @@
           }
 
           // Close modal on overlay click
-          const deleteModal = document.getElementById('deleteModal');
+          const deleteModal = document.querySelector('#deleteModal');
           if (deleteModal) {
             deleteModal.addEventListener('click', (e) => {
               if (e.target.id === 'deleteModal') {
@@ -1455,10 +1455,10 @@
         loadPendingApprovals();
 
         // Enable delete button only when user types "LÖSCHEN"
-        const deleteConfirmInput = document.getElementById('deleteConfirmation');
+        const deleteConfirmInput = document.querySelector('#deleteConfirmation');
         if (deleteConfirmInput) {
           deleteConfirmInput.addEventListener('input', (e) => {
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const confirmBtn = document.querySelector('#confirmDeleteBtn');
             if (confirmBtn) {
               confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
             }
@@ -1466,7 +1466,7 @@
         }
 
         // Close modal on overlay click
-        const deleteModal = document.getElementById('deleteModal');
+        const deleteModal = document.querySelector('#deleteModal');
         if (deleteModal) {
           deleteModal.addEventListener('click', (e) => {
             if (e.target.id === 'deleteModal') {

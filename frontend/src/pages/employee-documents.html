@@ -594,11 +594,11 @@
     <!-- JavaScript -->
     <script>
       document.addEventListener('DOMContentLoaded', () => {
-        const documentTableBody = document.getElementById('document-table-body');
-        const noDocumentsMessage = document.getElementById('no-documents');
-        const searchForm = document.getElementById('search-form');
-        const searchInput = document.getElementById('search-input');
-        const logoutBtn = document.getElementById('logout-btn');
+        const documentTableBody = document.querySelector('#document-table-body');
+        const noDocumentsMessage = document.querySelector('#no-documents');
+        const searchForm = document.querySelector('#search-form');
+        const searchInput = document.querySelector('#search-input');
+        const logoutBtn = document.querySelector('#logout-btn');
 
         // Event-Listener
         logoutBtn.addEventListener('click', logout);
@@ -779,9 +779,9 @@
                 const a = document.createElement('a');
                 a.href = url;
                 a.download = `dokument-${documentId}.pdf`;
-                document.body.appendChild(a);
+                document.body.append(a);
                 a.click();
-                document.body.removeChild(a);
+                a.remove();
               }
 
               // URL-Objekt später freigeben
@@ -821,7 +821,7 @@
             <i class="fas fa-exclamation-circle"></i>
             <span>${message}</span>
           `;
-          document.body.appendChild(notification);
+          document.body.append(notification);
 
           setTimeout(() => {
             notification.classList.add('show');
@@ -830,7 +830,7 @@
           setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => {
-              document.body.removeChild(notification);
+              notification.remove();
             }, 300);
           }, 4000);
         }
@@ -842,7 +842,7 @@
             <i class="fas fa-check-circle"></i>
             <span>${message}</span>
           `;
-          document.body.appendChild(notification);
+          document.body.append(notification);
 
           setTimeout(() => {
             notification.classList.add('show');
@@ -851,7 +851,7 @@
           setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => {
-              document.body.removeChild(notification);
+              notification.remove();
             }, 300);
           }, 3000);
         }
@@ -863,7 +863,7 @@
             <i class="fas fa-info-circle"></i>
             <span>${message}</span>
           `;
-          document.body.appendChild(notification);
+          document.body.append(notification);
 
           setTimeout(() => {
             notification.classList.add('show');
@@ -872,7 +872,7 @@
           setTimeout(() => {
             notification.classList.remove('show');
             setTimeout(() => {
-              document.body.removeChild(notification);
+              notification.remove();
             }, 300);
           }, 3500);
         }

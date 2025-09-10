@@ -492,7 +492,7 @@
 
             // Ausgewählten Tab aktivieren
             document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
-            document.getElementById(tabId).classList.add('active');
+            document.querySelector(tabId).classList.add('active');
 
             // Wenn Organisationsstruktur-Tab ausgewählt ist, Org-Chart rendern
             if (tabId === 'org-structure') {
@@ -507,12 +507,12 @@
             loadUsers();
 
             // Event-Listener für Formulare
-            document.getElementById('department-form').addEventListener('submit', saveDepartment);
-            document.getElementById('team-form').addEventListener('submit', saveTeam);
+            document.querySelector('#department-form').addEventListener('submit', saveDepartment);
+            document.querySelector('#team-form').addEventListener('submit', saveTeam);
 
             // Event-Listener für Suchfelder
-            document.getElementById('department-search').addEventListener('input', filterDepartments);
-            document.getElementById('team-search').addEventListener('input', filterTeams);
+            document.querySelector('#department-search').addEventListener('input', filterDepartments);
+            document.querySelector('#team-search').addEventListener('input', filterTeams);
           });
 
           // Abteilungen laden
@@ -579,7 +579,7 @@
 
           // Abteilungen anzeigen
           function renderDepartments() {
-            const container = document.getElementById('departments-container');
+            const container = document.querySelector('#departments-container');
             container.innerHTML = '';
 
             if (departments.length === 0) {
@@ -628,13 +628,13 @@
                     </div>
                 `;
 
-              container.appendChild(card);
+              container.append(card);
             });
           }
 
           // Teams anzeigen
           function renderTeams() {
-            const container = document.getElementById('teams-container');
+            const container = document.querySelector('#teams-container');
             container.innerHTML = '';
 
             if (teams.length === 0) {
@@ -680,13 +680,13 @@
                     </div>
                 `;
 
-              container.appendChild(card);
+              container.append(card);
             });
           }
 
           // Organisationsstruktur rendern
           function renderOrgChart() {
-            const container = document.getElementById('org-chart-container');
+            const container = document.querySelector('#org-chart-container');
             container.innerHTML = '';
 
             if (departments.length === 0) {
@@ -708,10 +708,10 @@
 
             topLevelDepts.forEach((dept) => {
               const branchDiv = buildOrgBranch(dept);
-              levelDiv.appendChild(branchDiv);
+              levelDiv.append(branchDiv);
             });
 
-            container.appendChild(levelDiv);
+            container.append(levelDiv);
           }
 
           // Rekursive Funktion zum Aufbau der Organisationsstruktur
@@ -727,7 +727,7 @@
                 <br>
                 <small>${department.manager_name || 'Kein Manager'}</small>
             `;
-            branchDiv.appendChild(nodeDiv);
+            branchDiv.append(nodeDiv);
 
             // Untergeordnete Abteilungen finden
             const childDepts = departments.filter((d) => d.parent_id === department.id);
@@ -736,7 +736,7 @@
               // Konnektor erstellen
               const connectorDiv = document.createElement('div');
               connectorDiv.className = 'org-connector';
-              branchDiv.appendChild(connectorDiv);
+              branchDiv.append(connectorDiv);
 
               // Untergeordnete Ebene erstellen
               const childLevelDiv = document.createElement('div');
@@ -744,10 +744,10 @@
 
               childDepts.forEach((childDept) => {
                 const childBranchDiv = buildOrgBranch(childDept);
-                childLevelDiv.appendChild(childBranchDiv);
+                childLevelDiv.append(childBranchDiv);
               });
 
-              branchDiv.appendChild(childLevelDiv);
+              branchDiv.append(childLevelDiv);
             }
 
             return branchDiv;
@@ -755,8 +755,8 @@
 
           // Dropdown-Felder befüllen
           function populateDepartmentDropdowns() {
-            const departmentParentDropdown = document.getElementById('department-parent');
-            const teamDepartmentDropdown = document.getElementById('team-department');
+            const departmentParentDropdown = document.querySelector('#department-parent');
+            const teamDepartmentDropdown = document.querySelector('#team-department');
 
             // Dropdown für übergeordnete Abteilung
             if (departmentParentDropdown) {
@@ -765,7 +765,7 @@
                 const option = document.createElement('option');
                 option.value = dept.id;
                 option.textContent = dept.name;
-                departmentParentDropdown.appendChild(option);
+                departmentParentDropdown.append(option);
               });
             }
 
@@ -776,16 +776,16 @@
                 const option = document.createElement('option');
                 option.value = dept.id;
                 option.textContent = dept.name;
-                teamDepartmentDropdown.appendChild(option);
+                teamDepartmentDropdown.append(option);
               });
             }
           }
 
           // Benutzer-Dropdowns befüllen
           function populateUserDropdowns() {
-            const departmentManagerDropdown = document.getElementById('department-manager');
-            const teamLeaderDropdown = document.getElementById('team-leader');
-            const addTeamMemberDropdown = document.getElementById('add-team-member');
+            const departmentManagerDropdown = document.querySelector('#department-manager');
+            const teamLeaderDropdown = document.querySelector('#team-leader');
+            const addTeamMemberDropdown = document.querySelector('#add-team-member');
 
             // Dropdown für Abteilungsmanager
             if (departmentManagerDropdown) {
@@ -794,7 +794,7 @@
                 const option = document.createElement('option');
                 option.value = user.id;
                 option.textContent = `${user.first_name} ${user.last_name}`;
-                departmentManagerDropdown.appendChild(option);
+                departmentManagerDropdown.append(option);
               });
             }
 
@@ -805,7 +805,7 @@
                 const option = document.createElement('option');
                 option.value = user.id;
                 option.textContent = `${user.first_name} ${user.last_name}`;
-                teamLeaderDropdown.appendChild(option);
+                teamLeaderDropdown.append(option);
               });
             }
 
@@ -818,17 +818,17 @@
                   const option = document.createElement('option');
                   option.value = user.id;
                   option.textContent = `${user.first_name} ${user.last_name}`;
-                  addTeamMemberDropdown.appendChild(option);
+                  addTeamMemberDropdown.append(option);
                 });
             }
           }
 
           // Abteilungen filtern
           function filterDepartments() {
-            const searchTerm = document.getElementById('department-search').value.toLowerCase();
-            const container = document.getElementById('departments-container');
+            const searchTerm = document.querySelector('#department-search').value.toLowerCase();
+            const container = document.querySelector('#departments-container');
 
-            const cards = container.getElementsByClassName('card');
+            const cards = container.querySelectorAll('.card');
 
             for (let i = 0; i < cards.length; i++) {
               const title = cards[i].querySelector('.card-title').textContent.toLowerCase();
@@ -844,10 +844,10 @@
 
           // Teams filtern
           function filterTeams() {
-            const searchTerm = document.getElementById('team-search').value.toLowerCase();
-            const container = document.getElementById('teams-container');
+            const searchTerm = document.querySelector('#team-search').value.toLowerCase();
+            const container = document.querySelector('#teams-container');
 
-            const cards = container.getElementsByClassName('card');
+            const cards = container.querySelectorAll('.card');
 
             for (let i = 0; i < cards.length; i++) {
               const title = cards[i].querySelector('.card-title').textContent.toLowerCase();
@@ -863,13 +863,13 @@
 
           // Abteilungs-Modal zeigen/verstecken
           function showDepartmentModal(departmentId = null) {
-            const modal = document.getElementById('department-modal');
-            const form = document.getElementById('department-form');
-            const title = document.getElementById('department-modal-title');
+            const modal = document.querySelector('#department-modal');
+            const form = document.querySelector('#department-form');
+            const title = document.querySelector('#department-modal-title');
 
             // Formular zurücksetzen
             form.reset();
-            document.getElementById('department-id').value = '';
+            document.querySelector('#department-id').value = '';
 
             if (departmentId) {
               // Bearbeiten-Modus
@@ -877,11 +877,11 @@
               const department = departments.find((d) => d.id === departmentId);
 
               if (department) {
-                document.getElementById('department-id').value = department.id;
-                document.getElementById('department-name').value = department.name;
-                document.getElementById('department-description').value = department.description || '';
-                document.getElementById('department-manager').value = department.manager_id || '';
-                document.getElementById('department-parent').value = department.parent_id || '';
+                document.querySelector('#department-id').value = department.id;
+                document.querySelector('#department-name').value = department.name;
+                document.querySelector('#department-description').value = department.description || '';
+                document.querySelector('#department-manager').value = department.manager_id || '';
+                document.querySelector('#department-parent').value = department.parent_id || '';
               }
             } else {
               // Neu-Modus
@@ -892,18 +892,18 @@
           }
 
           function hideDepartmentModal() {
-            document.getElementById('department-modal').style.display = 'none';
+            document.querySelector('#department-modal').style.display = 'none';
           }
 
           // Team-Modal zeigen/verstecken
           function showTeamModal(teamId = null) {
-            const modal = document.getElementById('team-modal');
-            const form = document.getElementById('team-form');
-            const title = document.getElementById('team-modal-title');
+            const modal = document.querySelector('#team-modal');
+            const form = document.querySelector('#team-form');
+            const title = document.querySelector('#team-modal-title');
 
             // Formular zurücksetzen
             form.reset();
-            document.getElementById('team-id').value = '';
+            document.querySelector('#team-id').value = '';
 
             if (teamId) {
               // Bearbeiten-Modus
@@ -911,11 +911,11 @@
               const team = teams.find((t) => t.id === teamId);
 
               if (team) {
-                document.getElementById('team-id').value = team.id;
-                document.getElementById('team-name').value = team.name;
-                document.getElementById('team-description').value = team.description || '';
-                document.getElementById('team-department').value = team.department_id || '';
-                document.getElementById('team-leader').value = team.leader_id || '';
+                document.querySelector('#team-id').value = team.id;
+                document.querySelector('#team-name').value = team.name;
+                document.querySelector('#team-description').value = team.description || '';
+                document.querySelector('#team-department').value = team.department_id || '';
+                document.querySelector('#team-leader').value = team.leader_id || '';
               }
             } else {
               // Neu-Modus
@@ -926,13 +926,13 @@
           }
 
           function hideTeamModal() {
-            document.getElementById('team-modal').style.display = 'none';
+            document.querySelector('#team-modal').style.display = 'none';
           }
 
           // Team-Mitglieder-Modal zeigen/verstecken
           function showTeamMembersModal(teamId) {
-            const modal = document.getElementById('team-members-modal');
-            const title = document.getElementById('team-members-modal-title');
+            const modal = document.querySelector('#team-members-modal');
+            const title = document.querySelector('#team-members-modal-title');
 
             currentTeamId = teamId;
             const team = teams.find((t) => t.id === teamId);
@@ -946,7 +946,7 @@
           }
 
           function hideTeamMembersModal() {
-            document.getElementById('team-members-modal').style.display = 'none';
+            document.querySelector('#team-members-modal').style.display = 'none';
             currentTeamId = null;
           }
 
@@ -1064,7 +1064,7 @@
 
           // Team-Mitglieder anzeigen
           function displayTeamMembers(members) {
-            const container = document.getElementById('team-members-container');
+            const container = document.querySelector('#team-members-container');
             container.innerHTML = '';
 
             if (members.length === 0) {
@@ -1090,12 +1090,12 @@
                 img.style.height = '30px';
                 img.style.borderRadius = '50%';
                 img.style.objectFit = 'cover';
-                imgElem.appendChild(img);
+                imgElem.append(img);
               } else {
                 imgElem.className = 'team-member-img';
                 imgElem.textContent = initials;
               }
-              memberDiv.appendChild(imgElem);
+              memberDiv.append(imgElem);
 
               // Info-Element
               const infoElem = document.createElement('div');
@@ -1104,7 +1104,7 @@
                     <div>${member.first_name} ${member.last_name}</div>
                     <div style="font-size: 12px; color: #666;">${member.position || 'Keine Position'}</div>
                 `;
-              memberDiv.appendChild(infoElem);
+              memberDiv.append(infoElem);
 
               // Aktions-Element
               const actionsElem = document.createElement('div');
@@ -1112,9 +1112,9 @@
               actionsElem.innerHTML = `
                     <button class="btn btn-danger btn-sm" onclick="removeTeamMember(${member.id})">Entfernen</button>
                 `;
-              memberDiv.appendChild(actionsElem);
+              memberDiv.append(actionsElem);
 
-              container.appendChild(memberDiv);
+              container.append(memberDiv);
             });
           }
 
@@ -1122,7 +1122,7 @@
           async function addTeamMember() {
             if (!currentTeamId) return;
 
-            const userId = document.getElementById('add-team-member').value;
+            const userId = document.querySelector('#add-team-member').value;
 
             if (!userId) {
               alert('Bitte wählen Sie einen Mitarbeiter aus');
@@ -1145,7 +1145,7 @@
                 loadTeamMembers(currentTeamId);
 
                 // Dropdown zurücksetzen
-                document.getElementById('add-team-member').value = '';
+                document.querySelector('#add-team-member').value = '';
               } else {
                 const error = await response.json();
                 alert(`Fehler: ${error.message}`);

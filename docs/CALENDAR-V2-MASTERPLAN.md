@@ -232,10 +232,10 @@ AND e.org_level = 'personal'
 
 ```javascript
 // Bei org_level Änderung
-document.getElementById('eventOrgLevel').addEventListener('change', (e) => {
+document.querySelector('eventOrgLevel').addEventListener('change', (e) => {
   const level = e.target.value;
-  const orgIdGroup = document.getElementById('orgIdGroup');
-  const attendeesGroup = document.getElementById('attendeesGroup');
+  const orgIdGroup = document.querySelector('orgIdGroup');
+  const attendeesGroup = document.querySelector('attendeesGroup');
 
   switch (level) {
     case 'company':
@@ -411,7 +411,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
 
 // Filter-Button Handler mit State-Save
 filterButtons.forEach((btn) => {
-  document.getElementById(btn.id)?.addEventListener('click', () => {
+  document.querySelector(btn.id)?.addEventListener('click', () => {
     currentFilter = btn.value;
     localStorage.setItem('calendarFilter', currentFilter);
     calendar.refetchEvents();

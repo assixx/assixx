@@ -810,7 +810,7 @@ export default [
     rules: {
       // MODERNE DOM APIs - nur im Frontend relevant
       'unicorn/prefer-modern-dom-apis': 'error', // .append() statt .appendChild()
-      'unicorn/prefer-query-selector': 'error', // querySelector statt getElementById
+      'unicorn/prefer-query-selector': 'error', // querySelector statt querySelector
       'unicorn/prefer-dom-node-remove': 'error', // node.remove() statt parent.removeChild()
       'unicorn/prefer-dom-node-append': 'error', // append() statt appendChild()
       'unicorn/prefer-dom-node-text-content': 'error', // textContent statt innerText

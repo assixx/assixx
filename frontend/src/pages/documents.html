@@ -893,7 +893,7 @@
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            const dashboardLink = document.getElementById('dashboard-link');
+            const dashboardLink = document.querySelector('#dashboard-link');
             if (dashboardLink) {
               if (payload.role === 'employee' || payload.activeRole === 'employee') {
                 dashboardLink.href = '/employee-dashboard';

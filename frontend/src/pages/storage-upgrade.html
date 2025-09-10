@@ -413,12 +413,12 @@
         const { used, total, percentage } = data;
 
         // Update text
-        document.getElementById('used-storage').textContent = formatBytes(used);
-        document.getElementById('total-storage').textContent = formatBytes(total);
-        document.getElementById('storage-percentage').textContent = `${percentage}%`;
+        document.querySelector('#used-storage').textContent = formatBytes(used);
+        document.querySelector('#total-storage').textContent = formatBytes(total);
+        document.querySelector('#storage-percentage').textContent = `${percentage}%`;
 
         // Update progress bar
-        const progressBar = document.getElementById('storage-progress');
+        const progressBar = document.querySelector('#storage-progress');
         progressBar.style.width = `${percentage}%`;
 
         // Update color based on usage
@@ -448,7 +448,7 @@
         });
 
         // Add current class to active plan
-        const currentPlanCard = document.getElementById(`plan-${plan}`);
+        const currentPlanCard = document.querySelector(`plan-${plan}`);
         if (currentPlanCard) {
           currentPlanCard.classList.add('current');
           const button = currentPlanCard.querySelector('button');

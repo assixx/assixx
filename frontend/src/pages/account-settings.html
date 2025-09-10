@@ -496,22 +496,22 @@
           console.error('Error checking root users:', error);
         }
 
-        document.getElementById('deleteModal').classList.add('active');
-        document.getElementById('deleteConfirmation').value = '';
-        document.getElementById('confirmDeleteBtn').disabled = true;
+        document.querySelector('#deleteModal').classList.add('active');
+        document.querySelector('#deleteConfirmation').value = '';
+        document.querySelector('#confirmDeleteBtn').disabled = true;
       };
 
       window.closeDeleteModal = function () {
-        document.getElementById('deleteModal').classList.remove('active');
+        document.querySelector('#deleteModal').classList.remove('active');
       };
 
       window.showDeletionStatusModal = function (queueId, tenantId) {
-        document.getElementById('deletionStatusModal').classList.add('active');
-        document.getElementById('queueIdDisplay').textContent = queueId || '-';
-        document.getElementById('tenantIdDisplay').textContent = tenantId || '-';
+        document.querySelector('#deletionStatusModal').classList.add('active');
+        document.querySelector('#queueIdDisplay').textContent = queueId || '-';
+        document.querySelector('#tenantIdDisplay').textContent = tenantId || '-';
 
         const scheduledDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        document.getElementById('scheduledDateDisplay').textContent = scheduledDate.toLocaleDateString('de-DE', {
+        document.querySelector('#scheduledDateDisplay').textContent = scheduledDate.toLocaleDateString('de-DE', {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -519,18 +519,18 @@
       };
 
       window.closeDeletionStatusModal = function () {
-        document.getElementById('deletionStatusModal').classList.remove('active');
+        document.querySelector('#deletionStatusModal').classList.remove('active');
       };
 
       // Delete confirmation input
-      document.getElementById('deleteConfirmation').addEventListener('input', function (e) {
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
+      document.querySelector('#deleteConfirmation').addEventListener('input', function (e) {
+        const confirmBtn = document.querySelector('#confirmDeleteBtn');
         confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
       });
 
       // Delete tenant function
       window.deleteTenant = async function () {
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
+        const confirmBtn = document.querySelector('#confirmDeleteBtn');
         confirmBtn.disabled = true;
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
 
@@ -540,7 +540,7 @@
           const response = await fetchWithAuth(endpoint, {
             method: 'DELETE',
             body: JSON.stringify({
-              reason: document.getElementById('deleteReason')?.value || 'Keine Angabe',
+              reason: document.querySelector('#deleteReason')?.value || 'Keine Angabe',
             }),
           });
 

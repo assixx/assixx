@@ -1215,18 +1215,18 @@
 
         // Update addons
         if (tenantAddons.employees) {
-          document.getElementById('addon-employees').textContent = tenantAddons.employees;
+          document.querySelector('#addon-employees').textContent = tenantAddons.employees;
         }
         if (tenantAddons.admins) {
-          document.getElementById('addon-admins').textContent = tenantAddons.admins;
+          document.querySelector('#addon-admins').textContent = tenantAddons.admins;
         }
         if (tenantAddons.storage_gb) {
-          document.getElementById('addon-storage').textContent = `${tenantAddons.storage_gb}GB`;
+          document.querySelector('#addon-storage').textContent = `${tenantAddons.storage_gb}GB`;
         }
       }
 
       function loadFeatures() {
-        const container = document.getElementById('features-container');
+        const container = document.querySelector('#features-container');
         container.innerHTML = '';
 
         Object.entries(featureCategories).forEach(([categoryName, categoryData]) => {
@@ -1279,7 +1279,7 @@
             </div>
           `;
 
-          container.appendChild(categoryDiv);
+          container.append(categoryDiv);
         });
       }
 
@@ -1431,7 +1431,7 @@
         const newValue = Math.max(0, currentValue + change);
 
         tenantAddons[backendType] = newValue;
-        document.getElementById(`addon-${type}`).textContent = type === 'storage' ? `${newValue}GB` : newValue;
+        document.querySelector(`addon-${type}`).textContent = type === 'storage' ? `${newValue}GB` : newValue;
         updateSummary();
       }
 
@@ -1459,9 +1459,9 @@
         totalCost += ((tenantAddons.storage_gb || 0) / 100) * 10;
 
         // Update UI
-        document.getElementById('summary-plan').textContent = planData.name;
-        document.getElementById('summary-features').textContent = `${activeCount} / ${totalCount}`;
-        document.getElementById('summary-cost').textContent = `${totalCost.toFixed(2)}€`;
+        document.querySelector('#summary-plan').textContent = planData.name;
+        document.querySelector('#summary-features').textContent = `${activeCount} / ${totalCount}`;
+        document.querySelector('#summary-cost').textContent = `${totalCost.toFixed(2)}€`;
       }
 
       async function saveChanges() {
@@ -1488,7 +1488,7 @@
           // Update cost display
           if (result.costs) {
             const totalCost = result.costs.totalCost;
-            document.getElementById('summary-cost').textContent = `${totalCost.toFixed(2)}€`;
+            document.querySelector('#summary-cost').textContent = `${totalCost.toFixed(2)}€`;
           }
 
           alert('Änderungen erfolgreich gespeichert!');

@@ -81,6 +81,7 @@ export interface SurveyUpdateData {
   startDate?: string | null;
   endDate?: string | null;
   questions?: QuestionCreateData[];
+  assignments?: AssignmentCreateData[];
 }
 
 export interface ResponseSubmitData {
@@ -332,6 +333,12 @@ export class SurveysService {
           is_required: q.isRequired ?? true,
           order_position: q.orderPosition ?? index + 1,
           options: q.options,
+        })),
+        assignments: data.assignments?.map((a) => ({
+          type: a.type,
+          department_id: a.departmentId,
+          team_id: a.teamId,
+          user_id: a.userId,
         })),
       };
 

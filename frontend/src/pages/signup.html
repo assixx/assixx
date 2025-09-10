@@ -985,11 +985,11 @@
 
       // Country Dropdown
       function toggleCountryDropdown() {
-        const dropdown = document.getElementById('countryDropdown');
+        const dropdown = document.querySelector('#countryDropdown');
         const display = document.querySelector('.country-display');
 
         // Close plan dropdown if open
-        document.getElementById('planDropdown').classList.remove('active');
+        document.querySelector('#planDropdown').classList.remove('active');
         document.querySelector('.plan-display').classList.remove('active');
 
         dropdown.classList.toggle('active');
@@ -1005,12 +1005,12 @@
         const planSelect = document.querySelector('.custom-plan-select');
 
         if (!countrySelect.contains(e.target)) {
-          document.getElementById('countryDropdown').classList.remove('active');
+          document.querySelector('#countryDropdown').classList.remove('active');
           document.querySelector('.country-display').classList.remove('active');
         }
 
         if (!planSelect.contains(e.target)) {
-          document.getElementById('planDropdown').classList.remove('active');
+          document.querySelector('#planDropdown').classList.remove('active');
           document.querySelector('.plan-display').classList.remove('active');
         }
 
@@ -1020,23 +1020,23 @@
       }
 
       function selectCountry(flag, code) {
-        document.getElementById('selectedFlag').textContent = flag;
-        document.getElementById('selectedCode').textContent = code;
-        document.getElementById('countryCode').value = code;
+        document.querySelector('#selectedFlag').textContent = flag;
+        document.querySelector('#selectedCode').textContent = code;
+        document.querySelector('#countryCode').value = code;
         currentCountryCode = code;
         currentCountryFlag = flag;
 
-        document.getElementById('countryDropdown').classList.remove('active');
+        document.querySelector('#countryDropdown').classList.remove('active');
         document.querySelector('.country-display').classList.remove('active');
       }
 
       // Plan Dropdown
       function togglePlanDropdown() {
-        const dropdown = document.getElementById('planDropdown');
+        const dropdown = document.querySelector('#planDropdown');
         const display = document.querySelector('.plan-display');
 
         // Close country dropdown if open
-        document.getElementById('countryDropdown').classList.remove('active');
+        document.querySelector('#countryDropdown').classList.remove('active');
         document.querySelector('.country-display').classList.remove('active');
 
         dropdown.classList.toggle('active');
@@ -1048,11 +1048,11 @@
       }
 
       function selectPlan(value, name) {
-        document.getElementById('selectedPlan').textContent = name;
-        document.getElementById('planValue').value = value;
+        document.querySelector('#selectedPlan').textContent = name;
+        document.querySelector('#planValue').value = value;
         currentPlan = value;
 
-        document.getElementById('planDropdown').classList.remove('active');
+        document.querySelector('#planDropdown').classList.remove('active');
         document.querySelector('.plan-display').classList.remove('active');
       }
 
@@ -1077,7 +1077,7 @@
 
       // Subdomain validation
       const subdomainInput = document.querySelector('input[name="subdomain"]');
-      const subdomainError = document.getElementById('subdomainError');
+      const subdomainError = document.querySelector('#subdomainError');
 
       subdomainInput.addEventListener('input', (e) => {
         const value = e.target.value.toLowerCase();
@@ -1093,7 +1093,7 @@
       // Password confirmation with real-time validation
       const passwordInput = document.querySelector('input[name="password"]');
       const passwordConfirmInput = document.querySelector('input[name="password_confirm"]');
-      const passwordError = document.getElementById('passwordError');
+      const passwordError = document.querySelector('#passwordError');
 
       passwordConfirmInput.addEventListener('input', () => {
         if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
@@ -1107,11 +1107,11 @@
 
       // Phone validation
       const phoneInput = document.querySelector('input[name="phone"]');
-      const phoneError = document.getElementById('phoneError');
+      const phoneError = document.querySelector('#phoneError');
 
       phoneInput.addEventListener('input', () => {
         const phoneValue = phoneInput.value.trim();
-        const countryCode = document.getElementById('countryCode').value;
+        const countryCode = document.querySelector('#countryCode').value;
 
         // Check if phone starts with 0 for Germany/Austria/Switzerland
         if ((countryCode === '+49' || countryCode === '+43' || countryCode === '+41') && phoneValue.startsWith('0')) {
@@ -1135,7 +1135,7 @@
       // Email confirmation validation
       const emailInput = document.querySelector('input[name="email"]');
       const emailConfirmInput = document.querySelector('input[name="email_confirm"]');
-      const emailMatchError = document.getElementById('emailMatchError');
+      const emailMatchError = document.querySelector('#emailMatchError');
 
       emailConfirmInput.addEventListener('input', () => {
         if (emailConfirmInput.value && emailInput.value !== emailConfirmInput.value) {
@@ -1159,7 +1159,7 @@
       });
 
       // Form submission
-      document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // Validate emails match
@@ -1282,8 +1282,8 @@
             // Extract data from v2 response if needed
             const responseData = useV2 && result.data ? result.data : result;
 
-            document.getElementById('successMessage').style.display = 'block';
-            document.getElementById('successMessage').innerHTML =
+            document.querySelector('#successMessage').style.display = 'block';
+            document.querySelector('#successMessage').innerHTML =
               `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
 
             // Clear form

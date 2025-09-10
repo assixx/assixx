@@ -207,8 +207,8 @@ private rotationConfig: ShiftRotationConfig = {
 
 // Event Handler für Checkboxen
 private setupShiftControls(): void {
-  const autofillCheckbox = document.getElementById('shift-autofill') as HTMLInputElement;
-  const rotationCheckbox = document.getElementById('shift-rotation') as HTMLInputElement;
+  const autofillCheckbox = document.querySelector('shift-autofill') as HTMLInputElement;
+  const rotationCheckbox = document.querySelector('shift-rotation') as HTMLInputElement;
 
   autofillCheckbox?.addEventListener('change', async (e) => {
     this.autofillConfig.enabled = (e.target as HTMLInputElement).checked;
@@ -444,13 +444,13 @@ private async loadUserPreferencesFromDatabase(): Promise<void> {
       switch(setting.setting_key) {
         case 'shift_autofill_enabled':
           this.autofillConfig.enabled = setting.setting_value === 'true';
-          const autofillCheckbox = document.getElementById('shift-autofill') as HTMLInputElement;
+          const autofillCheckbox = document.querySelector('shift-autofill') as HTMLInputElement;
           if (autofillCheckbox) autofillCheckbox.checked = this.autofillConfig.enabled;
           break;
 
         case 'shift_rotation_enabled':
           this.rotationConfig.enabled = setting.setting_value === 'true';
-          const rotationCheckbox = document.getElementById('shift-rotation') as HTMLInputElement;
+          const rotationCheckbox = document.querySelector('shift-rotation') as HTMLInputElement;
           if (rotationCheckbox) rotationCheckbox.checked = this.rotationConfig.enabled;
           break;
 

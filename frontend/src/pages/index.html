@@ -1422,7 +1422,7 @@
       handleBadgeScroll();
 
       function showSignup(plan = null) {
-        document.getElementById('signupModal').style.display = 'flex';
+        document.querySelector('#signupModal').style.display = 'flex';
         if (plan) {
           // Plan vorauswählen wenn von Preistabelle kommend
           localStorage.setItem('selectedPlan', plan);
@@ -1430,7 +1430,7 @@
       }
 
       function hideSignup() {
-        document.getElementById('signupModal').style.display = 'none';
+        document.querySelector('#signupModal').style.display = 'none';
       }
 
       // Subdomain-Validierung
@@ -1441,14 +1441,14 @@
 
         // Nur Kleinbuchstaben, Zahlen und Bindestriche
         if (!/^[a-z0-9-]*$/.test(value)) {
-          document.getElementById('subdomainError').textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt';
+          document.querySelector('#subdomainError').textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt';
         } else {
-          document.getElementById('subdomainError').textContent = '';
+          document.querySelector('#subdomainError').textContent = '';
         }
       });
 
       // Form Submit
-      document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const formData = new FormData(e.target);

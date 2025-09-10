@@ -28,7 +28,7 @@ Die Dropdown-Menüs im Employee Modal zeigten keine Daten aus der Datenbank an, 
 **Kompilierte admin-dashboard.js suchte nach:**
 
 ```javascript
-const dropdown = document.getElementById('employee-department-dropdown');
+const dropdown = document.querySelector('employee-department-dropdown');
 ```
 
 **HTML hatte aber:**
@@ -81,7 +81,7 @@ Alle IDs in der HTML-Datei wurden angepasst, um mit den erwarteten IDs aus der k
 
 1. **Konsistente Namenskonventionen sind kritisch** - Besonders zwischen HTML und JavaScript
 2. **CamelCase vs. Kebab-Case** - In diesem Projekt wird kebab-case für HTML IDs verwendet
-3. **Debugging-Tipp**: Wenn `getElementById()` null zurückgibt, immer zuerst prüfen:
+3. **Debugging-Tipp**: Wenn `querySelector()` null zurückgibt, immer zuerst prüfen:
    - Ist die ID korrekt geschrieben?
    - Existiert das Element zum Zeitpunkt des Zugriffs im DOM?
    - Stimmt die ID-Konvention überein?

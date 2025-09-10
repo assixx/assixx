@@ -99,7 +99,7 @@ if (!modal.parentElement || modal.parentElement !== document.body) {
 
   document.body.appendChild(modal);
   console.info(`[ModalManager] Modal added to DOM. Parent:`, modal.parentElement?.tagName);
-  console.info(`[ModalManager] Modal in DOM:`, document.getElementById(modalId) !== null);
+  console.info(`[ModalManager] Modal in DOM:`, document.querySelector(modalId) !== null);
   console.info(`[ModalManager] document.body contains modal:`, document.body.contains(modal));
 } else {
   console.info(`[ModalManager] Modal already in document.body`);

@@ -554,7 +554,7 @@ class EnhancedShiftPlanning {
   }
 
   renderAvailableMembers() {
-    const container = document.getElementById('availableMembers');
+    const container = document.querySelector('availableMembers');
     container.innerHTML = this.teamMembers
       .map(
         (member) => `

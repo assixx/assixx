@@ -807,16 +807,16 @@
 
     <script>
       function openLightbox(src) {
-        document.getElementById('lightboxImage').src = src;
-        document.getElementById('photoLightbox').classList.add('active');
+        document.querySelector('#lightboxImage').src = src;
+        document.querySelector('#photoLightbox').classList.add('active');
       }
 
       function closeLightbox() {
-        document.getElementById('photoLightbox').classList.remove('active');
+        document.querySelector('#photoLightbox').classList.remove('active');
       }
 
       // Close lightbox on click outside
-      document.getElementById('photoLightbox')?.addEventListener('click', function (e) {
+      document.querySelector('#photoLightbox')?.addEventListener('click', function (e) {
         if (e.target === this) {
           closeLightbox();
         }
@@ -824,8 +824,8 @@
 
       // Toggle Dropdown
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -846,10 +846,10 @@
 
       // Select Status
       function selectStatus(value, text) {
-        document.getElementById('statusDisplay').querySelector('span').textContent = text;
-        document.getElementById('statusValue').value = value;
-        document.getElementById('statusDisplay').classList.remove('active');
-        document.getElementById('statusDropdown').classList.remove('active');
+        document.querySelector('#statusDisplay').querySelector('span').textContent = text;
+        document.querySelector('#statusValue').value = value;
+        document.querySelector('#statusDisplay').classList.remove('active');
+        document.querySelector('#statusDropdown').classList.remove('active');
 
         // Trigger status update event
         const event = new CustomEvent('statusChange', { detail: { status: value } });
@@ -1116,17 +1116,17 @@
     <script>
       // Share Modal Functions
       function openShareModal() {
-        document.getElementById('shareModal').style.display = 'flex';
+        document.querySelector('#shareModal').style.display = 'flex';
         // Trigger load of teams and departments if needed
         window.dispatchEvent(new CustomEvent('loadOrgData'));
       }
 
       function closeShareModal() {
-        document.getElementById('shareModal').style.display = 'none';
+        document.querySelector('#shareModal').style.display = 'none';
         // Reset selections
         document.querySelectorAll('input[name="orgLevel"]').forEach((input) => (input.checked = false));
-        document.getElementById('teamSelect').style.display = 'none';
-        document.getElementById('departmentSelect').style.display = 'none';
+        document.querySelector('#teamSelect').style.display = 'none';
+        document.querySelector('#departmentSelect').style.display = 'none';
       }
 
       function confirmShare() {
@@ -1140,13 +1140,13 @@
         const level = selectedLevel.value;
 
         if (level === 'team') {
-          orgId = document.getElementById('teamSelect').value;
+          orgId = document.querySelector('#teamSelect').value;
           if (!orgId) {
             alert('Bitte wählen Sie ein Team aus.');
             return;
           }
         } else if (level === 'department') {
-          orgId = document.getElementById('departmentSelect').value;
+          orgId = document.querySelector('#departmentSelect').value;
           if (!orgId) {
             alert('Bitte wählen Sie eine Abteilung aus.');
             return;
@@ -1166,13 +1166,13 @@
       // Show/hide selects based on radio selection
       document.querySelectorAll('input[name="orgLevel"]').forEach((input) => {
         input.addEventListener('change', (e) => {
-          document.getElementById('teamSelect').style.display = 'none';
-          document.getElementById('departmentSelect').style.display = 'none';
+          document.querySelector('#teamSelect').style.display = 'none';
+          document.querySelector('#departmentSelect').style.display = 'none';
 
           if (e.target.value === 'team') {
-            document.getElementById('teamSelect').style.display = 'block';
+            document.querySelector('#teamSelect').style.display = 'block';
           } else if (e.target.value === 'department') {
-            document.getElementById('departmentSelect').style.display = 'block';
+            document.querySelector('#departmentSelect').style.display = 'block';
           }
         });
       });

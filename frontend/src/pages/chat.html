@@ -1903,7 +1903,7 @@
         document.querySelector('.delivery-text').textContent = text;
 
         // Update hidden input
-        document.getElementById('messageScheduling').value = value;
+        document.querySelector('#messageScheduling').value = value;
 
         // Close dropdown
         document.querySelector('.custom-delivery-select').classList.remove('active');
@@ -1914,8 +1914,8 @@
 
       // Toggle Chat Dropdown
       window.toggleChatDropdown = function (type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1931,8 +1931,8 @@
 
       // Select Chat Dropdown Option
       window.selectChatDropdownOption = function (type, value, text, meta = '') {
-        const display = document.getElementById(type + 'Display');
-        const input = document.getElementById('selected' + type.charAt(0).toUpperCase() + type.slice(1));
+        const display = document.querySelector(type + 'Display');
+        const input = document.querySelector('selected' + type.charAt(0).toUpperCase() + type.slice(1));
 
         // Update display text
         display.querySelector('span').textContent = text;
@@ -1942,14 +1942,14 @@
 
         // Close dropdown
         display.classList.remove('active');
-        document.getElementById(type + 'Dropdown').classList.remove('active');
+        document.querySelector(type + 'Dropdown').classList.remove('active');
 
         console.info(`✅ ${type} selected:`, { value, text, meta });
 
         // Handle specific dropdown types
         if (type === 'department' && value) {
           // Department selected, show employee dropdown
-          document.getElementById('employeeDropdownGroup').style.display = 'block';
+          document.querySelector('#employeeDropdownGroup').style.display = 'block';
           // Load employees for this department
           if (window.chatClient) {
             window.chatClient.loadEmployeesForDepartment(value);
