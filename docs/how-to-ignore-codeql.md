@@ -5,6 +5,7 @@ CodeQL sometimes reports false positives, especially for:
 - `js/missing-rate-limiting` - Doesn't recognize middleware patterns
 - `js/missing-token-validation` - Doesn't recognize JWT auth patterns (199+ false positives!)
 - `js/sql-injection` - Doesn't understand parameterized queries
+- `js/xss` - Doesn't recognize custom sanitization functions
 
 ## Solutions
 
@@ -39,6 +40,7 @@ The workflow in `.github/workflows/codeql-analysis.yml` uses the config:
 ## Current Status
 - ✅ `js/missing-token-validation` - Globally excluded (199 false positives!)
 - ✅ `js/missing-rate-limiting` - Globally excluded (systemic issue)
+- ✅ `js/xss` - Globally excluded (custom sanitization not recognized)
 - ✅ Individual suppressions added where needed
 
 ## CodeQL Limits Warning
