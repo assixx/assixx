@@ -3214,18 +3214,17 @@ const unifiedNavigationCSS = `
         position: relative;
     }
 
-    /* Active state - immer sichtbar mit primary color */
-    .sidebar.collapsed .sidebar-item.active .sidebar-link .icon {
-        color: var(--primary-color);
-    }
+
 
     .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
         content: '';
         position: absolute;
         inset: -8px;
-        background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         border-radius: 50%;
         z-index: -1;
+        background: rgba(139, 139, 139, 0.41);
+        border: 1px solid hsl(0, 0%, 48.6%);
+
     }
 
     /* Hover - Icon wird primary color */
@@ -3581,8 +3580,10 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
-        background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
-        color: var(--primary-color);
+        border: 1px solid hsl(0, 0%, 39.6%);
+        background: rgba(139, 139, 139, 0.41);
+        border: 1px solid hsl(0, 0%, 48.6%);
+
     }
 
     .sidebar-link .icon {
@@ -3675,7 +3676,7 @@ const unifiedNavigationCSS = `
 
     .submenu-link {
         display: inline flow-root list-item;
-        padding: 8px 45px 8px 16px;
+        padding: 3px 20px 3px 20px;
         color: var(--text-secondary);
         text-decoration: none;
         font-size: 0.85rem;
@@ -3693,11 +3694,10 @@ const unifiedNavigationCSS = `
 
     .submenu-link.active,
     .submenu-item.active .submenu-link {
-        background: rgba(33, 150, 243, 0.08);
-        color: var(--primary-color);
-        border-color: rgba(33, 150, 243, 0.15);
         transform: translateX(20px);
-        font-weight: 600;
+        background: rgba(139, 139, 139, 0.12);
+        border-radius: var(--radius-md);
+        border: 0.1px solid hsla(0, 0%, 39.6%, 0.44);
     }
 
     /* Layout adjustments */

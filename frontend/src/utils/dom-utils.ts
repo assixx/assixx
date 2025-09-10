@@ -234,6 +234,8 @@ export function setHTML(element: HTMLElement | null, html: string): void {
   if (element) {
     // Sanitize HTML with DOMPurify
     const sanitized = DOMPurify.sanitize(html, {
+      FORCE_BODY: false,
+      IN_PLACE: false,
       ALLOWED_TAGS: [
         'b',
         'i',

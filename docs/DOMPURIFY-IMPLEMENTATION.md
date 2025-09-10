@@ -80,21 +80,21 @@ Fertig. Mehr nicht nötig.
 
 | Seite | Script Tag | DOMPurify benutzt | Status |
 |-------|------------|-------------------|---------|
-| admin-dashboard.html | ✅ CDN | Ja (2x) | ✅ OK |
-| document-upload.html | ✅ CDN | Ja (2x) | ✅ OK |
-| employee-dashboard.html | ✅ CDN | Ja (1x) | ✅ OK |
-| employee-documents.html | ✅ CDN | Ja (6x) | ✅ OK |
-| employee-profile.html | ✅ CDN | Ja (5x) | ✅ OK |
-| manage-employees.html | ✅ CDN | Ja (1x) | ✅ OK |
-| kvp.html | ✅ CDN | Ja (1x) | ✅ OK |
-| login.html | ✅ CDN | Ja (1x) | ✅ OK |
-| root-features.html | ✅ CDN | Ja (1x) | ✅ OK |
-| root-profile.html | ✅ CDN | Ja (3x) | ✅ OK |
-| salary-documents.html | ✅ CDN | Ja (3x) | ✅ OK |
+| admin-dashboard.html | ✅ Lokal | Ja (2x) | ✅ OK |
+| document-upload.html | ✅ Lokal | Ja (2x) | ✅ OK |
+| employee-dashboard.html | ✅ Lokal | Ja (1x) | ✅ OK |
+| employee-documents.html | ✅ Lokal | Ja (6x) | ✅ OK |
+| employee-profile.html | ✅ Lokal | Ja (5x) | ✅ OK |
+| manage-employees.html | ✅ Lokal | Ja (1x) | ✅ OK |
+| kvp.html | ✅ Lokal | Ja (1x) | ✅ OK |
+| login.html | ✅ Lokal | Ja (1x) | ✅ OK |
+| root-features.html | ✅ Lokal | Ja (1x) | ✅ OK |
+| root-profile.html | ✅ Lokal | Ja (3x) | ✅ OK |
+| salary-documents.html | ✅ Lokal | Ja (3x) | ✅ OK |
 | signup.html | ❌ Entfernt | Nein | ✅ OK |
-| survey-admin-test.html | ✅ CDN | Ja (1x) | ✅ OK |
-| survey-details.html | ✅ CDN | Ja (2x) | ✅ OK |
-| survey-employee.html | ✅ CDN | Ja (2x) | ✅ OK |
-| tenant-deletion-status.html | ✅ CDN | Ja (1x) | ✅ OK |
+| survey-admin-test.html | ✅ Lokal | Ja (1x) | ✅ OK |
+| survey-details.html | ✅ Lokal | Ja (2x) | ✅ OK |
+| survey-employee.html | ✅ Lokal | Ja (2x) | ✅ OK |
+| tenant-deletion-status.html | ✅ Lokal | Ja (1x) | ✅ OK |
 
 **TODO:** TypeScript-Module erstellen und DOMPurify importieren!

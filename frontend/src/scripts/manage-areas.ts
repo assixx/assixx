@@ -1,7 +1,6 @@
 // Areas Management Module
 import { apiClient } from '../utils/api-client.js';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts.js';
-import { setHTML } from '../utils/dom-utils.js';
 
 // Types
 interface Area {
@@ -212,7 +211,10 @@ function renderAreas(): void {
     )
     .join('');
 
-  setHTML(areasTableBody, html);
+  // Direct innerHTML for tables - DOMPurify can strip table structure
+  if (areasTableBody) {
+    areasTableBody.innerHTML = html;
+  }
 }
 
 // Get type label
