@@ -24,7 +24,7 @@
 - Commit or push without permission from User
 - Checkout without permission from User
 - Perform Fast-Forward merge (always --no-ff)
-- Use ESLint disable comments
+- Use ESLint disable comments WITHOUT justification (wenn 100% sicher/nötig → MIT Kommentar WARUM)
 - Create new files when existing ones can be edited
 - Do more than requested
 

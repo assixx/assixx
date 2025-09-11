@@ -1,6 +1,7 @@
 // Areas Management Module
 import { apiClient } from '../utils/api-client.js';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts.js';
+import { setHTML } from '../utils/dom-utils.js';
 
 // Types
 interface Area {
@@ -30,10 +31,9 @@ let addAreaBtn: HTMLButtonElement | null;
 let areaModal: HTMLElement | null;
 let deleteModal: HTMLElement | null;
 let areaForm: HTMLFormElement | null;
-let areasTableBody: HTMLElement | null;
+let areasTableContent: HTMLElement | null;
 let loadingDiv: HTMLElement | null;
 let emptyDiv: HTMLElement | null;
-let areasTable: HTMLElement | null;
 
 // Initialize the page
 async function initializePage(): Promise<void> {
@@ -65,10 +65,9 @@ function initializeDOMElements(): void {
   areaModal = document.querySelector('#area-modal');
   deleteModal = document.querySelector('#delete-area-modal');
   areaForm = document.querySelector<HTMLFormElement>('#area-form');
-  areasTableBody = document.querySelector('#areas-table-body');
+  areasTableContent = document.querySelector('#areas-table-content');
   loadingDiv = document.querySelector('#areas-loading');
   emptyDiv = document.querySelector('#areas-empty');
-  areasTable = document.querySelector('#areas-table');
 }
 
 // Attach event listeners
@@ -174,47 +173,61 @@ function applyFiltersAndSearch(): void {
 
 // Render areas table
 function renderAreas(): void {
-  if (!areasTableBody) return;
+  if (!areasTableContent) return;
 
   if (filteredAreas.length === 0) {
-    areasTable?.classList.add('u-hidden');
+    setHTML(areasTableContent, '');
     emptyDiv?.classList.remove('u-hidden');
     return;
   }
 
-  areasTable?.classList.remove('u-hidden');
   emptyDiv?.classList.add('u-hidden');
 
-  const html = filteredAreas
-    .map(
-      (area) => `
-    <tr>
-      <td>
-        <strong>${area.name}</strong>
-        ${area.parent_id !== undefined && area.parent_id !== null ? `<br><small class="text-secondary">↳ Parent ID: ${area.parent_id}</small>` : ''}
-      </td>
-      <td>${area.description ?? '-'}</td>
-      <td>
-        <span class="badge badge-info">${getTypeLabel(area.type)}</span>
-      </td>
-      <td>${area.capacity ?? '-'}</td>
-      <td>${area.address ?? '-'}</td>
-      <td>
-        <span class="badge ${getStatusBadgeClass(area.is_active === 1 ? 'active' : 'inactive')}">${getStatusLabel(area.is_active === 1 ? 'active' : 'inactive')}</span>
-      </td>
-      <td>
-        <button class="action-btn edit" onclick="window.manageAreas.editArea(${area.id})">Bearbeiten</button>
-        <button class="action-btn delete" onclick="window.manageAreas.confirmDelete(${area.id})">Löschen</button>
-      </td>
-    </tr>
-  `,
-    )
-    .join('');
+  const tableHTML = `
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Beschreibung</th>
+          <th>Typ</th>
+          <th>Kapazität</th>
+          <th>Adresse</th>
+          <th>Status</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${filteredAreas
+          .map(
+            (area) => `
+              <tr>
+                <td>
+                  <strong>${area.name}</strong>
+                  ${area.parent_id !== undefined && area.parent_id !== null ? `<br><small class="text-secondary">↳ Parent ID: ${area.parent_id}</small>` : ''}
+                </td>
+                <td>${area.description ?? '-'}</td>
+                <td>
+                  <span class="badge badge-info">${getTypeLabel(area.type)}</span>
+                </td>
+                <td>${area.capacity ?? '-'}</td>
+                <td>${area.address ?? '-'}</td>
+                <td>
+                  <span class="badge ${getStatusBadgeClass(area.is_active === 1 ? 'active' : 'inactive')}">${getStatusLabel(area.is_active === 1 ? 'active' : 'inactive')}</span>
+                </td>
+                <td>
+                  <button class="action-btn edit" onclick="window.manageAreas.editArea(${area.id})">Bearbeiten</button>
+                  <button class="action-btn delete" onclick="window.manageAreas.confirmDelete(${area.id})">Löschen</button>
+                </td>
+              </tr>
+            `,
+          )
+          .join('')}
+      </tbody>
+    </table>
+  `;
 
-  // Direct innerHTML for tables - DOMPurify can strip table structure
-  if (areasTableBody) {
-    areasTableBody.innerHTML = html;
-  }
+  // Use setHTML for safe innerHTML assignment with proper sanitization
+  setHTML(areasTableContent, tableHTML);
 }
 
 // Get type label
@@ -266,6 +279,7 @@ function getStatusBadgeClass(status: string): string {
 }
 
 // Open area modal
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function openAreaModal(areaId?: number): void {
   editingAreaId = areaId ?? null;
 
@@ -412,7 +426,9 @@ async function deleteArea(areaId: number): Promise<void> {
 function showLoading(show: boolean): void {
   if (show) {
     loadingDiv?.classList.remove('u-hidden');
-    areasTable?.classList.add('u-hidden');
+    if (areasTableContent) {
+      setHTML(areasTableContent, '');
+    }
     emptyDiv?.classList.add('u-hidden');
   } else {
     loadingDiv?.classList.add('u-hidden');

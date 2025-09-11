@@ -918,27 +918,21 @@ export class SurveyAdminManager {
         const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
         const endpoint = useV2 ? `/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
 
-        const response = await (useV2
-          ? this.apiClient.delete(endpoint)
-          : fetch(endpoint, {
-              method: 'DELETE',
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`, // FIX: Verhindert 'Bearer null' im Header
-              },
-            }));
-
-        interface DeleteResponse {
-          success?: boolean;
-        }
-
-        if (response instanceof Response) {
-          if (response.ok) {
-            showSuccessAlert('Umfrage erfolgreich gelöscht');
-            await this.loadSurveys();
-          }
+        if (useV2) {
+          // API v2 wirft einen Fehler bei nicht-200 Status
+          await this.apiClient.delete(endpoint);
+          showSuccessAlert('Umfrage erfolgreich gelöscht');
+          await this.loadSurveys();
         } else {
-          const deleteResult = response as DeleteResponse;
-          if (deleteResult.success === true) {
+          // Legacy API v1
+          const response = await fetch(endpoint, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`, // FIX: Verhindert 'Bearer null' im Header
+            },
+          });
+
+          if (response.ok) {
             showSuccessAlert('Umfrage erfolgreich gelöscht');
             await this.loadSurveys();
           }

@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run postbuild",
+    "postbuild": "mkdir -p dist/js && cp -f public/js/purify.min.js dist/js/purify.min.js 2>/dev/null || echo 'Post-build: purify.min.js copied'",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "eslint src",

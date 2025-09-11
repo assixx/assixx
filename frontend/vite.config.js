@@ -142,6 +142,17 @@ export default defineConfig({
           console.info('✅ Copied feature-flags.js to dist');
         }
 
+        // Copy purify.min.js to dist/js
+        const jsDir = resolve(distDir, 'js');
+        if (!existsSync(jsDir)) mkdirSync(jsDir, { recursive: true });
+        
+        const purifySource = resolve(__dirname, 'public/js/purify.min.js');
+        const purifyDest = resolve(jsDir, 'purify.min.js');
+        if (existsSync(purifySource)) {
+          copyFileSync(purifySource, purifyDest);
+          console.info('✅ Copied purify.min.js to dist/js');
+        }
+
         // Copy FullCalendar JS files
         const fullcalendarSrc = resolve(__dirname, 'src/scripts/lib/fullcalendar.min.js');
         const fullcalendarLocalesSrc = resolve(__dirname, 'src/scripts/lib/fullcalendar-locales.min.js');

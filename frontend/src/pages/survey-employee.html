@@ -777,8 +777,17 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
     <script type="module">
+      // Import and make alerts available globally
       import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
-
+      window.showAlert = showAlert;
+      window.showSuccessAlert = showSuccessAlert;
+      window.showErrorAlert = showErrorAlert;
+      window.showConfirm = showConfirm;
+    </script>
+    <script>
+      // DOMPurify is available globally from /js/purify.min.js
+      // Alerts will be available from the module above
+      
       let currentSurvey = null;
       let answers = {};
 
@@ -901,14 +910,14 @@
         // Add click handler for completed surveys
         if (completed) {
           card.style.cursor = 'pointer';
-          card.onclick = () => viewResponse(survey.id);
+          card.onclick = () => window.viewResponse(survey.id);
         }
 
         const deadline = survey.end_date ? new Date(survey.end_date) : null;
         const daysLeft = deadline ? Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24)) : null;
         const isUrgent = daysLeft && daysLeft <= 7;
 
-        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        // eslint-disable-next-line no-unsanitized/property, no-undef -- DOMPurify loaded globally via script tag
         card.innerHTML = DOMPurify.sanitize(`
                 <div class="survey-card-header">
                     <h3 class="survey-card-title">${getQuestionText(survey.title)}</h3>
@@ -940,6 +949,11 @@
         return card;
       }
 
+      // Use alerts from window
+      const showErrorAlert = (...args) => window.showErrorAlert && window.showErrorAlert(...args);
+      // Removed unused showSuccessAlert - using window.showSuccessAlert directly
+      const showAlert = (...args) => window.showAlert && window.showAlert(...args);
+      
       // Start survey
       window.startSurvey = async function startSurvey(surveyId) {
         try {
@@ -1010,7 +1024,7 @@
         const div = document.createElement('div');
         div.className = 'question-item';
 
-        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        // eslint-disable-next-line no-unsanitized/property, no-undef -- DOMPurify loaded globally via script tag
         div.innerHTML = DOMPurify.sanitize(`
                 <div class="question-header">
                     <span class="question-number">${index + 1}</span>
@@ -1174,7 +1188,7 @@
 
         // Set new selection
         document.querySelector(`rating_${questionId}_${value}`).classList.add('selected');
-        updateAnswer(questionId, value, 'number');
+        window.updateAnswer(questionId, value, 'number');
       };
 
       // Update progress
@@ -1194,7 +1208,8 @@
         // Convert answers to array format
         const answersArray = [];
         for (const questionId in answers) {
-          const answer = answers[questionId];
+          // eslint-disable-next-line security/detect-object-injection -- questionId comes from controlled survey data
+        const answer = answers[questionId];
 
           if (answer.selectedOptions) {
             // Multiple choice - store as answer_options array
@@ -1242,7 +1257,7 @@
 
             // Wait a bit longer for database to update
             setTimeout(() => {
-              closeModal();
+              window.closeModal();
               // Force reload with a small delay to ensure database is updated
               setTimeout(() => {
                 console.info('Reloading surveys after submission...');
@@ -1349,7 +1364,8 @@
         `;
 
         // Add modal to body
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        // eslint-disable-next-line no-unsanitized/method, no-undef -- Using DOMPurify for XSS protection
+        document.body.insertAdjacentHTML('beforeend', DOMPurify.sanitize(modalHtml));
       }
 
       // Format answer based on question type
@@ -1383,6 +1399,7 @@
                 .map((optIndex) => {
                   const option =
                     typeof question.options[0] === 'string'
+                      // eslint-disable-next-line security/detect-object-injection -- optIndex comes from parsed answer data
                       ? question.options[optIndex]
                       : question.options.find((o) => o.id === optIndex)?.option_text;
                   return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;

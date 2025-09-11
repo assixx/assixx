@@ -1408,9 +1408,9 @@ class UnifiedNavigation {
     } else if (item.badge === 'unread-documents') {
       badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
     } else if (item.badge === 'new-kvp-suggestions') {
-      badgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #4caf50; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge nav-badge-kvp" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: linear-gradient(0deg, rgba(76, 175, 80, 0.71), rgba(76, 175, 80, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
     } else if (item.badge === 'lean-management-parent') {
-      badgeHtml = `<span class="nav-badge" id="lean-management-badge" style="display: none; position: absolute; top: 8px; right: 40px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
+      badgeHtml = `<span class="nav-badge" id="lean-management-badge" style="display: none; position: absolute; top: 8px; right: 40px; background: rgba(255, 153, 0, 0.7); backdrop-filter: blur(10px); color: #ffffffff; font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: 600; min-width: 30px; text-align: center;">0</span>`;
     } else if (item.badge === 'unread-calendar-events') {
       badgeHtml = `<span class="nav-badge" id="calendar-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
     }
@@ -1428,12 +1428,12 @@ class UnifiedNavigation {
                 } else if (child.badge === 'pending-surveys') {
                   childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
                 } else if (child.badge === 'new-kvp-suggestions') {
-                  childBadgeHtml = `<span class="nav-badge" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #4caf50; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
+                  childBadgeHtml = `<span class="nav-badge nav-badge-kvp" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: linear-gradient(0deg, rgba(76, 175, 80, 0.71), rgba(76, 175, 80, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
                 }
 
                 return `
-              <li class="submenu-item" style="position: relative;">
-                <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}">
+              <li class="submenu-item">
+                <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}" style="position: relative; display: block;">
                   <span class="submenu-label">${child.label}</span>
                   ${childBadgeHtml}
                 </a>
@@ -1640,10 +1640,7 @@ class UnifiedNavigation {
       mainContent?.classList.add(SIDEBAR_COLLAPSED_CLASS);
       chatMain?.classList.add(SIDEBAR_COLLAPSED_CLASS);
       chatSidebar?.classList.add(SIDEBAR_COLLAPSED_CLASS);
-      sidebar.style.setProperty('width', '68px', 'important');
       this.updateToggleIcon();
-    } else {
-      sidebar.style.setProperty('width', '280px', 'important');
     }
 
     // Toggle click handler
@@ -1658,26 +1655,13 @@ class UnifiedNavigation {
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
 
+      // Remove any inline width styles - let CSS handle it
+      sidebar.style.removeProperty('width');
+
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
       chatMain?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
       chatSidebar?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
-
-      // Set width directly as inline style to override any CSS
-      console.info('[UnifiedNav] Setting width for collapsed state:', newState);
-      if (newState) {
-        sidebar.style.width = '70px';
-        sidebar.style.setProperty('width', '70px', 'important');
-        console.info('[UnifiedNav] Set width to 70px, actual style:', sidebar.getAttribute('style'));
-
-        // Check if there's a CSS rule overriding
-        const computedStyle = window.getComputedStyle(sidebar);
-        console.info('[UnifiedNav] Width source:', computedStyle.getPropertyPriority('width'));
-      } else {
-        sidebar.style.width = '280px';
-        sidebar.style.setProperty('width', '280px', 'important');
-        console.info('[UnifiedNav] Set width to 280px, actual style:', sidebar.getAttribute('style'));
-      }
 
       // Force browser to recalculate styles
       void sidebar.offsetWidth;
@@ -2421,9 +2405,62 @@ class UnifiedNavigation {
           this.lastKnownKvpCount = currentCount;
           localStorage.setItem('lastKnownKvpCount', currentCount.toString());
         }
+
+        // Update parent badge (Lean Management)
+        this.updateLeanManagementParentBadge();
       }
     } catch (error) {
       console.error('Error updating KVP suggestions count:', error);
+    }
+  }
+
+  // Update Lean Management parent badge based on child badges
+  private updateLeanManagementParentBadge(): void {
+    const leanBadge = $$('#lean-management-badge');
+    if (!leanBadge) return;
+
+    // Check if any child badges are visible and get their counts
+    const kvpBadge = $$('#kvp-badge');
+    const surveysBadge = $$('#surveys-pending-badge');
+
+    const kvpVisible = kvpBadge?.style.display === DISPLAY_INLINE_BLOCK;
+    const surveysVisible = surveysBadge?.style.display === DISPLAY_INLINE_BLOCK;
+
+    // Calculate total count from visible child badges
+    let totalCount = 0;
+
+    if (kvpVisible && kvpBadge.textContent !== '') {
+      const kvpCount = Number.parseInt(kvpBadge.textContent, 10);
+      if (!Number.isNaN(kvpCount)) {
+        totalCount += kvpCount;
+      }
+    }
+
+    if (surveysVisible && surveysBadge.textContent !== '') {
+      const surveysCount = Number.parseInt(surveysBadge.textContent, 10);
+      if (!Number.isNaN(surveysCount)) {
+        totalCount += surveysCount;
+      }
+    }
+
+    // Show parent badge with total count if any child has a badge
+    if (totalCount > 0) {
+      leanBadge.textContent = totalCount > 99 ? '99+' : totalCount.toString();
+      leanBadge.style.display = DISPLAY_INLINE_BLOCK;
+    } else {
+      leanBadge.style.display = 'none';
+    }
+  }
+
+  // Update pending surveys badge (called from SSE)
+  public updatePendingSurveys(): void {
+    try {
+      // This gets called from SSE client when new survey arrives
+      // The actual badge update logic should be here
+      // For now, just update the parent badge
+      this.updateLeanManagementParentBadge();
+    } catch (error) {
+      console.error('Error updating pending surveys:', error);
     }
   }
 
@@ -3129,7 +3166,7 @@ const unifiedNavigationCSS = `
 
     /* Collapsed Sidebar Styles */
     .sidebar.collapsed {
-        width: 100px !important;
+        width: 70px !important;
     }
 
     /* Logo size adjustment when sidebar is collapsed */
@@ -3203,6 +3240,9 @@ const unifiedNavigationCSS = `
         background: transparent;
         font-size: 14px !important; /* Gleiche font-size wie normal state */
         line-height: 20px !important; /* Gleiche line-height wie normal state */
+        justify-content: center; /* Icons zentrieren im collapsed state */
+        gap: 0; /* Kein gap im collapsed state */
+        padding: var(--spacing-sm); /* GLEICHES padding wie normal state - verhindert Icon-Verschiebung */
     }
 
     /* Wichtig: overflow visible für collapsed sidebar damit der Kreis größer werden kann */
@@ -3286,12 +3326,8 @@ const unifiedNavigationCSS = `
     }
 
 
-    /* Tooltip styles for collapsed items */
-    .sidebar.collapsed .sidebar-link,
-    .sidebar.collapsed .sidebar-title {
-        position: relative;
-    }
-
+    /* Tooltip styles for collapsed items - DEAKTIVIERT wegen Icon-Verschiebung */
+    /*
     .sidebar.collapsed .sidebar-link:hover::after,
     .sidebar.collapsed .sidebar-title:hover::after {
         content: attr(title);
@@ -3309,8 +3345,8 @@ const unifiedNavigationCSS = `
         z-index: 1000;
         pointer-events: none;
         opacity: 0;
-        /*animation: tooltipFadeIn 0.3s ease forwards;*/
     }
+    */
 
     @keyframes tooltipFadeIn {
         to {
@@ -3319,15 +3355,7 @@ const unifiedNavigationCSS = `
     }
 
     /* Badge adjustments for collapsed sidebar */
-    .sidebar.collapsed .nav-badge {
-        position: absolute !important;
-        top: 4px !important;
-        right: 4px !important;
-        left: auto !important;
-        font-size: 0.6rem !important;
-        padding: 1px 4px !important;
-        min-width: 14px !important;
-    }
+
 
     /* Smooth transitions */
     .sidebar,
@@ -3572,6 +3600,7 @@ const unifiedNavigationCSS = `
         margin-bottom: 5px;
         height: 36px;
         box-sizing: border-box;
+        border: 1px solid transparent; /* Reserviert Platz für active border */
     }
 
     /* Hover/Active nur wenn NICHT collapsed */
@@ -3689,7 +3718,6 @@ const unifiedNavigationCSS = `
     .submenu-link:hover {
         background: rgba(33, 150, 243, 0.08);
         border-color: rgba(33, 150, 243, 0.15);
-        transform: translateX(20px);
     }
 
     .submenu-link.active,
@@ -3878,6 +3906,29 @@ const unifiedNavigationCSS = `
             right: auto;
             margin-top: var(--spacing-lg);
         }
+    }
+
+    /* Collapsed sidebar - show badges as dots */
+    .sidebar.collapsed .nav-badge {
+        position: absolute !important;
+        top: 4px !important;
+        right: 4px !important;
+        left: auto !important;
+        width: 8px !important;
+        height: 8px !important;
+        min-width: 8px !important;
+        padding: 0 !important;
+        border-radius: 50% !important;
+        font-size: 0 !important;
+        overflow: hidden !important;
+        text-indent: -9999px !important;
+    }
+
+    /* Collapsed sidebar - submenu badges as dots */
+    .sidebar.collapsed .submenu-link .nav-badge {
+        top: 50% !important;
+        right: 8px !important;
+        transform: translateY(-50%) !important;
     }
 `;
 

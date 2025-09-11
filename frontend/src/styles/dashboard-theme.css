@@ -708,6 +708,27 @@ body {
   justify-content: center;
 }
 
+/* Navigation Badges */
+.nav-badge {
+  display: inline-block;
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76));
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 50px;
+  font-weight: bold;
+  min-width: 30px;
+  text-align: center;
+}
+
+/* KVP Badge - Grün */
+.nav-badge-kvp {
+  background: linear-gradient(0deg, rgba(76, 175, 80, 0.71), rgba(76, 175, 80, 0.76));
+}
+
 .gap-1 {
   gap: var(--spacing-xs);
 }
@@ -905,6 +926,37 @@ body {
   margin-top: var(--spacing-lg);
   padding: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
+}
+
+/* Sidebar Icon Fix - Icons should not move on collapse */
+.sidebar-link .icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.sidebar-link .icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  display: block;
+}
+
+/* Ensure consistent icon positioning when collapsed */
+.sidebar.collapsed .sidebar-link .icon {
+  margin: 0 auto;
+}
+
+/* Fix submenu badge positioning */
+.submenu-link {
+  position: relative !important;
+  display: block !important;
+}
+
+.submenu-item {
+  position: relative;
 }
 
 /* Role Switch Button Styles */

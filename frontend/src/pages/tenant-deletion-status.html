@@ -349,14 +349,14 @@
           return;
         }
 
-        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        // eslint-disable-next-line no-undef, no-unsanitized/property -- DOMPurify from CDN, sanitized content
         container.innerHTML = DOMPurify.sanitize(statusData.map((item) => createStatusCard(item)).join(''));
       }
 
       function createStatusCard(item) {
         const progress = item.progress || 0;
         const createdAt = new Date(item.created_at);
-        const scheduledAt = item.scheduled_deletion_date ? new Date(item.scheduled_deletion_date) : null;
+        // const scheduledAt = item.scheduled_deletion_date ? new Date(item.scheduled_deletion_date) : null; // Currently unused
         const coolingOffRemaining = calculateCoolingOff(item);
 
         return `
@@ -452,6 +452,7 @@
           failed: 'Fehlgeschlagen',
           cancelled: 'Abgebrochen',
         };
+        // eslint-disable-next-line security/detect-object-injection -- status is from controlled enum
         return statusMap[status] || status;
       }
 

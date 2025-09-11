@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function loadEmployeeInfo(): Promise<void> {
     try {
-      const employeeInfo = await apiClient.get<EmployeeInfo>('/user/profile');
+      const employeeInfo = await apiClient.get<EmployeeInfo>('/users/me');
       displayEmployeeInfo(employeeInfo);
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiterinformationen:', error);
