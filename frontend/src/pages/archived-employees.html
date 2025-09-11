@@ -1,3 +1,4 @@
+<!-- eslint-disable no-undef -->
 <!doctype html>
 <html lang="de">
   <head>
@@ -206,7 +207,7 @@
               // Mitarbeiter anzeigen
               emptyMessage.style.display = 'none';
               // Safe: HTML is generated from server data and sanitized with DOMPurify
-              // eslint-disable-next-line no-unsanitized/property
+              // eslint-disable-next-line no-unsanitized/property, no-undef
               tableBody.innerHTML = DOMPurify.sanitize(
                 employees
                   .map(
@@ -230,10 +231,12 @@
             }
           } else {
             console.error('Error loading archived employees:', response.statusText);
+            // eslint-disable-next-line no-undef
             showError('Fehler beim Laden der archivierten Mitarbeiter.');
           }
         } catch (error) {
           console.error('Error loading archived employees:', error);
+          // eslint-disable-next-line no-undef
           showError('Fehler beim Laden der archivierten Mitarbeiter.');
         }
       }
@@ -251,14 +254,17 @@
           });
 
           if (response.ok) {
+            // eslint-disable-next-line no-undef
             showSuccess('Mitarbeiter erfolgreich wiederhergestellt');
             loadArchivedEmployees(); // Tabelle aktualisieren
           } else {
             const errorData = await response.json();
+            // eslint-disable-next-line no-undef
             showError(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
           }
         } catch (error) {
           console.error('Error unarchiving employee:', error);
+          // eslint-disable-next-line no-undef
           showError('Fehler beim Wiederherstellen des Mitarbeiters.');
         }
       };
@@ -272,7 +278,7 @@
 
         modalTitle.textContent = 'Mitarbeiter endgültig löschen';
         // Safe: HTML is generated from server data and sanitized with DOMPurify
-        // eslint-disable-next-line no-unsanitized/property
+        // eslint-disable-next-line no-unsanitized/property, no-undef
         modalBody.innerHTML = DOMPurify.sanitize(`
                 <p>Möchten Sie den Mitarbeiter <strong>${employeeName}</strong> wirklich endgültig löschen?</p>
                 <p class="text-danger"><strong>Warnung:</strong> Diese Aktion kann nicht rückgängig gemacht werden und alle zugeordneten Dokumente werden ebenfalls gelöscht.</p>
@@ -297,14 +303,17 @@
           });
 
           if (response.ok) {
+            // eslint-disable-next-line no-undef
             showSuccess('Mitarbeiter wurde endgültig gelöscht');
             loadArchivedEmployees(); // Tabelle aktualisieren
           } else {
             const errorData = await response.json();
+            // eslint-disable-next-line no-undef
             showError(`Fehler: ${errorData.message || 'Unbekannter Fehler'}`);
           }
         } catch (error) {
           console.error('Error deleting employee:', error);
+          // eslint-disable-next-line no-undef
           showError('Fehler beim Löschen des Mitarbeiters.');
         }
       }

@@ -476,6 +476,7 @@
     </div>
 
     <script>
+      /* global DOMPurify */
       // Tab-Wechsel-Funktionalität
       function showTab(tabId) {
         // Alle Tabs und Inhalte deaktivieren
@@ -660,11 +661,14 @@
           const rows = tableBody.querySelectorAll('tr');
 
           for (let i = 0; i < rows.length; i++) {
+            // eslint-disable-next-line security/detect-object-injection
             const fileName = rows[i].querySelectorAll('td')[0].textContent.toLowerCase();
 
             if (fileName.includes(searchTerm)) {
+              // eslint-disable-next-line security/detect-object-injection
               rows[i].style.display = '';
             } else {
+              // eslint-disable-next-line security/detect-object-injection
               rows[i].style.display = 'none';
             }
           }

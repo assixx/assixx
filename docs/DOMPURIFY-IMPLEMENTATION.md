@@ -92,9 +92,35 @@ Fertig. Mehr nicht nötig.
 | root-profile.html | ✅ Lokal | Ja (3x) | ✅ OK |
 | salary-documents.html | ✅ Lokal | Ja (3x) | ✅ OK |
 | signup.html | ❌ Entfernt | Nein | ✅ OK |
-| survey-admin-test.html | ✅ Lokal | Ja (1x) | ✅ OK |
 | survey-details.html | ✅ Lokal | Ja (2x) | ✅ OK |
 | survey-employee.html | ✅ Lokal | Ja (2x) | ✅ OK |
 | tenant-deletion-status.html | ✅ Lokal | Ja (1x) | ✅ OK |
+
+## ESLint Fix für DOMPurify
+
+### Problem
+ESLint meldet `'DOMPurify' is not defined` obwohl DOMPurify über `<script src="/js/purify.min.js">` geladen wird.
+
+### Lösung
+Am Anfang des Script-Blocks wo DOMPurify verwendet wird:
+
+```javascript
+<script>
+  /* global DOMPurify */
+  // Rest des Codes...
+</script>
+```
+
+### Bereits gefixt in:
+- ✅ admin-dashboard.html (Line 1685)
+- ✅ document-upload.html (Line 861)
+- ✅ employee-documents.html (Line 598)
+- ✅ survey-details.html (Line 340)
+- ✅ root-profile.html (Line 901)
+- ✅ login.html (Line 149)
+- ✅ manage-employees.html (Line 579)
+
+### Fix-Notiz (11.09.2025)
+Bei allen HTML-Dateien die DOMPurify lokal verwenden, muss der `/* global DOMPurify */` Kommentar hinzugefügt werden um ESLint-Warnungen zu vermeiden.
 
 **TODO:** TypeScript-Module erstellen und DOMPurify importieren!

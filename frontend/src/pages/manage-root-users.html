@@ -633,6 +633,7 @@
     <!-- Custom Dropdown Functions -->
     <script>
       // Toggle Dropdown
+
       function toggleDropdown(type) {
         const display = document.querySelector(type + 'Display');
         const dropdown = document.querySelector(type + 'Dropdown');
@@ -650,6 +651,7 @@
       }
 
       // Select Option
+
       function selectOption(type, value, text) {
         document.querySelector(type + 'Display').querySelector('span').textContent = text;
         document.querySelector(type + 'Value').value = value;
@@ -666,6 +668,7 @@
       });
 
       // Modal Functions
+
       function showAddRootModal() {
         document.querySelector('#modalTitle').textContent = 'Root User hinzufügen';
         document.querySelector('#rootForm').reset();

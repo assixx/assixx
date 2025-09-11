@@ -1,3 +1,5 @@
+<!-- eslint-disable no-unused-vars -->
+<!-- eslint-disable no-unused-vars -->
 <!doctype html>
 <html lang="de">
   <head>
@@ -1045,6 +1047,7 @@
 
     <script>
       // Dropdown Functions
+
       function toggleDropdown(type) {
         const display = document.querySelector(type + 'Display');
         const dropdown = document.querySelector(type + 'Dropdown');
@@ -1071,6 +1074,7 @@
       }
 
       // Modal Functions
+
       function showModal(modalId) {
         const modal = document.querySelector(modalId);
         if (modal) {
@@ -1127,7 +1131,7 @@
             </div>
           `;
           // Safe: HTML is hardcoded and sanitized with DOMPurify
-          // eslint-disable-next-line no-unsanitized/property
+          // eslint-disable-next-line no-unsanitized/property, no-undef
           roleIndicator.outerHTML = DOMPurify.sanitize(badgesHtml);
         }
       }, 500);

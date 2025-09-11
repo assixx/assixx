@@ -787,7 +787,7 @@
     <script>
       // DOMPurify is available globally from /js/purify.min.js
       // Alerts will be available from the module above
-      
+
       let currentSurvey = null;
       let answers = {};
 
@@ -953,7 +953,7 @@
       const showErrorAlert = (...args) => window.showErrorAlert && window.showErrorAlert(...args);
       // Removed unused showSuccessAlert - using window.showSuccessAlert directly
       const showAlert = (...args) => window.showAlert && window.showAlert(...args);
-      
+
       // Start survey
       window.startSurvey = async function startSurvey(surveyId) {
         try {
@@ -1209,7 +1209,7 @@
         const answersArray = [];
         for (const questionId in answers) {
           // eslint-disable-next-line security/detect-object-injection -- questionId comes from controlled survey data
-        const answer = answers[questionId];
+          const answer = answers[questionId];
 
           if (answer.selectedOptions) {
             // Multiple choice - store as answer_options array
@@ -1399,8 +1399,8 @@
                 .map((optIndex) => {
                   const option =
                     typeof question.options[0] === 'string'
-                      // eslint-disable-next-line security/detect-object-injection -- optIndex comes from parsed answer data
-                      ? question.options[optIndex]
+                      ? // eslint-disable-next-line security/detect-object-injection -- optIndex comes from parsed answer data
+                        question.options[optIndex]
                       : question.options.find((o) => o.id === optIndex)?.option_text;
                   return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;
                 })

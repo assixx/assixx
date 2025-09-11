@@ -610,7 +610,7 @@ export default [
     },
     rules: {
       // Basic JavaScript rules (same as frontend)
-      'no-unused-vars': 'warn',
+      'no-unused-vars': 'off', // Disabled for HTML files - functions are used in onclick handlers
       'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
       'no-undef': 'warn',
       'no-eval': 'warn',

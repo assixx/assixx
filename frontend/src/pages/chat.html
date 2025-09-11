@@ -1865,16 +1865,13 @@
       document.addEventListener('DOMContentLoaded', function () {
         console.info('🚀 Chat-Seite wird initialisiert...');
 
-        // 1. Navigation laden
+        // 1. Navigation laden (wird automatisch durch unified-navigation.ts initialisiert)
         if (typeof loadNavigation === 'function') {
           loadNavigation();
         } else {
-          console.info('Navigation wird geladen...');
-          setTimeout(() => {
-            if (window.UnifiedNavigation) {
-              new window.UnifiedNavigation();
-            }
-          }, 100);
+          console.info('Navigation wird automatisch geladen...');
+          // UnifiedNavigation wird bereits automatisch in unified-navigation.ts initialisiert
+          // Keine zusätzliche Instanz erstellen!
         }
 
         // Event-Listener werden bereits in chat.ts hinzugefügt

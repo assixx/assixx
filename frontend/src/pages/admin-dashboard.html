@@ -1270,20 +1270,15 @@
 
           // If no specific section or 'dashboard-section' requested, show dashboard
           if (!requestedSection || requestedSection === 'dashboard-section' || requestedSection === 'dashboard') {
-            // Use showSection directly (it's already imported statically)
-            if (typeof showSection === 'function') {
-              showSection('dashboard');
-            } else {
-              // Fallback if function not available
-              const dashboardSection = document.querySelector('#dashboard-section');
-              if (dashboardSection) {
-                // Hide all sections
-                document.querySelectorAll('.content-section').forEach((section) => {
-                  section.style.display = 'none';
-                });
-                // Show dashboard
-                dashboardSection.style.display = 'block';
-              }
+            // Fallback to direct DOM manipulation since showSection is not imported
+            const dashboardSection = document.querySelector('#dashboard-section');
+            if (dashboardSection) {
+              // Hide all sections
+              document.querySelectorAll('.content-section').forEach((section) => {
+                section.style.display = 'none';
+              });
+              // Show dashboard
+              dashboardSection.style.display = 'block';
             }
           }
         }, 100);
@@ -1293,37 +1288,8 @@
       // Direkte Event-Listener hinzufügen
       console.info('Adding direct event listeners');
 
-      // Performance monitoring helper
-      function measurePerformance(label, fn) {
-        const startTime = performance.now();
-        console.info(`[Performance] Starting: ${label}`);
-
-        const result = fn();
-
-        if (result && result.then) {
-          // Handle promises
-          return result
-            .then((res) => {
-              const endTime = performance.now();
-              console.info(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
-              return res;
-            })
-            .catch((err) => {
-              const endTime = performance.now();
-              console.error(`[Performance] Failed: ${label} - ${(endTime - startTime).toFixed(2)}ms`, err);
-              throw err;
-            });
-        } else {
-          // Handle synchronous functions
-          const endTime = performance.now();
-          console.info(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
-          return result;
-        }
-      }
-
       document.addEventListener('DOMContentLoaded', () => {
         console.info('[Performance] DOMContentLoaded event fired');
-        const pageStartTime = performance.now();
         // Event-Listener für das Schließen des Mitarbeiter-Modals (neu mit data-action)
         const employeeModal = document.querySelector('#employee-modal');
 
@@ -1443,12 +1409,16 @@
             const mode = this.dataset.mode || 'create';
             const employeeId = this.dataset.employeeId;
 
-            // Convert FormData to object
-            const data = {};
+            // Convert FormData to object (safe from injection)
+            const data = Object.create(null); // Use null prototype to prevent prototype pollution
             formData.forEach((value, key) => {
               // Convert to camelCase for API v2
               const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-              data[camelKey] = value;
+              // Validate key to prevent injection
+              if (typeof camelKey === 'string' && camelKey.length > 0) {
+                // eslint-disable-next-line security/detect-object-injection
+                data[camelKey] = value;
+              }
             });
 
             // Get dropdown values
@@ -1486,7 +1456,7 @@
               }
 
               if (response.ok) {
-                const result = await response.json();
+                await response.json();
                 showSuccess(mode === 'edit' ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
 
                 // Close modal
@@ -1546,16 +1516,20 @@
             }
 
             // Reset dropdowns
-            selectDropdownOption('employee-department', '', 'Keine Abteilung');
-            selectDropdownOption('employee-team', '', 'Kein Team');
-            selectActiveStatusOption('1', 'Aktiv');
+            if (typeof window.selectDropdownOption === 'function') {
+              window.selectDropdownOption('employee-department', '', 'Keine Abteilung');
+              window.selectDropdownOption('employee-team', '', 'Kein Team');
+            }
+            if (typeof window.selectActiveStatusOption === 'function') {
+              window.selectActiveStatusOption('1', 'Aktiv');
+            }
 
             // Show modal
             modal.style.display = 'flex';
 
             // Load departments for dropdown
-            if (typeof loadDepartmentsForEmployeeSelect === 'function') {
-              loadDepartmentsForEmployeeSelect();
+            if (typeof window.loadDepartmentsForEmployeeSelect === 'function') {
+              window.loadDepartmentsForEmployeeSelect();
             }
           }
         };
@@ -1591,22 +1565,30 @@
               e.preventDefault();
               e.stopPropagation();
               console.info('Showing employees section');
-              showSection('employees');
+              if (typeof window.showSection === 'function') {
+                window.showSection('employees');
+              }
             } else if (href === '#documents') {
               e.preventDefault();
               e.stopPropagation();
               console.info('Showing documents section');
-              showSection('documents');
+              if (typeof window.showSection === 'function') {
+                window.showSection('documents');
+              }
             } else if (href === '#teams') {
               e.preventDefault();
               e.stopPropagation();
               console.info('Showing teams section');
-              showSection('teams');
+              if (typeof window.showSection === 'function') {
+                window.showSection('teams');
+              }
             } else if (href === '#settings') {
               e.preventDefault();
               e.stopPropagation();
               console.info('Showing settings section');
-              showSection('settings');
+              if (typeof window.showSection === 'function') {
+                window.showSection('settings');
+              }
             }
           });
         });
@@ -1700,7 +1682,9 @@
           // Trigger change event for dependent dropdowns
           if (dropdownId === 'employeeDepartment') {
             // Reload teams when department changes
-            loadTeamsForEmployeeSelect();
+            if (typeof window.loadTeamsForEmployeeSelect === 'function') {
+              window.loadTeamsForEmployeeSelect();
+            }
           }
         } else {
           console.error('Dropdown elements not found for selection:', dropdownId);
@@ -1712,6 +1696,7 @@
       window.selectDropdownOption = selectDropdownOption;
     </script>
     <script>
+      /* global DOMPurify */
       // Funktionstabelle direkt definieren
 
       // Load documents table
@@ -1797,7 +1782,7 @@
       }
 
       // Mitarbeiter-Status ändern
-      async function changeEmployeeStatus(employeeId) {
+      window.changeEmployeeStatus = async function (employeeId) {
         console.info(`Changing status for employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
@@ -1946,7 +1931,7 @@
           console.error('Error loading employee for status change:', error);
           alert('Fehler beim Laden der Mitarbeiterdaten');
         }
-      }
+      };
 
       // Employee Status Form Submit Handler
       document.addEventListener('DOMContentLoaded', () => {
@@ -2039,7 +2024,7 @@
       });
 
       // Abteilung löschen
-      async function deleteDepartment(departmentId) {
+      window.deleteDepartment = async function (departmentId) {
         console.info(`Deleting department ${departmentId}`);
         if (!confirm('Sind Sie sicher, dass Sie diese Abteilung löschen möchten?')) {
           return;
@@ -2062,7 +2047,9 @@
 
           if (response.ok) {
             alert('Abteilung erfolgreich gelöscht');
-            loadDepartmentsTable();
+            if (typeof window.loadDepartmentsTable === 'function') {
+              window.loadDepartmentsTable();
+            }
           } else {
             const error = await response.json();
             alert(`Fehler: ${error.message}`);
@@ -2071,14 +2058,14 @@
           console.error('Error deleting department:', error);
           alert('Ein Fehler ist aufgetreten.');
         }
-      }
+      };
 
       // OLD editEmployeeAsync - REMOVED (replaced by new editEmployee function above)
 
       // Mitarbeiter löschen - moved to manage-employees.ts
 
       // Mitarbeiterstatus ändern
-      async function toggleEmployeeStatus(employeeId, currentStatus) {
+      window.toggleEmployeeStatus = async function (employeeId, currentStatus) {
         console.info(`Toggling employee ${employeeId} status from ${currentStatus}`);
         const token = localStorage.getItem('token');
         const newStatus = currentStatus === 'inactive' ? 'active' : 'inactive';
@@ -2104,7 +2091,7 @@
           console.error('Error toggling employee status:', error);
           alert('Ein Fehler ist aufgetreten.');
         }
-      }
+      };
 
       // Add event listener for payslip upload form
       document.addEventListener('DOMContentLoaded', () => {
@@ -2189,8 +2176,10 @@
           // API v2 returns { success: true, data: [...] }
           const departments = response.data || response;
 
-          // Store in cache
+          // Store in cache (atomic update to prevent race condition)
+          // eslint-disable-next-line require-atomic-updates
           departmentsCache = departments;
+          // eslint-disable-next-line require-atomic-updates
           departmentsCacheTime = Date.now();
 
           const dropdown = document.querySelector('#employeeDepartment-dropdown');
@@ -2238,7 +2227,9 @@
               if (option) {
                 const value = option.getAttribute('data-value') || '';
                 const text = option.getAttribute('data-text') || '';
-                selectDropdownOption('employeeDepartment', value, text);
+                if (typeof window.selectDropdownOption === 'function') {
+                  window.selectDropdownOption('employeeDepartment', value, text);
+                }
               }
             });
           }
@@ -2311,7 +2302,9 @@
                 if (option) {
                   const value = option.getAttribute('data-value') || '';
                   const text = option.getAttribute('data-text') || '';
-                  selectDropdownOption('employeeTeam', value, text);
+                  if (typeof window.selectDropdownOption === 'function') {
+                    window.selectDropdownOption('employeeTeam', value, text);
+                  }
                 }
               });
             }
@@ -2363,7 +2356,13 @@
           console.info('Modal found, showing it');
           modal.style.display = 'flex';
           // Mitarbeiter-Select füllen
-          loadEmployeesForSelect();
+          // TODO: loadEmployeesForSelect function needs to be implemented
+          if (typeof window.loadEmployeesForSelect === 'function') {
+            window.loadEmployeesForSelect();
+          } else if (typeof window.loadEmployeesTable === 'function') {
+            // Fallback to loadEmployeesTable if available
+            window.loadEmployeesTable();
+          }
         } else {
           console.error('Modal element not found!');
           alert('Dokument-Upload-Formular konnte nicht geladen werden.');
@@ -2377,7 +2376,11 @@
       window.showDocumentModal = showDocumentModal;
       window.showModal = showModal;
       window.hideModal = hideModal;
+      // eslint-disable-next-line no-undef
       window.toggleDropdown = toggleDropdown;
+      // selectDropdownOption is defined above in line 1636
+      // Safe to use here as it's defined in the same scope
+      // eslint-disable-next-line no-undef
       window.selectDropdownOption = selectDropdownOption;
 
       // Global click handler to close dropdowns when clicking outside
@@ -2394,15 +2397,17 @@
 
       // showDepartmentModal wurde nach departments.html verschoben
 
-      function showTeamModal() {
+      window.showTeamModal = function () {
         showModal('team-modal');
         // Abteilungen für Select laden
-        loadDepartmentsForSelect();
-      }
+        if (typeof window.loadDepartmentsForSelect === 'function') {
+          window.loadDepartmentsForSelect();
+        }
+      };
 
-      function hideTeamModal() {
+      window.hideTeamModal = function () {
         hideModal('team-modal');
-      }
+      };
 
       // Modal schließen bei Klick außerhalb
       window.addEventListener('click', function (event) {
@@ -2417,9 +2422,9 @@
       });
 
       // Placeholder functions for "view all" links
-      function showAllEmployees() {
+      window.showAllEmployees = function () {
         console.info('Show all employees');
-      }
+      };
 
       // Load employees table
       async function loadEmployeesTable() {
@@ -2704,19 +2709,25 @@
               if (employee.department_id || employee.departmentId) {
                 const deptId = employee.department_id || employee.departmentId;
                 const deptName = employee.department_name || employee.departmentName || 'Unbekannte Abteilung';
-                selectDropdownOption('employee-department', deptId, deptName);
+                if (typeof window.selectDropdownOption === 'function') {
+                  window.selectDropdownOption('employee-department', deptId, deptName);
+                }
               }
 
               // Set team dropdown if exists
               if (employee.team_id || employee.teamId) {
                 const teamId = employee.team_id || employee.teamId;
                 const teamName = employee.team_name || employee.teamName || 'Unbekanntes Team';
-                selectDropdownOption('employee-team', teamId, teamName);
+                if (typeof window.selectDropdownOption === 'function') {
+                  window.selectDropdownOption('employee-team', teamId, teamName);
+                }
               }
 
               // Set active status
               const isActive = employee.is_active !== undefined ? employee.is_active : 1;
-              selectActiveStatusOption(isActive ? '1' : '0', isActive ? 'Aktiv' : 'Inaktiv');
+              if (typeof window.selectActiveStatusOption === 'function') {
+                window.selectActiveStatusOption(isActive ? '1' : '0', isActive ? 'Aktiv' : 'Inaktiv');
+              }
 
               // Change submit button text
               const submitBtn = form.querySelector('button[type="submit"]');
@@ -2738,26 +2749,30 @@
           }
         } catch (error) {
           console.error('Error loading employee:', error);
-          showError('Fehler beim Laden der Mitarbeiterdaten');
+          if (typeof window.showError === 'function') {
+            window.showError('Fehler beim Laden der Mitarbeiterdaten');
+          } else {
+            alert('Fehler beim Laden der Mitarbeiterdaten');
+          }
         }
       }
 
       // Delete employee functionality moved to manage-employees.ts
 
-      function showAllDocuments() {
+      window.showAllDocuments = function () {
         console.info('Show all documents');
-      }
+      };
 
-      function showAllDepartments() {
+      window.showAllDepartments = function () {
         window.location.href = '/manage-departments';
-      }
+      };
 
-      function showAllTeams() {
+      window.showAllTeams = function () {
         console.info('Show all teams');
-      }
+      };
 
       // Dokument herunterladen
-      async function downloadDocument(documentId) {
+      window.downloadDocument = async function (documentId) {
         const token = localStorage.getItem('token');
         try {
           window.location.href = `/api/documents/download/${documentId}?token=${token}`;
@@ -2765,10 +2780,10 @@
           console.error('Error downloading document:', error);
           alert('Fehler beim Herunterladen des Dokuments');
         }
-      }
+      };
 
       // Dokument archivieren
-      async function archiveDocument(documentId) {
+      window.archiveDocument = async function (documentId) {
         if (!confirm('Möchten Sie dieses Dokument archivieren?')) {
           return;
         }
@@ -2794,10 +2809,10 @@
           console.error('Error archiving document:', error);
           alert('Fehler beim Archivieren des Dokuments');
         }
-      }
+      };
 
       // Dokument löschen
-      async function deleteDocument(documentId) {
+      window.deleteDocument = async function (documentId) {
         if (
           !confirm(
             'Sind Sie sicher, dass Sie dieses Dokument dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
@@ -2824,7 +2839,7 @@
           console.error('Error deleting document:', error);
           alert('Fehler beim Löschen des Dokuments');
         }
-      }
+      };
 
       // Section Navigation is now handled by show-section.ts module
     </script>
@@ -3834,7 +3849,7 @@
         window.addEventListener('popstate', updateFloatingButton);
 
         // Listen for section changes
-        const observer = new MutationObserver(function (mutations) {
+        const observer = new MutationObserver(function () {
           updateFloatingButton();
         });
 

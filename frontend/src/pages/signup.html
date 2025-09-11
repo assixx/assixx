@@ -980,11 +980,12 @@
     <script>
       // Custom Dropdown Functions
       let currentCountryCode = '+49';
-      let currentCountryFlag = '🇩🇪';
+      // currentCountryFlag is updated when country is selected
       let currentPlan = 'enterprise';
 
+      // Make functions global for onclick handlers
       // Country Dropdown
-      function toggleCountryDropdown() {
+      window.toggleCountryDropdown = function () {
         const dropdown = document.querySelector('#countryDropdown');
         const display = document.querySelector('.country-display');
 
@@ -998,7 +999,7 @@
         if (dropdown.classList.contains('active')) {
           document.addEventListener('click', closeDropdownOutside);
         }
-      }
+      };
 
       function closeDropdownOutside(e) {
         const countrySelect = document.querySelector('.custom-country-select');
@@ -1019,19 +1020,19 @@
         }
       }
 
-      function selectCountry(flag, code) {
+      window.selectCountry = function (flag, code) {
         document.querySelector('#selectedFlag').textContent = flag;
         document.querySelector('#selectedCode').textContent = code;
         document.querySelector('#countryCode').value = code;
         currentCountryCode = code;
-        currentCountryFlag = flag;
+        // Update flag (used internally)
 
         document.querySelector('#countryDropdown').classList.remove('active');
         document.querySelector('.country-display').classList.remove('active');
-      }
+      };
 
       // Plan Dropdown
-      function togglePlanDropdown() {
+      window.togglePlanDropdown = function () {
         const dropdown = document.querySelector('#planDropdown');
         const display = document.querySelector('.plan-display');
 
@@ -1045,19 +1046,19 @@
         if (dropdown.classList.contains('active')) {
           document.addEventListener('click', closeDropdownOutside);
         }
-      }
+      };
 
-      function selectPlan(value, name) {
+      window.selectPlan = function (value, name) {
         document.querySelector('#selectedPlan').textContent = name;
         document.querySelector('#planValue').value = value;
         currentPlan = value;
 
         document.querySelector('#planDropdown').classList.remove('active');
         document.querySelector('.plan-display').classList.remove('active');
-      }
+      };
 
       // Help function
-      function showHelp() {
+      window.showHelp = function () {
         alert(
           'Hilfe zur Registrierung:\n\n' +
             '1. Geben Sie Ihre Firmendaten ein\n' +
@@ -1066,7 +1067,7 @@
             '4. 14 Tage kostenlos testen!\n\n' +
             'Bei Fragen: support@assixx.com',
         );
-      }
+      };
 
       // Get plan from URL parameter
       const urlParams = new URLSearchParams(window.location.search);
@@ -1263,8 +1264,8 @@
 
           try {
             result = JSON.parse(responseText);
-          } catch (parseError) {
-            console.error('Failed to parse response:', responseText);
+          } catch (e) {
+            console.error('Failed to parse response:', responseText, e);
             result = { message: 'Server response was not valid JSON: ' + responseText };
           }
 
@@ -1279,8 +1280,7 @@
           }
 
           if (response.ok || (useV2 && result.success)) {
-            // Extract data from v2 response if needed
-            const responseData = useV2 && result.data ? result.data : result;
+            // v2 response handled, data extraction not needed here
 
             document.querySelector('#successMessage').style.display = 'block';
             document.querySelector('#successMessage').innerHTML =

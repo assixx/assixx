@@ -3300,7 +3300,7 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-menu {
-        margin-top: 73px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
+        margin-top: 72px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
     }
 
 
@@ -3726,6 +3726,7 @@ const unifiedNavigationCSS = `
         background: rgba(139, 139, 139, 0.12);
         border-radius: var(--radius-md);
         border: 0.1px solid hsla(0, 0%, 39.6%, 0.44);
+        margin-right: 80px;
     }
 
     /* Layout adjustments */

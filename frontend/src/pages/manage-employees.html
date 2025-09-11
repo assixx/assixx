@@ -576,6 +576,7 @@
     <!-- Employee Management -->
     <script type="module" src="/scripts/manage-employees.ts"></script>
     <script type="module">
+      /* global DOMPurify */
       // Auth check
       const token = localStorage.getItem('token');
       const userRole = localStorage.getItem('userRole');
@@ -663,6 +664,7 @@
           other: { class: 'badge-secondary', text: 'Sonstiges' },
         };
 
+        // eslint-disable-next-line security/detect-object-injection
         const config = statusConfig[status] || statusConfig.available;
         return `<span class="badge ${config.class}">${config.text}</span>`;
       }
@@ -878,6 +880,71 @@
         modal.classList.remove('active');
       }
 
+      // Helper function to load availability data
+      async function loadAvailabilityData(form, employeeId) {
+        try {
+          const response = await apiClient.get(`/availability?employee_id=${employeeId}`);
+          if (response.availability && response.availability.length > 0) {
+            const current = response.availability[0];
+            setFormValue(form, 'availabilityStatus', current.status || 'available');
+            setFormValue(form, 'availabilityStart', current.start_date || '');
+            setFormValue(form, 'availabilityEnd', current.end_date || '');
+            setFormValue(form, 'availabilityNotes', current.notes || '');
+          } else {
+            setAvailabilityDefaults(form);
+          }
+        } catch (error) {
+          console.warn('Could not load availability data:', error);
+          setAvailabilityDefaults(form);
+        }
+      }
+
+      // Helper to set availability defaults
+      function setAvailabilityDefaults(form) {
+        setFormValue(form, 'availabilityStatus', 'available');
+        setFormValue(form, 'availabilityStart', '');
+        setFormValue(form, 'availabilityEnd', '');
+        setFormValue(form, 'availabilityNotes', '');
+      }
+
+      // Helper to safely set form values
+      function setFormValue(form, fieldName, value) {
+        // eslint-disable-next-line security/detect-object-injection
+        if (form[fieldName]) {
+          // eslint-disable-next-line security/detect-object-injection
+          form[fieldName].value = value;
+        }
+      }
+
+      // Helper to populate employee form
+      function populateEmployeeForm(form, emp) {
+        form.firstName.value = emp.first_name || emp.firstName || '';
+        form.lastName.value = emp.last_name || emp.lastName || '';
+        form.email.value = emp.email || emp.username || '';
+        form.phone.value = emp.phone || '';
+        form.position.value = emp.position || '';
+        form.employeeNumber.value = emp.employee_number || emp.employeeNumber || '';
+
+        if (emp.birthday) {
+          form.birthday.value = emp.birthday.split('T')[0];
+        }
+
+        // Set active status
+        const isActive = getActiveStatus(emp);
+        form.isActive.value = isActive ? '1' : '0';
+      }
+
+      // Helper to determine active status
+      function getActiveStatus(emp) {
+        if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
+          return emp.isActive === true || emp.isActive === 1;
+        }
+        if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
+          return emp.is_active === true || emp.is_active === 1;
+        }
+        return true; // Default to active
+      }
+
       async function editEmployee(id) {
         try {
           const emp = await apiClient.get(`/users/${id}`);
@@ -894,55 +961,11 @@
           form.emailConfirm.removeAttribute('required');
           form.passwordConfirm.removeAttribute('required');
 
-          // Load availability data (if exists)
-          try {
-            const availabilityResponse = await apiClient.get(`/availability?employee_id=${id}`);
-            if (availabilityResponse.availability && availabilityResponse.availability.length > 0) {
-              // Get the most recent availability entry
-              const currentAvailability = availabilityResponse.availability[0];
+          // Load availability data
+          await loadAvailabilityData(form, id);
 
-              // Set availability fields
-              if (form.availabilityStatus) {
-                form.availabilityStatus.value = currentAvailability.status || 'available';
-              }
-              if (form.availabilityStart) {
-                form.availabilityStart.value = currentAvailability.start_date || '';
-              }
-              if (form.availabilityEnd) {
-                form.availabilityEnd.value = currentAvailability.end_date || '';
-              }
-              if (form.availabilityNotes) {
-                form.availabilityNotes.value = currentAvailability.notes || '';
-              }
-            } else {
-              // No availability record, set to default
-              if (form.availabilityStatus) form.availabilityStatus.value = 'available';
-              if (form.availabilityStart) form.availabilityStart.value = '';
-              if (form.availabilityEnd) form.availabilityEnd.value = '';
-              if (form.availabilityNotes) form.availabilityNotes.value = '';
-            }
-          } catch (availErr) {
-            console.warn('Could not load availability data:', availErr);
-            // Set defaults on error
-            if (form.availabilityStatus) form.availabilityStatus.value = 'available';
-          }
-          form.firstName.value = emp.first_name || emp.firstName || '';
-          form.lastName.value = emp.last_name || emp.lastName || '';
-          form.email.value = emp.email || emp.username || '';
-          form.phone.value = emp.phone || '';
-          form.position.value = emp.position || '';
-          form.employeeNumber.value = emp.employee_number || emp.employeeNumber || '';
-          if (emp.birthday) {
-            form.birthday.value = emp.birthday.split('T')[0];
-          }
-          // Handle both is_active (API v1/DB) and isActive (API v2)
-          if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
-            form.isActive.value = emp.isActive === true || emp.isActive === 1 ? '1' : '0';
-          } else if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
-            form.isActive.value = emp.is_active === true || emp.is_active === 1 ? '1' : '0';
-          } else {
-            form.isActive.value = '1'; // Default to active
-          }
+          // Populate form fields
+          populateEmployeeForm(form, emp);
 
           // Load and select department
           await loadDepartments();
@@ -956,7 +979,7 @@
             form.teamId.value = emp.team_id || emp.teamId;
           }
 
-          // Passwort optional beim Bearbeiten
+          // Make password optional for editing
           const passwordInput = document.querySelector('input[name="password"]');
           if (passwordInput) {
             passwordInput.removeAttribute('required');

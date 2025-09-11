@@ -858,6 +858,7 @@
     </div>
 
     <script>
+      /* global DOMPurify */
       document.addEventListener('DOMContentLoaded', () => {
         console.info('Document upload page loaded');
 
@@ -1184,6 +1185,7 @@
             console.info(`Loaded ${employees.length} employees`);
 
             // Re-query DOM element after await to avoid race condition
+            // eslint-disable-next-line require-atomic-updates
             userDropdown = document.querySelector('#userDropdown');
             if (!userDropdown) return;
 
@@ -1236,6 +1238,7 @@
         const fileInput = document.querySelector('#file-input');
 
         let recipientId = null;
+        // recipientName wird für zukünftige Features vorbereitet
         let recipientName = '';
 
         switch (recipientType) {
@@ -1444,7 +1447,7 @@
       }
 
       // Dropdown-Funktionen
-      function toggleDropdown(type) {
+      window.toggleDropdown = function (type) {
         const display = document.querySelector(type + 'Display');
         const dropdown = document.querySelector(type + 'Dropdown');
 
@@ -1458,7 +1461,7 @@
 
         display.classList.toggle('active');
         dropdown.classList.toggle('active');
-      }
+      };
 
       function selectOption(type, value, text) {
         const display = document.querySelector(type + 'Display');

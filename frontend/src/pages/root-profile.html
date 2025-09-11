@@ -898,6 +898,7 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <script>
+      /* global DOMPurify */
       // Authentication Check
       const token = localStorage.getItem('token');
       if (!token) {
@@ -918,7 +919,8 @@
               .join(''),
           );
           return JSON.parse(jsonPayload);
-        } catch (e) {
+        } catch {
+          // Error handling - return null if parsing fails
           return null;
         }
       }
@@ -1414,12 +1416,21 @@
               } else {
                 container.textContent = '...';
               }
-            } catch (e) {
+            } catch {
+              // Error handling - show placeholder on error
               container.textContent = '...';
             }
           } else {
             container.textContent = '...';
           }
+        }
+      }
+
+      // Modal functions
+      function closeDeleteModal() {
+        const modal = document.querySelector('#deleteModal');
+        if (modal) {
+          modal.style.display = 'none';
         }
       }
 

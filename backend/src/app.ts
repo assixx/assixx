@@ -47,6 +47,7 @@ const currentDirPath = getCurrentDirPath();
 const CONTENT_TYPE_HEADER = 'Content-Type';
 const MIME_TYPE_JAVASCRIPT = 'application/javascript';
 const X_CONTENT_TYPE_OPTIONS = 'X-Content-Type-Options';
+const RATE_LIMIT_PATH = '/rate-limit';
 
 // Security middleware
 // Page protection middleware
@@ -139,12 +140,60 @@ app.use((req: Request, res: Response, next: NextFunction): void => {
 
 // Protect HTML pages based on user role with rate limiting
 // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-app.use(rateLimiter.public, (req: Request, res: Response, next: NextFunction) => {
-  if (req.path.endsWith('.html')) {
-    protectPage(req, res, next);
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Skip rate limiting for /rate-limit page to avoid redirect loops
+  if (req.path === RATE_LIMIT_PATH) {
+    // Also skip protectPage for /rate-limit
+    next();
     return;
   }
-  next();
+
+  // Skip rate limiting for static files (CSS, JS, images, fonts, etc.)
+  const staticFileExtensions = [
+    '.css',
+    '.js',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.svg',
+    '.ico',
+    '.woff',
+    '.woff2',
+    '.ttf',
+    '.eot',
+  ];
+  const isStaticFile = staticFileExtensions.some((ext) => req.path.endsWith(ext));
+
+  // Skip rate limiting for static paths
+  const staticPaths = ['/styles/', '/js/', '/scripts/', '/assets/', '/images/', '/css/', '/fonts/'];
+  const isStaticPath = staticPaths.some((path) => req.path.startsWith(path));
+
+  if (isStaticFile || isStaticPath) {
+    // Only protect HTML pages
+    if (req.path.endsWith('.html')) {
+      protectPage(req, res, next);
+      return;
+    }
+    next();
+    return;
+  }
+
+  // Apply rate limiter only for non-static routes
+  // Using callback pattern as required by express-rate-limit library
+  // eslint-disable-next-line promise/prefer-await-to-callbacks
+  rateLimiter.public(req, res, (err?: unknown) => {
+    if (err) {
+      next(err);
+      return;
+    }
+    // Only protect HTML pages
+    if (req.path.endsWith('.html')) {
+      protectPage(req, res, next);
+      return;
+    }
+    next();
+  });
 });
 
 // Static files - serve from frontend dist directory (compiled JavaScript)
@@ -208,204 +257,235 @@ app.use(
 
 // Handle /js/ requests - map to TypeScript files in development
 // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
-app.use('/js', rateLimiter.public, (req: Request, res: Response): void => {
-  // Map JS requests to TypeScript source files
-  const jsFileName = path.basename(req.path, '.js');
-
-  // Check mappings for TypeScript files
-  const tsMapping: Record<string, string> = {
-    'unified-navigation': '/scripts/components/unified-navigation.ts',
-    'admin-dashboard': '/scripts/admin-dashboard.ts',
-    'role-switch': '/scripts/role-switch.ts',
-    'header-user-info': '/scripts/header-user-info.ts',
-    'root-dashboard': '/scripts/root-dashboard.ts',
-    auth: '/scripts/auth.ts',
-    blackboard: '/scripts/blackboard.ts',
-    calendar: '/scripts/calendar.ts',
-    chat: '/scripts/chat.ts',
-    shifts: '/scripts/shifts.ts',
-    documents: '/scripts/documents.ts',
-    'employee-dashboard': '/scripts/employee-dashboard.ts',
-    'manage-admins': '/scripts/manage-admins.ts',
-    'admin-profile': '/scripts/admin-profile.ts',
-    'admin-config': '/scripts/admin-config.ts',
-    'components/unified-navigation': '/scripts/components/unified-navigation.ts', // Added mapping for survey-results
-  };
-
-  // Security: Use Map instead of object for safe lookups
-  const tsMappingMap = new Map(Object.entries(tsMapping));
-  const tsPath = tsMappingMap.get(jsFileName) ?? null;
-  if (tsPath !== null && tsPath !== '') {
-    // Redirect to the TypeScript file
-    res.redirect(tsPath);
+app.use('/js', (req: Request, res: Response, next: NextFunction): void => {
+  // Skip rate limiting if parent path is /rate-limit
+  const referer = req.headers.referer ?? '';
+  if (referer.includes(RATE_LIMIT_PATH)) {
+    next();
     return;
   }
 
-  // If no mapping found, try to find it in dist
-  // Sanitize the path to prevent directory traversal
-  const sanitizedReqPath = req.path.substring(1).replace(/\.\./g, '').replace(/\/+/g, '/');
-  const distJsPath = path.resolve(distPath, 'js', sanitizedReqPath);
-
-  // Validate that the resolved path is within the expected directory
-  if (!distJsPath.startsWith(path.resolve(distPath, 'js'))) {
-    res.status(403).send('Forbidden');
-    return;
-  }
-
-  // Security: Validate path is within expected directory
-  const normalizedDistPath = path.normalize(distJsPath);
-  const absoluteDistPath = path.resolve(normalizedDistPath);
-  const expectedDistRoot = path.resolve(distPath);
-
-  if (!normalizedDistPath.includes('..') && absoluteDistPath.startsWith(expectedDistRoot)) {
-    // Use try-catch for file existence check to avoid non-literal fs warning
-    try {
-      fs.accessSync(absoluteDistPath, fs.constants.R_OK);
-      res.type(MIME_TYPE_JAVASCRIPT).sendFile(absoluteDistPath);
+  // Using callback pattern as required by express-rate-limit library
+  // eslint-disable-next-line promise/prefer-await-to-callbacks
+  rateLimiter.public(req, res, (err?: unknown) => {
+    if (err) {
+      next(err);
       return;
-    } catch {
-      // File doesn't exist, continue to fallback
     }
-  }
+    // Map JS requests to TypeScript source files
+    const jsFileName = path.basename(req.path, '.js');
 
-  // Fallback - return empty module
-  // Escape filename to prevent XSS
-  const escapedFileName = jsFileName.replace(/["'\\]/g, '\\$&').replace(/[<>]/g, '');
-  res
-    .type(MIME_TYPE_JAVASCRIPT)
-    .send(
-      `// Module ${escapedFileName} not found\nconsole.warn('Module ${escapedFileName} not found');`,
-    );
+    // Check mappings for TypeScript files
+    const tsMapping: Record<string, string> = {
+      'unified-navigation': '/scripts/components/unified-navigation.ts',
+      'admin-dashboard': '/scripts/admin-dashboard.ts',
+      'role-switch': '/scripts/role-switch.ts',
+      'header-user-info': '/scripts/header-user-info.ts',
+      'root-dashboard': '/scripts/root-dashboard.ts',
+      auth: '/scripts/auth.ts',
+      blackboard: '/scripts/blackboard.ts',
+      calendar: '/scripts/calendar.ts',
+      chat: '/scripts/chat.ts',
+      shifts: '/scripts/shifts.ts',
+      documents: '/scripts/documents.ts',
+      'employee-dashboard': '/scripts/employee-dashboard.ts',
+      'manage-admins': '/scripts/manage-admins.ts',
+      'admin-profile': '/scripts/admin-profile.ts',
+      'admin-config': '/scripts/admin-config.ts',
+      'components/unified-navigation': '/scripts/components/unified-navigation.ts', // Added mapping for survey-results
+    };
+
+    // Security: Use Map instead of object for safe lookups
+    const tsMappingMap = new Map(Object.entries(tsMapping));
+    const tsPath = tsMappingMap.get(jsFileName) ?? null;
+    if (tsPath !== null && tsPath !== '') {
+      // Redirect to the TypeScript file
+      res.redirect(tsPath);
+      return;
+    }
+
+    // If no mapping found, try to find it in dist
+    // Sanitize the path to prevent directory traversal
+    const sanitizedReqPath = req.path.substring(1).replace(/\.\./g, '').replace(/\/+/g, '/');
+    const distJsPath = path.resolve(distPath, 'js', sanitizedReqPath);
+
+    // Validate that the resolved path is within the expected directory
+    if (!distJsPath.startsWith(path.resolve(distPath, 'js'))) {
+      res.status(403).send('Forbidden');
+      return;
+    }
+
+    // Security: Validate path is within expected directory
+    const normalizedDistPath = path.normalize(distJsPath);
+    const absoluteDistPath = path.resolve(normalizedDistPath);
+    const expectedDistRoot = path.resolve(distPath);
+
+    if (!normalizedDistPath.includes('..') && absoluteDistPath.startsWith(expectedDistRoot)) {
+      // Use try-catch for file existence check to avoid non-literal fs warning
+      try {
+        fs.accessSync(absoluteDistPath, fs.constants.R_OK);
+        res.type(MIME_TYPE_JAVASCRIPT).sendFile(absoluteDistPath);
+        return;
+      } catch {
+        // File doesn't exist, continue to fallback
+      }
+    }
+
+    // Fallback - return empty module
+    // Escape filename to prevent XSS
+    const escapedFileName = jsFileName.replace(/["'\\]/g, '\\$&').replace(/[<>]/g, '');
+    res
+      .type(MIME_TYPE_JAVASCRIPT)
+      .send(
+        `// Module ${escapedFileName} not found\nconsole.warn('Module ${escapedFileName} not found');`,
+      );
+  });
 });
 
 // Development mode: Handle TypeScript files
 app.use(
   '/scripts',
-  rateLimiter.public,
   // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
+  // eslint-disable-next-line @typescript-eslint/require-await
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    if (!req.path.endsWith('.ts')) {
+    // Skip rate limiting if parent path is /rate-limit
+    const referer = req.headers.referer ?? '';
+    if (referer.includes(RATE_LIMIT_PATH)) {
       next();
       return;
     }
 
-    // Sanitize the path to prevent directory traversal
-    const sanitizedPath = req.path.replace(/\.\./g, '').replace(/\/+/g, '/');
-    const filename = sanitizedPath.slice(1, -3); // Remove leading / and .ts extension
-
-    // In development, check if compiled JS exists first
-    const jsPath = path.resolve(distPath, 'js', `${filename}.js`);
-    // Validate that the resolved path is within the expected directory
-    if (!jsPath.startsWith(path.resolve(distPath, 'js'))) {
-      res.status(403).send('Forbidden');
-      return;
-    }
-
-    // Security: Validate path is within expected directory
-    const normalizedJsPath = path.normalize(jsPath);
-    const absoluteJsPath = path.resolve(normalizedJsPath);
-    const expectedJsRoot = path.resolve(distPath, 'js');
-
-    if (!normalizedJsPath.includes('..') && absoluteJsPath.startsWith(expectedJsRoot)) {
-      // Use try-catch for file existence check to avoid non-literal fs warning
-      try {
-        fs.accessSync(absoluteJsPath, fs.constants.R_OK);
-        console.info(`[DEBUG] Serving compiled JS instead of TS: ${absoluteJsPath}`);
-        res.type(MIME_TYPE_JAVASCRIPT).sendFile(absoluteJsPath);
+    // Apply rate limiter
+    // Using callback pattern as required by express-rate-limit library
+    // eslint-disable-next-line promise/prefer-await-to-callbacks, @typescript-eslint/no-misused-promises
+    rateLimiter.public(req, res, async (err?: unknown) => {
+      if (err) {
+        next(err);
         return;
-      } catch {
-        // File doesn't exist, continue
       }
-    }
+      if (!req.path.endsWith('.ts')) {
+        next();
+        return;
+      }
 
-    // Serve TypeScript file directly from src
-    const requestPath = sanitizedPath.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
+      // Sanitize the path to prevent directory traversal
+      const sanitizedPath = req.path.replace(/\.\./g, '').replace(/\/+/g, '/');
+      const filename = sanitizedPath.slice(1, -3); // Remove leading / and .ts extension
 
-    // Special handling for components subdirectory
-    const mappings: Record<string, string> = {
-      'components/unified-navigation': 'scripts/components/unified-navigation.ts',
-    };
+      // In development, check if compiled JS exists first
+      const jsPath = path.resolve(distPath, 'js', `${filename}.js`);
+      // Validate that the resolved path is within the expected directory
+      if (!jsPath.startsWith(path.resolve(distPath, 'js'))) {
+        res.status(403).send('Forbidden');
+        return;
+      }
 
-    let actualTsPath: string;
+      // Security: Validate path is within expected directory
+      const normalizedJsPath = path.normalize(jsPath);
+      const absoluteJsPath = path.resolve(normalizedJsPath);
+      const expectedJsRoot = path.resolve(distPath, 'js');
 
-    // Check if we need to map the path - Security: Use Map for safe lookups
-    const mappingsMap = new Map(Object.entries(mappings));
-    const mappedPath = mappingsMap.get(requestPath);
-
-    if (mappedPath !== undefined) {
-      actualTsPath = path.resolve(srcPath, mappedPath);
-    } else {
-      actualTsPath = path.resolve(srcPath, 'scripts', sanitizedPath.replace(/^\/scripts\//, ''));
-    }
-
-    // Validate that the resolved path is within the src directory
-    if (!actualTsPath.startsWith(path.resolve(srcPath))) {
-      res.status(403).send('Forbidden');
-      return;
-    }
-
-    // Security: Validate path is within expected directory
-    const normalizedTsPath = path.normalize(actualTsPath);
-    const absoluteTsPath = path.resolve(normalizedTsPath);
-    const expectedSrcRoot = path.resolve(srcPath);
-
-    if (!normalizedTsPath.includes('..') && absoluteTsPath.startsWith(expectedSrcRoot)) {
-      // Use try-catch for both file existence and reading
-      try {
-        await fs.promises.access(absoluteTsPath, fs.constants.R_OK);
-        console.info(`[DEBUG] Serving TypeScript file: ${absoluteTsPath}`);
-
-        // Read the TypeScript file - path has been fully validated above
-        // The security warning here is a false positive as we've validated:
-        // 1. Path doesn't contain ".."
-        // 2. Path is within srcPath directory
-        // 3. File exists and is readable
-        // 4. Additional validation for security compliance
-        if (!absoluteTsPath.startsWith(expectedSrcRoot)) {
-          throw new Error('Invalid file path');
+      if (!normalizedJsPath.includes('..') && absoluteJsPath.startsWith(expectedJsRoot)) {
+        // Use try-catch for file existence check to avoid non-literal fs warning
+        try {
+          fs.accessSync(absoluteJsPath, fs.constants.R_OK);
+          console.info(`[DEBUG] Serving compiled JS instead of TS: ${absoluteJsPath}`);
+          res.type(MIME_TYPE_JAVASCRIPT).sendFile(absoluteJsPath);
+          return;
+        } catch {
+          // File doesn't exist, continue
         }
-        // Safe: Path has been validated above - no "..", within srcPath, and access checked
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        const tsContent = await fs.promises.readFile(absoluteTsPath, 'utf8');
-
-        // Transform TypeScript to JavaScript-compatible code
-        let transformedContent = tsContent
-          // Remove TypeScript-only import type statements
-          .replace(/import\s+type\s+\{[^}]+\}\s+from\s+[""'][^""']+[""'];?\s*/g, '')
-          // Remove declare global blocks - Security: Simplified regex to prevent ReDoS
-          .replace(/declare\s+global\s*\{[^}]*\}/g, '')
-          // Handle nested braces with multiple passes if needed
-          .replace(/declare\s+global\s*\{[^{}]*\{[^}]*\}[^}]*\}/g, '')
-          // Transform regular imports to add .ts extension
-          .replace(/from\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "from '$1.ts'")
-          .replace(/import\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "import '$1.ts'");
-
-        res.type(MIME_TYPE_JAVASCRIPT).send(transformedContent);
-      } catch {
-        // File doesn't exist or can't be read
-        console.warn(`[DEBUG] TypeScript file not accessible: ${actualTsPath}`);
       }
-    } else {
-      // For missing files, return empty module to avoid syntax errors
-      console.warn(`[DEBUG] TypeScript file not found: ${actualTsPath}, returning empty module`);
 
-      // Escape filename to prevent XSS
-      const escapedFilename = filename
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r')
-        .replace(/\t/g, '\\t')
-        .replace(/</g, '\\x3C')
-        .replace(/>/g, '\\x3E');
+      // Serve TypeScript file directly from src
+      const requestPath = sanitizedPath.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
 
-      res
-        .type(MIME_TYPE_JAVASCRIPT)
-        .send(
-          `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found, loaded empty placeholder');`,
-        );
-    }
+      // Special handling for components subdirectory
+      const mappings: Record<string, string> = {
+        'components/unified-navigation': 'scripts/components/unified-navigation.ts',
+      };
+
+      let actualTsPath: string;
+
+      // Check if we need to map the path - Security: Use Map for safe lookups
+      const mappingsMap = new Map(Object.entries(mappings));
+      const mappedPath = mappingsMap.get(requestPath);
+
+      if (mappedPath !== undefined) {
+        actualTsPath = path.resolve(srcPath, mappedPath);
+      } else {
+        actualTsPath = path.resolve(srcPath, 'scripts', sanitizedPath.replace(/^\/scripts\//, ''));
+      }
+
+      // Validate that the resolved path is within the src directory
+      if (!actualTsPath.startsWith(path.resolve(srcPath))) {
+        res.status(403).send('Forbidden');
+        return;
+      }
+
+      // Security: Validate path is within expected directory
+      const normalizedTsPath = path.normalize(actualTsPath);
+      const absoluteTsPath = path.resolve(normalizedTsPath);
+      const expectedSrcRoot = path.resolve(srcPath);
+
+      if (!normalizedTsPath.includes('..') && absoluteTsPath.startsWith(expectedSrcRoot)) {
+        // Use try-catch for both file existence and reading
+        try {
+          await fs.promises.access(absoluteTsPath, fs.constants.R_OK);
+          console.info(`[DEBUG] Serving TypeScript file: ${absoluteTsPath}`);
+
+          // Read the TypeScript file - path has been fully validated above
+          // The security warning here is a false positive as we've validated:
+          // 1. Path doesn't contain ".."
+          // 2. Path is within srcPath directory
+          // 3. File exists and is readable
+          // 4. Additional validation for security compliance
+          if (!absoluteTsPath.startsWith(expectedSrcRoot)) {
+            throw new Error('Invalid file path');
+          }
+          // Safe: Path has been validated above - no "..", within srcPath, and access checked
+          // eslint-disable-next-line security/detect-non-literal-fs-filename
+          const tsContent = await fs.promises.readFile(absoluteTsPath, 'utf8');
+
+          // Transform TypeScript to JavaScript-compatible code
+          let transformedContent = tsContent
+            // Remove TypeScript-only import type statements
+            .replace(/import\s+type\s+\{[^}]+\}\s+from\s+[""'][^""']+[""'];?\s*/g, '')
+            // Remove declare global blocks - Security: Simplified regex to prevent ReDoS
+            .replace(/declare\s+global\s*\{[^}]*\}/g, '')
+            // Handle nested braces with multiple passes if needed
+            .replace(/declare\s+global\s*\{[^{}]*\{[^}]*\}[^}]*\}/g, '')
+            // Transform regular imports to add .ts extension
+            .replace(/from\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "from '$1.ts'")
+            .replace(/import\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "import '$1.ts'");
+
+          res.type(MIME_TYPE_JAVASCRIPT).send(transformedContent);
+        } catch {
+          // File doesn't exist or can't be read
+          console.warn(`[DEBUG] TypeScript file not accessible: ${actualTsPath}`);
+        }
+      } else {
+        // For missing files, return empty module to avoid syntax errors
+        console.warn(`[DEBUG] TypeScript file not found: ${actualTsPath}, returning empty module`);
+
+        // Escape filename to prevent XSS
+        const escapedFilename = filename
+          .replace(/\\/g, '\\\\')
+          .replace(/'/g, "\\'")
+          .replace(/"/g, '\\"')
+          .replace(/\n/g, '\\n')
+          .replace(/\r/g, '\\r')
+          .replace(/\t/g, '\\t')
+          .replace(/</g, '\\x3C')
+          .replace(/>/g, '\\x3E');
+
+        res
+          .type(MIME_TYPE_JAVASCRIPT)
+          .send(
+            `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found, loaded empty placeholder');`,
+          );
+      }
+    });
   },
 );
 
@@ -471,7 +551,49 @@ app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
 
 // Apply general rate limiting to all routes (HTML and API)
 // This provides a baseline protection against DoS attacks
-app.use(generalLimiter);
+// IMPORTANT: Exclude /rate-limit and static files to prevent redirect loops
+app.use((req: Request, res: Response, next: NextFunction): void => {
+  // Skip rate limiting for /rate-limit page to avoid redirect loops
+  if (req.path === RATE_LIMIT_PATH) {
+    next();
+    return;
+  }
+
+  // Skip rate limiting for static files (CSS, JS, images, fonts, etc.)
+  const staticFileExtensions = [
+    '.css',
+    '.js',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.svg',
+    '.ico',
+    '.woff',
+    '.woff2',
+    '.ttf',
+    '.eot',
+  ];
+  const isStaticFile = staticFileExtensions.some((ext) => req.path.endsWith(ext));
+
+  // Skip rate limiting for static paths
+  const staticPaths = ['/styles/', '/js/', '/scripts/', '/assets/', '/images/', '/css/', '/fonts/'];
+  const isStaticPath = staticPaths.some((path) => req.path.startsWith(path));
+
+  if (isStaticFile || isStaticPath) {
+    next();
+    return;
+  }
+
+  // Skip general rate limiting for ALL API v2 requests (they have their own rate limiters)
+  // This includes both Bearer token and Cookie-based authentication
+  if (req.path.startsWith('/api/v2/')) {
+    next();
+    return;
+  }
+
+  generalLimiter(req, res, next);
+});
 
 // Additional rate limiting for API routes with exemptions
 app.use('/api', (req: Request, _res: Response, next: NextFunction): void => {
@@ -565,6 +687,14 @@ app.get('/login', (_req: Request, res: Response): void => {
   const projectRoot = process.cwd(); // In Docker this is /app
   const loginPath = path.join(projectRoot, 'frontend', 'src', 'pages', 'login.html');
   res.sendFile(loginPath);
+});
+
+// Rate limit page endpoint - MUST BE BEFORE OTHER ROUTES
+app.get(RATE_LIMIT_PATH, (_req: Request, res: Response): void => {
+  console.info('[DEBUG] GET /rate-limit - serving rate limit page');
+  const projectRoot = process.cwd(); // In Docker this is /app
+  const rateLimitPath = path.join(projectRoot, 'frontend', 'src', 'pages', 'rate-limit.html');
+  res.sendFile(rateLimitPath);
 });
 
 app.post('/login', async (req: Request, res: Response, _next: NextFunction): Promise<void> => {

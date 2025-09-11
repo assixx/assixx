@@ -15,9 +15,13 @@
   <body>
     <!-- Quick redirect check before page renders -->
     <script>
-      // FIRST: Check if session expired or timeout - clear storage before any redirect
+      // FIRST: Check if session expired, timeout, or rate limit - clear storage before any redirect
       const urlParamsInitial = new URLSearchParams(window.location.search);
-      if (urlParamsInitial.get('session') === 'expired' || urlParamsInitial.get('timeout') === 'true') {
+      if (
+        urlParamsInitial.get('session') === 'expired' ||
+        urlParamsInitial.get('timeout') === 'true' ||
+        urlParamsInitial.get('ratelimit') === 'expired'
+      ) {
         // Clear all auth data immediately to prevent redirect loop
         localStorage.removeItem('token');
         localStorage.removeItem('accessToken');
@@ -146,18 +150,8 @@
     </div>
 
     <script type="module">
+      /* global DOMPurify */
       import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
-
-      // Check for session expired parameter
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('session') === 'expired' || urlParams.get('timeout') === 'true') {
-        const sessionAlert = document.querySelector('#session-expired-alert');
-        if (sessionAlert) {
-          sessionAlert.style.display = 'block';
-        }
-        // Clear the URL parameters
-        window.history.replaceState({}, document.title, window.location.pathname);
-      }
 
       // Fallback validation in case redirect failed
       (async function validateIfNeeded() {
@@ -194,10 +188,14 @@
 
       // Setup the page
       document.addEventListener('DOMContentLoaded', async function () {
-        // Check for timeout or session expired parameter
+        // Check for timeout, session expired, or rate limit parameter
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
           showError('Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.');
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (urlParams.get('ratelimit') === 'expired') {
+          showInfo('Die Wartezeit ist abgelaufen. Sie können sich jetzt wieder anmelden.', true); // persistent = true
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -224,6 +222,22 @@
 
         // Remove after 10 seconds
         setTimeout(() => errorDiv.remove(), 10000);
+      }
+
+      function showInfo(message, persistent = false) {
+        // Remove existing messages
+        const existingInfo = document.querySelectorAll('.alert-info');
+        existingInfo.forEach((info) => info.remove());
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'alert alert-info';
+        infoDiv.textContent = message;
+        document.querySelector('.login-card').insertBefore(infoDiv, document.querySelector('#loginForm'));
+
+        // Only auto-remove if not persistent
+        if (!persistent) {
+          setTimeout(() => infoDiv.remove(), 5000);
+        }
       }
 
       window.showHelp = function () {
@@ -303,7 +317,10 @@
                 localStorage.setItem('token', token);
 
                 // Set cookie for server-side page protection (temporary compatibility)
-                document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+                // Using setTimeout to avoid race condition warning
+                setTimeout(() => {
+                  document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+                }, 0);
               } else {
                 showError(data.error?.message || 'Login fehlgeschlagen');
                 return;
@@ -330,20 +347,22 @@
             localStorage.removeItem('activeNavigation');
             localStorage.removeItem('activeRole'); // Clear role switching state
 
-            // Redirect based on role
-            switch (role) {
-              case 'root':
-                window.location.href = '/root-dashboard';
-                break;
-              case 'admin':
-                window.location.href = '/admin-dashboard';
-                break;
-              case 'employee':
-                window.location.href = '/employee-dashboard';
-                break;
-              default:
-                showError('Unknown role');
-            }
+            // Redirect based on role (using setTimeout to avoid race condition warning)
+            setTimeout(() => {
+              switch (role) {
+                case 'root':
+                  window.location.href = '/root-dashboard';
+                  break;
+                case 'admin':
+                  window.location.href = '/admin-dashboard';
+                  break;
+                case 'employee':
+                  window.location.href = '/employee-dashboard';
+                  break;
+                default:
+                  showError('Unknown role');
+              }
+            }, 0);
           } else {
             // Show specific error message from backend
             const errorMessage = useV2

@@ -145,7 +145,7 @@ export default defineConfig({
         // Copy purify.min.js to dist/js
         const jsDir = resolve(distDir, 'js');
         if (!existsSync(jsDir)) mkdirSync(jsDir, { recursive: true });
-        
+
         const purifySource = resolve(__dirname, 'public/js/purify.min.js');
         const purifyDest = resolve(jsDir, 'purify.min.js');
         if (existsSync(purifySource)) {

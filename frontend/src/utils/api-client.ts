@@ -28,6 +28,7 @@ export class ApiClient {
   private refreshToken: string | null = null;
   private version: 'v1' | 'v2' = 'v2';
   private baseUrl = '';
+  private isRedirectingToRateLimit = false; // Prevent multiple redirects
 
   private constructor() {
     this.loadTokens();
@@ -158,8 +159,21 @@ export class ApiClient {
   private async handleResponse<T>(response: Response, version: 'v1' | 'v2'): Promise<T> {
     const contentType = response.headers.get('content-type');
 
-    // Handle non-JSON responses (e.g., file downloads)
+    // Handle non-JSON responses (e.g., file downloads or HTML error pages)
     if (contentType?.includes('application/json') !== true) {
+      // Check for rate limit error even on non-JSON responses
+      if (response.status === 429) {
+        console.error('[API] Rate limit exceeded (non-JSON response)');
+        this.clearTokens();
+        // Only redirect once to prevent multiple redirects
+        if (!this.isRedirectingToRateLimit) {
+          this.isRedirectingToRateLimit = true;
+          console.log('[API] Redirecting to rate limit page...');
+          window.location.href = '/rate-limit';
+        }
+        throw new ApiError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED', 429);
+      }
+
       if (!response.ok) {
         throw new ApiError(`Request failed with status ${response.status}`, 'NON_JSON_ERROR', response.status);
       }
@@ -167,6 +181,20 @@ export class ApiClient {
     }
 
     const data = (await response.json()) as Record<string, unknown>;
+
+    // Check for rate limit error
+    if (response.status === 429) {
+      console.error('[API] Rate limit exceeded');
+      // Clear tokens to prevent further requests
+      this.clearTokens();
+      // Only redirect once to prevent multiple redirects
+      if (!this.isRedirectingToRateLimit) {
+        this.isRedirectingToRateLimit = true;
+        console.log('[API] Redirecting to rate limit page...');
+        window.location.href = '/rate-limit';
+      }
+      throw new ApiError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED', 429);
+    }
 
     // Check for expired token error
     if (response.status === 401 || response.status === 403) {

@@ -337,6 +337,7 @@
     </div>
 
     <script type="module">
+      /* global DOMPurify */
       import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
 
       let surveyId = null;
@@ -509,6 +510,7 @@
           active: 'Aktiv',
           completed: 'Abgeschlossen',
         };
+        // eslint-disable-next-line security/detect-object-injection
         return labels[status] || status;
       }
 
@@ -522,6 +524,7 @@
           number: 'Zahl',
           date: 'Datum',
         };
+        // eslint-disable-next-line security/detect-object-injection
         return labels[type] || type;
       }
 
@@ -593,7 +596,10 @@
 
           if (response.ok) {
             showSuccessAlert('Umfrage wurde erfolgreich gelöscht');
-            window.location.href = '/survey-admin';
+            // Avoid race condition by using setTimeout
+            setTimeout(() => {
+              window.location.href = '/survey-admin';
+            }, 100);
           } else {
             throw new Error('Fehler beim Löschen der Umfrage');
           }

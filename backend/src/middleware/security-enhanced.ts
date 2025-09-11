@@ -217,7 +217,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Zu viele Anfragen - Assixx</title>
-          <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet">
+          <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
           <style>
             :root {
               --primary-color: #2196f3;
@@ -233,7 +233,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
             * { margin: 0; padding: 0; box-sizing: border-box; }
 
             body {
-              font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
               background: #000000;
               min-height: 100vh;
               display: flex;
@@ -379,17 +379,17 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
 
 // API Rate Limiters - Enhanced with more granular controls
 export const generalLimiter = createTenantRateLimiter(
-  15 * 60 * 1000,
+  60 * 1000, // 1 minute for testing
   process.env.NODE_ENV === 'test' ? 100000
   : process.env.NODE_ENV === 'development' ? 50000
-  : 1000,
-); // 100000 requests per 15 minutes in test, 50000 in dev (erhöht für Testing), 1000 in prod
+  : 5000,
+); // 100000 requests per minute in test, 50000 in dev, 5000 in prod (erhöht für normale Dashboard-Nutzung)
 export const authLimiter = createTenantRateLimiter(
-  15 * 60 * 1000,
+  60 * 1000, // 1 minute for testing
   process.env.NODE_ENV === 'test' ? 100000
   : process.env.NODE_ENV === 'development' ? 100
   : 5,
-); // 100000 auth attempts in test, 100 in dev, 5 in prod
+); // 100000 auth attempts in test, 100 in dev, 5 in prod (per minute)
 export const uploadLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
   process.env.NODE_ENV === 'development' ? 100 : 10,
@@ -402,12 +402,12 @@ export const strictAuthLimiter = createTenantRateLimiter(
 ); // 50 login attempts in dev, 3 in prod
 export const apiLimiter = createTenantRateLimiter(
   60 * 1000,
-  process.env.NODE_ENV === 'development' ? 1000 : 100,
-); // 1000 API requests per minute in dev, 100 in prod
+  process.env.NODE_ENV === 'development' ? 10000 : 5000,
+); // 10000 API requests per minute in dev, 5000 in prod (ERHÖHT für Dashboard)
 export const searchLimiter = createTenantRateLimiter(
   60 * 1000,
-  process.env.NODE_ENV === 'development' ? 300 : 30,
-); // 300 search requests per minute in dev, 30 in prod
+  process.env.NODE_ENV === 'development' ? 500 : 200,
+); // 500 search requests per minute in dev, 200 in prod (ERHÖHT)
 export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 5); // 5 bulk operations per hour
 export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 20); // 20 reports per hour
 

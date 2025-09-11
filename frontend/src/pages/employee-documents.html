@@ -595,6 +595,7 @@
 
     <!-- JavaScript -->
     <script>
+      /* global DOMPurify */
       document.addEventListener('DOMContentLoaded', () => {
         const documentTableBody = document.querySelector('#document-table-body');
         const noDocumentsMessage = document.querySelector('#no-documents');
@@ -849,7 +850,7 @@
           }, 4000);
         }
 
-        function showSuccess(message) {
+        window.showSuccess = function (message) {
           const notification = document.createElement('div');
           notification.className = 'notification notification-success';
           // Safe: HTML structure with escaped message content via textContent
@@ -870,7 +871,7 @@
               notification.remove();
             }, 300);
           }, 3000);
-        }
+        };
 
         function showInfo(message) {
           const notification = document.createElement('div');
