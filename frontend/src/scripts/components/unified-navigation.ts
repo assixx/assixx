@@ -469,137 +469,139 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (token === null || token === 'test-mode') return;
 
-      // Make direct API call to get full user data including company_name
       console.info('[UnifiedNav] Fetching full user profile with company data');
-
-      // Check if we should use v1 or v2 API
       const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? window.FEATURE_FLAGS?.USE_API_V2_USERS;
-      console.info('[UnifiedNav] useV2 flag:', useV2); // DEBUG
+      console.info('[UnifiedNav] useV2 flag:', useV2);
 
-      try {
-        if (useV2 === true) {
-          // Use v2 API - /users/me endpoint
-          console.info('[UnifiedNav] Calling apiClient.get for /users/me'); // DEBUG
-          const userData = await apiClient.get<UserProfileResponse>('/users/me');
-          console.info('[UnifiedNav] Full user data from v2 API:', userData); // DEBUG
-
-          // userData is always defined from apiClient.get, no need to check
-
-          // Update company info - check tenant and fallback properties
-          const companyElement = $$('#sidebar-company-name');
-          const companyName = userData.tenant?.company_name ?? userData.companyName;
-          if (companyElement && companyName !== undefined) {
-            console.info('[UnifiedNav] Setting company name to:', companyName); // DEBUG
-            companyElement.textContent = companyName;
-          }
-
-          const domainElement = $$('#sidebar-domain');
-          const subdomain = userData.tenant?.subdomain ?? userData.subdomain;
-          if (domainElement && subdomain !== undefined) {
-            domainElement.textContent = `${subdomain}.assixx.de`;
-          }
-
-          // Update user info card with full details
-          const sidebarUserName = $$('#sidebar-user-name');
-          if (sidebarUserName) {
-            sidebarUserName.textContent = userData.email;
-          }
-
-          const sidebarFullName = $$('#sidebar-user-fullname');
-          if (sidebarFullName) {
-            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
-            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
-            if (firstName !== '' || lastName !== '') {
-              const fullName = `${firstName} ${lastName}`.trim();
-              sidebarFullName.textContent = fullName;
-            }
-          }
-
-          // Birthdate removed as requested
-
-          // Update employee number
-          const sidebarEmployeeNumber = $$('#sidebar-employee-number');
-          interface UserDataWithEmployeeNumber extends UserProfileResponse {
-            employee_number?: string;
-            data?: {
-              employeeNumber?: string;
-              employee_number?: string;
-            };
-          }
-          const userDataTyped = userData as UserDataWithEmployeeNumber;
-          const employeeNumber =
-            userData.employeeNumber ??
-            userDataTyped.employee_number ??
-            userData.data?.employeeNumber ??
-            userDataTyped.data?.employee_number;
-          if (sidebarEmployeeNumber && employeeNumber !== undefined) {
-            console.info('[UnifiedNav] Setting employee number to:', employeeNumber); // DEBUG
-            if (employeeNumber !== '000001') {
-              sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
-            } else {
-              sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
-              sidebarEmployeeNumber.style.color = 'var(--warning-color)';
-            }
-          }
-
-          // Update header user name with full name
-          const headerUserName = $$('#user-name');
-          if (headerUserName) {
-            // Same logic as sidebar-user-fullname which works correctly
-            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
-            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
-            console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
-
-            if (firstName !== '' || lastName !== '') {
-              const fullName = `${firstName} ${lastName}`.trim();
-              headerUserName.textContent = fullName;
-              console.info('[UnifiedNav] Set header name to:', fullName);
-            } else {
-              // Fallback auf Email oder Username wenn keine Namen vorhanden
-              headerUserName.textContent = userData.email;
-              console.info('[UnifiedNav] Fallback to email:', userData.email);
-            }
-          }
-
-          // Update avatar if we have profile picture
-          const sidebarAvatar = $$('#sidebar-user-avatar');
-          if (sidebarAvatar) {
-            // API v2 uses profilePictureUrl
-            const profilePic =
-              userData.profilePictureUrl ??
-              userData.profilePicture ??
-              userData.data?.profilePicture ??
-              userData.data?.profile_picture ??
-              null;
-            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
-            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
-            this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
-          }
-
-          // Also update header avatar
-          const headerAvatar = $$('#user-avatar');
-          if (headerAvatar) {
-            // API v2 uses profilePictureUrl
-            const profilePic =
-              userData.profilePictureUrl ??
-              userData.profilePicture ??
-              userData.data?.profilePicture ??
-              userData.data?.profile_picture ??
-              null;
-            const firstName = userData.firstName ?? userData.data?.firstName ?? '';
-            const lastName = userData.lastName ?? userData.data?.lastName ?? '';
-            this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
-          }
-
-          // Store profile data
-          this.userProfileData = userData;
-        }
-      } catch (error) {
-        console.error('[UnifiedNav] Error in v2 API call:', error);
+      if (useV2 === true) {
+        await this.loadV2UserProfile();
       }
     } catch (error) {
       console.error('[UnifiedNav] Error loading full user profile:', error);
     }
+  }
+
+  private async loadV2UserProfile(): Promise<void> {
+    try {
+      console.info('[UnifiedNav] Calling apiClient.get for /users/me');
+      const userData = await apiClient.get<UserProfileResponse>('/users/me');
+      console.info('[UnifiedNav] Full user data from v2 API:', userData);
+
+      this.updateCompanyInfo(userData);
+      this.updateUserInfo(userData);
+      this.updateEmployeeNumber(userData);
+      this.updateHeaderUserName(userData);
+      this.updateAvatars(userData);
+
+      this.userProfileData = userData;
+    } catch (error) {
+      console.error('[UnifiedNav] Error in v2 API call:', error);
+    }
+  }
+
+  private updateCompanyInfo(userData: UserProfileResponse): void {
+    const companyElement = $$('#sidebar-company-name');
+    const companyName = userData.tenant?.company_name ?? userData.companyName;
+    if (companyElement && companyName !== undefined) {
+      console.info('[UnifiedNav] Setting company name to:', companyName);
+      companyElement.textContent = companyName;
+    }
+
+    const domainElement = $$('#sidebar-domain');
+    const subdomain = userData.tenant?.subdomain ?? userData.subdomain;
+    if (domainElement && subdomain !== undefined) {
+      domainElement.textContent = `${subdomain}.assixx.de`;
+    }
+  }
+
+  private updateUserInfo(userData: UserProfileResponse): void {
+    const sidebarUserName = $$('#sidebar-user-name');
+    if (sidebarUserName) {
+      sidebarUserName.textContent = userData.email;
+    }
+
+    const sidebarFullName = $$('#sidebar-user-fullname');
+    if (sidebarFullName) {
+      const firstName = userData.firstName ?? userData.data?.firstName ?? '';
+      const lastName = userData.lastName ?? userData.data?.lastName ?? '';
+      if (firstName !== '' || lastName !== '') {
+        const fullName = `${firstName} ${lastName}`.trim();
+        sidebarFullName.textContent = fullName;
+      }
+    }
+  }
+
+  private updateEmployeeNumber(userData: UserProfileResponse): void {
+    const sidebarEmployeeNumber = $$('#sidebar-employee-number');
+    if (!sidebarEmployeeNumber) return;
+
+    interface UserDataWithEmployeeNumber extends UserProfileResponse {
+      employee_number?: string;
+      data?: {
+        employeeNumber?: string;
+        employee_number?: string;
+      };
+    }
+    const userDataTyped = userData as UserDataWithEmployeeNumber;
+    const employeeNumber =
+      userData.employeeNumber ??
+      userDataTyped.employee_number ??
+      userData.data?.employeeNumber ??
+      userDataTyped.data?.employee_number;
+
+    if (employeeNumber !== undefined) {
+      console.info('[UnifiedNav] Setting employee number to:', employeeNumber);
+      if (employeeNumber !== '000001') {
+        sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
+      } else {
+        sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
+        sidebarEmployeeNumber.style.color = 'var(--warning-color)';
+      }
+    }
+  }
+
+  private updateHeaderUserName(userData: UserProfileResponse): void {
+    const headerUserName = $$('#user-name');
+    if (!headerUserName) return;
+
+    const firstName = userData.firstName ?? userData.data?.firstName ?? '';
+    const lastName = userData.lastName ?? userData.data?.lastName ?? '';
+    console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
+
+    if (firstName !== '' || lastName !== '') {
+      const fullName = `${firstName} ${lastName}`.trim();
+      headerUserName.textContent = fullName;
+      console.info('[UnifiedNav] Set header name to:', fullName);
+    } else {
+      headerUserName.textContent = userData.email;
+      console.info('[UnifiedNav] Fallback to email:', userData.email);
+    }
+  }
+
+  private updateAvatars(userData: UserProfileResponse): void {
+    const profilePic = this.extractProfilePicture(userData);
+    const firstName = userData.firstName ?? userData.data?.firstName ?? '';
+    const lastName = userData.lastName ?? userData.data?.lastName ?? '';
+
+    const sidebarAvatar = $$('#sidebar-user-avatar');
+    if (sidebarAvatar) {
+      this.updateAvatarElement(sidebarAvatar, profilePic, firstName, lastName);
+    }
+
+    const headerAvatar = $$('#user-avatar');
+    if (headerAvatar) {
+      this.updateAvatarElement(headerAvatar, profilePic, firstName, lastName);
+    }
+  }
+
+  private extractProfilePicture(userData: UserProfileResponse): string | null {
+    return (
+      userData.profilePictureUrl ??
+      userData.profilePicture ??
+      userData.data?.profilePicture ??
+      userData.data?.profile_picture ??
+      null
+    );
   }
 
   private getNavigationItems(): NavigationItems {
@@ -1146,56 +1148,89 @@ class UnifiedNavigation {
   }
 
   private createFullNavigationStructure(): string {
-    // Get the actual user role from localStorage
+    const { storedUserRole, activeRole, userRole } = this.getUserRoles();
+    const { displayName, firstName, lastName, profilePicture } = this.getUserDisplayInfo();
+    const dashboardUrl = this.getDashboardUrl(storedUserRole, userRole);
+    const logoSrc = this.getLogoSrc();
+    const warningBanner = this.createRoleSwitchBanner(storedUserRole, activeRole);
+    const roleSwitchDropdown = this.createRoleSwitchDropdown(userRole, activeRole);
+    const userAvatar = this.createUserAvatar(profilePicture, firstName, lastName);
+
+    return `
+      ${this.createHeader(dashboardUrl, logoSrc, roleSwitchDropdown, userAvatar, displayName)}
+      ${this.createLogoutModal()}
+      ${warningBanner}
+      <!-- Sidebar -->
+      <aside class="sidebar ${this.isCollapsed ? 'collapsed' : ''}">
+        ${this.createNavigationHTML()}
+      </aside>
+    `;
+  }
+
+  private getUserRoles(): { storedUserRole: string | null; activeRole: string | null; userRole: string } {
     const storedUserRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole') ?? storedUserRole;
-
-    // Use the actual stored role for determining which UI elements to show
     const userRole = storedUserRole ?? 'employee';
+    return { storedUserRole, activeRole, userRole };
+  }
 
+  private getUserDisplayInfo(): {
+    displayName: string;
+    firstName: string;
+    lastName: string;
+    profilePicture: string | null;
+  } {
     const userName = this.userProfileData?.username ?? this.currentUser?.username ?? 'User';
     const firstName = this.userProfileData?.firstName ?? this.userProfileData?.first_name ?? '';
     const lastName = this.userProfileData?.lastName ?? this.userProfileData?.last_name ?? '';
     const displayName = firstName !== '' && lastName !== '' ? `${firstName} ${lastName}` : userName;
-    // API v2 uses profilePictureUrl
+
     let profilePicture =
       this.userProfileData?.profilePictureUrl ??
       this.userProfileData?.profilePicture ??
       this.userProfileData?.profile_picture ??
       null;
 
-    // Convert empty strings to null for proper avatar display
     if (profilePicture === '') {
       profilePicture = null;
     }
 
-    // Determine dashboard URL - ROOT users ALWAYS go to root dashboard
-    const dashboardUrl =
-      storedUserRole === 'root'
-        ? 'root-dashboard'
-        : userRole === 'admin'
-          ? 'admin-dashboard?section=dashboard'
-          : 'employee-dashboard';
+    return { displayName, firstName, lastName, profilePicture };
+  }
 
-    // Determine which logo to use based on sidebar collapsed state
-    const logoSrc = this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
+  private getDashboardUrl(storedUserRole: string | null, userRole: string): string {
+    return storedUserRole === 'root'
+      ? 'root-dashboard'
+      : userRole === 'admin'
+        ? 'admin-dashboard?section=dashboard'
+        : 'employee-dashboard';
+  }
 
-    // Check if user has switched roles and banner hasn't been dismissed
+  private getLogoSrc(): string {
+    return this.isCollapsed ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
+  }
+
+  private createRoleSwitchBanner(storedUserRole: string | null, activeRole: string | null): string {
     const isRoleSwitched = storedUserRole !== activeRole && activeRole !== null;
     const bannerDismissedKey =
       activeRole !== null ? `roleSwitchBannerDismissed_${activeRole}` : 'roleSwitchBannerDismissed_default';
     const isBannerDismissed = localStorage.getItem(bannerDismissedKey) === 'true';
 
-    const warningBanner =
-      isRoleSwitched && !isBannerDismissed
-        ? `
+    if (!isRoleSwitched || isBannerDismissed) {
+      return '';
+    }
+
+    const currentRoleText = activeRole === 'employee' ? 'Mitarbeiter' : activeRole === 'admin' ? 'Admin' : 'Root';
+    const originalRoleText = storedUserRole === 'root' ? 'Root' : storedUserRole === 'admin' ? 'Admin' : 'Mitarbeiter';
+
+    return `
       <!-- Role Switch Warning Banner -->
       <div class="role-switch-banner" id="role-switch-warning-banner">
         <div class="role-switch-banner-content">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" style="margin-right: 8px;">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
           </svg>
-          <span>Sie agieren derzeit als <strong>${activeRole === 'employee' ? 'Mitarbeiter' : activeRole === 'admin' ? 'Admin' : 'Root'}</strong>. Ihre ursprüngliche Rolle ist <strong>${storedUserRole === 'root' ? 'Root' : storedUserRole === 'admin' ? 'Admin' : 'Mitarbeiter'}</strong>.</span>
+          <span>Sie agieren derzeit als <strong>${currentRoleText}</strong>. Ihre ursprüngliche Rolle ist <strong>${originalRoleText}</strong>.</span>
           <button class="role-switch-banner-close" onclick="window.dismissRoleSwitchBanner();" title="Banner schließen">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -1203,15 +1238,88 @@ class UnifiedNavigation {
           </button>
         </div>
       </div>
-    `
-        : '';
+    `;
+  }
+
+  private createRoleSwitchDropdown(userRole: string, activeRole: string | null): string {
+    if (userRole === 'root') {
+      return this.createRootRoleSwitchDropdown(activeRole);
+    }
+    if (userRole === 'admin') {
+      return this.createAdminRoleSwitchDropdown(activeRole);
+    }
+    return '';
+  }
+
+  private createRootRoleSwitchDropdown(activeRole: string | null): string {
+    const currentView =
+      activeRole === 'root' ? 'Root-Ansicht' : activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht';
+    return `
+      <!-- Role Switch Custom Dropdown for Root -->
+      <div class="custom-dropdown role-switch-dropdown">
+        <div class="dropdown-display" id="roleSwitchDisplay">
+          <span>${currentView}</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="roleSwitchDropdown">
+          <div class="dropdown-option ${activeRole === 'root' ? 'active' : ''}" data-value="root">Root-Ansicht</div>
+          <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
+          <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
+        </div>
+        <input type="hidden" id="role-switch-value" value="${activeRole ?? 'root'}" />
+      </div>
+    `;
+  }
+
+  private createAdminRoleSwitchDropdown(activeRole: string | null): string {
+    const currentView = activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht';
+    return `
+      <!-- Role Switch Dropdown for Admin -->
+      <div class="custom-dropdown role-switch-dropdown">
+        <div class="dropdown-display" id="roleSwitchDisplay">
+          <span>${currentView}</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="roleSwitchDropdown">
+          <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
+          <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
+        </div>
+        <input type="hidden" id="role-switch-value" value="${activeRole ?? 'admin'}" />
+      </div>
+    `;
+  }
+
+  private createUserAvatar(profilePicture: string | null, firstName: string, lastName: string): string {
+    const avatarClass = profilePicture !== null && profilePicture !== '' ? '' : 'avatar-initials';
+    const content =
+      profilePicture !== null && profilePicture !== ''
+        ? `<img src="${profilePicture}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />`
+        : this.getInitials(firstName, lastName);
+
+    return `<div id="user-avatar" class="user-avatar ${avatarClass}">${content}</div>`;
+  }
+
+  private createHeader(
+    dashboardUrl: string,
+    logoSrc: string,
+    roleSwitchDropdown: string,
+    userAvatar: string,
+    displayName: string,
+  ): string {
+    const togglePath = this.isCollapsed
+      ? 'M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z'
+      : 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z';
 
     return `
       <!-- Header -->
       <header class="header">
         <button class="sidebar-toggle" id="sidebar-toggle" title="Sidebar ein-/ausklappen">
           <svg class="toggle-icon" width="30" height="30" viewBox="0 0 24 24" fill="white">
-            <path class="toggle-icon-path" d="${this.isCollapsed ? 'M4,6H20V8H4V6M4,11H15V13H4V11M4,16H20V18H4V16Z' : 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z'}"></path>
+            <path class="toggle-icon-path" d="${togglePath}"></path>
           </svg>
         </button>
         <a href="${dashboardUrl}" class="logo-container">
@@ -1219,62 +1327,22 @@ class UnifiedNavigation {
         </a>
         <div class="header-content">
           <div class="header-actions">
-            ${
-              // Root users always get the full dropdown with all 3 options
-              userRole === 'root'
-                ? `
-              <!-- Role Switch Custom Dropdown for Root -->
-              <div class="custom-dropdown role-switch-dropdown">
-                <div class="dropdown-display" id="roleSwitchDisplay">
-                  <span>${activeRole === 'root' ? 'Root-Ansicht' : activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht'}</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="roleSwitchDropdown">
-                  <div class="dropdown-option ${activeRole === 'root' ? 'active' : ''}" data-value="root">Root-Ansicht</div>
-                  <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
-                  <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
-                </div>
-                <input type="hidden" id="role-switch-value" value="${activeRole ?? 'root'}" />
-              </div>
-            `
-                : userRole === 'admin'
-                  ? `
-              <!-- Role Switch Dropdown for Admin -->
-              <div class="custom-dropdown role-switch-dropdown">
-                <div class="dropdown-display" id="roleSwitchDisplay">
-                  <span>${activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht'}</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="roleSwitchDropdown">
-                  <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
-                  <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
-                </div>
-                <input type="hidden" id="role-switch-value" value="${activeRole ?? 'admin'}" />
-              </div>
-            `
-                  : ''
-            }
-
+            ${roleSwitchDropdown}
             <div id="user-info">
-              <div id="user-avatar" class="user-avatar ${profilePicture !== null && profilePicture !== '' ? '' : 'avatar-initials'}">${
-                profilePicture !== null && profilePicture !== ''
-                  ? `<img src="${profilePicture}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />`
-                  : this.getInitials(firstName, lastName)
-              }</div>
+              ${userAvatar}
               <span id="user-name">${this.escapeHtml(displayName)}</span>
             </div>
-
             <button id="logout-btn" class="btn-logout">
               <i class="fas fa-sign-out-alt"></i>
             </button>
           </div>
         </div>
       </header>
+    `;
+  }
 
+  private createLogoutModal(): string {
+    return `
       <!-- Logout Confirmation Modal -->
       <div id="logoutModal" class="modal" style="display: none;">
         <div class="modal-overlay"></div>
@@ -1301,13 +1369,6 @@ class UnifiedNavigation {
           </div>
         </div>
       </div>
-
-      ${warningBanner}
-
-      <!-- Sidebar -->
-      <aside class="sidebar ${this.isCollapsed ? 'collapsed' : ''}">
-        ${this.createNavigationHTML()}
-      </aside>
     `;
   }
 
@@ -1396,120 +1457,140 @@ class UnifiedNavigation {
     const activeClass = isActive ? 'active' : '';
     const hasChildren = item.children && item.children.length > 0;
     const hasSubmenu = item.hasSubmenu === true && item.submenu !== undefined && item.submenu.length > 0;
-    // Remove onclick handler - use normal navigation instead
-    const clickHandler = '';
+    const badgeHtml = this.createBadgeHtml(item.badge);
 
-    // Badge für ungelesene Nachrichten oder offene Umfragen
-    let badgeHtml = '';
-    if (item.badge === 'unread-messages') {
-      badgeHtml = `<span class="nav-badge" id="chat-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
-    } else if (item.badge === 'pending-surveys') {
-      badgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; top: 8px; right: 15px; background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
-    } else if (item.badge === 'unread-documents') {
-      badgeHtml = `<span class="nav-badge" id="documents-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: #2196f3; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
-    } else if (item.badge === 'new-kvp-suggestions') {
-      badgeHtml = `<span class="nav-badge nav-badge-kvp" id="kvp-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: linear-gradient(0deg, rgba(76, 175, 80, 0.71), rgba(76, 175, 80, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
-    } else if (item.badge === 'lean-management-parent') {
-      badgeHtml = `<span class="nav-badge" id="lean-management-badge" style="display: none; position: absolute; top: 8px; right: 40px; background: rgba(255, 153, 0, 0.7); backdrop-filter: blur(10px); color: #ffffffff; font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: 600; min-width: 30px; text-align: center;">0</span>`;
-    } else if (item.badge === 'unread-calendar-events') {
-      badgeHtml = `<span class="nav-badge" id="calendar-unread-badge" style="display: none; position: absolute; top: 8px; right: 10px; background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
-    }
-
-    // If has submenu, create a dropdown
     if (hasSubmenu) {
-      const submenuItems =
-        item.submenu && item.submenu.length > 0
-          ? item.submenu
-              .map((child) => {
-                // Support both badgeId and badge properties
-                let childBadgeHtml = '';
-                if (child.badgeId !== undefined) {
-                  childBadgeHtml = `<span class="nav-badge" id="${child.badgeId}" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: #ff5722; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 10px; font-weight: bold; min-width: 18px; text-align: center;">0</span>`;
-                } else if (child.badge === 'pending-surveys') {
-                  childBadgeHtml = `<span class="nav-badge" id="surveys-pending-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(255, 152, 0, 0.15); backdrop-filter: blur(10px); border: 1px solid rgba(255, 152, 0, 0.3); color: #ff9800; font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; min-width: 20px; text-align: center;">0</span>`;
-                } else if (child.badge === 'new-kvp-suggestions') {
-                  childBadgeHtml = `<span class="nav-badge nav-badge-kvp" id="kvp-badge" style="display: none; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: linear-gradient(0deg, rgba(76, 175, 80, 0.71), rgba(76, 175, 80, 0.76)); font-size: 0.7rem; padding: 2px 6px; border-radius: 50px; font-weight: bold; min-width: 30px; text-align: center;">0</span>`;
-                }
-
-                return `
-              <li class="submenu-item">
-                <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}" style="position: relative; display: block;">
-                  <span class="submenu-label">${child.label}</span>
-                  ${childBadgeHtml}
-                </a>
-              </li>
-            `;
-              })
-              .join('')
-          : '';
-
-      return `
-        <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
-            <span class="icon">${item.icon ?? ''}</span>
-            <span class="label">${item.label}</span>
-            <span class="nav-indicator"></span>
-            <span class="submenu-arrow">
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 10l5 5 5-5z"/>
-              </svg>
-            </span>
-            ${badgeHtml}
-          </a>
-          <ul class="submenu" id="submenu-${item.id}" style="display: none;">
-            ${submenuItems}
-          </ul>
-        </li>
-      `;
+      return this.createSubmenuItem(item, activeClass, badgeHtml);
     }
 
-    // If has children, create a dropdown (old style)
     if (hasChildren === true) {
-      const submenuItems =
-        item.children && item.children.length > 0
-          ? item.children
-              .map(
-                (child) => `
-        <li class="submenu-item">
-          <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}">
-            <span class="submenu-label">${child.label}</span>
-          </a>
-        </li>
-      `,
-              )
-              .join('')
-          : '';
-
-      return `
-        <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-          <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
-            <span class="icon">${item.icon ?? ''}</span>
-            <span class="label">${item.label}</span>
-            <span class="nav-indicator"></span>
-            <span class="submenu-arrow">
-              <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M7 10l5 5 5-5z"/>
-              </svg>
-            </span>
-            ${badgeHtml}
-          </a>
-          <ul class="submenu" id="submenu-${item.id}" style="display: none;">
-            ${submenuItems}
-          </ul>
-        </li>
-      `;
+      return this.createChildrenItem(item, activeClass, badgeHtml);
     }
 
+    return this.createSimpleMenuItem(item, activeClass, badgeHtml);
+  }
+
+  private createBadgeHtml(badge?: string): string {
+    if (badge === undefined || badge === '') return '';
+
+    // Use Map to avoid object injection vulnerability
+    const badgeMap = new Map<string, { className: string; id: string }>([
+      ['unread-messages', { className: 'nav-badge', id: 'chat-unread-badge' }],
+      ['pending-surveys', { className: 'nav-badge nav-badge-surveys', id: 'surveys-pending-badge' }],
+      ['unread-documents', { className: 'nav-badge nav-badge-documents', id: 'documents-unread-badge' }],
+      ['new-kvp-suggestions', { className: 'nav-badge nav-badge-kvp', id: 'kvp-badge' }],
+      ['lean-management-parent', { className: 'nav-badge nav-badge-lean-parent', id: 'lean-management-badge' }],
+      ['unread-calendar-events', { className: 'nav-badge', id: 'calendar-unread-badge' }],
+    ]);
+
+    const config = badgeMap.get(badge);
+    if (config === undefined) {
+      return '';
+    }
+    return `<span class="${config.className}" id="${config.id}" style="display: none;">0</span>`;
+  }
+
+  private createChildBadgeHtml(child: NavItem): string {
+    if (child.badgeId !== undefined) {
+      return `<span class="nav-badge nav-badge-child nav-badge-child-default" id="${child.badgeId}" style="display: none;">0</span>`;
+    }
+    if (child.badge === 'pending-surveys') {
+      return `<span class="nav-badge nav-badge-child nav-badge-surveys" id="surveys-pending-badge" style="display: none;">0</span>`;
+    }
+    if (child.badge === 'new-kvp-suggestions') {
+      return `<span class="nav-badge nav-badge-child nav-badge-kvp" id="kvp-badge" style="display: none;">0</span>`;
+    }
+    return '';
+  }
+
+  private createSubmenuItem(item: NavItem, activeClass: string, badgeHtml: string): string {
+    const submenuItems = this.createSubmenuItems(item.submenu);
     return `
-            <li class="sidebar-item ${activeClass}" style="position: relative;">
-                <a href="${item.url ?? '#'}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">
-                    <span class="icon">${item.icon ?? ''}</span>
-                    <span class="label">${item.label}</span>
-                    <span class="nav-indicator"></span>
-                    ${badgeHtml}
-                </a>
-            </li>
+      <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
+        <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+          <span class="icon">${item.icon ?? ''}</span>
+          <span class="label">${item.label}</span>
+          <span class="nav-indicator"></span>
+          <span class="submenu-arrow">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </span>
+          ${badgeHtml}
+        </a>
+        <ul class="submenu" id="submenu-${item.id}" style="display: none;">
+          ${submenuItems}
+        </ul>
+      </li>
+    `;
+  }
+
+  private createSubmenuItems(submenu?: NavItem[]): string {
+    if (!submenu || submenu.length === 0) return '';
+    return submenu
+      .map((child) => {
+        const childBadgeHtml = this.createChildBadgeHtml(child);
+        return `
+          <li class="submenu-item">
+            <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}" style="position: relative; display: block;">
+              <span class="submenu-label">${child.label}</span>
+              ${childBadgeHtml}
+            </a>
+          </li>
         `;
+      })
+      .join('');
+  }
+
+  private createChildrenItem(item: NavItem, activeClass: string, badgeHtml: string): string {
+    const submenuItems = this.createChildrenItems(item.children);
+    return `
+      <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
+        <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+          <span class="icon">${item.icon ?? ''}</span>
+          <span class="label">${item.label}</span>
+          <span class="nav-indicator"></span>
+          <span class="submenu-arrow">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M7 10l5 5 5-5z"/>
+            </svg>
+          </span>
+          ${badgeHtml}
+        </a>
+        <ul class="submenu" id="submenu-${item.id}" style="display: none;">
+          ${submenuItems}
+        </ul>
+      </li>
+    `;
+  }
+
+  private createChildrenItems(children?: NavItem[]): string {
+    if (!children || children.length === 0) return '';
+    return children
+      .map(
+        (child) => `
+          <li class="submenu-item">
+            <a href="${child.url ?? '#'}" class="submenu-link" data-nav-id="${child.id}">
+              <span class="submenu-label">${child.label}</span>
+            </a>
+          </li>
+        `,
+      )
+      .join('');
+  }
+
+  private createSimpleMenuItem(item: NavItem, activeClass: string, badgeHtml: string): string {
+    const clickHandler = '';
+    return `
+      <li class="sidebar-item ${activeClass}" style="position: relative;">
+        <a href="${item.url ?? '#'}" class="sidebar-link" ${clickHandler} data-nav-id="${item.id}">
+          <span class="icon">${item.icon ?? ''}</span>
+          <span class="label">${item.label}</span>
+          <span class="nav-indicator"></span>
+          ${badgeHtml}
+        </a>
+      </li>
+    `;
   }
 
   // Removed unused method getUserInitials
@@ -2067,120 +2148,143 @@ class UnifiedNavigation {
     const currentPath = window.location.pathname;
     const urlParams = new URLSearchParams(window.location.search);
     const section = urlParams.get('section');
+
+    this.closeAllSubmenus();
+
+    const isDashboard = currentPath.includes('dashboard');
     let foundActiveSubmenu = false;
 
-    // First, ensure all submenus are closed and remove all submenu active states
+    if (isDashboard && section !== null && section !== '') {
+      foundActiveSubmenu = this.handleDashboardSection(section);
+    }
+
+    if (!foundActiveSubmenu && !isDashboard) {
+      foundActiveSubmenu = this.handleDirectSubmenuPages(currentPath);
+    }
+
+    if (!foundActiveSubmenu) {
+      localStorage.removeItem('openSubmenu');
+    }
+
+    this.restorePreviousSubmenu(foundActiveSubmenu);
+  }
+
+  private closeAllSubmenus(): void {
     document.querySelectorAll('.submenu').forEach((submenu) => {
       const submenuElement = submenu as HTMLElement;
       submenuElement.style.display = 'none';
       submenu.closest(SIDEBAR_ITEM_SELECTOR)?.classList.remove('open');
     });
 
-    // Remove active class from all submenu items
     document.querySelectorAll('.submenu-item').forEach((item) => {
       item.classList.remove('active');
     });
 
-    // Remove active class from all submenu links
     document.querySelectorAll('.submenu-link').forEach((link) => {
       link.classList.remove('active');
     });
+  }
 
-    // Check if we're on a dashboard page with a section that has a submenu
-    const isDashboard = currentPath.includes('dashboard');
-    if (isDashboard && section !== null && section !== '') {
-      // Check if this section corresponds to a menu item with submenu
-      const menuItems = this.getNavigationForRole(this.currentRole);
-      const menuItem = menuItems.find((item) => item.id === section);
+  private handleDashboardSection(section: string): boolean {
+    const menuItems = this.getNavigationForRole(this.currentRole);
+    const menuItem = menuItems.find((item) => item.id === section);
 
-      if (
-        menuItem !== undefined &&
-        (menuItem.hasSubmenu === true || (menuItem.children !== undefined && menuItem.children.length > 0))
-      ) {
-        // Open the submenu for this section
-        const submenu = document.querySelector(`#submenu-${section}`);
-        const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+    if (!menuItem) {
+      return false;
+    }
 
-        if (submenu instanceof HTMLElement && parentItem) {
-          submenu.style.display = 'block';
-          parentItem.classList.add('open');
-          localStorage.setItem('openSubmenu', section);
+    const hasSubmenu = menuItem.hasSubmenu === true;
+    const hasChildren = menuItem.children !== undefined && menuItem.children.length > 0;
+
+    if (!hasSubmenu && !hasChildren) {
+      return false;
+    }
+
+    const submenu = document.querySelector(`#submenu-${section}`);
+    const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+
+    if (!(submenu instanceof HTMLElement) || !parentItem) {
+      return false;
+    }
+
+    submenu.style.display = 'block';
+    parentItem.classList.add('open');
+    localStorage.setItem('openSubmenu', section);
+
+    if (menuItem.children && menuItem.children.length > 0) {
+      this.activateFirstChild(submenu);
+    }
+
+    return true;
+  }
+
+  private activateFirstChild(submenu: HTMLElement): void {
+    const firstChildLink = submenu.querySelector('.submenu-link');
+    if (!firstChildLink) return;
+
+    firstChildLink.classList.add('active');
+    const submenuItem = firstChildLink.closest('.submenu-item');
+    if (submenuItem) {
+      submenuItem.classList.add('active');
+    }
+  }
+
+  private handleDirectSubmenuPages(currentPath: string): boolean {
+    let foundActiveSubmenu = false;
+
+    document.querySelectorAll('.submenu-link').forEach((link) => {
+      if (foundActiveSubmenu) return;
+
+      const linkElement = link as HTMLAnchorElement;
+      try {
+        const linkPath = new URL(linkElement.href, window.location.origin).pathname;
+        if (currentPath === linkPath) {
           foundActiveSubmenu = true;
-
-          // For sections like employees that have children, mark the first child as active
-          if (menuItem.children && menuItem.children.length > 0) {
-            const firstChildLink = submenu.querySelector('.submenu-link');
-            if (firstChildLink) {
-              firstChildLink.classList.add('active');
-              const submenuItem = firstChildLink.closest('.submenu-item');
-              if (submenuItem) {
-                submenuItem.classList.add('active');
-              }
-            }
-          }
+          this.activateSubmenuLink(link);
         }
+      } catch {
+        console.warn('Invalid submenu URL:', linkElement.href);
+      }
+    });
+
+    return foundActiveSubmenu;
+  }
+
+  private activateSubmenuLink(link: Element): void {
+    link.classList.add('active');
+    const submenuItem = link.closest('.submenu-item');
+    if (submenuItem) {
+      submenuItem.classList.add('active');
+    }
+
+    const submenu = link.closest('.submenu');
+    const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+
+    if (submenu && parentItem) {
+      (submenu as HTMLElement).style.display = 'block';
+      parentItem.classList.add('open');
+      parentItem.classList.add('active');
+
+      const parentLink = parentItem.querySelector<HTMLElement>('.sidebar-link');
+      const parentId = parentLink?.dataset.navId;
+      if (parentId !== undefined && parentId !== '') {
+        localStorage.setItem('openSubmenu', parentId);
       }
     }
+  }
 
-    // If not handled by section parameter, check for direct submenu pages
-    if (!foundActiveSubmenu && !isDashboard) {
-      // Check all submenu links to find if we're on a submenu page
-      document.querySelectorAll('.submenu-link').forEach((link) => {
-        const linkElement = link as HTMLAnchorElement;
-        try {
-          const linkPath = new URL(linkElement.href, window.location.origin).pathname;
+  private restorePreviousSubmenu(foundActiveSubmenu: boolean): void {
+    if (foundActiveSubmenu) return;
 
-          // Check if current path matches this submenu link exactly
-          if (currentPath === linkPath) {
-            foundActiveSubmenu = true;
-
-            // Mark the submenu item and link as active
-            link.classList.add('active');
-            const submenuItem = link.closest('.submenu-item');
-            if (submenuItem) {
-              submenuItem.classList.add('active');
-            }
-
-            // Find and open the parent submenu
-            const submenu = link.closest('.submenu');
-            const parentItem = submenu?.closest('.sidebar-item.has-submenu');
-
-            if (submenu && parentItem) {
-              (submenu as HTMLElement).style.display = 'block';
-              parentItem.classList.add('open');
-              parentItem.classList.add('active');
-
-              // Store the open submenu state
-              const parentLink = parentItem.querySelector<HTMLElement>('.sidebar-link');
-              const parentId = parentLink?.dataset.navId;
-              if (parentId !== undefined && parentId !== '') {
-                localStorage.setItem('openSubmenu', parentId);
-              }
-            }
-          }
-        } catch {
-          // Skip invalid URLs
-          console.warn('Invalid submenu URL:', linkElement.href);
-        }
-      });
-    }
-
-    // If we're not on any submenu page and not in a section with submenu, clear the stored state
-    if (!foundActiveSubmenu) {
-      localStorage.removeItem('openSubmenu');
-    }
-
-    // Restore previously open submenu if we're still on the same parent section
     const storedSubmenu = localStorage.getItem('openSubmenu');
-    if (storedSubmenu !== null && storedSubmenu !== '' && !foundActiveSubmenu) {
-      const submenu = document.querySelector(`#submenu-${storedSubmenu}`);
-      const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+    if (storedSubmenu === null || storedSubmenu === '') return;
 
-      if (submenu instanceof HTMLElement && parentItem?.classList.contains('active') === true) {
-        // Only restore if the parent item is active
-        submenu.style.display = 'block';
-        parentItem.classList.add('open');
-      }
+    const submenu = document.querySelector(`#submenu-${storedSubmenu}`);
+    const parentItem = submenu?.closest('.sidebar-item.has-submenu');
+
+    if (submenu instanceof HTMLElement && parentItem?.classList.contains('active') === true) {
+      submenu.style.display = 'block';
+      parentItem.classList.add('open');
     }
   }
 
@@ -3166,7 +3270,7 @@ const unifiedNavigationCSS = `
 
     /* Collapsed Sidebar Styles */
     .sidebar.collapsed {
-        width: 70px !important;
+        width: 4.5rem !important; /* 72px bei 16px base - durch 8 teilbar! */
     }
 
     /* Logo size adjustment when sidebar is collapsed */
@@ -3184,7 +3288,7 @@ const unifiedNavigationCSS = `
         font-size: 0;
         transform: rotate(-2deg);
         background: #e6b80000;
-        min-height: 25px;
+        min-height: 26px;
         margin-left: 4px;
     }
 
@@ -3201,28 +3305,28 @@ const unifiedNavigationCSS = `
 
 
     .sidebar.collapsed .pinned-icon {
-        top: -7px;
+        top: -0.4375rem; /* -7px in rem */
     }
 
     .sidebar.collapsed .pin-head {
-        width: 16px;
-        height: 16px;
+        width: 1rem; /* 16px in rem */
+        height: 1rem;
     }
 
     .sidebar.collapsed .pin-head::after {
-        width: 5px;
-        height: 5px;
-        top: 3px;
-        left: 3px;
+        width: 0.3125rem; /* 5px in rem */
+        height: 0.3125rem;
+        top: 0.1875rem; /* 3px in rem */
+        left: 0.1875rem;
     }
 
     .sidebar.collapsed .user-info-card {
-        padding: 17px;
+        padding: 1.0625rem; /* 17px in rem */
         flex-direction: column;
         align-items: center;
         min-height: auto;
-        margin-top: 80px;
-        margin-bottom: 20px;
+        margin-top: 5rem; /* 80px in rem */
+        margin-bottom: 1.25rem; /* 20px in rem */
     }
 
     .sidebar.collapsed .user-details {
@@ -3238,11 +3342,11 @@ const unifiedNavigationCSS = `
     /* Collapsed state: Hover/Active NUR auf Icon */
     .sidebar.collapsed .sidebar-link {
         background: transparent;
-        font-size: 14px !important; /* Gleiche font-size wie normal state */
-        line-height: 20px !important; /* Gleiche line-height wie normal state */
-        justify-content: center; /* Icons zentrieren im collapsed state */
+        font-size: 0.875rem !important; /* 14px in rem */
+        line-height: 1.25rem !important; /* 20px in rem */
+        justify-content: flex-start; /* NICHT center! */
         gap: 0; /* Kein gap im collapsed state */
-        padding: var(--spacing-sm); /* GLEICHES padding wie normal state - verhindert Icon-Verschiebung */
+        padding: 0.5rem; /* 8px in rem */
     }
 
     /* Wichtig: overflow visible für collapsed sidebar damit der Kreis größer werden kann */
@@ -3250,20 +3354,21 @@ const unifiedNavigationCSS = `
         overflow: visible !important;
     }
 
-    .sidebar.collapsed .sidebar-link .icon {
-        position: relative;
-    }
 
 
-
+.sidebar-link .icon svg {
+  width: 1.0625rem !important; /* 17px in rem */
+  height: 1.0625rem !important;
+  display: block;
+}
     .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
         content: '';
         position: absolute;
-        inset: -8px;
+        inset: -0.5625rem; /* -9px in rem */
         border-radius: 50%;
         z-index: -1;
         background: rgba(139, 139, 139, 0.41);
-        border: 1px solid hsl(0, 0%, 48.6%);
+        border: 1px solid hsl(0, 0%, 39.6%);
 
     }
 
@@ -3276,7 +3381,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
         content: '';
         position: absolute;
-        inset: -8px;
+        inset: -0.5625rem; /* -9px in rem */
         background: rgba(33, 150, 243, 0.1);
         border-radius: 50%;
         z-index: -1;
@@ -3300,13 +3405,14 @@ const unifiedNavigationCSS = `
     }
 
     .sidebar.collapsed .sidebar-menu {
-        margin-top: 72px; /* Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
+        /*margin-top: 72px;  Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
+        margin-top: 4.5rem;
     }
 
 
     /* Main content adjustment for collapsed sidebar */
     .main-content.sidebar-collapsed {
-        margin-left: 70px;
+        margin-left: 4.5rem; /* Gleicher Wert wie sidebar width */
     }
 
     /* Container full width when sidebar collapsed */
@@ -3470,7 +3576,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed #sidebar-user-avatar,
     .sidebar.collapsed .user-avatar,
     .sidebar.collapsed .user-info-card .user-avatar {
-        margin-left: -13.5px !important;
+        margin-left: -13px !important;
     }
 
     .user-details {
@@ -3586,19 +3692,18 @@ const unifiedNavigationCSS = `
     /* .sidebar-item - Using styles from dashboard-theme.css */
 
     .sidebar-link {
-        display: flex;
+        display: flex; /* Zurück zu Flexbox! */
         align-items: center;
-        gap: var(--spacing-sm);
-        padding: var(--spacing-sm);
+        padding: 0.5rem; /* 8px in rem */
         color: var(--text-secondary);
         text-decoration: none;
         border-radius: 18px;
         position: relative;
         overflow: hidden;
-        font-size: 14px; /* Explizite px statt rem für konsistenz */
-        line-height: 20px; /* Explizite line-height */
-        margin-bottom: 5px;
-        height: 36px;
+        font-size: 0.875rem; /* 14px in rem */
+        line-height: 1.25rem; /* 20px in rem */
+        margin-bottom: 0.3125rem; /* 5px in rem */
+        height: 2.125rem; /* 34px in rem */
         box-sizing: border-box;
         border: 1px solid transparent; /* Reserviert Platz für active border */
     }
@@ -3611,24 +3716,24 @@ const unifiedNavigationCSS = `
     .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
         border: 1px solid hsl(0, 0%, 39.6%);
         background: rgba(139, 139, 139, 0.41);
-        border: 1px solid hsl(0, 0%, 48.6%);
 
     }
 
     .sidebar-link .icon {
-        min-width: 20px;
-        width: 20px;
-        height: 20px;
+        position: absolute; /* ABSOLUTE positionieren! */
+        min-width: 1.0625rem; /* 17px in rem */
+        width: 1.0625rem;
+        height: 1.0625rem;
         text-align: center;
         display: flex;
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
         margin-left: 0;
-        /*  */
     }
 
     .sidebar-link .label {
+        margin-left: 1.75rem; /* Platz für Icon + Gap */
         font-weight: 500;
         flex: 1;
         white-space: nowrap;
@@ -3690,9 +3795,9 @@ const unifiedNavigationCSS = `
     }
 
     .submenu {
-        margin-left: 32px;
-        margin-top: 4px;
-        margin-bottom: 5px;
+        margin-left: 2rem; /* 32px in rem */
+        margin-top: 0.25rem; /* 4px in rem */
+        margin-bottom: 0.3125rem; /* 5px in rem */
         list-style: none;
         padding: 0;
         overflow: hidden;
@@ -3700,18 +3805,19 @@ const unifiedNavigationCSS = `
     }
 
     .submenu-item {
-        margin-bottom: 2px;
+        margin-bottom: 0.125rem; /* 2px in rem */
     }
 
     .submenu-link {
         display: inline flow-root list-item;
-        padding: 3px 20px 3px 20px;
+        padding: 0.1875rem 1.25rem; /* 3px 20px in rem */
         color: var(--text-secondary);
         text-decoration: none;
         font-size: 0.85rem;
         border-radius: 12px;
         /*  */
-        transform: translateX(6px);
+        /*transform: translateX(6px);*/
+        margin-left: 0.375rem; /* 6px in rem */
         position: relative;
     }
 
@@ -3722,11 +3828,11 @@ const unifiedNavigationCSS = `
 
     .submenu-link.active,
     .submenu-item.active .submenu-link {
-        transform: translateX(20px);
+        transform: translateX(1.25rem); /* 20px in rem */
         background: rgba(139, 139, 139, 0.12);
         border-radius: var(--radius-md);
-        border: 0.1px solid hsla(0, 0%, 39.6%, 0.44);
-        margin-right: 80px;
+        border: 1px solid hsla(0, 0%, 39.6%, 0.44);
+        margin-right: 5rem; /* 80px in rem */
     }
 
     /* Layout adjustments */

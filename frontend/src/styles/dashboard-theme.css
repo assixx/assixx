@@ -220,14 +220,6 @@ body {
   padding: var(--spacing-lg);
 }
 
-/* Container full width when sidebar is collapsed */
-/* MOVED TO unified-navigation.ts */
-/*
-.main-content.sidebar-collapsed .container {
-  max-width: none;
-}
-*/
-
 /* Cards */
 .card {
   overflow: hidden;
@@ -717,16 +709,61 @@ body {
   background: linear-gradient(0deg, rgba(243, 33, 33, 0.71), rgba(243, 33, 33, 0.76));
   color: #fff;
   font-size: 0.7rem;
-  padding: 2px 6px;
+  /* padding: 2px 6px; */
   border-radius: 50px;
   font-weight: bold;
-  min-width: 30px;
+  min-width: 24px;
   text-align: center;
 }
 
 /* KVP Badge - Grün */
 .nav-badge-kvp {
   background: linear-gradient(0deg, rgba(76, 175, 80, 0.71), rgba(76, 175, 80, 0.76));
+}
+
+/* Surveys Badge - Orange mit Glassmorphism */
+.nav-badge-surveys {
+  background: rgba(255, 152, 0, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  color: #ff9800;
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  min-width: 20px;
+  right: 15px;
+}
+
+/* Documents Badge - Blau */
+.nav-badge-documents {
+  background: #2196f3;
+  color: #fff;
+  border-radius: 10px;
+  min-width: 18px;
+}
+
+/* Lean Management Parent Badge - Orange */
+.nav-badge-lean-parent {
+  right: 40px;
+  background: rgba(255, 153, 0, 0.7);
+  backdrop-filter: blur(10px);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Child Badge Positioning */
+.nav-badge-child {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Default Child Badge */
+.nav-badge-child-default {
+  background: #ff5722;
+  color: #fff;
+  border-radius: 10px;
+  min-width: 18px;
 }
 
 .gap-1 {
@@ -896,19 +933,47 @@ body {
   padding: var(--spacing-lg);
 }
 
-/* Employee deletion dialog styles */
-.alert {
-  margin: 16px 0;
-  padding: 12px 16px;
-  border-radius: 4px;
-  font-weight: 500;
-}
+
+
 
 .alert-warning {
-  border-left: 4px solid orange;
-  color: #d68000;
-  background-color: rgb(255 165 0 / 15%);
+  border-left: 3px solid rgba(255, 165, 0, 0.8);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 165, 0, 0.08) 0%,
+    rgba(255, 165, 0, 0.03) 100%
+  );
+  color: rgb(255, 183, 77);
+  border-color: rgba(255, 165, 0, 0.3);
 }
+
+
+.alert-success {
+  border-left: 3px solid rgba(76, 175, 80, 0.8);
+  background: linear-gradient(
+    135deg,
+    rgba(76, 175, 80, 0.08) 0%,
+    rgba(76, 175, 80, 0.03) 100%
+  );
+  color: rgb(129, 199, 132);
+  border-color: rgba(76, 175, 80, 0.3);
+}
+
+
+.alert-error {
+  border-left: 3px solid rgba(244, 67, 54, 0.8);
+  background: linear-gradient(
+    135deg,
+    rgba(244, 67, 54, 0.08) 0%,
+    rgba(244, 67, 54, 0.03) 100%
+  );
+  color: rgb(239, 83, 80);
+  border-color: rgba(244, 67, 54, 0.3);
+}
+
+
+
+
 
 .option-description {
   margin-top: 4px;
@@ -926,27 +991,6 @@ body {
   margin-top: var(--spacing-lg);
   padding: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
-}
-
-/* Sidebar Icon Fix - Icons should not move on collapse */
-.sidebar-link .icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.sidebar-link .icon svg {
-  width: 17px !important;
-  height: 17px !important;
-  display: block;
-}
-
-/* Ensure consistent icon positioning when collapsed */
-.sidebar.collapsed .sidebar-link .icon {
-  margin: 0 auto;
 }
 
 /* Fix submenu badge positioning */
