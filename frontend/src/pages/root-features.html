@@ -625,6 +625,12 @@
     </style>
     <!-- DOMPurify CDN für inline Scripts -->
     <script src="/js/purify.min.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      // Make setHTML globally available for inline scripts
+      window.setHTML = setHTML;
+    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -819,11 +825,11 @@
                   zusätzlich
                 </div>
                 <div class="addon-controls">
-                  <button class="addon-btn" onclick="adjustAddon('employees', -1)">
+                  <button class="addon-btn" data-action="adjust-addon" data-type="employees" data-amount="-1">
                     <i class="fas fa-minus"></i>
                   </button>
                   <span class="addon-value" id="addon-employees">0</span>
-                  <button class="addon-btn" onclick="adjustAddon('employees', 1)">
+                  <button class="addon-btn" data-action="adjust-addon" data-type="employees" data-amount="1">
                     <i class="fas fa-plus"></i>
                   </button>
                 </div>
@@ -841,11 +847,11 @@
                   zusätzlich
                 </div>
                 <div class="addon-controls">
-                  <button class="addon-btn" onclick="adjustAddon('admins', -1)">
+                  <button class="addon-btn" data-action="adjust-addon" data-type="admins" data-amount="-1">
                     <i class="fas fa-minus"></i>
                   </button>
                   <span class="addon-value" id="addon-admins">0</span>
-                  <button class="addon-btn" onclick="adjustAddon('admins', 1)">
+                  <button class="addon-btn" data-action="adjust-addon" data-type="admins" data-amount="1">
                     <i class="fas fa-plus"></i>
                   </button>
                 </div>
@@ -863,11 +869,11 @@
                   inklusive
                 </div>
                 <div class="addon-controls">
-                  <button class="addon-btn" onclick="adjustAddon('storage', -100)">
+                  <button class="addon-btn" data-action="adjust-addon" data-type="storage" data-amount="-100">
                     <i class="fas fa-minus"></i>
                   </button>
                   <span class="addon-value" id="addon-storage">0</span>
-                  <button class="addon-btn" onclick="adjustAddon('storage', 100)">
+                  <button class="addon-btn" data-action="adjust-addon" data-type="storage" data-amount="100">
                     <i class="fas fa-plus"></i>
                   </button>
                 </div>
@@ -895,7 +901,7 @@
               </div>
             </div>
             <div class="summary-actions">
-              <button class="btn-save" onclick="saveChanges()">
+              <button class="btn-save" data-action="save-changes">
                 <i class="fas fa-save"></i>
                 Änderungen speichern
               </button>
@@ -1235,9 +1241,8 @@
           const categoryDiv = document.createElement('div');
           categoryDiv.className = 'feature-category';
 
-          // Safe: HTML is generated from server data and sanitized with DOMPurify
-          // eslint-disable-next-line no-unsanitized/property
-          categoryDiv.innerHTML = DOMPurify.sanitize(`
+          // Safe: HTML is generated from server data and sanitized with dom-utils
+          const htmlContent = `
             <div class="category-header">
               <div class="category-icon">${categoryData.icon}</div>
               <h3 class="category-title">${categoryName}</h3>
@@ -1265,10 +1270,10 @@
                       ${
                         canActivate
                           ? isActive
-                            ? `<button class="btn btn-deactivate" onclick="toggleFeature('${feature.code}', false)">
+                            ? `<button class="btn btn-deactivate" data-action="toggle-feature" data-feature="${feature.code}" data-state="false">
                             Deaktivieren
                           </button>`
-                            : `<button class="btn btn-activate" onclick="toggleFeature('${feature.code}', true)">
+                            : `<button class="btn btn-activate" data-action="toggle-feature" data-feature="${feature.code}" data-state="true">
                             Aktivieren
                           </button>`
                           : `<button class="btn" disabled>
@@ -1281,8 +1286,10 @@
                 })
                 .join('')}
             </div>
-          `);
+          `;
 
+          // Use dom-utils setHTML for safe sanitization
+          window.setHTML(categoryDiv, htmlContent);
           container.append(categoryDiv);
         });
       }
@@ -1501,6 +1508,39 @@
           alert('Fehler beim Speichern der Änderungen');
         }
       }
+
+      // Event delegation for all actions
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (target) {
+          const action = target.dataset.action;
+
+          switch (action) {
+            case 'toggle-feature': {
+              const feature = target.dataset.feature;
+              const state = target.dataset.state === 'true';
+              if (window.toggleFeature) {
+                window.toggleFeature(feature, state);
+              }
+              break;
+            }
+            case 'adjust-addon': {
+              const type = target.dataset.type;
+              const amount = parseInt(target.dataset.amount);
+              if (window.adjustAddon) {
+                window.adjustAddon(type, amount);
+              }
+              break;
+            }
+            case 'save-changes': {
+              if (window.saveChanges) {
+                window.saveChanges();
+              }
+              break;
+            }
+          }
+        }
+      });
     </script>
 
     <!-- Breadcrumb Component -->

@@ -415,6 +415,14 @@
         }
       }
 
+      /* Section Divider */
+      .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        margin: var(--spacing-xl) 0;
+        position: relative;
+      }
+
       /* Empty State */
       .empty-state {
         text-align: center;
@@ -726,6 +734,9 @@
                 </div>
               </div>
 
+              <!-- Section Divider -->
+              <div class="section-divider"></div>
+
               <!-- Completed Surveys -->
               <div class="surveys-section">
                 <h2 class="section-title">
@@ -747,7 +758,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2 class="modal-title" id="modalTitle">Umfrage beantworten</h2>
-          <button class="close-btn" onclick="closeModal()">&times;</button>
+          <button class="close-btn" id="modalCloseBtn">&times;</button>
         </div>
 
         <div class="survey-progress">
@@ -763,7 +774,7 @@
           </div>
 
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" id="modalCancelBtn">Abbrechen</button>
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-paper-plane"></i>
               Antworten absenden
@@ -791,9 +802,139 @@
       let currentSurvey = null;
       let answers = {};
 
+      // Define functions first (before they are used in onclick handlers)
+
+      // Start survey
+      window.startSurvey = async function startSurvey(surveyId) {
+        console.log('Starting survey with ID:', surveyId);
+        try {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+          console.log('Using endpoint:', endpoint, 'V2:', useV2);
+
+          // Load survey details
+          const response = await fetch(endpoint, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
+          console.log('Response status:', response.status);
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Survey data received:', result);
+
+            // Handle v2 API response structure
+            currentSurvey = useV2 && result.success ? result.data : result.data || result.survey || result;
+
+            if (!currentSurvey || !currentSurvey.questions) {
+              console.error('Invalid survey data:', currentSurvey);
+              showErrorAlert('Fehler: Umfragedaten sind ungültig');
+              return;
+            }
+
+            answers = {};
+            displaySurveyForm();
+          } else {
+            console.error('Survey load failed:', response.status, response.statusText);
+            const errorData = await response.json().catch(() => ({ message: 'Unbekannter Fehler' }));
+            showErrorAlert(`Fehler beim Laden der Umfrage: ${errorData.message || response.statusText}`);
+          }
+        } catch (error) {
+          console.error('Error loading survey:', error);
+          showErrorAlert('Fehler beim Laden der Umfrage');
+        }
+      };
+
       // Initialize
       document.addEventListener('DOMContentLoaded', function () {
         loadSurveys();
+
+        // Event delegation for all interactive elements (fixes DOMPurify onclick/onchange removal)
+        // Handle click events
+        document.body.addEventListener('click', (e) => {
+          // Handle survey action buttons
+          const surveyButton = e.target.closest('.survey-action');
+          if (surveyButton) {
+            const card = surveyButton.closest('.survey-card');
+            if (!card) return;
+
+            const surveyId = card.dataset.surveyId;
+            if (!surveyId) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (card.classList.contains('completed')) {
+              window.viewResponse(parseInt(surveyId));
+            } else {
+              window.startSurvey(parseInt(surveyId));
+            }
+            return;
+          }
+
+          // Handle modal close button
+          if (e.target.id === 'modalCloseBtn' || e.target.id === 'modalCancelBtn') {
+            window.closeModal();
+            return;
+          }
+
+          // Handle response modal close
+          if (e.target.dataset.action === 'close-response-modal') {
+            window.closeResponseModal();
+            return;
+          }
+
+          // Handle rating buttons
+          const ratingBtn = e.target.closest('.rating-option');
+          if (ratingBtn && ratingBtn.dataset.questionId && ratingBtn.dataset.ratingValue) {
+            window.selectRating(parseInt(ratingBtn.dataset.questionId), parseInt(ratingBtn.dataset.ratingValue));
+            return;
+          }
+        });
+
+        // Handle change events for form inputs (fixes DOMPurify onchange removal)
+        document.body.addEventListener('change', (e) => {
+          const target = e.target;
+
+          // Handle text inputs and textareas
+          if (
+            target.matches(
+              'textarea[data-question-id], input[type="text"][data-question-id], input[type="number"][data-question-id], input[type="date"][data-question-id]',
+            )
+          ) {
+            const questionId = parseInt(target.dataset.questionId);
+            const type = target.type === 'number' ? 'number' : target.type === 'date' ? 'date' : 'text';
+            window.updateAnswer(questionId, target.value, type);
+            return;
+          }
+
+          // Handle radio buttons (single choice and yes/no)
+          if (target.matches('input[type="radio"]')) {
+            const name = target.name;
+            if (name && name.startsWith('question_')) {
+              const questionId = parseInt(name.replace('question_', ''));
+              if (target.dataset.textValue) {
+                // Yes/No questions
+                window.updateAnswer(questionId, target.dataset.textValue, 'text');
+              } else {
+                // Single choice questions
+                window.updateAnswer(questionId, parseInt(target.value), 'single');
+              }
+            }
+            return;
+          }
+
+          // Handle checkboxes (multiple choice)
+          if (target.matches('input[type="checkbox"]')) {
+            const questionId = parseInt(target.dataset.questionId);
+            const optionId = parseInt(target.value);
+            if (questionId && !isNaN(optionId)) {
+              window.updateMultipleChoice(questionId, optionId, target.checked);
+            }
+            return;
+          }
+        });
       });
 
       // Load available surveys
@@ -907,10 +1048,12 @@
         const card = document.createElement('div');
         card.className = completed ? 'survey-card completed' : 'survey-card';
 
-        // Add click handler for completed surveys
+        // Store survey ID in data attribute for event delegation
+        card.dataset.surveyId = survey.id;
+
+        // Completed cards are clickable (handled by event delegation)
         if (completed) {
           card.style.cursor = 'pointer';
-          card.onclick = () => window.viewResponse(survey.id);
         }
 
         const deadline = survey.end_date ? new Date(survey.end_date) : null;
@@ -939,8 +1082,7 @@
                     `
                         : '<div></div>'
                     }
-                    <button class="survey-action ${completed ? 'completed' : ''}"
-                            onclick="${completed ? 'viewResponse' : 'startSurvey'}(${survey.id})">
+                    <button class="survey-action ${completed ? 'completed' : ''}">
                         ${completed ? '<i class="fas fa-check"></i> Abgeschlossen' : '<i class="fas fa-arrow-right"></i> Teilnehmen'}
                     </button>
                 </div>
@@ -953,32 +1095,6 @@
       const showErrorAlert = (...args) => window.showErrorAlert && window.showErrorAlert(...args);
       // Removed unused showSuccessAlert - using window.showSuccessAlert directly
       const showAlert = (...args) => window.showAlert && window.showAlert(...args);
-
-      // Start survey
-      window.startSurvey = async function startSurvey(surveyId) {
-        try {
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
-
-          // Load survey details
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            // Handle v2 API response structure
-            currentSurvey = useV2 && result.success ? result.data : result.data || result.survey || result;
-            answers = {};
-            displaySurveyForm();
-          }
-        } catch (error) {
-          console.error('Error loading survey:', error);
-          showErrorAlert('Fehler beim Laden der Umfrage');
-        }
-      };
 
       // Helper function to convert Buffer to text
       function getQuestionText(questionText) {
@@ -1002,6 +1118,15 @@
 
       // Display survey form
       function displaySurveyForm() {
+        console.log('Displaying survey form for:', currentSurvey);
+
+        const modal = document.querySelector('#surveyModal');
+        if (!modal) {
+          console.error('Survey modal not found!');
+          alert('Fehler: Modal nicht gefunden!');
+          return;
+        }
+
         document.querySelector('#modalTitle').textContent = getQuestionText(currentSurvey.title);
         const container = document.querySelector('#questionsContainer');
         container.innerHTML = '';
@@ -1016,7 +1141,8 @@
         });
 
         updateProgress();
-        document.querySelector('#surveyModal').style.display = 'flex';
+        modal.style.display = 'flex';
+        console.log('Modal display set to flex');
       }
 
       // Create question element
@@ -1047,8 +1173,7 @@
           case 'text':
             return `<textarea class="form-control"
                                     data-question-id="${question.id}"
-                                    ${question.is_required ? 'required' : ''}
-                                    onchange="updateAnswer(${question.id}, this.value, 'text')"></textarea>`;
+                                    ${question.is_required ? 'required' : ''}></textarea>`;
 
           case 'single_choice':
             return question.options
@@ -1063,7 +1188,7 @@
                                    name="question_${question.id}"
                                    value="${optionId}"
                                    ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, ${optionId}, 'single')">
+>
                             <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
                     `;
@@ -1081,7 +1206,7 @@
                             <input type="checkbox"
                                    id="q${question.id}_opt${optionId}"
                                    value="${optionId}"
-                                   onchange="updateMultipleChoice(${question.id}, ${optionId}, this.checked)">
+                                   data-question-id="${question.id}">
                             <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
                     `;
@@ -1096,7 +1221,8 @@
                                 (value) => `
                                 <div class="rating-option"
                                      id="rating_${question.id}_${value}"
-                                     onclick="selectRating(${question.id}, ${value})">
+                                     data-question-id="${question.id}"
+                                     data-rating-value="${value}">
                                     ${value}
                                 </div>
                             `,
@@ -1113,7 +1239,7 @@
                                    name="question_${question.id}"
                                    value="yes"
                                    ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, 'Ja', 'text')">
+                                   data-text-value="Ja">
                             <label for="q${question.id}_yes">Ja</label>
                         </div>
                         <div class="choice-option">
@@ -1122,7 +1248,7 @@
                                    name="question_${question.id}"
                                    value="no"
                                    ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, 'Nein', 'text')">
+                                   data-text-value="Nein">
                             <label for="q${question.id}_no">Nein</label>
                         </div>
                     `;
@@ -1130,14 +1256,14 @@
           case 'number':
             return `<input type="number"
                                    class="form-control"
-                                   ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, this.value, 'number')">`;
+                                   data-question-id="${question.id}"
+                                   ${question.is_required ? 'required' : ''}>`;
 
           case 'date':
             return `<input type="date"
                                    class="form-control"
-                                   ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, this.value, 'date')">`;
+                                   data-question-id="${question.id}"
+                                   ${question.is_required ? 'required' : ''}>`;
 
           default:
             return '';
@@ -1330,7 +1456,7 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h2>Ihre Antworten - ${survey.title}</h2>
-                <span class="close" onclick="closeResponseModal()">&times;</span>
+                <span class="close" data-action="close-response-modal">&times;</span>
               </div>
               <div class="modal-body">
                 <div class="response-info">

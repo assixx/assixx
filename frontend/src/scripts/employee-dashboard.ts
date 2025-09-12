@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // DOM elements
   const documentTableBody = $$id('recent-documents');
-  const logoutBtn = $$id('logout-btn') as HTMLButtonElement | null;
+  // logoutBtn removed - handled by unified-navigation
   const searchForm = $$id('search-form') as HTMLFormElement | null;
   const searchInput = $$id('search-input') as HTMLInputElement | null;
 
@@ -100,26 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Logout button
-  if (logoutBtn !== null) {
-    logoutBtn.addEventListener('click', (e) => {
-      void (async () => {
-        e.preventDefault();
-        // Direct logout without confirmation
-        try {
-          // Import and use the logout function from auth module
-          const { logout } = await import('./auth.js');
-          await logout();
-        } catch (error) {
-          console.error('Logout error:', error);
-          // Fallback
-          window.location.href = '/login';
-        }
-      })();
-    });
-  } else {
-    console.error('Logout-Button nicht gefunden');
-  }
+  // Logout is handled by unified-navigation with confirmation modal
 
   // Load initial data
   void loadEmployeeInfo();
@@ -199,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function loadDocuments(): Promise<void> {
     try {
-      const documents = await apiClient.get<Document[]>('/documents/my-documents');
+      const documents = await apiClient.get<Document[]>('/documents');
       displayDocuments(documents);
     } catch (error) {
       console.error('Fehler beim Laden der Dokumente:', error);

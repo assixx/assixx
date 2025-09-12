@@ -771,6 +771,12 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <!-- DOMPurify CDN für inline Scripts -->
     <script src="/js/purify.min.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      // Make setHTML globally available for inline scripts
+      window.setHTML = setHTML;
+    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -813,7 +819,7 @@
                 </div>
                 <div class="profile-picture-actions">
                   <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
-                  <button class="btn btn-primary" onclick="document.querySelector('profile-picture-input').click()">
+                  <button class="btn btn-primary" data-action="trigger-file-input">
                     <i class="fas fa-camera"></i>
                     Bild ändern
                   </button>
@@ -1181,13 +1187,14 @@
       function showMessage(message, type) {
         const container = document.querySelector('#message-container');
         if (container) {
-          // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
-          container.innerHTML = DOMPurify.sanitize(`
+          // Use dom-utils setHTML for safe sanitization
+          const htmlContent = `
                 <div class="alert alert-${type}">
                     <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
                     ${message}
                 </div>
-            `);
+            `;
+          window.setHTML(container, htmlContent);
 
           setTimeout(() => {
             container.innerHTML = '';
@@ -1199,8 +1206,8 @@
       function showSuccessOverlay(text = 'Erfolgreich!') {
         const overlay = document.createElement('div');
         overlay.className = 'success-overlay';
-        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
-        overlay.innerHTML = DOMPurify.sanitize(`
+        // Use dom-utils setHTML for safe sanitization
+        const overlayHtml = `
           <div class="success-message">
             <div class="success-icon">
               <i class="fas fa-check-circle"></i>
@@ -1209,7 +1216,8 @@
               ${text}
             </div>
           </div>
-        `);
+        `;
+        window.setHTML(overlay, overlayHtml);
         document.body.append(overlay);
 
         // Remove after animation - immer 2 Sekunden
@@ -1262,8 +1270,9 @@
 
           if (approvals.length > 0) {
             approvalSection.style.display = 'block';
-            // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
-            approvalList.innerHTML = DOMPurify.sanitize(approvals.map((approval) => createApprovalItem(approval)).join(''));
+            // Use dom-utils setHTML for safe sanitization
+            const approvalsHtml = approvals.map((approval) => createApprovalItem(approval)).join('');
+            window.setHTML(approvalList, approvalsHtml);
           } else {
             approvalSection.style.display = 'none';
             approvalList.innerHTML = ''; // Clear any existing content
@@ -1299,13 +1308,13 @@
                 ${
                   canApprove
                     ? `
-                  <button class="btn btn-success" onclick="approveDeletion(${approval.queue_id})">
+                  <button class="btn btn-success" data-action="approve-deletion" data-queue-id="${approval.queue_id}">
                     <i class="fas fa-check"></i> Genehmigen
                   </button>
                 `
                     : ''
                 }
-                <button class="btn btn-danger" onclick="rejectDeletion(${approval.queue_id})">
+                <button class="btn btn-danger" data-action="reject-deletion" data-queue-id="${approval.queue_id}">
                   <i class="fas fa-times"></i> Ablehnen
                 </button>
               </div>
@@ -1490,6 +1499,34 @@
             }
           });
         }
+
+        // Event delegation for all actions
+        document.addEventListener('click', function (e) {
+          const target = e.target.closest('[data-action]');
+          if (target) {
+            const action = target.dataset.action;
+
+            switch (action) {
+              case 'trigger-file-input':
+                document.querySelector('#profile-picture-input').click();
+                break;
+              case 'approve-deletion': {
+                const queueId = parseInt(target.dataset.queueId);
+                if (window.approveDeletion) {
+                  window.approveDeletion(queueId);
+                }
+                break;
+              }
+              case 'reject-deletion': {
+                const queueId = parseInt(target.dataset.queueId);
+                if (window.rejectDeletion) {
+                  window.rejectDeletion(queueId);
+                }
+                break;
+              }
+            }
+          }
+        });
       }
     </script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>

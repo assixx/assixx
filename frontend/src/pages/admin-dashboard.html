@@ -599,6 +599,12 @@
     <script src="/js/purify.min.js"></script>
     <!-- Feature Flags -->
     <script src="/feature-flags.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      // Make setHTML globally available for inline scripts
+      window.setHTML = setHTML;
+    </script>
   </head>
   <body class="admin-dashboard">
     <!-- Unified Navigation -->
@@ -1716,27 +1722,25 @@
 
             const tbody = document.querySelector('#documents-table-body');
             if (tbody) {
-              // Safe: HTML is generated from server data and sanitized with DOMPurify
-              // eslint-disable-next-line no-unsanitized/property
-              tbody.innerHTML = DOMPurify.sanitize(
-                documents
-                  .map((doc) => {
-                    // Bestimme den Empfänger-Text basierend auf recipient_type
-                    let recipientDisplay = '-';
-                    if (doc.recipient_type === 'user' && doc.employee_name) {
-                      recipientDisplay = doc.employee_name;
-                    } else if (doc.recipient_type === 'team' && doc.team_name) {
-                      recipientDisplay = `Team: ${doc.team_name}`;
-                    } else if (doc.recipient_type === 'department' && doc.department_name) {
-                      recipientDisplay = `Abteilung: ${doc.department_name}`;
-                    } else if (doc.recipient_type === 'company') {
-                      recipientDisplay = 'Gesamte Firma';
-                    } else if (doc.employee_name) {
-                      // Fallback für alte Dokumente
-                      recipientDisplay = doc.employee_name;
-                    }
+              // Safe: HTML is generated from server data and sanitized with dom-utils
+              const htmlContent = documents
+                .map((doc) => {
+                  // Bestimme den Empfänger-Text basierend auf recipient_type
+                  let recipientDisplay = '-';
+                  if (doc.recipient_type === 'user' && doc.employee_name) {
+                    recipientDisplay = doc.employee_name;
+                  } else if (doc.recipient_type === 'team' && doc.team_name) {
+                    recipientDisplay = `Team: ${doc.team_name}`;
+                  } else if (doc.recipient_type === 'department' && doc.department_name) {
+                    recipientDisplay = `Abteilung: ${doc.department_name}`;
+                  } else if (doc.recipient_type === 'company') {
+                    recipientDisplay = 'Gesamte Firma';
+                  } else if (doc.employee_name) {
+                    // Fallback für alte Dokumente
+                    recipientDisplay = doc.employee_name;
+                  }
 
-                    return `
+                  return `
                     <tr>
                       <td>${doc.file_name || doc.filename || '-'}</td>
                       <td>${recipientDisplay}</td>
@@ -1749,21 +1753,21 @@
                       </td>
                       <td>
                         <div class="btn-group" role="group">
-                          <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})" title="Herunterladen">
+                          <button class="btn btn-sm btn-primary" data-action="download-document" data-doc-id="${doc.id}" title="Herunterladen">
                             <i class="fas fa-download me-1"></i>
                             Download
                           </button>
                           ${
                             !doc.is_archived
                               ? `
-                            <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})" title="Archivieren">
+                            <button class="btn btn-sm btn-warning" data-action="archive-document" data-doc-id="${doc.id}" title="Archivieren">
                               <i class="fas fa-archive me-1"></i>
                               Archiv
                             </button>
                           `
                               : ''
                           }
-                          <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})" title="Löschen">
+                          <button class="btn btn-sm btn-danger" data-action="delete-document" data-doc-id="${doc.id}" title="Löschen">
                             <i class="fas fa-trash me-1"></i>
                             Löschen
                           </button>
@@ -1771,9 +1775,34 @@
                       </td>
                     </tr>
                   `;
-                  })
-                  .join(''),
-              );
+                })
+                .join('');
+              // Use dom-utils setHTML for safe sanitization
+              window.setHTML(tbody, htmlContent);
+
+              // Event delegation for document actions
+              if (!tbody.dataset.delegationInitialized) {
+                tbody.dataset.delegationInitialized = 'true';
+                tbody.addEventListener('click', (e) => {
+                  const button = e.target.closest('[data-action]');
+                  if (button) {
+                    const action = button.dataset.action;
+                    const docId = button.dataset.docId;
+
+                    switch (action) {
+                      case 'download-document':
+                        if (window.downloadDocument) window.downloadDocument(parseInt(docId));
+                        break;
+                      case 'archive-document':
+                        if (window.archiveDocument) window.archiveDocument(parseInt(docId));
+                        break;
+                      case 'delete-document':
+                        if (window.deleteDocument) window.deleteDocument(parseInt(docId));
+                        break;
+                    }
+                  }
+                });
+              }
             }
           }
         } catch (error) {
@@ -2552,9 +2581,8 @@
             const firstName = employee.firstName || employee.first_name || '';
             const lastName = employee.lastName || employee.last_name || '';
 
-            // Safe: HTML is generated from server data and sanitized with DOMPurify
-            // eslint-disable-next-line no-unsanitized/property
-            row.innerHTML = DOMPurify.sanitize(`
+            // Safe: HTML is generated from server data and sanitized with dom-utils
+            const rowHtml = `
               <td>${firstName} ${lastName}</td>
               <td>${employee.email || ''}</td>
               <td>${employee.employeeId || employee.employee_id || employee.id || ''}</td>
@@ -2575,19 +2603,42 @@
                 }
               </td>
               <td>
-                <button class="btn btn-sm btn-info" onclick="changeEmployeeStatus(${employee.id})">
+                <button class="btn btn-sm btn-info" data-action="change-employee-status" data-employee-id="${employee.id}">
                   <i class="fas fa-user-clock"></i> Status ändern
                 </button>
-                <button class="btn btn-sm btn-secondary" onclick="editEmployee(${employee.id})">
+                <button class="btn btn-sm btn-secondary" data-action="edit-employee" data-employee-id="${employee.id}">
                   <i class="fas fa-edit"></i> Bearbeiten
                 </button>
                 <a href="/manage-employees" class="btn btn-sm btn-danger">
                   <i class="fas fa-users-cog"></i> Verwalten
                 </a>
               </td>
-            `);
+            `;
+            // Use dom-utils setHTML for safe sanitization
+            window.setHTML(row, rowHtml);
             tableBody.append(row);
           });
+
+          // Event delegation for employee actions
+          if (!tableBody.dataset.delegationInitialized) {
+            tableBody.dataset.delegationInitialized = 'true';
+            tableBody.addEventListener('click', (e) => {
+              const button = e.target.closest('[data-action]');
+              if (button) {
+                const action = button.dataset.action;
+                const employeeId = button.dataset.employeeId;
+
+                switch (action) {
+                  case 'change-employee-status':
+                    if (window.changeEmployeeStatus) window.changeEmployeeStatus(parseInt(employeeId));
+                    break;
+                  case 'edit-employee':
+                    if (window.editEmployee) window.editEmployee(parseInt(employeeId));
+                    break;
+                }
+              }
+            });
+          }
         } catch (error) {
           console.error('Error loading employees:', error);
           const tableBody = document.querySelector('#employees-table-body');

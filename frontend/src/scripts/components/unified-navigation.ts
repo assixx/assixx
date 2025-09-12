@@ -277,6 +277,9 @@ class UnifiedNavigation {
     this.injectNavigationHTML();
     // Don't attach event listeners here - they will be attached after navigation is injected
 
+    // Initialize event delegation for all navigation actions
+    this.initializeEventDelegation();
+
     // Fix logo navigation after DOM is ready
     setTimeout(() => {
       this.fixLogoNavigation();
@@ -1231,7 +1234,7 @@ class UnifiedNavigation {
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
           </svg>
           <span>Sie agieren derzeit als <strong>${currentRoleText}</strong>. Ihre ursprüngliche Rolle ist <strong>${originalRoleText}</strong>.</span>
-          <button class="role-switch-banner-close" onclick="window.dismissRoleSwitchBanner();" title="Banner schließen">
+          <button class="role-switch-banner-close" data-action="dismiss-role-banner" title="Banner schließen">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
             </svg>
@@ -1424,7 +1427,7 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <button class="sidebar-title blackboard-button" onclick="window.location.href='/blackboard'" title="Zum Schwarzen Brett">
+                <button class="sidebar-title blackboard-button" data-action="navigate-blackboard" title="Zum Schwarzen Brett">
                     <span class="title-icon pinned-icon">
                         <span class="pin-head"></span>
                         <span class="pin-needle"></span>
@@ -1507,7 +1510,7 @@ class UnifiedNavigation {
     const submenuItems = this.createSubmenuItems(item.submenu);
     return `
       <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-        <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+        <a href="#" class="sidebar-link" data-action="toggle-submenu" data-nav-id="${item.id}">
           <span class="icon">${item.icon ?? ''}</span>
           <span class="label">${item.label}</span>
           <span class="nav-indicator"></span>
@@ -1546,7 +1549,7 @@ class UnifiedNavigation {
     const submenuItems = this.createChildrenItems(item.children);
     return `
       <li class="sidebar-item has-submenu ${activeClass}" style="position: relative;">
-        <a href="#" class="sidebar-link" onclick="toggleSubmenu(event, '${item.id}')" data-nav-id="${item.id}">
+        <a href="#" class="sidebar-link" data-action="toggle-submenu" data-nav-id="${item.id}">
           <span class="icon">${item.icon ?? ''}</span>
           <span class="label">${item.label}</span>
           <span class="nav-indicator"></span>
@@ -2708,6 +2711,44 @@ class UnifiedNavigation {
     }
   }
 
+  /**
+   * Initialize event delegation for all navigation actions
+   */
+  private initializeEventDelegation(): void {
+    // Event delegation for all navigation actions
+    document.addEventListener('click', (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const actionElement = target.closest<HTMLElement>('[data-action]');
+
+      if (actionElement !== null) {
+        const action = actionElement.dataset.action ?? '';
+
+        switch (action) {
+          case 'dismiss-role-banner':
+            window.dismissRoleSwitchBanner();
+            break;
+
+          case 'navigate-blackboard':
+            window.location.href = '/blackboard';
+            break;
+
+          case 'navigate-storage-upgrade':
+            window.location.href = '/storage-upgrade';
+            break;
+
+          case 'toggle-submenu': {
+            e.preventDefault();
+            const navId = actionElement.dataset.navId ?? '';
+            if (navId !== '') {
+              (window as unknown as NavigationWindow).toggleSubmenu(e, navId);
+            }
+            break;
+          }
+        }
+      }
+    });
+  }
+
   // Fix logo navigation based on user role
   private initializeSSE(): void {
     const token = localStorage.getItem('token');
@@ -2830,7 +2871,7 @@ class UnifiedNavigation {
           </div>
           <div class="storage-percentage" id="storage-percentage">0% belegt</div>
         </div>
-        <button class="storage-upgrade-btn" onclick="window.location.href='/storage-upgrade'">
+        <button class="storage-upgrade-btn" data-action="navigate-storage-upgrade">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
           </svg>
@@ -3083,8 +3124,8 @@ const unifiedNavigationCSS = `
         color: #ffffffff;
         padding: var(--spacing-sm);
         background:rgba(234, 187, 0, 0);
-        border-radius: 5px;
-        border: 1.3px solid rgba(255, 255, 255, 1);
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 1);
         /*  */
         cursor: pointer;
         width: 98%;

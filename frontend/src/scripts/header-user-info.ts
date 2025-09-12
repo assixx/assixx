@@ -20,8 +20,12 @@ async function loadHeaderUserInfo(): Promise<void> {
     if (!payload) return;
 
     const userNameElement = document.querySelector('#user-name');
-    if (userNameElement) {
-      userNameElement.textContent = payload.username;
+    if (userNameElement !== null) {
+      // Only set username if element is empty or shows email
+      const currentText = userNameElement.textContent;
+      if (currentText === '' || currentText.includes('@')) {
+        userNameElement.textContent = payload.username;
+      }
     }
 
     // Update role badge based on user role

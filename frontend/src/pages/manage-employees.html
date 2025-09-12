@@ -735,7 +735,7 @@
       // Legacy functions for backwards compatibility
       async function loadEmployees() {
         try {
-          const employees = await apiClient.get('/users');
+          const employees = await apiClient.get('/api/v2/users');
           const employeeUsers = employees.filter((u) => u.role === 'employee');
 
           // V2 API already provides availability data in the user objects
@@ -947,7 +947,7 @@
 
       async function editEmployee(id) {
         try {
-          const emp = await apiClient.get(`/users/${id}`);
+          const emp = await apiClient.get(`/api/v2/users/${id}`);
           document.querySelector('#modalTitle').textContent = 'Mitarbeiter bearbeiten';
 
           const form = document.querySelector('#employee-form');
@@ -999,7 +999,7 @@
         }
 
         try {
-          await apiClient.delete(`/users/${id}`);
+          await apiClient.delete(`/api/v2/users/${id}`);
           alert('Mitarbeiter erfolgreich gelöscht');
           loadEmployees();
         } catch (error) {
@@ -1016,7 +1016,7 @@
 
       async function loadDepartments() {
         try {
-          const departments = await apiClient.get('/departments');
+          const departments = await apiClient.get('/api/v2/departments');
           const select = document.querySelector('#employee-department-select');
           if (select && departments) {
             select.innerHTML = '<option value="">Keine Abteilung</option>';
@@ -1034,7 +1034,7 @@
 
       async function loadTeams() {
         try {
-          const teams = await apiClient.get('/teams');
+          const teams = await apiClient.get('/api/v2/teams');
           const select = document.querySelector('#employee-team-select');
           if (select && teams) {
             select.innerHTML = '<option value="">Kein Team</option>';
@@ -1140,7 +1140,7 @@
             }
 
             // Update employee data first
-            await apiClient.put(`/users/${employeeId}`, data);
+            await apiClient.put(`/api/v2/users/${employeeId}`, data);
 
             // Then update availability if any fields are set
             if (data.availabilityStatus || data.availabilityStart || data.availabilityEnd) {
@@ -1153,7 +1153,7 @@
                 };
 
                 // Use v2 API endpoint for availability
-                await apiClient.put(`/users/${employeeId}/availability`, availabilityData);
+                await apiClient.put(`/api/v2/users/${employeeId}/availability`, availabilityData);
                 console.log('Availability updated successfully');
               } catch (availErr) {
                 console.error('Error updating availability:', availErr);
@@ -1175,7 +1175,7 @@
               data.employeeNumber = `EMP${timestamp}`;
             }
 
-            await apiClient.post('/users', data);
+            await apiClient.post('/api/v2/users', data);
             alert('Mitarbeiter erstellt');
             closeEmployeeModal();
             loadEmployees(); // Dynamisches Reload wie bei manage-admins!

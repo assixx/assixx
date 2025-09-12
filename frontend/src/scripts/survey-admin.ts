@@ -137,9 +137,78 @@ export class SurveyAdminManager {
       void this.init();
     }
 
-    // Close dropdowns when clicking outside
+    // Event delegation for all survey admin actions
     document.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
+
+      // Handle all data-action clicks
+      const actionElement = target.closest<HTMLElement>('[data-action]');
+      if (actionElement !== null) {
+        const action = actionElement.dataset.action ?? '';
+        const surveyId = actionElement.dataset.surveyId ?? '';
+        const params = actionElement.dataset.params ?? '';
+
+        // Stop propagation for buttons within cards
+        if (actionElement.tagName === 'BUTTON' && actionElement.closest('.survey-card') !== null) {
+          e.stopPropagation();
+        }
+
+        switch (action) {
+          case 'edit-survey':
+            if (surveyId !== '') void this.editSurvey(Number.parseInt(surveyId, 10));
+            break;
+          case 'view-results':
+            if (surveyId !== '') this.viewResults(Number.parseInt(surveyId, 10));
+            break;
+          case 'delete-survey':
+            if (surveyId !== '') void this.deleteSurvey(Number.parseInt(surveyId, 10));
+            break;
+          case 'create-from-template':
+            if (surveyId !== '') this.createFromTemplate(Number.parseInt(surveyId, 10));
+            break;
+          case 'remove-question':
+            if (params !== '') this.removeQuestion(params);
+            break;
+          case 'toggle-dropdown':
+            if (params !== '') this.toggleDropdown(params);
+            break;
+          case 'select-question-type':
+            if (params !== '') {
+              const parts = params.split('|');
+              if (parts.length === 3) {
+                const [questionId, type, label] = parts;
+                this.selectQuestionType(questionId, type, label);
+              }
+            }
+            break;
+          case 'add-option':
+            if (params !== '') this.addOption(params);
+            break;
+          case 'remove-option':
+            this.removeOption(target);
+            break;
+          case 'add-question':
+            this.addQuestion();
+            break;
+          case 'save-survey-draft':
+            void this.saveSurvey('draft');
+            break;
+          case 'save-survey-active':
+            void this.saveSurvey('active');
+            break;
+          case 'select-assignment':
+            if (params !== '') {
+              const parts = params.split('|');
+              if (parts.length === 2) {
+                const [type, label] = parts;
+                void this.selectAssignmentOption(type, label);
+              }
+            }
+            break;
+        }
+      }
+
+      // Close dropdowns when clicking outside
       if (!target.closest('.custom-dropdown')) {
         document.querySelectorAll('.dropdown-options.active').forEach((dropdown) => {
           dropdown.classList.remove('active');
@@ -327,12 +396,12 @@ export class SurveyAdminManager {
     const completedCount = survey.completedCount ?? 0;
     const responseRate = responseCount > 0 ? Math.round((completedCount / responseCount) * 100) : 0;
     const isDraft = survey.status === 'draft';
-    const onClickAction = isDraft ? 'editSurvey' : 'viewResults';
+    const onClickAction = isDraft ? 'edit-survey' : 'view-results';
     const surveyId = survey.id ?? 0;
     const status = survey.status ?? 'draft';
 
     return `
-      <div class="survey-card" onclick="surveyAdmin.${onClickAction}(${surveyId})">
+      <div class="survey-card" data-action="${onClickAction}" data-survey-id="${surveyId}">
         <div class="survey-card-header">
           <h3 class="survey-card-title">${this.getTextFromBuffer(survey.title)}</h3>
           <span class="survey-status ${status}">${this.getStatusText(status)}</span>
@@ -352,7 +421,7 @@ export class SurveyAdminManager {
           ${
             responseCount === 0
               ? `
-            <button class="survey-action-btn" onclick="event.stopPropagation(); surveyAdmin.editSurvey(${surveyId})">
+            <button class="survey-action-btn" data-action="edit-survey" data-survey-id="${surveyId}">
               <i class="fas fa-edit"></i>
               Bearbeiten
             </button>
@@ -362,14 +431,14 @@ export class SurveyAdminManager {
           ${
             !isDraft
               ? `
-            <button class="survey-action-btn" onclick="event.stopPropagation(); surveyAdmin.viewResults(${surveyId})">
+            <button class="survey-action-btn" data-action="view-results" data-survey-id="${surveyId}">
               <i class="fas fa-chart-bar"></i>
               Ergebnisse
             </button>
           `
               : ''
           }
-          <button class="survey-action-btn" onclick="event.stopPropagation(); surveyAdmin.deleteSurvey(${surveyId})">
+          <button class="survey-action-btn" data-action="delete-survey" data-survey-id="${surveyId}">
             <i class="fas fa-trash"></i>
             Löschen
           </button>
@@ -401,7 +470,7 @@ export class SurveyAdminManager {
     const html = templates
       .map(
         (template) => `
-      <div class="template-card" onclick="surveyAdmin.createFromTemplate(${template.id})">
+      <div class="template-card" data-action="create-from-template" data-survey-id="${template.id}">
         <h4>${escapeHtml(template.name)}</h4>
         <p>${escapeHtml(template.description)}</p>
         <span class="template-category">${escapeHtml(template.category)}</span>
@@ -578,7 +647,7 @@ export class SurveyAdminManager {
       <div class="question-item" id="${questionId}">
         <div class="question-header">
           <span class="question-number">${this.questionCounter}</span>
-          <button type="button" class="remove-question" onclick="surveyAdmin.removeQuestion('${questionId}')">
+          <button type="button" class="remove-question" data-action="remove-question" data-params="${questionId}">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             </svg>
@@ -593,32 +662,32 @@ export class SurveyAdminManager {
         <div class="question-controls">
           <div class="custom-dropdown">
             <div class="dropdown-display" id="${questionId}_typeDisplay"
-                 onclick="surveyAdmin.toggleDropdown('${questionId}_type')">
+                 data-action="toggle-dropdown" data-params="${questionId}_type">
               <span>Textantwort</span>
               <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                 <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </div>
             <div class="dropdown-options" id="${questionId}_typeDropdown">
-              <div class="dropdown-option" onclick="surveyAdmin.selectQuestionType('${questionId}', 'text', 'Textantwort')">
+              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|text|Textantwort">
                 Textantwort
               </div>
-              <div class="dropdown-option" onclick="surveyAdmin.selectQuestionType('${questionId}', 'single_choice', 'Einzelauswahl')">
+              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|single_choice|Einzelauswahl">
                 Einzelauswahl
               </div>
-              <div class="dropdown-option" onclick="surveyAdmin.selectQuestionType('${questionId}', 'multiple_choice', 'Mehrfachauswahl')">
+              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|multiple_choice|Mehrfachauswahl">
                 Mehrfachauswahl
               </div>
-              <div class="dropdown-option" onclick="surveyAdmin.selectQuestionType('${questionId}', 'rating', 'Bewertung (1-5)')">
+              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|rating|Bewertung (1-5)">
                 Bewertung (1-5)
               </div>
-              <div class="dropdown-option" onclick="surveyAdmin.selectQuestionType('${questionId}', 'yes_no', 'Ja/Nein')">
+              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|yes_no|Ja/Nein">
                 Ja/Nein
               </div>
-              <div class="dropdown-option" onclick="surveyAdmin.selectQuestionType('${questionId}', 'number', 'Zahl')">
+              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|number|Zahl">
                 Zahl
               </div>
-              <div class="dropdown-option" onclick="surveyAdmin.selectQuestionType('${questionId}', 'date', 'Datum')">
+              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|date|Datum">
                 Datum
               </div>
             </div>
@@ -635,7 +704,7 @@ export class SurveyAdminManager {
         <div id="${questionId}_options" style="display: none;">
           <div class="options-header">
             <label class="form-label">Antwortoptionen</label>
-            <button type="button" class="add-option-btn" onclick="surveyAdmin.addOption('${questionId}')">
+            <button type="button" class="add-option-btn" data-action="add-option" data-params="${questionId}">
               <i class="fas fa-plus"></i> Option hinzufügen
             </button>
           </div>
@@ -670,20 +739,24 @@ export class SurveyAdminManager {
 
   public addOption(questionId: string): void {
     const optionList = document.querySelector(`#${questionId}_option_list`);
-    if (!optionList) return;
+    if (optionList === null) return;
 
     const optionHtml = `
       <div class="option-item">
         <input type="text" class="option-input" placeholder="Option eingeben...">
-        <button type="button" class="remove-option" onclick="surveyAdmin.removeOption(this)">
+        <button type="button" class="remove-option" data-action="remove-option">
           <i class="fas fa-times"></i>
         </button>
       </div>
     `;
 
-    // Safe: HTML template is hardcoded without any user input
-    // eslint-disable-next-line no-unsanitized/method
-    optionList.insertAdjacentHTML('beforeend', optionHtml);
+    // Use setHTML from dom-utils instead of insertAdjacentHTML
+    const tempDiv = document.createElement('div');
+    setHTML(tempDiv, optionHtml);
+    const optionElement = tempDiv.firstElementChild;
+    if (optionElement !== null) {
+      optionList.append(optionElement);
+    }
   }
 
   public removeOption(button: HTMLElement): void {
@@ -978,21 +1051,25 @@ export class SurveyAdminManager {
         if (q.options && q.options.length > 0) {
           this.handleQuestionTypeChange(questionId, q.questionType);
           const optionsList = document.querySelector(`#${questionId}_option_list`);
-          if (optionsList) {
+          if (optionsList !== null) {
             optionsList.innerHTML = '';
             q.options.forEach((option) => {
               const optionText = typeof option === 'string' ? option : option.option_text;
               const optionHtml = `
                 <div class="option-item">
                   <input type="text" class="option-input" value="${escapeHtml(optionText)}">
-                  <button type="button" class="remove-option" onclick="surveyAdmin.removeOption(this)">
+                  <button type="button" class="remove-option" data-action="remove-option">
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
               `;
-              // Safe: optionText is escaped with escapeHtml()
-              // eslint-disable-next-line no-unsanitized/method
-              optionsList.insertAdjacentHTML('beforeend', optionHtml);
+              // Use setHTML from dom-utils to sanitize and append
+              const tempDiv = document.createElement('div');
+              setHTML(tempDiv, optionHtml);
+              const optionElement = tempDiv.firstElementChild;
+              if (optionElement !== null) {
+                optionsList.append(optionElement);
+              }
             });
           }
         }
@@ -1116,21 +1193,25 @@ export class SurveyAdminManager {
           const qType = question.questionType;
           this.handleQuestionTypeChange(`question_${this.questionCounter}`, qType);
           const optionsList = questionElement.querySelector(`#question_${this.questionCounter}_option_list`);
-          if (optionsList) {
+          if (optionsList !== null) {
             optionsList.innerHTML = '';
             question.options.forEach((option) => {
               const optionText = typeof option === 'string' ? option : option.option_text;
               const optionHtml = `
                 <div class="option-item">
                   <input type="text" class="option-input" value="${escapeHtml(optionText)}">
-                  <button type="button" class="remove-option" onclick="surveyAdmin.removeOption(this)">
+                  <button type="button" class="remove-option" data-action="remove-option">
                     <i class="fas fa-times"></i>
                   </button>
                 </div>
               `;
-              // Safe: optionText is escaped with escapeHtml()
-              // eslint-disable-next-line no-unsanitized/method
-              optionsList.insertAdjacentHTML('beforeend', optionHtml);
+              // Use setHTML from dom-utils to sanitize and append
+              const tempDiv = document.createElement('div');
+              setHTML(tempDiv, optionHtml);
+              const optionElement = tempDiv.firstElementChild;
+              if (optionElement !== null) {
+                optionsList.append(optionElement);
+              }
             });
           }
         }

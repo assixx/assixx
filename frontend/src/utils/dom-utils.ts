@@ -307,7 +307,7 @@ export function setHTML(element: HTMLElement | null, html: string): void {
         'value',
         'name',
         'for',
-        'onclick',
+        // 'onclick', // REMOVED for security - use Event Delegation instead!
         'style',
         // Accessibility attributes
         'role',

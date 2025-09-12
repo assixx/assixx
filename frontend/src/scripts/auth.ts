@@ -372,10 +372,21 @@ export async function loadUserInfo(): Promise<User> {
 
         // Update user display - check both element IDs for compatibility
         const userName = document.querySelector('#userName') ?? document.querySelector('#user-name');
-        if (userName) {
-          const firstName = user.first_name ?? 'Admin';
-          const lastName = user.last_name ?? '';
-          userName.textContent = `${firstName} ${lastName}`.trim();
+        if (userName !== null) {
+          // API v2 uses camelCase (firstName), API v1 uses snake_case (first_name)
+          // Handle both API versions with type assertion
+          interface UserWithBothFormats extends User {
+            firstName?: string;
+            lastName?: string;
+          }
+          const userWithBoth = user as UserWithBothFormats;
+          const firstName = userWithBoth.firstName ?? userWithBoth.first_name ?? userWithBoth.username;
+          const lastName = userWithBoth.lastName ?? userWithBoth.last_name ?? '';
+          const displayName = `${firstName} ${lastName}`.trim();
+          // Only update if not already correctly set
+          if (userName.textContent !== displayName) {
+            userName.textContent = displayName;
+          }
         }
 
         const userRole = document.querySelector('#userRole');
