@@ -859,6 +859,9 @@
 
     <script>
       /* global DOMPurify */
+      // Constants
+      const FILE_INPUT_SELECTOR = '#file-input';
+
       document.addEventListener('DOMContentLoaded', () => {
         console.info('Document upload page loaded');
 
@@ -1008,7 +1011,7 @@
         }
 
         const categoryDisplay = document.querySelector('#categoryDisplay').querySelector('span').textContent;
-        const fileInput = document.querySelector('#file-input');
+        const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
         const fileName = fileInput.files[0].name;
 
         const confirmMsg =
@@ -1028,7 +1031,7 @@
       // Datei-Upload-Bereich einrichten
       function setupFileUpload() {
         const dropArea = document.querySelector('#drop-area');
-        const fileInput = document.querySelector('#file-input');
+        const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
         const fileInfo = document.querySelector('#file-info');
         const fileName = document.querySelector('#file-name');
         const fileSize = document.querySelector('#file-size');
@@ -1097,7 +1100,7 @@
             }
 
             // Dateiauswahl zurücksetzen
-            const fileInput = document.querySelector('#file-input');
+            const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
             if (fileInput) {
               fileInput.value = '';
             }
@@ -1111,7 +1114,7 @@
             showError(`Die Datei ist zu groß (${formatFileSize(file.size)}). Die maximale Dateigröße beträgt 5 MB.`);
 
             // Dateiauswahl zurücksetzen
-            const fileInput = document.querySelector('#file-input');
+            const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
             if (fileInput) {
               fileInput.value = '';
             }
@@ -1160,7 +1163,11 @@
           const sizes = ['Bytes', 'KB', 'MB', 'GB'];
           const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-          return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+          // Ensure i is within bounds to prevent object injection
+          const sizeIndex = Math.min(Math.max(0, i), sizes.length - 1);
+
+          // eslint-disable-next-line security/detect-object-injection -- sizeIndex is mathematically bounded between 0 and sizes.length-1
+          return parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2)) + ' ' + sizes[sizeIndex];
         }
       }
 
@@ -1235,7 +1242,7 @@
 
         // Überprüfen, ob alle erforderlichen Felder ausgefüllt sind
         const category = formData.get('category');
-        const fileInput = document.querySelector('#file-input');
+        const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
 
         let recipientId = null;
         // recipientName wird für zukünftige Features vorbereitet

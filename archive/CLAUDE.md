@@ -120,13 +120,13 @@ Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden
 
 ## START-TRIGGER
 
-### Trigger 1: "weitermachen mit Assixx" (Normal-Modus)
+### Trigger 1: "continue with Assixx" (Normal-Modus)
 
 - **Aktion:** Vollständige Pflicht-Checkliste durchführen MIT dev-status.sh
 - **Prozess:** Alle Starttasks, TodoWrite mit 10+ Punkten, komplette Checks inklusive dev-status.sh
 - **Ziel:** Sicherstellen, dass alles korrekt läuft
 
-### Trigger 2: "weitermachen mit Assixx und skip" (Skip-Modus)
+### Trigger 2: "continue with Assixx without dev-status.sh" (Skip-Modus)
 
 - **Aktion:** Vollständige Pflicht-Checkliste durchführen OHNE dev-status.sh
 - **Prozess:** Alle Starttasks, TodoWrite mit 10+ Punkten, komplette Checks aber dev-status.sh wird übersprungen
@@ -135,8 +135,8 @@ Alle existierenden Modals für Dateneingabe müssen schrittweise umgebaut werden
 
 ## DOCKER QUICK-CHECK
 
-**Bei "weitermachen mit Assixx" (Normal-Modus) IMMER ausführen:**
-**Bei "weitermachen mit Assixx und skip" (Skip-Modus) ÜBERSPRINGEN!**
+**Bei "continue with Assixx" (Normal-Modus) IMMER ausführen:**
+**Bei "continue with Assixx without dev-status.sh" (Skip-Modus) ÜBERSPRINGEN!**
 
 ```bash
 # Working Directory ist WICHTIG!
@@ -146,7 +146,7 @@ cd /home/scs/projects/Assixx/docker
 docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 # ODER nutze das neue Status-Script (empfohlen):
-# ACHTUNG: Bei "und skip" wird dev-status.sh NICHT ausgeführt!
+# ACHTUNG: Bei "without dev-status.sh" wird dev-status.sh NICHT ausgeführt!
 /home/scs/projects/Assixx/scripts/dev-status.sh
 ```
 
@@ -232,7 +232,7 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 ## PFLICHT-CHECKLISTE (TodoWrite mit 10+ Punkten)
 
-1. Docker-Check (bei "und skip": OHNE dev-status.sh)
+1. Docker-Check (bei "without dev-status.sh": OHNE dev-status.sh)
 2. TODO.md (AKTUELLE PHASE + FORTSCHRITTS-TRACKING!)
 3. CLAUDE.md
 4. TypeScript-Standards
@@ -305,19 +305,19 @@ docker-compose ps && curl -s http://localhost:3000/health | jq '.'
 
 ## WORKFLOW
 
-### Bei "weitermachen mit Assixx" (Normal-Modus)
+### Bei "continue with Assixx" (Normal-Modus)
 
 1. TodoWrite mit 10+ Punkten erstellen (siehe PFLICHT-CHECKLISTE)
 2. Alle Checks durchführen INKLUSIVE dev-status.sh
 3. Zusammenfassung erstellen
 
-### Bei "weitermachen mit Assixx und skip" (Skip-Modus)
+### Bei "continue with Assixx without dev-status.sh" (Skip-Modus)
 
 1. TodoWrite mit 10+ Punkten erstellen (siehe PFLICHT-CHECKLISTE)
 2. Alle Checks durchführen OHNE dev-status.sh
 3. Zusammenfassung erstellen
 
-**MERKE:** Der einzige Unterschied ist das Überspringen von dev-status.sh bei "und skip"
+**MERKE:** Der einzige Unterschied ist das Überspringen von dev-status.sh bei "without dev-status.sh"
 
 ### Dokumentation aktualisieren bei
 
@@ -433,9 +433,9 @@ weitere Notes:
 
 ## 🎯 START-TRIGGER QUICK REFERENCE (23.08.2025)
 
-- **"weitermachen mit Assixx"** → Normal-Modus mit allen Checks INKLUSIVE dev-status.sh
-- **"weitermachen mit Assixx und skip"** → Skip-Modus mit allen Checks OHNE dev-status.sh
-- **EINZIGER UNTERSCHIED:** Bei "und skip" wird dev-status.sh übersprungen!
+- **"continue with Assixx"** → Normal-Modus mit allen Checks INKLUSIVE dev-status.sh
+- **"continue with Assixx without dev-status.sh"** → Skip-Modus mit allen Checks OHNE dev-status.sh
+- **EINZIGER UNTERSCHIED:** Bei "without dev-status.sh" wird dev-status.sh übersprungen!
 
 ## Aktuelle Notizen (26.06.2025)
 

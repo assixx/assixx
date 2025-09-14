@@ -5,7 +5,8 @@
 
 import domPurify from 'dompurify';
 import type { Document } from '../types/api.types';
-import { fetchWithAuth, showError, showSuccess } from './auth';
+import { ApiClient } from '../utils/api-client';
+import { showErrorAlert, showSuccessAlert } from './utils/alerts';
 import { $$id } from '../utils/dom-utils';
 
 // Document scope type
@@ -30,12 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function initializeDocuments(): Promise<void> {
   try {
+    // Show loading state
+    showLoadingState();
+
     await loadDocuments();
     updateStats();
     renderDocuments();
   } catch (error) {
     console.error('Error initializing documents:', error);
-    showError('Fehler beim Laden der Dokumente');
+    showErrorAlert('Fehler beim Laden der Dokumente');
+    // Hide loading state on error
+    hideLoadingState();
   }
 }
 
@@ -83,15 +89,9 @@ function setupEventListeners(): void {
  */
 async function loadDocuments(): Promise<void> {
   try {
-    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const endpoint = useV2Documents === true ? '/api/v2/documents' : '/api/documents/v2';
-    const response = await fetchWithAuth(endpoint);
+    const apiClient = ApiClient.getInstance();
+    const data = await apiClient.request<{ documents?: Document[] }>('/documents', { method: 'GET' });
 
-    if (!response.ok) {
-      throw new Error('Failed to load documents');
-    }
-
-    const data = (await response.json()) as { documents?: Document[] };
     allDocuments = data.documents ?? [];
 
     // Update document counts
@@ -241,6 +241,9 @@ function renderDocuments(): void {
   const container = document.querySelector('#documentsContainer');
   if (!container) return;
 
+  // Clear loading state first
+  hideLoadingState();
+
   if (filteredDocuments.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
@@ -363,19 +366,17 @@ function viewDocument(documentId: number): void {
     // Find the document in our data
     const doc = allDocuments.find((d) => d.id === documentId);
     if (!doc) {
-      showError('Dokument nicht gefunden');
+      showErrorAlert('Dokument nicht gefunden');
       return;
     }
 
     currentDocument = doc;
 
     // Mark as read
-    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const endpoint =
-      useV2Documents === true ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
     void (async () => {
       try {
-        await fetchWithAuth(endpoint, { method: 'POST' });
+        const apiClient = ApiClient.getInstance();
+        await apiClient.request(`/documents/${documentId}/read`, { method: 'POST' });
         // Update local state
         doc.is_read = true;
         updateStats();
@@ -389,7 +390,7 @@ function viewDocument(documentId: number): void {
     showDocumentModal(doc);
   } catch (error) {
     console.error('Error viewing document:', error);
-    showError('Fehler beim Öffnen des Dokuments');
+    showErrorAlert('Fehler beim Öffnen des Dokuments');
   }
 }
 
@@ -422,15 +423,12 @@ function showDocumentModal(doc: Document): void {
     }
 
     // Try to show PDF preview with authentication
-    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const previewUrl =
-      useV2Documents === true ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
-
     // For iframe, we need to handle authentication differently
     // First, try to fetch the document
     void (async () => {
       try {
-        const response = await fetchWithAuth(previewUrl);
+        const apiClient = ApiClient.getInstance();
+        const response = await apiClient.request<Response>(`/documents/preview/${doc.id}`, { method: 'GET' });
         if (!response.ok) throw new Error('Preview failed');
         const blob = await response.blob();
 
@@ -517,16 +515,14 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     // Check if we have a token
     const token = localStorage.getItem('token');
     if (token === null || token === '') {
-      showError('Nicht angemeldet. Bitte melden Sie sich erneut an.');
+      showErrorAlert('Nicht angemeldet. Bitte melden Sie sich erneut an.');
       window.location.href = '/login';
       return;
     }
 
     // Fetch with authentication
-    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-    const endpoint =
-      useV2Documents === true ? `/api/v2/documents/download/${documentId}` : `/api/documents/download/${documentId}`;
-    const response = await fetchWithAuth(endpoint);
+    const apiClient = ApiClient.getInstance();
+    const response = await apiClient.request<Response>(`/documents/download/${documentId}`, { method: 'GET' });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -561,13 +557,13 @@ async function downloadDocument(docId?: string | number): Promise<void> {
       window.URL.revokeObjectURL(url);
     }, 100);
 
-    showSuccess('Dokument wird heruntergeladen');
+    showSuccessAlert('Dokument wird heruntergeladen');
   } catch (error) {
     console.error('Error downloading document:', error);
     if (error instanceof TypeError && error.message.includes('NetworkError')) {
-      showError('Netzwerkfehler beim Herunterladen. Bitte überprüfen Sie Ihre Verbindung.');
+      showErrorAlert('Netzwerkfehler beim Herunterladen. Bitte überprüfen Sie Ihre Verbindung.');
     } else {
-      showError('Fehler beim Herunterladen des Dokuments');
+      showErrorAlert('Fehler beim Herunterladen des Dokuments');
     }
   }
 }
@@ -655,6 +651,7 @@ function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
+  // eslint-disable-next-line security/detect-object-injection -- i is mathematically bounded by log calculation
   return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
@@ -682,6 +679,34 @@ function debounce<T extends (...args: unknown[]) => unknown>(func: T, wait: numb
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(later, wait);
   };
+}
+
+/**
+ * Show loading state
+ */
+function showLoadingState(): void {
+  const container = document.querySelector('#documentsContainer');
+  if (container !== null) {
+    container.innerHTML = `
+      <div class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        Lade Dokumente...
+      </div>
+    `;
+  }
+}
+
+/**
+ * Hide loading state
+ */
+function hideLoadingState(): void {
+  const container = document.querySelector('#documentsContainer');
+  if (container !== null) {
+    const loadingState = container.querySelector('.loading-state');
+    if (loadingState !== null) {
+      loadingState.remove();
+    }
+  }
 }
 
 // Extend window for global functions

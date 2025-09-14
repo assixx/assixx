@@ -21,7 +21,6 @@
       })();
     </script>
     <script src="/feature-flags.js"></script>
-    <meta http-equiv="refresh" content="0; url=/pages/documents-search.html" />
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -413,8 +412,8 @@
         transform: rotate(180deg);
       }
 
-      .dropdown-display svg {
-      }
+      /*.dropdown-display svg {
+      }*/
 
       .dropdown-options {
         position: absolute;
@@ -910,11 +909,8 @@
       });
     </script>
 
-    <!-- Redirect to new documents search page -->
-    <script>
-      // Fallback redirect if meta refresh doesn't work
-      window.location.href = '/documents-search';
-    </script>
+    <!-- Documents Script -->
+    <script type="module" src="/scripts/documents.ts"></script>
 
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>

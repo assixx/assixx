@@ -635,8 +635,13 @@
       // Toggle Dropdown
 
       function toggleDropdown(type) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
+        const display = document.querySelector('#' + type + 'Display');
+        const dropdown = document.querySelector('#' + type + 'Dropdown');
+
+        if (!display || !dropdown) {
+          console.error('Dropdown elements not found for type:', type);
+          return;
+        }
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -653,10 +658,19 @@
       // Select Option
 
       function selectOption(type, value, text) {
-        document.querySelector(type + 'Display').querySelector('span').textContent = text;
-        document.querySelector(type + 'Value').value = value;
-        document.querySelector(type + 'Display').classList.remove('active');
-        document.querySelector(type + 'Dropdown').classList.remove('active');
+        const display = document.querySelector('#' + type + 'Display');
+        const valueInput = document.querySelector('#' + type + 'Value');
+        const dropdown = document.querySelector('#' + type + 'Dropdown');
+
+        if (!display || !valueInput || !dropdown) {
+          console.error('Dropdown elements not found for type:', type);
+          return;
+        }
+
+        display.querySelector('span').textContent = text;
+        valueInput.value = value;
+        display.classList.remove('active');
+        dropdown.classList.remove('active');
       }
 
       // Click outside to close

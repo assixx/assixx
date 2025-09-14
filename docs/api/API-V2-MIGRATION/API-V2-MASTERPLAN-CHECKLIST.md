@@ -113,8 +113,8 @@
 #### Organization Management
 
 - [x] departments.html - Department Management (v2 API + Feature Flag aktiv) ✅
-- [ ] manage-department-groups.ts
-- [ ] org-management.html (teams/areas API)
+- [x] manage-department-groups.ts ✅
+- [x] org-management.html (DELETED - deprecated) ✅
 
 #### System Administration
 
@@ -127,23 +127,28 @@
 
 - [x] manage-root-users.ts ✅ (06.09.2025 - API v2 Migration abgeschlossen)
 - [x] manage-root-users.html ✅ (06.09.2025 - Keine direkten API Calls)
-- [ ] root-features.html
-- [ ] feature-management.html (features API)
-- [ ] tenant-deletion-status.html
-- [ ] storage-upgrade.html (plans API)
+- [ ] root-features.html ⚠️ **UNTER VORBEHALT - noch unklar ob/wie migriert wird**
+- [ ] feature-management.html (features API) ⚠️ **UNTER VORBEHALT - noch unklar ob/wie migriert wird**
+- [x] tenant-deletion-status.html ✅ (09.13.2025 - API v2 Migration abgeschlossen)
+- [ ] storage-upgrade.html (plans API) ⚠️ **UNTER VORBEHALT - noch unklar ob/wie migriert wird**
 
-### PHASE 10: Survey System
+### PHASE 10: Survey System ✅
 
 **Warum:** Eigenständiges Feature-Set
 
-- [ ] survey-admin.html
-- [ ] survey-employee.html
-- [ ] survey-results.html
-- [ ] survey-details.html
+- [x] survey-admin.html
+- [x] survey-employee.html
+- [x] survey-results.html
+- [x] survey-details.html
 
 ---
 
-## ✅ Fortschritt: 48/58 Files (82.7% abgeschlossen)
+## ✅ Fortschritt: 55/58 Files (94.8% abgeschlossen)
+
+### ⚠️ HINWEIS ZU AUSSTEHENDEN FILES
+
+- **root-features.html, feature-management.html, storage-upgrade.html:** Diese 3 Files werden vorerst übersprungen, da noch unklar ist, wie diese Features in Zukunft gehandhabt werden sollen. Migration unter Vorbehalt.
+- **tenant-deletion-status.html:** ✅ Migriert zu API v2 mit ApiClient
 
 ### ⚠️ WICHTIGE NOTIZEN
 

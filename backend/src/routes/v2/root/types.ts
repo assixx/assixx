@@ -111,7 +111,15 @@ export interface TenantDeletionRequest {
 export interface TenantDeletionStatus {
   queueId: number;
   tenantId: number;
-  status: 'pending' | 'approved' | 'executing' | 'completed' | 'failed' | 'cancelled' | 'stopped';
+  status:
+    | 'pending'
+    | 'pending_approval'
+    | 'approved'
+    | 'executing'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | 'stopped';
   requestedBy: number;
   requestedByName?: string;
   requestedAt: Date;
@@ -120,6 +128,7 @@ export interface TenantDeletionStatus {
   scheduledFor?: Date;
   reason?: string;
   errorMessage?: string;
+  coolingOffHours: number;
   canCancel: boolean;
   canApprove: boolean;
 }

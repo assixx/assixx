@@ -172,8 +172,6 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/pages/documents-payroll': ['employee', 'admin', 'root'],
   '/salary-documents': ['employee', 'admin', 'root'],
   '/pages/salary-documents': ['employee', 'admin', 'root'],
-  '/employee-documents': ['employee', 'admin', 'root'],
-  '/pages/employee-documents': ['employee', 'admin', 'root'],
   '/account-settings': ['employee', 'admin', 'root'],
   '/pages/account-settings': ['employee', 'admin', 'root'],
 };
@@ -1515,7 +1513,7 @@ class UnifiedNavigation {
           <span class="label">${item.label}</span>
           <span class="nav-indicator"></span>
           <span class="submenu-arrow">
-            <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
               <path d="M7 10l5 5 5-5z"/>
             </svg>
           </span>
@@ -3447,7 +3445,7 @@ const unifiedNavigationCSS = `
 
     .sidebar.collapsed .sidebar-menu {
         /*margin-top: 72px;  Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
-        margin-top: 4.5rem;
+        margin-top: 4.44rem;
     }
 
 
@@ -3744,7 +3742,7 @@ const unifiedNavigationCSS = `
         font-size: 0.875rem; /* 14px in rem */
         line-height: 1.25rem; /* 20px in rem */
         margin-bottom: 0.3125rem; /* 5px in rem */
-        height: 2.125rem; /* 34px in rem */
+        height: 2.1rem; /* 34px in rem */
         box-sizing: border-box;
         border: 1px solid transparent; /* Reserviert Platz für active border */
     }
@@ -3873,7 +3871,7 @@ const unifiedNavigationCSS = `
         background: rgba(139, 139, 139, 0.12);
         border-radius: var(--radius-md);
         border: 1px solid hsla(0, 0%, 39.6%, 0.44);
-        margin-right: 5rem; /* 80px in rem */
+        margin-right: 2rem; /* 80px in rem */
     }
 
     /* Layout adjustments */

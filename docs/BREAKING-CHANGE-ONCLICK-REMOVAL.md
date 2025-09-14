@@ -1,12 +1,13 @@
 # 🚨 BREAKING CHANGE: onclick Removed from DOMPurify Config
 
-**Date:** December 2024  
-**Impact:** HIGH - 21 TypeScript files affected  
+**Date:** December 2024
+**Impact:** HIGH - 21 TypeScript files affected
 **Status:** Config changed, migration needed
 
 ## What Changed
 
 ### dom-utils.ts (Line 310)
+
 ```typescript
 // BEFORE:
 ALLOWED_ATTR: [
@@ -26,6 +27,7 @@ ALLOWED_ATTR: [
 All files using `setHTML()` with onclick handlers will stop working:
 
 ### Critical Files (High Traffic)
+
 - `survey-admin.ts` - Survey management buttons
 - `admin-dashboard.ts` - Dashboard action buttons
 - `employee-dashboard.ts` - Employee actions
@@ -33,6 +35,7 @@ All files using `setHTML()` with onclick handlers will stop working:
 - `manage-teams.ts` - Team management
 
 ### Full List
+
 ```
 employee-dashboard.ts
 unified-navigation.ts
@@ -62,6 +65,7 @@ manage-departments.ts
 ### Example: survey-admin.ts
 
 **BEFORE (BROKEN NOW):**
+
 ```typescript
 setHTML(element, `
   <button onclick="surveyAdmin.editSurvey(${id})">Edit</button>
@@ -69,6 +73,7 @@ setHTML(element, `
 ```
 
 **AFTER (WORKING):**
+
 ```typescript
 // Step 1: Remove onclick, add data attributes
 setHTML(element, `
@@ -78,7 +83,7 @@ setHTML(element, `
 // Step 2: Add event delegation (once per file)
 document.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
-  
+
   if (target.dataset.action === 'edit-survey') {
     const id = target.dataset.id;
     surveyAdmin.editSurvey(parseInt(id));
@@ -89,6 +94,7 @@ document.addEventListener('click', (e) => {
 ## 📋 Migration Checklist
 
 ### Immediate Actions Required
+
 - [ ] survey-admin.ts - Fix all survey action buttons
 - [ ] admin-dashboard.ts - Fix dashboard buttons
 - [ ] employee-dashboard.ts - Fix employee actions
@@ -98,11 +104,13 @@ document.addEventListener('click', (e) => {
 ### Pattern to Search and Replace
 
 **Search for:**
+
 ```typescript
 onclick="
 ```
 
 **Replace with Event Delegation pattern:**
+
 1. Add `data-action` and `data-*` attributes
 2. Remove `onclick` completely
 3. Add event listener with delegation
@@ -110,6 +118,7 @@ onclick="
 ## ⚠️ Testing Required
 
 After migration, test these critical flows:
+
 1. Survey creation/editing in survey-admin
 2. Dashboard actions in admin-dashboard
 3. Employee management functions
@@ -128,11 +137,13 @@ After migration, test these critical flows:
 For files with simple onclick patterns, use this regex:
 
 **Find:**
+
 ```regex
 onclick="(\w+)\.(\w+)\(([^)]*)\)"
 ```
 
 **Replace:**
+
 ```
 data-action="$2" data-params="$3"
 ```

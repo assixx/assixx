@@ -779,7 +779,15 @@ export class RootService {
         ipAddress,
       );
     } catch (error: unknown) {
+      logger.error('Error in requestTenantDeletion:', error);
       if (error instanceof ServiceError) throw error;
+
+      // Check for specific error messages
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage.includes('already marked_for_deletion')) {
+        throw new ServiceError('ALREADY_SCHEDULED', 'Tenant is already marked for deletion', 409);
+      }
+
       throw new ServiceError('SERVER_ERROR', 'Failed to request deletion', error);
     }
   }
@@ -788,7 +796,10 @@ export class RootService {
    * Get tenant deletion status
    * @param tenantId - The tenant ID
    */
-  async getDeletionStatus(tenantId: number): Promise<TenantDeletionStatus | null> {
+  async getDeletionStatus(
+    tenantId: number,
+    currentUserId?: number,
+  ): Promise<TenantDeletionStatus | null> {
     try {
       const [deletions] = await execute<RowDataPacket[]>(
         `SELECT
@@ -810,6 +821,12 @@ export class RootService {
       }
 
       const deletion = deletions[0];
+      // CRITICAL: Two-person principle - creator cannot approve their own deletion request
+      const isCreator = currentUserId ? deletion.created_by === currentUserId : false;
+      const canApprove = deletion.status === 'pending_approval' && !isCreator;
+      const canCancel =
+        ['pending_approval', 'approved'].includes(deletion.status as string) && isCreator;
+
       return {
         queueId: deletion.id as number,
         tenantId: deletion.tenant_id as number,
@@ -829,8 +846,9 @@ export class RootService {
         scheduledFor: (deletion.scheduled_for as Date | null) ?? undefined,
         reason: deletion.reason as string,
         errorMessage: (deletion.error_message as string | null) ?? undefined,
-        canCancel: ['pending', 'approved'].includes(deletion.status as string),
-        canApprove: deletion.status === 'pending',
+        coolingOffHours: deletion.cooling_off_hours as number,
+        canCancel,
+        canApprove,
       };
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get deletion status', error);

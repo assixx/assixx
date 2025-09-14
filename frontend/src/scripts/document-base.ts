@@ -5,7 +5,8 @@
 
 import domPurify from 'dompurify';
 import type { Document } from '../types/api.types';
-import { fetchWithAuth, showError, showSuccess } from './auth';
+import { ApiClient } from '../utils/api-client';
+import { showErrorAlert, showSuccessAlert } from './utils/alerts';
 import { $$id } from '../utils/dom-utils';
 
 // Document scope type
@@ -41,6 +42,8 @@ export class DocumentBase {
       this.loadFavorites();
       this.updatePageHeader();
       if (this.currentScope !== 'all') {
+        // Show loading state
+        this.showLoadingState();
         await this.loadDocuments();
         this.updateStats();
         this.renderDocuments();
@@ -49,7 +52,9 @@ export class DocumentBase {
       this.addViewModeToggle();
     } catch (error) {
       console.error('Error initializing documents:', error);
-      showError('Fehler beim Laden der Dokumente');
+      showErrorAlert('Fehler beim Laden der Dokumente');
+      // Clear loading state on error
+      this.hideLoadingState();
     }
   }
 
@@ -153,15 +158,10 @@ export class DocumentBase {
    */
   protected async loadDocuments(): Promise<void> {
     try {
-      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint = useV2Documents === true ? '/api/v2/documents' : '/api/documents/v2';
-      const response = await fetchWithAuth(endpoint);
-
-      if (!response.ok) {
-        throw new Error('Failed to load documents');
-      }
-
-      const result = (await response.json()) as { data?: Document[]; documents?: Document[] };
+      const apiClient = ApiClient.getInstance();
+      const result = await apiClient.request<{ data?: Document[]; documents?: Document[] }>('/documents', {
+        method: 'GET',
+      });
 
       // Backend returns {data: Document[], pagination: {...}}
       this.allDocuments = result.data ?? result.documents ?? [];
@@ -260,7 +260,7 @@ export class DocumentBase {
       this.renderDocuments();
     } catch (error) {
       console.error('Error performing search:', error);
-      showError('Fehler bei der Suche');
+      showErrorAlert('Fehler bei der Suche');
     }
   }
 
@@ -319,6 +319,9 @@ export class DocumentBase {
     const container = document.querySelector('#documentsContainer');
     if (!container) return;
 
+    // Clear container first (removes loading spinner)
+    container.innerHTML = '';
+
     if (this.filteredDocuments.length === 0) {
       const emptyMessage =
         this.currentScope === 'all' && this.currentSearch !== ''
@@ -352,7 +355,6 @@ export class DocumentBase {
       grid.append(this.createDocumentCard(doc));
     });
 
-    container.innerHTML = '';
     container.append(grid);
   }
 
@@ -420,17 +422,15 @@ export class DocumentBase {
     try {
       const doc = this.allDocuments.find((d) => d.id === documentId);
       if (!doc) {
-        showError('Dokument nicht gefunden');
+        showErrorAlert('Dokument nicht gefunden');
         return;
       }
 
       // Mark as read
-      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint =
-        useV2Documents === true ? `/api/v2/documents/${documentId}/read` : `/api/documents/${documentId}/read`;
       void (async () => {
         try {
-          await fetchWithAuth(endpoint, { method: 'POST' });
+          const apiClient = ApiClient.getInstance();
+          await apiClient.request(`/documents/${documentId}/read`, { method: 'POST' });
           // Update local state
           doc.is_read = true;
           this.updateStats();
@@ -444,7 +444,7 @@ export class DocumentBase {
       this.showDocumentModal(doc);
     } catch (error) {
       console.error('Error viewing document:', error);
-      showError('Fehler beim Öffnen des Dokuments');
+      showErrorAlert('Fehler beim Öffnen des Dokuments');
     }
   }
 
@@ -467,12 +467,10 @@ export class DocumentBase {
     const previewError = document.querySelector('#previewError');
 
     if (previewFrame && previewError) {
-      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint =
-        useV2Documents === true ? `/api/v2/documents/preview/${doc.id}` : `/api/documents/preview/${doc.id}`;
       void (async () => {
         try {
-          const response = await fetchWithAuth(endpoint);
+          const apiClient = ApiClient.getInstance();
+          const response = await apiClient.request<Response>(`/documents/preview/${doc.id}`, { method: 'GET' });
           if (!response.ok) throw new Error('Preview failed');
           const blob = await response.blob();
           const blobUrl = URL.createObjectURL(blob);
@@ -561,6 +559,7 @@ export class DocumentBase {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
+    // eslint-disable-next-line security/detect-object-injection -- i is mathematically bounded by log calculation
     return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
@@ -643,13 +642,41 @@ export class DocumentBase {
   public toggleFavorite(docId: number): void {
     if (this.favoriteDocIds.has(docId)) {
       this.favoriteDocIds.delete(docId);
-      showSuccess('Aus Favoriten entfernt');
+      showSuccessAlert('Aus Favoriten entfernt');
     } else {
       this.favoriteDocIds.add(docId);
-      showSuccess('Zu Favoriten hinzugefügt');
+      showSuccessAlert('Zu Favoriten hinzugefügt');
     }
     this.saveFavorites();
     this.renderDocuments();
+  }
+
+  /**
+   * Show loading state
+   */
+  protected showLoadingState(): void {
+    const container = document.querySelector('#documentsContainer');
+    if (container !== null) {
+      container.innerHTML = `
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Dokumente werden geladen...</p>
+        </div>
+      `;
+    }
+  }
+
+  /**
+   * Hide loading state
+   */
+  protected hideLoadingState(): void {
+    const container = document.querySelector('#documentsContainer');
+    if (container !== null) {
+      const loadingSpinner = container.querySelector('.loading-spinner');
+      if (loadingSpinner !== null) {
+        loadingSpinner.remove();
+      }
+    }
   }
 }
 
@@ -704,10 +731,8 @@ window.downloadDocument = function (docId?: string | number): void {
     }
 
     try {
-      const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-      const endpoint =
-        useV2Documents === true ? `/api/v2/documents/download/${documentId}` : `/api/documents/download/${documentId}`;
-      const response = await fetchWithAuth(endpoint);
+      const apiClient = ApiClient.getInstance();
+      const response = await apiClient.request<Response>(`/documents/download/${documentId}`, { method: 'GET' });
 
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status}`);
@@ -727,10 +752,10 @@ window.downloadDocument = function (docId?: string | number): void {
         window.URL.revokeObjectURL(url);
       }, 100);
 
-      showSuccess('Dokument wird heruntergeladen');
+      showSuccessAlert('Dokument wird heruntergeladen');
     } catch (error) {
       console.error('Error downloading document:', error);
-      showError('Fehler beim Herunterladen des Dokuments');
+      showErrorAlert('Fehler beim Herunterladen des Dokuments');
     }
   })();
 };

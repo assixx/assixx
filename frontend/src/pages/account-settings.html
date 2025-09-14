@@ -26,263 +26,7 @@
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
       @import url('/styles/user-info-update.css');
-      /* Glassmorphismus Design-Standards */
-
-      /* Dramatischer Hintergrund-Gradient */
-      body {
-        position: relative;
-        min-height: 100vh;
-        overflow-x: hidden;
-        background: #000;
-      }
-
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
-        pointer-events: none;
-        z-index: -1;
-      }
-
-      /* Settings Container */
-      .settings-container {
-        /*max-width: 800px;*/
-        margin: 0 auto;
-        margin-top: -5px !important;
-      }
-
-      /* Glassmorphismus Cards */
-      .settings-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-xl);
-        margin-bottom: var(--spacing-lg);
-        /* animation: fadeInUp 0.6s ease-out; */
-      }
-
-      /* Card Title with accent bar */
-      .card-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0 0 var(--spacing-lg) 0;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-      }
-
-      .card-title::before {
-        content: '';
-        width: 4px;
-        height: 24px;
-        background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-        border-radius: 2px;
-      }
-
-      /* Delete Modal Styles */
-      .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        backdrop-filter: blur(10px);
-        z-index: 1000;
-        transition:
-          opacity 0.1s ease,
-          visibility 0.1s ease;
-        /* animation: fadeIn 0.3s ease; */
-      }
-
-      .modal-overlay.active {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .modal-content {
-        background: hsla(0, 0%, 8.2%, 0.84);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        padding: 32px;
-        max-width: 500px;
-        width: 90%;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        /* animation: slideInUp 0.3s ease; */
-      }
-
-      .modal-header {
-        text-align: center;
-        margin-bottom: 24px;
-        color: #f44336;
-      }
-
-      .modal-header h3 {
-        margin-top: 16px;
-        font-size: 24px;
-      }
-
-      .warning-box {
-        background: rgba(244, 67, 54, 0.1);
-        border: 1px solid rgba(244, 67, 54, 0.3);
-        border-radius: var(--radius-sm);
-        padding: 24px;
-        margin-bottom: 24px;
-      }
-
-      .confirmation-input {
-        margin: 24px 0;
-      }
-
-      .modal-footer {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        margin-top: 24px;
-      }
-
-      /* Status Modal Styles */
-      #deletionStatusModal {
-        max-width: 600px;
-      }
-
-      .deletion-status-content {
-        text-align: center;
-        padding: 24px;
-      }
-
-      .deletion-status-icon {
-        font-size: 64px;
-        color: var(--primary-color);
-        margin-bottom: 20px;
-        /* animation: pulse 2s infinite; */
-      }
-
-      @keyframes pulse {
-        0% {
-          opacity: 1;
-        }
-        50% {
-          opacity: 0.5;
-        }
-        100% {
-          opacity: 1;
-        }
-      }
-
-      .deletion-info {
-        background: rgba(33, 150, 243, 0.1);
-        border: 1px solid rgba(33, 150, 243, 0.3);
-        border-radius: var(--radius-sm);
-        padding: 16px;
-        margin: 20px 0;
-      }
-
-      .deletion-info p {
-        margin: 8px 0;
-        color: var(--text-primary);
-      }
-
-      /* Button Styles */
-      .btn {
-        padding: 10px 24px;
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-        font-size: 14px;
-        cursor: pointer;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      .btn-danger {
-        background: rgba(244, 67, 54, 0.2);
-        color: #ffffff;
-        border: 1px solid #f44336;
-      }
-
-      .btn-danger:hover:not(:disabled) {
-        background: rgba(244, 67, 54, 0.3);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 20px rgba(244, 67, 54, 0.3);
-      }
-
-      .btn-danger:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .btn-secondary {
-        background: rgba(255, 255, 255, 0.05);
-        color: var(--text-primary);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.1);
-        transform: translateY(-1px);
-      }
-
-      .btn-info {
-        background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
-        border: 1px solid #2196f3;
-      }
-
-      .btn-info:hover {
-        background: rgba(33, 150, 243, 0.3);
-        transform: translateY(-1px);
-      }
-
-      /* Animations */
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-        }
-        to {
-          opacity: 1;
-        }
-      }
-
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes slideInUp {
-        from {
-          transform: translateY(100px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      /* Button Group */
-      .button-group {
-        display: flex;
-        gap: 12px;
-        margin-top: 20px;
-      }
+      @import url('/styles/account-settings.css');
     </style>
   </head>
   <body>
@@ -324,7 +68,7 @@
                     <i class="fas fa-trash-alt"></i>
                     Tenant komplett löschen
                   </button>
-                  <button class="btn btn-info" onclick="window.location.href='/tenant-deletion-status'">
+                  <button id="deletionStatusButton" class="btn btn-info u-hidden" onclick="window.location.href='/tenant-deletion-status'">
                     <i class="fas fa-tasks"></i>
                     Löschstatus anzeigen
                   </button>
@@ -468,11 +212,44 @@
     <script type="module" src="/scripts/role-switch.ts"></script>
     <script type="module">
       import { fetchWithAuth, showError } from '/scripts/auth.js';
+      import { showErrorAlert } from '/scripts/utils/alerts.js';
 
       const token = localStorage.getItem('token');
       if (!token) {
         window.location.href = '/login';
       }
+
+      // Check for pending deletion status on page load
+      async function checkDeletionStatus() {
+        try {
+          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const endpoint = useV2Root ? '/api/v2/root/tenant/deletion-status' : '/api/root/tenant/deletion-status';
+          const response = await fetchWithAuth(endpoint);
+
+          if (response.ok) {
+            const data = await response.json();
+            // Show button if there's an active deletion request
+            // API returns either a single object or an array
+            const hasActiveRequest = data && (Array.isArray(data) ? data.length > 0 : data.queueId || data.id || data.data);
+
+            if (hasActiveRequest) {
+              const button = document.querySelector('#deletionStatusButton');
+              if (button) {
+                button.classList.remove('u-hidden');
+              }
+            }
+          }
+          // If 404 or no data, keep button hidden (default state)
+        } catch (error) {
+          // Silent fail - button stays hidden if API fails
+          console.info('No pending deletion found');
+        }
+      }
+
+      // Check deletion status when page loads
+      document.addEventListener('DOMContentLoaded', () => {
+        checkDeletionStatus();
+      });
 
       // Modal functions
       window.showDeleteModal = async function () {
@@ -483,11 +260,19 @@
           const response = await fetchWithAuth(endpoint);
           if (response.ok) {
             const data = await response.json();
-            const rootUsers = data.data.filter((user) => user.role === 'root');
+            // API /root/users returns only root users already
+            // Response structure: { users: [...] } or just array
+            const rootUsers = data.users || data;
 
-            if (rootUsers.length < 2) {
-              showError(
-                'Tenant-Löschung nicht möglich: Es müssen mindestens 2 Root-Benutzer vorhanden sein, bevor der Tenant gelöscht werden kann.',
+            // Ensure it's an array and count root users
+            const rootUserCount = Array.isArray(rootUsers) ? rootUsers.length : 0;
+
+            console.info(`Found ${rootUserCount} root users in tenant`);
+
+            if (rootUserCount < 2) {
+              const userText = rootUserCount === 1 ? 'Es gibt nur 1 Root-Benutzer' : 'Es gibt keine Root-Benutzer';
+              showErrorAlert(
+                `Tenant-Löschung nicht möglich: ${userText}. Um den Tenant zu löschen, erstellen Sie bitte mindestens einen weiteren Root-Benutzer (Zwei-Personen-Prinzip).`,
               );
               return;
             }
@@ -535,6 +320,7 @@
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
 
         try {
+          // Use v2 endpoint with feature flag
           const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
           const endpoint = useV2Root ? '/api/v2/root/tenants/current' : '/api/root/tenants/current';
           const response = await fetchWithAuth(endpoint, {
@@ -545,13 +331,23 @@
           });
 
           if (response.ok) {
-            const data = await response.json();
+            const result = await response.json();
 
-            // Show status modal with tenant ID from server response
-            window.showDeletionStatusModal(data.data.queueId, data.data.tenantId);
+            // Handle v2 API response format
+            const data = result.data || result;
+
+            // Show status modal with data from server response
+            // The API returns the queueId and tenantId in the response
+            window.showDeletionStatusModal(data.queueId || data.id, data.tenantId || data.tenant_id);
 
             // Close delete confirmation modal
             window.closeDeleteModal();
+
+            // Show the deletion status button now that there's a pending deletion
+            const button = document.querySelector('#deletionStatusButton');
+            if (button) {
+              button.classList.remove('u-hidden');
+            }
           } else {
             const error = await response.json();
             showError(error.error || 'Fehler beim Löschen des Tenants');

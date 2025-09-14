@@ -6,6 +6,7 @@ import { Request, Response } from 'express';
 
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
 import { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
 import { rootService } from './root.service.js';
@@ -635,6 +636,92 @@ export class RootController {
   }
 
   /**
+   * DELETE /api/v2/root/tenants/current
+   * Delete current tenant (uses JWT token for tenant_id)
+   * Compatible with v1 API
+   */
+  async deleteCurrentTenant(req: AuthenticatedRequest, res: Response): Promise<void> {
+    try {
+      const body = req.body as TenantDeletionRequest | undefined;
+      const reason = body?.reason;
+      const tenantId = req.user.tenant_id; // Always use tenant from JWT
+
+      logger.warn(
+        `🔒 SECURE DELETE: Root user ${req.user.username} (ID: ${req.user.id}) requesting deletion of their own tenant ${tenantId}`,
+      );
+
+      // Check if there are at least 2 root users (two-person principle)
+      const rootUsers = await rootService.getRootUsers(tenantId);
+      if (rootUsers.length < 2) {
+        res
+          .status(400)
+          .json(
+            errorResponse(
+              'INSUFFICIENT_ROOT_USERS',
+              `Tenant-Löschung nicht möglich: ${rootUsers.length === 1 ? 'Es gibt nur 1 Root-Benutzer' : 'Es gibt keine Root-Benutzer'}. Um den Tenant zu löschen, erstellen Sie bitte mindestens einen weiteren Root-Benutzer (Zwei-Personen-Prinzip).`,
+            ),
+          );
+        return;
+      }
+
+      // Initiate deletion - use requestTenantDeletion from rootService
+      logger.info(
+        `Calling rootService.requestTenantDeletion with: tenantId=${tenantId}, userId=${req.user.id}, reason=${reason ?? 'none'}, ip=${req.ip ?? 'unknown'}`,
+      );
+      const queueId = await rootService.requestTenantDeletion(
+        tenantId,
+        req.user.id,
+        reason ?? 'Keine Angabe',
+        req.ip ?? 'unknown',
+      );
+
+      res.json(
+        successResponse({
+          queueId,
+          tenantId,
+          scheduledDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          message: 'Löschung eingeleitet - Genehmigung von zweitem Root-Benutzer erforderlich',
+          approvalRequired: true,
+        }),
+      );
+    } catch (error: unknown) {
+      logger.error('Error deleting tenant:', error);
+
+      // Handle ServiceError with specific codes
+      if (error instanceof ServiceError && error.code === 'ALREADY_SCHEDULED') {
+        res
+          .status(409)
+          .json(
+            errorResponse(
+              'ALREADY_SCHEDULED',
+              'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
+            ),
+          );
+        return;
+      }
+
+      // Legacy check for error messages
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      if (
+        errorMessage.includes('already scheduled') ||
+        errorMessage.includes('already marked_for_deletion')
+      ) {
+        res
+          .status(409)
+          .json(
+            errorResponse(
+              'ALREADY_SCHEDULED',
+              'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
+            ),
+          );
+        return;
+      }
+
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Fehler beim Löschen des Tenants'));
+    }
+  }
+
+  /**
    * @param req - The request object
    * @param res - The response object
 
@@ -713,7 +800,7 @@ export class RootController {
    */
   async getDeletionStatus(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const status = await rootService.getDeletionStatus(req.user.tenant_id);
+      const status = await rootService.getDeletionStatus(req.user.tenant_id, req.user.id);
 
       if (!status) {
         res.status(404).json({

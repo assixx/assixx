@@ -158,6 +158,16 @@ router.get(
 );
 
 // Tenant Deletion Routes
+
+// DELETE /tenants/current - Compatible with v1 API
+router.delete(
+  '/tenants/current',
+  ...security.root(createValidation([body('reason').optional().isString()])),
+  typed.paramsBody<Record<string, never>, { reason?: string }>(
+    rootController.deleteCurrentTenant.bind(rootController),
+  ),
+);
+
 router.post(
   '/tenant/deletion',
   ...security.root(createValidation([body('reason').optional().isString()])),

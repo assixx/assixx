@@ -1,5 +1,7 @@
 // Department Groups Management
 import domPurify from 'dompurify';
+import { ApiClient } from '../utils/api-client';
+import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 // import { $id } from '../utils/dom-utils'; // Currently not used
 
 (() => {
@@ -7,16 +9,15 @@ import domPurify from 'dompurify';
   const CREATE_GROUP_MODAL_SELECTOR = '#createGroupModal';
 
   // Auth check
-  const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
 
-  if (token === null || token === '' || userRole !== 'root') {
+  if (userRole !== 'root') {
     window.location.href = '/login';
     return;
   }
 
-  // After the check above, token is guaranteed to be a non-empty string
-  const validToken = token;
+  // Initialize API client
+  const apiClient = ApiClient.getInstance();
 
   interface Department {
     id: number;
@@ -41,39 +42,22 @@ import domPurify from 'dompurify';
   // Load groups
   async function loadGroups() {
     try {
-      const response = await fetch('/api/department-groups/hierarchy', {
-        headers: {
-          Authorization: `Bearer ${validToken}`,
-          'Content-Type': 'application/json',
-        },
+      const data = await apiClient.request<{ data: DepartmentGroup[] }>('/department-groups', {
+        method: 'GET',
       });
 
-      if (response.ok) {
-        const result = (await response.json()) as { data?: DepartmentGroup[] };
-        groups = result.data ?? [];
-        renderGroupTree();
-      } else {
-        showError('Fehler beim Laden der Gruppen');
-      }
+      groups = data.data;
+      renderGroupTree();
     } catch (error) {
       console.error('Error loading groups:', error);
-      showError('Netzwerkfehler beim Laden der Gruppen');
+      showErrorAlert('Netzwerkfehler beim Laden der Gruppen');
     }
   }
 
   // Load departments
   async function loadDepartments() {
     try {
-      const response = await fetch('/api/departments', {
-        headers: {
-          Authorization: `Bearer ${validToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        departments = (await response.json()) as Department[];
-      }
+      departments = await apiClient.request<Department[]>('/departments', { method: 'GET' });
     } catch (error) {
       console.error('Error loading departments:', error);
     }
@@ -340,7 +324,7 @@ import domPurify from 'dompurify';
         !(groupDescInput instanceof HTMLTextAreaElement) ||
         !(parentGroupSelect instanceof HTMLSelectElement)
       ) {
-        showError('Formularfelder nicht gefunden');
+        showErrorAlert('Formularfelder nicht gefunden');
         return;
       }
 
@@ -355,30 +339,21 @@ import domPurify from 'dompurify';
       };
 
       try {
-        const url = editingGroupId !== null ? `/api/department-groups/${editingGroupId}` : '/api/department-groups';
+        const url = editingGroupId !== null ? `/department-groups/${editingGroupId}` : '/department-groups';
 
         const method = editingGroupId !== null ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
+        await apiClient.request(url, {
           method,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify(formData),
         });
 
-        if (response.ok) {
-          showSuccess(editingGroupId !== null ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
-          closeModal();
-          await loadGroups();
-        } else {
-          const error = (await response.json()) as { error?: string };
-          showError(error.error ?? 'Fehler beim Speichern');
-        }
+        showSuccessAlert(editingGroupId !== null ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
+        closeModal();
+        await loadGroups();
       } catch (error) {
         console.error('Error saving group:', error);
-        showError('Netzwerkfehler beim Speichern');
+        showErrorAlert('Netzwerkfehler beim Speichern');
       }
     })();
   });
@@ -388,28 +363,21 @@ import domPurify from 'dompurify';
     const group = findGroupById(groupId);
     if (!group) return;
 
-    // Use custom confirmation dialog instead of native confirm
-    const userConfirmed = await showConfirmDialog(`Möchten Sie die Gruppe "${group.name}" wirklich löschen?`);
+    // Use custom confirmation dialog
+    const userConfirmed = await showConfirm(`Möchten Sie die Gruppe "${group.name}" wirklich löschen?`);
     if (!userConfirmed) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/department-groups/${groupId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${validToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      await apiClient.request(`/department-groups/${groupId}`, { method: 'DELETE' });
 
-      if (response.ok) {
-        showSuccess('Gruppe gelöscht');
-        selectedGroupId = null;
-        await loadGroups();
-        const groupDetails = document.querySelector('#groupDetails');
-        if (groupDetails) {
-          groupDetails.innerHTML = `
+      showSuccessAlert('Gruppe gelöscht');
+      selectedGroupId = null;
+      await loadGroups();
+      const groupDetails = document.querySelector('#groupDetails');
+      if (groupDetails) {
+        groupDetails.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">
             <i class="fas fa-info-circle"></i>
@@ -417,14 +385,10 @@ import domPurify from 'dompurify';
           <div>Wählen Sie eine Gruppe aus, um Details anzuzeigen</div>
         </div>
       `;
-        }
-      } else {
-        const error = (await response.json()) as { error?: string };
-        showError(error.error ?? 'Fehler beim Löschen');
       }
     } catch (error) {
       console.error('Error deleting group:', error);
-      showError('Netzwerkfehler beim Löschen');
+      showErrorAlert('Netzwerkfehler beim Löschen');
     }
   };
 
@@ -437,39 +401,7 @@ import domPurify from 'dompurify';
     await Promise.resolve();
   };
 
-  // Helper functions
-  function showError(message: string) {
-    // Replace alert with custom notification
-    console.error(`Fehler: ${message}`);
-    // TODO: Implement custom notification system
-    const notification = document.createElement('div');
-    notification.className = 'notification error';
-    notification.textContent = `Fehler: ${message}`;
-    document.body.append(notification);
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
-  }
-
-  function showSuccess(message: string) {
-    // Replace alert with custom notification
-    console.info(`Erfolg: ${message}`);
-    // TODO: Implement custom notification system
-    const notification = document.createElement('div');
-    notification.className = 'notification success';
-    notification.textContent = `Erfolg: ${message}`;
-    document.body.append(notification);
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
-  }
-
-  async function showConfirmDialog(message: string): Promise<boolean> {
-    // TODO: Implement custom confirmation dialog
-    // For now, return true as placeholder
-    console.warn('Confirmation dialog not implemented:', message);
-    return await Promise.resolve(true);
-  }
+  // Note: showError, showSuccess, and showConfirmDialog are now imported from utils/alerts
 
   // Initialize
   document.addEventListener('DOMContentLoaded', () => {
