@@ -170,8 +170,6 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/pages/documents-personal': ['employee', 'admin', 'root'],
   '/documents-payroll': ['employee', 'admin', 'root'],
   '/pages/documents-payroll': ['employee', 'admin', 'root'],
-  '/salary-documents': ['employee', 'admin', 'root'],
-  '/pages/salary-documents': ['employee', 'admin', 'root'],
   '/account-settings': ['employee', 'admin', 'root'],
   '/pages/account-settings': ['employee', 'admin', 'root'],
 };

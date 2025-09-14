@@ -22,220 +22,7 @@
     </script>
     <script src="/feature-flags.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-    <style>
-      /* CSS Import - WICHTIG: Lädt dashboard-theme.css ZUERST */
-      @import url('/styles/dashboard-theme.css');
-      @import url('/styles/breadcrumb-alignment.css');
-
-      /* ========================================
-           GLASSMORPHISMUS ÜBERSCHREIBUNGEN
-           ======================================== */
-
-      /* Body Background - Dramatischer Verlauf */
-      body {
-        position: relative;
-        min-height: 100vh;
-        overflow-x: hidden;
-        background: #000;
-      }
-
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
-        pointer-events: none;
-        z-index: -1;
-      }
-
-      /* Storage Plans Grid */
-      .storage-plans-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: var(--spacing-xl);
-        margin: var(--spacing-xl) 0;
-      }
-
-      /* Storage Plan Card */
-      .storage-plan-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-xl);
-        box-shadow: var(--shadow-sm);
-
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .storage-plan-card:hover {
-        transform: translateY(-4px);
-        border-color: var(--primary-color);
-        box-shadow:
-          0 10px 40px rgba(33, 150, 243, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
-
-      .storage-plan-card.current {
-        border-color: rgba(33, 150, 243, 0.5);
-        background: rgba(33, 150, 243, 0.05);
-      }
-
-      .storage-size {
-        font-size: 3rem;
-        font-weight: 700;
-        color: var(--primary-color);
-        margin: var(--spacing-lg) 0;
-        text-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
-      }
-
-      .storage-price {
-        font-size: 1.5rem;
-        color: var(--text-primary);
-        margin-bottom: var(--spacing-lg);
-      }
-
-      .storage-price span {
-        font-size: 1rem;
-        color: var(--text-secondary);
-      }
-
-      .storage-features {
-        list-style: none;
-        padding: 0;
-        margin: var(--spacing-lg) 0;
-        text-align: left;
-        flex-grow: 1;
-      }
-
-      .storage-features li {
-        padding: var(--spacing-sm) 0;
-        position: relative;
-        padding-left: var(--spacing-xl);
-        color: var(--text-secondary);
-      }
-
-      .storage-features li::before {
-        content: '✓';
-        position: absolute;
-        left: 0;
-        color: var(--success-color);
-        font-weight: bold;
-      }
-
-      /* Current Usage */
-      .current-usage {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-xl);
-        margin-bottom: var(--spacing-xl);
-        box-shadow: var(--shadow-sm);
-      }
-
-      .usage-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: var(--spacing-md);
-      }
-
-      .usage-title {
-        font-size: 1.25rem;
-        color: var(--primary-color);
-        font-weight: 600;
-      }
-
-      .usage-text {
-        font-size: 1rem;
-        color: var(--text-primary);
-      }
-
-      .usage-progress {
-        width: 100%;
-        height: 20px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-        overflow: hidden;
-        margin-bottom: var(--spacing-md);
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-      }
-
-      .usage-progress-bar {
-        height: 100%;
-        background: var(--success-color);
-        border-radius: 10px;
-        transition:
-          width 0.5s ease,
-          background-color 0.3s ease;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .usage-progress-bar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(
-          45deg,
-          transparent 25%,
-          rgba(255, 255, 255, 0.2) 25%,
-          rgba(255, 255, 255, 0.2) 50%,
-          transparent 50%,
-          transparent 75%,
-          rgba(255, 255, 255, 0.2) 75%,
-          rgba(255, 255, 255, 0.2)
-        );
-        background-size: 20px 20px;
-        /* animation: progress-stripes 1s linear infinite; */
-      }
-
-      @keyframes progress-stripes {
-        0% {
-          background-position: 0 0;
-        }
-        100% {
-          background-position: 20px 20px;
-        }
-      }
-
-      /* FAQ Section */
-      .faq-section {
-        margin-top: calc(var(--spacing-xl) * 2);
-      }
-
-      .faq-item {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-lg);
-        margin-bottom: var(--spacing-md);
-        box-shadow:
-          0 4px 16px rgba(0, 0, 0, 0.3),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
-
-      .faq-question {
-        font-weight: 600;
-        color: var(--primary-color);
-        margin-bottom: var(--spacing-sm);
-      }
-
-      .faq-answer {
-        color: var(--text-secondary);
-        line-height: 1.6;
-      }
-    </style>
+    <link rel="stylesheet" href="/styles/storage-upgrade.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
@@ -382,11 +169,59 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <script type="module">
-      // Import auth token from global window object (set by auth.ts)
-      const getAuthToken = () => localStorage.getItem('token');
+      // Import apiClient for v2 API support
+      import { apiClient } from '/utils/api-client.js';
 
-      // Load current storage info
+      // Import auth token from global window object (set by auth.ts)
+      const getAuthToken = () => localStorage.getItem('accessToken') || localStorage.getItem('token');
+
+      // Load current storage info using v2 API
       async function loadStorageInfo() {
+        try {
+          const token = getAuthToken();
+          if (!token) return;
+
+          // Check if we should use v2 API
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
+
+          if (useV2) {
+            // V2 API: Get current plan and addons for storage info
+            try {
+              // Get current plan info
+              const currentPlan = await apiClient.get('/plans/current');
+
+              // Get addons (includes storage)
+              const addons = await apiClient.get('/plans/addons');
+
+              // Calculate storage usage (might need to get from different endpoint)
+              const storageInfo = {
+                used: 0, // TODO: Get actual used storage from backend
+                total: (addons.storageGb || 5) * 1024 * 1024 * 1024, // Convert GB to bytes
+                percentage: 0,
+                plan: currentPlan.plan?.code || 'basic',
+              };
+
+              // TODO: Replace with actual storage usage endpoint when available
+              // For now, we'll need to get this from another endpoint or calculate it
+
+              updateStorageDisplay(storageInfo);
+              highlightCurrentPlan(storageInfo.plan);
+            } catch (error) {
+              console.error('Error loading storage info from v2 API:', error);
+              // Fallback to v1 if v2 fails
+              await loadStorageInfoV1();
+            }
+          } else {
+            // V1 API fallback
+            await loadStorageInfoV1();
+          }
+        } catch (error) {
+          console.error('Error loading storage info:', error);
+        }
+      }
+
+      // V1 API fallback function
+      async function loadStorageInfoV1() {
         try {
           const token = getAuthToken();
           if (!token) return;
@@ -404,7 +239,7 @@
             highlightCurrentPlan(data.plan);
           }
         } catch (error) {
-          console.error('Error loading storage info:', error);
+          console.error('Error loading storage info from v1 API:', error);
         }
       }
 
@@ -435,9 +270,31 @@
       function formatBytes(bytes) {
         if (bytes === 0) return '0 GB';
         const k = 1024;
-        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+
+        // Use switch statement to avoid object injection warning
+        let sizeUnit;
+        switch (i) {
+          case 0:
+            sizeUnit = 'B';
+            break;
+          case 1:
+            sizeUnit = 'KB';
+            break;
+          case 2:
+            sizeUnit = 'MB';
+            break;
+          case 3:
+            sizeUnit = 'GB';
+            break;
+          case 4:
+            sizeUnit = 'TB';
+            break;
+          default:
+            sizeUnit = i < 0 ? 'B' : 'TB';
+        }
+
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizeUnit;
       }
 
       // Highlight current plan
@@ -462,10 +319,46 @@
       }
 
       // Upgrade storage
-      window.upgradeStorage = function (plan) {
+      window.upgradeStorage = async function (plan) {
         if (confirm(`Möchten Sie wirklich auf den ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan upgraden?`)) {
-          // TODO: Implement upgrade API call
-          alert('Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktieren Sie unseren Support.');
+          try {
+            const useV2 = window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
+
+            if (useV2) {
+              // V2 API: Upgrade plan - Use safe property access
+              let planId;
+              switch (plan) {
+                case 'basic':
+                  planId = 1;
+                  break;
+                case 'professional':
+                  planId = 2;
+                  break;
+                case 'enterprise':
+                  planId = 3;
+                  break;
+                default:
+                  alert('Ungültiger Plan ausgewählt');
+                  return;
+              }
+
+              const result = await apiClient.put('/plans/upgrade', {
+                planId: planId,
+              });
+
+              if (result) {
+                alert('Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.');
+                // Reload storage info to reflect changes
+                await loadStorageInfo();
+              }
+            } else {
+              // V1 API or not implemented yet
+              alert('Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktieren Sie unseren Support.');
+            }
+          } catch (error) {
+            console.error('Error upgrading plan:', error);
+            alert('Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.');
+          }
         }
       };
 
