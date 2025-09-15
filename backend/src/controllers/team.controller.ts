@@ -7,6 +7,10 @@ import { Pool } from 'mysql2/promise';
 
 import teamService from '../services/team.service';
 
+// Constants
+const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
+const UNKNOWN_ERROR = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -79,7 +83,7 @@ class TeamController {
   async getAll(req: TeamQueryRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -112,7 +116,7 @@ class TeamController {
       console.error('Error in TeamController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -126,7 +130,7 @@ class TeamController {
   async getById(req: TeamGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -146,7 +150,7 @@ class TeamController {
       console.error('Error in TeamController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -160,7 +164,7 @@ class TeamController {
   async create(req: TeamCreateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -170,7 +174,7 @@ class TeamController {
       console.error('Error in TeamController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -184,7 +188,7 @@ class TeamController {
   async update(req: TeamUpdateRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -200,7 +204,7 @@ class TeamController {
       console.error('Error in TeamController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -214,7 +218,7 @@ class TeamController {
   async delete(req: TeamGetRequest, res: Response): Promise<void> {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -230,7 +234,7 @@ class TeamController {
       console.error('Error in TeamController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

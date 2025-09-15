@@ -1975,6 +1975,7 @@ class ChatClient {
     const emojiContent = $$('#emojiContent');
     if (!emojiContent) return;
 
+    // eslint-disable-next-line security/detect-object-injection -- categoryName kommt aus Emoji-Picker UI (hartcodierte Kategorie-Buttons), kein User-Input
     const emojis = this.emojiCategories[categoryName] ?? [];
     emojiContent.innerHTML = '';
 
@@ -2227,6 +2228,7 @@ class ChatClient {
       employee: 'Mitarbeiter',
       root: 'Root',
     };
+    // eslint-disable-next-line security/detect-object-injection -- role kommt aus JWT Token (validierte User-Rolle: 'admin'|'employee'|'root'), kein beliebiger User-Input
     return roleMap[role] ?? role;
   }
 
@@ -3187,6 +3189,7 @@ class ChatClient {
       '"': '&quot;',
       "'": '&#039;',
     };
+    // eslint-disable-next-line security/detect-object-injection -- m kommt aus Regex-Match von definierten Zeichen ["&'<>], kein beliebiger User-Input
     return text.replace(/["&'<>]/g, (m) => map[m]);
   }
 
@@ -3228,6 +3231,7 @@ class ChatClient {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
+    // eslint-disable-next-line security/detect-object-injection -- i ist berechneter Index (0-3) basiert auf Math.log(), kein User-Input, 100% sicher
     return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 }

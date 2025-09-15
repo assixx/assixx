@@ -11,6 +11,9 @@ import { logger } from '../../../utils/logger.js';
 import { departmentGroupsService } from './service.js';
 import { AddDepartmentsRequest, CreateGroupRequest, UpdateGroupRequest } from './types.js';
 
+// Constants
+const INVALID_REQUEST_DATA = 'Invalid request data';
+
 /**
  *
  */
@@ -101,7 +104,7 @@ export class DepartmentGroupsController {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
+          message: INVALID_REQUEST_DATA,
           details: errors.array().map((error) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
@@ -172,7 +175,7 @@ export class DepartmentGroupsController {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
+          message: INVALID_REQUEST_DATA,
           details: errors.array().map((error) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
@@ -242,7 +245,7 @@ export class DepartmentGroupsController {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
+          message: INVALID_REQUEST_DATA,
           details: errors.array().map((error) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
@@ -307,7 +310,7 @@ export class DepartmentGroupsController {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
+          message: INVALID_REQUEST_DATA,
           details: errors.array().map((error) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
@@ -378,7 +381,7 @@ export class DepartmentGroupsController {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
+          message: INVALID_REQUEST_DATA,
           details: errors.array().map((error) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: error.msg,
@@ -438,7 +441,7 @@ export class DepartmentGroupsController {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
+          message: INVALID_REQUEST_DATA,
           details: errors.array().map((error) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: error.msg,

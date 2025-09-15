@@ -477,6 +477,10 @@
 
     <script>
       /* global DOMPurify */
+
+      // Constants
+      const GENERIC_ERROR_MESSAGE = 'Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.';
+
       // Tab-Wechsel-Funktionalität
       function showTab(tabId) {
         // Alle Tabs und Inhalte deaktivieren
@@ -536,7 +540,7 @@
           }
         } catch (error) {
           console.error('Fehler beim Laden der Benutzerdaten:', error);
-          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError(GENERIC_ERROR_MESSAGE);
         }
       }
 
@@ -558,7 +562,7 @@
           }
         } catch (error) {
           console.error('Fehler beim Laden der Dokumente:', error);
-          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError(GENERIC_ERROR_MESSAGE);
         }
       }
 
@@ -727,7 +731,7 @@
           }
         } catch (error) {
           console.error('Fehler beim Herunterladen des Dokuments:', error);
-          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError(GENERIC_ERROR_MESSAGE);
         }
       }
 
@@ -788,7 +792,7 @@
           }
         } catch (error) {
           console.error('Fehler beim Aktualisieren des Profils:', error);
-          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError(GENERIC_ERROR_MESSAGE);
         }
       });
 
@@ -837,7 +841,7 @@
           }
         } catch (error) {
           console.error('Fehler beim Aktualisieren der Einstellungen:', error);
-          showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+          showError(GENERIC_ERROR_MESSAGE);
         }
       });
 

@@ -613,8 +613,6 @@
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
   </head>
   <body class="document-upload">
     <!-- Unified Navigation -->
@@ -666,19 +664,19 @@
                       <label class="form-label">Empfänger-Typ</label>
                       <div class="recipient-type-selector">
                         <label class="radio-option">
-                          <input type="radio" name="recipientType" value="user" checked onchange="updateRecipientSelector('user')" />
+                          <input type="radio" name="recipientType" value="user" checked />
                           <span>Einzelner Mitarbeiter</span>
                         </label>
                         <label class="radio-option">
-                          <input type="radio" name="recipientType" value="team" onchange="updateRecipientSelector('team')" />
+                          <input type="radio" name="recipientType" value="team" />
                           <span>Team</span>
                         </label>
                         <label class="radio-option">
-                          <input type="radio" name="recipientType" value="department" onchange="updateRecipientSelector('department')" />
+                          <input type="radio" name="recipientType" value="department" />
                           <span>Abteilung</span>
                         </label>
                         <label class="radio-option">
-                          <input type="radio" name="recipientType" value="company" onchange="updateRecipientSelector('company')" />
+                          <input type="radio" name="recipientType" value="company" />
                           <span>Gesamte Firma</span>
                         </label>
                       </div>
@@ -687,7 +685,7 @@
                     <div class="form-group" id="recipientSelectorGroup">
                       <label for="user-select" class="form-label" id="recipientLabel">Mitarbeiter auswählen</label>
                       <div class="custom-dropdown" id="userDropdownContainer">
-                        <div class="dropdown-display placeholder" id="userDisplay" onclick="toggleDropdown('user')">
+                        <div class="dropdown-display placeholder" id="userDisplay" data-dropdown="user">
                           <span>Bitte Mitarbeiter auswählen</span>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                             <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -700,7 +698,7 @@
                       </div>
 
                       <div class="custom-dropdown" id="teamDropdownContainer" style="display: none">
-                        <div class="dropdown-display placeholder" id="teamDisplay" onclick="toggleDropdown('team')">
+                        <div class="dropdown-display placeholder" id="teamDisplay" data-dropdown="team">
                           <span>Bitte Team auswählen</span>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                             <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -713,7 +711,7 @@
                       </div>
 
                       <div class="custom-dropdown" id="departmentDropdownContainer" style="display: none">
-                        <div class="dropdown-display placeholder" id="departmentDisplay" onclick="toggleDropdown('department')">
+                        <div class="dropdown-display placeholder" id="departmentDisplay" data-dropdown="department">
                           <span>Bitte Abteilung auswählen</span>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                             <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -743,21 +741,21 @@
                     <div class="form-group">
                       <label for="category-select" class="form-label">Kategorie</label>
                       <div class="custom-dropdown">
-                        <div class="dropdown-display placeholder" id="categoryDisplay" onclick="toggleDropdown('category')">
+                        <div class="dropdown-display placeholder" id="categoryDisplay" data-dropdown="category">
                           <span>Bitte Kategorie auswählen</span>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                             <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                           </svg>
                         </div>
                         <div class="dropdown-options" id="categoryDropdown">
-                          <div class="dropdown-option" onclick="selectOption('category', 'salary', 'Gehaltsabrechnung')">
+                          <div class="dropdown-option" data-action="select-option" data-type="category" data-value="salary" data-text="Gehaltsabrechnung">
                             Gehaltsabrechnung
                           </div>
-                          <div class="dropdown-option" onclick="selectOption('category', 'contract', 'Vertrag')">Vertrag</div>
-                          <div class="dropdown-option" onclick="selectOption('category', 'certificate', 'Zertifikat/Zeugnis')">
+                          <div class="dropdown-option" data-action="select-option" data-type="category" data-value="contract" data-text="Vertrag">Vertrag</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="category" data-value="certificate" data-text="Zertifikat/Zeugnis">
                             Zertifikat/Zeugnis
                           </div>
-                          <div class="dropdown-option" onclick="selectOption('category', 'other', 'Sonstiges')">Sonstiges</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="category" data-value="other" data-text="Sonstiges">Sonstiges</div>
                         </div>
                         <input type="hidden" name="category" id="categoryValue" required />
                       </div>
@@ -773,26 +771,26 @@
                     <div class="form-group">
                       <label for="month-select" class="form-label">Monat (optional)</label>
                       <div class="custom-dropdown">
-                        <div class="dropdown-display placeholder" id="monthDisplay" onclick="toggleDropdown('month')">
+                        <div class="dropdown-display placeholder" id="monthDisplay" data-dropdown="month">
                           <span>Monat auswählen (optional)</span>
                           <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                             <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                           </svg>
                         </div>
                         <div class="dropdown-options" id="monthDropdown">
-                          <div class="dropdown-option" onclick="selectOption('month', '', 'Kein Monat')">Kein Monat</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'Januar', 'Januar')">Januar</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'Februar', 'Februar')">Februar</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'März', 'März')">März</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'April', 'April')">April</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'Mai', 'Mai')">Mai</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'Juni', 'Juni')">Juni</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'Juli', 'Juli')">Juli</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'August', 'August')">August</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'September', 'September')">September</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'Oktober', 'Oktober')">Oktober</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'November', 'November')">November</div>
-                          <div class="dropdown-option" onclick="selectOption('month', 'Dezember', 'Dezember')">Dezember</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="" data-text="Kein Monat">Kein Monat</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="Januar" data-text="Januar">Januar</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="Februar" data-text="Februar">Februar</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="März" data-text="März">März</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="April" data-text="April">April</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="Mai" data-text="Mai">Mai</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="Juni" data-text="Juni">Juni</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="Juli" data-text="Juli">Juli</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="August" data-text="August">August</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="September" data-text="September">September</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="Oktober" data-text="Oktober">Oktober</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="November" data-text="November">November</div>
+                          <div class="dropdown-option" data-action="select-option" data-type="month" data-value="Dezember" data-text="Dezember">Dezember</div>
                         </div>
                         <input type="hidden" name="month" id="monthValue" />
                       </div>
@@ -858,7 +856,6 @@
     </div>
 
     <script>
-      /* global DOMPurify */
       // Constants
       const FILE_INPUT_SELECTOR = '#file-input';
 
@@ -881,7 +878,46 @@
 
         // Dropdown-Funktionalität einrichten
         setupDropdowns();
+
+        // Event Delegation for dynamic content
+        setupEventDelegation();
       });
+
+      // Event Delegation setup
+      function setupEventDelegation() {
+        // Handle recipient type changes
+        document.addEventListener('change', function(e) {
+          if (e.target.name === 'recipientType') {
+            updateRecipientSelector(e.target.value);
+          }
+        });
+
+        // Handle dropdown and option clicks
+        document.addEventListener('click', function(e) {
+          const target = e.target;
+
+          // Dropdown toggle
+          const dropdownDisplay = target.closest('[data-dropdown]');
+          if (dropdownDisplay) {
+            e.preventDefault();
+            e.stopPropagation();
+            const type = dropdownDisplay.dataset.dropdown;
+            toggleDropdown(type);
+            return;
+          }
+
+          // Option selection
+          const option = target.closest('[data-action="select-option"]');
+          if (option) {
+            e.preventDefault();
+            const type = option.dataset.type;
+            const value = option.dataset.value;
+            const text = option.dataset.text;
+            selectOption(type, value, text);
+            return;
+          }
+        });
+      }
 
       // Empfänger-Selector aktualisieren
       function updateRecipientSelector(type) {
@@ -939,19 +975,20 @@
             const teams = result.data || [];
             const teamDropdown = document.querySelector('#teamDropdown');
 
-            // Safe: HTML is generated from server data and sanitized with DOMPurify
-            // eslint-disable-next-line no-unsanitized/property
-            teamDropdown.innerHTML = DOMPurify.sanitize(
-              teams
-                .map(
-                  (team) => `
-              <div class="dropdown-option" onclick="selectOption('team', '${team.id}', '${team.name}')">
-                ${team.name}
-              </div>
-            `,
-                )
-                .join(''),
-            );
+            // Clear existing options
+            teamDropdown.innerHTML = '';
+
+            // Add teams using DOM methods
+            teams.forEach((team) => {
+              const option = document.createElement('div');
+              option.className = 'dropdown-option';
+              option.setAttribute('data-action', 'select-option');
+              option.setAttribute('data-type', 'team');
+              option.setAttribute('data-value', team.id.toString());
+              option.setAttribute('data-text', team.name);
+              option.textContent = team.name;
+              teamDropdown.append(option);
+            });
           }
         } catch (error) {
           console.error('Error loading teams:', error);
@@ -971,19 +1008,20 @@
             const departments = result.data || [];
             const departmentDropdown = document.querySelector('#departmentDropdown');
 
-            // Safe: HTML is generated from server data and sanitized with DOMPurify
-            // eslint-disable-next-line no-unsanitized/property
-            departmentDropdown.innerHTML = DOMPurify.sanitize(
-              departments
-                .map(
-                  (dept) => `
-              <div class="dropdown-option" onclick="selectOption('department', '${dept.id}', '${dept.name}')">
-                ${dept.name}
-              </div>
-            `,
-                )
-                .join(''),
-            );
+            // Clear existing options
+            departmentDropdown.innerHTML = '';
+
+            // Add departments using DOM methods
+            departments.forEach((dept) => {
+              const option = document.createElement('div');
+              option.className = 'dropdown-option';
+              option.setAttribute('data-action', 'select-option');
+              option.setAttribute('data-type', 'department');
+              option.setAttribute('data-value', dept.id.toString());
+              option.setAttribute('data-text', dept.name);
+              option.textContent = dept.name;
+              departmentDropdown.append(option);
+            });
           }
         } catch (error) {
           console.error('Error loading departments:', error);
@@ -1204,8 +1242,11 @@
               employees.forEach((employee) => {
                 const option = document.createElement('div');
                 option.className = 'dropdown-option';
+                option.setAttribute('data-action', 'select-option');
+                option.setAttribute('data-type', 'user');
+                option.setAttribute('data-value', employee.id.toString());
+                option.setAttribute('data-text', `${employee.first_name} ${employee.last_name}`);
                 option.textContent = `${employee.first_name} ${employee.last_name}`;
-                option.onclick = () => selectOption('user', employee.id, `${employee.first_name} ${employee.last_name}`);
                 userDropdown.append(option);
               });
             } else {
@@ -1321,12 +1362,25 @@
           // Button-Zustand ändern
           if (uploadButton) {
             uploadButton.disabled = true;
-            uploadButton.innerHTML = `
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="loading-spinner">
-                            <path d="M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z" />
-                        </svg>
-                        Wird hochgeladen...
-                    `;
+            // Clear button content
+            while (uploadButton.firstChild) {
+              uploadButton.firstChild.remove();
+            }
+
+            // Add spinner SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('width', '20');
+            svg.setAttribute('height', '20');
+            svg.setAttribute('viewBox', '0 0 24 24');
+            svg.setAttribute('fill', 'currentColor');
+            svg.classList.add('loading-spinner');
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z');
+            svg.append(path);
+
+            uploadButton.append(svg);
+            uploadButton.append(document.createTextNode(' Wird hochgeladen...'));
           }
 
           // Erfolgs- und Fehlerelemente
@@ -1397,12 +1451,24 @@
             // Button-Zustand zurücksetzen
             if (uploadButton) {
               uploadButton.disabled = false;
-              uploadButton.innerHTML = `
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z" />
-                        </svg>
-                        Dokument hochladen
-                    `;
+              // Clear button content
+              while (uploadButton.firstChild) {
+                uploadButton.firstChild.remove();
+              }
+
+              // Add upload SVG
+              const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+              svg.setAttribute('width', '20');
+              svg.setAttribute('height', '20');
+              svg.setAttribute('viewBox', '0 0 24 24');
+              svg.setAttribute('fill', 'currentColor');
+
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              path.setAttribute('d', 'M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z');
+              svg.append(path);
+
+              uploadButton.append(svg);
+              uploadButton.append(document.createTextNode(' Dokument hochladen'));
             }
           }
         });
@@ -1454,9 +1520,9 @@
       }
 
       // Dropdown-Funktionen
-      window.toggleDropdown = function (type) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
+      function toggleDropdown(type) {
+        const display = document.querySelector('#' + type + 'Display');
+        const dropdown = document.querySelector('#' + type + 'Dropdown');
 
         // Alle anderen schließen
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1468,12 +1534,12 @@
 
         display.classList.toggle('active');
         dropdown.classList.toggle('active');
-      };
+      }
 
       function selectOption(type, value, text) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
-        const input = document.querySelector(type + 'Value');
+        const display = document.querySelector('#' + type + 'Display');
+        const dropdown = document.querySelector('#' + type + 'Dropdown');
+        const input = document.querySelector('#' + type + 'Value');
 
         display.querySelector('span').textContent = text;
         display.classList.remove('placeholder');

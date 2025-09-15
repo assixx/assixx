@@ -9,6 +9,10 @@ import { Pool } from 'mysql2/promise';
 import type { UserCreateData } from '../models/user';
 import employeeService from '../services/employee.service';
 
+// Constants
+const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
+const UNKNOWN_ERROR = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -107,7 +111,7 @@ class EmployeeController {
   async getAll(req: EmployeeQueryRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -152,7 +156,7 @@ class EmployeeController {
       console.error('Error in EmployeeController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -166,7 +170,7 @@ class EmployeeController {
   async getById(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -193,7 +197,7 @@ class EmployeeController {
       console.error('Error in EmployeeController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -207,7 +211,7 @@ class EmployeeController {
   async create(req: EmployeeCreateRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -239,7 +243,7 @@ class EmployeeController {
       console.error('Error in EmployeeController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -253,7 +257,7 @@ class EmployeeController {
   async update(req: EmployeeUpdateRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -297,7 +301,7 @@ class EmployeeController {
       console.error('Error in EmployeeController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -311,7 +315,7 @@ class EmployeeController {
   async delete(req: EmployeeGetRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -327,7 +331,7 @@ class EmployeeController {
       console.error('Error in EmployeeController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

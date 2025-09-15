@@ -772,6 +772,7 @@ export async function getSurveyStatistics(
 
           if (Array.isArray(selectedOptions)) {
             selectedOptions.forEach((optionIndex: number) => {
+              // eslint-disable-next-line security/detect-object-injection -- optionIndex kommt aus validierten Survey-Daten (numerischer Index aus DB), kein User-Input, 100% sicher
               optionCounts[optionIndex] = (optionCounts[optionIndex] ?? 0) + 1;
             });
           }
@@ -781,6 +782,7 @@ export async function getSurveyStatistics(
         questionStat.options = options.map((optionText: unknown, index: number) => ({
           option_id: index,
           option_text: String(optionText),
+          // eslint-disable-next-line security/detect-object-injection -- index ist Array-Iterator von map(), immer numerisch und sicher, kein User-Input
           count: optionCounts[index] ?? 0,
         }));
       } else if (question.question_type === 'text') {

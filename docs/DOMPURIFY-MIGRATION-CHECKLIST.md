@@ -4,7 +4,7 @@
 
 **Phase 1:** ✅ COMPLETED - onclick removed from dom-utils.ts config
 **Phase 2:** ⏳ IN PROGRESS - Fixing TypeScript files (30% done)
-**Phase 3:** ⏳ IN PROGRESS - Migrating HTML files (32% done)
+**Phase 3:** ⏳ IN PROGRESS - Migrating HTML files (47% done - 9/19 completed)
 **Next:** Continue fixing remaining TypeScript and HTML files
 
 ## 🎯 Migration Overview
@@ -77,7 +77,7 @@
 
 ## 📋 Phase 3: Migrate HTML Files from DOMPurify
 
-### ✅ Completed HTML Files (6 of 19)
+### ✅ Completed HTML Files (9 of 19)
 
 - [x] **admin-dashboard.html** ✅ COMPLETED
 - [x] **employee-dashboard.html** ✅ COMPLETED
@@ -85,16 +85,16 @@
 - [x] **root-profile.html** ✅ COMPLETED
 - [x] **survey-employee.html** ✅ COMPLETED (with Event Delegation)
 - [x] **root-dashboard.html** ✅ CLEAN (no DOMPurify/onclick)
+- [x] **kvp.html** ✅ COMPLETED (Event Delegation implemented)
+- [x] **feature-management.html** ✅ COMPLETED (Event Delegation, no TypeScript file)
+- [x] **document-upload.html** ✅ COMPLETED (Event Delegation, fixed upload-document.ts)
 
-### 🔴 Still to migrate (13 files)
+### 🔴 Still to migrate (10 files)
 
 - [ ] archived-employees.html
 - [ ] design-standards.html
-- [ ] document-upload.html
 - [ ] employee-documents.html
 - [ ] employee-profile.html
-- [ ] feature-management.html
-- [ ] kvp.html
 - [ ] login.html
 - [ ] manage-employees.html
 - [ ] salary-documents.html
@@ -167,17 +167,17 @@ document.addEventListener('click', (e) => {
 
 - Phase 1: ✅ Config changed (100%)
 - Phase 2: ⏳ TypeScript fixes (25/82 onclick fixed - 30%)
-- Phase 3: ⏳ HTML migration (6/19 files migrated - 32%)
-- Phase 4: ⏳ Testing (15%)
+- Phase 3: ⏳ HTML migration (9/19 files migrated - 47%)
+- Phase 4: ⏳ Testing (25%)
 
 ### Metrics
 
 - **Total onclick to fix:** 82
-- **Fixed:** 25 handlers
-- **Remaining:** 57 handlers
-- **TypeScript files completed:** 4/21 (19%)
-- **HTML files completed:** 6/19 (32%)
-- **Critical dashboards:** ✅ All migrated (admin, employee, root)
+- **Fixed:** 28 handlers (feature-management: 3 more fixed)
+- **Remaining:** 54 handlers
+- **TypeScript files completed:** 5/21 (24%)
+- **HTML files completed:** 9/19 (47%)
+- **Critical dashboards:** ✅ All migrated (admin, employee, root, kvp, feature-management)
 
 ## 🚀 Quick Wins
 

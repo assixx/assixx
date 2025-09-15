@@ -78,8 +78,16 @@ async function loadEmployees(): Promise<void> {
       const userSelect = document.querySelector('#user-select');
 
       if (userSelect !== null) {
-        // Add employees to dropdown
-        userSelect.innerHTML = '<option value="">-- Mitarbeiter auswählen --</option>';
+        // Clear existing options
+        while (userSelect.firstChild) {
+          userSelect.removeChild(userSelect.firstChild);
+        }
+
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Mitarbeiter auswählen --';
+        userSelect.appendChild(defaultOption);
 
         employees.forEach((employee: User) => {
           const option = document.createElement('option');

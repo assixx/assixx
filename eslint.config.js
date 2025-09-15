@@ -292,7 +292,7 @@ export default [
       'sonarjs/non-existent-operator': 'error',
 
       // --- ANGEPASST --- Kognitive Komplexität auf einen realistischen Wert gesetzt.
-      'sonarjs/cognitive-complexity': ['warn', 30],
+      'sonarjs/cognitive-complexity': ['warn', 10],
       'sonarjs/no-collapsible-if': 'error',
       'sonarjs/no-collection-size-mischeck': 'error',
       'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
@@ -650,7 +650,7 @@ export default [
       'sonarjs/no-identical-conditions': 'error',
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/cognitive-complexity': ['warn', 30],
+      'sonarjs/cognitive-complexity': ['warn', 10],
       'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
       'sonarjs/no-duplicated-branches': 'error',
 

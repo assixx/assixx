@@ -9,6 +9,9 @@ import Survey from '../models/survey';
 import surveyService from '../services/survey.service';
 import { mapQuestionType } from '../types/survey.types';
 
+// Constants
+const UNKNOWN_ERROR = 'Unknown error';
+
 // Extended Request interfaces for survey operations
 interface AuthenticatedRequest extends Request {
   user?: {
@@ -155,7 +158,7 @@ class SurveyController {
       console.error('Error in SurveyController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -180,7 +183,7 @@ class SurveyController {
       console.error('Error in SurveyController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -215,7 +218,7 @@ class SurveyController {
       console.error('Error in SurveyController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -268,7 +271,7 @@ class SurveyController {
       console.error('Error in SurveyController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -293,7 +296,7 @@ class SurveyController {
       console.error('Error in SurveyController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -313,7 +316,7 @@ class SurveyController {
       console.error('Error in SurveyController.getTemplates:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Templates',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -338,7 +341,7 @@ class SurveyController {
       console.error('Error in SurveyController.createFromTemplate:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen aus Template',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -361,7 +364,7 @@ class SurveyController {
       console.error('Error in SurveyController.getStatistics:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Statistiken',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

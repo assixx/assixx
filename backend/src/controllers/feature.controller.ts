@@ -7,6 +7,10 @@ import { Pool } from 'mysql2/promise';
 
 import featureService from '../services/feature.service';
 
+// Constants
+const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
+const UNKNOWN_ERROR = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -87,7 +91,7 @@ class FeatureController {
   getAll(req: FeatureQueryRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -106,7 +110,7 @@ class FeatureController {
       console.error('Error in FeatureController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -120,7 +124,7 @@ class FeatureController {
   getById(req: FeatureGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -140,7 +144,7 @@ class FeatureController {
       console.error('Error in FeatureController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -154,7 +158,7 @@ class FeatureController {
   create(req: FeatureCreateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -170,7 +174,7 @@ class FeatureController {
       console.error('Error in FeatureController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -184,7 +188,7 @@ class FeatureController {
   update(req: FeatureUpdateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -200,7 +204,7 @@ class FeatureController {
       console.error('Error in FeatureController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -214,7 +218,7 @@ class FeatureController {
   delete(req: FeatureGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -230,7 +234,7 @@ class FeatureController {
       console.error('Error in FeatureController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

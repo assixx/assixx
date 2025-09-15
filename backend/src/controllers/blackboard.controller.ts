@@ -8,6 +8,10 @@ import { Pool } from 'mysql2/promise';
 import blackboardService from '../services/blackboard.service';
 import { AuthenticatedRequest } from '../types/request.types';
 
+// Constants
+const DB_CONNECTION_ERROR = 'Database connection not available';
+const UNKNOWN_ERROR = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends AuthenticatedRequest {
   tenantDb?: Pool;
@@ -87,7 +91,7 @@ class BlackboardController {
       };
 
       if (!req.tenantDb) {
-        res.status(500).json({ error: 'Database connection not available' });
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
       const result = await blackboardService.getAll(
@@ -101,7 +105,7 @@ class BlackboardController {
       console.error('Error in BlackboardController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -121,7 +125,7 @@ class BlackboardController {
       }
 
       if (!req.tenantDb) {
-        res.status(500).json({ error: 'Database connection not available' });
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
       const result = await blackboardService.getById(
@@ -135,7 +139,7 @@ class BlackboardController {
       console.error('Error in BlackboardController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -168,7 +172,7 @@ class BlackboardController {
         color: req.body.color === null ? undefined : req.body.color,
       };
       if (!req.tenantDb) {
-        res.status(500).json({ error: 'Database connection not available' });
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
       const result = await blackboardService.create(req.tenantDb, createData);
@@ -177,7 +181,7 @@ class BlackboardController {
       console.error('Error in BlackboardController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -208,7 +212,7 @@ class BlackboardController {
         category: req.body.category === null ? undefined : req.body.category,
       };
       if (!req.tenantDb) {
-        res.status(500).json({ error: 'Database connection not available' });
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
       const result = await blackboardService.update(
@@ -222,7 +226,7 @@ class BlackboardController {
       console.error('Error in BlackboardController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -242,7 +246,7 @@ class BlackboardController {
       }
 
       if (!req.tenantDb) {
-        res.status(500).json({ error: 'Database connection not available' });
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
       await blackboardService.delete(req.tenantDb, id, req.user.tenant_id);
@@ -251,7 +255,7 @@ class BlackboardController {
       console.error('Error in BlackboardController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

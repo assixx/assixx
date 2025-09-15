@@ -1,3 +1,13 @@
+# HTML files (Stylelint should not parse HTML files as CSS - 100% False Positive)
+**/*.html
+**/*.htm
+**/*.php
+**/*.tsx
+**/*.jsx
+**/*.ts
+**/*.js
+**/*.md
+
 # Dependencies
 node_modules/
 .pnpm-store/

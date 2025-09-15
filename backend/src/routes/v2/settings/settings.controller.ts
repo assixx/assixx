@@ -11,6 +11,10 @@ import * as settingsService from './settings.service.js';
 import type { SettingCategory, SettingData, SettingType } from './settings.service.js';
 import { BulkUpdateRequest, SystemSetting, UserSetting } from './types.js';
 
+// Constants
+const UNEXPECTED_ERROR = 'An unexpected error occurred';
+const USER_AGENT_HEADER = 'user-agent';
+
 // ==================== SYSTEM SETTINGS ====================
 
 /**
@@ -38,7 +42,7 @@ export const getSystemSettings = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -56,7 +60,7 @@ export const getSystemSetting = async (req: AuthenticatedRequest, res: Response)
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -87,7 +91,7 @@ export const upsertSystemSetting = async (
       req.user.tenant_id,
       req.user.role,
       req.ip,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     res.json(successResponse(null));
@@ -95,7 +99,7 @@ export const upsertSystemSetting = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -116,7 +120,7 @@ export const deleteSystemSetting = async (
       req.user.tenant_id,
       req.user.role,
       req.ip,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     res.json(successResponse(null));
@@ -124,7 +128,7 @@ export const deleteSystemSetting = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -153,7 +157,7 @@ export const getTenantSettings = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -172,7 +176,7 @@ export const getTenantSetting = async (req: AuthenticatedRequest, res: Response)
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -203,7 +207,7 @@ export const upsertTenantSetting = async (
       req.user.id,
       req.user.role,
       req.ip,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     res.json(successResponse(null));
@@ -211,7 +215,7 @@ export const upsertTenantSetting = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -232,7 +236,7 @@ export const deleteTenantSetting = async (
       req.user.id,
       req.user.role,
       req.ip,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     res.json(successResponse(null));
@@ -240,7 +244,7 @@ export const deleteTenantSetting = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -274,7 +278,7 @@ export const getUserSettings = async (req: AuthenticatedRequest, res: Response):
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -293,7 +297,7 @@ export const getUserSetting = async (req: AuthenticatedRequest, res: Response): 
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -324,7 +328,7 @@ export const upsertUserSetting = async (
       req.user.tenant_id,
       bodyData.team_id,
       req.ip,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     res.json(successResponse(null));
@@ -332,7 +336,7 @@ export const upsertUserSetting = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -354,7 +358,7 @@ export const deleteUserSetting = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -383,7 +387,7 @@ export const getAdminUserSettings = async (
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };
@@ -400,7 +404,7 @@ export const getCategories = (_req: AuthenticatedRequest, res: Response): void =
     const categories = settingsService.getSettingsCategories();
     res.json(successResponse({ categories }));
   } catch {
-    res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+    res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
   }
 };
 
@@ -441,7 +445,7 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response): Prom
       req.user.tenant_id,
       req.user.role,
       req.ip,
-      req.get('user-agent'),
+      req.get(USER_AGENT_HEADER),
     );
 
     res.json(successResponse({ results }));
@@ -449,7 +453,7 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response): Prom
     if (error instanceof ServiceError) {
       res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res.status(500).json(errorResponse('INTERNAL_ERROR', 'An unexpected error occurred'));
+      res.status(500).json(errorResponse('INTERNAL_ERROR', UNEXPECTED_ERROR));
     }
   }
 };

@@ -476,7 +476,7 @@ export async function findDocumentsByUser(userId: number): Promise<DbDocument[]>
 }
 
 // Find all documents accessible to an employee (personal, team, department, company)
-// eslint-disable-next-line sonarjs/cognitive-complexity
+
 export async function findDocumentsByEmployeeWithAccess(
   userId: number,
   tenant_id: number,
@@ -663,7 +663,7 @@ export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
 }
 
 // Find documents with flexible filters
-// eslint-disable-next-line sonarjs/cognitive-complexity
+
 export async function findDocumentsWithFilters(
   tenantId: number,
   filters: DocumentFilters,

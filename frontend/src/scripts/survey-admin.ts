@@ -820,7 +820,6 @@ export class SurveyAdminManager {
   // CRUD Operations
   // ============================================
 
-  // eslint-disable-next-line sonarjs/cognitive-complexity
   public async saveSurvey(status: 'draft' | 'active'): Promise<void> {
     const assignmentType = document.querySelector<HTMLInputElement>('#assignmentType')?.value;
     const assignments: SurveyAssignment[] = [];

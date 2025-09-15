@@ -238,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     const sizeIndex = Math.min(i, sizes.length - 1);
 
+    // eslint-disable-next-line security/detect-object-injection -- sizeIndex ist begrenzt auf 0-3 durch Math.min(), kein User-Input, 100% sicher
     return `${Number.parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2))} ${sizes[sizeIndex]}`;
   }
 });

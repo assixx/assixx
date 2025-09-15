@@ -7,6 +7,10 @@ import { Pool } from 'mysql2/promise';
 
 import tenantService from '../services/tenant.service';
 
+// Constants
+const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
+const UNKNOWN_ERROR = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -87,7 +91,7 @@ class TenantController {
   getAll(req: TenantQueryRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -112,7 +116,7 @@ class TenantController {
       console.error('Error in TenantController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -126,7 +130,7 @@ class TenantController {
   getById(req: TenantGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -146,7 +150,7 @@ class TenantController {
       console.error('Error in TenantController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -160,7 +164,7 @@ class TenantController {
   create(req: TenantCreateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -197,7 +201,7 @@ class TenantController {
       console.error('Error in TenantController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -211,7 +215,7 @@ class TenantController {
   update(req: TenantUpdateRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -227,7 +231,7 @@ class TenantController {
       console.error('Error in TenantController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -241,7 +245,7 @@ class TenantController {
   delete(req: TenantGetRequest, res: Response): void {
     try {
       if (!req.tenantDb) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -257,7 +261,7 @@ class TenantController {
       console.error('Error in TenantController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

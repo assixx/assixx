@@ -279,7 +279,6 @@ function getStatusBadgeClass(status: string): string {
 }
 
 // Open area modal
-// eslint-disable-next-line sonarjs/cognitive-complexity
 function openAreaModal(areaId?: number): void {
   editingAreaId = areaId ?? null;
 

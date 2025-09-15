@@ -1274,11 +1274,13 @@
       window.updateAnswer = function updateAnswer(questionId, value, type) {
         if (type === 'single') {
           // For single choice, store as array with one element
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId] = {
             questionId: questionId,
             answerOptions: [value],
           };
         } else {
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId] = {
             questionId: questionId,
             [`answer${type === 'text' ? 'Text' : type === 'number' ? 'Number' : 'Date'}`]: value,
@@ -1289,7 +1291,9 @@
 
       // Update multiple choice answer
       window.updateMultipleChoice = function updateMultipleChoice(questionId, optionId, checked) {
+        // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
         if (!answers[questionId]) {
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId] = {
             questionId: questionId,
             selectedOptions: [],
@@ -1297,8 +1301,10 @@
         }
 
         if (checked) {
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId].selectedOptions.push(optionId);
         } else {
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId].selectedOptions = answers[questionId].selectedOptions.filter((id) => id !== optionId);
         }
 

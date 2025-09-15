@@ -11,6 +11,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     MODAL_TITLE: '#modalTitle',
     ADMIN_PASSWORD: '#adminPassword',
     ADMIN_PASSWORD_CONFIRM: '#adminPasswordConfirm',
+    ADMIN_EMAIL_CONFIRM: '#adminEmailConfirm',
     POSITION_DROPDOWN_VALUE: '#positionDropdownValue',
     DEPARTMENT_SELECT: '#departmentSelect',
     DEPARTMENT_SELECT_CONTAINER: '#departmentSelectContainer',
@@ -368,7 +369,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     ($('#adminFirstName') as HTMLInputElement).value = admin.firstName;
     ($('#adminLastName') as HTMLInputElement).value = admin.lastName;
     ($('#adminEmail') as HTMLInputElement).value = admin.email;
-    ($('#adminEmailConfirm') as HTMLInputElement).value = admin.email;
+    ($(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement).value = admin.email;
 
     // Custom dropdown for position
     const positionValue = admin.position ?? '';
@@ -400,8 +401,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'none';
 
     // Clear error messages
-    const emailError = $$('#email-error');
-    const passwordError = $$('#password-error');
+    const emailError = $$(SELECTORS.EMAIL_ERROR);
+    const passwordError = $$(SELECTORS.PASSWORD_ERROR);
     if (emailError) emailError.style.display = 'none';
     if (passwordError) passwordError.style.display = 'none';
 
@@ -465,7 +466,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     }
 
     // Passwort-Felder und E-Mail-Bestätigung als optional setzen beim Bearbeiten
-    const emailConfirmField = $$('#adminEmailConfirm') as HTMLInputElement | null;
+    const emailConfirmField = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
     if (emailConfirmField !== null) {
       emailConfirmField.required = false;
     }
@@ -592,7 +593,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     if (activeStatusGroup) activeStatusGroup.style.display = 'none';
 
     // Passwort-Felder und E-Mail-Bestätigung als required setzen für neue Admins
-    const emailConfirmField = $$('#adminEmailConfirm') as HTMLInputElement | null;
+    const emailConfirmField = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
     if (emailConfirmField !== null) emailConfirmField.required = true;
 
     const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
@@ -609,8 +610,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
 
     // Clear error messages
-    const emailError = $$('#email-error');
-    const passwordError = $$('#password-error');
+    const emailError = $$(SELECTORS.EMAIL_ERROR);
+    const passwordError = $$(SELECTORS.PASSWORD_ERROR);
     if (emailError) emailError.style.display = 'none';
     if (passwordError) passwordError.style.display = 'none';
 
@@ -624,8 +625,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     currentAdminId = null;
 
     // Clear error messages when closing
-    const emailError = $$('#email-error');
-    const passwordError = $$('#password-error');
+    const emailError = $$(SELECTORS.EMAIL_ERROR);
+    const passwordError = $$(SELECTORS.PASSWORD_ERROR);
     if (emailError) emailError.style.display = 'none';
     if (passwordError) passwordError.style.display = 'none';
   };
@@ -987,10 +988,10 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
       // Validate email match
       const emailEl = $$('#adminEmail') as HTMLInputElement | null;
-      const emailConfirmEl = $$('#adminEmailConfirm') as HTMLInputElement | null;
+      const emailConfirmEl = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
       const email = emailEl !== null ? emailEl.value : '';
       const emailConfirm = emailConfirmEl !== null ? emailConfirmEl.value : '';
-      const emailError = $$('#email-error');
+      const emailError = $$(SELECTORS.EMAIL_ERROR);
 
       if (email !== emailConfirm) {
         if (emailError) emailError.style.display = 'block';
@@ -1005,7 +1006,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       const passwordConfirmEl = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
       const password = passwordEl !== null ? passwordEl.value : '';
       const passwordConfirm = passwordConfirmEl !== null ? passwordConfirmEl.value : '';
-      const passwordError = $$('#password-error');
+      const passwordError = $$(SELECTORS.PASSWORD_ERROR);
 
       if (password !== '' && password !== passwordConfirm) {
         if (passwordError) passwordError.style.display = 'block';
@@ -1219,13 +1220,13 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
       });
 
       // Real-time validation for email confirmation
-      const emailConfirmInput = $$('#adminEmailConfirm') as HTMLInputElement | null;
+      const emailConfirmInput = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
       if (emailConfirmInput) {
         emailConfirmInput.addEventListener('input', () => {
           const emailEl = $$('#adminEmail') as HTMLInputElement | null;
           const email = emailEl !== null ? emailEl.value : '';
           const emailConfirm = emailConfirmInput.value;
-          const emailError = $$('#email-error');
+          const emailError = $$(SELECTORS.EMAIL_ERROR);
 
           if (emailConfirm !== '' && email !== emailConfirm) {
             if (emailError) emailError.style.display = 'block';
@@ -1242,7 +1243,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
           const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
           const password = passwordEl !== null ? passwordEl.value : '';
           const passwordConfirm = passwordConfirmInput.value;
-          const passwordError = $$('#password-error');
+          const passwordError = $$(SELECTORS.PASSWORD_ERROR);
 
           if (passwordConfirm !== '' && password !== passwordConfirm) {
             if (passwordError) passwordError.style.display = 'block';

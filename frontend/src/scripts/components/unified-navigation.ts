@@ -3401,7 +3401,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
         content: '';
         position: absolute;
-        inset: -0.5625rem; /* -9px in rem */
+        inset: -0.55rem; /* -9px in rem */
         border-radius: 50%;
         z-index: -1;
         background: rgba(139, 139, 139, 0.41);
@@ -3418,7 +3418,7 @@ const unifiedNavigationCSS = `
     .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
         content: '';
         position: absolute;
-        inset: -0.5625rem; /* -9px in rem */
+        inset: -0.55rem; /* -9px in rem */
         background: rgba(33, 150, 243, 0.1);
         border-radius: 50%;
         z-index: -1;

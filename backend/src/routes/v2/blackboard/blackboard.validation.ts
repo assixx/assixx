@@ -5,6 +5,9 @@ import { body, param, query } from 'express-validator';
 
 import { handleValidationErrors } from '../../../middleware/validation.js';
 
+// Constants
+const ENTRY_ID_ERROR = 'Entry ID must be a positive integer';
+
 export const blackboardValidation = {
   // List entries validation
   list: [
@@ -46,10 +49,7 @@ export const blackboardValidation = {
   ],
 
   // Get by ID validation
-  getById: [
-    param('id').isInt({ min: 1 }).withMessage('Entry ID must be a positive integer'),
-    handleValidationErrors,
-  ],
+  getById: [param('id').isInt({ min: 1 }).withMessage(ENTRY_ID_ERROR), handleValidationErrors],
 
   // Create entry validation
   create: [
@@ -103,7 +103,7 @@ export const blackboardValidation = {
 
   // Update entry validation
   update: [
-    param('id').isInt({ min: 1 }).withMessage('Entry ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(ENTRY_ID_ERROR),
     body('title')
       .optional()
       .trim()
@@ -160,22 +160,16 @@ export const blackboardValidation = {
   ],
 
   // Delete validation
-  delete: [
-    param('id').isInt({ min: 1 }).withMessage('Entry ID must be a positive integer'),
-    handleValidationErrors,
-  ],
+  delete: [param('id').isInt({ min: 1 }).withMessage(ENTRY_ID_ERROR), handleValidationErrors],
 
   // Archive/Unarchive validation
   archiveUnarchive: [
-    param('id').isInt({ min: 1 }).withMessage('Entry ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(ENTRY_ID_ERROR),
     handleValidationErrors,
   ],
 
   // Confirm validation
-  confirm: [
-    param('id').isInt({ min: 1 }).withMessage('Entry ID must be a positive integer'),
-    handleValidationErrors,
-  ],
+  confirm: [param('id').isInt({ min: 1 }).withMessage(ENTRY_ID_ERROR), handleValidationErrors],
 
   // Dashboard entries validation
   dashboard: [
@@ -188,12 +182,12 @@ export const blackboardValidation = {
 
   // Attachment validation
   uploadAttachment: [
-    param('id').isInt({ min: 1 }).withMessage('Entry ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(ENTRY_ID_ERROR),
     handleValidationErrors,
   ],
 
   getAttachments: [
-    param('id').isInt({ min: 1 }).withMessage('Entry ID must be a positive integer'),
+    param('id').isInt({ min: 1 }).withMessage(ENTRY_ID_ERROR),
     handleValidationErrors,
   ],
 

@@ -18,585 +18,13 @@
         document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
       })();
     </script>
-    <style>
-      @import url('/styles/dashboard-theme.css');
-      @import url('/styles/breadcrumb-alignment.css');
-      /* Glassmorphismus Design-Standards */
+    <!-- Admin Dashboard CSS extracted to external file -->
+    <link rel="stylesheet" href="/styles/admin-dashboard.css" />
 
-      /* Fix for sidebar title alignment - TEMPORARILY REMOVED FOR TESTING */
-      /* .sidebar-title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 16px;
-        margin: 0 0 16px 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: 12px;
-        border: 1px solid rgba(33, 150, 243, 0.2);
-      }
-
-      .sidebar-title .title-icon {
-        display: flex;
-        align-items: center;
-        font-size: 1.1rem;
-      } */
-
-      /* Dramatischer Hintergrund-Gradient */
-      body {
-        position: relative;
-        min-height: 100vh;
-        overflow-x: hidden;
-        background: #000;
-      }
-
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
-        pointer-events: none;
-        z-index: -1;
-      }
-
-      /* Styles von breadcrumb-alignment.css und dashboard-theme.css */
-
-      /* Glassmorphismus für Cards - definiert in dashboard-theme.css */
-
-      /* Ansprechendere Compact-Cards */
-      .compact-card {
-        backdrop-filter: var(--glass-backdrop);
-        background: var(--glass-bg);
-        border: var(--glass-border);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        cursor: pointer;
-        overflow: hidden;
-        padding: var(--spacing-xl);
-        position: relative;
-      }
-
-      .compact-card::before {
-        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-        content: '';
-        height: 4px;
-        left: 0;
-        position: absolute;
-        right: 0;
-        top: 0;
-      }
-
-      /*.compact-card:hover::before {
-        opacity: 1;
-      }*/
-
-      .compact-card:hover {
-        background: hsla(0, 0%, 100%, 0.03);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 12px 40px rgba(0, 0, 0, 0.5),
-          inset 0 1px 0 hsla(0, 0%, 100%, 0.15);
-        transform: translateY(-8px);
-      }
-
-      .compact-card .card-header {
-        background: rgba(255, 255, 255, 0.01);
-        backdrop-filter: blur(10px);
-        padding: var(--spacing-md) var(--spacing-lg);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 10px 10px 0 0;
-      }
-
-      .compact-card .card-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-      }
-
-      .compact-card .card-title::before {
-        content: '';
-        width: 4px;
-        height: 20px;
-        background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-        border-radius: 2px;
-      }
-
-      .compact-content {
-        padding: var(--spacing-lg);
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .compact-list {
-        margin: var(--spacing-md) 0;
-        flex: 1;
-      }
-
-      .compact-list .list-item {
-        padding: var(--spacing-2sm);
-        margin-bottom: var(--spacing-sm);
-        background: var(--glass-bg);
-        border-radius: var(--radius-sm);
-        border: var(--glass-border);
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-      }
-
-      .compact-list .list-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(0, 142, 255, 0.3);
-        transform: translateX(5px);
-        color: var(--text-primary);
-      }
-
-      .compact-list .list-item strong {
-        color: var(--text-primary);
-        font-weight: 500;
-      }
-
-      .view-all-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        color: var(--primary-color);
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.85rem;
-        padding: 8px 0;
-        margin-top: auto;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-      }
-
-      .view-all-link:hover {
-        color: var(--primary-light);
-      }
-
-      .view-all-link .arrow {
-        font-size: 0.9rem;
-      }
-
-      .view-all-link:hover .arrow {
-        transform: translateX(3px);
-      }
-
-      /* Button in Compact-Cards */
-      .compact-card .btn-block {
-        width: 100%;
-        padding: 10px 16px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        letter-spacing: 0.3px;
-        margin-bottom: var(--spacing-md);
-      }
-
-      /* Form-Controls mit Glassmorphismus */
-      .form-control,
-      .search-input {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        color: #fff;
-      }
-
-      .form-control:focus,
-      .search-input:focus {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 0 0 3px rgba(0, 142, 255, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        outline: none;
-      }
-
-      /* Deaktivierte Form-Controls */
-      .form-control:disabled {
-        background: rgba(255, 255, 255, 0.01);
-        border-color: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.4);
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .form-control:disabled::placeholder {
-        color: rgba(255, 255, 255, 0.3);
-      }
-
-      /* Buttons mit Glassmorphismus und Shine-Effekt */
-      .btn {
-        position: relative;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .btn-primary {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
-      }
-
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
-      }
-
-      .btn::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        transform: rotate(45deg) translate(-70%, -70%);
-      }
-
-      .btn:hover::after {
-        transform: rotate(45deg) translate(-30%, -30%);
-      }
-
-      /* Tabellen mit Glassmorphismus */
-      .table {
-        background: transparent;
-      }
-
-      .table thead th {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .table tbody tr {
-        background: rgba(255, 255, 255, 0.01);
-      }
-
-      .table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.03);
-      }
-
-      /* Admin Grid - Gleiche Höhe für alle Cards */
-      .admin-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: var(--spacing-lg);
-        align-items: stretch;
-      }
-
-      @media (max-width: 1200px) {
-        .admin-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-
-      @media (max-width: 768px) {
-        .admin-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .admin-grid > div {
-        display: flex;
-      }
-
-      /* Animationen */
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* Animation für Cards - bei Bedarf aktivieren
-      .stat-card,
-      .card,
-      .compact-card {
-        animation: fadeInUp 0.6s ease-out;
-      }
-      */
-
-      @keyframes subtle-pulse {
-        0% {
-          box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        50% {
-          box-shadow:
-            0 8px 32px rgba(0, 142, 255, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        }
-        100% {
-          box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-      }
-
-      /* Action buttons in tables - equal width */
-      .table td:last-child .btn {
-        min-width: 110px;
-        margin: 2px;
-      }
-
-      /* Status buttons - Outline style like Secondary buttons */
-      .btn-status-active {
-        background: transparent;
-        border: 1px solid #ff6b35;
-        color: #ff6b35;
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-        backdrop-filter: blur(10px);
-      }
-
-      .btn-status-active:hover {
-        background: rgba(255, 107, 53, 0.1);
-        border-color: #ff5722;
-        color: #ff5722;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
-      }
-
-      .btn-status-inactive {
-        background: transparent;
-        border: 1px solid #28a745;
-        color: #28a745;
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-        backdrop-filter: blur(10px);
-      }
-
-      .btn-status-inactive:hover {
-        background: rgba(40, 167, 69, 0.1);
-        border-color: #218838;
-        color: #218838;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
-      }
-
-      /* Blackboard Preview Styles */
-      .blackboard-preview {
-        min-height: 200px;
-      }
-
-      .blackboard-preview .list-item {
-        padding: 12px;
-        border-radius: 8px;
-        background: var(--glass-bg);
-        margin-bottom: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .blackboard-preview .list-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(255, 255, 255, 0.1);
-        transform: translateX(4px);
-      }
-
-      .blackboard-preview .list-item::before {
-        content: '📌';
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        font-size: 14px;
-        opacity: 0.8;
-      }
-
-      .blackboard-preview .list-item-content {
-        margin-left: 24px;
-      }
-
-      .blackboard-preview .list-item-title {
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 4px;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .blackboard-preview .list-item-meta {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .blackboard-preview .priority-badge {
-        display: inline-flex;
-        align-items: center;
-        font-size: 0.75rem;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-weight: 500;
-      }
-
-      .blackboard-preview .priority-urgent {
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-        border: 1px solid rgba(244, 67, 54, 0.3);
-      }
-
-      .blackboard-preview .priority-high {
-        background: rgba(255, 152, 0, 0.2);
-        color: #ff9800;
-        border: 1px solid rgba(255, 152, 0, 0.3);
-      }
-
-      .blackboard-preview .priority-normal {
-        background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
-        border: 1px solid rgba(33, 150, 243, 0.3);
-      }
-
-      .blackboard-preview .priority-low {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-        border: 1px solid rgba(76, 175, 80, 0.3);
-      }
-
-      /* Skeleton Loading */
-      .loading-placeholder {
-        padding: 8px 0;
-      }
-
-      .skeleton {
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
-        background-size: 200% 100%;
-        /* animation: skeleton-loading 1.5s infinite; */
-        border-radius: 4px;
-        margin-bottom: 8px;
-      }
-
-      .skeleton-text {
-        height: 48px;
-        width: 100%;
-      }
-
-      @keyframes skeleton-loading {
-        0% {
-          background-position: 200% 0;
-        }
-        100% {
-          background-position: -200% 0;
-        }
-      }
-
-      /* Empty State */
-      .blackboard-empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--text-secondary);
-      }
-
-      .blackboard-empty-state i {
-        font-size: 100px;
-        opacity: 0.3;
-        margin-bottom: 16px;
-        margin-top: -30px;
-      }
-
-      /* Additional Badge Styles */
-      .badge-warning {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffc107;
-      }
-
-      .badge-secondary {
-        background: rgba(108, 117, 125, 0.2);
-        color: #6c757d;
-      }
-
-      /* Info Button Style */
-      .btn-info {
-        background: rgba(23, 162, 184, 0.2);
-        border: 1px solid rgba(23, 162, 184, 0.3);
-        color: #17a2b8;
-      }
-
-      .btn-info:hover {
-        background: rgba(23, 162, 184, 0.3);
-        border-color: #17a2b8;
-        transform: translateY(-1px);
-      }
-
-      /* Global Layout Shift Prevention using CSS Custom Properties */
-      :root {
-        /* These are set by inline script above */
-        --sidebar-width: 250px;
-        --content-margin: 250px;
-        --grid-columns: 3;
-        --card-max-width: 100%;
-        --widget-padding: 1.5rem;
-      }
-
-      /* When sidebar is collapsed */
-      [data-sidebar='collapsed'] {
-        --sidebar-width: 60px;
-        --content-margin: 60px;
-        --grid-columns: 4;
-        --card-max-width: 100%;
-        --widget-padding: 2rem;
-      }
-
-      /* Apply to all main content */
-      .main-content {
-        margin-left: var(--content-margin);
-      }
-
-      /* Apply to all grids */
-      .admin-grid {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        max-width: 100%;
-      }
-
-      /* Apply to all cards and widgets
-      .card,
-      .widget,
-      .stat-card,
-      .blackboard-widget {
-        max-width: var(--card-max-width);
-      }*/
-
-      /* Prevent any layout shift during initial load */
-      body:not(.loaded) * {
-        /* Reserved for dynamic styles to prevent layout shift */
-        transition: none;
-      }
-
-      /* Breadcrumb Styles sind jetzt in breadcrumb.js enthalten */
-    </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
     <!-- Feature Flags -->
     <script src="/feature-flags.js"></script>
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
@@ -732,11 +160,11 @@
                   <p class="text-secondary" class="u-mt-text">Teams erstellen und verwalten</p>
                 </div>
                 <div class="compact-content">
-                  <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
+                  <button class="btn btn-primary btn-block mb-3" data-action="show-team-modal">Neues Team</button>
                   <div class="compact-list" id="team-list">
                     <!-- Wird dynamisch gefüllt -->
                   </div>
-                  <a href="#" class="view-all-link" onclick="showAllTeams()">
+                  <a href="#" class="view-all-link" data-action="show-all-teams">
                     Verwalten
                     <span class="arrow">→</span>
                   </a>
@@ -831,295 +259,14 @@
     <!-- Employee Status Modal -->
     <!-- Employee Status Modal removed - functionality moved to manage-employees.html -->
 
-    <!-- Document Modal -->
-    <div id="document-modal" class="modal" class="u-hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Dokument hochladen</h3>
-          <button class="modal-close" onclick="hideModal('document-modal')">&times;</button>
-        </div>
-        <form id="document-upload-form" enctype="multipart/form-data">
-          <div class="form-group">
-            <label class="form-label">Mitarbeiter auswählen</label>
-            <select name="employeeId" id="upload-employee-select" class="form-control" required>
-              <option value="">Bitte wählen...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Dokumenttyp</label>
-            <select name="category" class="form-control">
-              <option value="payslip">Lohnabrechnung</option>
-              <option value="contract">Vertrag</option>
-              <option value="certificate">Bescheinigung</option>
-              <option value="other">Sonstiges</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Datei auswählen</label>
-            <input type="file" name="document" class="form-control" accept="application/pdf" required />
-          </div>
-          <button type="submit" class="btn btn-primary">Dokument hochladen</button>
-        </form>
-      </div>
-    </div>
+    <!-- Document Modal removed - functionality moved to /document-upload page -->
 
     <!-- Department Modal ist bereits weiter oben definiert -->
     <!-- Team Modal ist bereits weiter oben definiert -->
 
     <!-- Modal Styles -->
-    <style>
-      .modal {
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        backdrop-filter: blur(10px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: var(--spacing-lg);
-        border-bottom: 1px solid var(--border-color);
-      }
-
-      .modal-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--primary-color);
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-sm);
-      }
-
-      .modal-close:hover {
-        background-color: var(--background-dark);
-        color: var(--error-color);
-      }
-
-      /* Form Styles für Modals */
-      .modal .form-group {
-        margin-bottom: 20px;
-      }
-
-      .modal .form-label {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-
-      .modal .form-control {
-        width: 100%;
-        padding: var(--spacing-2sm);
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        color: #fff;
-      }
-
-      .modal .form-control:focus {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 0 0 3px rgba(0, 142, 255, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        outline: none;
-      }
-
-      .modal .button-group {
-        display: flex;
-        justify-content: space-between;
-        gap: 15px;
-        margin-top: 20px;
-      }
-
-      .table-row-inactive {
-        background-color: rgba(255, 165, 0, 0.1);
-      }
-
-      .table-row-archived {
-        background-color: rgba(128, 128, 128, 0.1);
-      }
-
-      .modal form {
-        padding: var(--spacing-lg);
-      }
-
-      /* Button Group Styles */
-      .btn-group {
-        display: inline-flex;
-        vertical-align: middle;
-        gap: 4px;
-      }
-
-      .btn-group > .btn {
-        position: relative;
-        flex: 0 1 auto;
-      }
-
-      /* Utility Classes */
-      .me-1 {
-        margin-right: 0.25rem !important;
-      }
-
-      /* Better button styles for tables */
-      .table .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-        line-height: 1.5;
-        border-radius: var(--radius-sm);
-      }
-    </style>
 
     <!-- Custom Dropdown Styles -->
-    <style>
-      .custom-dropdown {
-        position: relative;
-        width: 100%;
-      }
-
-      /* Dropdown Display - Trigger Button */
-      .dropdown-display,
-      .custom-select-display {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: var(--spacing-2sm);
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        color: #fff;
-        cursor: pointer;
-      }
-
-      .dropdown-display:hover,
-      .custom-select-display:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .dropdown-display.active svg,
-      .custom-select-display.active svg {
-        transform: rotate(180deg);
-        transition: transform 0.3s ease;
-      }
-
-      .dropdown-display svg {
-        transition: transform 0.3s ease;
-      }
-
-      .dropdown-display.disabled,
-      .custom-select-display.disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      /* Dropdown Options - Container */
-      .dropdown-options {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        right: 0;
-        background: rgba(18, 18, 18, 0.8);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        box-shadow:
-          0 8px 32px rgba(0, 0, 0, 0.4),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        max-height: 200px;
-        overflow-y: auto;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-
-        z-index: 10001;
-      }
-
-      /* Active State für Dropdown Options */
-      .dropdown-options.active {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-      }
-
-      /* Legacy show class Support */
-      .dropdown-options.show {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-      }
-
-      /* Dropdown Option Items */
-      .dropdown-option {
-        padding: 10px 12px;
-        color: var(--text-primary);
-        cursor: pointer;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .dropdown-option:last-child {
-        border-bottom: none;
-      }
-
-      .dropdown-option:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #fff;
-      }
-
-      .dropdown-option.selected {
-        background: rgba(33, 150, 243, 0.1);
-        color: var(--primary-color);
-      }
-
-      /* Icons in Dropdown Options */
-      .dropdown-option i {
-        margin-right: 0.5rem;
-        width: 16px;
-        text-align: center;
-        color: var(--primary-color);
-      }
-
-      /* Scrollbar Styling */
-      .dropdown-options::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      .dropdown-options::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 3px;
-      }
-
-      .dropdown-options::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 3px;
-      }
-
-      .dropdown-options::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-      }
-    </style>
 
     <!-- JavaScript -->
     <!-- Verhindert mehrfache Bestätigungsdialoge -->
@@ -1639,6 +786,74 @@
         }
       });
 
+      // Event Delegation for all data-action buttons (replacing onclick handlers)
+      /* global showTeamModal, closeTeamModal, saveTeam, showMachineModal, closeMachineModal, saveMachine, showAreaModal, closeAreaModal, saveArea, showEmployeeModal, showAllTeams, hideModal, toggleDropdown, selectDropdownOption */
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          // Modal controls
+          case 'show-team-modal':
+            if (typeof showTeamModal === 'function') showTeamModal();
+            break;
+          case 'close-team-modal':
+            if (typeof closeTeamModal === 'function') closeTeamModal();
+            break;
+          case 'save-team':
+            if (typeof saveTeam === 'function') saveTeam();
+            break;
+          case 'show-machine-modal':
+            if (typeof showMachineModal === 'function') showMachineModal();
+            break;
+          case 'close-machine-modal':
+            if (typeof closeMachineModal === 'function') closeMachineModal();
+            break;
+          case 'save-machine':
+            if (typeof saveMachine === 'function') saveMachine();
+            break;
+          case 'show-area-modal':
+            if (typeof showAreaModal === 'function') showAreaModal();
+            break;
+          case 'close-area-modal':
+            if (typeof closeAreaModal === 'function') closeAreaModal();
+            break;
+          case 'save-area':
+            if (typeof saveArea === 'function') saveArea();
+            break;
+          case 'show-employee-modal':
+            if (typeof showEmployeeModal === 'function') showEmployeeModal();
+            break;
+          case 'show-all-teams':
+            e.preventDefault();
+            if (typeof showAllTeams === 'function') showAllTeams();
+            break;
+          case 'hide-modal': {
+            const modalId = target.dataset.modal;
+            if (modalId && typeof hideModal === 'function') hideModal(modalId);
+            break;
+          }
+
+          // Dropdown controls
+          case 'toggle-dropdown': {
+            const dropdownId = target.dataset.dropdown;
+            if (dropdownId && typeof toggleDropdown === 'function') toggleDropdown(dropdownId);
+            break;
+          }
+          case 'select-dropdown': {
+            const dropdown = target.dataset.dropdown;
+            const value = target.dataset.value || '';
+            const display = target.dataset.display || '';
+            if (typeof selectDropdownOption === 'function') {
+              selectDropdownOption(dropdown, value, display);
+            }
+            break;
+          }
+        }
+      });
+
       function selectDropdownOption(dropdownId, value, text) {
         console.info('selectDropdownOption called:', dropdownId, value, text);
         // Try both ID formats for compatibility
@@ -1893,13 +1108,14 @@
             currentStatus = 'unavailable';
           }
           if (statusDisplay) {
-            const statusText =
-              {
-                available: 'Verfügbar',
-                vacation: 'Urlaub',
-                sick: 'Krank',
-                unavailable: 'Nicht verfügbar',
-              }[currentStatus] || 'Verfügbar';
+            // Use Map to avoid object injection vulnerability
+            const statusMap = new Map([
+              ['available', 'Verfügbar'],
+              ['vacation', 'Urlaub'],
+              ['sick', 'Krank'],
+              ['unavailable', 'Nicht verfügbar'],
+            ]);
+            const statusText = statusMap.get(currentStatus) || 'Verfügbar';
             statusDisplay.querySelector('span').textContent = statusText;
           }
 
@@ -2225,7 +1441,7 @@
         if (dropdown && departments) {
           // Clear existing options and add default
           dropdown.innerHTML = `
-              <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employeeDepartment', '', 'Keine Abteilung')">
+              <div class="dropdown-option" data-value="" data-action="select-dropdown" data-dropdown="employeeDepartment" data-display="Keine Abteilung">
                 <i class="fas fa-times-circle"></i> Keine Abteilung
               </div>
             `;
@@ -2299,7 +1515,7 @@
 
             // Clear existing options and add default
             dropdown.innerHTML = `
-              <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employeeTeam', '', 'Kein Team')">
+              <div class="dropdown-option" data-value="" data-action="select-dropdown" data-dropdown="employeeTeam" data-display="Kein Team">
                 <i class="fas fa-times-circle"></i> Kein Team
               </div>
             `;
@@ -2378,31 +1594,12 @@
         }
       }
 
-      function showDocumentModal() {
-        console.info('Document upload modal requested');
-        const modal = document.querySelector('#document-modal');
-        if (modal) {
-          console.info('Modal found, showing it');
-          modal.style.display = 'flex';
-          // Mitarbeiter-Select füllen
-          // TODO: loadEmployeesForSelect function needs to be implemented
-          if (typeof window.loadEmployeesForSelect === 'function') {
-            window.loadEmployeesForSelect();
-          } else if (typeof window.loadEmployeesTable === 'function') {
-            // Fallback to loadEmployeesTable if available
-            window.loadEmployeesTable();
-          }
-        } else {
-          console.error('Modal element not found!');
-          alert('Dokument-Upload-Formular konnte nicht geladen werden.');
-        }
-      }
+      // showDocumentModal removed - functionality moved to /document-upload page
 
       // Make functions globally available
       window.showEmployeeModal = showEmployeeModal;
       window.loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
       window.loadTeamsForEmployeeSelect = loadTeamsForEmployeeSelect;
-      window.showDocumentModal = showDocumentModal;
       window.showModal = showModal;
       window.hideModal = hideModal;
       // eslint-disable-next-line no-undef
@@ -2440,7 +1637,7 @@
 
       // Modal schließen bei Klick außerhalb
       window.addEventListener('click', function (event) {
-        const modals = ['employee-modal', 'document-modal', 'team-modal'];
+        const modals = ['employee-modal', 'team-modal'];
         modals.forEach((modalId) => {
           const modal = document.querySelector(modalId);
           if (event.target == modal) {
@@ -2561,21 +1758,23 @@
               }
             }
 
-            const availabilityBadgeClass =
-              {
-                available: 'badge-success',
-                vacation: 'badge-warning',
-                sick: 'badge-danger',
-                unavailable: 'badge-secondary',
-              }[effectiveStatus] || 'badge-success';
+            // Use Map to avoid object injection vulnerability
+            const badgeClassMap = new Map([
+              ['available', 'badge-success'],
+              ['vacation', 'badge-warning'],
+              ['sick', 'badge-danger'],
+              ['unavailable', 'badge-secondary'],
+            ]);
+            const availabilityBadgeClass = badgeClassMap.get(effectiveStatus) || 'badge-success';
 
-            const availabilityText =
-              {
-                available: 'Verfügbar',
-                vacation: 'Urlaub',
-                sick: 'Krank',
-                unavailable: 'Beurlaubt',
-              }[effectiveStatus] || 'Verfügbar';
+            // Use Map to avoid object injection vulnerability
+            const availabilityTextMap = new Map([
+              ['available', 'Verfügbar'],
+              ['vacation', 'Urlaub'],
+              ['sick', 'Krank'],
+              ['unavailable', 'Beurlaubt'],
+            ]);
+            const availabilityText = availabilityTextMap.get(effectiveStatus) || 'Verfügbar';
 
             // Handle both v1 (snake_case) and v2 (camelCase) field names
             const firstName = employee.firstName || employee.first_name || '';
@@ -2895,566 +2094,11 @@
       // Section Navigation is now handled by show-section.ts module
     </script>
 
-    <style>
-      /* Search Styles */
-      .search-container {
-        display: flex;
-        gap: var(--spacing-sm);
-        margin-left: auto;
-      }
-
-      .search-input {
-        min-width: 300px;
-        padding: var(--spacing-2sm);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        background-color: var(--background-dark);
-        color: var(--text-primary);
-      }
-
-      .search-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
-      }
-
-      .flex-between {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--spacing-md);
-      }
-
-      /* Modal Styles */
-      .modal {
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .button-group {
-        display: flex;
-        justify-content: space-between;
-        gap: 15px;
-        margin-top: 20px;
-      }
-
-      #team-modal .modal-content,
-      #employee-status-modal .modal-content,
-      #employee-modal .modal-content,
-      #document-modal .modal-content,
-      #edit-employee-modal .modal-content {
-        /* Verwendet CSS-Variablen aus dashboard-theme.css */
-        padding: var(--spacing-lg);
-        width: 90%;
-        max-width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: var(--shadow-sm);
-        /* animation: fadeInUp 0.3s ease-out; */
-      }
-
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .modal-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--primary-color);
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: var(--text-secondary);
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-sm);
-      }
-
-      .modal-close:hover {
-        background-color: var(--background-dark);
-        color: var(--error-color);
-      }
-
-      .table-responsive {
-        overflow-x: auto;
-      }
-
-      .btn-group {
-        display: flex;
-        gap: var(--spacing-sm);
-      }
-
-      .badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        border-radius: 20px;
-      }
-
-      .badge-primary {
-        background-color: var(--primary-color);
-        color: #fff;
-      }
-
-      .badge-secondary {
-        background-color: var(--secondary-color);
-        color: #fff;
-      }
-
-      .badge-success {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11px;
-        color: rgba(76, 175, 80, 0.9);
-        background: rgba(76, 175, 80, 0.1);
-        padding: 3px 8px;
-        border-radius: var(--radius-md);
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 700;
-        border: 1px solid rgba(76, 175, 80, 0.2);
-        width: fit-content;
-      }
-
-      .badge-danger {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11px;
-        color: rgba(244, 67, 54, 0.9);
-        background: rgba(244, 67, 54, 0.1);
-        padding: 3px 8px;
-        border-radius: var(--radius-md);
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 700;
-        border: 1px solid rgba(244, 67, 54, 0.2);
-        width: fit-content;
-      }
-
-      tr:hover .badge-success {
-        background: rgba(76, 175, 80, 0.15);
-        border-color: rgba(76, 175, 80, 0.3);
-      }
-
-      tr:hover .badge-danger {
-        background: rgba(244, 67, 54, 0.15);
-        border-color: rgba(244, 67, 54, 0.3);
-      }
-
-      .badge-warning {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11px;
-        color: rgba(255, 152, 0, 0.9);
-        background: rgba(255, 152, 0, 0.1);
-        padding: 3px 8px;
-        border-radius: var(--radius-md);
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 700;
-        border: 1px solid rgba(255, 152, 0, 0.2);
-        width: fit-content;
-      }
-
-      tr:hover .badge-warning {
-        background: rgba(255, 152, 0, 0.15);
-        border-color: rgba(255, 152, 0, 0.3);
-      }
-
-      .department-list,
-      .team-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
-      }
-
-      .department-item,
-      .team-item {
-        padding: var(--spacing-2sm);
-        background-color: var(--background-dark);
-        border-radius: var(--radius-sm);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      /* Floating Action Button */
-      .add-employee-btn {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 60px;
-        height: 60px;
-        background: rgba(33, 150, 243, 0.2);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(33, 150, 243, 0.3);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        color: var(--primary-color);
-        cursor: pointer;
-        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
-
-        z-index: 100;
-      }
-
-      .add-employee-btn:hover {
-        background: rgba(33, 150, 243, 0.3);
-        transform: scale(1.1);
-        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
-      }
-
-      /* Modal Styles */
-      .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        backdrop-filter: blur(5px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        transition:
-          opacity 0.1s ease,
-          visibility 0.1s ease;
-      }
-
-      .modal-overlay.active {
-        display: flex;
-      }
-
-      .modal-container {
-        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
-        max-width: 900px;
-        position: relative;
-        width: 100%;
-        border: var(--border-width) solid hsla(0, 0%, 100%, 0.1);
-        overflow: hidden;
-        max-height: 85vh !important;
-        backdrop-filter: var(--glass-backdrop);
-        background: var(--glass-card-bg);
-        border: var(--glass-card-border);
-        border-radius: var(--glass-card-radius);
-      }
-
-      /* Modal Large Variante für größere Formulare */
-      .modal-container.modal-lg {
-        max-width: 800px;
-      }
-
-      /* Form Sections für bessere Strukturierung */
-      .form-section {
-        margin-bottom: 2rem;
-        padding-bottom: 1.5rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .form-section:last-child {
-        border-bottom: none;
-        margin-bottom: 0;
-      }
-
-      .section-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-
-      .section-title i {
-        color: var(--primary-color);
-        font-size: 1rem;
-      }
-
-      .modal-header {
-        padding: 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      .modal-title {
-        font-size: 24px;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-      }
-
-      .modal-close {
-        background: transparent;
-        border: none;
-        color: var(--text-secondary);
-        font-size: 24px;
-        cursor: pointer;
-        padding: 0;
-        width: 32px;
-        height: 32px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-      }
-
-      .modal-close:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
-      }
-
-      .modal-body {
-        padding: 24px;
-      }
-
-      .modal-footer {
-        padding: 16px 24px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        justify-content: flex-end;
-        gap: 12px;
-      }
-
-      .form-group {
-        margin-bottom: 20px;
-      }
-
-      .form-group label {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--text-primary);
-        font-weight: 500;
-      }
-
-      .form-group label i {
-        margin-right: 8px;
-        color: var(--primary-color);
-      }
-
-      /* Form Controls mit Glassmorphismus - EXAKT wie im Calendar Modal */
-      .form-control,
-      input[type='text'],
-      input[type='email'],
-      input[type='password'],
-      input[type='date'],
-      input[type='time'],
-      input[type='number'],
-      textarea {
-        width: 100%;
-        padding: var(--spacing-2sm);
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        color: #fff;
-        font-size: 14px;
-      }
-
-      .form-control:focus,
-      input:focus,
-      textarea:focus {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 0 0 3px rgba(0, 142, 255, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        outline: none;
-      }
-
-      .form-control::placeholder,
-      input::placeholder,
-      textarea::placeholder {
-        color: rgba(255, 255, 255, 0.4);
-      }
-
-      .form-control option {
-        background: rgba(18, 18, 18, 0.95);
-        color: var(--text-primary);
-      }
-
-      /* Disabled state */
-      .form-control:disabled,
-      input:disabled,
-      textarea:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background: rgba(255, 255, 255, 0.02);
-      }
-
-      .form-row {
-        display: flex;
-        gap: 16px;
-      }
-
-      .form-row .form-group {
-        flex: 1;
-      }
-
-      /* Grid System für Formulare */
-      .col-md-6 {
-        flex: 1;
-        min-width: 0;
-      }
-
-      @media (max-width: 768px) {
-        .form-row {
-          flex-direction: column;
-        }
-
-        .col-md-6 {
-          width: 100%;
-        }
-      }
-
-      .required {
-        color: var(--danger-color);
-      }
-
-      .btn {
-        padding: 10px 20px;
-        border: none;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-      }
-
-      .btn-primary {
-        background: var(--primary-color);
-        color: #fff;
-      }
-
-      .btn-primary:hover {
-        background: var(--primary-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
-      }
-
-      .btn-secondary {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--text-primary);
-      }
-
-      .btn-secondary:hover {
-        background: rgba(255, 255, 255, 0.15);
-      }
-
-      /* Compact Item Styles - Übersichtlich aber kompakt */
-      .compact-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 3px 12px;
-        margin-bottom: 6px;
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        transition: all 0.2s ease;
-        cursor: default;
-      }
-
-      .compact-item:last-child {
-        margin-bottom: 0;
-      }
-
-      .compact-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(255, 255, 255, 0.1);
-        transform: translateX(4px);
-      }
-
-      .compact-item-name {
-        font-weight: 500;
-        color: var(--text-primary);
-        font-size: 0.95rem;
-        flex: 1;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        margin-right: 12px;
-      }
-
-      .compact-item-count {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        background: rgba(255, 255, 255, 0.05);
-        padding: 3px 10px;
-        border-radius: 12px;
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-
-      /* Farbige Badges für verschiedene Status */
-      .compact-item-count.badge-success {
-        background: rgba(76, 175, 80, 0.15);
-        color: #4caf50;
-      }
-
-      .compact-item-count.badge-warning {
-        background: rgba(255, 152, 0, 0.15);
-        color: #ff9800;
-      }
-
-      .compact-item-count.badge-info {
-        background: rgba(33, 150, 243, 0.15);
-        color: #2196f3;
-      }
-
-      /* Mini-Divider zwischen Items für bessere Trennung */
-      .compact-item + .compact-item {
-        position: relative;
-      }
-
-      /* Responsive für kleine Cards */
-      @media (max-width: 400px) {
-        .compact-item {
-          padding: 8px 10px;
-        }
-
-        .compact-item-name {
-          font-size: 0.9rem;
-        }
-
-        .compact-item-count {
-          font-size: 0.8rem;
-          padding: 2px 8px;
-        }
-      }
-    </style>
-
     <!-- Floating Action Buttons -->
-    <button class="add-employee-btn" id="floating-add-employee" onclick="showEmployeeModal()" style="display: none">+</button>
-    <button class="add-employee-btn" id="floating-add-team" onclick="showTeamModal()" style="display: none">+</button>
-    <button class="add-employee-btn" id="floating-add-machine" onclick="showMachineModal()" style="display: none">+</button>
-    <button class="add-employee-btn" id="floating-add-area" onclick="showAreaModal()" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-employee" data-action="show-employee-modal" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-team" data-action="show-team-modal" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-machine" data-action="show-machine-modal" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-area" data-action="show-area-modal" style="display: none">+</button>
 
     <!-- Team Creation Modal -->
     <div class="modal-overlay" id="teamModal">
@@ -3464,7 +2108,7 @@
             <i class="fas fa-users"></i>
             Neues Team erstellen
           </h2>
-          <button type="button" class="modal-close" onclick="closeTeamModal()">
+          <button type="button" class="modal-close" data-action="close-team-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -3537,14 +2181,20 @@
                   Abteilung
                 </label>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="team-department-display" onclick="toggleDropdown('team-department')">
+                  <div class="dropdown-display" id="team-department-display" data-action="toggle-dropdown" data-dropdown="team-department">
                     <span>Keine Abteilung</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="team-department-dropdown">
-                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('team-department', '', 'Keine Abteilung')">
+                    <div
+                      class="dropdown-option"
+                      data-value=""
+                      data-action="select-dropdown"
+                      data-dropdown="team-department"
+                      data-display="Keine Abteilung"
+                    >
                       Keine Abteilung
                     </div>
                     <!-- Will be populated dynamically -->
@@ -3560,7 +2210,7 @@
                 Zugewiesene Maschinen
               </label>
               <div class="custom-dropdown">
-                <div class="dropdown-display" id="team-machines-display" onclick="toggleDropdown('team-machines')">
+                <div class="dropdown-display" id="team-machines-display" data-action="toggle-dropdown" data-dropdown="team-machines">
                   <span>Keine Maschinen zugewiesen</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                     <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -3579,7 +2229,7 @@
                 Team-Mitglieder
               </label>
               <div class="custom-dropdown">
-                <div class="dropdown-display" id="team-users-display" onclick="toggleDropdown('team-users')">
+                <div class="dropdown-display" id="team-users-display" data-action="toggle-dropdown" data-dropdown="team-users">
                   <span>Keine Mitglieder zugewiesen</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                     <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -3594,8 +2244,8 @@
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeTeamModal()">Abbrechen</button>
-          <button type="button" class="btn btn-primary" onclick="saveTeam()">
+          <button type="button" class="btn btn-secondary" data-action="close-team-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" data-action="save-team">
             <i class="fas fa-save"></i>
             Team erstellen
           </button>
@@ -3611,7 +2261,7 @@
             <i class="fas fa-cogs"></i>
             Neue Maschine hinzufügen
           </h2>
-          <button type="button" class="modal-close" onclick="closeMachineModal()">
+          <button type="button" class="modal-close" data-action="close-machine-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -3700,14 +2350,25 @@
                   Abteilung
                 </label>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="machine-department-display" onclick="toggleDropdown('machine-department')">
+                  <div
+                    class="dropdown-display"
+                    id="machine-department-display"
+                    data-action="toggle-dropdown"
+                    data-dropdown="machine-department"
+                  >
                     <span>Keine Abteilung</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="machine-department-dropdown">
-                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('machine-department', '', 'Keine Abteilung')">
+                    <div
+                      class="dropdown-option"
+                      data-value=""
+                      data-action="select-dropdown"
+                      data-dropdown="machine-department"
+                      data-display="Keine Abteilung"
+                    >
                       Keine Abteilung
                     </div>
                     <!-- Will be populated dynamically -->
@@ -3721,14 +2382,20 @@
                   Bereich
                 </label>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="machine-area-display" onclick="toggleDropdown('machine-area')">
+                  <div class="dropdown-display" id="machine-area-display" data-action="toggle-dropdown" data-dropdown="machine-area">
                     <span>Kein Bereich</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="machine-area-dropdown">
-                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('machine-area', '', 'Kein Bereich')">
+                    <div
+                      class="dropdown-option"
+                      data-value=""
+                      data-action="select-dropdown"
+                      data-dropdown="machine-area"
+                      data-display="Kein Bereich"
+                    >
                       Kein Bereich
                     </div>
                     <!-- Will be populated dynamically -->
@@ -3762,8 +2429,8 @@
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeMachineModal()">Abbrechen</button>
-          <button type="button" class="btn btn-primary" onclick="saveMachine()">
+          <button type="button" class="btn btn-secondary" data-action="close-machine-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" data-action="save-machine">
             <i class="fas fa-save"></i>
             Maschine hinzufügen
           </button>
@@ -3779,7 +2446,7 @@
             <i class="fas fa-map-marker-alt"></i>
             Neuen Bereich erstellen
           </h2>
-          <button type="button" class="modal-close" onclick="closeAreaModal()">
+          <button type="button" class="modal-close" data-action="close-area-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -3845,8 +2512,8 @@
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeAreaModal()">Abbrechen</button>
-          <button type="button" class="btn btn-primary" onclick="saveArea()">
+          <button type="button" class="btn btn-secondary" data-action="close-area-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" data-action="save-area">
             <i class="fas fa-save"></i>
             Bereich erstellen
           </button>

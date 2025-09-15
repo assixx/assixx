@@ -1,6 +1,6 @@
 # Assixx TODO-Liste
 
-## 🚀 AKTUELLER STATUS (20.08.2025)
+## 🚀 AKTUELLER STATUS (14.09.2025)
 
 **📁 Archiv:** Alte TODOs wurden verschoben → `/archive/TODO_bak_August.md` (nur zur Dokumentation)
 
@@ -9,15 +9,9 @@
 #### 📚 Wichtige Dokumente (in dieser Reihenfolge lesen)
 
 1. **Hauptdokument:** `/home/scs/projects/Assixx/TODO.md` (diese Datei)
-2. **Frontend-Details:** `/home/scs/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-FRONTEND-MIGRATION-DETAILS.md`
-3. **Checkliste:** `/home/scs/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-MASTERPLAN-CHECKLIST.md`
-4. **Executive Summary:** `/home/scs/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-MIGRATION-EXECUTIVE-SUMMARY.md`
-5. **Masterplan:** `/home/scs/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-MIGRATION-MASTERPLAN.md`
 
-### ⚡ Workflow
+###DOM-purify-siehe Goldstandard###
 
-1. **ZUERST:** Die Checkliste abarbeiten → `API-V2-MASTERPLAN-CHECKLIST.md` (Stand: 20.08.2025)
-2. **DANACH:** Mit DEAL-BREAKER Features fortfahren (siehe unten)
 
 ## 🔥 DEAL-BREAKER Features
 

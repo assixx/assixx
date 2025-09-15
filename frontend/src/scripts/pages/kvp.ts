@@ -4,7 +4,7 @@
  */
 
 import { ApiClient } from '../../utils/api-client';
-import { $$ } from '../../utils/dom-utils';
+import { $$, setHTML } from '../../utils/dom-utils';
 import { getAuthToken } from '../auth';
 import notificationService from '../services/notification.service';
 import { showConfirm } from '../utils/alerts';
@@ -61,6 +61,7 @@ interface Department {
 interface KvpWindow extends Window {
   selectCategory: (id: string, name: string) => void;
   selectDepartment: (id: string, name: string) => void;
+  selectKvpCategory?: (id: string, name: string) => void;
   showCreateModal: () => void;
   hideCreateModal: () => void;
   selectedPhotos?: File[];
@@ -230,16 +231,16 @@ class KvpPage {
       if (categoryDropdown) {
         // Keep the first "Alle Kategorien" option
         const firstOption = categoryDropdown.querySelector('.dropdown-option');
-        categoryDropdown.innerHTML = '';
+        setHTML(categoryDropdown as HTMLElement, '');
         if (firstOption) categoryDropdown.append(firstOption);
 
         // Add categories
         this.categories.forEach((category) => {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
-          option.onclick = () => {
-            (window as unknown as KvpWindow).selectCategory(category.id.toString(), category.name);
-          };
+          option.dataset.action = 'select-category';
+          option.dataset.value = category.id.toString();
+          option.dataset.text = category.name;
           option.textContent = category.name;
           categoryDropdown.append(option);
         });
@@ -281,16 +282,16 @@ class KvpPage {
       if (departmentDropdown) {
         // Keep the first "Alle Abteilungen" option
         const firstOption = departmentDropdown.querySelector('.dropdown-option');
-        departmentDropdown.innerHTML = '';
+        setHTML(departmentDropdown as HTMLElement, '');
         if (firstOption) departmentDropdown.append(firstOption);
 
         // Add departments
         this.departments.forEach((dept) => {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
-          option.onclick = () => {
-            (window as unknown as KvpWindow).selectDepartment(dept.id.toString(), dept.name);
-          };
+          option.dataset.action = 'select-department';
+          option.dataset.value = dept.id.toString();
+          option.dataset.text = dept.name;
           option.textContent = dept.name;
           departmentDropdown.append(option);
         });
@@ -446,15 +447,14 @@ class KvpPage {
     if (!container || !emptyState) return;
 
     if (this.suggestions.length === 0) {
-      container.innerHTML = '';
+      setHTML(container, '');
       emptyState.style.display = '';
       return;
     }
 
     emptyState.style.display = 'none';
 
-    // eslint-disable-next-line no-unsanitized/property -- User content is escaped with escapeHtml
-    container.innerHTML = this.suggestions
+    const suggestionsHTML = this.suggestions
       .map((suggestion) => {
         const statusClass = suggestion.status.replace('_', '');
         const visibilityIcon = suggestion.orgLevel === 'company' ? 'fa-globe' : 'fa-users';
@@ -506,6 +506,8 @@ class KvpPage {
       `;
       })
       .join('');
+
+    setHTML(container, suggestionsHTML);
 
     // Add click handlers
     container.querySelectorAll('.kvp-card').forEach((card) => {
@@ -802,6 +804,22 @@ class KvpPage {
       });
     }
 
+    // Event Delegation for dynamic KVP category selection in modal
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const kvpCategoryOption = target.closest('[data-action="select-kvp-category"]');
+      if (kvpCategoryOption instanceof HTMLElement) {
+        const value = kvpCategoryOption.dataset.value;
+        const text = kvpCategoryOption.dataset.text;
+        if (value !== undefined && value !== '' && text !== undefined && text !== '') {
+          const kvpWindow = window as unknown as KvpWindow;
+          if (kvpWindow.selectKvpCategory) {
+            kvpWindow.selectKvpCategory(value, text);
+          }
+        }
+      }
+    });
+
     // Create new buttons (both header and floating)
     const createBtn = document.querySelector('#createNewBtn');
     if (createBtn) {
@@ -851,7 +869,7 @@ class KvpPage {
   private escapeHtml(text: string): string {
     const div = document.createElement('div');
     div.textContent = text;
-    return div.innerHTML;
+    return div.textContent;
   }
 
   private showSuccess(message: string): void {
@@ -979,16 +997,16 @@ class KvpPage {
     // Load categories into dropdown
     const categoryDropdown = $$('#kvpCategoryDropdown');
     if (categoryDropdown && this.categories.length > 0) {
-      // eslint-disable-next-line no-unsanitized/property -- User content is escaped with escapeHtml
-      categoryDropdown.innerHTML = this.categories
+      const categoryOptions = this.categories
         .map(
           (category) => `
-        <div class="dropdown-option" onclick="selectKvpCategory('${category.id}', '${this.escapeHtml(category.name)}')">
+        <div class="dropdown-option" data-action="select-kvp-category" data-value="${category.id}" data-text="${this.escapeHtml(category.name)}">
           ${category.icon ?? '💡'} ${this.escapeHtml(category.name)}
         </div>
       `,
         )
         .join('');
+      setHTML(categoryDropdown, categoryOptions);
     }
 
     // Show modal
@@ -1102,7 +1120,7 @@ class KvpPage {
       // Clear photo selection
       (window as unknown as KvpWindow).selectedPhotos = [];
       const photoPreview = document.querySelector('#photoPreview');
-      if (photoPreview) photoPreview.innerHTML = '';
+      if (photoPreview) setHTML(photoPreview as HTMLElement, '');
 
       // Reload suggestions
       await this.loadSuggestions();

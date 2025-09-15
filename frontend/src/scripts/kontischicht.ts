@@ -5,6 +5,9 @@
 
 import { $$id } from '../utils/dom-utils';
 
+// Constants
+const SHIFT_ROW_SELECTOR = '.shift-row';
+
 interface DaySchedule {
   early: number[]; // User IDs for early shift
   late: number[]; // User IDs for late shift
@@ -660,7 +663,7 @@ class KontischichtManager {
 
     // Remove scroll classes and styles from all shift rows
     const SCROLL_CONTAINER_CLASS = 'kontischicht-scroll-container';
-    const shiftRows = document.querySelectorAll('.shift-row');
+    const shiftRows = document.querySelectorAll(SHIFT_ROW_SELECTOR);
     shiftRows.forEach((row) => {
       if (row instanceof HTMLElement) {
         row.classList.remove(SCROLL_CONTAINER_CLASS);
@@ -708,7 +711,7 @@ class KontischichtManager {
     }
 
     // Update all shift rows grid
-    const shiftRows = document.querySelectorAll('.shift-row');
+    const shiftRows = document.querySelectorAll(SHIFT_ROW_SELECTOR);
     shiftRows.forEach((row) => {
       if (row instanceof HTMLElement) {
         row.style.gridTemplateColumns = '120px repeat(14, 120px)';
@@ -746,7 +749,7 @@ class KontischichtManager {
     }
 
     // Reset all shift rows grid
-    const shiftRows = document.querySelectorAll('.shift-row');
+    const shiftRows = document.querySelectorAll(SHIFT_ROW_SELECTOR);
     shiftRows.forEach((row) => {
       if (row instanceof HTMLElement) {
         row.style.gridTemplateColumns = '120px repeat(7, 1fr)';
@@ -799,7 +802,7 @@ class KontischichtManager {
     }
 
     // Add scroll container class to all shift rows for synchronized scrolling
-    const shiftRows = document.querySelectorAll('.shift-row');
+    const shiftRows = document.querySelectorAll(SHIFT_ROW_SELECTOR);
     shiftRows.forEach((row) => {
       row.classList.add('kontischicht-scroll-container');
       if (row instanceof HTMLElement) {
@@ -839,7 +842,7 @@ class KontischichtManager {
   private addWeek2ShiftCells(): void {
     console.info('🔄 Adding week 2 shift cells');
 
-    const shiftRows = document.querySelectorAll('.shift-row');
+    const shiftRows = document.querySelectorAll(SHIFT_ROW_SELECTOR);
     const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const;
 
     shiftRows.forEach((row) => {

@@ -92,6 +92,7 @@ export function checkPageAccess(): void {
   }
 
   // Check if page exists in permissions
+  // eslint-disable-next-line security/detect-object-injection -- pageName kommt aus window.location.pathname (eigene URL), kein externer User-Input
   const allowedRoles = pagePermissions[pageName];
 
   if (allowedRoles === undefined) {

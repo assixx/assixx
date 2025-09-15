@@ -8,6 +8,10 @@ import { Pool } from 'mysql2/promise';
 import type { DepartmentCreateData, DepartmentUpdateData } from '../models/department';
 import departmentService from '../services/department.service';
 
+// Constants
+const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
+const UNKNOWN_ERROR = 'Unknown error';
+
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
   tenantDb?: Pool;
@@ -87,7 +91,7 @@ class DepartmentController {
   async getAll(req: DepartmentQueryRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -131,7 +135,7 @@ class DepartmentController {
       console.error('Error in DepartmentController.getAll:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -145,7 +149,7 @@ class DepartmentController {
   async getById(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -172,7 +176,7 @@ class DepartmentController {
       console.error('Error in DepartmentController.getById:', error);
       res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -186,7 +190,7 @@ class DepartmentController {
   async create(req: DepartmentCreateRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -205,7 +209,7 @@ class DepartmentController {
       console.error('Error in DepartmentController.create:', error);
       res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -219,7 +223,7 @@ class DepartmentController {
   async update(req: DepartmentUpdateRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -250,7 +254,7 @@ class DepartmentController {
       console.error('Error in DepartmentController.update:', error);
       res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -264,7 +268,7 @@ class DepartmentController {
   async delete(req: DepartmentGetRequest, res: Response): Promise<void> {
     try {
       if (req.tenantDb === undefined) {
-        res.status(400).json({ error: 'Tenant database not available' });
+        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
 
@@ -280,7 +284,7 @@ class DepartmentController {
       console.error('Error in DepartmentController.delete:', error);
       res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

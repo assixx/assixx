@@ -131,6 +131,7 @@
     "value-keyword-case": "lower",
     "value-no-vendor-prefix": true
   },
+  "ignoreFiles": ["**/*.html", "**/*.htm", "**/*.php", "**/*.md", "**/*.js", "**/*.ts", "**/*.tsx", "**/*.jsx"],
   "overrides": [
     {
       "files": ["**/lib/**/*.css", "**/vendor/**/*.css", "**/*.min.css"],

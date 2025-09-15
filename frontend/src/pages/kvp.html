@@ -848,8 +848,6 @@
         margin-top: -15px !important;
       }
     </style>
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
   </head>
 
   <body class="kvp-page">
@@ -943,33 +941,33 @@
               <div class="secondary-filters">
                 <!-- Status Filter Dropdown -->
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+                  <div class="dropdown-display" id="statusDisplay" data-dropdown="status">
                     <span>Alle Status</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="statusDropdown">
-                    <div class="dropdown-option" onclick="selectStatus('', 'Alle Status')">Alle Status</div>
-                    <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
-                    <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
-                    <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
-                    <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
-                    <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="" data-text="Alle Status">Alle Status</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="new" data-text="Neu">Neu</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="in_review" data-text="In Prüfung">In Prüfung</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="approved" data-text="Genehmigt">Genehmigt</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="implemented" data-text="Umgesetzt">Umgesetzt</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="rejected" data-text="Abgelehnt">Abgelehnt</div>
                   </div>
                   <input type="hidden" name="statusFilter" id="statusFilterValue" />
                 </div>
 
                 <!-- Category Filter Dropdown -->
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="categoryDisplay" onclick="toggleDropdown('category')">
+                  <div class="dropdown-display" id="categoryDisplay" data-dropdown="category">
                     <span>Alle Kategorien</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="categoryDropdown">
-                    <div class="dropdown-option" onclick="selectCategory('', 'Alle Kategorien')">Alle Kategorien</div>
+                    <div class="dropdown-option" data-action="select-category" data-value="" data-text="Alle Kategorien">Alle Kategorien</div>
                     <!-- Dynamisch geladen -->
                   </div>
                   <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
@@ -977,14 +975,14 @@
 
                 <!-- Department Filter Dropdown -->
                 <div class="custom-dropdown admin-only" class="u-hidden">
-                  <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+                  <div class="dropdown-display" id="departmentDisplay" data-dropdown="department">
                     <span>Alle Abteilungen</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="departmentDropdown">
-                    <div class="dropdown-option" onclick="selectDepartment('', 'Alle Abteilungen')">Alle Abteilungen</div>
+                    <div class="dropdown-option" data-action="select-department" data-value="" data-text="Alle Abteilungen">Alle Abteilungen</div>
                     <!-- Dynamisch geladen für Admins -->
                   </div>
                   <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
@@ -1018,7 +1016,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neuer KVP-Vorschlag</h3>
-          <button class="modal-close" onclick="window.hideCreateModal()">&times;</button>
+          <button class="modal-close" data-action="close-modal">&times;</button>
         </div>
         <form id="createKvpForm">
           <div class="modal-body">
@@ -1079,7 +1077,7 @@
                   <span class="required">*</span>
                 </label>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="kvpCategoryDisplay" onclick="toggleDropdown('kvpCategory')">
+                  <div class="dropdown-display" id="kvpCategoryDisplay" data-dropdown="kvpCategory">
                     <span>Bitte wählen</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1096,17 +1094,17 @@
               <div class="form-group">
                 <label class="form-label" for="kvpPriority">Priorität</label>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="kvpPriorityDisplay" onclick="toggleDropdown('kvpPriority')">
+                  <div class="dropdown-display" id="kvpPriorityDisplay" data-dropdown="kvpPriority">
                     <span>Normal</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="kvpPriorityDropdown">
-                    <div class="dropdown-option" onclick="selectKvpPriority('low', 'Niedrig')">Niedrig</div>
-                    <div class="dropdown-option" onclick="selectKvpPriority('normal', 'Normal')">Normal</div>
-                    <div class="dropdown-option" onclick="selectKvpPriority('high', 'Hoch')">Hoch</div>
-                    <div class="dropdown-option" onclick="selectKvpPriority('urgent', 'Dringend')">Dringend</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="low" data-text="Niedrig">Niedrig</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="normal" data-text="Normal">Normal</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="high" data-text="Hoch">Hoch</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="urgent" data-text="Dringend">Dringend</div>
                   </div>
                   <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
                 </div>
@@ -1139,9 +1137,8 @@
                   accept="image/jpeg,image/jpg,image/png"
                   multiple
                   class="u-hidden"
-                  onchange="handlePhotoSelection(this)"
                 />
-                <div class="upload-box" onclick="document.querySelector('kvpPhotos').click()">
+                <div class="upload-box" data-action="upload-photos">
                   <i class="fas fa-camera"></i>
                   <p>Klicken Sie hier, um Fotos auszuwählen</p>
                   <p class="small text-muted">oder ziehen Sie Dateien hierher</p>
@@ -1152,7 +1149,7 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="window.hideCreateModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" data-action="close-modal">Abbrechen</button>
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-save"></i>
               Vorschlag einreichen
@@ -1162,12 +1159,106 @@
       </div>
     </div>
 
-    <!-- Dropdown Functions -->
+    <!-- Event Delegation for KVP Page (without DOMPurify) -->
     <script>
-      // Toggle Dropdown
+      // Photo upload handling
+      let selectedPhotos = [];
+      window.selectedPhotos = selectedPhotos;
+
+      // Event Delegation Handler
+      document.addEventListener('click', function(e) {
+        const target = e.target;
+
+        // Dropdown toggle
+        const dropdownDisplay = target.closest('[data-dropdown]');
+        if (dropdownDisplay) {
+          e.preventDefault();
+          e.stopPropagation();
+          const type = dropdownDisplay.dataset.dropdown;
+          toggleDropdown(type);
+          return;
+        }
+
+        // Status selection
+        const statusOption = target.closest('[data-action="select-status"]');
+        if (statusOption) {
+          e.preventDefault();
+          selectStatus(statusOption.dataset.value, statusOption.dataset.text);
+          return;
+        }
+
+        // Category selection
+        const categoryOption = target.closest('[data-action="select-category"]');
+        if (categoryOption) {
+          e.preventDefault();
+          selectCategory(categoryOption.dataset.value, categoryOption.dataset.text);
+          return;
+        }
+
+        // Department selection
+        const departmentOption = target.closest('[data-action="select-department"]');
+        if (departmentOption) {
+          e.preventDefault();
+          selectDepartment(departmentOption.dataset.value, departmentOption.dataset.text);
+          return;
+        }
+
+        // Priority selection
+        const priorityOption = target.closest('[data-action="select-priority"]');
+        if (priorityOption) {
+          e.preventDefault();
+          selectKvpPriority(priorityOption.dataset.value, priorityOption.dataset.text);
+          return;
+        }
+
+        // Modal close
+        const modalClose = target.closest('[data-action="close-modal"]');
+        if (modalClose) {
+          e.preventDefault();
+          hideCreateModal();
+          return;
+        }
+
+        // Photo upload trigger
+        const uploadBox = target.closest('[data-action="upload-photos"]');
+        if (uploadBox) {
+          e.preventDefault();
+          document.querySelector('#kvpPhotos').click();
+          return;
+        }
+
+        // Remove photo
+        const removePhotoBtn = target.closest('[data-action="remove-photo"]');
+        if (removePhotoBtn) {
+          e.preventDefault();
+          const index = parseInt(removePhotoBtn.dataset.index);
+          removePhoto(index);
+          return;
+        }
+
+        // Close dropdowns when clicking outside
+        if (!target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Click outside modal to close
+      document.querySelector('#createKvpModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+          hideCreateModal();
+        }
+      });
+
+      // File input change handler
+      document.querySelector('#kvpPhotos')?.addEventListener('change', function(e) {
+        handlePhotoSelection(this);
+      });
+
+      // Helper Functions
       function toggleDropdown(type) {
-        const display = document.querySelector(type + 'Display');
-        const dropdown = document.querySelector(type + 'Dropdown');
+        const display = document.querySelector(`#${type}Display`);
+        const dropdown = document.querySelector(`#${type}Dropdown`);
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1181,7 +1272,6 @@
         dropdown.classList.toggle('active');
       }
 
-      // Select Status
       function selectStatus(value, text) {
         document.querySelector('#statusDisplay').querySelector('span').textContent = text;
         document.querySelector('#statusFilterValue').value = value;
@@ -1193,7 +1283,6 @@
         document.querySelector('#statusFilterValue').dispatchEvent(event);
       }
 
-      // Select Category
       function selectCategory(value, text) {
         document.querySelector('#categoryDisplay').querySelector('span').textContent = text;
         document.querySelector('#categoryFilterValue').value = value;
@@ -1205,7 +1294,6 @@
         document.querySelector('#categoryFilterValue').dispatchEvent(event);
       }
 
-      // Select Department
       function selectDepartment(value, text) {
         document.querySelector('#departmentDisplay').querySelector('span').textContent = text;
         document.querySelector('#departmentFilterValue').value = value;
@@ -1217,7 +1305,6 @@
         document.querySelector('#departmentFilterValue').dispatchEvent(event);
       }
 
-      // Select KVP Category
       function selectKvpCategory(value, text) {
         document.querySelector('#kvpCategoryDisplay').querySelector('span').textContent = text;
         document.querySelector('#kvpCategoryValue').value = value;
@@ -1225,7 +1312,6 @@
         document.querySelector('#kvpCategoryDropdown').classList.remove('active');
       }
 
-      // Select KVP Priority
       function selectKvpPriority(value, text) {
         document.querySelector('#kvpPriorityDisplay').querySelector('span').textContent = text;
         document.querySelector('#kvpPriorityValue').value = value;
@@ -1233,23 +1319,14 @@
         document.querySelector('#kvpPriorityDropdown').classList.remove('active');
       }
 
-      // Click outside to close
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-        }
-      });
-
-      // Simple modal functions as fallback
-      window.showCreateModal = function () {
+      function showCreateModal() {
         const modal = document.querySelector('#createKvpModal');
         if (modal) {
           modal.classList.add('active');
         }
-      };
+      }
 
-      window.hideCreateModal = function () {
+      function hideCreateModal() {
         const modal = document.querySelector('#createKvpModal');
         if (modal) {
           modal.classList.remove('active');
@@ -1257,20 +1334,9 @@
           selectedPhotos = [];
           window.selectedPhotos = selectedPhotos;
           const preview = document.querySelector('#photoPreview');
-          if (preview) preview.innerHTML = '';
+          if (preview) preview.innerHTML = ''; // Safe here because we control the content
         }
-      };
-
-      // Click outside modal to close
-      document.querySelector('#createKvpModal')?.addEventListener('click', function (e) {
-        if (e.target === this) {
-          window.hideCreateModal();
-        }
-      });
-
-      // Photo upload handling
-      let selectedPhotos = [];
-      window.selectedPhotos = selectedPhotos; // Make it globally accessible
+      }
 
       function handlePhotoSelection(input) {
         const files = Array.from(input.files);
@@ -1286,7 +1352,7 @@
 
         validFiles.forEach((file) => {
           selectedPhotos.push(file);
-          window.selectedPhotos = selectedPhotos; // Keep window reference updated
+          window.selectedPhotos = selectedPhotos;
           displayPhotoPreview(file, selectedPhotos.length - 1);
         });
 
@@ -1296,16 +1362,25 @@
 
       function displayPhotoPreview(file, index) {
         const reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = function(e) {
           const preview = document.querySelector('#photoPreview');
           const item = document.createElement('div');
           item.className = 'photo-preview-item';
-          // Safe: HTML is generated from file reader data and sanitized with DOMPurify
-          // eslint-disable-next-line no-unsanitized/property
-          item.innerHTML = DOMPurify.sanitize(`
-            <img src="${e.target.result}" alt="Vorschau">
-            <button class="remove-photo" onclick="removePhoto(${index})" type="button">&times;</button>
-          `);
+
+          // Create elements safely without innerHTML
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.alt = 'Vorschau';
+
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'remove-photo';
+          removeBtn.setAttribute('data-action', 'remove-photo');
+          removeBtn.setAttribute('data-index', index.toString());
+          removeBtn.type = 'button';
+          removeBtn.textContent = '×';
+
+          item.append(img);
+          item.append(removeBtn);
           preview.append(item);
         };
         reader.readAsDataURL(file);
@@ -1313,21 +1388,22 @@
 
       function removePhoto(index) {
         selectedPhotos.splice(index, 1);
-        window.selectedPhotos = selectedPhotos; // Keep window reference updated
+        window.selectedPhotos = selectedPhotos;
         refreshPhotoPreview();
       }
 
       function refreshPhotoPreview() {
         const preview = document.querySelector('#photoPreview');
-        preview.innerHTML = '';
+        preview.innerHTML = ''; // Safe - we're just clearing
         selectedPhotos.forEach((file, index) => {
           displayPhotoPreview(file, index);
         });
       }
 
-      // Make functions globally available
-      window.handlePhotoSelection = handlePhotoSelection;
-      window.removePhoto = removePhoto;
+      // Make functions globally available for TypeScript module
+      window.showCreateModal = showCreateModal;
+      window.hideCreateModal = hideCreateModal;
+      window.selectKvpCategory = selectKvpCategory;
     </script>
 
     <!-- Scripts -->

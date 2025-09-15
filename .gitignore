@@ -61,6 +61,9 @@ coverage/
 # ESLint
 eslint-report.json
 
+# Stylelint
+.stylelintcache
+
 # Feature flags (local development only)
 frontend/public/feature-flags.js
 

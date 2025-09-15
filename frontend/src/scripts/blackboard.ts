@@ -18,6 +18,10 @@ declare const DOMPurify: {
 // Initialize API client
 const apiClient = ApiClient.getInstance();
 
+// Constants
+const MIME_TYPE_PDF = 'application/pdf';
+const FULLSCREEN_MODE_CLASS = 'fullscreen-mode';
+
 // Display style constants
 const DISPLAY_INLINE_FLEX = 'inline-flex';
 const DISPLAY_NONE = 'none';
@@ -220,7 +224,6 @@ function initializeBlackboard() {
   console.info('[Blackboard] Script loaded at:', new Date().toISOString());
 
   // Check if user is logged in
-  // eslint-disable-next-line sonarjs/cognitive-complexity
   void (async () => {
     try {
       await checkLoggedIn();
@@ -568,7 +571,7 @@ function setupFileUploadHandlers(): void {
 function handleFileSelection(files: File[]): void {
   const maxFiles = 5;
   const maxSize = 10 * 1024 * 1024; // 10MB
-  const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+  const allowedTypes = [MIME_TYPE_PDF, 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
   // Filter valid files
   const validFiles = files.filter((file) => {
@@ -617,7 +620,7 @@ function updateAttachmentPreview(): void {
     const item = document.createElement('div');
     item.className = 'attachment-item';
 
-    const icon = file.type === 'application/pdf' ? 'fa-file-pdf pdf' : 'fa-file-image image';
+    const icon = file.type === MIME_TYPE_PDF ? 'fa-file-pdf pdf' : 'fa-file-image image';
     const size = formatFileSize(file.size);
 
     // Create attachment info wrapper
@@ -689,6 +692,7 @@ function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
+  // eslint-disable-next-line security/detect-object-injection -- i ist berechneter Index (0-2), basiert auf Math.log(), kein User-Input, 100% sicher
   return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
@@ -905,7 +909,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
   if (isDirectAttachment && entry.attachments && entry.attachments.length > 0) {
     const attachment = entry.attachments[0];
     const isImage = attachment.mime_type.startsWith('image/');
-    const isPDF = attachment.mime_type === 'application/pdf';
+    const isPDF = attachment.mime_type === MIME_TYPE_PDF;
 
     // Set size class
     let sizeStyle = '';
@@ -1045,6 +1049,7 @@ function getPriorityIcon(priority: string): string {
     high: '<i class="fas fa-exclamation-circle" style="color: #ff9800; font-size: 12px;"></i>',
     critical: '<i class="fas fa-exclamation-triangle" style="color: #f44336; font-size: 12px;"></i>',
   };
+  // eslint-disable-next-line security/detect-object-injection -- priority kommt aus DB als enum ('low'|'medium'|'high'|'critical'), kein beliebiger User-Input
   return icons[priority] ?? icons.medium;
 }
 
@@ -1465,7 +1470,7 @@ async function viewEntry(entryId: number): Promise<void> {
               <div class="entry-attachment-list" id="attachment-list-${entryId}">
                 ${attachments
                   .map((att) => {
-                    const isPDF = att.mime_type === 'application/pdf';
+                    const isPDF = att.mime_type === MIME_TYPE_PDF;
 
                     console.info(`[Blackboard] Rendering attachment:`, att);
 
@@ -1788,7 +1793,7 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
           { once: true },
         );
       });
-    } else if (mimeType === 'application/pdf') {
+    } else if (mimeType === MIME_TYPE_PDF) {
       // For PDFs, use object tag instead of iframe to avoid CSP issues
       const response = await fetch(`/api/v2${endpoint}`, {
         credentials: 'same-origin',
@@ -2065,7 +2070,7 @@ function handleDirectAttachFile(file: File): void {
   console.info('[DirectAttach] handleDirectAttachFile called with:', file.name, file.type, file.size);
 
   // Validate file type
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', MIME_TYPE_PDF];
   if (!allowedTypes.includes(file.type)) {
     showError('Nur JPG, PNG und PDF Dateien sind erlaubt');
     return;
@@ -2112,7 +2117,7 @@ function handleDirectAttachFile(file: File): void {
       previewImage.append(img);
     };
     reader.readAsDataURL(file);
-  } else if (file.type === 'application/pdf') {
+  } else if (file.type === MIME_TYPE_PDF) {
     previewImage.innerHTML = `<i class="fas fa-file-pdf" style="font-size: 64px; color: #dc3545;"></i>`;
   }
 }
@@ -2292,7 +2297,7 @@ function setupFullscreenControls(): void {
     void (async () => {
       try {
         // Add fullscreen mode class to body
-        document.body.classList.add('fullscreen-mode');
+        document.body.classList.add(FULLSCREEN_MODE_CLASS);
 
         // Request fullscreen - check for browser compatibility
         const elem = document.documentElement as Document['documentElement'] & {
@@ -2319,7 +2324,7 @@ function setupFullscreenControls(): void {
         }
       } catch (error) {
         console.error('[Fullscreen] Error entering fullscreen:', error);
-        document.body.classList.remove('fullscreen-mode');
+        document.body.classList.remove(FULLSCREEN_MODE_CLASS);
       }
     })();
   });
@@ -2337,7 +2342,7 @@ function setupFullscreenControls(): void {
 
   // ESC key handler
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && document.body.classList.contains('fullscreen-mode')) {
+    if (event.key === 'Escape' && document.body.classList.contains(FULLSCREEN_MODE_CLASS)) {
       exitFullscreen();
     }
   });
@@ -2356,7 +2361,7 @@ function handleFullscreenChange(): void {
 
   if (!isFullscreen) {
     // User exited fullscreen
-    document.body.classList.remove('fullscreen-mode');
+    document.body.classList.remove(FULLSCREEN_MODE_CLASS);
     stopAutoRefresh();
 
     // Reset button icon
@@ -2392,7 +2397,7 @@ function exitFullscreen(): void {
     doc.msExitFullscreen();
   }
 
-  document.body.classList.remove('fullscreen-mode');
+  document.body.classList.remove(FULLSCREEN_MODE_CLASS);
   stopAutoRefresh();
 }
 

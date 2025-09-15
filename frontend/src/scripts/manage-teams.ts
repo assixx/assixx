@@ -7,6 +7,9 @@ import { ApiClient } from '../utils/api-client';
 import { mapTeams, mapUsers, type TeamAPIResponse, type UserAPIResponse, type MappedTeam } from '../utils/api-mappers';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
+// Constants
+const DELETE_TEAM_MODAL_ID = '#delete-team-modal';
+
 interface TeamMember {
   id: number;
   username: string;
@@ -127,11 +130,11 @@ class TeamsManager {
       }
     });
     document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
-      const modal = document.querySelector('#delete-team-modal');
+      const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
       if (modal) modal.classList.remove('active');
     });
     document.querySelector('#cancel-delete-modal')?.addEventListener('click', () => {
-      const modal = document.querySelector('#delete-team-modal');
+      const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
       if (modal) modal.classList.remove('active');
     });
 
@@ -374,7 +377,7 @@ class TeamsManager {
 
   deleteTeam(id: number): void {
     // Show confirmation modal
-    const modal = document.querySelector('#delete-team-modal');
+    const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
     const deleteInput = document.querySelector<HTMLInputElement>('#delete-team-id');
 
     if (modal === null || deleteInput === null) {
@@ -399,7 +402,7 @@ class TeamsManager {
       showSuccessAlert('Team erfolgreich gelöscht');
 
       // Close the modal
-      const modal = document.querySelector('#delete-team-modal');
+      const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
       if (modal !== null) {
         modal.classList.remove('active');
       }
@@ -425,7 +428,7 @@ class TeamsManager {
             });
             showSuccessAlert('Team und alle Mitgliederzuordnungen erfolgreich gelöscht');
             // Close the modal
-            const modal = document.querySelector('#delete-team-modal');
+            const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
             if (modal !== null) {
               modal.classList.remove('active');
             }

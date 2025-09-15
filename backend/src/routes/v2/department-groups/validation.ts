@@ -4,6 +4,9 @@
  */
 import { body, param, query } from 'express-validator';
 
+// Constants
+const INVALID_GROUP_ID = 'Invalid group ID';
+
 export const createGroupValidation = [
   body('name')
     .trim()
@@ -22,7 +25,7 @@ export const createGroupValidation = [
 ];
 
 export const updateGroupValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Invalid group ID'),
+  param('id').isInt({ min: 1 }).withMessage(INVALID_GROUP_ID),
   body('name')
     .trim()
     .notEmpty()
@@ -36,25 +39,23 @@ export const updateGroupValidation = [
     .withMessage('Description must be at most 500 characters'),
 ];
 
-export const getGroupValidation = [param('id').isInt({ min: 1 }).withMessage('Invalid group ID')];
+export const getGroupValidation = [param('id').isInt({ min: 1 }).withMessage(INVALID_GROUP_ID)];
 
-export const deleteGroupValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Invalid group ID'),
-];
+export const deleteGroupValidation = [param('id').isInt({ min: 1 }).withMessage(INVALID_GROUP_ID)];
 
 export const addDepartmentsValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Invalid group ID'),
+  param('id').isInt({ min: 1 }).withMessage(INVALID_GROUP_ID),
   body('departmentIds').isArray({ min: 1 }).withMessage('departmentIds must be a non-empty array'),
   body('departmentIds.*').isInt({ min: 1 }).withMessage('Invalid department ID'),
 ];
 
 export const removeDepartmentValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Invalid group ID'),
+  param('id').isInt({ min: 1 }).withMessage(INVALID_GROUP_ID),
   param('departmentId').isInt({ min: 1 }).withMessage('Invalid department ID'),
 ];
 
 export const getGroupDepartmentsValidation = [
-  param('id').isInt({ min: 1 }).withMessage('Invalid group ID'),
+  param('id').isInt({ min: 1 }).withMessage(INVALID_GROUP_ID),
   query('includeSubgroups')
     .optional()
     .isBoolean()

@@ -1,4 +1,4 @@
-@import url("/styles/dashboard-theme.css");
+@import "/styles/dashboard-theme.css";
 
 /* Global Box Sizing */
 * {
@@ -8,30 +8,25 @@
 /* Dramatischer Hintergrund-Gradient */
 body {
   position: relative;
-  min-height: 100vh;
+
   overflow-x: hidden;
-  background: #000;
+
+  min-height: 100vh;
   margin: 0;
   padding: 0;
+
+  background: #000;
 }
 
 body::after {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    5deg,
-    transparent,
-    rgba(0, 142, 255, 0.1) 100%,
-    #01000482 0,
-    rgba(0, 0, 4, 0.6) 100%,
-    #000
-  );
   pointer-events: none;
+  content: "";
+
+  position: fixed;
   z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
 }
 
 /* Header wird von unified-navigation gehandelt */
@@ -44,12 +39,12 @@ body::after {
 
 /* Container Styles */
 .container {
-  padding: 24px;
   margin-top: -25px !important; /* Align first container with sidebar user-info-card */
+  padding: 24px;
 }
 
 /* Mobile responsiv */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .layout-container {
     flex-direction: column;
   }
@@ -57,21 +52,22 @@ body::after {
 
 /* Plan Selection Header */
 .plan-header {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 32px;
-  margin-bottom: 32px;
-  box-shadow: var(--shadow-sm);
-  width: 100%;
   box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 32px;
+  padding: 32px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: hsl(0deg 0% 100% / 2%);
   backdrop-filter: blur(20px) saturate(180%);
-  background: hsla(0, 0%, 100%, 0.02);
+  box-shadow: var(--shadow-sm);
 }
 
 .current-plan-info {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
 }
 
@@ -83,21 +79,24 @@ body::after {
 
 .plan-badge {
   display: inline-flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+
   padding: 8px 16px;
-  background: var(--accent-gradient);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 20px;
+
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+
+  background: var(--accent-gradient);
 }
 
 .plan-badge.enterprise {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 215, 0, 0.05));
-  border-color: rgba(255, 215, 0, 0.3);
+  border-color: rgb(255 215 0 / 30%);
   color: #ffd700;
+  background: linear-gradient(135deg, rgb(255 215 0 / 15%), rgb(255 215 0 / 5%));
 }
 
 /* Plan Selection Cards */
@@ -109,77 +108,85 @@ body::after {
 }
 
 .plan-card {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 24px;
-  position: relative;
   cursor: pointer;
+
+  position: relative;
+
+  padding: 24px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(10px);
 }
 
 .plan-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 40%);
 }
 
 .plan-card.current {
   border-color: var(--primary-color);
-  background: rgba(33, 150, 243, 0.1);
+  background: rgb(33 150 243 / 10%);
 }
 
 .plan-card.recommended {
-  border-color: rgba(255, 215, 0, 0.5);
+  border-color: rgb(255 215 0 / 50%);
 }
 
 .plan-card.recommended::before {
   content: "EMPFOHLEN";
+
   position: absolute;
   top: -12px;
   right: 20px;
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
-  color: #000;
+
   padding: 4px 12px;
   border-radius: 12px;
+
   font-size: 11px;
   font-weight: 700;
+  color: #000;
+
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
 }
 
 .plan-name {
+  margin-bottom: 8px;
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-bottom: 8px;
 }
 
 .plan-price {
+  margin-bottom: 4px;
   font-size: 36px;
   font-weight: 700;
   color: var(--primary-color);
-  margin-bottom: 4px;
 }
 
 .plan-price small {
   font-size: 16px;
-  color: var(--text-secondary);
   font-weight: 400;
+  color: var(--text-secondary);
 }
 
 .plan-description {
-  color: var(--text-secondary);
-  font-size: 14px;
   margin-bottom: 20px;
-  opacity: 0.8;
+  font-size: 14px;
+  color: var(--text-secondary);
+  opacity: 80%;
 }
 
 .plan-limits {
   display: flex;
   gap: 16px;
+
   margin-bottom: 20px;
   padding-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .limit-item {
@@ -188,16 +195,16 @@ body::after {
 }
 
 .limit-value {
+  display: block;
   font-size: 24px;
   font-weight: 700;
   color: var(--text-primary);
-  display: block;
 }
 
 .limit-label {
   font-size: 12px;
   color: var(--text-secondary);
-  opacity: 0.7;
+  opacity: 70%;
 }
 
 .plan-features {
@@ -206,9 +213,11 @@ body::after {
 
 .plan-feature {
   display: flex;
-  align-items: center;
   gap: 8px;
+  align-items: center;
+
   margin-bottom: 8px;
+
   font-size: 14px;
   color: var(--text-secondary);
 }
@@ -223,25 +232,28 @@ body::after {
 }
 
 .plan-action {
+  cursor: pointer;
+
   width: 100%;
   padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(255 255 255 / 20%);
   border-radius: 8px;
-  color: var(--text-primary);
+
   font-weight: 500;
-  cursor: pointer;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 2%);
 }
 
 .plan-action:hover {
-  background: rgba(255, 255, 255, 0.05);
   border-color: var(--primary-color);
+  background: rgb(255 255 255 / 5%);
 }
 
 .plan-action.current {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
   cursor: default;
+  border-color: var(--primary-color);
+  background: var(--primary-color);
 }
 
 /* Features Section */
@@ -251,8 +263,8 @@ body::after {
 
 .section-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 24px;
 }
 
@@ -268,20 +280,23 @@ body::after {
 }
 
 .filter-btn {
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  color: var(--text-secondary);
-  font-size: 14px;
   cursor: pointer;
+
+  padding: 8px 16px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 20px;
+
+  font-size: 14px;
+  color: var(--text-secondary);
+
+  background: rgb(255 255 255 / 2%);
 }
 
 .filter-btn:hover,
 .filter-btn.active {
-  background: rgba(255, 255, 255, 0.05);
   border-color: var(--primary-color);
   color: var(--primary-color);
+  background: rgb(255 255 255 / 5%);
 }
 
 /* Feature Categories */
@@ -291,8 +306,8 @@ body::after {
 
 .category-header {
   display: flex;
-  align-items: center;
   gap: 12px;
+  align-items: center;
   margin-bottom: 16px;
 }
 
@@ -313,79 +328,86 @@ body::after {
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 24px;
   position: relative;
+
+  padding: 24px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(10px);
 }
 
 .feature-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 4%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
 }
 
 .feature-card.active {
   border-color: var(--success-color);
-  background: rgba(76, 175, 80, 0.1);
+  background: rgb(76 175 80 / 10%);
 }
 
 .feature-card.locked {
-  opacity: 0.6;
   cursor: not-allowed;
+  opacity: 60%;
 }
 
 .feature-status {
   position: absolute;
   top: 12px;
   right: 12px;
+
   padding: 4px 8px;
   border-radius: 12px;
+
   font-size: 11px;
   font-weight: 500;
 }
 
 .status-active {
-  background: rgba(76, 175, 80, 0.2);
   color: var(--success-color);
+  background: rgb(76 175 80 / 20%);
 }
 
 .status-inactive {
-  background: rgba(255, 255, 255, 0.1);
   color: var(--text-secondary);
+  background: rgb(255 255 255 / 10%);
 }
 
 .status-locked {
-  background: rgba(255, 152, 0, 0.2);
   color: var(--warning-color);
+  background: rgb(255 152 0 / 20%);
 }
 
 .feature-name {
+  margin-bottom: 8px;
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 8px;
 }
 
 .feature-description {
+  margin-bottom: 12px;
   font-size: 14px;
   color: var(--text-secondary);
-  margin-bottom: 12px;
-  opacity: 0.8;
+  opacity: 80%;
 }
 
 .feature-plan-badge {
   display: inline-block;
+
+  margin-bottom: 16px;
   padding: 4px 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 4px;
+
   font-size: 12px;
   color: var(--text-secondary);
-  margin-bottom: 16px;
+
+  background: rgb(255 255 255 / 5%);
 }
 
 .feature-actions {
@@ -395,26 +417,30 @@ body::after {
 
 /* Feature-spezifische Buttons - nur innerhalb von Features */
 .feature-actions .btn {
+  cursor: pointer;
+
   flex: 1;
+
   padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgb(255 255 255 / 20%);
   border-radius: var(--radius-md);
-  color: var(--text-primary);
+
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
+  color: var(--text-primary);
   text-align: center;
+
+  background: rgb(255 255 255 / 2%);
 }
 
 .feature-actions .btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.3);
+  border-color: rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 5%);
 }
 
 .btn-activate {
-  background: var(--primary-color);
   border-color: var(--primary-color);
+  background: var(--primary-color);
 }
 
 .btn-activate:hover {
@@ -422,29 +448,30 @@ body::after {
 }
 
 .btn-deactivate {
-  background: rgba(244, 67, 54, 0.2);
   border-color: var(--error-color);
   color: var(--error-color);
+  background: rgb(244 67 54 / 20%);
 }
 
 .btn-deactivate:hover {
-  background: rgba(244, 67, 54, 0.3);
+  background: rgb(244 67 54 / 30%);
 }
 
 .feature-actions .btn:disabled {
-  opacity: 0.5;
   cursor: not-allowed;
+  opacity: 50%;
 }
 
 /* Add-ons Section */
 .addons-section {
   margin-top: 48px;
   margin-bottom: 100px; /* Platz für Summary Bar */
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
   padding: 32px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px);
 }
 
 .addons-grid {
@@ -455,36 +482,38 @@ body::after {
 }
 
 .addon-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
   padding: 24px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 8px;
+
   text-align: center;
+
+  background: rgb(255 255 255 / 2%);
 }
 
 .addon-icon {
-  font-size: 32px;
   margin-bottom: 12px;
+  font-size: 32px;
 }
 
 .addon-name {
+  margin-bottom: 8px;
   font-size: 16px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 8px;
 }
 
 .addon-price {
+  margin-bottom: 4px;
   font-size: 20px;
   font-weight: 700;
   color: var(--primary-color);
-  margin-bottom: 4px;
 }
 
 .addon-unit {
   font-size: 12px;
   color: var(--text-secondary);
-  opacity: 0.7;
+  opacity: 70%;
 }
 
 .addon-current {
@@ -495,65 +524,74 @@ body::after {
 
 .addon-controls {
   display: flex;
+  gap: 12px;
   align-items: center;
   justify-content: center;
-  gap: 12px;
 }
 
 .addon-btn {
-  width: 32px;
-  height: 32px;
+  cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 50%;
+
   color: var(--text-primary);
-  cursor: pointer;
+
+  background: rgb(255 255 255 / 2%);
 }
 
 .addon-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
   border-color: var(--primary-color);
+  background: rgb(255 255 255 / 5%);
 }
 
 .addon-value {
+  min-width: 40px;
+
   font-size: 18px;
   font-weight: 600;
   color: var(--text-primary);
-  min-width: 40px;
   text-align: center;
 }
 
 /* Summary Bar - angepasst für Standard-Layout */
 .summary-bar {
-  backdrop-filter: blur(20px);
-  border-top: 1px solid hsla(0, 0%, 100%, 0.1);
-  bottom: 0;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-  left: var(--sidebar-width, 250px);
-  padding: 12px 24px;
   position: fixed;
-  right: 0;
   z-index: 900;
+  right: 0;
+  bottom: 0;
+  left: var(--sidebar-width, 250px);
+
+  padding: 12px 24px;
+  border-top: 1px solid hsl(0deg 0% 100% / 10%);
+
+  backdrop-filter: blur(20px);
+  box-shadow: 0 -4px 20px rgb(0 0 0 / 30%);
+
   transition: left 0.3s ease;
 }
 
 /* Mobile responsiv */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .summary-bar {
     left: 0;
   }
 }
 
 .summary-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
   max-width: 100%;
   margin: 0;
   padding: 0 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .summary-items {
@@ -569,7 +607,7 @@ body::after {
 .summary-label {
   font-size: 11px;
   color: var(--text-secondary);
-  opacity: 0.7;
+  opacity: 70%;
 }
 
 .summary-value {
@@ -584,18 +622,21 @@ body::after {
 }
 
 .btn-save {
+  cursor: pointer;
+
   padding: 8px 24px;
-  background: var(--primary-color);
   border: none;
   border-radius: var(--radius-md);
-  color: #fff;
-  font-weight: 600;
+
   font-size: 14px;
-  cursor: pointer;
+  font-weight: 600;
+  color: #fff;
+
+  background: var(--primary-color);
 }
 
 .btn-save:hover {
-  background: var(--primary-dark);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+  background: var(--primary-dark);
+  box-shadow: 0 4px 12px rgb(33 150 243 / 30%);
 }

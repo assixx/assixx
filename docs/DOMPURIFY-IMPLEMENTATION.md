@@ -1,5 +1,7 @@
 # DOMPurify Implementation Guide
 
+eventuell veraltet -> goldstandrd ist richtig
+
 ## Prinzip
 
 **KEIN Inline-JavaScript in HTML!** Alles in TypeScript-Module.
@@ -99,9 +101,11 @@ Fertig. Mehr nicht nötig.
 ## ESLint Fix für DOMPurify
 
 ### Problem
+
 ESLint meldet `'DOMPurify' is not defined` obwohl DOMPurify über `<script src="/js/purify.min.js">` geladen wird.
 
 ### Lösung
+
 Am Anfang des Script-Blocks wo DOMPurify verwendet wird:
 
 ```javascript
@@ -111,7 +115,8 @@ Am Anfang des Script-Blocks wo DOMPurify verwendet wird:
 </script>
 ```
 
-### Bereits gefixt in:
+### Bereits gefixt in
+
 - ✅ admin-dashboard.html (Line 1685)
 - ✅ document-upload.html (Line 861)
 - ✅ employee-documents.html (Line 598)
@@ -121,6 +126,7 @@ Am Anfang des Script-Blocks wo DOMPurify verwendet wird:
 - ✅ manage-employees.html (Line 579)
 
 ### Fix-Notiz (11.09.2025)
+
 Bei allen HTML-Dateien die DOMPurify lokal verwenden, muss der `/* global DOMPurify */` Kommentar hinzugefügt werden um ESLint-Warnungen zu vermeiden.
 
 **TODO:** TypeScript-Module erstellen und DOMPurify importieren!
