@@ -921,6 +921,8 @@ export default [
       'jest.config.js',
       'jest.config.cjs',
       'uploads/**',
+      '**/*.yml',
+      '**/*.yaml',
       'frontend/src/scripts/lib/**',
       'frontend/src/styles/lib/**',
       'frontend/public/**',
