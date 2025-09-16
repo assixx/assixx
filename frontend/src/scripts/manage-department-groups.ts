@@ -92,7 +92,7 @@ import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
         (group) => `
     <div style="margin-left: ${level * 20}px;">
       <div class="tree-item ${selectedGroupId === group.id ? 'active' : ''}"
-           onclick="selectGroup(${group.id})"
+           data-action="select-group"
            data-group-id="${group.id}">
         <i class="fas fa-folder tree-item-icon"></i>
         <span class="tree-item-name">${group.name}</span>
@@ -172,13 +172,13 @@ import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
     </div>
 
     <div class="action-buttons">
-      <button class="btn btn-primary" onclick="editGroup(${group.id})">
+      <button class="btn btn-primary" data-action="edit-group" data-group-id="${group.id}">
         <i class="fas fa-edit"></i> Bearbeiten
       </button>
-      <button class="btn btn-secondary" onclick="addDepartmentsToGroup(${group.id})">
+      <button class="btn btn-secondary" data-action="add-departments" data-group-id="${group.id}">
         <i class="fas fa-plus"></i> Abteilungen hinzufügen
       </button>
-      <button class="btn btn-danger" onclick="deleteGroup(${group.id})">
+      <button class="btn btn-danger" data-action="delete-group" data-group-id="${group.id}">
         <i class="fas fa-trash"></i> Löschen
       </button>
     </div>
@@ -409,6 +409,59 @@ import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
       await loadDepartments();
       await loadGroups();
     })();
+  });
+
+  // Event delegation for all actions
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle show create group modal
+    const createBtn = target.closest<HTMLElement>('[data-action="show-create-group-modal"]');
+    if (createBtn) {
+      (window as unknown as ManageDeptGroupsWindow).showCreateGroupModal();
+    }
+
+    // Handle close modal
+    const closeBtn = target.closest<HTMLElement>('[data-action="close-modal"]');
+    if (closeBtn) {
+      (window as unknown as ManageDeptGroupsWindow).closeModal();
+    }
+
+    // Handle select group
+    const selectBtn = target.closest<HTMLElement>('[data-action="select-group"]');
+    if (selectBtn) {
+      const groupId = selectBtn.dataset.groupId;
+      if (groupId !== undefined) {
+        (window as unknown as ManageDeptGroupsWindow).selectGroup(Number.parseInt(groupId, 10));
+      }
+    }
+
+    // Handle edit group
+    const editBtn = target.closest<HTMLElement>('[data-action="edit-group"]');
+    if (editBtn) {
+      const groupId = editBtn.dataset.groupId;
+      if (groupId !== undefined) {
+        (window as unknown as ManageDeptGroupsWindow).editGroup(Number.parseInt(groupId, 10));
+      }
+    }
+
+    // Handle add departments
+    const addDeptBtn = target.closest<HTMLElement>('[data-action="add-departments"]');
+    if (addDeptBtn) {
+      const groupId = addDeptBtn.dataset.groupId;
+      if (groupId !== undefined) {
+        void (window as unknown as ManageDeptGroupsWindow).addDepartmentsToGroup(Number.parseInt(groupId, 10));
+      }
+    }
+
+    // Handle delete group
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-group"]');
+    if (deleteBtn) {
+      const groupId = deleteBtn.dataset.groupId;
+      if (groupId !== undefined) {
+        void (window as unknown as ManageDeptGroupsWindow).deleteGroup(Number.parseInt(groupId, 10));
+      }
+    }
   });
 
   // Close modal on outside click

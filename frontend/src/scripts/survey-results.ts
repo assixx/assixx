@@ -207,7 +207,7 @@ class SurveyResultsPage {
         <button class="btn btn-secondary" id="export-pdf">
           <i class="fas fa-file-pdf"></i> PDF Export
         </button>
-        <button class="btn btn-secondary" onclick="window.print()">
+        <button class="btn btn-secondary" data-action="print">
           <i class="fas fa-print"></i> Drucken
         </button>
       </div>
@@ -488,6 +488,23 @@ class SurveyResultsPage {
         this.exportToPDF();
       });
     }
+
+    // Event delegation for dynamic buttons
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      // Handle print button
+      const printBtn = target.closest<HTMLElement>('[data-action="print"]');
+      if (printBtn) {
+        window.print();
+      }
+
+      // Handle navigate back button
+      const navigateBtn = target.closest<HTMLElement>('[data-action="navigate-back"]');
+      if (navigateBtn) {
+        window.location.href = '/survey-admin';
+      }
+    });
   }
 
   private async exportToExcel(): Promise<void> {
@@ -599,7 +616,7 @@ class SurveyResultsPage {
       <div class="empty-state">
         <div class="empty-icon">❌</div>
         <p>${escapeHtml(message)}</p>
-        <button class="btn btn-secondary" onclick="window.location.href='/survey-admin'">
+        <button class="btn btn-secondary" data-action="navigate-back">
           Zurück zur Übersicht
         </button>
       </div>

@@ -74,7 +74,7 @@ interface WindowWithEmployeeHandlers extends Window {
   hideEmployeeModal?: () => void;
   closeEmployeeModal?: () => void; // Alias for hideEmployeeModal
   saveEmployee?: () => Promise<void>;
-  loadDepartmentsForEmployeeSelect: () => Promise<void>;
+  loadDepartmentsForEmployeeSelect?: () => Promise<void>;
   loadTeamsForEmployeeSelect?: () => Promise<void>;
 }
 
@@ -142,6 +142,30 @@ class EmployeesManager {
       btn.addEventListener('click', () => {
         this.hideEmployeeModal();
       });
+    });
+
+    // Event delegation for employee actions
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const w = window as WindowWithEmployeeHandlers;
+
+      // Handle edit employee
+      const editBtn = target.closest<HTMLElement>('[data-action="edit-employee"]');
+      if (editBtn) {
+        const employeeId = editBtn.dataset.employeeId;
+        if (employeeId !== undefined) {
+          void w.editEmployee?.(Number.parseInt(employeeId, 10));
+        }
+      }
+
+      // Handle delete employee
+      const deleteBtn = target.closest<HTMLElement>('[data-action="delete-employee"]');
+      if (deleteBtn) {
+        const employeeId = deleteBtn.dataset.employeeId;
+        if (employeeId !== undefined) {
+          void w.deleteEmployee?.(Number.parseInt(employeeId, 10));
+        }
+      }
     });
   }
 
@@ -302,8 +326,8 @@ class EmployeesManager {
                 ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
               </td>
               <td>
-                <button class="action-btn edit" onclick="window.editEmployee(${employee.id})">Bearbeiten</button>
-                <button class="action-btn delete" onclick="window.deleteEmployee(${employee.id})">Löschen</button>
+                <button class="action-btn edit" data-action="edit-employee" data-employee-id="${employee.id}">Bearbeiten</button>
+                <button class="action-btn delete" data-action="delete-employee" data-employee-id="${employee.id}">Löschen</button>
               </td>
             </tr>
           `;
@@ -557,7 +581,9 @@ class EmployeesManager {
         // Use void to handle promise without async/await in setTimeout
         void (async () => {
           // Load departments first
-          await w.loadDepartmentsForEmployeeSelect();
+          if (w.loadDepartmentsForEmployeeSelect !== undefined) {
+            await w.loadDepartmentsForEmployeeSelect();
+          }
 
           // Restore department selection if provided
           if (departmentId !== undefined) {

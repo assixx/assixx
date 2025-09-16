@@ -47,6 +47,9 @@ interface QueueRow extends RowDataPacket {
   tenant_id: number;
   approval_status: string;
   created_by: number;
+  status: string;
+  scheduled_deletion_date?: Date;
+  created_at?: Date;
 }
 
 interface FileRow extends RowDataPacket {
@@ -2083,12 +2086,53 @@ export class TenantDeletionService {
    * @param cancelledBy - The cancelledBy parameter
    */
   async cancelDeletion(tenantId: number, cancelledBy: number): Promise<void> {
-    const [queueItems] = await query<RowDataPacket[]>(
-      'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ? AND status = ? AND scheduled_deletion_date > NOW()',
-      [tenantId, 'queued'],
+    logger.info('[TenantDeletionService.cancelDeletion] Starting cancellation', {
+      tenantId,
+      cancelledBy,
+    });
+
+    // First check all deletion queue items for this tenant
+    const [allQueueItems] = await query<RowDataPacket[]>(
+      'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ?',
+      [tenantId],
     );
 
+    logger.info('[TenantDeletionService.cancelDeletion] All queue items for tenant:', {
+      tenantId,
+      count: allQueueItems.length,
+      items: allQueueItems.map((item) => ({
+        id: (item as QueueRow).id,
+        status: (item as QueueRow).status,
+        approval_status: (item as QueueRow).approval_status,
+        scheduled_deletion_date: (item as QueueRow).scheduled_deletion_date,
+        created_at: (item as QueueRow).created_at,
+      })),
+    });
+
+    // Now check for cancellable items - any that are not already completed, cancelled, or failed
+    // Also include items with empty status (initial state)
+    const [queueItems] = await query<RowDataPacket[]>(
+      'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ? AND (status = ? OR status NOT IN (?, ?, ?))',
+      [tenantId, '', 'cancelled', 'completed', 'failed'],
+    );
+
+    logger.info('[TenantDeletionService.cancelDeletion] Cancellable queue items:', {
+      tenantId,
+      count: queueItems.length,
+      statusNotIn: ['cancelled', 'completed', 'failed'],
+      items: queueItems.map((item) => ({
+        id: (item as QueueRow).id,
+        status: (item as QueueRow).status,
+        approval_status: (item as QueueRow).approval_status,
+        scheduled_deletion_date: (item as QueueRow).scheduled_deletion_date,
+      })),
+    });
+
     if (queueItems.length === 0) {
+      logger.error('[TenantDeletionService.cancelDeletion] No cancellable deletion found', {
+        tenantId,
+        allItemsCount: allQueueItems.length,
+      });
       throw new Error('No cancellable deletion found for this tenant');
     }
 

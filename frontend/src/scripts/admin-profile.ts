@@ -274,6 +274,16 @@ function setupProfilePictureHandlers(): void {
   const fileInput = $$('#profile-picture-input');
   const removeBtn = document.querySelector('#remove-picture-btn');
 
+  // Event delegation for trigger file input button
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const button = target.closest('[data-action="trigger-file-input"]');
+
+    if (button instanceof HTMLElement && fileInput !== null) {
+      fileInput.click();
+    }
+  });
+
   // File upload
   if (fileInput !== null) {
     fileInput.addEventListener('change', (e) => {

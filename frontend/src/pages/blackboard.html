@@ -573,7 +573,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title" id="entryFormModalLabel">Neuer Eintrag</h3>
-          <button type="button" class="modal-close" onclick="hideModal('entryFormModal')">&times;</button>
+          <button type="button" class="modal-close" data-action="hide-modal" data-modal="entryFormModal">&times;</button>
         </div>
         <form id="entryForm">
           <input type="hidden" id="entryId" name="entry_id" />
@@ -694,7 +694,7 @@
         </form>
         <div class="button-group">
           <button type="submit" class="btn btn-primary" id="saveEntryBtn">Speichern</button>
-          <button type="button" class="btn btn-secondary" onclick="hideModal('entryFormModal')">Abbrechen</button>
+          <button type="button" class="btn btn-secondary" data-action="hide-modal" data-modal="entryFormModal">Abbrechen</button>
         </div>
       </div>
     </div>
@@ -704,7 +704,7 @@
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
           <h3 class="modal-title">Bild/PDF direkt anheften</h3>
-          <button type="button" class="modal-close" onclick="hideModal('directAttachModal')">&times;</button>
+          <button type="button" class="modal-close" data-action="hide-modal" data-modal="directAttachModal">&times;</button>
         </div>
         <form id="directAttachForm">
           <div class="modal-body">
@@ -735,7 +735,7 @@
                   <div id="previewFileName" class="fw-bold"></div>
                   <div id="previewFileSize" class="text-secondary"></div>
                 </div>
-                <button type="button" class="btn btn-sm btn-danger" onclick="clearDirectAttachment()">
+                <button type="button" class="btn btn-sm btn-danger" data-action="clear-attachment">
                   <i class="fas fa-times"></i>
                 </button>
               </div>
@@ -787,7 +787,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="hideModal('directAttachModal')">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" data-action="hide-modal" data-modal="directAttachModal">Abbrechen</button>
             <button type="button" class="btn btn-primary" id="saveDirectAttachBtn">
               <i class="fas fa-thumbtack"></i>
               Anheften
@@ -943,6 +943,28 @@
           }, 300);
         }
       }
+
+      // Event Delegation for modal actions
+      document.addEventListener('click', function (e) {
+        const target = e.target;
+
+        // Handle hide modal
+        const hideModalBtn = target.closest('[data-action="hide-modal"]');
+        if (hideModalBtn) {
+          const modalId = hideModalBtn.dataset.modal;
+          hideModal('#' + modalId);
+          return;
+        }
+
+        // Handle clear attachment
+        const clearBtn = target.closest('[data-action="clear-attachment"]');
+        if (clearBtn) {
+          if (window.clearDirectAttachment) {
+            window.clearDirectAttachment();
+          }
+          return;
+        }
+      });
 
       // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
       window.DashboardUI = {

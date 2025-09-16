@@ -80,6 +80,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // const logoutBtn = document.querySelector('logout-btn') as HTMLButtonElement; // Not used - handled by unified-navigation
   const dashboardContent = document.querySelector<HTMLElement>('#dashboard-data');
 
+  // Event delegation for log entries navigation
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle navigate to logs
+    const logEntry = target.closest<HTMLElement>('[data-action="navigate-logs"]');
+    if (logEntry) {
+      window.location.href = '/logs';
+    }
+  });
+
   // Event-Listener hinzufügen
   if (createAdminForm !== null) {
     createAdminForm.addEventListener('submit', (e) => {
@@ -431,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             return `
-              <div class="log-entry" onclick="window.location.href = "/logs"">
+              <div class="log-entry" data-action="navigate-logs" style="cursor: pointer;">
                 <div class="log-entry-header">
                   <div class="log-action">${getActionLabel(log.action)}</div>
                   <div class="log-timestamp">${dateString} ${timeString}</div>

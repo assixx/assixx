@@ -178,11 +178,31 @@ export class DocumentBase {
    * Set up event delegation for dynamic elements
    */
   protected setupEventDelegation(): void {
-    // Delegate click events for favorite buttons
+    // Delegate click events for action buttons
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      const favoriteBtn = target.closest('.favorite-btn');
 
+      // Handle data-action buttons
+      const actionBtn = target.closest('[data-action]');
+      if (actionBtn instanceof HTMLElement) {
+        const action = actionBtn.dataset.action;
+
+        if (action === 'toggle-dropdown') {
+          const dropdownType = actionBtn.dataset.dropdown;
+          if (dropdownType !== undefined) {
+            window.toggleDropdown(dropdownType);
+          }
+        } else if (action === 'close-document-modal') {
+          window.closeDocumentModal();
+        } else if (action === 'download-document') {
+          const downloadBtn = document.querySelector('#downloadButton');
+          const docId = downloadBtn instanceof HTMLElement ? downloadBtn.dataset.docId : undefined;
+          window.downloadDocument(docId);
+        }
+      }
+
+      // Handle favorite buttons
+      const favoriteBtn = target.closest('.favorite-btn');
       if (favoriteBtn instanceof HTMLElement) {
         e.stopPropagation();
         const docId = favoriteBtn.dataset.docId;

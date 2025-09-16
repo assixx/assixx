@@ -869,16 +869,16 @@
                 <div class="form-group">
                   <label class="form-label" class="u-color-text-primary u-fw-500 u-block u-mb-8">Dropdown Auswahl</label>
                   <div class="custom-dropdown">
-                    <div class="dropdown-display" id="demoDisplay" onclick="toggleDropdown('demo')">
+                    <div class="dropdown-display" id="demoDisplay" on click(depcreated.itsnow eventhandler)="toggleDropdown('demo')">
                       <span>Bitte wählen</span>
                       <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                       </svg>
                     </div>
                     <div class="dropdown-options" id="demoDropdown">
-                      <div class="dropdown-option" onclick="selectOption('demo', 'option1', 'Option 1')">Option 1</div>
-                      <div class="dropdown-option" onclick="selectOption('demo', 'option2', 'Option 2')">Option 2</div>
-                      <div class="dropdown-option" onclick="selectOption('demo', 'option3', 'Option 3')">Option 3</div>
+                      <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('demo', 'option1', 'Option 1')">Option 1</div>
+                      <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('demo', 'option2', 'Option 2')">Option 2</div>
+                      <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('demo', 'option3', 'Option 3')">Option 3</div>
                     </div>
                   </div>
                 </div>
@@ -896,7 +896,7 @@
             </div>
             <div class="card-body">
               <p>Klicken Sie auf den Button, um ein Modal zu öffnen:</p>
-              <button class="btn btn-primary" onclick="showModal('demoModal')">Modal öffnen</button>
+              <button class="btn btn-primary" on click(depcreated.itsnow eventhandler)="showModal('demoModal')">Modal öffnen</button>
             </div>
           </div>
         </section>
@@ -1024,7 +1024,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Demo Modal</h3>
-          <button class="modal-close" onclick="hideModal('demoModal')">&times;</button>
+          <button class="modal-close" on click(depcreated.itsnow eventhandler)="hideModal('demoModal')">&times;</button>
         </div>
         <form style="padding: var(--spacing-lg)">
           <div class="form-group">
@@ -1037,7 +1037,7 @@
           </div>
           <div style="display: flex; gap: 10px; margin-top: 20px">
             <button type="submit" class="btn btn-primary" class="u-flex-1">Speichern</button>
-            <button type="button" class="btn btn-secondary" class="u-flex-1" onclick="hideModal('demoModal')">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" class="u-flex-1" on click(depcreated.itsnow eventhandler)="hideModal('demoModal')">Abbrechen</button>
           </div>
         </form>
       </div>

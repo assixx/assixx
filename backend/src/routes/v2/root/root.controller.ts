@@ -838,11 +838,26 @@ export class RootController {
    */
   async cancelDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      logger.info('[RootController.cancelDeletion] Starting cancellation');
+      logger.info('[RootController.cancelDeletion] User:', {
+        userId: req.user.id,
+        username: req.user.username,
+        tenantId: req.user.tenant_id,
+        role: req.user.role,
+      });
+
       await tenantDeletionService.cancelDeletion(req.user.tenant_id, req.user.id);
 
+      logger.info('[RootController.cancelDeletion] Cancellation successful');
       res.json({ message: 'Deletion cancelled successfully' });
     } catch (error: unknown) {
-      logger.error('Error cancelling deletion:', error);
+      logger.error('[RootController.cancelDeletion] Error cancelling deletion:', error);
+      logger.error('[RootController.cancelDeletion] Error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        tenantId: req.user.tenant_id,
+        userId: req.user.id,
+      });
       res.status(500).json({
         error: 'SERVER_ERROR',
         message: 'Failed to cancel deletion',

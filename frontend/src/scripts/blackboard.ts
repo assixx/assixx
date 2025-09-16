@@ -26,20 +26,6 @@ const FULLSCREEN_MODE_CLASS = 'fullscreen-mode';
 const DISPLAY_INLINE_FLEX = 'inline-flex';
 const DISPLAY_NONE = 'none';
 
-/**
- * Escapes a string for safe use in JavaScript string literals
- * Handles backslashes, quotes, newlines, etc.
- */
-function escapeJsString(str: string): string {
-  return str
-    .replace(/\\/g, '\\\\') // Escape backslashes first
-    .replace(/'/g, "\\'") // Escape single quotes
-    .replace(/"/g, '\\"') // Escape double quotes
-    .replace(/\n/g, '\\n') // Escape newlines
-    .replace(/\r/g, '\\r') // Escape carriage returns
-    .replace(/\t/g, '\\t'); // Escape tabs
-}
-
 interface BlackboardEntry {
   id: number;
   title: string;
@@ -212,6 +198,123 @@ function setEntriesLoadingEnabled(enabled: boolean): void {
 
 // Function to initialize blackboard
 function initializeBlackboard() {
+  // Setup Event Delegation for all dynamic content
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle remove attachment button
+    const removeAttachmentBtn = target.closest<HTMLElement>('[data-action="remove-attachment"]');
+    if (removeAttachmentBtn) {
+      const index = removeAttachmentBtn.dataset.index;
+      if (index !== undefined) {
+        removeAttachment(Number.parseInt(index, 10));
+      }
+    }
+
+    // Handle preview attachment
+    const previewBtn = target.closest<HTMLElement>('[data-action="preview-attachment"]');
+    if (previewBtn) {
+      e.stopPropagation();
+      const attachmentId = previewBtn.dataset.attachmentId;
+      const mimeType = previewBtn.dataset.mimeType;
+      const filename = previewBtn.dataset.filename;
+      if (attachmentId !== undefined && mimeType !== undefined && filename !== undefined) {
+        void previewAttachment(Number.parseInt(attachmentId, 10), mimeType, filename);
+      }
+    }
+
+    // Handle view entry
+    const viewEntryBtn = target.closest<HTMLElement>('[data-action="view-entry"]');
+    if (viewEntryBtn) {
+      const entryId = viewEntryBtn.dataset.entryId;
+      if (entryId !== undefined) {
+        void viewEntry(Number.parseInt(entryId, 10));
+      }
+    }
+
+    // Handle edit entry
+    const editEntryBtn = target.closest<HTMLElement>('[data-action="edit-entry"]');
+    if (editEntryBtn) {
+      e.stopPropagation();
+      const entryId = editEntryBtn.dataset.entryId;
+      if (entryId !== undefined) {
+        openEntryForm(Number.parseInt(entryId, 10));
+      }
+    }
+
+    // Handle delete entry
+    const deleteEntryBtn = target.closest<HTMLElement>('[data-action="delete-entry"]');
+    if (deleteEntryBtn) {
+      e.stopPropagation();
+      const entryId = deleteEntryBtn.dataset.entryId;
+      if (entryId !== undefined) {
+        deleteEntry(Number.parseInt(entryId, 10));
+      }
+    }
+
+    // Handle page navigation
+    const changePageBtn = target.closest<HTMLElement>('[data-action="change-page"]');
+    if (changePageBtn) {
+      const page = changePageBtn.dataset.page;
+      if (page !== undefined) {
+        changePage(Number.parseInt(page, 10));
+      }
+    }
+
+    // Handle close modal
+    const closeModalBtn = target.closest<HTMLElement>('[data-action="close-modal"]');
+    if (closeModalBtn) {
+      const modalId = closeModalBtn.dataset.modalId;
+      if (modalId !== undefined) {
+        closeModal(modalId);
+      }
+    }
+
+    // Handle confirm delete
+    const confirmDeleteBtn = target.closest<HTMLElement>('[data-action="confirm-delete"]');
+    if (confirmDeleteBtn) {
+      const entryId = confirmDeleteBtn.dataset.entryId;
+      if (entryId !== undefined) {
+        closeModal('deleteConfirmModal');
+        void performDelete(Number.parseInt(entryId, 10));
+      }
+    }
+
+    // Handle open PDF in new tab
+    const openPdfBtn = target.closest<HTMLElement>('[data-action="open-pdf-new-tab"]');
+    if (openPdfBtn) {
+      const attachmentUrl = openPdfBtn.dataset.attachmentUrl;
+      if (attachmentUrl !== undefined) {
+        void (async () => {
+          try {
+            const resp = await fetch(attachmentUrl, {
+              credentials: 'same-origin',
+            });
+            const fileBlob = await resp.blob();
+            const url = URL.createObjectURL(fileBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.click();
+            setTimeout(() => {
+              URL.revokeObjectURL(url);
+            }, 100);
+          } catch (error) {
+            console.error('Error opening PDF in new tab:', error);
+            showError('Fehler beim Öffnen der PDF');
+          }
+        })();
+      }
+    }
+
+    // Handle save direct attachment
+    const saveDirectBtn = target.closest<HTMLElement>('[data-action="save-direct-attachment"]');
+    if (saveDirectBtn) {
+      console.info('[DirectAttach] Save button clicked');
+      void saveDirectAttachment();
+    }
+  });
+
   // Aktiviere das automatische Laden der Einträge
   setEntriesLoadingEnabled(true);
 
@@ -655,9 +758,8 @@ function updateAttachmentPreview(): void {
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
     removeButton.className = 'attachment-remove';
-    removeButton.onclick = () => {
-      removeAttachment(index);
-    };
+    removeButton.dataset.action = 'remove-attachment';
+    removeButton.dataset.index = index.toString();
 
     const removeIcon = document.createElement('i');
     removeIcon.className = 'fas fa-times';
@@ -926,8 +1028,11 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
         <div class="pinboard-image" style="${sizeStyle} margin: 0 auto;">
           <img src="/api/blackboard/attachments/${attachment.id}/preview"
                alt="${escapeHtml(attachment.original_name)}"
-               style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
-               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${escapeJsString(attachment.mime_type)}', '${escapeJsString(attachment.original_name)}')">
+               style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;"
+               data-action="preview-attachment"
+               data-attachment-id="${attachment.id}"
+               data-mime-type="${escapeHtml(attachment.mime_type)}"
+               data-filename="${escapeHtml(attachment.original_name)}">
         </div>
       `;
     } else if (isPDF) {
@@ -952,7 +1057,10 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
           </div>
           <div class="pdf-overlay"
                style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; cursor: pointer; z-index: 10;"
-               onclick="event.stopPropagation(); previewAttachment(${attachment.id}, '${escapeJsString(attachment.mime_type)}', '${escapeJsString(attachment.original_name)}')"
+               data-action="preview-attachment"
+               data-attachment-id="${attachment.id}"
+               data-mime-type="${escapeHtml(attachment.mime_type)}"
+               data-filename="${escapeHtml(attachment.original_name)}"
                title="Klicken für Vollansicht">
           </div>
         </div>
@@ -972,7 +1080,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
   }
 
   const htmlContent = `
-    <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" data-entry-id="${entry.id}" onclick="viewEntry(${entry.id})" style="cursor: pointer;">
+    <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" data-entry-id="${entry.id}" data-action="view-entry" style="cursor: pointer;">
       <div class="pushpin ${randomPushpin}"></div>
 
       <h4 style="margin: 0 0 10px 0; font-weight: 600; color:rgb(0, 0, 0);">
@@ -1005,10 +1113,10 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
         canEdit
           ? `
         <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; /* transition: opacity 0.2s; */">
-          <button class="btn btn-sm btn-link p-1" onclick="event.stopPropagation(); editEntry(${entry.id})" title="Bearbeiten">
+          <button class="btn btn-sm btn-link p-1" data-action="edit-entry" data-entry-id="${entry.id}" title="Bearbeiten">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="btn btn-sm btn-link p-1 text-danger" onclick="event.stopPropagation(); deleteEntry(${entry.id})" title="Löschen">
+          <button class="btn btn-sm btn-link p-1 text-danger" data-action="delete-entry" data-entry-id="${entry.id}" title="Löschen">
             <i class="fas fa-trash"></i>
           </button>
         </div>
@@ -1069,9 +1177,8 @@ function updatePagination(pagination: PaginationInfo): void {
     const prevBtn = document.createElement('button');
     prevBtn.className = 'btn btn-sm btn-secondary';
     prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    prevBtn.onclick = () => {
-      changePage(currentPage - 1);
-    };
+    prevBtn.dataset.action = 'change-page';
+    prevBtn.dataset.page = (currentPage - 1).toString();
     paginationContainer.append(prevBtn);
   }
 
@@ -1081,9 +1188,8 @@ function updatePagination(pagination: PaginationInfo): void {
       const pageBtn = document.createElement('button');
       pageBtn.className = `btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
       pageBtn.textContent = i.toString();
-      pageBtn.onclick = () => {
-        changePage(i);
-      };
+      pageBtn.dataset.action = 'change-page';
+      pageBtn.dataset.page = i.toString();
       paginationContainer.append(pageBtn);
     } else if (i === currentPage - 3 || i === currentPage + 3) {
       const dots = document.createElement('span');
@@ -1098,9 +1204,8 @@ function updatePagination(pagination: PaginationInfo): void {
     const nextBtn = document.createElement('button');
     nextBtn.className = 'btn btn-sm btn-secondary';
     nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    nextBtn.onclick = () => {
-      changePage(currentPage + 1);
-    };
+    nextBtn.dataset.action = 'change-page';
+    nextBtn.dataset.page = (currentPage + 1).toString();
     paginationContainer.append(nextBtn);
   }
 }
@@ -1348,14 +1453,14 @@ function showDeleteConfirmation(entryId: number): void {
       <div class="modal-content" style="max-width: 400px;">
         <div class="modal-header">
           <h3 class="modal-title">Eintrag löschen</h3>
-          <button class="modal-close" onclick="closeModal('deleteConfirmModal')">&times;</button>
+          <button class="modal-close" data-action="close-modal" data-modal-id="deleteConfirmModal">&times;</button>
         </div>
         <div class="modal-body">
           <p>Möchten Sie diesen Eintrag wirklich löschen?</p>
           <p class="text-muted">Diese Aktion kann nicht rückgängig gemacht werden.</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('deleteConfirmModal')">Abbrechen</button>
+          <button type="button" class="btn btn-secondary" data-action="close-modal" data-modal-id="deleteConfirmModal">Abbrechen</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
             <i class="fas fa-trash"></i> Löschen
           </button>
@@ -1368,10 +1473,8 @@ function showDeleteConfirmation(entryId: number): void {
   // Set up the confirm button
   const confirmBtn = $$id('confirmDeleteBtn') as HTMLButtonElement | null;
   if (confirmBtn) {
-    confirmBtn.onclick = async () => {
-      closeModal('deleteConfirmModal');
-      await performDelete(entryId);
-    };
+    confirmBtn.dataset.action = 'confirm-delete';
+    confirmBtn.dataset.entryId = entryId.toString();
   }
 
   // Show the modal
@@ -1481,7 +1584,10 @@ async function viewEntry(entryId: number): Promise<void> {
                          data-filename="${escapeHtml(att.original_name)}"
                          style="cursor: pointer;"
                          title="Vorschau: ${escapeHtml(att.original_name)}"
-                         onclick="console.info('[Blackboard] Inline onclick fired!', ${att.id}); window.previewAttachment && window.previewAttachment(${att.id}, '${escapeJsString(att.mime_type)}', '${escapeJsString(att.original_name)}'); return false;">
+                         data-action="preview-attachment-link"
+                         data-attachment-id="${att.id}"
+                         data-mime-type="${escapeHtml(att.mime_type)}"
+                         data-filename="${escapeHtml(att.original_name)}">
                       <i class="fas ${isPDF ? 'fa-file-pdf' : 'fa-file-image'}"></i>
                       <span>${escapeHtml(att.original_name)}</span>
                       <span class="attachment-size">(${formatFileSize(att.file_size)})</span>
@@ -1502,10 +1608,10 @@ async function viewEntry(entryId: number): Promise<void> {
         // eslint-disable-next-line no-unsanitized/property
         footer.innerHTML = DOMPurify.sanitize(`
             <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-            <button type="button" class="btn btn-primary" onclick="editEntry(${entryId})">
+            <button type="button" class="btn btn-primary" data-action="edit-entry-modal" data-entry-id="${entryId}">
               <i class="fas fa-edit"></i> Bearbeiten
             </button>
-            <button type="button" class="btn btn-danger" onclick="deleteEntry(${entryId})">
+            <button type="button" class="btn btn-danger" data-action="delete-entry-modal" data-entry-id="${entryId}">
               <i class="fas fa-trash"></i> Löschen
             </button>
           `);
@@ -1560,46 +1666,16 @@ async function viewEntry(entryId: number): Promise<void> {
             parentElement: htmlItem.parentElement,
           });
 
-          // Direct click handler without cloning
-          htmlItem.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.info(`[Blackboard] Attachment onclick fired:`, { attachmentId, mimeType, filename });
-
-            // Call preview function
-            if (typeof window.previewAttachment === 'function') {
-              console.info('[Blackboard] Calling window.previewAttachment');
-              void window.previewAttachment(attachmentId, mimeType, filename);
-            } else if (typeof previewAttachment === 'function') {
-              console.info('[Blackboard] Calling previewAttachment directly');
-              void previewAttachment(attachmentId, mimeType, filename);
-            } else {
-              console.error('[Blackboard] previewAttachment function not found!');
-            }
-          };
-
-          // Also add addEventListener as backup
-          htmlItem.addEventListener(
-            'click',
-            (_) => {
-              console.info(`[Blackboard] Attachment addEventListener fired:`, { attachmentId, mimeType, filename });
-            },
-            true,
-          ); // Use capture phase
-
-          // Visual feedback
+          // Set data attributes for event delegation
+          htmlItem.dataset.action = 'preview-attachment-item';
+          htmlItem.dataset.attachmentId = attachmentId.toString();
+          htmlItem.dataset.mimeType = mimeType;
+          htmlItem.dataset.filename = filename;
           htmlItem.style.cursor = 'pointer';
-          /* htmlItem.style.transition = 'all 0.2s ease'; */
 
-          htmlItem.addEventListener('mouseenter', () => {
-            htmlItem.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-            htmlItem.style.transform = 'scale(1.02)';
-          });
-
-          htmlItem.addEventListener('mouseleave', () => {
-            htmlItem.style.backgroundColor = '';
-            htmlItem.style.transform = '';
-          });
+          // Event handling is done via event delegation
+          // Visual feedback can be added via CSS
+          htmlItem.style.cursor = 'pointer';
 
           // Log computed styles to check for issues
           const computedStyle = window.getComputedStyle(htmlItem);
@@ -1723,32 +1799,11 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
 
     downloadLink.href = useV2 ? `/api/v2${endpoint}` : `/api${endpoint}`;
     downloadLink.setAttribute('download', fileName);
-    // Add click handler to download with auth token
-    downloadLink.onclick = async (e: Event) => {
-      e.preventDefault();
-      try {
-        let response: Response;
-        // Use v2 endpoint directly
-        response = await fetch(`/api/v2${endpoint}`, {
-          credentials: 'same-origin',
-        });
-
-        if (!response.ok) throw new Error('Download failed');
-
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.append(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error('Download error:', error);
-        showError('Fehler beim Herunterladen der Datei');
-      }
-    };
+    // Set data attributes for download handler
+    downloadLink.dataset.action = 'download-attachment';
+    downloadLink.dataset.attachmentId = attachmentId.toString();
+    downloadLink.dataset.filename = fileName;
+    downloadLink.dataset.endpoint = endpoint;
   }
 
   // Load preview content
@@ -1817,29 +1872,12 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
         `),
       );
 
-      // Add click handler for "open in new tab" button
+      // Add data attributes for "open in new tab" button
       setTimeout(() => {
         const openButton = $$id('openPdfNewTab') as HTMLButtonElement | null;
         if (openButton) {
-          openButton.onclick = async () => {
-            try {
-              const resp = await fetch(attachmentUrl, {
-                credentials: 'same-origin',
-              });
-              const fileBlob = await resp.blob();
-              const url = URL.createObjectURL(fileBlob);
-              const a = document.createElement('a');
-              a.href = url;
-              a.target = '_blank';
-              a.click();
-              setTimeout(() => {
-                URL.revokeObjectURL(url);
-              }, 100);
-            } catch (error) {
-              console.error('Error opening PDF in new tab:', error);
-              showError('Fehler beim Öffnen der PDF');
-            }
-          };
+          openButton.dataset.action = 'open-pdf-new-tab';
+          openButton.dataset.attachmentUrl = attachmentUrl;
         }
       }, 100);
 
@@ -2056,10 +2094,7 @@ function setupDirectAttachHandlers(): void {
 
   // Save button handler
   if (saveBtn) {
-    saveBtn.onclick = async () => {
-      console.info('[DirectAttach] Save button clicked');
-      await saveDirectAttachment();
-    };
+    saveBtn.dataset.action = 'save-direct-attachment';
   }
 }
 

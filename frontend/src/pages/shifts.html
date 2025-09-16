@@ -1130,7 +1130,7 @@
               <div class="info-item">
                 <div class="info-label">Bereich</div>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="areaDisplay" onclick="toggleDropdown('area')">
+                  <div class="dropdown-display" id="areaDisplay" data-action="toggle-dropdown" data-dropdown="area">
                     <span>Bereich wählen...</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1146,7 +1146,7 @@
               <div class="info-item">
                 <div class="info-label">Abteilung</div>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
+                  <div class="dropdown-display" id="departmentDisplay" data-action="toggle-dropdown" data-dropdown="department">
                     <span>Abteilung wählen...</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1162,7 +1162,7 @@
               <div class="info-item">
                 <div class="info-label">Maschine</div>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="machineDisplay" onclick="toggleDropdown('machine')">
+                  <div class="dropdown-display" id="machineDisplay" data-action="toggle-dropdown" data-dropdown="machine">
                     <span>Maschine wählen...</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1178,7 +1178,7 @@
               <div class="info-item">
                 <div class="info-label">Team</div>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="teamDisplay" onclick="toggleDropdown('team')">
+                  <div class="dropdown-display" id="teamDisplay" data-action="toggle-dropdown" data-dropdown="team">
                     <span>Team wählen...</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1519,6 +1519,19 @@
         if (!e.target.closest('.custom-dropdown')) {
           document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
           document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Event Delegation for dropdown actions
+      document.addEventListener('click', function (e) {
+        const target = e.target;
+
+        // Handle toggle dropdown
+        const toggleBtn = target.closest('[data-action="toggle-dropdown"]');
+        if (toggleBtn) {
+          e.stopPropagation();
+          const dropdownType = toggleBtn.dataset.dropdown;
+          toggleDropdown('#' + dropdownType);
         }
       });
 

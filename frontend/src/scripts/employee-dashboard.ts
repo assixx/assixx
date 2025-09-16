@@ -106,6 +106,19 @@ document.addEventListener('DOMContentLoaded', () => {
   void loadEmployeeInfo();
   void loadDocuments();
 
+  // Event delegation for document download buttons
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const button = target.closest('[data-action="download-document"]');
+
+    if (button instanceof HTMLButtonElement) {
+      const docId = button.dataset.docId;
+      if (docId !== undefined) {
+        downloadDocument(docId);
+      }
+    }
+  });
+
   /**
    * Search documents
    */
@@ -216,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <td>${uploadDate}</td>
             <td>${fileSize}</td>
             <td>
-              <button class="btn btn-sm btn-primary" onclick="downloadDocument('${doc.id}')">
+              <button class="btn btn-sm btn-primary" data-action="download-document" data-doc-id="${doc.id}">
                 <i class="fas fa-download"></i> Download
               </button>
             </td>

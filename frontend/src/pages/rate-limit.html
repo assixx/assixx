@@ -188,7 +188,7 @@
         <div class="retry-label">Versuchen Sie es wieder in:</div>
         <div class="retry-time countdown" id="countdown">1:00</div>
       </div>
-      <button class="btn-primary" id="retryBtn" onclick="window.location.href='/login'" disabled>Zurück zum Login</button>
+      <button class="btn-primary" id="retryBtn" data-action="redirect-login" disabled>Zurück zum Login</button>
     </div>
 
     <script>
@@ -270,11 +270,14 @@
         }, 500);
       }
 
-      // Update button click to include rate limit parameter
-      retryBtn.onclick = function () {
-        localStorage.removeItem('rateLimitTimestamp');
-        window.location.href = '/login?ratelimit=expired';
-      };
+      // Event delegation for button click
+      document.addEventListener('click', function (e) {
+        const button = e.target.closest('[data-action="redirect-login"]');
+        if (button && !button.disabled) {
+          localStorage.removeItem('rateLimitTimestamp');
+          window.location.href = '/login?ratelimit=expired';
+        }
+      });
     </script>
   </body>
 </html>

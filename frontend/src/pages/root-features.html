@@ -26,8 +26,6 @@
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <link rel="stylesheet" href="/styles/root-features.css" />
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       import { setHTML } from '/utils/dom-utils.js';
@@ -892,7 +890,7 @@
         } else if (backendType === 'storage_gb') {
           tenantAddons.storage_gb = newValue;
         }
-        document.querySelector(`addon-${type}`).textContent = type === 'storage' ? `${newValue}GB` : newValue;
+        document.querySelector(`#addon-${type}`).textContent = type === 'storage' ? `${newValue}GB` : newValue;
         updateSummary();
       }
 
@@ -971,23 +969,17 @@
             case 'toggle-feature': {
               const feature = target.dataset.feature;
               const state = target.dataset.state === 'true';
-              if (window.toggleFeature) {
-                window.toggleFeature(feature, state);
-              }
+              toggleFeature(feature, state);
               break;
             }
             case 'adjust-addon': {
               const type = target.dataset.type;
               const amount = parseInt(target.dataset.amount);
-              if (window.adjustAddon) {
-                window.adjustAddon(type, amount);
-              }
+              adjustAddon(type, amount);
               break;
             }
             case 'save-changes': {
-              if (window.saveChanges) {
-                window.saveChanges();
-              }
+              saveChanges();
               break;
             }
           }

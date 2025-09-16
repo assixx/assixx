@@ -21,7 +21,11 @@
       })();
     </script>
     <script src="/feature-flags.js"></script>
-    <script src="/js/purify.min.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      window.setHTML = setHTML; // Make available globally
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -337,7 +341,6 @@
     </div>
 
     <script type="module">
-      /* global DOMPurify */
       import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
 
       let surveyId = null;
@@ -396,8 +399,10 @@
           return;
         }
 
-        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
-        contentArea.innerHTML = DOMPurify.sanitize(`
+        // Use dom-utils setHTML for safe sanitization
+        window.setHTML(
+          contentArea,
+          `
                 <!-- Allgemeine Informationen -->
                 <div class="details-card">
                     <div class="details-header">
@@ -464,20 +469,21 @@
 
                 <!-- Aktionen -->
                 <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="editSurvey()">
+                    <button class="btn btn-primary" data-action="edit-survey">
                         <i class="fas fa-edit"></i> Bearbeiten
                     </button>
-                    <button class="btn btn-secondary" onclick="viewResults(${escapeHtml(surveyId)})">
+                    <button class="btn btn-secondary" data-action="view-results" data-survey-id="${escapeHtml(surveyId)}">
                         <i class="fas fa-chart-bar"></i> Ergebnisse anzeigen
                     </button>
-                    <button class="btn btn-secondary" onclick="duplicateSurvey()">
+                    <button class="btn btn-secondary" data-action="duplicate-survey">
                         <i class="fas fa-copy"></i> Duplizieren
                     </button>
-                    <button class="btn btn-danger" onclick="deleteSurvey()">
+                    <button class="btn btn-danger" data-action="delete-survey">
                         <i class="fas fa-trash"></i> Löschen
                     </button>
                 </div>
-            `);
+            `,
+        );
       }
 
       function renderQuestions() {
@@ -549,16 +555,19 @@
       function showError(message) {
         const contentArea = document.querySelector('#content-area');
         const safeMessage = escapeHtml(message);
-        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
-        contentArea.innerHTML = DOMPurify.sanitize(`
+        // Use dom-utils setHTML for safe sanitization
+        window.setHTML(
+          contentArea,
+          `
                 <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
                     <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">❌</div>
                     <p>${safeMessage}</p>
-                    <button class="btn btn-secondary" onclick="window.location.href='/survey-admin'">
+                    <button class="btn btn-secondary" data-action="back-to-overview">
                         Zurück zur Übersicht
                     </button>
                 </div>
-            `);
+            `,
+        );
       }
 
       function editSurvey() {
@@ -608,6 +617,34 @@
           showErrorAlert(error.message);
         }
       }
+
+      // Event Delegation for all button actions
+      document.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          case 'edit-survey':
+            editSurvey();
+            break;
+          case 'view-results': {
+            const surveyId = target.dataset.surveyId;
+            viewResults(surveyId);
+            break;
+          }
+          case 'duplicate-survey':
+            duplicateSurvey();
+            break;
+          case 'delete-survey':
+            deleteSurvey();
+            break;
+          case 'back-to-overview':
+            window.location.href = '/survey-admin';
+            break;
+        }
+      });
     </script>
 
     <!-- Unified Navigation -->

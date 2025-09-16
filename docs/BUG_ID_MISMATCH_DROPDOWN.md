@@ -45,12 +45,12 @@ Alle IDs in der HTML-Datei wurden angepasst, um mit den erwarteten IDs aus der k
 
 ```html
 <!-- Department Dropdown -->
-<div class="custom-select-display" id="employeeDepartment-display" onclick="toggleDropdown('employeeDepartment')">
+<div class="custom-select-display" id="employeeDepartment-display" on click="toggleDropdown('employeeDepartment')">
   <div class="dropdown-options" id="employeeDepartment-dropdown">
     <input type="hidden" name="departmentId" id="employeeDepartmentSelect" />
 
     <!-- Team Dropdown -->
-    <div class="custom-select-display" id="employeeTeam-display" onclick="toggleDropdown('employeeTeam')">
+    <div class="custom-select-display" id="employeeTeam-display" on click="toggleDropdown('employeeTeam')">
       <div class="dropdown-options" id="employeeTeam-dropdown">
         <input type="hidden" name="teamId" id="employeeTeamSelect" />
       </div>
@@ -63,12 +63,12 @@ Alle IDs in der HTML-Datei wurden angepasst, um mit den erwarteten IDs aus der k
 
 ```html
 <!-- Department Dropdown -->
-<div class="custom-select-display" id="employee-department-display" onclick="toggleDropdown('employee-department')">
+<div class="custom-select-display" id="employee-department-display" on click="toggleDropdown('employee-department')">
   <div class="dropdown-options" id="employee-department-dropdown">
     <input type="hidden" name="departmentId" id="employee-department-select" />
 
     <!-- Team Dropdown -->
-    <div class="custom-select-display" id="employee-team-display" onclick="toggleDropdown('employee-team')">
+    <div class="custom-select-display" id="employee-team-display" on click="toggleDropdown('employee-team')">
       <div class="dropdown-options" id="employee-team-dropdown">
         <input type="hidden" name="teamId" id="employee-team-select" />
       </div>

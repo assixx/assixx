@@ -97,6 +97,29 @@ function attachEventListeners(): void {
     }
   });
 
+  // Event delegation for area action buttons
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle edit area
+    const editBtn = target.closest<HTMLElement>('[data-action="edit-area"]');
+    if (editBtn) {
+      const areaId = editBtn.dataset.areaId;
+      if (areaId !== undefined) {
+        openAreaModal(Number.parseInt(areaId, 10));
+      }
+    }
+
+    // Handle delete area
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-area"]');
+    if (deleteBtn) {
+      const areaId = deleteBtn.dataset.areaId;
+      if (areaId !== undefined) {
+        confirmDelete(Number.parseInt(areaId, 10));
+      }
+    }
+  });
+
   // Note: Filter and search functionality removed to match departments.html structure
   // If needed, can be re-added as a separate control panel
 
@@ -215,8 +238,8 @@ function renderAreas(): void {
                   <span class="badge ${getStatusBadgeClass(area.is_active === 1 ? 'active' : 'inactive')}">${getStatusLabel(area.is_active === 1 ? 'active' : 'inactive')}</span>
                 </td>
                 <td>
-                  <button class="action-btn edit" onclick="window.manageAreas.editArea(${area.id})">Bearbeiten</button>
-                  <button class="action-btn delete" onclick="window.manageAreas.confirmDelete(${area.id})">Löschen</button>
+                  <button class="action-btn edit" data-action="edit-area" data-area-id="${area.id}">Bearbeiten</button>
+                  <button class="action-btn delete" data-action="delete-area" data-area-id="${area.id}">Löschen</button>
                 </td>
               </tr>
             `,
@@ -433,23 +456,6 @@ function showLoading(show: boolean): void {
     loadingDiv?.classList.add('u-hidden');
   }
 }
-
-// Export functions for global access (for onclick handlers)
-declare global {
-  interface Window {
-    manageAreas: {
-      editArea: (id: number) => void;
-      confirmDelete: (id: number) => void;
-    };
-  }
-}
-
-window.manageAreas = {
-  editArea: (id: number) => {
-    openAreaModal(id);
-  },
-  confirmDelete,
-};
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {

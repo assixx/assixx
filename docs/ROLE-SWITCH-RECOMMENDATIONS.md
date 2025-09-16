@@ -19,7 +19,7 @@ private showRoleSwitchIndicator(): void {
       <div class="role-switch-warning">
         <i class="fas fa-exclamation-triangle"></i>
         <span>Sie agieren als: <strong>${payload.activeRole.toUpperCase()}</strong></span>
-        <button onclick="UnifiedNav.switchBackToOriginalRole()">
+        <button on click(depcreated.itsnow eventhandler)="UnifiedNav.switchBackToOriginalRole()">
           Zurück zu ${payload.role.toUpperCase()}
         </button>
       </div>

@@ -672,6 +672,11 @@
     </style>
     <!-- Feature Flags for API v2 Migration -->
     <script src="/feature-flags.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      window.setHTML = setHTML; // Make available globally
+    </script>
   </head>
   <body>
     <!-- Back to Homepage Button -->
@@ -681,19 +686,13 @@
     </a>
 
     <!-- Help Button -->
-    <div class="help-button" onclick="showHelp()">?</div>
+    <div class="help-button" data-action="show-help">?</div>
 
     <div class="signup-container">
       <!-- Header -->
       <div class="signup-header">
         <div class="header-left">
-          <img
-            src="/assets/images/logo.png"
-            alt="Assixx Logo"
-            class="signup-logo"
-            onclick="window.location.reload()"
-            class="u-cursor-pointer"
-          />
+          <img src="/assets/images/logo.png" alt="Assixx Logo" class="signup-logo" data-action="reload-page" class="u-cursor-pointer" />
           <div class="header-text">
             <h1></h1>
             <!-- machen wir anders spöter -->
@@ -752,7 +751,7 @@
             <label class="form-label">Telefon *</label>
             <div class="phone-input-group">
               <div class="custom-country-select">
-                <div class="country-display" onclick="toggleCountryDropdown()">
+                <div class="country-display" data-action="toggle-country">
                   <span id="selectedFlag">🇩🇪</span>
                   <span id="selectedCode">+49</span>
                   <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -760,19 +759,19 @@
                   </svg>
                 </div>
                 <div class="country-dropdown" id="countryDropdown">
-                  <div class="country-option" onclick="selectCountry('🇩🇪', '+49')">🇩🇪 +49</div>
-                  <div class="country-option" onclick="selectCountry('🇦🇹', '+43')">🇦🇹 +43</div>
-                  <div class="country-option" onclick="selectCountry('🇨🇭', '+41')">🇨🇭 +41</div>
-                  <div class="country-option" onclick="selectCountry('🇫🇷', '+33')">🇫🇷 +33</div>
-                  <div class="country-option" onclick="selectCountry('🇮🇹', '+39')">🇮🇹 +39</div>
-                  <div class="country-option" onclick="selectCountry('🇪🇸', '+34')">🇪🇸 +34</div>
-                  <div class="country-option" onclick="selectCountry('🇳🇱', '+31')">🇳🇱 +31</div>
-                  <div class="country-option" onclick="selectCountry('🇧🇪', '+32')">🇧🇪 +32</div>
-                  <div class="country-option" onclick="selectCountry('🇱🇺', '+352')">🇱🇺 +352</div>
-                  <div class="country-option" onclick="selectCountry('🇵🇱', '+48')">🇵🇱 +48</div>
-                  <div class="country-option" onclick="selectCountry('🇨🇿', '+420')">🇨🇿 +420</div>
-                  <div class="country-option" onclick="selectCountry('🇺🇸', '+1')">🇺🇸 +1</div>
-                  <div class="country-option" onclick="selectCountry('🇬🇧', '+44')">🇬🇧 +44</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇩🇪" data-code="+49">🇩🇪 +49</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇦🇹" data-code="+43">🇦🇹 +43</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇨🇭" data-code="+41">🇨🇭 +41</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇫🇷" data-code="+33">🇫🇷 +33</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇮🇹" data-code="+39">🇮🇹 +39</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇪🇸" data-code="+34">🇪🇸 +34</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇳🇱" data-code="+31">🇳🇱 +31</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇧🇪" data-code="+32">🇧🇪 +32</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇱🇺" data-code="+352">🇱🇺 +352</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇵🇱" data-code="+48">🇵🇱 +48</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇨🇿" data-code="+420">🇨🇿 +420</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇺🇸" data-code="+1">🇺🇸 +1</div>
+                  <div class="country-option" data-action="select-country" data-flag="🇬🇧" data-code="+44">🇬🇧 +44</div>
                 </div>
               </div>
               <input type="hidden" id="countryCode" value="+49" />
@@ -809,22 +808,22 @@
           <div class="form-group">
             <label class="form-label">Plan</label>
             <div class="custom-plan-select">
-              <div class="plan-display" onclick="togglePlanDropdown()">
+              <div class="plan-display" data-action="toggle-plan">
                 <span id="selectedPlan">Enterprise</span>
                 <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                 </svg>
               </div>
               <div class="plan-dropdown" id="planDropdown">
-                <div class="plan-option" onclick="selectPlan('enterprise', 'Enterprise')">
+                <div class="plan-option" data-action="select-plan" data-value="enterprise" data-name="Enterprise">
                   <span>Enterprise</span>
                   <span class="plan-price">€149/M</span>
                 </div>
-                <div class="plan-option" onclick="selectPlan('professional', 'Professional')">
+                <div class="plan-option" data-action="select-plan" data-value="professional" data-name="Professional">
                   <span>Professional</span>
                   <span class="plan-price">€99/M</span>
                 </div>
-                <div class="plan-option" onclick="selectPlan('basic', 'Basic')">
+                <div class="plan-option" data-action="select-plan" data-value="basic" data-name="Basic">
                   <span>Basic</span>
                   <span class="plan-price">€49/M</span>
                 </div>
@@ -983,9 +982,8 @@
       // currentCountryFlag is updated when country is selected
       let currentPlan = 'enterprise';
 
-      // Make functions global for onclick handlers
       // Country Dropdown
-      window.toggleCountryDropdown = function () {
+      function toggleCountryDropdown() {
         const dropdown = document.querySelector('#countryDropdown');
         const display = document.querySelector('.country-display');
 
@@ -999,7 +997,7 @@
         if (dropdown.classList.contains('active')) {
           document.addEventListener('click', closeDropdownOutside);
         }
-      };
+      }
 
       function closeDropdownOutside(e) {
         const countrySelect = document.querySelector('.custom-country-select');
@@ -1020,7 +1018,7 @@
         }
       }
 
-      window.selectCountry = function (flag, code) {
+      function selectCountry(flag, code) {
         document.querySelector('#selectedFlag').textContent = flag;
         document.querySelector('#selectedCode').textContent = code;
         document.querySelector('#countryCode').value = code;
@@ -1029,10 +1027,10 @@
 
         document.querySelector('#countryDropdown').classList.remove('active');
         document.querySelector('.country-display').classList.remove('active');
-      };
+      }
 
       // Plan Dropdown
-      window.togglePlanDropdown = function () {
+      function togglePlanDropdown() {
         const dropdown = document.querySelector('#planDropdown');
         const display = document.querySelector('.plan-display');
 
@@ -1046,19 +1044,19 @@
         if (dropdown.classList.contains('active')) {
           document.addEventListener('click', closeDropdownOutside);
         }
-      };
+      }
 
-      window.selectPlan = function (value, name) {
+      function selectPlan(value, name) {
         document.querySelector('#selectedPlan').textContent = name;
         document.querySelector('#planValue').value = value;
         currentPlan = value;
 
         document.querySelector('#planDropdown').classList.remove('active');
         document.querySelector('.plan-display').classList.remove('active');
-      };
+      }
 
       // Help function
-      window.showHelp = function () {
+      function showHelp() {
         alert(
           'Hilfe zur Registrierung:\n\n' +
             '1. Geben Sie Ihre Firmendaten ein\n' +
@@ -1067,7 +1065,7 @@
             '4. 14 Tage kostenlos testen!\n\n' +
             'Bei Fragen: support@assixx.com',
         );
-      };
+      }
 
       // Get plan from URL parameter
       const urlParams = new URLSearchParams(window.location.search);
@@ -1156,6 +1154,41 @@
         } else {
           emailMatchError.style.display = 'none';
           emailConfirmInput.style.borderColor = '';
+        }
+      });
+
+      // Event Delegation for all button actions
+      document.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          case 'show-help':
+            showHelp();
+            break;
+          case 'reload-page':
+            window.location.reload();
+            break;
+          case 'toggle-country':
+            toggleCountryDropdown();
+            break;
+          case 'select-country': {
+            const flag = target.dataset.flag;
+            const code = target.dataset.code;
+            selectCountry(flag, code);
+            break;
+          }
+          case 'toggle-plan':
+            togglePlanDropdown();
+            break;
+          case 'select-plan': {
+            const value = target.dataset.value;
+            const name = target.dataset.name;
+            selectPlan(value, name);
+            break;
+          }
         }
       });
 
@@ -1283,8 +1316,10 @@
             // v2 response handled, data extraction not needed here
 
             document.querySelector('#successMessage').style.display = 'block';
-            document.querySelector('#successMessage').innerHTML =
-              `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
+            window.setHTML(
+              document.querySelector('#successMessage'),
+              `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`,
+            );
 
             // Clear form
             e.target.reset();

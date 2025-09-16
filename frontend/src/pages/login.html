@@ -9,8 +9,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <!-- Feature Flags for API v2 Migration -->
     <script src="/feature-flags.js"></script>
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      // Make setHTML globally available for inline scripts
+      window.setHTML = setHTML;
+    </script>
   </head>
   <body>
     <!-- Quick redirect check before page renders -->
@@ -66,17 +70,11 @@
     </a>
 
     <!-- Fragezeichen oben rechts - Glassmorphismus -->
-    <div class="help-button" onclick="showHelp()">?</div>
+    <div class="help-button" data-action="show-help">?</div>
     <div class="login-container">
       <!-- Logo Section -->
       <div class="login-header">
-        <img
-          src="../assets/images/logo.png"
-          alt="Assixx Logo"
-          class="login-logo"
-          onclick="window.location.reload()"
-          class="u-cursor-pointer"
-        />
+        <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo u-cursor-pointer" data-action="reload-page" />
       </div>
 
       <!-- Login Form -->
@@ -138,8 +136,8 @@
         </form>
 
         <div class="login-footer">
-          <a href="#" onclick="showPasswordReset()" class="text-secondary">Passwort vergessen?</a>
-          <a href="#" onclick="requestAccess()" class="text-secondary" style="margin-left: 20px">Zugangsdaten beantragen</a>
+          <a href="#" data-action="show-password-reset" class="text-secondary">Passwort vergessen?</a>
+          <a href="#" data-action="request-access" class="text-secondary" style="margin-left: 20px">Zugangsdaten beantragen</a>
         </div>
       </div>
 
@@ -150,7 +148,6 @@
     </div>
 
     <script type="module">
-      /* global DOMPurify */
       import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
 
       // Fallback validation in case redirect failed
@@ -210,14 +207,16 @@
         const errorDiv = document.createElement('div');
         const isTimeout = message.includes('Sitzung');
         errorDiv.className = `alert ${isTimeout ? 'alert-timeout' : 'alert-error'}`;
-        // Safe: HTML is generated from error message and sanitized with DOMPurify
-        // eslint-disable-next-line no-unsanitized/property
-        errorDiv.innerHTML = DOMPurify.sanitize(`
+        // Safe: HTML is generated from error message and sanitized with dom-utils
+        window.setHTML(
+          errorDiv,
+          `
           <div class="alert-content">
             ${isTimeout ? '<strong>⏱️ Sitzung abgelaufen</strong><br>' : '<strong>Fehler!</strong><br>'}
             ${message.replace(/\n/g, '<br>')}
           </div>
-        `);
+        `,
+        );
         document.querySelector('.login-card').insertBefore(errorDiv, document.querySelector('#loginForm'));
 
         // Remove after 10 seconds
@@ -373,6 +372,34 @@
         } catch (error) {
           console.error('Login error:', error);
           showError('An error occurred during login');
+        }
+      });
+
+      // Event delegation for all click actions
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+        e.preventDefault();
+
+        switch (action) {
+          case 'show-help':
+            alert(
+              'Hilfe:\n\nBitte kontaktieren Sie Ihren Administrator für Unterstützung.\n\nE-Mail: admin@assixx.de\nTelefon: +49 123 456789',
+            );
+            break;
+          case 'reload-page':
+            window.location.reload();
+            break;
+          case 'show-password-reset':
+            alert('Passwort zurücksetzen:\n\nBitte wenden Sie sich an Ihren Administrator um Ihr Passwort zurückzusetzen.');
+            break;
+          case 'request-access':
+            alert(
+              'Zugangsdaten beantragen:\n\nBitte kontaktieren Sie Ihren Administrator um Zugangsdaten zu erhalten.\n\nE-Mail: admin@assixx.de',
+            );
+            break;
         }
       });
     </script>

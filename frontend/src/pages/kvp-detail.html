@@ -641,18 +641,26 @@
                     <span class="info-value" id="status"></span>
                     <!-- Status Dropdown for Admins -->
                     <div class="custom-dropdown admin-only" id="statusDropdownContainer" class="u-hidden">
-                      <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
+                      <div class="dropdown-display" id="statusDisplay" data-action="toggle-dropdown" data-dropdown="status">
                         <span>Neu</span>
                         <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                           <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                         </svg>
                       </div>
                       <div class="dropdown-options" id="statusDropdown">
-                        <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
-                        <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
-                        <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
-                        <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
-                        <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
+                        <div class="dropdown-option" data-action="select-status" data-value="new" data-label="Neu">Neu</div>
+                        <div class="dropdown-option" data-action="select-status" data-value="in_review" data-label="In Prüfung">
+                          In Prüfung
+                        </div>
+                        <div class="dropdown-option" data-action="select-status" data-value="approved" data-label="Genehmigt">
+                          Genehmigt
+                        </div>
+                        <div class="dropdown-option" data-action="select-status" data-value="implemented" data-label="Umgesetzt">
+                          Umgesetzt
+                        </div>
+                        <div class="dropdown-option" data-action="select-status" data-value="rejected" data-label="Abgelehnt">
+                          Abgelehnt
+                        </div>
                       </div>
                       <input type="hidden" name="statusValue" id="statusValue" />
                     </div>
@@ -795,7 +803,7 @@
 
     <!-- Lightbox -->
     <div class="lightbox" id="photoLightbox">
-      <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+      <span class="lightbox-close" data-action="close-lightbox">&times;</span>
       <img id="lightboxImage" src="" alt="Vollbild" />
     </div>
 
@@ -863,6 +871,49 @@
           document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
         }
       });
+
+      // Event Delegation for all actions
+      document.addEventListener('click', function (e) {
+        const target = e.target;
+
+        // Handle toggle dropdown
+        const toggleBtn = target.closest('[data-action="toggle-dropdown"]');
+        if (toggleBtn) {
+          const dropdownType = toggleBtn.dataset.dropdown;
+          toggleDropdown('#' + dropdownType);
+          return;
+        }
+
+        // Handle select status
+        const statusOption = target.closest('[data-action="select-status"]');
+        if (statusOption) {
+          const value = statusOption.dataset.value;
+          const label = statusOption.dataset.label;
+          selectStatus(value, label);
+          return;
+        }
+
+        // Handle close lightbox
+        const closeLightboxBtn = target.closest('[data-action="close-lightbox"]');
+        if (closeLightboxBtn) {
+          closeLightbox();
+          return;
+        }
+
+        // Handle close share modal
+        const closeShareBtn = target.closest('[data-action="close-share-modal"]');
+        if (closeShareBtn) {
+          closeShareModal();
+          return;
+        }
+
+        // Handle confirm share
+        const confirmShareBtn = target.closest('[data-action="confirm-share"]');
+        if (confirmShareBtn) {
+          confirmShare();
+          return;
+        }
+      });
     </script>
 
     <!-- Share Modal -->
@@ -870,7 +921,7 @@
       <div class="modal-content" style="max-width: 500px">
         <div class="modal-header">
           <h2>Vorschlag teilen</h2>
-          <button type="button" class="close-btn" onclick="closeShareModal()">&times;</button>
+          <button type="button" class="close-btn" data-action="close-share-modal">&times;</button>
         </div>
         <div class="modal-body">
           <p>Wählen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag teilen möchten:</p>
@@ -908,8 +959,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeShareModal()">Abbrechen</button>
-          <button type="button" class="btn btn-primary" onclick="confirmShare()">Teilen</button>
+          <button type="button" class="btn btn-secondary" data-action="close-share-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" data-action="confirm-share">Teilen</button>
         </div>
       </div>
     </div>

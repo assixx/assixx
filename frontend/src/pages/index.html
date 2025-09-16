@@ -810,7 +810,7 @@
   <body>
     <header class="header">
       <nav class="nav">
-        <div class="logo-container" class="u-cursor-pointer" onclick="window.location.reload()">
+        <div class="logo-container" class="u-cursor-pointer" data-action="reload-page">
           <img src="/assets/images/logo.png" alt="Assixx Logo" class="logo" />
         </div>
         <div class="nav-links">
@@ -1367,7 +1367,7 @@
           </div>
 
           <button type="submit" class="btn btn-primary" class="u-w-full">Kostenlos registrieren</button>
-          <button type="button" class="btn btn-secondary" style="width: 100%; margin-top: 1rem" onclick="hideSignup()">Abbrechen</button>
+          <button type="button" class="btn btn-secondary" style="width: 100%; margin-top: 1rem" data-action="hide-signup">Abbrechen</button>
         </form>
       </div>
     </div>
@@ -1420,6 +1420,22 @@
 
       // Initial call
       handleBadgeScroll();
+
+      // Event delegation for action buttons
+      document.addEventListener('click', (e) => {
+        const target = e.target;
+        const button = target.closest('[data-action]');
+
+        if (!button) return;
+
+        const action = button.dataset.action;
+
+        if (action === 'reload-page') {
+          window.location.reload();
+        } else if (action === 'hide-signup') {
+          hideSignup();
+        }
+      });
 
       function showSignup(plan = null) {
         document.querySelector('#signupModal').style.display = 'flex';

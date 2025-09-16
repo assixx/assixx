@@ -689,11 +689,11 @@
   <body>
     <!-- Document Preview Modal -->
     <div class="modal" id="documentPreviewModal" class="u-hidden">
-      <div class="modal-backdrop" onclick="closeDocumentModal()"></div>
+      <div class="modal-backdrop" data-action="close-document-modal"></div>
       <div class="modal-content modal-lg">
         <div class="modal-header">
           <h2 class="modal-title" id="modalDocumentTitle">Dokument Vorschau</h2>
-          <button class="modal-close" onclick="closeDocumentModal()">&times;</button>
+          <button class="modal-close" data-action="close-document-modal">&times;</button>
         </div>
         <div class="modal-body">
           <!-- Document Info -->
@@ -731,11 +731,11 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeDocumentModal()">
+          <button class="btn btn-secondary" data-action="close-document-modal">
             <i class="fas fa-times me-2"></i>
             Schließen
           </button>
-          <button class="btn btn-primary" id="downloadButton" onclick="downloadDocument()">
+          <button class="btn btn-primary" id="downloadButton" data-action="download-document">
             <i class="fas fa-download me-2"></i>
             Herunterladen
           </button>
@@ -843,26 +843,26 @@
                 </div>
 
                 <div class="custom-dropdown sort-dropdown" style="min-width: 200px">
-                  <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
+                  <div class="dropdown-display" id="sortDisplay" data-action="toggle-dropdown" data-dropdown="sort">
                     <span>Neueste zuerst</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="sortDropdown">
-                    <div class="dropdown-option" onclick="selectSort('newest', 'Neueste zuerst')">
+                    <div class="dropdown-option" data-action="select-sort" data-value="newest" data-text="Neueste zuerst">
                       <i class="fas fa-sort-amount-down me-2"></i>
                       Neueste zuerst
                     </div>
-                    <div class="dropdown-option" onclick="selectSort('oldest', 'Älteste zuerst')">
+                    <div class="dropdown-option" data-action="select-sort" data-value="oldest" data-text="Älteste zuerst">
                       <i class="fas fa-sort-amount-up me-2"></i>
                       Älteste zuerst
                     </div>
-                    <div class="dropdown-option" onclick="selectSort('name', 'Nach Name')">
+                    <div class="dropdown-option" data-action="select-sort" data-value="name" data-text="Nach Name">
                       <i class="fas fa-sort-alpha-down me-2"></i>
                       Nach Name
                     </div>
-                    <div class="dropdown-option" onclick="selectSort('size', 'Nach Größe')">
+                    <div class="dropdown-option" data-action="select-sort" data-value="size" data-text="Nach Größe">
                       <i class="fas fa-weight me-2"></i>
                       Nach Größe
                     </div>
@@ -904,6 +904,34 @@
             }
           } catch (e) {
             console.error('Error parsing token:', e);
+          }
+        }
+      });
+
+      // Event Delegation for all document actions
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          case 'close-document-modal':
+            if (window.closeDocumentModal) window.closeDocumentModal();
+            break;
+          case 'download-document':
+            if (window.downloadDocument) window.downloadDocument();
+            break;
+          case 'toggle-dropdown': {
+            const dropdown = target.dataset.dropdown;
+            if (window.toggleDropdown) window.toggleDropdown(dropdown);
+            break;
+          }
+          case 'select-sort': {
+            const value = target.dataset.value;
+            const text = target.dataset.text;
+            if (window.selectSort) window.selectSort(value, text);
+            break;
           }
         }
       });

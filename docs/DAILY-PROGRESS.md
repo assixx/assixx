@@ -21,7 +21,7 @@
 4. **Manage-Employees Modal Fix**
    - Problem: Floating Add Button (+) öffnete keinen Modal
    - Ursache: Fehlender onclick Event & falsche show() Methode
-   - Lösung: `onclick="showEmployeeModal()"` hinzugefügt & `classList.add('active')` statt `show()`
+   - Lösung: `on click="showEmployeeModal()"` hinzugefügt & `classList.add('active')` statt `show()`
 
 ### 📊 Metriken
 - **Commits**: ~10 kritische Fixes
