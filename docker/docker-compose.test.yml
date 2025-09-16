@@ -20,10 +20,10 @@ services:
     healthcheck:
       test:
         ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
-      interval: 5s      # Schneller checken (alle 5 statt 10 Sekunden)
-      timeout: 10s      # Kürzerer Timeout (10 statt 30 Sekunden pro Check)
-      retries: 40       # Mehr Versuche (40 statt 30)
-      start_period: 90s # Längere Startperiode (90 statt 60 Sekunden)
+      interval: 3s      # Alle 3 Sekunden checken
+      timeout: 20s      # Großzügiger Timeout pro Check
+      retries: 60       # 60 Versuche = max 3 Minuten
+      start_period: 120s # 2 Minuten Startzeit für MySQL Init
 
   # Assixx Backend (Development Mode with Live Reload)
   backend:
