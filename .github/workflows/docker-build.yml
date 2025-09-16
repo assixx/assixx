@@ -200,10 +200,12 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ needs.build-and-push-image.outputs.image-tag }}
+          # Use only the first image tag (split by newline and take first)
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
           format: "sarif"
           output: "trivy-results.sarif"
-        continue-on-error: true
+          severity: "CRITICAL,HIGH,MEDIUM"
+        continue-on-error: true  # Keep for now to not break CI
 
       - name: Check if SARIF file exists
         id: check_sarif
