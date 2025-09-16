@@ -77,9 +77,9 @@ jobs:
     # - Pull requests (for review)
     # - Direct pushes to master/develop (for hotfixes/releases)
     # - Skip push events on feature branches (PR already tests them)
-    if: |
-      github.event_name == 'pull_request' || 
-      (github.event_name == 'push' && contains('refs/heads/master refs/heads/develop', github.ref))
+    # Only run integration test on PRs to avoid duplicate tests after merge
+    # This also reduces flakiness since test only runs once per change
+    if: github.event_name == 'pull_request'
     # Prevent multiple integration tests from running simultaneously
     concurrency:
       group: docker-integration-test
