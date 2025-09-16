@@ -733,8 +733,6 @@
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       import { setHTML } from '/utils/dom-utils.js';
@@ -927,7 +925,6 @@
     </div>
 
     <script>
-      /* global DOMPurify */
       let currentUser = null;
 
       // Initialize on page load
@@ -1116,7 +1113,10 @@
           }
         } catch (error) {
           console.error('Error loading activity:', error);
-          document.querySelector('#activity-list').innerHTML = '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
+          const activityList = document.querySelector('#activity-list');
+          if (activityList) {
+            window.setHTML(activityList, '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>');
+          }
         }
       }
 
