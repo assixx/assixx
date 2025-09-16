@@ -3,6 +3,13 @@
   "version": "1.0.0",
   "type": "module",
   "main": "backend/src/server.ts",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=10.0.0",
+    "npm": "please-use-pnpm",
+    "yarn": "please-use-pnpm"
+  },
+  "packageManager": "pnpm@10.16.1",
   "pnpm": {
     "overrides": {
       "tmp": "^0.2.4",
@@ -11,6 +18,7 @@
     }
   },
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "start": "node dist/backend/src/server.js",
     "start:prod": "node dist/backend/src/server.js",
     "dev": "concurrently \"pnpm run dev:backend:ts\" \"pnpm run dev:frontend\"",
@@ -117,7 +125,7 @@
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-html": "^8.1.3",
     "eslint-plugin-import-x": "^4.16.1",
-    "eslint-plugin-jsdoc": "^58.0.0",
+    "eslint-plugin-jsdoc": "^58.1.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-no-secrets": "^2.2.1",
     "eslint-plugin-no-unsanitized": "^4.1.4",

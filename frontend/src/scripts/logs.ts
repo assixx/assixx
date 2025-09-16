@@ -310,7 +310,7 @@ import { $$, setHTML } from '../utils/dom-utils';
 
                           // For other JSON details, show with click handler
                           const detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
-                          return `<span class="details-preview" onclick="showFullDetails('${btoa(detailsStr)}')" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
+                          return `<span class="details-preview" data-action="show-details" data-details="${btoa(detailsStr)}" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
                         ${detailsStr.length > 50 ? `${detailsStr.substring(0, 50)}...` : detailsStr}
                       </span>`;
                         } catch {
@@ -753,7 +753,7 @@ import { $$, setHTML } from '../utils/dom-utils';
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Log Details</h3>
-          <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+          <button class="modal-close" data-action="close-modal">&times;</button>
         </div>
         <div class="modal-body" style="padding: 24px;">
           <pre style="color: var(--text-primary); background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; max-height: 400px;">${formatted}</pre>
@@ -780,7 +780,7 @@ import { $$, setHTML } from '../utils/dom-utils';
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Log Details</h3>
-          <button class="modal-close" onclick="this.closest('.modal').remove()">&times;</button>
+          <button class="modal-close" data-action="close-modal">&times;</button>
         </div>
         <div class="modal-body" style="padding: 24px;">
           <pre style="color: var(--text-primary); background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; max-height: 400px;">${decodedText}</pre>
@@ -794,7 +794,7 @@ import { $$, setHTML } from '../utils/dom-utils';
 
   // Update delete button state based on active filters
   function updateDeleteButtonState() {
-    const deleteBtn = document.querySelector('.btn-danger[onclick="deleteFilteredLogs()"]');
+    const deleteBtn = document.querySelector('.btn-danger[data-action="delete-filtered-logs"]');
     if (deleteBtn) {
       const hasActiveFilters = Object.keys(currentFilters).length > 0;
       (deleteBtn as HTMLButtonElement).disabled = !hasActiveFilters;
@@ -810,4 +810,63 @@ import { $$, setHTML } from '../utils/dom-utils';
       }
     }
   }
+
+  // Event delegation for dynamic content
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle show details
+    const detailsBtn = target.closest<HTMLElement>('[data-action="show-details"]');
+    if (detailsBtn) {
+      const encodedDetails = detailsBtn.dataset.details;
+      if (encodedDetails !== undefined) {
+        (window as unknown as LogsWindow).showFullDetails(encodedDetails);
+      }
+    }
+
+    // Handle close modal
+    const closeBtn = target.closest<HTMLElement>('[data-action="close-modal"]');
+    if (closeBtn) {
+      const modal = closeBtn.closest('.modal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+
+    // Handle delete filtered logs
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-filtered-logs"]');
+    if (deleteBtn) {
+      (window as unknown as LogsWindow).deleteFilteredLogs();
+    }
+
+    // Handle reset filters
+    const resetBtn = target.closest<HTMLElement>('[data-action="reset-filters"]');
+    if (resetBtn) {
+      (window as unknown as LogsWindow).resetFilters();
+    }
+
+    // Handle apply filters
+    const applyBtn = target.closest<HTMLElement>('[data-action="apply-filters"]');
+    if (applyBtn) {
+      (window as unknown as LogsWindow).applyFilters();
+    }
+
+    // Handle load previous page
+    const prevBtn = target.closest<HTMLElement>('[data-action="load-previous-page"]');
+    if (prevBtn) {
+      (window as unknown as LogsWindow).loadPreviousPage();
+    }
+
+    // Handle load next page
+    const nextBtn = target.closest<HTMLElement>('[data-action="load-next-page"]');
+    if (nextBtn) {
+      (window as unknown as LogsWindow).loadNextPage();
+    }
+
+    // Handle confirm delete
+    const confirmBtn = target.closest<HTMLElement>('[data-action="confirm-delete"]');
+    if (confirmBtn) {
+      void (window as unknown as LogsWindow).confirmDeleteLogs();
+    }
+  });
 })();

@@ -119,6 +119,39 @@ function attachEventListeners(): void {
       closeDeleteModal();
     }
   });
+
+  // Event delegation for department actions
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle toggle status
+    const toggleBtn = target.closest<HTMLElement>('[data-action="toggle-status"]');
+    if (toggleBtn) {
+      const deptId = toggleBtn.dataset.deptId;
+      const status = toggleBtn.dataset.status;
+      if (deptId !== undefined && status !== undefined) {
+        void toggleDepartmentStatus(Number.parseInt(deptId, 10), status);
+      }
+    }
+
+    // Handle edit department
+    const editBtn = target.closest<HTMLElement>('[data-action="edit-department"]');
+    if (editBtn) {
+      const deptId = editBtn.dataset.deptId;
+      if (deptId !== undefined) {
+        openDepartmentModal(Number.parseInt(deptId, 10));
+      }
+    }
+
+    // Handle delete department
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-department"]');
+    if (deleteBtn) {
+      const deptId = deleteBtn.dataset.deptId;
+      if (deptId !== undefined) {
+        confirmDelete(Number.parseInt(deptId, 10));
+      }
+    }
+  });
 }
 
 // Load departments from API
@@ -222,11 +255,11 @@ function renderDepartments(): void {
                 <td>${dept.employee_count ?? 0}</td>
                 <td>${dept.team_count ?? 0}</td>
                 <td>
-                  <button class="action-btn ${dept.status === 'active' ? 'deactivate' : 'activate'}" onclick="window.manageDepartments.toggleStatus(${dept.id}, '${dept.status}')">
+                  <button class="action-btn ${dept.status === 'active' ? 'deactivate' : 'activate'}" data-action="toggle-status" data-dept-id="${dept.id}" data-status="${dept.status}">
                     ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
                   </button>
-                  <button class="action-btn edit" onclick="window.manageDepartments.editDepartment(${dept.id})">Bearbeiten</button>
-                  <button class="action-btn delete" onclick="window.manageDepartments.confirmDelete(${dept.id})">Löschen</button>
+                  <button class="action-btn edit" data-action="edit-department" data-dept-id="${dept.id}">Bearbeiten</button>
+                  <button class="action-btn delete" data-action="delete-department" data-dept-id="${dept.id}">Löschen</button>
                 </td>
               </tr>
             `;
@@ -418,7 +451,7 @@ async function deleteDepartment(departmentId: number): Promise<void> {
   }
 }
 
-// Export functions for global access (for onclick handlers)
+// Export functions for global access (for event delegation)
 declare global {
   interface Window {
     manageDepartments: {

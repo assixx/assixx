@@ -897,16 +897,18 @@
           <div class="form-group">
             <label class="form-label">Zielgruppe</label>
             <div class="custom-dropdown">
-              <div class="dropdown-display" id="assignmentDropdownDisplay" onclick="surveyAdmin.toggleDropdown('assignmentDropdown')">
+              <div class="dropdown-display" id="assignmentDropdownDisplay" data-action="toggle-dropdown" data-dropdown="assignmentDropdown">
                 <span>Ganze Firma</span>
                 <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
               <div class="dropdown-options" id="assignmentDropdownDropdown">
-                <div class="dropdown-option" onclick="surveyAdmin.selectAssignmentOption('all_users', 'Ganze Firma')">Ganze Firma</div>
-                <div class="dropdown-option" onclick="surveyAdmin.selectAssignmentOption('department', 'Abteilung')">Abteilung</div>
-                <div class="dropdown-option" onclick="surveyAdmin.selectAssignmentOption('team', 'Team')">Team</div>
+                <div class="dropdown-option" data-action="select-assignment" data-value="all_users" data-text="Ganze Firma">
+                  Ganze Firma
+                </div>
+                <div class="dropdown-option" data-action="select-assignment" data-value="department" data-text="Abteilung">Abteilung</div>
+                <div class="dropdown-option" data-action="select-assignment" data-value="team" data-text="Team">Team</div>
               </div>
               <input type="hidden" id="assignmentType" value="all_users" />
             </div>
@@ -949,7 +951,7 @@
             <div id="questionsList">
               <!-- Questions will be added here -->
             </div>
-            <button type="button" class="btn btn-secondary" onclick="surveyAdmin.addQuestion()">
+            <button type="button" class="btn btn-secondary" data-action="add-question">
               <i class="fas fa-plus"></i>
               Frage hinzufügen
             </button>
@@ -957,11 +959,11 @@
 
           <div class="action-buttons">
             <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
-            <button type="button" class="btn btn-primary" onclick="surveyAdmin.saveSurvey('draft')">
+            <button type="button" class="btn btn-primary" data-action="save-survey" data-status="draft">
               <i class="fas fa-save"></i>
               Als Entwurf speichern
             </button>
-            <button type="button" class="btn btn-success" onclick="surveyAdmin.saveSurvey('active')">
+            <button type="button" class="btn btn-success" data-action="save-survey" data-status="active">
               <i class="fas fa-paper-plane"></i>
               Umfrage starten
             </button>
@@ -971,7 +973,7 @@
     </div>
 
     <!-- Floating Add Button -->
-    <button class="add-survey-btn" onclick="surveyAdmin.showCreateModal()">+</button>
+    <button class="add-survey-btn" data-action="show-create-modal">+</button>
 
     <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
@@ -987,6 +989,49 @@
 
       // Make modalManager available globally
       window.modalManager = modalManager;
+
+      // Event Delegation for HTML-specific actions
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          case 'toggle-dropdown': {
+            const dropdown = target.dataset.dropdown;
+            if (window.surveyAdmin && window.surveyAdmin.toggleDropdown) {
+              window.surveyAdmin.toggleDropdown(dropdown);
+            }
+            break;
+          }
+          case 'select-assignment': {
+            const value = target.dataset.value;
+            const text = target.dataset.text;
+            if (window.surveyAdmin && window.surveyAdmin.selectAssignmentOption) {
+              window.surveyAdmin.selectAssignmentOption(value, text);
+            }
+            break;
+          }
+          case 'add-question':
+            if (window.surveyAdmin && window.surveyAdmin.addQuestion) {
+              window.surveyAdmin.addQuestion();
+            }
+            break;
+          case 'save-survey': {
+            const status = target.dataset.status;
+            if (window.surveyAdmin && window.surveyAdmin.saveSurvey) {
+              window.surveyAdmin.saveSurvey(status);
+            }
+            break;
+          }
+          case 'show-create-modal':
+            if (window.surveyAdmin && window.surveyAdmin.showCreateModal) {
+              window.surveyAdmin.showCreateModal();
+            }
+            break;
+        }
+      });
     </script>
   </body>
 </html>

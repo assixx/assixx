@@ -32,7 +32,7 @@ router.get('/pages/index', rateLimiter.public, (_req: Request, res: Response) =>
 }); // Redirect old URL
 router.get('/login', rateLimiter.auth, servePage('login'));
 router.get('/signup', rateLimiter.auth, servePage('signup'));
-router.get('/design-standards', rateLimiter.public, servePage('design-standards'));
+// router.get('/design-standards', rateLimiter.public, servePage('design-standards')); // Moved to test-pages
 
 // Authenticated pages - All users
 router.get('/dashboard', rateLimiter.authenticated, authenticateToken, servePage('dashboard'));

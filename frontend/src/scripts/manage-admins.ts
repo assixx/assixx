@@ -317,9 +317,9 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
             <td>${admin.createdAt !== undefined ? new Date(admin.createdAt).toLocaleDateString('de-DE') : '-'}</td>
             <td>${admin.lastLogin !== undefined && admin.lastLogin !== '' ? new Date(admin.lastLogin).toLocaleDateString('de-DE') : '-'}</td>
             <td>
-              <button class="action-btn edit" onclick="editAdmin(${String(admin.id)})">Bearbeiten</button>
-              <button class="action-btn permissions" onclick="showPermissionsModal(${String(admin.id)})" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
-              <button class="action-btn delete" onclick="deleteAdmin(${String(admin.id)})">Löschen</button>
+              <button class="action-btn edit" data-action="edit-admin" data-admin-id="${String(admin.id)}">Bearbeiten</button>
+              <button class="action-btn permissions" data-action="show-permissions" data-admin-id="${String(admin.id)}" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
+              <button class="action-btn delete" data-action="delete-admin" data-admin-id="${String(admin.id)}">Löschen</button>
             </td>
           </tr>
         `;
@@ -1184,6 +1184,38 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
   // Hilfsfunktionen wurden bereits aus auth.ts importiert
   // showErrorAlert und showSuccessAlert sind bereits oben importiert
+
+  // Event delegation for admin actions
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle edit admin
+    const editBtn = target.closest<HTMLElement>('[data-action="edit-admin"]');
+    if (editBtn) {
+      const adminId = editBtn.dataset.adminId;
+      if (adminId !== undefined) {
+        void editAdminHandler(Number.parseInt(adminId, 10));
+      }
+    }
+
+    // Handle show permissions
+    const permissionsBtn = target.closest<HTMLElement>('[data-action="show-permissions"]');
+    if (permissionsBtn) {
+      const adminId = permissionsBtn.dataset.adminId;
+      if (adminId !== undefined) {
+        void showPermissionsModal(Number.parseInt(adminId, 10));
+      }
+    }
+
+    // Handle delete admin
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-admin"]');
+    if (deleteBtn) {
+      const adminId = deleteBtn.dataset.adminId;
+      if (adminId !== undefined) {
+        void deleteAdminHandler(Number.parseInt(adminId, 10));
+      }
+    }
+  });
 
   // Modal schließen bei Klick außerhalb
   window.addEventListener('click', (e) => {

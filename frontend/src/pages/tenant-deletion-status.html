@@ -23,7 +23,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <script src="/feature-flags.js"></script>
-    <script src="/js/purify.min.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      window.setHTML = setHTML; // Make available globally
+    </script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
@@ -215,8 +219,8 @@
           return;
         }
 
-        // eslint-disable-next-line no-undef, no-unsanitized/property -- DOMPurify from CDN, sanitized content
-        container.innerHTML = DOMPurify.sanitize(statusData.map((item) => createStatusCard(item)).join(''));
+        // Use dom-utils setHTML for safe sanitization
+        window.setHTML(container, statusData.map((item) => createStatusCard(item)).join(''));
       }
 
       function createStatusCard(item) {
@@ -324,10 +328,10 @@
                 ${
                   item.canApprove
                     ? `
-                  <button class="btn btn-approve" onclick="approveDeletion(${item.queueId || item.id})">
+                  <button class="btn btn-approve" data-action="approve" data-queue-id="${item.queueId || item.id}">
                     <i class="fas fa-check"></i> Genehmigen
                   </button>
-                  <button class="btn btn-reject" onclick="rejectDeletion(${item.queueId || item.id})">
+                  <button class="btn btn-reject" data-action="reject" data-queue-id="${item.queueId || item.id}">
                     <i class="fas fa-times"></i> Ablehnen
                   </button>
                 `
@@ -336,7 +340,7 @@
                 ${
                   item.canCancel
                     ? `
-                  <button class="btn btn-secondary" onclick="cancelDeletion(${item.queueId || item.id})">
+                  <button class="btn btn-secondary" data-action="cancel" data-queue-id="${item.queueId || item.id}">
                     <i class="fas fa-ban"></i> Abbrechen (als Ersteller)
                   </button>
                 `
@@ -352,7 +356,7 @@
               item.status === 'queued' || item.status === 'approved' || item.status === 'processing'
                 ? `
               <div class="action-buttons">
-                <button class="btn btn-emergency" onclick="emergencyStop(${item.queueId || item.id})">
+                <button class="btn btn-emergency" data-action="emergency-stop" data-queue-id="${item.queueId || item.id}">
                   <i class="fas fa-stop-circle"></i> Emergency Stop
                 </button>
                 ${
@@ -492,8 +496,12 @@
         if (!confirmed) return;
 
         try {
-          await apiClient.request(`/v2/root/deletion-approvals/${queueId}/approve`, {
+          await apiClient.request(`/root/deletion-approvals/${queueId}/approve`, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
           });
 
           showSuccessAlert('Löschung genehmigt! 30 Tage Grace Period beginnt.');
@@ -509,8 +517,11 @@
         if (!reason) return;
 
         try {
-          await apiClient.request(`/v2/root/deletion-approvals/${queueId}/reject`, {
+          await apiClient.request(`/root/deletion-approvals/${queueId}/reject`, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ reason }),
           });
 
@@ -527,8 +538,12 @@
         if (!confirmed) return;
 
         try {
-          await apiClient.request('/v2/root/tenant/cancel-deletion', {
+          await apiClient.request('/root/tenant/cancel-deletion', {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
           });
 
           showSuccessAlert('Löschanfrage abgebrochen!');
@@ -550,8 +565,11 @@
         if (!confirmed) return;
 
         try {
-          await apiClient.request(`/v2/root/deletion-queue/${queueId}/emergency-stop`, {
+          await apiClient.request(`/root/deletion-queue/${queueId}/emergency-stop`, {
             method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
               reason: 'Emergency Stop durch Root-User aktiviert',
             }),
@@ -569,6 +587,30 @@
       document.addEventListener('DOMContentLoaded', () => {
         // Initial load will automatically schedule refreshes
         loadDeletionStatus();
+
+        // Event Delegation for button actions
+        document.addEventListener('click', async (e) => {
+          const btn = e.target.closest('[data-action]');
+          if (!btn) return;
+
+          const action = btn.dataset.action;
+          const queueId = btn.dataset.queueId;
+
+          switch (action) {
+            case 'approve':
+              await window.approveDeletion(parseInt(queueId));
+              break;
+            case 'reject':
+              await window.rejectDeletion(parseInt(queueId));
+              break;
+            case 'cancel':
+              await window.cancelDeletion(parseInt(queueId));
+              break;
+            case 'emergency-stop':
+              await window.emergencyStop(parseInt(queueId));
+              break;
+          }
+        });
       });
     </script>
 

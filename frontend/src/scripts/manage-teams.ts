@@ -69,6 +69,7 @@ interface WindowWithTeamHandlers extends Window {
   editTeam?: (id: number) => Promise<void>;
   viewTeamDetails?: (id: number) => Promise<void>;
   deleteTeam?: (id: number) => void;
+  toggleTeamStatus?: (id: number, status: string) => Promise<void>;
   showTeamModal?: () => Promise<void>;
   closeTeamModal?: () => void;
   saveTeam?: () => Promise<void>;
@@ -168,6 +169,50 @@ class TeamsManager {
         const searchInput = e.target as HTMLInputElement;
         this.searchTerm = searchInput.value;
         void this.loadTeams();
+      }
+    });
+
+    // Event delegation for team actions
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const w = window as WindowWithTeamHandlers;
+
+      // Handle dropdown toggles
+      const dropdownToggle = target.closest<HTMLElement>('[data-action="toggle-dropdown"]');
+      if (dropdownToggle) {
+        const dropdownId = dropdownToggle.dataset.dropdown;
+        const windowWithToggle = window as WindowWithTeamHandlers & { toggleDropdown?: (dropdownId: string) => void };
+        if (dropdownId !== undefined && dropdownId !== '' && 'toggleDropdown' in windowWithToggle) {
+          windowWithToggle.toggleDropdown(dropdownId);
+        }
+      }
+
+      // Handle edit team
+      const editBtn = target.closest<HTMLElement>('[data-action="edit-team"]');
+      if (editBtn) {
+        const teamId = editBtn.dataset.teamId;
+        if (teamId !== undefined && w.editTeam) {
+          void w.editTeam(Number.parseInt(teamId, 10));
+        }
+      }
+
+      // Handle toggle team status
+      const toggleBtn = target.closest<HTMLElement>('[data-action="toggle-team-status"]');
+      if (toggleBtn) {
+        const teamId = toggleBtn.dataset.teamId;
+        const status = toggleBtn.dataset.status;
+        if (teamId !== undefined && status !== undefined && w.toggleTeamStatus) {
+          void w.toggleTeamStatus(Number.parseInt(teamId, 10), status);
+        }
+      }
+
+      // Handle delete team
+      const deleteBtn = target.closest<HTMLElement>('[data-action="delete-team"]');
+      if (deleteBtn) {
+        const teamId = deleteBtn.dataset.teamId;
+        if (teamId !== undefined && w.deleteTeam) {
+          w.deleteTeam(Number.parseInt(teamId, 10));
+        }
       }
     });
   }
@@ -286,13 +331,13 @@ class TeamsManager {
         </td>
         <td>${new Date(team.createdAt).toLocaleDateString('de-DE')}</td>
         <td>
-          <button class="action-btn edit" onclick="window.editTeam(${team.id})">
+          <button class="action-btn edit" data-action="edit-team" data-team-id="${team.id}">
             Bearbeiten
           </button>
-          <button class="action-btn ${team.status === 'active' ? 'deactivate' : 'activate'}" onclick="window.toggleTeamStatus(${team.id}, '${team.status}')">
+          <button class="action-btn ${team.status === 'active' ? 'deactivate' : 'activate'}" data-action="toggle-team-status" data-team-id="${team.id}" data-status="${team.status}">
             ${team.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
           </button>
-          <button class="action-btn delete" onclick="window.deleteTeam(${team.id})">
+          <button class="action-btn delete" data-action="delete-team" data-team-id="${team.id}">
             Löschen
           </button>
         </td>
@@ -562,7 +607,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Expose functions globally for HTML onclick handlers
+    // Expose functions globally for event delegation
     const w = window as unknown as WindowWithTeamHandlers;
     w.editTeam = async (id: number) => {
       const team = await teamsManager?.getTeamDetails(id);
@@ -754,6 +799,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     w.deleteTeam = (id: number) => {
       teamsManager?.deleteTeam(id);
+    };
+
+    w.toggleTeamStatus = async (id: number, currentStatus: string) => {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      const response = await teamsManager?.apiClient.request<{ success: boolean; message: string }>(`/teams/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response?.success === true) {
+        showSuccessAlert(`Team status successfully changed to ${newStatus}`);
+        void teamsManager?.loadTeams();
+      }
     };
 
     // Handler for floating add button
@@ -1121,7 +1179,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     };
 
-    // Window-level functions for onclick handlers are already defined above
+    // Window-level functions for event delegation are already defined above
 
     // Function to check if teams section is visible
     const checkTeamsVisibility = () => {

@@ -116,11 +116,11 @@ function createSurveyCard(survey, completed) {
 
 ### Files That Need Fixing (High Priority)
 
-- [ ] survey-employee.html - "Teilnehmen" button broken
-- [ ] survey-admin.html - Similar survey management
-- [ ] admin-dashboard.html - 31 onclick handlers
-- [ ] document-upload.html - 24 onclick handlers
-- [ ] signup.html - 20 onclick handlers
+- [x] survey-employee.html - "Teilnehmen" button broken
+- [x] survey-admin.html - Similar survey management
+- [x] admin-dashboard.html - 31 onclick handlers
+- [x] document-upload.html - 24 onclick handlers
+- [x] signup.html - 20 onclick handlers
 
 ### Files Using Best Practice (Reference)
 

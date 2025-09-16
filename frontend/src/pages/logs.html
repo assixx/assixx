@@ -511,42 +511,152 @@
                 <div class="filter-group">
                   <label class="filter-label">Aktion</label>
                   <div class="custom-dropdown">
-                    <div class="dropdown-display" id="actionDisplay" onclick="toggleDropdown('action')">
+                    <div class="dropdown-display" id="actionDisplay" data-action="toggle-dropdown" data-dropdown="action">
                       <span>Alle Aktionen</span>
                       <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                       </svg>
                     </div>
                     <div class="dropdown-options" id="actionDropdown">
-                      <div class="dropdown-option" onclick="selectOption('action', 'all', 'Alle Aktionen')">Alle Aktionen</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'login', 'Anmeldung')">Anmeldung</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'logout', 'Abmeldung')">Abmeldung</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'create', 'Erstellt')">Erstellt</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'update', 'Aktualisiert')">Aktualisiert</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'delete', 'Gelöscht')">Gelöscht</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'upload', 'Hochgeladen')">Hochgeladen</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'download', 'Heruntergeladen')">Heruntergeladen</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'view', 'Angesehen')">Angesehen</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'assign', 'Zugewiesen')">Zugewiesen</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'unassign', 'Entfernt')">Entfernt</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'kvp_created', 'KVP Erstellt')">KVP Erstellt</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'kvp_shared', 'KVP Geteilt')">KVP Geteilt</div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'survey_created', 'Umfrage Erstellt')">
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="all"
+                        data-text="Alle Aktionen"
+                      >
+                        Alle Aktionen
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="login" data-text="Anmeldung">
+                        Anmeldung
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="logout" data-text="Abmeldung">
+                        Abmeldung
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="create" data-text="Erstellt">
+                        Erstellt
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="update"
+                        data-text="Aktualisiert"
+                      >
+                        Aktualisiert
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="delete" data-text="Gelöscht">
+                        Gelöscht
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="upload"
+                        data-text="Hochgeladen"
+                      >
+                        Hochgeladen
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="download"
+                        data-text="Heruntergeladen"
+                      >
+                        Heruntergeladen
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="action" data-value="view" data-text="Angesehen">
+                        Angesehen
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="assign"
+                        data-text="Zugewiesen"
+                      >
+                        Zugewiesen
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="unassign"
+                        data-text="Entfernt"
+                      >
+                        Entfernt
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="kvp_created"
+                        data-text="KVP Erstellt"
+                      >
+                        KVP Erstellt
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="kvp_shared"
+                        data-text="KVP Geteilt"
+                      >
+                        KVP Geteilt
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="survey_created"
+                        data-text="Umfrage Erstellt"
+                      >
                         Umfrage Erstellt
                       </div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'survey_updated', 'Umfrage Aktualisiert')">
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="survey_updated"
+                        data-text="Umfrage Aktualisiert"
+                      >
                         Umfrage Aktualisiert
                       </div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'survey_deleted', 'Umfrage Gelöscht')">
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="survey_deleted"
+                        data-text="Umfrage Gelöscht"
+                      >
                         Umfrage Gelöscht
                       </div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'survey_submitted', 'Umfrage Beantwortet')">
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="survey_submitted"
+                        data-text="Umfrage Beantwortet"
+                      >
                         Umfrage Beantwortet
                       </div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'survey_viewed', 'Umfrage Angesehen')">
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="survey_viewed"
+                        data-text="Umfrage Angesehen"
+                      >
                         Umfrage Angesehen
                       </div>
-                      <div class="dropdown-option" onclick="selectOption('action', 'survey_exported', 'Umfrage Exportiert')">
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="action"
+                        data-value="survey_exported"
+                        data-text="Umfrage Exportiert"
+                      >
                         Umfrage Exportiert
                       </div>
                     </div>
@@ -556,25 +666,79 @@
                 <div class="filter-group">
                   <label class="filter-label">Entitätstyp</label>
                   <div class="custom-dropdown">
-                    <div class="dropdown-display" id="entityDisplay" onclick="toggleDropdown('entity')">
+                    <div class="dropdown-display" id="entityDisplay" data-action="toggle-dropdown" data-dropdown="entity">
                       <span>Alle Typen</span>
                       <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                       </svg>
                     </div>
                     <div class="dropdown-options" id="entityDropdown">
-                      <div class="dropdown-option" onclick="selectOption('entity', 'all', 'Alle Typen')">Alle Typen</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'user', 'Benutzer')">Benutzer</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'admin', 'Administrator')">Administrator</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'department', 'Abteilung')">Abteilung</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'document', 'Dokument')">Dokument</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'blackboard', 'Schwarzes Brett')">Schwarzes Brett</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'logs', 'Logs')">Logs</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'tenant', 'Tenant')">Tenant</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'survey', 'Umfrage')">Umfrage</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'team', 'Team')">Team</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'task', 'Aufgabe')">Aufgabe</div>
-                      <div class="dropdown-option" onclick="selectOption('entity', 'kvp_suggestion', 'KVP-Vorschlag')">KVP-Vorschlag</div>
+                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="all" data-text="Alle Typen">
+                        Alle Typen
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="user" data-text="Benutzer">
+                        Benutzer
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="entity"
+                        data-value="admin"
+                        data-text="Administrator"
+                      >
+                        Administrator
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="entity"
+                        data-value="department"
+                        data-text="Abteilung"
+                      >
+                        Abteilung
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="entity"
+                        data-value="document"
+                        data-text="Dokument"
+                      >
+                        Dokument
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="entity"
+                        data-value="blackboard"
+                        data-text="Schwarzes Brett"
+                      >
+                        Schwarzes Brett
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="logs" data-text="Logs">
+                        Logs
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="tenant" data-text="Tenant">
+                        Tenant
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="survey" data-text="Umfrage">
+                        Umfrage
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="team" data-text="Team">
+                        Team
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="entity" data-value="task" data-text="Aufgabe">
+                        Aufgabe
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="entity"
+                        data-value="kvp_suggestion"
+                        data-text="KVP-Vorschlag"
+                      >
+                        KVP-Vorschlag
+                      </div>
                     </div>
                   </div>
                   <input type="hidden" id="filter-entity" value="all" />
@@ -582,19 +746,33 @@
                 <div class="filter-group">
                   <label class="filter-label">HTTP-Methode</label>
                   <div class="custom-dropdown">
-                    <div class="dropdown-display" id="methodDisplay" onclick="toggleDropdown('method')">
+                    <div class="dropdown-display" id="methodDisplay" data-action="toggle-dropdown" data-dropdown="method">
                       <span>Alle Methoden</span>
                       <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                       </svg>
                     </div>
                     <div class="dropdown-options" id="methodDropdown">
-                      <div class="dropdown-option" onclick="selectOption('method', 'all', 'Alle Methoden')">Alle Methoden</div>
-                      <div class="dropdown-option" onclick="selectOption('method', 'GET', 'GET')">GET</div>
-                      <div class="dropdown-option" onclick="selectOption('method', 'POST', 'POST')">POST</div>
-                      <div class="dropdown-option" onclick="selectOption('method', 'PUT', 'PUT')">PUT</div>
-                      <div class="dropdown-option" onclick="selectOption('method', 'DELETE', 'DELETE')">DELETE</div>
-                      <div class="dropdown-option" onclick="selectOption('method', 'PATCH', 'PATCH')">PATCH</div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="method"
+                        data-value="all"
+                        data-text="Alle Methoden"
+                      >
+                        Alle Methoden
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="GET" data-text="GET">GET</div>
+                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="POST" data-text="POST">
+                        POST
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="PUT" data-text="PUT">PUT</div>
+                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="DELETE" data-text="DELETE">
+                        DELETE
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="method" data-value="PATCH" data-text="PATCH">
+                        PATCH
+                      </div>
                     </div>
                   </div>
                   <input type="hidden" id="filter-method" value="all" />
@@ -602,36 +780,88 @@
                 <div class="filter-group">
                   <label class="filter-label">Zeitraum</label>
                   <div class="custom-dropdown">
-                    <div class="dropdown-display" id="timerangeDisplay" onclick="toggleDropdown('timerange')">
+                    <div class="dropdown-display" id="timerangeDisplay" data-action="toggle-dropdown" data-dropdown="timerange">
                       <span>Alle Zeit</span>
                       <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                         <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                       </svg>
                     </div>
                     <div class="dropdown-options" id="timerangeDropdown">
-                      <div class="dropdown-option" onclick="selectOption('timerange', 'all', 'Alle Zeit')">Alle Zeit</div>
-                      <div class="dropdown-option" onclick="selectOption('timerange', 'today', 'Heute')">Heute</div>
-                      <div class="dropdown-option" onclick="selectOption('timerange', 'yesterday', 'Gestern')">Gestern</div>
-                      <div class="dropdown-option" onclick="selectOption('timerange', 'week', 'Letzte 7 Tage')">Letzte 7 Tage</div>
-                      <div class="dropdown-option" onclick="selectOption('timerange', 'month', 'Letzter Monat')">Letzter Monat</div>
-                      <div class="dropdown-option" onclick="selectOption('timerange', '3months', 'Letzte 3 Monate')">Letzte 3 Monate</div>
-                      <div class="dropdown-option" onclick="selectOption('timerange', '6months', 'Letzte 6 Monate')">Letzte 6 Monate</div>
-                      <div class="dropdown-option" onclick="selectOption('timerange', 'year', 'Letztes Jahr')">Letztes Jahr</div>
+                      <div class="dropdown-option" data-action="select-option" data-type="timerange" data-value="all" data-text="Alle Zeit">
+                        Alle Zeit
+                      </div>
+                      <div class="dropdown-option" data-action="select-option" data-type="timerange" data-value="today" data-text="Heute">
+                        Heute
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="timerange"
+                        data-value="yesterday"
+                        data-text="Gestern"
+                      >
+                        Gestern
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="timerange"
+                        data-value="week"
+                        data-text="Letzte 7 Tage"
+                      >
+                        Letzte 7 Tage
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="timerange"
+                        data-value="month"
+                        data-text="Letzter Monat"
+                      >
+                        Letzter Monat
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="timerange"
+                        data-value="3months"
+                        data-text="Letzte 3 Monate"
+                      >
+                        Letzte 3 Monate
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="timerange"
+                        data-value="6months"
+                        data-text="Letzte 6 Monate"
+                      >
+                        Letzte 6 Monate
+                      </div>
+                      <div
+                        class="dropdown-option"
+                        data-action="select-option"
+                        data-type="timerange"
+                        data-value="year"
+                        data-text="Letztes Jahr"
+                      >
+                        Letztes Jahr
+                      </div>
                     </div>
                   </div>
                   <input type="hidden" id="filter-timerange" value="all" />
                 </div>
               </div>
               <div class="u-flex-gap-md">
-                <button class="btn btn-primary" onclick="applyFilters()">
+                <button class="btn btn-primary" data-action="apply-filters">
                   <i class="fas fa-filter"></i>
                   Filter anwenden
                 </button>
-                <button class="btn btn-secondary" onclick="resetFilters()">
+                <button class="btn btn-secondary" data-action="reset-filters">
                   <i class="fas fa-undo"></i>
                   Zurücksetzen
                 </button>
-                <button class="btn btn-danger" onclick="deleteFilteredLogs()" title="Wählen Sie zuerst spezifische Filter aus">
+                <button class="btn btn-danger" data-action="delete-filtered-logs" title="Wählen Sie zuerst spezifische Filter aus">
                   <i class="fas fa-trash"></i>
                   Gefilterte Logs löschen
                 </button>
@@ -648,12 +878,12 @@
 
             <!-- Pagination -->
             <div class="pagination" id="pagination-container" style="display: none; padding: 0 24px 24px">
-              <button class="pagination-btn" id="prev-btn" onclick="loadPreviousPage()">
+              <button class="pagination-btn" id="prev-btn" data-action="load-previous-page">
                 <i class="fas fa-chevron-left"></i>
                 Zurück
               </button>
               <span class="pagination-info" id="pagination-info">Seite 1</span>
-              <button class="pagination-btn" id="next-btn" onclick="loadNextPage()">
+              <button class="pagination-btn" id="next-btn" data-action="load-next-page">
                 Weiter
                 <i class="fas fa-chevron-right"></i>
               </button>
@@ -728,8 +958,8 @@
           </div>
 
           <div style="display: flex; gap: 12px; justify-content: flex-end">
-            <button class="btn btn-secondary" onclick="closeDeleteLogsModal()">Abbrechen</button>
-            <button id="confirmDeleteLogsBtn" class="btn btn-danger" onclick="confirmDeleteLogs()" disabled style="min-width: 120px">
+            <button class="btn btn-secondary" data-action="close-delete-modal">Abbrechen</button>
+            <button id="confirmDeleteLogsBtn" class="btn btn-danger" data-action="confirm-delete" disabled style="min-width: 120px">
               <i class="fas fa-trash"></i>
               Logs löschen
             </button>
@@ -791,6 +1021,55 @@
         if (!e.target.closest('.custom-dropdown')) {
           document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
           document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Event Delegation for data-action attributes
+      document.addEventListener('click', function (e) {
+        const target = e.target;
+        const action = target.dataset.action || target.closest('[data-action]')?.dataset.action;
+
+        if (!action) return;
+
+        switch (action) {
+          case 'toggle-dropdown': {
+            const element = target.closest('[data-action="toggle-dropdown"]');
+            if (element) {
+              const dropdown = element.dataset.dropdown;
+              if (dropdown) {
+                toggleDropdown('#' + dropdown);
+              }
+            }
+            break;
+          }
+
+          case 'select-option': {
+            const element = target.closest('[data-action="select-option"]');
+            if (element) {
+              const type = element.dataset.type;
+              const value = element.dataset.value;
+              const text = element.dataset.text;
+              if (type && value && text) {
+                selectOption('#' + type, value, text);
+              }
+            }
+            break;
+          }
+
+          case 'close-delete-modal': {
+            closeDeleteLogsModal();
+            break;
+          }
+
+          // Business logic actions (handled in logs.ts)
+          case 'reset-filters':
+          case 'apply-filters':
+          case 'load-previous-page':
+          case 'load-next-page':
+          case 'confirm-delete': {
+            // These will be handled in logs.ts
+            break;
+          }
         }
       });
 

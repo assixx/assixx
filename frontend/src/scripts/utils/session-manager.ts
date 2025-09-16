@@ -124,7 +124,7 @@ export class SessionManager {
             Klicken Sie auf "Aktiv bleiben" um angemeldet zu bleiben.
           </p>
           <div style="display: flex; gap: 12px; margin-top: 20px;">
-            <button onclick="window.sessionManager.extendSession()" style="
+            <button data-action="extend-session" style="
               background: #2196f3;
               color: #fff;
               border: none;
@@ -133,7 +133,7 @@ export class SessionManager {
               cursor: pointer;
               font-size: 16px;
             ">Aktiv bleiben</button>
-            <button onclick="window.sessionManager.logout()" style="
+            <button data-action="session-logout" style="
               background: #666;
               color: #fff;
               border: none;
@@ -147,6 +147,21 @@ export class SessionManager {
       </div>
     `;
     document.body.append(warningModal);
+
+    // Add event delegation for the modal buttons
+    warningModal.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      // Handle extend session button
+      if (target.dataset.action === 'extend-session') {
+        this.extendSession();
+      }
+
+      // Handle logout button
+      if (target.dataset.action === 'session-logout') {
+        this.logout();
+      }
+    });
   }
 
   private handleSessionTimeout(): void {
@@ -210,14 +225,6 @@ export class SessionManager {
       this.checkInterval = null;
     }
   }
-}
-
-// Initialize session manager when module loads
-if (typeof window !== 'undefined') {
-  interface SessionWindow extends Window {
-    sessionManager: SessionManager;
-  }
-  (window as unknown as SessionWindow).sessionManager = SessionManager.getInstance();
 }
 
 // Export for use in other modules

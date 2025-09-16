@@ -403,8 +403,11 @@
 
     <!-- Common Scripts with ApiClient -->
     <script type="module" src="/scripts/common.js"></script>
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
+    <!-- dom-utils for safe HTML rendering -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      window.setHTML = setHTML; // Make available globally for inline script
+    </script>
   </head>
   <body>
     <!-- Notification Container for alerts -->
@@ -447,7 +450,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title" id="modalTitle">Neuer Mitarbeiter</h3>
-          <button class="modal-close" onclick="closeEmployeeModal()">&times;</button>
+          <button class="modal-close" data-action="close-modal">&times;</button>
         </div>
         <form id="employee-form" style="padding: 20px">
           <div class="form-group">
@@ -559,14 +562,14 @@
           </div>
           <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
             <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" onclick="closeEmployeeModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" data-action="close-modal">Abbrechen</button>
           </div>
         </form>
       </div>
     </div>
 
     <!-- Floating Add Button -->
-    <button class="add-employee-btn" onclick="showEmployeeModal()">+</button>
+    <button class="add-employee-btn" data-action="add-employee">+</button>
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
@@ -576,7 +579,6 @@
     <!-- Employee Management -->
     <script type="module" src="/scripts/manage-employees.ts"></script>
     <script type="module">
-      /* global DOMPurify */
       // Auth check
       const token = localStorage.getItem('token');
       const userRole = localStorage.getItem('userRole');
@@ -819,8 +821,8 @@
                       ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
                     </td>
                     <td>
-                      <button class="action-btn edit" onclick="editEmployee(${emp.id})">Bearbeiten</button>
-                      <button class="action-btn delete" onclick="deleteEmployee(${emp.id})">Löschen</button>
+                      <button class="action-btn edit" data-action="edit-employee" data-id="${emp.id}">Bearbeiten</button>
+                      <button class="action-btn delete" data-action="delete-employee" data-id="${emp.id}">Löschen</button>
                     </td>
                   </tr>
                   `;
@@ -830,9 +832,8 @@
           </table>
         `;
 
-        // Safe: HTML is generated from server data and sanitized with DOMPurify
-        // eslint-disable-next-line no-unsanitized/property
-        container.innerHTML = DOMPurify.sanitize(tableHTML);
+        // Use setHTML from dom-utils for safe rendering
+        window.setHTML(container, tableHTML);
       }
 
       // Modal functions
@@ -1234,6 +1235,40 @@
       // Initialize
       document.addEventListener('DOMContentLoaded', () => {
         loadEmployees();
+
+        // Event Delegation for all button actions
+        document.addEventListener('click', (e) => {
+          const target = e.target;
+          const action = target.dataset?.action;
+
+          if (!action) return;
+
+          switch (action) {
+            case 'add-employee':
+              showEmployeeModal();
+              break;
+
+            case 'close-modal':
+              closeEmployeeModal();
+              break;
+
+            case 'edit-employee': {
+              const editId = target.dataset.id;
+              if (editId) {
+                editEmployee(parseInt(editId));
+              }
+              break;
+            }
+
+            case 'delete-employee': {
+              const deleteId = target.dataset.id;
+              if (deleteId) {
+                deleteEmployee(parseInt(deleteId));
+              }
+              break;
+            }
+          }
+        });
       });
     </script>
   </body>

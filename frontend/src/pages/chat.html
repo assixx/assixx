@@ -1672,7 +1672,7 @@
             <div class="message-input-container" id="chatArea" class="u-hidden">
               <div class="delivery-options">
                 <div class="custom-delivery-select">
-                  <div class="delivery-display" onclick="toggleDeliveryDropdown()">
+                  <div class="delivery-display" data-action="toggle-delivery-dropdown">
                     <span class="delivery-icon">⚡</span>
                     <span class="delivery-text">Sofort senden</span>
                     <span class="dropdown-arrow">▼</span>
@@ -1681,7 +1681,9 @@
                     <div
                       class="delivery-dropdown-option"
                       data-value="immediate"
-                      onclick="selectDeliveryOption('immediate', '⚡', 'Sofort senden')"
+                      data-action="select-delivery"
+                      data-icon="⚡"
+                      data-text="Sofort senden"
                     >
                       <span class="option-icon">⚡</span>
                       <span class="option-text">Sofort senden</span>
@@ -1689,7 +1691,9 @@
                     <div
                       class="delivery-dropdown-option"
                       data-value="break_time"
-                      onclick="selectDeliveryOption('break_time', '☕', 'In der Pause')"
+                      data-action="select-delivery"
+                      data-icon="☕"
+                      data-text="In der Pause"
                     >
                       <span class="option-icon">☕</span>
                       <span class="option-text">In der Pause</span>
@@ -1697,7 +1701,9 @@
                     <div
                       class="delivery-dropdown-option"
                       data-value="after_work"
-                      onclick="selectDeliveryOption('after_work', '🏠', 'Nach Feierabend')"
+                      data-action="select-delivery"
+                      data-icon="🏠"
+                      data-text="Nach Feierabend"
                     >
                       <span class="option-icon">🏠</span>
                       <span class="option-text">Nach Feierabend</span>
@@ -1755,7 +1761,7 @@
             <div class="form-group">
               <label class="form-label">Abteilung auswählen</label>
               <div class="custom-dropdown">
-                <div class="dropdown-display" id="departmentDisplay" onclick="toggleChatDropdown('department')">
+                <div class="dropdown-display" id="departmentDisplay" data-action="toggle-chat-dropdown" data-dropdown="department">
                   <span>Abteilung wählen</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                     <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1772,7 +1778,7 @@
             <div class="form-group" id="employeeDropdownGroup" class="u-hidden">
               <label class="form-label">Mitarbeiter auswählen</label>
               <div class="custom-dropdown">
-                <div class="dropdown-display" id="employeeDisplay" onclick="toggleChatDropdown('employee')">
+                <div class="dropdown-display" id="employeeDisplay" data-action="toggle-chat-dropdown" data-dropdown="employee">
                   <span>Mitarbeiter wählen</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                     <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1791,7 +1797,7 @@
             <div class="form-group">
               <label class="form-label">Administrator auswählen</label>
               <div class="custom-dropdown">
-                <div class="dropdown-display" id="adminDisplay" onclick="toggleChatDropdown('admin')">
+                <div class="dropdown-display" id="adminDisplay" data-action="toggle-chat-dropdown" data-dropdown="admin">
                   <span>Administrator wählen</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                     <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1949,6 +1955,38 @@
           }
         }
       };
+
+      // Event Delegation for all actions
+      document.addEventListener('click', function (e) {
+        const target = e.target;
+
+        // Handle toggle delivery dropdown
+        const toggleDeliveryBtn = target.closest('[data-action="toggle-delivery-dropdown"]');
+        if (toggleDeliveryBtn) {
+          toggleDeliveryDropdown();
+          return;
+        }
+
+        // Handle select delivery option
+        const selectDeliveryBtn = target.closest('[data-action="select-delivery"]');
+        if (selectDeliveryBtn) {
+          const value = selectDeliveryBtn.dataset.value;
+          const icon = selectDeliveryBtn.dataset.icon;
+          const text = selectDeliveryBtn.dataset.text;
+          selectDeliveryOption(value, icon, text);
+          return;
+        }
+
+        // Handle toggle chat dropdown
+        const toggleChatBtn = target.closest('[data-action="toggle-chat-dropdown"]');
+        if (toggleChatBtn) {
+          const dropdown = toggleChatBtn.dataset.dropdown;
+          if (window.toggleChatDropdown) {
+            window.toggleChatDropdown('#' + dropdown);
+          }
+          return;
+        }
+      });
 
       // Click outside to close dropdowns
       document.addEventListener('click', function (e) {

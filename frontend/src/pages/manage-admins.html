@@ -637,14 +637,14 @@
     </div>
 
     <!-- Add Admin Button -->
-    <button class="add-admin-btn" onclick="showAddAdminModal()">+</button>
+    <button class="add-admin-btn" data-action="show-add-admin-modal">+</button>
 
     <!-- Admin Modal -->
     <div class="modal" id="adminModal">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title" id="modalTitle">Admin hinzufügen</h3>
-          <button class="modal-close" onclick="closeAdminModal()">&times;</button>
+          <button class="modal-close" data-action="close-admin-modal">&times;</button>
         </div>
         <form id="adminForm">
           <div class="form-group">
@@ -691,31 +691,83 @@
           <div class="form-group">
             <label class="form-label">Position *</label>
             <div class="custom-dropdown">
-              <div class="dropdown-display" id="positionDropdownDisplay" onclick="toggleDropdown('positionDropdown')">
+              <div class="dropdown-display" id="positionDropdownDisplay" data-action="toggle-dropdown" data-dropdown="positionDropdown">
                 <span>Position auswählen...</span>
                 <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
               <div class="dropdown-options" id="positionDropdownDropdown">
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'bereichsleiter', 'Bereichsleiter')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="bereichsleiter"
+                  data-text="Bereichsleiter"
+                >
                   Bereichsleiter
                 </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'personalleiter', 'Personalleiter')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="personalleiter"
+                  data-text="Personalleiter"
+                >
                   Personalleiter
                 </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="geschaeftsfuehrer"
+                  data-text="Geschäftsführer"
+                >
                   Geschäftsführer
                 </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'werksleiter', 'Werksleiter')">Werksleiter</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'produktionsleiter', 'Produktionsleiter')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="werksleiter"
+                  data-text="Werksleiter"
+                >
+                  Werksleiter
+                </div>
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="produktionsleiter"
+                  data-text="Produktionsleiter"
+                >
                   Produktionsleiter
                 </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'qualitaetsleiter', 'Qualitätsleiter')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="qualitaetsleiter"
+                  data-text="Qualitätsleiter"
+                >
                   Qualitätsleiter
                 </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'it-leiter', 'IT-Leiter')">IT-Leiter</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'vertriebsleiter', 'Vertriebsleiter')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="it-leiter"
+                  data-text="IT-Leiter"
+                >
+                  IT-Leiter
+                </div>
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="vertriebsleiter"
+                  data-text="Vertriebsleiter"
+                >
                   Vertriebsleiter
                 </div>
               </div>
@@ -810,7 +862,7 @@
             </div>
           </div>
           <div class="button-group">
-            <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" data-action="close-admin-modal">Abbrechen</button>
             <button type="submit" class="btn btn-primary">Speichern</button>
           </div>
         </form>
@@ -822,7 +874,7 @@
       <div class="modal-content" style="max-width: 600px">
         <div class="modal-header">
           <h3 class="modal-title">Abteilungsberechtigungen verwalten</h3>
-          <button class="modal-close" onclick="closePermissionsModal()">&times;</button>
+          <button class="modal-close" data-action="close-permissions-modal">&times;</button>
         </div>
 
         <div class="admin-info" style="padding: 16px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; margin: 16px">
@@ -838,11 +890,11 @@
 
         <div style="padding: 0 16px">
           <div class="permission-options" style="display: flex; gap: 12px; margin-bottom: 20px">
-            <button onclick="selectAllDepartments()" class="btn btn-secondary" class="u-flex-1">
+            <button data-action="select-all-departments" class="btn btn-secondary" class="u-flex-1">
               <i class="fas fa-check-square"></i>
               Alle auswählen
             </button>
-            <button onclick="selectNoDepartments()" class="btn btn-secondary" class="u-flex-1">
+            <button data-action="select-no-departments" class="btn btn-secondary" class="u-flex-1">
               <i class="fas fa-square"></i>
               Keine auswählen
             </button>
@@ -855,7 +907,8 @@
             >
               <button
                 class="tab-header active"
-                onclick="switchPermTab('departments')"
+                data-action="switch-perm-tab"
+                data-tab="departments"
                 data-tab="departments"
                 style="
                   padding: 8px 16px;
@@ -870,7 +923,8 @@
               </button>
               <button
                 class="tab-header"
-                onclick="switchPermTab('groups')"
+                data-action="switch-perm-tab"
+                data-tab="groups"
                 data-tab="groups"
                 style="
                   padding: 8px 16px;
@@ -940,11 +994,11 @@
           </div>
 
           <div class="modal-actions" style="display: flex; gap: 12px; padding: 16px 0">
-            <button onclick="savePermissions()" class="btn btn-primary" class="u-flex-1">
+            <button data-action="save-permissions" class="btn btn-primary" class="u-flex-1">
               <i class="fas fa-save"></i>
               Speichern
             </button>
-            <button onclick="closePermissionsModal()" class="btn btn-secondary" class="u-flex-1">Abbrechen</button>
+            <button data-action="close-permissions-modal" class="btn btn-secondary" class="u-flex-1">Abbrechen</button>
           </div>
         </div>
       </div>
@@ -1001,6 +1055,62 @@
         if (!e.target.closest('.custom-dropdown')) {
           document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
           document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Event Delegation for data-action
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          case 'show-add-admin-modal':
+            if (window.showAddAdminModal) {
+              window.showAddAdminModal();
+            }
+            break;
+          case 'close-admin-modal':
+            if (window.closeAdminModal) {
+              window.closeAdminModal();
+            }
+            break;
+          case 'toggle-dropdown': {
+            const dropdown = target.dataset.dropdown;
+            if (dropdown) {
+              toggleDropdown('#' + dropdown);
+            }
+            break;
+          }
+          case 'select-option': {
+            const dropdown = target.dataset.dropdown;
+            const value = target.dataset.value;
+            const text = target.dataset.text;
+            if (dropdown && value && text) {
+              selectOption('#' + dropdown, value, text);
+            }
+            break;
+          }
+          case 'close-permissions-modal':
+            closePermissionsModal();
+            break;
+          case 'select-all-departments':
+            selectAllDepartments();
+            break;
+          case 'select-no-departments':
+            selectNoDepartments();
+            break;
+          case 'switch-perm-tab': {
+            const tab = target.dataset.tab;
+            if (tab) {
+              switchPermTab(tab);
+            }
+            break;
+          }
+          case 'save-permissions':
+            savePermissions();
+            break;
         }
       });
 

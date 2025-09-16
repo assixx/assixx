@@ -517,14 +517,14 @@
     </div>
 
     <!-- Add Root Button -->
-    <button class="add-root-btn" onclick="showAddRootModal()">+</button>
+    <button class="add-root-btn" data-action="show-add-root-modal">+</button>
 
     <!-- Root User Modal -->
     <div class="modal" id="rootModal">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title" id="modalTitle">Root User hinzufügen</h3>
-          <button class="modal-close" onclick="closeRootModal()">&times;</button>
+          <button class="modal-close" data-action="close-root-modal">&times;</button>
         </div>
         <form id="rootForm" style="padding: 20px">
           <div class="form-group">
@@ -578,23 +578,47 @@
           <div class="form-group">
             <label class="form-label">Position *</label>
             <div class="custom-dropdown">
-              <div class="dropdown-display" id="positionDropdownDisplay" onclick="toggleDropdown('positionDropdown')">
+              <div class="dropdown-display" id="positionDropdownDisplay" data-action="toggle-dropdown" data-dropdown="positionDropdown">
                 <span>Position auswählen...</span>
                 <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                   <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                 </svg>
               </div>
               <div class="dropdown-options" id="positionDropdownDropdown">
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'ceo', 'CEO')">CEO</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cto', 'CTO')">CTO</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'cfo', 'CFO')">CFO</div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'geschaeftsfuehrer', 'Geschäftsführer')">
+                <div class="dropdown-option" data-action="select-option" data-dropdown="positionDropdown" data-value="ceo" data-text="CEO">
+                  CEO
+                </div>
+                <div class="dropdown-option" data-action="select-option" data-dropdown="positionDropdown" data-value="cto" data-text="CTO">
+                  CTO
+                </div>
+                <div class="dropdown-option" data-action="select-option" data-dropdown="positionDropdown" data-value="cfo" data-text="CFO">
+                  CFO
+                </div>
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="geschaeftsfuehrer"
+                  data-text="Geschäftsführer"
+                >
                   Geschäftsführer
                 </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'it-administrator', 'IT-Administrator')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="it-administrator"
+                  data-text="IT-Administrator"
+                >
                   IT-Administrator
                 </div>
-                <div class="dropdown-option" onclick="selectOption('positionDropdown', 'systemadministrator', 'Systemadministrator')">
+                <div
+                  class="dropdown-option"
+                  data-action="select-option"
+                  data-dropdown="positionDropdown"
+                  data-value="systemadministrator"
+                  data-text="Systemadministrator"
+                >
                   Systemadministrator
                 </div>
               </div>
@@ -619,7 +643,7 @@
 
           <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
             <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" onclick="closeRootModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" data-action="close-root-modal">Abbrechen</button>
           </div>
         </form>
       </div>
@@ -681,6 +705,43 @@
         }
       });
 
+      // Event Delegation for data-action
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          case 'show-add-root-modal':
+            if (window.showAddRootModal) {
+              window.showAddRootModal();
+            }
+            break;
+          case 'close-root-modal':
+            if (window.closeRootModal) {
+              window.closeRootModal();
+            }
+            break;
+          case 'toggle-dropdown': {
+            const dropdown = target.dataset.dropdown;
+            if (dropdown) {
+              toggleDropdown(dropdown);
+            }
+            break;
+          }
+          case 'select-option': {
+            const dropdown = target.dataset.dropdown;
+            const value = target.dataset.value;
+            const text = target.dataset.text;
+            if (dropdown && value && text) {
+              selectOption(dropdown, value, text);
+            }
+            break;
+          }
+        }
+      });
+
       // Modal Functions
 
       function showAddRootModal() {
@@ -696,6 +757,10 @@
       function closeRootModal() {
         document.querySelector('#rootModal').classList.remove('active');
       }
+
+      // Export functions to window for compatibility
+      window.showAddRootModal = showAddRootModal;
+      window.closeRootModal = closeRootModal;
     </script>
 
     <!-- Breadcrumb Component -->

@@ -338,15 +338,15 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```html
 <div class="custom-dropdown">
-  <div class="dropdown-display" id="myDropdownDisplay" onclick="toggleDropdown('myDropdown')">
+  <div class="dropdown-display" id="myDropdownDisplay" on click(depcreated.itsnow eventhandler)="toggleDropdown('myDropdown')">
     <span>Bitte wählen</span>
     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     </svg>
   </div>
   <div class="dropdown-options" id="myDropdownDropdown">
-    <div class="dropdown-option" onclick="selectOption('value1', 'Text 1')">Text 1</div>
-    <div class="dropdown-option" onclick="selectOption('value2', 'Text 2')">Text 2</div>
+    <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('value1', 'Text 1')">Text 1</div>
+    <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('value2', 'Text 2')">Text 2</div>
   </div>
   <input type="hidden" name="fieldName" id="myDropdownValue" required />
 </div>
@@ -644,7 +644,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   <div class="modal-content">
     <div class="modal-header">
       <h3 class="modal-title">Modal Titel</h3>
-      <button class="modal-close" onclick="hideModal('myModal')">&times;</button>
+      <button class="modal-close" on click(depcreated.itsnow eventhandler)="hideModal('myModal')">&times;</button>
     </div>
     <form>
       <div class="form-group">
@@ -653,7 +653,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
       </div>
       <div class="button-group">
         <button type="submit" class="btn btn-primary">Speichern</button>
-        <button type="button" class="btn btn-secondary" onclick="hideModal('myModal')">Abbrechen</button>
+        <button type="button" class="btn btn-secondary" on click(depcreated.itsnow eventhandler)="hideModal('myModal')">Abbrechen</button>
       </div>
     </form>
   </div>

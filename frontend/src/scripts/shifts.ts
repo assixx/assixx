@@ -756,6 +756,54 @@ class ShiftPlanningSystem {
       } else if (target.id === 'updateScheduleBtn') {
         void this.updateSchedule();
       }
+
+      // Handle remove shift button
+      if (target.dataset.action === 'remove-shift' || target.parentElement?.dataset.action === 'remove-shift') {
+        e.stopPropagation();
+        const btn = target.dataset.action === 'remove-shift' ? target : target.parentElement;
+        if (btn) {
+          const employeeId = btn.dataset.employeeId;
+          const card = btn.closest('.employee-shift-card');
+          const cell = card?.closest(CSS_SELECTORS.SHIFT_CELL);
+          if (cell && employeeId !== undefined && employeeId !== '') {
+            // Set flag to prevent autofill when removing
+            this.isRemoving = true;
+            this.assignShift(cell as HTMLElement, Number(employeeId));
+            this.isRemoving = false;
+          }
+        }
+      }
+
+      // Handle close modal button
+      if (target.dataset.action === 'close-modal') {
+        const w = window as unknown as { modalManager?: { closeModal?: () => void } };
+        if (w.modalManager && typeof w.modalManager.closeModal === 'function') {
+          w.modalManager.closeModal();
+        }
+      }
+
+      // Handle add to favorites button
+      if (target.dataset.action === 'add-to-favorites') {
+        void this.addToFavorites();
+      }
+
+      // Handle dropdown options
+      const option = target.closest<HTMLElement>('.dropdown-option');
+      if (option) {
+        const type = option.dataset.type;
+        const value = option.dataset.value;
+        const text = option.dataset.text;
+        if (
+          type !== undefined &&
+          type !== '' &&
+          value !== undefined &&
+          value !== '' &&
+          text !== undefined &&
+          text !== ''
+        ) {
+          this.selectOption(type, value, text);
+        }
+      }
     });
 
     // Setup shift control checkboxes (preferences will be loaded after team selection)
@@ -1176,10 +1224,9 @@ class ShiftPlanningSystem {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
       option.dataset.value = String(area.id);
+      option.dataset.type = 'area';
+      option.dataset.text = area.name;
       option.textContent = area.name;
-      option.onclick = () => {
-        this.selectOption('area', String(area.id), area.name);
-      };
       dropdown.append(option);
     });
   }
@@ -1209,10 +1256,10 @@ class ShiftPlanningSystem {
     this.departments.forEach((dept) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
+      option.dataset.value = dept.id.toString();
+      option.dataset.type = 'department';
+      option.dataset.text = dept.name;
       option.textContent = dept.name;
-      option.onclick = () => {
-        (window as unknown as ShiftsWindow).selectOption('department', dept.id.toString(), dept.name);
-      };
       dropdown.append(option);
     });
 
@@ -1256,10 +1303,10 @@ class ShiftPlanningSystem {
     filteredMachines.forEach((machine) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
+      option.dataset.value = machine.id.toString();
+      option.dataset.type = 'machine';
+      option.dataset.text = machine.name;
       option.textContent = machine.name;
-      option.onclick = () => {
-        (window as unknown as ShiftsWindow).selectOption('machine', machine.id.toString(), machine.name);
-      };
       dropdown.append(option);
     });
   }
@@ -1297,10 +1344,10 @@ class ShiftPlanningSystem {
     this.teams.forEach((team) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
+      option.dataset.value = team.id.toString();
+      option.dataset.type = 'team';
+      option.dataset.text = team.name;
       option.textContent = team.name;
-      option.onclick = () => {
-        (window as unknown as ShiftsWindow).selectOption('team', team.id.toString(), team.name);
-      };
       dropdown.append(option);
     });
   }
@@ -1314,14 +1361,10 @@ class ShiftPlanningSystem {
     this.teamLeaders.forEach((leader) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
+      option.dataset.value = leader.id.toString();
+      option.dataset.type = 'teamLeader';
+      option.dataset.text = leader.name !== '' ? leader.name : leader.username;
       option.textContent = leader.name !== '' ? leader.name : leader.username;
-      option.onclick = () => {
-        (window as unknown as ShiftsWindow).selectOption(
-          'teamLeader',
-          leader.id.toString(),
-          leader.name !== '' ? leader.name : leader.username,
-        );
-      };
       dropdown.append(option);
     });
   }
@@ -4689,18 +4732,10 @@ class ShiftPlanningSystem {
     if (this.isAdmin) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
+      removeBtn.dataset.action = 'remove-shift';
+      removeBtn.dataset.employeeId = String(employee.id);
       const removeIcon = createElement('i', { className: 'fas fa-times' });
       removeBtn.append(removeIcon);
-      removeBtn.onclick = (e) => {
-        e.stopPropagation();
-        const cell = card.closest(CSS_SELECTORS.SHIFT_CELL);
-        if (cell) {
-          // Set flag to prevent autofill when removing
-          this.isRemoving = true;
-          this.assignShift(cell as HTMLElement, employee.id);
-          this.isRemoving = false;
-        }
-      };
       // Hide button if not in edit mode
       if (!this.isEditMode && this.currentPlanId !== null) {
         removeBtn.style.display = 'none';
@@ -5407,7 +5442,7 @@ class ShiftPlanningSystem {
           }
         </div>
         <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="window.modalManager.closeModal()">Schließen</button>
+          <button class="btn btn-secondary" data-action="close-modal">Schließen</button>
         </div>
       </div>
     `;
@@ -5903,10 +5938,8 @@ class ShiftPlanningSystem {
         const btn = document.createElement('button');
         btn.id = 'addToFavoritesBtn';
         btn.className = 'btn btn-success add-favorite-btn';
+        btn.dataset.action = 'add-to-favorites';
         btn.innerHTML = '⭐ Zu Favoriten hinzufügen';
-        btn.onclick = () => {
-          void this.addToFavorites();
-        };
 
         // Insert after the filter row
         filterRow.parentElement?.insertBefore(btn, filterRow.nextSibling);

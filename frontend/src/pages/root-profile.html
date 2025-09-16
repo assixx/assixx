@@ -769,8 +769,6 @@
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <!-- DOMPurify CDN für inline Scripts -->
-    <script src="/js/purify.min.js"></script>
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       import { setHTML } from '/utils/dom-utils.js';
@@ -904,7 +902,6 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
     <script>
-      /* global DOMPurify */
       // Authentication Check
       const token = localStorage.getItem('token');
       if (!token) {
@@ -1401,10 +1398,6 @@
         }
       }
 
-      // Make functions globally available
-      window.approveDeletion = approveDeletion;
-      window.rejectDeletion = rejectDeletion;
-
       // Set initial placeholder while loading
       function setInitialPlaceholder() {
         const container = document.querySelector('#profile-picture-display');
@@ -1512,16 +1505,12 @@
                 break;
               case 'approve-deletion': {
                 const queueId = parseInt(target.dataset.queueId);
-                if (window.approveDeletion) {
-                  window.approveDeletion(queueId);
-                }
+                approveDeletion(queueId);
                 break;
               }
               case 'reject-deletion': {
                 const queueId = parseInt(target.dataset.queueId);
-                if (window.rejectDeletion) {
-                  window.rejectDeletion(queueId);
-                }
+                rejectDeletion(queueId);
                 break;
               }
             }

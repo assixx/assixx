@@ -60,6 +60,38 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
     // Setup validation listeners
     setupValidationListeners();
+
+    // Event delegation for root user actions
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      // Handle edit root user
+      const editBtn = target.closest<HTMLElement>('[data-action="edit-root-user"]');
+      if (editBtn) {
+        const userId = editBtn.dataset.userId;
+        if (userId !== undefined) {
+          void editRootUserHandler(Number.parseInt(userId, 10));
+        }
+      }
+
+      // Handle show root permissions
+      const permissionsBtn = target.closest<HTMLElement>('[data-action="show-root-permissions"]');
+      if (permissionsBtn) {
+        const userId = permissionsBtn.dataset.userId;
+        if (userId !== undefined) {
+          showRootPermissionsModal(Number.parseInt(userId, 10));
+        }
+      }
+
+      // Handle delete root user
+      const deleteBtn = target.closest<HTMLElement>('[data-action="delete-root-user"]');
+      if (deleteBtn) {
+        const userId = deleteBtn.dataset.userId;
+        if (userId !== undefined) {
+          void deleteRootUser(Number.parseInt(userId, 10));
+        }
+      }
+    });
   }
 
   function setupValidationListeners(): void {
@@ -211,9 +243,9 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
               <td>${new Date(user.createdAt).toLocaleDateString('de-DE')}</td>
               <td>${user.lastLogin !== undefined ? new Date(user.lastLogin).toLocaleDateString('de-DE') : '-'}</td>
               <td>
-                <button class="action-btn edit" onclick="editRootUser(${user.id})">Bearbeiten</button>
-                <button class="action-btn permissions" onclick="showRootPermissionsModal(${user.id})" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
-                <button class="action-btn delete" onclick="deleteRootUser(${user.id})">Löschen</button>
+                <button class="action-btn edit" data-action="edit-root-user" data-user-id="${user.id}">Bearbeiten</button>
+                <button class="action-btn permissions" data-action="show-root-permissions" data-user-id="${user.id}" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
+                <button class="action-btn delete" data-action="delete-root-user" data-user-id="${user.id}">Löschen</button>
               </td>
             </tr>
           `,
@@ -447,7 +479,7 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     }
   }
 
-  // Make functions available globally for onclick handlers
+  // Make functions available globally for event delegation
   interface RootUsersWindow extends Window {
     showAddRootModal: (() => void) | null;
     showAddRootUserModal: (() => void) | null; // Alias
@@ -465,9 +497,9 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
   (window as unknown as RootUsersWindow).showRootPermissionsModal = null;
   (window as unknown as RootUsersWindow).deleteRootUser = null;
 
-  // Make functions globally available for onclick handlers
+  // Make functions globally available for event delegation
   (window as unknown as RootUsersWindow).showAddRootModal = showAddRootModal;
-  (window as unknown as RootUsersWindow).showAddRootUserModal = showAddRootModal; // Alias for HTML onclick
+  (window as unknown as RootUsersWindow).showAddRootUserModal = showAddRootModal; // Alias for compatibility
   (window as unknown as RootUsersWindow).closeRootModal = closeRootModal;
   (window as unknown as RootUsersWindow).editRootUser = editRootUserHandler;
   (window as unknown as RootUsersWindow).showRootPermissionsModal = showRootPermissionsModal;

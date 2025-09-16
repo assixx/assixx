@@ -558,7 +558,7 @@ class KontischichtManager {
             ${this.selectedPattern.employeeCount !== undefined && this.selectedPattern.employeeCount !== 0 ? ` | ${this.selectedPattern.employeeCount} Mitarbeiter` : ''}
           </p>
         </div>
-        <button onclick="kontischichtManager.changePattern()" style="
+        <button data-action="change-pattern" style="
           background: rgba(66, 153, 225, 0.2);
           color: #4299e1;
           border: 1px solid rgba(66, 153, 225, 0.4);
@@ -1525,7 +1525,29 @@ window.kontischichtManager = kontischichtManager;
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => {
     kontischichtManager.init();
+
+    // Event delegation for change pattern button
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+
+      // Handle change pattern
+      const changeBtn = target.closest<HTMLElement>('[data-action="change-pattern"]');
+      if (changeBtn) {
+        kontischichtManager.changePattern();
+      }
+    });
   });
 } else {
   kontischichtManager.init();
+
+  // Event delegation for change pattern button
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle change pattern
+    const changeBtn = target.closest<HTMLElement>('[data-action="change-pattern"]');
+    if (changeBtn) {
+      kontischichtManager.changePattern();
+    }
+  });
 }

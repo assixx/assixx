@@ -351,8 +351,8 @@ function renderGroupTree(groups, level = 0) {
     </div>
 
     <div class="permission-options">
-      <button onclick="selectAllDepartments()">Alle auswählen</button>
-      <button onclick="selectNoDepartments()">Keine auswählen</button>
+      <button on click="selectAllDepartments()">Alle auswählen</button>
+      <button on click="selectNoDepartments()">Keine auswählen</button>
     </div>
 
     <div class="department-list">
@@ -360,8 +360,8 @@ function renderGroupTree(groups, level = 0) {
     </div>
 
     <div class="modal-actions">
-      <button onclick="savePermissions()" class="btn-primary">Speichern</button>
-      <button onclick="closeModal()" class="btn-secondary">Abbrechen</button>
+      <button on click="savePermissions()" class="btn-primary">Speichern</button>
+      <button on click="closeModal()" class="btn-secondary">Abbrechen</button>
     </div>
   </div>
 </div>
@@ -466,7 +466,7 @@ async function loadDepartmentBadge() {
 <div class="page-container">
   <h1>Abteilungsgruppen verwalten</h1>
 
-  <button onclick="showCreateGroupModal()" class="btn-primary">
+  <button on click="showCreateGroupModal()" class="btn-primary">
     <i class="fas fa-plus"></i> Neue Gruppe erstellen
   </button>
 
@@ -523,7 +523,7 @@ async function loadDepartmentBadge() {
 
       <div class="modal-actions">
         <button type="submit" class="btn-primary">Erstellen</button>
-        <button type="button" onclick="closeModal()" class="btn-secondary">Abbrechen</button>
+        <button type="button" on click="closeModal()" class="btn-secondary">Abbrechen</button>
       </div>
     </form>
   </div>

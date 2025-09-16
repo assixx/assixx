@@ -101,7 +101,7 @@
             </div>
             <div class="control-right">
               <div class="custom-dropdown">
-                <div class="dropdown-display" id="sortDisplay" onclick="toggleDropdown('sort')">
+                <div class="dropdown-display" id="sortDisplay" data-action="toggle-dropdown" data-dropdown="sort">
                   <i class="fas fa-sort me-2"></i>
                   <span>Neueste zuerst</span>
                   <i class="fas fa-chevron-down ms-auto"></i>
@@ -148,7 +148,7 @@
             <i class="fas fa-file-alt me-2"></i>
             <span id="modalDocumentTitle">Dokument Vorschau</span>
           </h2>
-          <button class="close-button" onclick="closeDocumentModal()">
+          <button class="close-button" data-action="close-document-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -195,11 +195,11 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeDocumentModal()">
+          <button class="btn btn-secondary" data-action="close-document-modal">
             <i class="fas fa-times me-2"></i>
             Schließen
           </button>
-          <button class="btn btn-primary" id="downloadButton" onclick="downloadDocument()">
+          <button class="btn btn-primary" id="downloadButton" data-action="download-document">
             <i class="fas fa-download me-2"></i>
             Herunterladen
           </button>

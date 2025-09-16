@@ -94,7 +94,7 @@
                 <li>Erweiterte Backup-Historie</li>
                 <li>Priorisierter Support</li>
               </ul>
-              <button class="btn btn-primary" onclick="upgradeStorage('professional')">Upgrade auf 25 GB</button>
+              <button class="btn btn-primary" data-action="upgrade-storage" data-plan="professional">Upgrade auf 25 GB</button>
             </div>
 
             <!-- Enterprise Plan -->
@@ -113,7 +113,7 @@
                 <li>24/7 Support</li>
                 <li>Dedizierter Account Manager</li>
               </ul>
-              <button class="btn btn-primary" onclick="upgradeStorage('enterprise')">Upgrade auf 100 GB</button>
+              <button class="btn btn-primary" data-action="upgrade-storage" data-plan="enterprise">Upgrade auf 100 GB</button>
             </div>
           </div>
 
@@ -126,7 +126,7 @@
               <p style="margin-bottom: var(--spacing-lg)">
                 Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für ein individuelles Angebot.
               </p>
-              <button class="btn btn-primary" onclick="contactSales()">
+              <button class="btn btn-primary" data-action="contact-sales">
                 <i class="fas fa-phone"></i>
                 Vertrieb kontaktieren
               </button>
@@ -317,6 +317,25 @@
           }
         }
       }
+
+      // Event delegation for storage actions
+      document.addEventListener('click', (e) => {
+        const target = e.target;
+        const button = target.closest('[data-action]');
+
+        if (!button) return;
+
+        const action = button.dataset.action;
+
+        if (action === 'upgrade-storage') {
+          const plan = button.dataset.plan;
+          if (plan) {
+            window.upgradeStorage(plan);
+          }
+        } else if (action === 'contact-sales') {
+          window.contactSales();
+        }
+      });
 
       // Upgrade storage
       window.upgradeStorage = async function (plan) {

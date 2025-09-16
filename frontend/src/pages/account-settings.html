@@ -64,11 +64,16 @@
                   <li>Die gesamte Firmenstruktur</li>
                 </ul>
                 <div class="button-group">
-                  <button class="btn btn-danger" onclick="showDeleteModal()">
+                  <button class="btn btn-danger" data-action="show-delete-modal">
                     <i class="fas fa-trash-alt"></i>
                     Tenant komplett löschen
                   </button>
-                  <button id="deletionStatusButton" class="btn btn-info u-hidden" onclick="window.location.href='/tenant-deletion-status'">
+                  <button
+                    id="deletionStatusButton"
+                    class="btn btn-info u-hidden"
+                    data-action="navigate"
+                    data-href="/tenant-deletion-status"
+                  >
                     <i class="fas fa-tasks"></i>
                     Löschstatus anzeigen
                   </button>
@@ -140,11 +145,11 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" onclick="closeDeleteModal()">
+          <button class="btn btn-secondary" data-action="close-delete-modal">
             <i class="fas fa-times"></i>
             Abbrechen
           </button>
-          <button class="btn btn-danger" id="confirmDeleteBtn" onclick="deleteTenant()" disabled>
+          <button class="btn btn-danger" id="confirmDeleteBtn" data-action="delete-tenant" disabled>
             <i class="fas fa-trash-alt"></i>
             Endgültig löschen
           </button>
@@ -191,11 +196,11 @@
           </p>
 
           <div class="button-group" style="justify-content: center">
-            <button class="btn btn-secondary" onclick="closeDeletionStatusModal()">
+            <button class="btn btn-secondary" data-action="close-status-modal">
               <i class="fas fa-times"></i>
               Schließen
             </button>
-            <button class="btn btn-info" onclick="window.location.href='/tenant-deletion-status'">
+            <button class="btn btn-info" data-action="navigate" data-href="/tenant-deletion-status">
               <i class="fas fa-external-link-alt"></i>
               Zum Löschstatus
             </button>
@@ -249,6 +254,34 @@
       // Check deletion status when page loads
       document.addEventListener('DOMContentLoaded', () => {
         checkDeletionStatus();
+      });
+
+      // Event Delegation for all actions
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          case 'show-delete-modal':
+            if (window.showDeleteModal) window.showDeleteModal();
+            break;
+          case 'close-delete-modal':
+            if (window.closeDeleteModal) window.closeDeleteModal();
+            break;
+          case 'delete-tenant':
+            if (window.deleteTenant && !target.disabled) window.deleteTenant();
+            break;
+          case 'close-status-modal':
+            if (window.closeDeletionStatusModal) window.closeDeletionStatusModal();
+            break;
+          case 'navigate': {
+            const href = target.dataset.href;
+            if (href) window.location.href = href;
+            break;
+          }
+        }
       });
 
       // Modal functions

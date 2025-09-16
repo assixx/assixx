@@ -8,6 +8,13 @@ import { $$, setHTML, getData } from '../../utils/dom-utils';
 import { getAuthToken } from '../auth';
 import { showSuccessAlert, showErrorAlert, showConfirm } from '../utils/alerts';
 
+// Extend Window interface for openLightbox function
+declare global {
+  interface Window {
+    openLightbox?: (url: string) => void;
+  }
+}
+
 interface User {
   id: number;
   role: 'root' | 'admin' | 'employee';
@@ -625,7 +632,7 @@ class KvpDetailPage {
         photos
           .map(
             (photo, index) => `
-        <div class="photo-thumbnail" onclick="window.openLightbox('/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}')">
+        <div class="photo-thumbnail" data-action="open-lightbox" data-url="/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}">
           <img src="/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}"
                alt="${this.escapeHtml(photo.fileName)}"
                loading="lazy">
@@ -706,6 +713,19 @@ class KvpDetailPage {
         })();
       });
     }
+
+    // Event delegation for photo lightbox
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const thumbnail = target.closest('[data-action="open-lightbox"]');
+
+      if (thumbnail instanceof HTMLElement) {
+        const url = thumbnail.dataset.url;
+        if (url !== undefined && url !== '' && typeof window.openLightbox === 'function') {
+          window.openLightbox(url);
+        }
+      }
+    });
 
     // Action buttons
     document.querySelector('#editBtn')?.addEventListener('click', () => {

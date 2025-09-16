@@ -157,6 +157,39 @@ class MachinesManager {
       const modal = document.querySelector('#delete-machine-modal');
       if (modal) modal.classList.remove('active');
     });
+
+    // Event delegation for machine actions
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const w = window as WindowWithMachineHandlers;
+
+      // Handle edit machine
+      const editBtn = target.closest<HTMLElement>('[data-action="edit-machine"]');
+      if (editBtn) {
+        const machineId = editBtn.dataset.machineId;
+        if (machineId !== undefined && w.editMachine) {
+          void w.editMachine(Number.parseInt(machineId, 10));
+        }
+      }
+
+      // Handle view machine details
+      const viewBtn = target.closest<HTMLElement>('[data-action="view-machine-details"]');
+      if (viewBtn) {
+        const machineId = viewBtn.dataset.machineId;
+        if (machineId !== undefined && w.viewMachineDetails) {
+          void w.viewMachineDetails(Number.parseInt(machineId, 10));
+        }
+      }
+
+      // Handle delete machine
+      const deleteBtn = target.closest<HTMLElement>('[data-action="delete-machine"]');
+      if (deleteBtn) {
+        const machineId = deleteBtn.dataset.machineId;
+        if (machineId !== undefined && w.deleteMachine) {
+          void w.deleteMachine(Number.parseInt(machineId, 10));
+        }
+      }
+    });
   }
 
   async loadMachines(): Promise<void> {
@@ -257,13 +290,13 @@ class MachinesManager {
           ${this.getMaintenanceWarning(machine.nextMaintenance)}
         </td>
         <td>
-          <button class="btn btn-sm btn-secondary" onclick="window.editMachine(${machine.id})">
+          <button class="btn btn-sm btn-secondary" data-action="edit-machine" data-machine-id="${machine.id}">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="btn btn-sm btn-secondary" onclick="window.viewMachineDetails(${machine.id})">
+          <button class="btn btn-sm btn-secondary" data-action="view-machine-details" data-machine-id="${machine.id}">
             <i class="fas fa-eye"></i>
           </button>
-          <button class="btn btn-sm btn-danger" onclick="window.deleteMachine(${machine.id})">
+          <button class="btn btn-sm btn-danger" data-action="delete-machine" data-machine-id="${machine.id}">
             <i class="fas fa-trash"></i>
           </button>
         </td>
@@ -561,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
       void machinesManager?.loadMachines();
     };
 
-    // Expose functions globally for HTML onclick handlers
+    // Expose functions globally for event delegation
     const w = window as unknown as WindowWithMachineHandlers;
     w.editMachine = async (id: number) => {
       const machine = await machinesManager?.getMachineDetails(id);

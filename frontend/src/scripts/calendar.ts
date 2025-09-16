@@ -557,7 +557,9 @@ async function showUnreadEventsModal(): Promise<void> {
         // Accept button
         const acceptBtn = document.createElement('button');
         acceptBtn.className = 'btn btn-success btn-sm';
-        acceptBtn.onclick = () => window.respondToEvent(event.id, 'accepted');
+        acceptBtn.dataset.action = 'respond-event';
+        acceptBtn.dataset.eventId = event.id.toString();
+        acceptBtn.dataset.response = 'accepted';
         const acceptIcon = document.createElement('i');
         acceptIcon.className = 'fas fa-check';
         acceptBtn.append(acceptIcon);
@@ -567,7 +569,9 @@ async function showUnreadEventsModal(): Promise<void> {
         // Decline button
         const declineBtn = document.createElement('button');
         declineBtn.className = 'btn btn-danger btn-sm';
-        declineBtn.onclick = () => window.respondToEvent(event.id, 'declined');
+        declineBtn.dataset.action = 'respond-event';
+        declineBtn.dataset.eventId = event.id.toString();
+        declineBtn.dataset.response = 'declined';
         const declineIcon = document.createElement('i');
         declineIcon.className = 'fas fa-times';
         declineBtn.append(declineIcon);
@@ -577,7 +581,8 @@ async function showUnreadEventsModal(): Promise<void> {
         // Details button
         const detailsBtn = document.createElement('button');
         detailsBtn.className = 'btn btn-secondary btn-sm';
-        detailsBtn.onclick = () => window.showEventDetails(event.id);
+        detailsBtn.dataset.action = 'show-event-details';
+        detailsBtn.dataset.eventId = event.id.toString();
         const detailsIcon = document.createElement('i');
         detailsIcon.className = 'fas fa-info-circle';
         detailsBtn.append(detailsIcon);
@@ -1039,6 +1044,158 @@ function setupEventListeners(): void {
         const value = (option as HTMLElement).dataset.value ?? '';
         const text = option.textContent.trim();
         selectRecurrence(value, text);
+      }
+    }
+
+    // Handle event response buttons (Zusagen/Absagen)
+    const respondEventBtn = target.closest<HTMLElement>('[data-action="respond-event"]');
+    if (respondEventBtn) {
+      const eventId = respondEventBtn.dataset.eventId;
+      const response = respondEventBtn.dataset.response;
+      if (eventId !== undefined && response !== undefined) {
+        void window.respondToEvent(Number.parseInt(eventId, 10), response as 'accepted' | 'declined');
+      }
+    }
+
+    // Handle show event details button
+    const showDetailsBtn = target.closest<HTMLElement>('[data-action="show-event-details"]');
+    if (showDetailsBtn) {
+      const eventId = showDetailsBtn.dataset.eventId;
+      if (eventId !== undefined) {
+        void window.showEventDetails(Number.parseInt(eventId, 10));
+      }
+    }
+
+    // Handle modal response buttons
+    const respondModalBtn = target.closest<HTMLElement>('[data-action="respond-modal"]');
+    if (respondModalBtn) {
+      const eventId = respondModalBtn.dataset.eventId;
+      const response = respondModalBtn.dataset.response;
+      if (eventId !== undefined && response !== undefined) {
+        void window.respondToEvent(Number.parseInt(eventId, 10), response as 'accepted' | 'tentative' | 'declined');
+      }
+    }
+
+    // Handle edit event button
+    const editEventBtn = target.closest<HTMLElement>('[data-action="edit-event"]');
+    if (editEventBtn) {
+      const eventId = editEventBtn.dataset.eventId;
+      if (eventId !== undefined) {
+        window.editEvent(Number.parseInt(eventId, 10));
+      }
+    }
+
+    // Handle delete event button
+    const deleteEventBtn = target.closest<HTMLElement>('[data-action="delete-event"]');
+    if (deleteEventBtn) {
+      const eventId = deleteEventBtn.dataset.eventId;
+      if (eventId !== undefined) {
+        window.deleteEvent(Number.parseInt(eventId, 10));
+      }
+    }
+
+    // Handle confirm delete event button
+    const confirmDeleteBtn = target.closest<HTMLElement>('[data-action="confirm-delete-event"]');
+    if (confirmDeleteBtn) {
+      console.info('[CALENDAR] Confirm delete button clicked');
+      void confirmDeleteEvent();
+    }
+
+    // Handle add attendee button
+    const addAttendeeBtn = target.closest<HTMLElement>('[data-action="add-attendee"]');
+    if (addAttendeeBtn) {
+      const empId = addAttendeeBtn.dataset.empId;
+      const empName = addAttendeeBtn.dataset.empName;
+      if (empId !== undefined && empName !== undefined) {
+        addAttendee(Number.parseInt(empId, 10), empName);
+      }
+    }
+
+    // Handle select department option
+    const selectDeptOption = target.closest<HTMLElement>('[data-action="select-department"]');
+    if (selectDeptOption) {
+      e.preventDefault();
+      const deptId = selectDeptOption.dataset.deptId;
+      const deptName = selectDeptOption.dataset.deptName;
+      if (deptId !== undefined && deptName !== undefined) {
+        selectDepartment(Number.parseInt(deptId, 10), deptName);
+        closeAllDropdowns();
+      }
+    }
+
+    // Handle select department with teams option
+    const selectDeptWithTeamsOption = target.closest<HTMLElement>('[data-action="select-department-with-teams"]');
+    if (selectDeptWithTeamsOption) {
+      e.preventDefault();
+      const deptId = selectDeptWithTeamsOption.dataset.deptId;
+      const deptName = selectDeptWithTeamsOption.dataset.deptName;
+      if (deptId !== undefined && deptName !== undefined) {
+        selectDepartment(Number.parseInt(deptId, 10), deptName);
+        loadTeamsForDepartment(Number.parseInt(deptId, 10));
+        closeAllDropdowns();
+      }
+    }
+
+    // Handle select team option
+    const selectTeamOption = target.closest<HTMLElement>('[data-action="select-team"]');
+    if (selectTeamOption) {
+      e.preventDefault();
+      const teamId = selectTeamOption.dataset.teamId;
+      const teamName = selectTeamOption.dataset.teamName;
+      if (teamId !== undefined && teamName !== undefined) {
+        selectTeam(Number.parseInt(teamId, 10), teamName);
+        closeAllDropdowns();
+      }
+    }
+
+    // Handle add attendee by email button
+    const addByEmailBtn = target.closest<HTMLElement>('[data-action="add-attendee-by-email"]');
+    if (addByEmailBtn) {
+      // Implementation for adding attendee by email
+      const emailInput = $$('#attendeeEmailInput') as HTMLInputElement | null;
+      if (emailInput !== null && emailInput.value !== '') {
+        const email = emailInput.value.trim();
+        // Basic email validation - using simple pattern
+        // Using \S (non-whitespace) to avoid complex character classes
+        const emailRegex = /^\S[^\s@]*@\S[^\s.]*\.\S{2,}$/;
+        if (email !== '' && emailRegex.test(email)) {
+          // For now, just show the email in the list
+          const emailsList = $$('#selectedAttendeesEmails');
+          if (emailsList) {
+            const emailDiv = document.createElement('div');
+            emailDiv.className = 'badge badge-secondary mr-2 mb-2';
+            emailDiv.textContent = email;
+            emailsList.append(emailDiv);
+            emailInput.value = '';
+          }
+        } else {
+          showError('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+        }
+      }
+    }
+
+    // Handle remove attendee button
+    const removeAttendeeBtn = target.closest<HTMLElement>('[data-action="remove-attendee"]');
+    if (removeAttendeeBtn) {
+      const userId = removeAttendeeBtn.dataset.userId;
+      if (userId !== undefined) {
+        window.removeAttendee(Number.parseInt(userId, 10));
+      }
+    }
+
+    // Handle toggle recurrence end dropdown
+    const toggleRecurrenceBtn = target.closest<HTMLElement>('[data-action="toggle-recurrence-end-dropdown"]');
+    if (toggleRecurrenceBtn) {
+      window.toggleRecurrenceEndDropdown();
+    }
+
+    // Handle select recurrence end option
+    const selectRecurrenceOption = target.closest<HTMLElement>('[data-action="select-recurrence-end"]');
+    if (selectRecurrenceOption) {
+      const endType = selectRecurrenceOption.dataset.endType;
+      const endText = selectRecurrenceOption.dataset.endText;
+      if (endType !== undefined && endText !== undefined) {
+        window.selectRecurrenceEnd(endType, endText);
       }
     }
 
@@ -1651,13 +1808,13 @@ async function viewEvent(eventId: number): Promise<void> {
         <div class="response-buttons">
           <h4>Ihre Antwort</h4>
           <div class="btn-group">
-            <button class="btn ${currentResponse === 'accepted' ? 'btn-success' : 'btn-outline-success'}" onclick="respondToEvent(${event.id}, 'accepted')">
+            <button class="btn ${currentResponse === 'accepted' ? 'btn-success' : 'btn-outline-success'}" data-action="respond-modal" data-event-id="${event.id}" data-response="accepted">
               <i class="fas fa-check"></i> Zusagen
             </button>
-            <button class="btn ${currentResponse === 'tentative' ? 'btn-warning' : 'btn-outline-warning'}" onclick="respondToEvent(${event.id}, 'tentative')">
+            <button class="btn ${currentResponse === 'tentative' ? 'btn-warning' : 'btn-outline-warning'}" data-action="respond-modal" data-event-id="${event.id}" data-response="tentative">
               <i class="fas fa-question"></i> Vielleicht
             </button>
-            <button class="btn ${currentResponse === 'declined' ? 'btn-danger' : 'btn-outline-danger'}" onclick="respondToEvent(${event.id}, 'declined')">
+            <button class="btn ${currentResponse === 'declined' ? 'btn-danger' : 'btn-outline-danger'}" data-action="respond-modal" data-event-id="${event.id}" data-response="declined">
               <i class="fas fa-times"></i> Absagen
             </button>
           </div>
@@ -1680,10 +1837,10 @@ async function viewEvent(eventId: number): Promise<void> {
     if (event.created_by === currentUserId) {
       modalContent += `
         <div class="modal-actions">
-          <button class="btn btn-primary" onclick="editEvent(${event.id})">
+          <button class="btn btn-primary" data-action="edit-event" data-event-id="${event.id}">
             <i class="fas fa-edit"></i> Bearbeiten
           </button>
-          <button class="btn btn-danger" onclick="deleteEvent(${event.id})">
+          <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
             <i class="fas fa-trash"></i> Löschen
           </button>
           <button class="btn btn-secondary" data-action="close">
@@ -1695,7 +1852,7 @@ async function viewEvent(eventId: number): Promise<void> {
       // Admin can delete but not edit
       modalContent += `
         <div class="modal-actions">
-          <button class="btn btn-danger" onclick="deleteEvent(${event.id})">
+          <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
             <i class="fas fa-trash"></i> Löschen
           </button>
           <button class="btn btn-secondary" data-action="close">
@@ -2054,11 +2211,9 @@ function updateOrgIdDropdown(level: string): void {
         option.className = 'dropdown-option';
         option.dataset.value = dept.id.toString();
         option.textContent = dept.name;
-        option.onclick = (e) => {
-          e.preventDefault();
-          selectDepartment(dept.id, dept.name);
-          closeAllDropdowns();
-        };
+        option.dataset.action = 'select-department';
+        option.dataset.deptId = dept.id.toString();
+        option.dataset.deptName = dept.name;
         departmentDropdown?.append(option);
       });
     }
@@ -2073,13 +2228,9 @@ function updateOrgIdDropdown(level: string): void {
       option.className = 'dropdown-option';
       option.dataset.value = dept.id.toString();
       option.textContent = dept.name;
-      option.onclick = (e) => {
-        e.preventDefault();
-        selectDepartment(dept.id, dept.name);
-        // Load teams for this department
-        loadTeamsForDepartment(dept.id);
-        closeAllDropdowns();
-      };
+      option.dataset.action = 'select-department-with-teams';
+      option.dataset.deptId = dept.id.toString();
+      option.dataset.deptName = dept.name;
       departmentDropdown?.append(option);
     });
   }
@@ -2128,11 +2279,9 @@ function loadTeamsForDepartment(departmentId: number): void {
     option.className = 'dropdown-option';
     option.dataset.value = team.id.toString();
     option.textContent = team.name;
-    option.onclick = (e) => {
-      e.preventDefault();
-      selectTeam(team.id, team.name);
-      closeAllDropdowns();
-    };
+    option.dataset.action = 'select-team';
+    option.dataset.teamId = team.id.toString();
+    option.dataset.teamName = team.name;
     teamDropdown.append(option);
   });
 
@@ -2605,10 +2754,8 @@ function deleteEvent(eventId: number): void {
       // Add click handler to the delete button when modal opens
       const confirmBtn = $$('#confirmDeleteBtn');
       if (confirmBtn) {
-        confirmBtn.onclick = () => {
-          console.info('[CALENDAR] Confirm delete button clicked, eventToDelete:', eventToDelete);
-          void confirmDeleteEvent();
-        };
+        confirmBtn.dataset.action = 'confirm-delete-event';
+        confirmBtn.dataset.eventId = eventToDelete?.toString() ?? '';
       }
     },
   });
@@ -2720,9 +2867,9 @@ function searchAttendees(query: string): void {
 
     const addBtn = document.createElement('button');
     addBtn.className = 'btn btn-sm btn-primary';
-    addBtn.onclick = () => {
-      addAttendee(emp.id, name);
-    };
+    addBtn.dataset.action = 'add-attendee';
+    addBtn.dataset.empId = emp.id.toString();
+    addBtn.dataset.empName = name;
     const plusIcon = document.createElement('i');
     plusIcon.className = 'fas fa-plus';
     addBtn.append(plusIcon);
@@ -3219,7 +3366,7 @@ async function loadEmployeesForAttendees(): Promise<void> {
           <div class="form-group">
             <label>Teilnehmer per E-Mail einladen:</label>
             <input type="email" id="attendeeEmailInput" class="form-control" placeholder="email@example.com">
-            <button type="button" class="btn btn-primary mt-2" onclick="addAttendeeByEmail()">
+            <button type="button" class="btn btn-primary mt-2" data-action="add-attendee-by-email">
               <i class="fas fa-plus"></i> Hinzufügen
             </button>
             <div id="selectedAttendeesEmails" class="mt-3"></div>
@@ -3385,7 +3532,7 @@ function updateSelectedAttendees(): void {
           <span class="attendee-name">
             ${escapeHtml(displayName)}
           </span>
-          <button type="button" class="remove-attendee" onclick="removeAttendee(${userId})">
+          <button type="button" class="remove-attendee" data-action="remove-attendee" data-user-id="${userId}">
             <i class="fas fa-times"></i>
           </button>
         </div>
@@ -3707,20 +3854,20 @@ function getEventFormModalTemplate(): string {
                 <i class="fas fa-calendar-times"></i> Wiederkehrung endet
               </label>
               <div class="custom-dropdown" id="recurrenceEndTypeWrapper">
-                <div class="custom-select-display dropdown-display" onclick="window.toggleRecurrenceEndDropdown()">
+                <div class="custom-select-display dropdown-display" data-action="toggle-recurrence-end-dropdown">
                   <span id="selectedRecurrenceEnd">Nie</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="dropdown-options" id="recurrenceEndDropdown">
-                  <div class="dropdown-option" data-value="never" onclick="window.selectRecurrenceEnd('never', 'Nie')">
+                  <div class="dropdown-option" data-value="never" data-action="select-recurrence-end" data-end-type="never" data-end-text="Nie">
                     Nie
                   </div>
-                  <div class="dropdown-option" data-value="after" onclick="window.selectRecurrenceEnd('after', 'Nach Anzahl')">
+                  <div class="dropdown-option" data-value="after" data-action="select-recurrence-end" data-end-type="after" data-end-text="Nach Anzahl">
                     Nach Anzahl
                   </div>
-                  <div class="dropdown-option" data-value="until" onclick="window.selectRecurrenceEnd('until', 'An Datum')">
+                  <div class="dropdown-option" data-value="until" data-action="select-recurrence-end" data-end-type="until" data-end-text="An Datum">
                     An Datum
                   </div>
                 </div>
