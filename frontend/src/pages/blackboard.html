@@ -20,6 +20,7 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/blackboard.css');
@@ -108,8 +109,10 @@
 
       /* Modal Overlays - Glassmorphismus */
       .modal-overlay {
-        background-color: rgba(0, 0, 0, 0.7);
         backdrop-filter: blur(10px);
+        transition:
+          opacity 0.1s ease,
+          visibility 0.1s ease;
       }
 
       .modal-container {
@@ -338,13 +341,12 @@
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        color: white;
+        color: #fff;
         padding: 10px 20px;
         border-radius: 8px;
         cursor: pointer;
         display: none;
         font-size: 14px;
-        transition: all 0.3s ease;
       }
 
       .fullscreen-exit-btn:hover {
@@ -863,10 +865,10 @@
         currentZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
 
         // Update display
-        document.getElementById('zoomLevel').textContent = currentZoom + '%';
+        document.querySelector('#zoomLevel').textContent = currentZoom + '%';
 
         // Apply CSS zoom property instead of transform
-        const container = document.getElementById('blackboardContainer');
+        const container = document.querySelector('#blackboardContainer');
         container.style.zoom = currentZoom + '%';
 
         // Store in localStorage
@@ -882,11 +884,11 @@
         }
 
         // Zoom button event listeners
-        document.getElementById('zoomInBtn').addEventListener('click', function () {
+        document.querySelector('#zoomInBtn').addEventListener('click', function () {
           updateZoom(currentZoom + zoomStep);
         });
 
-        document.getElementById('zoomOutBtn').addEventListener('click', function () {
+        document.querySelector('#zoomOutBtn').addEventListener('click', function () {
           updateZoom(currentZoom - zoomStep);
         });
 
@@ -906,9 +908,9 @@
           }
         });
 
-        const filterToggle = document.getElementById('filterToggle');
-        const filterContent = document.getElementById('filterContent');
-        const filterToggleIcon = document.getElementById('filterToggleIcon');
+        const filterToggle = document.querySelector('#filterToggle');
+        const filterContent = document.querySelector('#filterContent');
+        const filterToggleIcon = document.querySelector('#filterToggleIcon');
 
         filterToggle.addEventListener('click', function () {
           if (filterContent.style.display === 'none' || filterContent.style.display === '') {
@@ -923,7 +925,7 @@
 
       // Modal Functions
       function showModal(modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.style.display = 'flex';
           setTimeout(() => {
@@ -933,7 +935,7 @@
       }
 
       function hideModal(modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.classList.remove('active');
           setTimeout(() => {
@@ -957,10 +959,10 @@
           if (!container) {
             container = document.createElement('div');
             container.className = 'toast-container';
-            document.body.appendChild(container);
+            document.body.append(container);
           }
 
-          container.appendChild(toast);
+          container.append(toast);
 
           // Nach 3 Sekunden ausblenden
           setTimeout(function () {
@@ -1031,6 +1033,8 @@
         await import('/scripts/auth.ts');
         // Then load unified navigation
         await import('/scripts/components/unified-navigation.ts');
+        // Load role switch
+        await import('/scripts/role-switch.ts');
         // Load breadcrumb
         const { initBreadcrumb } = await import('/scripts/components/breadcrumb.js');
         initBreadcrumb();

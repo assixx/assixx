@@ -1,11 +1,5 @@
 // Database-specific Type Definitions
-
-import {
-  Pool,
-  ResultSetHeader,
-  RowDataPacket,
-  FieldPacket,
-} from "mysql2/promise";
+import { FieldPacket, Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 export interface DatabaseConfig {
   host: string;

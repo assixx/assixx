@@ -2,33 +2,46 @@
  * Root Service v2
  * Business logic for root user operations and tenant management
  */
+import bcrypt from 'bcryptjs';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import bcrypt from "bcryptjs";
-import { ResultSetHeader, RowDataPacket } from "mysql2/promise";
-
-import { RootLog } from "../../../models/rootLog.js";
-import TenantModel from "../../../models/tenant.js";
-import UserModel from "../../../models/user.js";
-import { tenantDeletionService } from "../../../services/tenantDeletion.service.js";
-import { execute } from "../../../utils/db.js";
-import { generateEmployeeId } from "../../../utils/employeeIdGenerator.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
+import rootLog from '../../../models/rootLog';
+import tenantModel from '../../../models/tenant.js';
+import userModel from '../../../models/user.js';
+import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { execute } from '../../../utils/db.js';
+import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
+import { logger } from '../../../utils/logger.js';
 import {
+  AdminLog,
   AdminUser,
   CreateAdminRequest,
-  UpdateAdminRequest,
-  RootUser,
   CreateRootUserRequest,
-  UpdateRootUserRequest,
-  Tenant,
   DashboardStats,
-  StorageInfo,
-  AdminLog,
-  TenantDeletionStatus,
   DeletionApproval,
   DeletionDryRunReport,
-} from "./types.js";
+  MySQLError,
+  RootUser,
+  StorageInfo,
+  Tenant,
+  TenantDeletionStatus,
+  UpdateAdminRequest,
+  UpdateRootUserRequest,
+} from './types.js';
+
+// Type guard for MySQL errors
+function isMySQLError(error: unknown): error is MySQLError {
+  return (
+    error !== null &&
+    error !== undefined &&
+    typeof error === 'object' &&
+    'message' in error &&
+    (('code' in error && typeof (error as MySQLError).code === 'string') ||
+      ('sqlMessage' in error && typeof (error as MySQLError).sqlMessage === 'string') ||
+      ('sql' in error && typeof (error as MySQLError).sql === 'string'))
+  );
+}
 
 interface TenantRow extends RowDataPacket {
   id: number;
@@ -44,21 +57,28 @@ interface TenantRow extends RowDataPacket {
   updated_at: Date;
 }
 
+/**
+ *
+ */
 export class RootService {
   /**
    * Get all admin users for a tenant
+   * @param tenantId - The tenant ID
    */
   async getAdmins(tenantId: number): Promise<AdminUser[]> {
     try {
       // Get admins with extended information
-      const admins = await UserModel.findByRole("admin", true, tenantId);
+      // If no tenantId provided, get ALL admins from ALL tenants
+      logger.info(`[RootService.getAdmins] Fetching admins for tenant ${tenantId}`);
+      const admins = await userModel.findByRole('admin', true, tenantId);
+      logger.info(`[RootService.getAdmins] Found ${admins.length} admins for tenant ${tenantId}`);
 
       // Add tenant information
-      const adminsWithTenants = await Promise.all(
+      return await Promise.all(
         admins.map(async (admin) => {
           let tenantName: string | undefined;
           if (admin.tenant_id) {
-            const tenant = await TenantModel.findById(admin.tenant_id);
+            const tenant = await tenantModel.findById(admin.tenant_id);
             tenantName = tenant?.company_name;
           }
 
@@ -66,11 +86,11 @@ export class RootService {
             id: admin.id,
             username: admin.username,
             email: admin.email,
-            firstName: admin.first_name ?? "",
-            lastName: admin.last_name ?? "",
+            firstName: admin.first_name || '',
+            lastName: admin.last_name || '',
             company: admin.company,
             notes: admin.notes,
-            isActive: admin.is_active ?? false,
+            isActive: Boolean(admin.is_active),
             tenantId: admin.tenant_id ?? 0,
             tenantName,
             createdAt: admin.created_at ?? new Date(),
@@ -79,119 +99,114 @@ export class RootService {
           };
         }),
       );
-
-      return adminsWithTenants;
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve admin users",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin users', error);
     }
   }
 
   /**
    * Get single admin by ID
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async getAdminById(id: number, tenantId: number): Promise<AdminUser | null> {
     try {
-      const admin = await UserModel.findById(id, tenantId);
+      const admin = await userModel.findById(id, tenantId);
 
-      if (!admin || admin.role !== "admin") {
+      if (!admin || admin.role !== 'admin') {
         return null;
       }
 
       // Get tenant name
       let tenantName: string | undefined;
       if (admin.tenant_id) {
-        const tenant = await TenantModel.findById(admin.tenant_id);
+        const tenant = await tenantModel.findById(admin.tenant_id);
         tenantName = tenant?.company_name;
       }
 
       // Get last login
-      const lastLogin = await RootLog.getLastLogin(id);
+      const lastLogin = await rootLog.getLastLogin(id);
 
       return {
         id: admin.id,
         username: admin.username,
         email: admin.email,
-        firstName: admin.first_name ?? "",
-        lastName: admin.last_name ?? "",
+        firstName: admin.first_name || '',
+        lastName: admin.last_name || '',
         company: admin.company,
         notes: admin.notes,
-        isActive: admin.is_active ?? false,
+        isActive: Boolean(admin.is_active),
         tenantId: admin.tenant_id ?? 0,
         tenantName,
         createdAt: admin.created_at ?? new Date(),
         updatedAt: admin.updated_at ?? new Date(),
         lastLogin: lastLogin?.created_at,
       };
-    } catch (error) {
-      throw new ServiceError("SERVER_ERROR", "Failed to retrieve admin", error);
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin', error);
     }
   }
 
   /**
    * Create new admin user
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
-  async createAdmin(
-    data: CreateAdminRequest,
-    tenantId: number,
-  ): Promise<number> {
+  async createAdmin(data: CreateAdminRequest, tenantId: number): Promise<number> {
     try {
+      // Hash password before passing to model
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+
       const adminData = {
         username: data.username,
         email: data.email,
-        password: data.password,
-        first_name: data.firstName ?? "",
-        last_name: data.lastName ?? "",
-        role: "admin" as const,
+        password: hashedPassword,
+        first_name: data.firstName ?? '',
+        last_name: data.lastName ?? '',
+        role: 'admin' as const,
         tenant_id: tenantId,
         is_active: true,
         company: data.company,
         notes: data.notes,
+        employee_number: data.employeeNumber ?? '',
+        position: data.position ?? '',
       };
 
-      const adminId = await UserModel.create(adminData);
+      const adminId = await userModel.create(adminData);
 
       // Add admin to tenant_admins table
       try {
         await execute(
-          "INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)",
+          'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)',
           [tenantId, adminId],
         );
-      } catch (error) {
+      } catch (error: unknown) {
         // Log but don't fail - admin was created successfully
-        console.warn("Could not add admin to tenant_admins:", error);
+        console.warn('Could not add admin to tenant_admins:', error);
       }
 
       return adminId;
-    } catch (error) {
+    } catch (error: unknown) {
       const dbError = error as { code?: string };
-      if (dbError.code === "ER_DUP_ENTRY") {
-        throw new ServiceError(
-          "DUPLICATE_ENTRY",
-          "Username or email already exists",
-          error,
-        );
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        throw new ServiceError('DUPLICATE_ENTRY', 'Username or email already exists', error);
       }
-      throw new ServiceError("SERVER_ERROR", "Failed to create admin", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to create admin', error);
     }
   }
 
   /**
    * Update admin user
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
-  async updateAdmin(
-    id: number,
-    data: UpdateAdminRequest,
-    tenantId: number,
-  ): Promise<void> {
+  async updateAdmin(id: number, data: UpdateAdminRequest, tenantId: number): Promise<void> {
     try {
       // Check if admin exists
       const admin = await this.getAdminById(id, tenantId);
       if (!admin) {
-        throw new ServiceError("NOT_FOUND", "Admin not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
       const updateData: Record<string, unknown> = {};
@@ -203,90 +218,97 @@ export class RootService {
       if (data.company !== undefined) updateData.company = data.company;
       if (data.notes !== undefined) updateData.notes = data.notes;
       if (data.isActive !== undefined) updateData.is_active = data.isActive;
+      if (data.employeeNumber !== undefined) updateData.employee_number = data.employeeNumber;
+      if (data.position !== undefined) updateData.position = data.position;
 
       // Hash password if provided
       if (data.password) {
         updateData.password = await bcrypt.hash(data.password, 10);
       }
 
-      const success = await UserModel.update(id, updateData, tenantId);
+      const success = await userModel.update(id, updateData, tenantId);
       if (!success) {
-        throw new ServiceError("UPDATE_FAILED", "Failed to update admin", 500);
+        throw new ServiceError('UPDATE_FAILED', 'Failed to update admin', 500);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError("SERVER_ERROR", "Failed to update admin", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to update admin', error);
     }
   }
 
   /**
    * Delete admin user
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async deleteAdmin(id: number, tenantId: number): Promise<void> {
     try {
       // Check if admin exists
       const admin = await this.getAdminById(id, tenantId);
       if (!admin) {
-        throw new ServiceError("NOT_FOUND", "Admin not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
-      const success = await UserModel.delete(id);
+      const success = await userModel.delete(id);
       if (!success) {
-        throw new ServiceError("DELETE_FAILED", "Failed to delete admin", 500);
+        throw new ServiceError('DELETE_FAILED', 'Failed to delete admin', 500);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError("SERVER_ERROR", "Failed to delete admin", error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete admin', error);
     }
   }
 
   /**
    * Get admin logs
+   * @param adminId - The adminId parameter
+   * @param tenantId - The tenant ID
+   * @param days - The days parameter
    */
-  async getAdminLogs(
-    adminId: number,
-    tenantId: number,
-    days?: number,
-  ): Promise<AdminLog[]> {
+  async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
     try {
       // Verify admin exists
       const admin = await this.getAdminById(adminId, tenantId);
       if (!admin) {
-        throw new ServiceError("NOT_FOUND", "Admin not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
-      const logs = await RootLog.getByUserId(adminId, days ?? 0);
+      const logs = await rootLog.getByUserId(adminId, days ?? 0);
 
       return logs.map((log) => ({
         id: log.id,
         userId: log.user_id,
         action: log.action,
-        entityType: log.entity_type ?? "",
+        entityType: log.entity_type ?? '',
         entityId: log.entity_id,
-        description: log.description,
+        description: log.description as string | undefined,
         ipAddress: log.ip_address,
         userAgent: log.user_agent,
         createdAt: log.created_at,
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve admin logs",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin logs', error);
     }
   }
 
   /**
-   * Get all tenants
+   * Get tenants - ONLY the root user's own tenant for security
+   * @param tenantId - The tenant ID of the requesting user
    */
-  async getTenants(): Promise<Tenant[]> {
+  async getTenants(tenantId: number): Promise<Tenant[]> {
     try {
-      const tenants = await TenantModel.findAll();
+      // CRITICAL: Multi-tenant isolation - only return user's own tenant
+      const tenant = await tenantModel.findById(tenantId);
+
+      if (!tenant) {
+        return [];
+      }
+
+      const tenants = [tenant]; // Only return the user's own tenant
 
       // Get user counts for each tenant
-      const tenantsWithCounts = await Promise.all(
+      return await Promise.all(
         tenants.map(async (tenant) => {
           const [adminCount] = await execute<RowDataPacket[]>(
             "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'admin'",
@@ -299,7 +321,7 @@ export class RootService {
           );
 
           const [storageUsed] = await execute<RowDataPacket[]>(
-            "SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?",
+            'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
             [tenant.id],
           );
 
@@ -308,80 +330,72 @@ export class RootService {
             companyName: tenant.company_name,
             subdomain: tenant.subdomain,
             currentPlan: tenant.current_plan ?? undefined,
-            status: tenant.status as Tenant["status"],
+            status: tenant.status as Tenant['status'],
             maxUsers: (tenant as TenantRow).max_users,
             maxAdmins: (tenant as TenantRow).max_admins,
             industry: (tenant as TenantRow).industry,
             country: (tenant as TenantRow).country,
             createdAt: tenant.created_at,
             updatedAt: tenant.updated_at,
-            adminCount: adminCount[0].count,
-            employeeCount: employeeCount[0].count,
-            storageUsed: storageUsed[0].total,
+            adminCount: (adminCount[0] as { count: number }).count,
+            employeeCount: (employeeCount[0] as { count: number }).count,
+            storageUsed: (storageUsed[0] as { total: number }).total,
           };
         }),
       );
-
-      return tenantsWithCounts;
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve tenants",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve tenants', error);
     }
   }
 
   /**
    * Get all root users for a tenant
+   * @param tenantId - The tenant ID
    */
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
     try {
       const [users] = await execute<RowDataPacket[]>(
-        `SELECT 
-          id, username, email, first_name, last_name, 
-          position, notes, is_active, employee_id, created_at, updated_at
-        FROM users 
+        `SELECT
+          id, username, email, first_name, last_name,
+          position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
+        FROM users
         WHERE role = 'root' AND tenant_id = ?
         ORDER BY created_at DESC`,
         [tenantId],
       );
 
-      return users.map((user) => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        position: user.position,
-        notes: user.notes,
-        isActive: user.is_active,
-        employeeId: user.employee_id,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
+      return users.map((user: RowDataPacket) => ({
+        id: user.id as number,
+        username: user.username as string,
+        email: user.email as string,
+        firstName: user.first_name as string,
+        lastName: user.last_name as string,
+        position: (user.position as string | null) ?? undefined,
+        notes: (user.notes as string | null) ?? undefined,
+        employeeNumber: (user.employee_number as string | null) ?? undefined,
+        departmentId: (user.department_id as number | null) ?? undefined,
+        isActive: Boolean(user.is_active),
+        employeeId: user.employee_id as string,
+        createdAt: user.created_at as Date,
+        updatedAt: user.updated_at as Date,
       }));
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve root users",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root users', error);
     }
   }
 
   /**
    * Get single root user
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
-  async getRootUserById(
-    id: number,
-    tenantId: number,
-  ): Promise<RootUser | null> {
+  async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     try {
       const [users] = await execute<RowDataPacket[]>(
-        `SELECT 
-          id, username, email, first_name, last_name, 
-          position, notes, is_active, employee_id, created_at, updated_at
-        FROM users 
+        `SELECT
+          id, username, email, first_name, last_name,
+          position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
+        FROM users
         WHERE id = ? AND role = 'root' AND tenant_id = ?`,
         [id, tenantId],
       );
@@ -392,134 +406,180 @@ export class RootService {
 
       const user = users[0];
       return {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        position: user.position,
-        notes: user.notes,
-        isActive: user.is_active,
-        employeeId: user.employee_id,
-        createdAt: user.created_at,
-        updatedAt: user.updated_at,
+        id: user.id as number,
+        username: user.username as string,
+        email: user.email as string,
+        firstName: user.first_name as string,
+        lastName: user.last_name as string,
+        position: (user.position as string | null) ?? undefined,
+        notes: (user.notes as string | null) ?? undefined,
+        employeeNumber: (user.employee_number as string | null) ?? undefined,
+        departmentId: (user.department_id as number | null) ?? undefined,
+        isActive: Boolean(user.is_active),
+        employeeId: user.employee_id as string,
+        createdAt: user.created_at as Date,
+        updatedAt: user.updated_at as Date,
       };
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to retrieve root user",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root user', error);
     }
   }
 
   /**
    * Create root user
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
-  async createRootUser(
-    data: CreateRootUserRequest,
-    tenantId: number,
-  ): Promise<number> {
+  async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
     try {
+      logger.info('[RootService.createRootUser] Starting with data:', {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        employeeNumber: data.employeeNumber,
+        departmentId: data.departmentId,
+        tenantId,
+      });
+
       // Check if email already exists
       const [existing] = await execute<RowDataPacket[]>(
-        "SELECT id FROM users WHERE email = ? AND tenant_id = ?",
+        'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
         [data.email, tenantId],
       );
 
       if (existing.length > 0) {
-        throw new ServiceError("DUPLICATE_EMAIL", "Email already in use", 400);
+        throw new ServiceError('DUPLICATE_EMAIL', 'Email already in use', 400);
       }
 
       // Get tenant subdomain for employee_id
       const [tenantData] = await execute<TenantRow[]>(
-        "SELECT subdomain FROM tenants WHERE id = ?",
+        'SELECT subdomain FROM tenants WHERE id = ?',
         [tenantId],
       );
 
-      const subdomain = tenantData[0]?.subdomain ?? "DEFAULT";
+      const subdomain = tenantData[0]?.subdomain ?? 'DEFAULT';
 
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
 
+      logger.info('[RootService.createRootUser] Executing INSERT with values:', {
+        username: data.username || data.email,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        position: data.position,
+        notes: data.notes,
+        employeeNumber: data.employeeNumber ?? null,
+        departmentId: data.departmentId ?? null,
+        isActive: data.isActive ?? true,
+        tenantId,
+      });
+
       // Create root user
       const [result] = await execute<ResultSetHeader>(
         `INSERT INTO users (
-          username, email, password, first_name, last_name, 
-          role, position, notes, is_active, tenant_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, NOW(), NOW())`,
+          username, email, password, first_name, last_name,
+          role, position, notes, employee_number, department_id, is_active, tenant_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
-          data.username ?? data.email,
+          data.username || data.email,
           data.email,
           hashedPassword,
           data.firstName,
           data.lastName,
           data.position,
           data.notes,
+          data.employeeNumber ?? null,
+          data.departmentId ?? null,
           data.isActive ?? true,
           tenantId,
         ],
       );
 
+      console.log('[RootService.createRootUser] INSERT result:', {
+        insertId: result.insertId,
+        affectedRows: result.affectedRows,
+        resultType: typeof result.insertId,
+      });
+
       // Generate and update employee_id
-      const employeeId = generateEmployeeId(subdomain, "root", result.insertId);
+      const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
+      console.log('[RootService.createRootUser] Generated employeeId:', employeeId);
 
-      await execute("UPDATE users SET employee_id = ? WHERE id = ?", [
-        employeeId,
+      await execute('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, result.insertId]);
+      console.log('[RootService.createRootUser] UPDATE completed for ID:', result.insertId);
+
+      logger.info(
+        '[RootService.createRootUser] User created successfully with ID:',
         result.insertId,
-      ]);
-
-      return result.insertId;
-    } catch (error) {
-      if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to create root user",
-        error,
       );
+      return result.insertId;
+    } catch (error: unknown) {
+      logger.error('[RootService.createRootUser] Error creating root user:', error);
+      logger.error('[RootService.createRootUser] Error type:', typeof error);
+
+      if (isMySQLError(error)) {
+        logger.error('[RootService.createRootUser] Error constructor:', error.constructor.name);
+        logger.error('[RootService.createRootUser] MySQL Error Code:', error.code);
+        logger.error('[RootService.createRootUser] MySQL Error Message:', error.sqlMessage);
+        logger.error('[RootService.createRootUser] MySQL Error SQL:', error.sql);
+      } else if (error instanceof Error) {
+        logger.error('[RootService.createRootUser] Error name:', error.name);
+        logger.error('[RootService.createRootUser] Error message:', error.message);
+      }
+
+      if (error instanceof ServiceError) throw error;
+      throw new ServiceError('SERVER_ERROR', 'Failed to create root user', error);
     }
   }
 
   /**
    * Update root user
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
    */
-  async updateRootUser(
-    id: number,
-    data: UpdateRootUserRequest,
-    tenantId: number,
-  ): Promise<void> {
+  async updateRootUser(id: number, data: UpdateRootUserRequest, tenantId: number): Promise<void> {
     try {
       // Check if user exists
       const user = await this.getRootUserById(id, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "Root user not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Root user not found', 404);
       }
 
       const fields: string[] = [];
       const values: unknown[] = [];
 
       if (data.firstName !== undefined) {
-        fields.push("first_name = ?");
+        fields.push('first_name = ?');
         values.push(data.firstName);
       }
       if (data.lastName !== undefined) {
-        fields.push("last_name = ?");
+        fields.push('last_name = ?');
         values.push(data.lastName);
       }
       if (data.email !== undefined) {
-        fields.push("email = ?");
+        fields.push('email = ?');
         values.push(data.email);
       }
       if (data.position !== undefined) {
-        fields.push("position = ?");
+        fields.push('position = ?');
         values.push(data.position);
       }
       if (data.notes !== undefined) {
-        fields.push("notes = ?");
+        fields.push('notes = ?');
         values.push(data.notes);
       }
+      if (data.employeeNumber !== undefined) {
+        fields.push('employee_number = ?');
+        values.push(data.employeeNumber);
+      }
+      if (data.departmentId !== undefined) {
+        fields.push('department_id = ?');
+        values.push(data.departmentId);
+      }
       if (data.isActive !== undefined) {
-        fields.push("is_active = ?");
+        fields.push('is_active = ?');
         values.push(data.isActive);
       }
 
@@ -527,41 +587,33 @@ export class RootService {
         return; // Nothing to update
       }
 
-      fields.push("updated_at = NOW()");
+      fields.push('updated_at = NOW()');
       values.push(id);
 
-      await execute(
-        `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
-        values,
-      );
-    } catch (error) {
+      await execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to update root user",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to update root user', error);
     }
   }
 
   /**
    * Delete root user
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param currentUserId - The currentUserId parameter
    */
-  async deleteRootUser(
-    id: number,
-    tenantId: number,
-    currentUserId: number,
-  ): Promise<void> {
+  async deleteRootUser(id: number, tenantId: number, currentUserId: number): Promise<void> {
     try {
       // Prevent self-deletion
       if (id === currentUserId) {
-        throw new ServiceError("SELF_DELETE", "Cannot delete yourself", 400);
+        throw new ServiceError('SELF_DELETE', 'Cannot delete yourself', 400);
       }
 
       // Check if user exists
       const user = await this.getRootUserById(id, tenantId);
       if (!user) {
-        throw new ServiceError("NOT_FOUND", "Root user not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Root user not found', 404);
       }
 
       // Check if at least one root user will remain
@@ -572,31 +624,28 @@ export class RootService {
 
       if (rootCount[0].count < 1) {
         throw new ServiceError(
-          "LAST_ROOT_USER",
-          "At least one root user must remain in the system",
+          'LAST_ROOT_USER',
+          'At least one root user must remain in the system',
           400,
         );
       }
 
-      await execute("DELETE FROM users WHERE id = ?", [id]);
-    } catch (error) {
+      await execute('DELETE FROM users WHERE id = ?', [id]);
+    } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to delete root user",
-        error,
-      );
+      throw new ServiceError('SERVER_ERROR', 'Failed to delete root user', error);
     }
   }
 
   /**
    * Get dashboard statistics
+   * @param tenantId - The tenant ID
    */
   async getDashboardStats(tenantId: number): Promise<DashboardStats> {
     try {
       // Get user counts
-      const admins = await UserModel.findByRole("admin", false, tenantId);
-      const employees = await UserModel.findByRole("employee", false, tenantId);
+      const admins = await userModel.findByRole('admin', false, tenantId);
+      const employees = await userModel.findByRole('employee', false, tenantId);
 
       // Get tenant count (for multi-tenant overview)
       const [tenantCount] = await execute<RowDataPacket[]>(
@@ -605,48 +654,45 @@ export class RootService {
 
       // Get active features
       const [features] = await execute<RowDataPacket[]>(
-        `SELECT f.code 
-         FROM tenant_features tf 
-         JOIN features f ON tf.feature_id = f.id 
+        `SELECT f.code
+         FROM tenant_features tf
+         JOIN features f ON tf.feature_id = f.id
          WHERE tf.tenant_id = ? AND tf.is_active = 1`,
         [tenantId],
       );
 
-      const activeFeatures = features.map((f: RowDataPacket) => f.code);
+      const activeFeatures = features.map((f: RowDataPacket) => f.code as string);
 
       // Simple system health check
       const systemHealth = {
-        database: "healthy" as const,
-        storage: "healthy" as const,
-        services: "healthy" as const,
+        database: 'healthy' as const,
+        storage: 'healthy' as const,
+        services: 'healthy' as const,
       };
 
       return {
         adminCount: admins.length,
         employeeCount: employees.length,
         totalUsers: admins.length + employees.length + 1, // +1 for root
-        tenantCount: tenantCount[0].count,
+        tenantCount: (tenantCount[0] as { count: number }).count,
         activeFeatures,
         systemHealth,
       };
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get dashboard stats",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to get dashboard stats', error);
     }
   }
 
   /**
    * Get storage information
+   * @param tenantId - The tenant ID
    */
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
     try {
       // Get tenant information
-      const tenant = await TenantModel.findById(tenantId);
+      const tenant = await tenantModel.findById(tenantId);
       if (!tenant) {
-        throw new ServiceError("NOT_FOUND", "Tenant not found", 404);
+        throw new ServiceError('NOT_FOUND', 'Tenant not found', 404);
       }
 
       // Storage limits by plan
@@ -656,22 +702,24 @@ export class RootService {
         enterprise: 100 * 1024 * 1024 * 1024, // 100 GB
       };
 
-      const totalStorage =
-        storageLimits[tenant.current_plan ?? "basic"] ?? storageLimits.basic;
+      const totalStorage = storageLimits[tenant.current_plan ?? 'basic'] ?? storageLimits.basic;
 
       // Get storage breakdown
       const [documents] = await execute<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?",
+        'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
         [tenantId],
       );
 
       const [attachments] = await execute<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(file_size), 0) as total FROM kvp_attachments WHERE tenant_id = ?",
+        `SELECT COALESCE(SUM(ka.file_size), 0) as total
+         FROM kvp_attachments ka
+         JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
+         WHERE ks.tenant_id = ?`,
         [tenantId],
       );
 
       const [logs] = await execute<RowDataPacket[]>(
-        "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(old_values, '')) + LENGTH(COALESCE(new_values, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
+        "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
         [tenantId],
       );
 
@@ -680,15 +728,14 @@ export class RootService {
       const logsSize = Number(logs[0].total);
       const backupsSize = 0; // Placeholder
 
-      const usedStorage =
-        documentsSize + attachmentsSize + logsSize + backupsSize;
+      const usedStorage = documentsSize + attachmentsSize + logsSize + backupsSize;
       const percentage = Math.round((usedStorage / totalStorage) * 100);
 
       return {
         used: usedStorage,
         total: totalStorage,
         percentage: Math.min(percentage, 100),
-        plan: tenant.current_plan ?? "basic",
+        plan: tenant.current_plan ?? 'basic',
         breakdown: {
           documents: documentsSize,
           attachments: attachmentsSize,
@@ -696,17 +743,17 @@ export class RootService {
           backups: backupsSize,
         },
       };
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get storage info",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to get storage info', error);
     }
   }
 
   /**
    * Request tenant deletion
+   * @param tenantId - The tenant ID
+   * @param requestedBy - The requestedBy parameter
+   * @param reason - The reason parameter
+   * @param ipAddress - The ipAddress parameter
    */
   async requestTenantDeletion(
     tenantId: number,
@@ -716,42 +763,46 @@ export class RootService {
   ): Promise<number> {
     try {
       // Check if there are at least 2 root users
-      const rootUsers = await UserModel.findByRole("root", false, tenantId);
+      const rootUsers = await userModel.findByRole('root', false, tenantId);
       if (rootUsers.length < 2) {
         throw new ServiceError(
-          "INSUFFICIENT_ROOT_USERS",
-          "At least 2 root users required before tenant deletion",
+          'INSUFFICIENT_ROOT_USERS',
+          'At least 2 root users required before tenant deletion',
           400,
         );
       }
 
-      const queueId = await tenantDeletionService.requestTenantDeletion(
+      return await tenantDeletionService.requestTenantDeletion(
         tenantId,
         requestedBy,
-        reason ?? "No reason provided",
+        reason ?? 'No reason provided',
         ipAddress,
       );
-
-      return queueId;
-    } catch (error) {
+    } catch (error: unknown) {
+      logger.error('Error in requestTenantDeletion:', error);
       if (error instanceof ServiceError) throw error;
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to request deletion",
-        error,
-      );
+
+      // Check for specific error messages
+      const errorMessage = error instanceof Error ? error.message : '';
+      if (errorMessage.includes('already marked_for_deletion')) {
+        throw new ServiceError('ALREADY_SCHEDULED', 'Tenant is already marked for deletion', 409);
+      }
+
+      throw new ServiceError('SERVER_ERROR', 'Failed to request deletion', error);
     }
   }
 
   /**
    * Get tenant deletion status
+   * @param tenantId - The tenant ID
    */
   async getDeletionStatus(
     tenantId: number,
+    currentUserId?: number,
   ): Promise<TenantDeletionStatus | null> {
     try {
       const [deletions] = await execute<RowDataPacket[]>(
-        `SELECT 
+        `SELECT
           dq.*,
           t.company_name,
           u.username as requested_by_name
@@ -770,27 +821,37 @@ export class RootService {
       }
 
       const deletion = deletions[0];
+      // CRITICAL: Two-person principle - creator cannot approve their own deletion request
+      const isCreator = currentUserId ? deletion.created_by === currentUserId : false;
+      const canApprove = deletion.status === 'pending_approval' && !isCreator;
+      const canCancel =
+        ['pending_approval', 'approved'].includes(deletion.status as string) && isCreator;
+
       return {
-        queueId: deletion.id,
-        tenantId: deletion.tenant_id,
-        status: deletion.status,
-        requestedBy: deletion.created_by,
-        requestedByName: deletion.requested_by_name,
-        requestedAt: deletion.created_at,
-        approvedBy: deletion.approved_by,
-        approvedAt: deletion.approved_at,
-        scheduledFor: deletion.scheduled_for,
-        reason: deletion.reason,
-        errorMessage: deletion.error_message,
-        canCancel: ["pending", "approved"].includes(deletion.status),
-        canApprove: deletion.status === "pending",
+        queueId: deletion.id as number,
+        tenantId: deletion.tenant_id as number,
+        status: deletion.status as
+          | 'cancelled'
+          | 'pending'
+          | 'approved'
+          | 'executing'
+          | 'completed'
+          | 'failed'
+          | 'stopped',
+        requestedBy: deletion.created_by as number,
+        requestedByName: deletion.requested_by_name as string,
+        requestedAt: deletion.created_at as Date,
+        approvedBy: (deletion.approved_by as number | null) ?? undefined,
+        approvedAt: (deletion.approved_at as Date | null) ?? undefined,
+        scheduledFor: (deletion.scheduled_for as Date | null) ?? undefined,
+        reason: deletion.reason as string,
+        errorMessage: (deletion.error_message as string | null) ?? undefined,
+        coolingOffHours: deletion.cooling_off_hours as number,
+        canCancel,
+        canApprove,
       };
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get deletion status",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to get deletion status', error);
     }
   }
 
@@ -800,7 +861,7 @@ export class RootService {
   async getAllDeletionRequests(): Promise<DeletionApproval[]> {
     try {
       const [deletions] = await execute<RowDataPacket[]>(
-        `SELECT 
+        `SELECT
           q.*,
           t.company_name,
           t.subdomain,
@@ -813,35 +874,30 @@ export class RootService {
       );
 
       return deletions.map((d: RowDataPacket) => ({
-        queueId: d.id,
-        tenantId: d.tenant_id,
-        companyName: d.company_name,
-        subdomain: d.subdomain,
-        requesterId: d.created_by,
-        requesterName: d.requester_name,
-        requesterEmail: d.requester_email,
-        requestedAt: d.created_at,
-        reason: d.reason,
-        status: d.status,
+        queueId: d.id as number,
+        tenantId: d.tenant_id as number,
+        companyName: d.company_name as string,
+        subdomain: d.subdomain as string,
+        requesterId: d.created_by as number,
+        requesterName: d.requester_name as string,
+        requesterEmail: d.requester_email as string,
+        requestedAt: d.created_at as Date,
+        reason: d.reason as string,
+        status: d.status as string,
       }));
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get deletion requests",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to get deletion requests', error);
     }
   }
 
   /**
    * Get pending approvals
+   * @param currentUserId - The currentUserId parameter
    */
-  async getPendingApprovals(
-    currentUserId: number,
-  ): Promise<DeletionApproval[]> {
+  async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     try {
       const [approvals] = await execute<RowDataPacket[]>(
-        `SELECT 
+        `SELECT
           q.*,
           t.company_name,
           t.subdomain,
@@ -850,43 +906,40 @@ export class RootService {
         FROM tenant_deletion_queue q
         JOIN tenants t ON t.id = q.tenant_id
         JOIN users u ON u.id = q.created_by
-        WHERE q.status = 'pending' 
+        WHERE q.status = 'pending'
         AND q.created_by != ?
         ORDER BY q.created_at DESC`,
         [currentUserId],
       );
 
       return approvals.map((a: RowDataPacket) => ({
-        queueId: a.id,
-        tenantId: a.tenant_id,
-        companyName: a.company_name,
-        subdomain: a.subdomain,
-        requesterId: a.created_by,
-        requesterName: a.requester_name,
-        requesterEmail: a.requester_email,
-        requestedAt: a.created_at,
-        reason: a.reason,
-        status: a.status,
+        queueId: a.id as number,
+        tenantId: a.tenant_id as number,
+        companyName: a.company_name as string,
+        subdomain: a.subdomain as string,
+        requesterId: a.created_by as number,
+        requesterName: a.requester_name as string,
+        requesterEmail: a.requester_email as string,
+        requestedAt: a.created_at as Date,
+        reason: a.reason as string,
+        status: a.status as string,
       }));
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to get pending approvals",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to get pending approvals', error);
     }
   }
 
   /**
    * Perform deletion dry run
+   * @param tenantId - The tenant ID
    */
   async performDeletionDryRun(tenantId: number): Promise<DeletionDryRunReport> {
     try {
       const report = await tenantDeletionService.performDryRun(tenantId);
 
       // Get tenant name
-      const tenant = await TenantModel.findById(tenantId);
-      const companyName = tenant?.company_name ?? "Unknown";
+      const tenant = await tenantModel.findById(tenantId);
+      const companyName = tenant?.company_name ?? 'Unknown';
 
       // Transform to our API format
       return {
@@ -894,26 +947,22 @@ export class RootService {
         companyName,
         estimatedDuration: `${report.estimatedDuration} minutes`,
         affectedRecords: {
-          users: report.affectedRecords.users ?? 0,
-          documents: report.affectedRecords.documents ?? 0,
-          departments: report.affectedRecords.departments ?? 0,
-          teams: report.affectedRecords.teams ?? 0,
-          shifts: report.affectedRecords.shifts ?? 0,
-          kvpSuggestions: report.affectedRecords.kvp_suggestions ?? 0,
-          surveys: report.affectedRecords.surveys ?? 0,
-          logs: report.affectedRecords.logs ?? 0,
-          total: report.totalRecords ?? 0,
+          users: report.affectedRecords.users || 0,
+          documents: report.affectedRecords.documents || 0,
+          departments: report.affectedRecords.departments || 0,
+          teams: report.affectedRecords.teams || 0,
+          shifts: report.affectedRecords.shifts || 0,
+          kvpSuggestions: report.affectedRecords.kvp_suggestions || 0,
+          surveys: report.affectedRecords.surveys || 0,
+          logs: report.affectedRecords.logs || 0,
+          total: report.totalRecords || 0,
         },
         storageToFree: 0, // Not provided by service
         warnings: report.warnings,
         canProceed: report.blockers.length === 0,
       };
-    } catch (error) {
-      throw new ServiceError(
-        "SERVER_ERROR",
-        "Failed to perform dry run",
-        error,
-      );
+    } catch (error: unknown) {
+      throw new ServiceError('SERVER_ERROR', 'Failed to perform dry run', error);
     }
   }
 }

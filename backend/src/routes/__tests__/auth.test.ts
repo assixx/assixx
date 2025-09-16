@@ -2,23 +2,24 @@
  * API Tests for Authentication Endpoints
  * Tests login, logout, token refresh, and multi-tenant authentication
  */
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { Pool } from 'mysql2/promise';
+// Must be first import
+import request from 'supertest';
 
-import "../../__tests__/test-env-setup"; // Must be first import
-import request from "supertest";
-import jwt from "jsonwebtoken";
-import { Pool } from "mysql2/promise";
-import bcrypt from "bcryptjs";
-import app from "../../app";
+import { asTestRows } from '../../__tests__/mocks/db-types';
+import '../../__tests__/test-env-setup';
+import app from '../../app';
 import {
-  createTestDatabase,
   cleanupTestData,
   closeTestDatabase,
+  createTestDatabase,
   createTestTenant,
   createTestUser,
-} from "../mocks/database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
+} from '../mocks/database';
 
-describe("Authentication API Endpoints", () => {
+describe('Authentication API Endpoints', () => {
   let testDb: Pool;
   let tenant1Id: number;
   let tenant2Id: number;
@@ -32,26 +33,26 @@ describe("Authentication API Endpoints", () => {
     await cleanupTestData();
 
     // JWT_SECRET is already set in test-env-setup.ts
-    process.env.SESSION_SECRET = "test-session-secret";
+    process.env.SESSION_SECRET = 'test-session-secret';
 
     // Test database connection
     try {
-      await testDb.execute("SELECT 1");
-      console.log("Database connection successful");
-    } catch (error) {
-      console.error("Database connection failed:", error);
+      await testDb.execute('SELECT 1');
+      console.info('Database connection successful');
+    } catch (error: unknown) {
+      console.error('Database connection failed:', error);
     }
 
     // Clean up any existing test users with our test emails
     // First delete related records due to foreign key constraints
-    const [existingUsers] = (await testDb.execute(
-      "SELECT id FROM users WHERE email IN (?, ?)",
-      ["testuser1@authtest1.de", "testuser2@authtest2.de"],
-    )) as any;
+    const [existingUsers] = (await testDb.execute('SELECT id FROM users WHERE email IN (?, ?)', [
+      'testuser1@authtest1.de',
+      'testuser2@authtest2.de',
+    ])) as any;
 
     if (existingUsers.length > 0) {
       const userIds = existingUsers.map((u: any) => u.id);
-      const placeholders = userIds.map(() => "?").join(",");
+      const placeholders = userIds.map(() => '?').join(',');
 
       // Delete related records first (handle missing tables gracefully)
       try {
@@ -59,16 +60,13 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM activity_logs WHERE user_id IN (${placeholders})`,
           userIds,
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
       try {
-        await testDb.execute(
-          `DELETE FROM admin_logs WHERE user_id IN (${placeholders})`,
-          userIds,
-        );
-      } catch (e: any) {
+        await testDb.execute(`DELETE FROM admin_logs WHERE user_id IN (${placeholders})`, userIds);
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
@@ -77,16 +75,16 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM user_sessions WHERE user_id IN (${placeholders})`,
           userIds,
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
       try {
-        await testDb.execute(
-          `DELETE FROM login_attempts WHERE username IN (?, ?)`,
-          ["testuser1@authtest1.de", "testuser2@authtest2.de"],
-        );
-      } catch (e: any) {
+        await testDb.execute(`DELETE FROM login_attempts WHERE username IN (?, ?)`, [
+          'testuser1@authtest1.de',
+          'testuser2@authtest2.de',
+        ]);
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
@@ -95,68 +93,60 @@ describe("Authentication API Endpoints", () => {
           `DELETE FROM oauth_tokens WHERE user_id IN (${placeholders})`,
           userIds,
         );
-      } catch (e: any) {
+      } catch (e: unknown) {
         if (!e.message?.includes("doesn't exist")) throw e;
       }
 
       // Now delete the users
-      await testDb.execute("DELETE FROM users WHERE email IN (?, ?)", [
-        "testuser1@authtest1.de",
-        "testuser2@authtest2.de",
+      await testDb.execute('DELETE FROM users WHERE email IN (?, ?)', [
+        'testuser1@authtest1.de',
+        'testuser2@authtest2.de',
       ]);
     }
 
     // Create test tenants
     try {
-      tenant1Id = await createTestTenant(
-        testDb,
-        "authtest1",
-        "Auth Test Company 1",
-      );
-    } catch (error) {
-      console.error("Failed to create tenant1:", error);
+      tenant1Id = await createTestTenant(testDb, 'authtest1', 'Auth Test Company 1');
+    } catch (error: unknown) {
+      console.error('Failed to create tenant1:', error);
       throw error;
     }
 
     try {
-      tenant2Id = await createTestTenant(
-        testDb,
-        "authtest2",
-        "Auth Test Company 2",
-      );
-    } catch (error) {
-      console.error("Failed to create tenant2:", error);
+      tenant2Id = await createTestTenant(testDb, 'authtest2', 'Auth Test Company 2');
+    } catch (error: unknown) {
+      console.error('Failed to create tenant2:', error);
       throw error;
     }
 
     // Create test users - WICHTIG: In unserer DB sind username und email IMMER GLEICH!
     try {
       testUser1 = await createTestUser(testDb, {
-        username: "testuser1@authtest1.de",
-        email: "testuser1@authtest1.de",
-        password: "TestPass123!",
-        role: "admin",
+        username: 'testuser1@authtest1.de',
+        email: 'testuser1@authtest1.de',
+        password: 'TestPass123!',
+        role: 'admin',
         tenant_id: tenant1Id,
-        first_name: "Test",
-        last_name: "User1",
+        first_name: 'Test',
+        last_name: 'User1',
       });
-    } catch (error) {
-      console.error("Failed to create testUser1:", error);
+    } catch (error: unknown) {
+      console.error('Failed to create testUser1:', error);
       throw error;
     }
 
     try {
       testUser2 = await createTestUser(testDb, {
-        username: "testuser2@authtest2.de",
-        email: "testuser2@authtest2.de",
-        password: "TestPass456!",
-        role: "employee",
+        username: 'testuser2@authtest2.de',
+        email: 'testuser2@authtest2.de',
+        password: 'TestPass456!',
+        role: 'employee',
         tenant_id: tenant2Id,
-        first_name: "Test",
-        last_name: "User2",
+        first_name: 'Test',
+        last_name: 'User2',
       });
-    } catch (error) {
-      console.error("Failed to create testUser2:", error);
+    } catch (error: unknown) {
+      console.error('Failed to create testUser2:', error);
       throw error;
     }
   });
@@ -168,37 +158,37 @@ describe("Authentication API Endpoints", () => {
 
   beforeEach(async () => {
     // Clear sessions before each test
-    await testDb.execute("DELETE FROM user_sessions");
+    await testDb.execute('DELETE FROM user_sessions');
   });
 
-  describe("POST /api/auth/login", () => {
-    it("should successfully login with valid credentials", async () => {
-      console.log("Attempting login with username:", testUser1.username);
-      const response = await request(app).post("/api/auth/login").send({
+  describe('POST /api/auth/login', () => {
+    it('should successfully login with valid credentials', async () => {
+      console.info('Attempting login with username:', testUser1.username);
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username, // This will now include the prefix
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-123",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-123',
       });
 
       if (response.status !== 200) {
-        console.error("Login failed with:", response.status, response.body);
-        console.error("Test user data:", testUser1);
+        console.error('Login failed with:', response.status, response.body);
+        console.error('Test user data:', testUser1);
       }
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
         success: true,
-        message: "Login erfolgreich",
+        message: 'Login erfolgreich',
         data: {
           user: {
             id: testUser1.id,
             username: testUser1.username,
             email: testUser1.email,
-            role: "admin",
+            role: 'admin',
             tenant_id: tenant1Id,
-            first_name: "Test",
-            last_name: "User1",
+            first_name: 'Test',
+            last_name: 'User1',
           },
-          role: "admin",
+          role: 'admin',
         },
       });
 
@@ -206,19 +196,18 @@ describe("Authentication API Endpoints", () => {
       expect(response.body.data.token).toBeDefined();
 
       // Cookie should be set
-      const cookies = response.headers["set-cookie"];
+      const cookies = response.headers['set-cookie'];
       expect(cookies).toBeDefined();
-      const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-      expect(cookieArray.some((cookie) => cookie.startsWith("token="))).toBe(
-        true,
-      );
+      const cookieArray =
+        Array.isArray(cookies) ? cookies !== null && cookies !== undefined : [cookies];
+      expect(cookieArray.some((cookie) => cookie.startsWith('token='))).toBe(true);
     });
 
-    it("should verify JWT token contains correct claims", async () => {
-      const response = await request(app).post("/api/auth/login").send({
+    it('should verify JWT token contains correct claims', async () => {
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-jwt-verify",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-jwt-verify',
       });
 
       const token = response.body.data.token;
@@ -227,112 +216,106 @@ describe("Authentication API Endpoints", () => {
       expect(decoded).toMatchObject({
         id: testUser1.id,
         tenant_id: tenant1Id,
-        role: "admin",
+        role: 'admin',
         username: testUser1.username,
       });
       expect(decoded.exp).toBeGreaterThan(Date.now() / 1000);
     });
 
-    it("should create session record in database", async () => {
+    it('should create session record in database', async () => {
       // Clean up any existing sessions for this user
-      await testDb.execute("DELETE FROM user_sessions WHERE user_id = ?", [
-        testUser1.id,
-      ]);
+      await testDb.execute('DELETE FROM user_sessions WHERE user_id = ?', [testUser1.id]);
 
-      const response = await request(app).post("/api/auth/login").send({
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "unique-fingerprint",
+        password: 'TestPass123!',
+        fingerprint: 'unique-fingerprint',
       });
 
       expect(response.status).toBe(200);
 
       // Check session was created
       const [rows] = await testDb.execute(
-        "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
+        'SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()',
         [testUser1.id],
       );
-      const sessions = asTestRows<any>(rows);
+      const sessions = asTestRows<unknown>(rows);
       expect(sessions.length).toBeGreaterThanOrEqual(1);
       expect(sessions[0]).toMatchObject({
         user_id: testUser1.id,
-        fingerprint: "unique-fingerprint",
+        fingerprint: 'unique-fingerprint',
       });
     });
 
-    it("should reject invalid username", async () => {
-      const response = await request(app).post("/api/auth/login").send({
-        username: "nonexistent",
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-invalid-user",
+    it('should reject invalid username', async () => {
+      const response = await request(app).post('/api/auth/login').send({
+        username: 'nonexistent',
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-invalid-user',
       });
 
       expect(response.status).toBe(401);
       expect(response.body).toMatchObject({
         success: false,
-        error: "Ungültige Anmeldedaten",
+        error: 'Ungültige Anmeldedaten',
       });
     });
 
-    it("should reject invalid password", async () => {
-      const response = await request(app).post("/api/auth/login").send({
+    it('should reject invalid password', async () => {
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "WrongPassword123!",
-        fingerprint: "test-fingerprint-wrong-pass",
+        password: 'WrongPassword123!',
+        fingerprint: 'test-fingerprint-wrong-pass',
       });
 
       expect(response.status).toBe(401);
       expect(response.body).toMatchObject({
         success: false,
-        error: "Ungültige Anmeldedaten",
+        error: 'Ungültige Anmeldedaten',
       });
     });
 
-    it("should reject inactive user", async () => {
+    it('should reject inactive user', async () => {
       // Deactivate user
-      await testDb.execute("UPDATE users SET is_active = 0 WHERE id = ?", [
-        testUser1.id,
-      ]);
+      await testDb.execute('UPDATE users SET is_active = 0 WHERE id = ?', [testUser1.id]);
 
-      const response = await request(app).post("/api/auth/login").send({
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-inactive-user",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-inactive-user',
       });
 
       expect(response.status).toBe(401);
-      expect(response.body.error).toContain("deaktiviert");
+      expect(response.body.error).toContain('deaktiviert');
 
       // Reactivate for other tests
-      await testDb.execute("UPDATE users SET is_active = 1 WHERE id = ?", [
-        testUser1.id,
-      ]);
+      await testDb.execute('UPDATE users SET is_active = 1 WHERE id = ?', [testUser1.id]);
     });
 
-    it("should handle login attempts with missing fields", async () => {
-      const response1 = await request(app).post("/api/auth/login").send({
+    it('should handle login attempts with missing fields', async () => {
+      const response1 = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        fingerprint: "test-fingerprint-missing-pass",
+        fingerprint: 'test-fingerprint-missing-pass',
       });
 
       expect(response1.status).toBe(400);
       expect(response1.body.error).toBeDefined();
-      expect(response1.body.error.code).toBe("VALIDATION_ERROR");
+      expect(response1.body.error.code).toBe('VALIDATION_ERROR');
       expect(response1.body.error.details).toBeDefined();
 
       // Second test fails with 500 error due to API inconsistency
       // Skipping until API is fixed
     });
 
-    it.skip("should rate limit login attempts", async () => {
+    it.skip('should rate limit login attempts', async () => {
       // Rate limiting is disabled in test environment
       const attempts = Array(6)
         .fill(null)
         .map(() =>
-          request(app).post("/api/auth/login").send({
+          request(app).post('/api/auth/login').send({
             username: testUser1.username,
-            password: "WrongPass",
-            fingerprint: "test-fingerprint-rate-limit",
+            password: 'WrongPass',
+            fingerprint: 'test-fingerprint-rate-limit',
           }),
         );
 
@@ -341,32 +324,32 @@ describe("Authentication API Endpoints", () => {
       expect(rateLimited.length).toBeGreaterThan(0);
     });
 
-    it("should track failed login attempts", async () => {
+    it('should track failed login attempts', async () => {
       // Make failed attempts
       for (let i = 0; i < 3; i++) {
         await request(app)
-          .post("/api/auth/login")
+          .post('/api/auth/login')
           .send({
             username: testUser1.username,
-            password: "WrongPass",
-            fingerprint: "test-fingerprint-failed-attempt-" + i,
+            password: 'WrongPass',
+            fingerprint: 'test-fingerprint-failed-attempt-' + i,
           });
       }
 
       // Check failed attempts were logged
       const [rows] = await testDb.execute(
-        "SELECT COUNT(*) as count FROM login_attempts WHERE username = ? AND success = 0",
+        'SELECT COUNT(*) as count FROM login_attempts WHERE username = ? AND success = 0',
         [testUser1.username],
       );
-      const attempts = asTestRows<any>(rows);
+      const attempts = asTestRows<unknown>(rows);
       expect(attempts[0].count).toBeGreaterThanOrEqual(3);
     });
 
-    it("should support email login as alternative to username", async () => {
-      const response = await request(app).post("/api/auth/login").send({
+    it('should support email login as alternative to username', async () => {
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.email,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-email-login",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-email-login',
       });
 
       expect(response.status).toBe(200);
@@ -374,28 +357,28 @@ describe("Authentication API Endpoints", () => {
     });
   });
 
-  describe("POST /api/auth/logout", () => {
+  describe('POST /api/auth/logout', () => {
     let authToken: string;
 
     beforeEach(async () => {
       // Login first to get token
-      const loginResponse = await request(app).post("/api/auth/login").send({
+      const loginResponse = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-logout",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-logout',
       });
       authToken = loginResponse.body.data.token;
     });
 
-    it("should successfully logout authenticated user", async () => {
+    it('should successfully logout authenticated user', async () => {
       const response = await request(app)
-        .post("/api/auth/logout")
-        .set("Authorization", `Bearer ${authToken}`)
-        .set("Content-Type", "application/json")
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Content-Type', 'application/json')
         .send({}); // Send empty body
 
       if (response.status !== 200) {
-        console.log("Logout response:", response.status, response.body);
+        console.info('Logout response:', response.status, response.body);
       }
 
       expect(response.status).toBe(200);
@@ -405,78 +388,77 @@ describe("Authentication API Endpoints", () => {
       });
 
       // Cookie should be cleared
-      const cookies = response.headers["set-cookie"];
-      const cookieArray = Array.isArray(cookies) ? cookies : [cookies];
-      expect(cookieArray.some((cookie) => cookie.includes("token=;"))).toBe(
-        true,
-      );
+      const cookies = response.headers['set-cookie'];
+      const cookieArray =
+        Array.isArray(cookies) ? cookies !== null && cookies !== undefined : [cookies];
+      expect(cookieArray.some((cookie) => cookie.includes('token=;'))).toBe(true);
     });
 
-    it.skip("should invalidate session in database", async () => {
+    it.skip('should invalidate session in database', async () => {
       // Session is already created during login in beforeEach
       const decoded = jwt.verify(authToken, process.env.JWT_SECRET!) as any;
 
       // Verify session exists before logout
       const [rowsBefore] = await testDb.execute(
-        "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
+        'SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()',
         [decoded.id],
       );
-      const sessionsBefore = asTestRows<any>(rowsBefore);
+      const sessionsBefore = asTestRows<unknown>(rowsBefore);
       expect(sessionsBefore.length).toBeGreaterThan(0);
 
       await request(app)
-        .post("/api/auth/logout")
-        .set("Authorization", `Bearer ${authToken}`)
+        .post('/api/auth/logout')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({}); // Send empty body
 
       // Our logout implementation now always invalidates sessions by setting expires_at to NOW()
       // regardless of VALIDATE_SESSIONS setting
       const [rowsAfter] = await testDb.execute(
-        "SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()",
+        'SELECT * FROM user_sessions WHERE user_id = ? AND expires_at > NOW()',
         [decoded.id],
       );
-      const sessionsAfter = asTestRows<any>(rowsAfter);
+      const sessionsAfter = asTestRows<unknown>(rowsAfter);
       expect(sessionsAfter).toHaveLength(0);
     });
 
-    it("should handle logout without authentication", async () => {
-      const response = await request(app).post("/api/auth/logout");
+    it('should handle logout without authentication', async () => {
+      const response = await request(app).post('/api/auth/logout');
 
       // Either 400 (bad request) or 401 (unauthorized) is acceptable
       expect([400, 401]).toContain(response.status);
     });
   });
 
-  describe("GET /api/auth/me", () => {
+  describe('GET /api/auth/me', () => {
     let authToken1: string;
     let authToken2: string;
 
     beforeEach(async () => {
       // Login both users
-      const login1 = await request(app).post("/api/auth/login").send({
+      const login1 = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-me-1",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-me-1',
       });
       authToken1 = login1.body.data.token;
 
-      const login2 = await request(app).post("/api/auth/login").send({
+      const login2 = await request(app).post('/api/auth/login').send({
         username: testUser2.username,
-        password: "TestPass456!",
-        fingerprint: "test-fingerprint-me-2",
+        password: 'TestPass456!',
+        fingerprint: 'test-fingerprint-me-2',
       });
       authToken2 = login2.body.data.token;
     });
 
-    it("should return current user info", async () => {
+    it('should return current user info', async () => {
       const response = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", `Bearer ${authToken1}`);
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${authToken1}`);
 
       // Debug info
       if (response.status !== 200) {
-        console.log("GET /api/auth/me failed:", response.status, response.body);
-        console.log("Token used:", authToken1);
+        console.info('GET /api/auth/me failed:', response.status, response.body);
+        console.info('Token used:', authToken1);
       }
 
       expect(response.status).toBe(200);
@@ -486,77 +468,71 @@ describe("Authentication API Endpoints", () => {
           id: testUser1.id,
           username: testUser1.username,
           email: testUser1.email,
-          role: "admin",
+          role: 'admin',
           tenant_id: tenant1Id,
-          tenantName: "__AUTOTEST__Auth Test Company 1",
+          tenantName: '__AUTOTEST__Auth Test Company 1',
         },
       });
     });
 
-    it("should include tenant information", async () => {
+    it('should include tenant information', async () => {
       const response = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", `Bearer ${authToken1}`);
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${authToken1}`);
 
-      expect(response.body.data.tenantName).toBe(
-        "__AUTOTEST__Auth Test Company 1",
-      );
+      expect(response.body.data.tenantName).toBe('__AUTOTEST__Auth Test Company 1');
       expect(response.body.data.tenant_id).toBe(tenant1Id);
     });
 
-    it("should return 401 without authentication", async () => {
-      const response = await request(app).get("/api/auth/me");
+    it('should return 401 without authentication', async () => {
+      const response = await request(app).get('/api/auth/me');
 
       expect(response.status).toBe(401);
     });
 
-    it("should return 403 with invalid token", async () => {
+    it('should return 403 with invalid token', async () => {
       const response = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", "Bearer invalid-token");
+        .get('/api/auth/me')
+        .set('Authorization', 'Bearer invalid-token');
 
       expect(response.status).toBe(403);
     });
 
-    it("should ensure tenant isolation", async () => {
+    it('should ensure tenant isolation', async () => {
       const response1 = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", `Bearer ${authToken1}`);
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${authToken1}`);
 
       const response2 = await request(app)
-        .get("/api/auth/me")
-        .set("Authorization", `Bearer ${authToken2}`);
+        .get('/api/auth/me')
+        .set('Authorization', `Bearer ${authToken2}`);
 
       expect(response1.body.data.tenant_id).toBe(tenant1Id);
       expect(response2.body.data.tenant_id).toBe(tenant2Id);
-      expect(response1.body.data.tenant_id).not.toBe(
-        response2.body.data.tenant_id,
-      );
+      expect(response1.body.data.tenant_id).not.toBe(response2.body.data.tenant_id);
     });
   });
 
-  describe.skip("POST /api/auth/refresh", () => {
+  describe.skip('POST /api/auth/refresh', () => {
     let authToken: string;
     let refreshToken: string;
 
     beforeEach(async () => {
-      const loginResponse = await request(app).post("/api/auth/login").send({
+      const loginResponse = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-refresh",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-refresh',
       });
       authToken = loginResponse.body.data.token;
       // Get the actual refresh token from login
       refreshToken = loginResponse.body.data.refreshToken;
     });
 
-    it("should refresh JWT token", async () => {
+    it('should refresh JWT token', async () => {
       // Wait a bit to ensure new token has different timestamp
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      const response = await request(app)
-        .post("/api/auth/refresh")
-        .send({ refreshToken });
+      const response = await request(app).post('/api/auth/refresh').send({ refreshToken });
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
@@ -571,10 +547,8 @@ describe("Authentication API Endpoints", () => {
       expect(response.body.data.token).not.toBe(authToken);
     });
 
-    it("should maintain user claims in new token", async () => {
-      const response = await request(app)
-        .post("/api/auth/refresh")
-        .send({ refreshToken });
+    it('should maintain user claims in new token', async () => {
+      const response = await request(app).post('/api/auth/refresh').send({ refreshToken });
 
       const newToken = response.body.data.token;
       const decoded = jwt.verify(newToken, process.env.JWT_SECRET!) as any;
@@ -582,152 +556,146 @@ describe("Authentication API Endpoints", () => {
       expect(decoded).toMatchObject({
         id: testUser1.id,
         tenant_id: tenant1Id,
-        role: "admin",
+        role: 'admin',
       });
     });
 
-    it("should reject invalid refresh token", async () => {
+    it('should reject invalid refresh token', async () => {
       const response = await request(app)
-        .post("/api/auth/refresh")
-        .send({ refreshToken: "invalid-refresh-token" });
+        .post('/api/auth/refresh')
+        .send({ refreshToken: 'invalid-refresh-token' });
 
       expect(response.status).toBe(401);
     });
 
-    it("should reject expired refresh token", async () => {
+    it('should reject expired refresh token', async () => {
       // Create expired token
       const expiredToken = jwt.sign(
-        { id: testUser1.id, type: "refresh" },
+        { id: testUser1.id, type: 'refresh' },
         process.env.JWT_SECRET!,
-        { expiresIn: "-1h" },
+        { expiresIn: '-1h' },
       );
 
       const response = await request(app)
-        .post("/api/auth/refresh")
+        .post('/api/auth/refresh')
         .send({ refreshToken: expiredToken });
 
       expect(response.status).toBe(401);
     });
   });
 
-  describe("Multi-Tenant Authentication", () => {
-    it("should isolate login attempts by tenant", async () => {
+  describe('Multi-Tenant Authentication', () => {
+    it('should isolate login attempts by tenant', async () => {
       // Try to login user1 with tenant2's subdomain
       const response = await request(app)
-        .post("/api/auth/login")
-        .set("X-Tenant-Subdomain", "authtest2")
+        .post('/api/auth/login')
+        .set('X-Tenant-Subdomain', 'authtest2')
         .send({
           username: testUser1.username,
-          password: "TestPass123!",
-          fingerprint: "test-fingerprint-wrong-tenant",
+          password: 'TestPass123!',
+          fingerprint: 'test-fingerprint-wrong-tenant',
         });
 
       expect(response.status).toBe(401);
     });
 
-    it("should not allow cross-tenant token usage", async () => {
+    it('should not allow cross-tenant token usage', async () => {
       // Get token for user1 (tenant1)
-      const login1 = await request(app).post("/api/auth/login").send({
+      const login1 = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-multi-tenant",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-multi-tenant',
       });
       const token1 = login1.body.data.token;
 
       // Try to use token1 to access tenant2 resources
       const response = await request(app)
-        .get("/api/users")
-        .set("Authorization", `Bearer ${token1}`)
-        .set("X-Tenant-Id", tenant2Id.toString());
+        .get('/api/users')
+        .set('Authorization', `Bearer ${token1}`)
+        .set('X-Tenant-Id', tenant2Id.toString());
 
       expect(response.status).toBe(403);
     });
   });
 
-  describe.skip("Password Reset Flow", () => {
-    it("should initiate password reset", async () => {
-      const response = await request(app)
-        .post("/api/auth/forgot-password")
-        .send({
-          email: testUser1.email,
-        });
+  describe.skip('Password Reset Flow', () => {
+    it('should initiate password reset', async () => {
+      const response = await request(app).post('/api/auth/forgot-password').send({
+        email: testUser1.email,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
         success: true,
-        message: expect.stringContaining("E-Mail"),
+        message: expect.stringContaining('E-Mail'),
       });
 
       // Check reset token was saved
-      const [rows] = await testDb.execute(
-        "SELECT * FROM password_reset_tokens WHERE user_id = ?",
-        [testUser1.id],
-      );
-      const tokens = asTestRows<any>(rows);
+      const [rows] = await testDb.execute('SELECT * FROM password_reset_tokens WHERE user_id = ?', [
+        testUser1.id,
+      ]);
+      const tokens = asTestRows<unknown>(rows);
       expect(tokens).toHaveLength(1);
     });
 
-    it("should reset password with valid token", async () => {
+    it('should reset password with valid token', async () => {
       // Create reset token
-      const resetToken = "test-reset-token-123";
+      const resetToken = 'test-reset-token-123';
       const hashedToken = await bcrypt.hash(resetToken, 10);
       await testDb.execute(
-        "INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))",
+        'INSERT INTO password_reset_tokens (user_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))',
         [testUser1.id, hashedToken],
       );
 
-      const response = await request(app)
-        .post("/api/auth/reset-password")
-        .send({
-          token: resetToken,
-          newPassword: "NewSecurePass123!",
-        });
+      const response = await request(app).post('/api/auth/reset-password').send({
+        token: resetToken,
+        newPassword: 'NewSecurePass123!',
+      });
 
       expect(response.status).toBe(200);
 
       // Verify can login with new password
-      const loginResponse = await request(app).post("/api/auth/login").send({
+      const loginResponse = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "NewSecurePass123!",
-        fingerprint: "test-fingerprint-new-password",
+        password: 'NewSecurePass123!',
+        fingerprint: 'test-fingerprint-new-password',
       });
       expect(loginResponse.status).toBe(200);
     });
   });
 
-  describe("Security Headers", () => {
-    it("should include security headers in auth responses", async () => {
-      const response = await request(app).post("/api/auth/login").send({
+  describe('Security Headers', () => {
+    it('should include security headers in auth responses', async () => {
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-security-headers",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-security-headers',
       });
 
-      expect(response.headers["x-content-type-options"]).toBe("nosniff");
-      expect(response.headers["x-frame-options"]).toBe("DENY");
-      expect(response.headers["x-xss-protection"]).toBe("1; mode=block");
+      expect(response.headers['x-content-type-options']).toBe('nosniff');
+      expect(response.headers['x-frame-options']).toBe('DENY');
+      expect(response.headers['x-xss-protection']).toBe('1; mode=block');
     });
 
-    it("should set secure cookie flags", async () => {
-      process.env.NODE_ENV = "production";
+    it('should set secure cookie flags', async () => {
+      process.env.NODE_ENV = 'production';
 
-      const response = await request(app).post("/api/auth/login").send({
+      const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
-        password: "TestPass123!",
-        fingerprint: "test-fingerprint-secure-cookie",
+        password: 'TestPass123!',
+        fingerprint: 'test-fingerprint-secure-cookie',
       });
 
-      const cookies = response.headers["set-cookie"];
-      const tokenCookie = Array.isArray(cookies)
-        ? cookies.find((c) => c.startsWith("token="))
-        : cookies?.startsWith("token=")
-          ? cookies
-          : undefined;
+      const cookies = response.headers['set-cookie'];
+      const tokenCookie =
+        Array.isArray(cookies) ? cookies.find((c) => c.startsWith('token='))
+        : cookies?.startsWith('token=') ? cookies
+        : undefined;
 
-      expect(tokenCookie).toContain("HttpOnly");
-      expect(tokenCookie).toContain("SameSite=Strict");
+      expect(tokenCookie).toContain('HttpOnly');
+      expect(tokenCookie).toContain('SameSite=Strict');
 
-      process.env.NODE_ENV = "test";
+      process.env.NODE_ENV = 'test';
     });
   });
 });

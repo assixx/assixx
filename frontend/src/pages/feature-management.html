@@ -31,7 +31,7 @@
 
       /* Align first container with sidebar user-info-card */
       .container {
-        margin-top: -37px !important;
+        margin-top: -25px !important;
       }
 
       /* Glassmorphismus für Cards */
@@ -49,7 +49,6 @@
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         color: #fff;
-        transition: all 0.3s ease;
       }
 
       .form-control:focus {
@@ -68,7 +67,6 @@
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
       }
 
       .btn-primary {
@@ -120,7 +118,6 @@
 
       .table tbody tr {
         background: rgba(255, 255, 255, 0.01);
-        transition: all 0.3s ease;
       }
 
       .table tbody tr:hover {
@@ -154,6 +151,63 @@
           transform: translateY(0);
         }
       }
+
+      /* Notification Styles */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(255, 255, 255, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        padding: 16px 20px;
+        min-width: 300px;
+        max-width: 500px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        transform: translateX(400px);
+        transition: all 0.3s ease-out;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.notification-error {
+        border-left: 4px solid #ff4444;
+        color: #d32f2f;
+      }
+
+      .notification.notification-error i {
+        color: #ff4444;
+        font-size: 16px;
+      }
+
+      .notification.notification-success {
+        border-left: 4px solid #4caf50;
+        color: #2e7d32;
+      }
+
+      .notification.notification-success i {
+        color: #4caf50;
+        font-size: 16px;
+      }
+
+      .notification.notification-info {
+        border-left: 4px solid #2196f3;
+        color: #1976d2;
+      }
+
+      .notification.notification-info i {
+        color: #2196f3;
+        font-size: 16px;
+      }
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -177,7 +231,7 @@
               <p class="text-secondary" class="u-mt-text">Wählen Sie einen Tenant zur Feature-Verwaltung</p>
             </div>
             <div class="card-body">
-              <select id="tenant-select" class="form-control" onchange="loadTenantFeatures()">
+              <select id="tenant-select" class="form-control">
                 <option value="">Bitte Tenant wählen...</option>
               </select>
             </div>
@@ -292,7 +346,7 @@
         <script>
           const token = localStorage.getItem('token');
           let currentTenantId = null;
-          let allFeatures = [];
+          const allFeatures = [];
 
           // Tenants laden
           async function loadTenants() {
@@ -303,31 +357,31 @@
 
               if (response.ok) {
                 const tenants = await response.json();
-                const select = document.getElementById('tenant-select');
+                const select = document.querySelector('#tenant-select');
 
                 tenants.forEach((tenant) => {
                   const option = document.createElement('option');
                   option.value = tenant.id;
                   option.textContent = `${tenant.company_name} (${tenant.subdomain})`;
-                  select.appendChild(option);
+                  select.append(option);
                 });
               }
             } catch (error) {
               console.error('Error loading tenants:', error);
-              alert('Fehler beim Laden der Tenants');
+              showError('Fehler beim Laden der Tenants');
             }
           }
 
           // Features für Tenant laden
           async function loadTenantFeatures() {
-            const tenantId = document.getElementById('tenant-select').value;
+            const tenantId = document.querySelector('#tenant-select').value;
             if (!tenantId) {
-              document.getElementById('features-container').style.display = 'none';
+              document.querySelector('#features-container').style.display = 'none';
               return;
             }
 
             currentTenantId = tenantId;
-            document.getElementById('features-container').style.display = 'block';
+            document.querySelector('#features-container').style.display = 'block';
 
             try {
               const response = await fetch(`/features/tenant/${tenantId}`, {
@@ -341,13 +395,13 @@
               }
             } catch (error) {
               console.error('Error loading features:', error);
-              alert('Fehler beim Laden der Features');
+              showError('Fehler beim Laden der Features');
             }
           }
 
           // Features anzeigen
           function displayFeatures(features) {
-            const tbody = document.getElementById('features-table-body');
+            const tbody = document.querySelector('#features-table-body');
             tbody.innerHTML = '';
 
             features.forEach((feature) => {
@@ -356,29 +410,83 @@
               const statusClass = `status-${status}`;
               const categoryClass = `category-${feature.category}`;
 
-              row.innerHTML = `
-                    <td>${feature.name}</td>
-                    <td><span class="${categoryClass}">${feature.category.toUpperCase()}</span></td>
-                    <td>${feature.description}</td>
-                    <td>€${feature.base_price}</td>
-                    <td><span class="${statusClass}">${status.toUpperCase()}</span></td>
-                    <td>${feature.valid_until || '-'}</td>
-                    <td>${feature.current_usage || 0} / ${feature.usage_limit || '∞'}</td>
-                    <td>
-                        ${
-                          status === 'active' || status === 'trial'
-                            ? `<button class="btn btn-sm btn-danger" onclick="deactivateFeature('${feature.code}')">Deaktivieren</button>`
-                            : `<button class="btn btn-sm btn-success" onclick="showActivateForm('${feature.code}')">Aktivieren</button>`
-                        }
-                    </td>
-                `;
-              tbody.appendChild(row);
+              // Create cells safely without innerHTML
+              const cells = [
+                feature.name,
+                null, // category with special formatting
+                feature.description,
+                `€${feature.base_price}`,
+                null, // status with special formatting
+                feature.valid_until || '-',
+                `${feature.current_usage || 0} / ${feature.usage_limit || '∞'}`,
+                null, // action button
+              ];
+
+              // Name cell
+              const nameCell = document.createElement('td');
+              nameCell.textContent = cells[0];
+              row.append(nameCell);
+
+              // Category cell
+              const categoryCell = document.createElement('td');
+              const categorySpan = document.createElement('span');
+              categorySpan.className = categoryClass;
+              categorySpan.textContent = feature.category.toUpperCase();
+              categoryCell.append(categorySpan);
+              row.append(categoryCell);
+
+              // Description cell
+              const descCell = document.createElement('td');
+              descCell.textContent = cells[2];
+              row.append(descCell);
+
+              // Price cell
+              const priceCell = document.createElement('td');
+              priceCell.textContent = cells[3];
+              row.append(priceCell);
+
+              // Status cell
+              const statusCell = document.createElement('td');
+              const statusSpan = document.createElement('span');
+              statusSpan.className = statusClass;
+              statusSpan.textContent = status.toUpperCase();
+              statusCell.append(statusSpan);
+              row.append(statusCell);
+
+              // Valid until cell
+              const validCell = document.createElement('td');
+              validCell.textContent = cells[5];
+              row.append(validCell);
+
+              // Usage cell
+              const usageCell = document.createElement('td');
+              usageCell.textContent = cells[6];
+              row.append(usageCell);
+
+              // Action cell
+              const actionCell = document.createElement('td');
+              const button = document.createElement('button');
+              if (status === 'active' || status === 'trial') {
+                button.className = 'btn btn-sm btn-danger';
+                button.textContent = 'Deaktivieren';
+                button.setAttribute('data-action', 'deactivate');
+                button.setAttribute('data-feature-code', feature.code);
+              } else {
+                button.className = 'btn btn-sm btn-success';
+                button.textContent = 'Aktivieren';
+                button.setAttribute('data-action', 'activate');
+                button.setAttribute('data-feature-code', feature.code);
+              }
+              actionCell.append(button);
+              row.append(actionCell);
+
+              tbody.append(row);
             });
           }
 
           // Feature-Select befüllen
           function populateFeatureSelect(features) {
-            const select = document.getElementById('feature-select');
+            const select = document.querySelector('#feature-select');
             select.innerHTML = '<option value="">Bitte wählen...</option>';
 
             const inactiveFeatures = features.filter((f) => !f.status || f.status === 'disabled' || f.status === 'expired');
@@ -387,32 +495,32 @@
               const option = document.createElement('option');
               option.value = feature.code;
               option.textContent = `${feature.name} (€${feature.base_price})`;
-              select.appendChild(option);
+              select.append(option);
             });
           }
 
           // Feature aktivieren Form anzeigen
           function showActivateForm(featureCode) {
-            document.getElementById('feature-select').value = featureCode;
-            document.getElementById('activate-feature-form').scrollIntoView({ behavior: 'smooth' });
+            document.querySelector('#feature-select').value = featureCode;
+            document.querySelector('#activate-feature-form').scrollIntoView({ behavior: 'smooth' });
           }
 
           // Feature aktivieren
-          document.getElementById('activate-feature-form').addEventListener('submit', async (e) => {
+          document.querySelector('#activate-feature-form').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const featureCode = document.getElementById('feature-select').value;
+            const featureCode = document.querySelector('#feature-select').value;
             if (!featureCode) {
-              alert('Bitte ein Feature auswählen');
+              showError('Bitte ein Feature auswählen');
               return;
             }
 
             const options = {
-              validFrom: document.getElementById('valid-from').value,
-              validUntil: document.getElementById('valid-until').value || null,
-              trialDays: parseInt(document.getElementById('trial-days').value) || 0,
-              usageLimit: parseInt(document.getElementById('usage-limit').value) || null,
-              customPrice: parseFloat(document.getElementById('custom-price').value) || null,
+              validFrom: document.querySelector('#valid-from').value,
+              validUntil: document.querySelector('#valid-until').value || null,
+              trialDays: parseInt(document.querySelector('#trial-days').value) || 0,
+              usageLimit: parseInt(document.querySelector('#usage-limit').value) || null,
+              customPrice: parseFloat(document.querySelector('#custom-price').value) || null,
             };
 
             try {
@@ -430,16 +538,16 @@
               });
 
               if (response.ok) {
-                alert('Feature erfolgreich aktiviert');
+                showSuccess('Feature erfolgreich aktiviert');
                 loadTenantFeatures();
-                document.getElementById('activate-feature-form').reset();
+                document.querySelector('#activate-feature-form').reset();
               } else {
                 const error = await response.json();
-                alert(`Fehler: ${error.error}`);
+                showError(`Fehler: ${error.error}`);
               }
             } catch (error) {
               console.error('Error activating feature:', error);
-              alert('Fehler beim Aktivieren des Features');
+              showError('Fehler beim Aktivieren des Features');
             }
           });
 
@@ -463,25 +571,123 @@
               });
 
               if (response.ok) {
-                alert('Feature erfolgreich deaktiviert');
+                showSuccess('Feature erfolgreich deaktiviert');
                 loadTenantFeatures();
               } else {
                 const error = await response.json();
-                alert(`Fehler: ${error.error}`);
+                showError(`Fehler: ${error.error}`);
               }
             } catch (error) {
               console.error('Error deactivating feature:', error);
-              alert('Fehler beim Deaktivieren des Features');
+              showError('Fehler beim Deaktivieren des Features');
             }
           }
+
+          // Event Delegation for dynamic content
+          document.addEventListener('click', function (e) {
+            const target = e.target;
+
+            // Handle feature actions
+            if (target.hasAttribute('data-action')) {
+              const action = target.getAttribute('data-action');
+              const featureCode = target.getAttribute('data-feature-code');
+
+              if (action === 'deactivate') {
+                deactivateFeature(featureCode);
+              } else if (action === 'activate') {
+                showActivateForm(featureCode);
+              }
+            }
+          });
+
+          // Tenant select change handler
+          document.querySelector('#tenant-select')?.addEventListener('change', function () {
+            loadTenantFeatures();
+          });
 
           // Initialisierung
           document.addEventListener('DOMContentLoaded', () => {
             // Heute als Standard für "Gültig ab"
-            document.getElementById('valid-from').value = new Date().toISOString().split('T')[0];
+            document.querySelector('#valid-from').value = new Date().toISOString().split('T')[0];
 
             loadTenants();
           });
+
+          // Notification functions
+          function showError(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-error';
+
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-exclamation-circle';
+            const span = document.createElement('span');
+            span.textContent = message;
+
+            notification.append(icon);
+            notification.append(span);
+            document.body.append(notification);
+
+            setTimeout(() => {
+              notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => {
+                notification.remove();
+              }, 300);
+            }, 4000);
+          }
+
+          function showSuccess(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-success';
+
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-check-circle';
+            const span = document.createElement('span');
+            span.textContent = message;
+
+            notification.append(icon);
+            notification.append(span);
+            document.body.append(notification);
+
+            setTimeout(() => {
+              notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => {
+                notification.remove();
+              }, 300);
+            }, 3000);
+          }
+
+          function showInfo(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-info';
+
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-info-circle';
+            const span = document.createElement('span');
+            span.textContent = message;
+
+            notification.append(icon);
+            notification.append(span);
+            document.body.append(notification);
+
+            setTimeout(() => {
+              notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+              notification.classList.remove('show');
+              setTimeout(() => {
+                notification.remove();
+              }, 300);
+            }, 3500);
+          }
         </script>
       </main>
     </div>

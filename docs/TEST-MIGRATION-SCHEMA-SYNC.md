@@ -28,7 +28,7 @@
 2. **DB-Ansatz** (documents.test.ts) → Scheiterte an Schema-Drift
 3. **Mix-Ansatz** → Verletzt "Test = Production" Prinzip
 
-### Wichtige Commits & Lessons:
+### Wichtige Commits & Lessons
 
 ```bash
 # Success: auth-refactored mit Mocks
@@ -56,13 +56,13 @@ f536003: "Revert fix: Support different DB schemas"
 - Keine separaten Test-Migrations mehr
 - Test = Production garantiert
 
-### Relevante Dokumente:
+### Relevante Dokumente
 
 - `docs/DEBUGGING-WORKFLOW-LESSONS.md` → One-by-One, Test=Production
 - `docs/DATABASE-MIGRATION-GUIDE.md` → Schema Management
 - `backend/src/routes/__tests__/documents.test.ts` → Aktueller Stand (gemockt)
 
-### Warum KEINE Unit/Integration Trennung:
+### Warum KEINE Unit/Integration Trennung
 
 **Von 20 Tests sind nur 5 echte Unit-Test-Kandidaten:**
 
@@ -78,13 +78,13 @@ f536003: "Revert fix: Support different DB schemas"
 
 **Fazit**: Künstlich Routes in "Units" zu zerlegen ist Selbstbetrug!
 
-### Jest console.log Problem:
+### Jest console.info Problem
 
-- console.log wird in Tests unterdrückt
+- console.info wird in Tests unterdrückt
 - Lösung: Error throwing für Debugging
 - Dokumentiert in DEBUGGING-WORKFLOW-LESSONS.md (Zeile 130-180)
 
-### Aktuelle Probleme die wir lösen:
+### Aktuelle Probleme die wir lösen
 
 1. **403 Forbidden** - User not found (DB Mismatch)
 2. **Foreign Key Constraints** - department_id fails
@@ -165,28 +165,28 @@ docker exec assixx-backend pnpm test -- --listTests | wc -l
  * Document Upload Test - Mit echter Test-Datenbank
  * Kein Mocking von DB oder Models!
  */
+import jwt from 'jsonwebtoken';
+import request from 'supertest';
 
-import request from "supertest";
-import jwt from "jsonwebtoken";
-import app from "../../app";
-import { pool } from "../../database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
+import { asTestRows } from '../../__tests__/mocks/db-types';
+import app from '../../app';
+import { pool } from '../../database';
 
 // Nur externe Services mocken
-jest.mock("../../utils/emailService", () => ({
+jest.mock('../../utils/emailService', () => ({
   default: {
     sendEmail: jest.fn().mockResolvedValue(true),
   },
 }));
 
-jest.mock("fs/promises", () => ({
+jest.mock('fs/promises', () => ({
   unlink: jest.fn().mockResolvedValue(undefined),
   mkdir: jest.fn().mockResolvedValue(undefined),
   access: jest.fn().mockResolvedValue(undefined),
-  readFile: jest.fn().mockResolvedValue(Buffer.from("Test PDF content")),
+  readFile: jest.fn().mockResolvedValue(Buffer.from('Test PDF content')),
 }));
 
-describe("Document Upload - Integration Test", () => {
+describe('Document Upload - Integration Test', () => {
   let testTenantId: number;
   let testUserId: number;
   let testToken: string;
@@ -194,24 +194,24 @@ describe("Document Upload - Integration Test", () => {
   beforeAll(async () => {
     // Setup test data
     const [tenantResult] = await pool.execute(
-      "INSERT INTO tenants (name, subdomain) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)",
-      ["Test Tenant", "test-doc"],
+      'INSERT INTO tenants (name, subdomain) VALUES (?, ?) ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)',
+      ['Test Tenant', 'test-doc'],
     );
     testTenantId = (tenantResult as any).insertId;
 
     const [userResult] = await pool.execute(
-      `INSERT INTO users (username, email, password_hash, role, tenant_id, first_name, last_name, status) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?) 
+      `INSERT INTO users (username, email, password_hash, role, tenant_id, first_name, last_name, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE id=LAST_INSERT_ID(id)`,
       [
-        "testuser@test.com",
-        "testuser@test.com",
-        "$2b$10$dummy", // Dummy hash
-        "admin",
+        'testuser@test.com',
+        'testuser@test.com',
+        '$2b$10$dummy', // Dummy hash
+        'admin',
         testTenantId,
-        "Test",
-        "User",
-        "active",
+        'Test',
+        'User',
+        'active',
       ],
     );
     testUserId = (userResult as any).insertId;
@@ -220,57 +220,57 @@ describe("Document Upload - Integration Test", () => {
     testToken = jwt.sign(
       {
         id: testUserId,
-        username: "testuser@test.com",
-        role: "admin",
+        username: 'testuser@test.com',
+        role: 'admin',
         tenant_id: testTenantId,
       },
-      process.env.JWT_SECRET || "test-secret",
-      { expiresIn: "1h" },
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '1h' },
     );
   });
 
   afterAll(async () => {
     // Cleanup
-    await pool.execute("DELETE FROM documents WHERE tenant_id = ?", [testTenantId]);
-    await pool.execute("DELETE FROM users WHERE tenant_id = ?", [testTenantId]);
-    await pool.execute("DELETE FROM tenants WHERE id = ?", [testTenantId]);
+    await pool.execute('DELETE FROM documents WHERE tenant_id = ?', [testTenantId]);
+    await pool.execute('DELETE FROM users WHERE tenant_id = ?', [testTenantId]);
+    await pool.execute('DELETE FROM tenants WHERE id = ?', [testTenantId]);
   });
 
   beforeEach(async () => {
     // Clean documents before each test
-    await pool.execute("DELETE FROM documents WHERE tenant_id = ?", [testTenantId]);
+    await pool.execute('DELETE FROM documents WHERE tenant_id = ?', [testTenantId]);
   });
 
-  it("should upload a document successfully", async () => {
+  it('should upload a document successfully', async () => {
     const response = await request(app)
-      .post("/api/documents/upload")
-      .set("Authorization", `Bearer ${testToken}`)
-      .field("recipientType", "company")
-      .field("category", "general")
-      .field("description", "Test document")
-      .attach("document", Buffer.from("Test content"), "test.pdf");
+      .post('/api/documents/upload')
+      .set('Authorization', `Bearer ${testToken}`)
+      .field('recipientType', 'company')
+      .field('category', 'general')
+      .field('description', 'Test document')
+      .attach('document', Buffer.from('Test content'), 'test.pdf');
 
     expect(response.status).toBe(201);
     expect(response.body).toMatchObject({
       success: true,
-      message: expect.stringContaining("erfolgreich"),
+      message: expect.stringContaining('erfolgreich'),
       data: {
         documentId: expect.any(Number),
       },
     });
 
     // Verify in database
-    const [rows] = await pool.execute("SELECT * FROM documents WHERE id = ?", [response.body.data.documentId]);
+    const [rows] = await pool.execute('SELECT * FROM documents WHERE id = ?', [response.body.data.documentId]);
     const docs = asTestRows<any>(rows);
     expect(docs).toHaveLength(1);
     expect(docs[0].tenant_id).toBe(testTenantId);
   });
 
-  it("should reject unauthenticated requests", async () => {
+  it('should reject unauthenticated requests', async () => {
     const response = await request(app)
-      .post("/api/documents/upload")
-      .field("category", "general")
-      .attach("document", Buffer.from("Test"), "test.pdf");
+      .post('/api/documents/upload')
+      .field('category', 'general')
+      .attach('document', Buffer.from('Test'), 'test.pdf');
 
     expect(response.status).toBe(401);
   });
@@ -364,21 +364,21 @@ UPDATE users SET status = 'active' WHERE id = ?;
 
 ## 🤔 Kritische Betrachtung (100% ehrlich)
 
-### Was gut ist:
+### Was gut ist
 
 - ✅ Keine Mock-Wartung mehr
 - ✅ Test = Production garantiert
 - ✅ Schema-Drift gelöst
 - ✅ Einfacher zu verstehen
 
-### Was problematisch ist:
+### Was problematisch ist
 
 - ❌ CI wird langsamer (1-2 Min statt 30s)
 - ❌ Race Conditions bei parallelen Tests möglich
 - ❌ Echte Unit Tests (Utils) verlieren wir
 - ❌ Mehr DB-Last bei Entwicklung
 
-### Alternative die wir verworfen haben:
+### Alternative die wir verworfen haben
 
 **Hybrid-Ansatz**:
 

@@ -5,33 +5,39 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && npm run postbuild",
+    "postbuild": "mkdir -p dist/js && cp -f public/js/purify.min.js dist/js/purify.min.js 2>/dev/null || echo 'Post-build: purify.min.js copied'",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "eslint src",
+    "lint:fixnowarn": "eslint src/**/*.ts --no-warn-ignored --fix --quiet",
     "lint:fix": "eslint src --fix"
   },
   "devDependencies": {
-    "@eslint/js": "^9.32.0",
-    "@types/node": "^24.1.0",
-    "@typescript-eslint/eslint-plugin": "^8.38.0",
-    "@typescript-eslint/parser": "^8.38.0",
+    "@eslint/js": "^9.33.0",
+    "@openapitools/openapi-generator-cli": "^2.22.0",
+    "@types/node": "^24.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/parser": "^8.40.0",
     "autoprefixer": "^10.4.21",
     "cssnano": "^7.1.0",
-    "eslint": "^9.32.0",
+    "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.3",
+    "eslint-plugin-html": "^8.1.3",
+    "eslint-plugin-prettier": "^5.5.4",
     "globals": "^16.3.0",
+    "openapi-typescript": "^7.9.1",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "terser": "^5.43.1",
     "typescript": "^5.9.2",
-    "vite": "^7.0.6"
+    "vite": "^7.1.3"
   },
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.0.0",
     "chart.js": "^4.5.0",
-    "marked": "^16.1.1",
+    "dompurify": "^3.2.6",
+    "marked": "^16.2.0",
     "moment": "^2.30.1"
   }
 }

@@ -4,9 +4,32 @@
  */
 
 import type { User } from '../types/api.types';
-
+import { $$, $all, $$id, setHTML } from '../utils/dom-utils';
+import { featureFlags } from '../utils/feature-flags';
 import { getAuthToken, showSuccess, showError } from './auth';
 import { modalManager } from './utils/modal-manager';
+import { shiftCalendarIntegration } from './shifts-in-calendar';
+
+// Window.unifiedNav is already declared in global.d.ts
+
+// API Response interfaces
+interface ApiResponse<T = unknown> {
+  success: boolean;
+  data: {
+    data: T[];
+    pagination?: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+}
+
+interface LegacyApiResponse<T = unknown> {
+  data: T[];
+  events?: T[];
+}
 
 // FullCalendar types
 interface FullCalendarApi {
@@ -17,6 +40,11 @@ interface FullCalendarApi {
   addEvent(event: FullCalendarEventInput): FullCalendarEvent;
   unselect(): void;
   changeView(viewName: string): void;
+  view: {
+    activeStart: Date;
+    activeEnd: Date;
+  };
+  on(eventName: string, callback: (info: { start: Date; end: Date }) => void): void;
 }
 
 interface FullCalendarEvent {
@@ -39,6 +67,7 @@ interface FullCalendarEventInput {
   backgroundColor?: string;
   borderColor?: string;
   textColor?: string;
+  classNames?: string[];
   extendedProps?: Record<string, unknown>;
 }
 
@@ -92,6 +121,7 @@ interface FullCalendarOptions {
   height?: string | number;
   nowIndicator?: boolean;
   navLinks?: boolean;
+  dateClick?: (info: { date: Date; allDay: boolean }) => void;
   select?: (info: FullCalendarSelectInfo) => void;
   eventClick?: (info: FullCalendarEventClickInfo) => void;
   eventMouseEnter?: (info: FullCalendarEventMouseEnterInfo) => void;
@@ -117,42 +147,93 @@ declare global {
   }
 }
 
+// API Response Types for proper typing
+interface ApiV2Response<T> {
+  success: boolean;
+  data: {
+    data: T[];
+    pagination?: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+}
+
+interface ApiV1Response<T> {
+  data?: T[];
+  events?: T[];
+  success?: boolean;
+}
+
 interface CalendarEvent {
   id: number;
   title: string;
   description?: string;
   start_time: string;
   end_time: string;
+  startTime?: string; // v2 API field
+  endTime?: string; // v2 API field
   all_day: boolean | number | string;
+  allDay?: boolean | number | string; // v2 API field
   location?: string;
   org_level: 'personal' | 'company' | 'department' | 'team';
+  orgLevel?: 'personal' | 'company' | 'department' | 'team'; // v2 API field
   org_id?: number;
+  orgId?: number; // v2 API field
   color?: string;
   reminder_time?: number;
+  reminderTime?: number; // v2 API field
+  reminderMinutes?: number; // v2 API field
+  requiresResponse?: boolean; // v2 API field
+  requires_response?: boolean; // v1 API field
   created_by: number;
+  createdBy?: number; // v2 API field
   created_at: string;
+  createdAt?: string; // v2 API field
   updated_at: string;
+  updatedAt?: string; // v2 API field
   // Additional fields from joins
   creator_name?: string;
+  creatorName?: string; // v2 API field
   department_name?: string;
+  departmentName?: string; // v2 API field
   team_name?: string;
+  teamName?: string; // v2 API field
   // User-specific fields
   user_response?: 'accepted' | 'declined' | 'tentative' | 'pending';
+  userResponse?: 'accepted' | 'declined' | 'tentative' | 'pending'; // v2 API field
   attendees?: EventAttendee[];
 }
 
 interface EventAttendee {
   id: number;
   event_id: number;
-  user_id: number;
-  response: 'accepted' | 'declined' | 'tentative' | 'pending';
+  user_id?: number;
+  userId?: number; // v2 API uses camelCase
+  response?: 'accepted' | 'declined' | 'tentative' | 'pending';
+  responseStatus?: 'accepted' | 'declined' | 'tentative' | 'pending'; // v2 API field
   responded_at?: string;
+  respondedAt?: string; // v2 API uses camelCase
   // User info
   username?: string;
   first_name?: string;
+  firstName?: string; // v2 API uses camelCase
   last_name?: string;
+  lastName?: string; // v2 API uses camelCase
   email?: string;
+  profilePicture?: string; // v2 API additional field
 }
+
+interface UnreadEvent {
+  id: number;
+  title: string;
+  startTime: string;
+  requiresResponse: boolean;
+}
+
+// Interface for creating new calendar events - not used anymore, using inline types instead
 
 interface Department {
   id: number;
@@ -162,7 +243,8 @@ interface Department {
 interface Team {
   id: number;
   name: string;
-  department_id: number;
+  department_id?: number; // v1 API
+  departmentId?: number; // v2 API
 }
 
 interface UserData extends User {
@@ -174,34 +256,36 @@ interface UserData extends User {
 
 // Global variables
 let calendar: FullCalendarApi; // FullCalendar instance
-let currentFilter: string = 'all';
-let currentSearch: string = '';
+// Always default to 'all' filter on page load
+let currentFilter = 'all';
+let currentSearch = '';
 let departments: Department[] = [];
 let teams: Team[] = [];
 let employees: User[] = [];
-let isAdmin: boolean = false;
+let isAdmin = false;
 let currentUserId: number | null = null;
 let selectedAttendees: number[] = [];
-let calendarView: string = 'dayGridMonth'; // Default view
+let eventToDelete: number | null = null; // Track which event to delete
+let calendarView = 'dayGridMonth'; // Default view
 
 /**
  * Helper function to set selected organization ID
  */
 function selectOrgId(id: number, name: string): void {
-  const selectedOrgIdElement = document.getElementById('selectedOrgId') as HTMLElement;
-  const eventOrgIdElement = document.getElementById('eventOrgId') as HTMLInputElement;
+  const selectedOrgIdElement = $$('#selectedOrgId');
+  const eventOrgIdElement = $$('#eventOrgId') as HTMLInputElement | null;
 
   if (selectedOrgIdElement) {
     selectedOrgIdElement.textContent = name;
   }
-  if (eventOrgIdElement) {
+  if (eventOrgIdElement !== null) {
     eventOrgIdElement.value = id.toString();
   }
 }
 
 // Initialize when document is ready
-function initializeApp() {
-  console.log('Calendar: Starting initialization...');
+async function initializeApp() {
+  console.info('Calendar: Starting initialization...');
 
   // Register modal templates
   registerModalTemplates();
@@ -210,46 +294,49 @@ function initializeApp() {
   try {
     checkLoggedIn();
     // Load user data
-    fetchUserData()
-      .then((userData: UserData) => {
-        currentUserId = userData.id;
-        isAdmin = userData.role === 'admin' || userData.role === 'root';
+    try {
+      const userData = await fetchUserData();
+      currentUserId = userData.id;
+      isAdmin = userData.role === 'admin' || userData.role === 'root';
 
-        // Show/hide "New Event" button based on permissions
-        const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
-        console.log('Calendar: newEventBtn found:', !!newEventBtn);
-        if (newEventBtn) {
-          newEventBtn.style.display = isAdmin ? 'block' : 'none';
-        }
+      // Show/hide "New Event" button based on permissions
+      const newEventBtn = $$('#newEventBtn');
+      console.info('Calendar: newEventBtn found:', newEventBtn !== null);
+      if (newEventBtn !== null) {
+        newEventBtn.style.display = isAdmin ? 'block' : 'none';
+      }
 
-        // Load departments and teams for form dropdowns
-        void loadDepartmentsAndTeams();
+      // Load departments and teams for form dropdowns
+      void loadDepartmentsAndTeams();
 
-        // Initialize calendar - wrapped to prevent redirect on calendar errors
-        try {
-          initializeCalendar();
-        } catch (calendarError) {
-          console.error('Calendar initialization error:', calendarError);
-          showError('Kalender konnte nicht geladen werden.');
-        }
+      // Initialize calendar - wrapped to prevent redirect on calendar errors
+      try {
+        initializeCalendar();
+        // Setup fullscreen controls
+        setupFullscreenControls();
+      } catch (calendarError) {
+        console.error('Calendar initialization error:', calendarError);
+        showError('Kalender konnte nicht geladen werden.');
+      }
 
-        // Load upcoming events
-        void loadUpcomingEvents();
+      // Load upcoming events
+      void loadUpcomingEvents();
 
-        // Setup event listeners
-        console.log('Calendar: Setting up event listeners...');
-        setupEventListeners();
+      // Setup event listeners
+      console.info('Calendar: Setting up event listeners...');
+      setupEventListeners();
 
-        // Setup color picker
-        setupColorPicker();
+      // Color picker removed - color is auto-determined by org_level
 
-        console.log('Calendar: Initialization complete');
-      })
-      .catch((error) => {
-        console.error('Error loading user data:', error);
-        window.location.href = '/login';
-      });
-  } catch (error) {
+      // Check for unread events and show modal if necessary
+      void checkUnreadEvents();
+
+      console.info('Calendar: Initialization complete');
+    } catch (error: unknown) {
+      console.error('Error loading user data:', error);
+      window.location.href = '/login';
+    }
+  } catch (error: unknown) {
     console.error('Error checking login:', error);
     window.location.href = '/login';
   }
@@ -257,21 +344,25 @@ function initializeApp() {
 
 // Wait for both DOM and scripts to be ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeApp);
+  document.addEventListener('DOMContentLoaded', () => {
+    void initializeApp();
+  });
 } else {
   // DOM is already loaded, run directly
-  setTimeout(initializeApp, 100); // Small delay to ensure all scripts are loaded
+  setTimeout(() => {
+    void initializeApp();
+  }, 100); // Small delay to ensure all scripts are loaded
 }
 
 /**
  * Register all modal templates
  */
 function registerModalTemplates(): void {
-  console.log('Calendar: registerModalTemplates() called');
+  console.info('Calendar: registerModalTemplates() called');
 
   // Event Form Modal Template
   const eventFormTemplate = getEventFormModalTemplate();
-  console.log('Calendar: eventFormTemplate length:', eventFormTemplate.length);
+  console.info('Calendar: eventFormTemplate length:', eventFormTemplate.length);
   modalManager.registerTemplate('eventFormModal', eventFormTemplate);
 
   // Event Detail Modal Template
@@ -283,7 +374,223 @@ function registerModalTemplates(): void {
   // Event Response Modal Template
   modalManager.registerTemplate('eventResponseModal', getEventResponseModalTemplate());
 
-  console.log('Calendar: All modal templates registered');
+  // Confirmation Modal Template (for delete)
+  modalManager.registerTemplate('confirmationModal', getConfirmationModalTemplate());
+
+  // Unread Events Modal Template
+  modalManager.registerTemplate('unreadEventsModal', getUnreadEventsModalTemplate());
+
+  console.info('Calendar: All modal templates registered');
+}
+
+/**
+ * Get Unread Events Modal Template
+ */
+function getUnreadEventsModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="unreadEventsModal">
+      <div class="modal-container modal-lg">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-bell"></i> Neue Termine mit Statusanfrage
+          </h2>
+          <button type="button" class="modal-close" data-action="close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="unreadEventsList" class="unread-events-list">
+            <!-- Events will be loaded here -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close">
+            Schließen
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Check for unread events and show modal if necessary
+ */
+async function checkUnreadEvents(): Promise<void> {
+  try {
+    const token = getAuthToken();
+    if (token === null || token === '') return;
+
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch unread events');
+      return;
+    }
+
+    const data = (await response.json()) as { data?: { totalUnread?: number }; totalUnread?: number };
+    const result = useV2 ? data.data : data;
+    const totalUnread = result?.totalUnread ?? 0;
+
+    // If there are unread events, show the modal
+    if (totalUnread > 0) {
+      // Check if badge was clicked or if we should auto-show
+      const badge = $$('#calendar-unread-badge');
+      if (badge && badge.style.display !== 'none') {
+        // Auto-show modal when page loads with unread events
+        setTimeout(() => {
+          void showUnreadEventsModal();
+        }, 1000);
+      }
+    }
+
+    // Update badge in navigation
+    if (window.unifiedNav) {
+      void window.unifiedNav.updateUnreadCalendarEvents();
+    }
+  } catch (error: unknown) {
+    console.error('Error checking unread events:', error);
+  }
+}
+
+/**
+ * Show event details (wrapper for viewEvent)
+ */
+async function showEventDetails(eventId: number): Promise<void> {
+  // Close the unread events modal first
+  modalManager.hide('unreadEventsModal');
+
+  // Show the event details
+  await viewEvent(eventId);
+}
+
+/**
+ * Show unread events modal
+ */
+async function showUnreadEventsModal(): Promise<void> {
+  try {
+    const token = getAuthToken();
+    if (token === null || token === '') return;
+
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('Failed to fetch unread events');
+      return;
+    }
+
+    const data = (await response.json()) as {
+      data?: { eventsRequiringResponse?: UnreadEvent[] };
+      eventsRequiringResponse?: UnreadEvent[];
+    };
+    const result = useV2 ? data.data : data;
+    const events: UnreadEvent[] = result?.eventsRequiringResponse ?? [];
+
+    // Show modal
+    const modal = modalManager.show('unreadEventsModal');
+    if (!modal) return;
+
+    // Populate events list
+    const listContainer = $$('#unreadEventsList');
+    if (!listContainer) return;
+
+    // Clear container
+    while (listContainer.firstChild) {
+      listContainer.firstChild.remove();
+    }
+
+    if (events.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'text-center p-4';
+
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-check-circle text-success';
+      icon.style.fontSize = '3rem';
+      emptyDiv.append(icon);
+
+      const text = document.createElement('p');
+      text.className = 'mt-3';
+      text.textContent = 'Keine Termine mit ausstehender Statusanfrage';
+      emptyDiv.append(text);
+
+      listContainer.append(emptyDiv);
+    } else {
+      events.forEach((event) => {
+        const eventDiv = document.createElement('div');
+        eventDiv.className = 'unread-event-item';
+        eventDiv.dataset.eventId = event.id.toString();
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'event-info';
+
+        const title = document.createElement('h4');
+        title.textContent = event.title;
+        infoDiv.append(title);
+
+        const dateP = document.createElement('p');
+        dateP.className = 'text-muted';
+        const clockIcon = document.createElement('i');
+        clockIcon.className = 'fas fa-clock';
+        dateP.append(clockIcon);
+        dateP.append(document.createTextNode(' ' + new Date(event.startTime).toLocaleString('de-DE')));
+        infoDiv.append(dateP);
+
+        eventDiv.append(infoDiv);
+
+        const actionsDiv = document.createElement('div');
+        actionsDiv.className = 'event-actions';
+
+        // Accept button
+        const acceptBtn = document.createElement('button');
+        acceptBtn.className = 'btn btn-success btn-sm';
+        acceptBtn.onclick = () => window.respondToEvent(event.id, 'accepted');
+        const acceptIcon = document.createElement('i');
+        acceptIcon.className = 'fas fa-check';
+        acceptBtn.append(acceptIcon);
+        acceptBtn.append(document.createTextNode(' Zusagen'));
+        actionsDiv.append(acceptBtn);
+
+        // Decline button
+        const declineBtn = document.createElement('button');
+        declineBtn.className = 'btn btn-danger btn-sm';
+        declineBtn.onclick = () => window.respondToEvent(event.id, 'declined');
+        const declineIcon = document.createElement('i');
+        declineIcon.className = 'fas fa-times';
+        declineBtn.append(declineIcon);
+        declineBtn.append(document.createTextNode(' Absagen'));
+        actionsDiv.append(declineBtn);
+
+        // Details button
+        const detailsBtn = document.createElement('button');
+        detailsBtn.className = 'btn btn-secondary btn-sm';
+        detailsBtn.onclick = () => window.showEventDetails(event.id);
+        const detailsIcon = document.createElement('i');
+        detailsIcon.className = 'fas fa-info-circle';
+        detailsBtn.append(detailsIcon);
+        detailsBtn.append(document.createTextNode(' Details'));
+        actionsDiv.append(detailsBtn);
+
+        eventDiv.append(actionsDiv);
+        listContainer.append(eventDiv);
+      });
+    }
+  } catch (error: unknown) {
+    console.error('Error loading unread events:', error);
+  }
 }
 
 /**
@@ -293,14 +600,14 @@ let calendarInitialized = false;
 
 function initializeCalendar(): void {
   if (calendarInitialized) {
-    console.log('Calendar: Already initialized, skipping...');
+    console.info('Calendar: Already initialized, skipping...');
     return;
   }
 
-  console.log('Calendar: Initializing FullCalendar...');
+  console.info('Calendar: Initializing FullCalendar...');
 
-  const calendarEl = document.getElementById('calendar') as HTMLElement;
-  console.log('Calendar: Calendar element found:', !!calendarEl);
+  const calendarEl = $$('#calendar');
+  console.info('Calendar: Calendar element found:', !!calendarEl);
 
   if (!calendarEl) {
     console.error('Calendar element not found');
@@ -308,13 +615,19 @@ function initializeCalendar(): void {
   }
 
   // Check if FullCalendar is loaded
-  console.log('Calendar: FullCalendar loaded:', typeof window.FullCalendar !== 'undefined');
+  console.info('Calendar: FullCalendar loaded:', typeof window.FullCalendar !== 'undefined');
   if (typeof window.FullCalendar === 'undefined') {
-    console.log('Calendar: FullCalendar not yet loaded, waiting...');
+    console.info('Calendar: FullCalendar not yet loaded, waiting...');
     // Try again after a short delay
-    setTimeout(() => initializeCalendar(), 500);
+    setTimeout(() => {
+      initializeCalendar();
+    }, 500);
     return;
   }
+
+  // Get user role for permission checks
+  const userRole = localStorage.getItem('userRole');
+  console.info('Calendar: User role for permissions:', userRole);
 
   calendarInitialized = true;
 
@@ -342,17 +655,28 @@ function initializeCalendar(): void {
       nowIndicator: true,
       dayMaxEvents: true,
       navLinks: true,
-      selectable: isAdmin, // Only admins can select dates to create events
+      selectable: userRole === 'admin' || userRole === 'root', // Only admins and root can select dates
+      selectMirror: userRole === 'admin' || userRole === 'root', // Show visual feedback only for admins/root
+      dateClick(info: { date: Date; allDay: boolean }) {
+        console.info('Calendar: Date clicked:', info);
+        // Only admins and root can create events
+        if (userRole === 'admin' || userRole === 'root') {
+          // Open event form for single day click
+          openEventForm(null, info.date, info.date, info.allDay);
+        } else {
+          console.info('Calendar: Employees cannot create events');
+        }
+      },
       select(info: FullCalendarSelectInfo) {
-        console.log('Calendar: Date selected:', info);
-        if (isAdmin) {
-          console.log('Calendar: User is admin, opening event form');
+        console.info('Calendar: Date range selected:', info);
+        // Only admins and root can create events
+        if (userRole === 'admin' || userRole === 'root') {
           // Bei Klick auf einzelnen Tag: allDay = false
           // Nur wenn der ganze Tag ausgewählt wurde UND es die Monatsansicht ist
           const allDay = info.allDay && info.view.type === 'dayGridMonth';
           openEventForm(null, info.start, info.end, allDay);
         } else {
-          console.log('Calendar: User is not admin, ignoring selection');
+          console.info('Calendar: Employees cannot create events');
         }
       },
       events(
@@ -360,21 +684,45 @@ function initializeCalendar(): void {
         successCallback: (events: FullCalendarEventInput[]) => void,
         failureCallback: (error: Error) => void,
       ) {
-        loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
+        // eslint-disable-next-line promise/prefer-await-to-then -- FullCalendar expects callback-based API
+        void loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
       },
       eventClick(info: FullCalendarEventClickInfo) {
-        void viewEvent(parseInt(info.event.id, 10));
+        void viewEvent(Number.parseInt(info.event.id, 10));
       },
       eventMouseEnter(info: FullCalendarEventMouseEnterInfo) {
         // Show tooltip on hover
         const tooltip = document.createElement('div');
         tooltip.className = 'event-tooltip';
-        tooltip.innerHTML = `
-        <strong>${info.event.title}</strong><br>
-        ${info.event.extendedProps?.description ?? ''}
-        ${info.event.extendedProps?.location ? `<br><i class="fas fa-map-marker-alt"></i> ${info.event.extendedProps.location}` : ''}
-      `;
-        document.body.appendChild(tooltip);
+        const description = (info.event.extendedProps?.description as string | undefined) ?? '';
+        const location = info.event.extendedProps?.location as string | undefined;
+        // Clear tooltip
+        while (tooltip.firstChild) {
+          tooltip.firstChild.remove();
+        }
+
+        // Add title
+        const strong = document.createElement('strong');
+        strong.textContent = info.event.title;
+        tooltip.append(strong);
+
+        // Add line break
+        tooltip.append(document.createElement('br'));
+
+        // Add description
+        if (description !== '') {
+          tooltip.append(document.createTextNode(description));
+        }
+
+        // Add location if present
+        if (location !== undefined && location !== '') {
+          tooltip.append(document.createElement('br'));
+          const locationIcon = document.createElement('i');
+          locationIcon.className = 'fas fa-map-marker-alt';
+          tooltip.append(locationIcon);
+          tooltip.append(document.createTextNode(' ' + location));
+        }
+        document.body.append(tooltip);
 
         const rect = info.el.getBoundingClientRect();
         tooltip.style.position = 'absolute';
@@ -394,7 +742,10 @@ function initializeCalendar(): void {
     });
 
     calendar.render();
-  } catch (error) {
+
+    // Initialize shift calendar integration
+    shiftCalendarIntegration.init(calendar);
+  } catch (error: unknown) {
     console.error('Error initializing calendar:', error);
     showError('Fehler beim Initialisieren des Kalenders. Bitte laden Sie die Seite neu.');
   }
@@ -404,39 +755,100 @@ function initializeCalendar(): void {
  * Setup all event listeners
  */
 function setupEventListeners(): void {
-  // Filter by level using pill buttons
-  document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
-    button.addEventListener('click', function (this: HTMLElement) {
-      // Remove active class from all pills
-      document.querySelectorAll('.filter-pill').forEach((pill) => pill.classList.remove('active'));
-      // Add active class to clicked pill
+  // Filter by level using tab buttons (Gesamt/Firma/Abteilung/Team/Meine)
+  const levelFilterButtons = $all('#levelFilter button.tab-btn') as NodeListOf<HTMLButtonElement>;
+  levelFilterButtons.forEach((button) => {
+    // Set initial active state based on saved filter
+    if (button.dataset.value === currentFilter) {
+      button.classList.add('active');
+    } else {
+      button.classList.remove('active');
+    }
+
+    button.addEventListener('click', function (this: HTMLButtonElement) {
+      // Remove active class from all buttons
+      levelFilterButtons.forEach((btn) => {
+        btn.classList.remove('active');
+      });
+      // Add active class to clicked button
       this.classList.add('active');
 
       currentFilter = this.dataset.value ?? 'all';
+      // Save filter to localStorage
+      localStorage.setItem('calendarFilter', currentFilter);
+      console.info('[CALENDAR] Filter changed to:', currentFilter);
       calendar.refetchEvents();
     });
   });
 
-  // View buttons
-  document.querySelectorAll<HTMLElement>('.view-btn').forEach((button) => {
+  // Legacy: Filter by level using pill buttons (if any exist)
+  $all('.filter-pill[data-value]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
-      const view = this.dataset.view;
-      if (view) {
+      // Remove active class from all pills
+      $all('.filter-pill').forEach((pill) => {
+        pill.classList.remove('active');
+      });
+      // Add active class to clicked pill
+      this.classList.add('active');
+
+      currentFilter = this.dataset.value ?? 'all';
+      // Save filter to localStorage
+      localStorage.setItem('calendarFilter', currentFilter);
+      calendar.refetchEvents();
+    });
+  });
+
+  // View buttons - Support both class-based and ID-based selectors
+  const viewButtons = [
+    { id: 'monthView', view: 'dayGridMonth' },
+    { id: 'weekView', view: 'timeGridWeek' },
+    { id: 'dayView', view: 'timeGridDay' },
+    { id: 'listView', view: 'listWeek' },
+  ];
+
+  viewButtons.forEach(({ id, view }) => {
+    const button = $$id(id);
+    if (button) {
+      button.addEventListener('click', () => {
+        console.info('[CALENDAR] Changing view to:', view);
         calendarView = view;
         calendar.changeView(view);
 
         // Update active state
-        document.querySelectorAll('.view-btn').forEach((btn) => btn.classList.remove('active'));
+        $all('.view-selector button').forEach((btn) => {
+          btn.classList.remove('active');
+          btn.classList.remove('btn-primary');
+          btn.classList.add('btn-outline-primary');
+        });
+        button.classList.add('active');
+        button.classList.remove('btn-outline-primary');
+        button.classList.add('btn-primary');
+      });
+    }
+  });
+
+  // Also support legacy view-btn class approach
+  $all('.view-btn').forEach((button) => {
+    button.addEventListener('click', function (this: HTMLElement) {
+      const view = this.dataset.view;
+      if (view !== undefined && view !== '') {
+        calendarView = view;
+        calendar.changeView(view);
+
+        // Update active state
+        $all('.view-btn').forEach((btn) => {
+          btn.classList.remove('active');
+        });
         this.classList.add('active');
       }
     });
   });
 
   // Search button
-  const searchButton = document.getElementById('searchButton') as HTMLButtonElement;
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+  const searchButton = $$('#searchButton');
+  const searchInput = $$('#searchInput') as HTMLInputElement | null;
 
-  if (searchButton && searchInput) {
+  if (searchButton !== null && searchInput !== null) {
     searchButton.addEventListener('click', () => {
       currentSearch = searchInput.value.trim();
       calendar.refetchEvents();
@@ -450,64 +862,103 @@ function setupEventListeners(): void {
     });
   }
 
-  // New event button
-  const newEventBtn = document.getElementById('newEventBtn') as HTMLButtonElement;
-  console.log('Calendar: Looking for newEventBtn:', newEventBtn);
-  if (newEventBtn) {
-    console.log('Calendar: Adding click listener to newEventBtn');
-    // Remove any existing listeners
-    const newButton = newEventBtn.cloneNode(true) as HTMLButtonElement;
-    newEventBtn.parentNode?.replaceChild(newButton, newEventBtn);
+  // New event button (in filter bar) - only for admins and root
+  const newEventBtn = $$('#newEventBtn');
+  console.info('Calendar: Looking for newEventBtn:', newEventBtn);
 
-    newButton.addEventListener('click', (e) => {
-      console.log('Calendar: New Event button clicked');
-      e.preventDefault();
-      e.stopPropagation();
+  // Get user role
+  const currentUserRole = localStorage.getItem('userRole');
+  const canCreate = currentUserRole === 'admin' || currentUserRole === 'root';
 
-      // Debug check
-      console.log('Calendar: About to call openEventForm...');
-      try {
-        openEventForm();
-        console.log('Calendar: openEventForm() call completed');
-      } catch (error) {
-        console.error('Calendar: Error calling openEventForm:', error);
-      }
-    });
+  if (newEventBtn !== null) {
+    if (!canCreate) {
+      // Hide button for employees
+      console.info('Calendar: Hiding new event button for employee');
+      newEventBtn.style.display = 'none';
+    } else {
+      console.info('Calendar: Adding click listener to newEventBtn');
+      // Remove any existing listeners
+      const newButton = newEventBtn.cloneNode(true) as HTMLButtonElement;
+      newEventBtn.parentNode?.replaceChild(newButton, newEventBtn);
+
+      newButton.addEventListener('click', (e) => {
+        console.info('Calendar: New Event button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Debug check
+        console.info('Calendar: About to call openEventForm...');
+        try {
+          openEventForm();
+          console.info('Calendar: openEventForm() call completed');
+        } catch (error: unknown) {
+          console.error('Calendar: Error calling openEventForm:', error);
+        }
+      });
+    }
   } else {
     console.error('Calendar: newEventBtn not found!');
   }
 
+  // New event button in calendar card header - only for admins and root
+  const newCalendarEventBtn = $$('#newCalendarEventBtn');
+  console.info('Calendar: Looking for newCalendarEventBtn:', newCalendarEventBtn);
+
+  // Check user role
+  const userRole = localStorage.getItem('userRole');
+  const canCreateEvents = userRole === 'admin' || userRole === 'root';
+
+  if (newCalendarEventBtn !== null) {
+    if (!canCreateEvents) {
+      // Hide button for employees
+      console.info('Calendar: Hiding new event button for employee');
+      newCalendarEventBtn.style.display = 'none';
+    } else {
+      console.info('Calendar: Adding click listener to newCalendarEventBtn');
+      // Remove any existing listeners
+      const newButton = newCalendarEventBtn.cloneNode(true) as HTMLButtonElement;
+      newCalendarEventBtn.parentNode?.replaceChild(newButton, newCalendarEventBtn);
+
+      newButton.addEventListener('click', (e) => {
+        console.info('Calendar: New Calendar Event button clicked');
+        e.preventDefault();
+        e.stopPropagation();
+
+        try {
+          openEventForm();
+          console.info('Calendar: openEventForm() call completed from calendar header');
+        } catch (error: unknown) {
+          console.error('Calendar: Error calling openEventForm:', error);
+        }
+      });
+    }
+  } else {
+    console.info('Calendar: newCalendarEventBtn not found - this is ok if not on calendar page');
+  }
+
   // Save event button
-  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement;
-  if (saveEventBtn) {
+  const saveEventBtn = $$('#saveEventBtn');
+  if (saveEventBtn !== null) {
     saveEventBtn.addEventListener('click', () => {
       void saveEvent();
     });
   }
 
   // Organization level change
-  const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLSelectElement;
-  if (eventOrgLevel) {
-    eventOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
+  const eventOrgLevel = $$('#eventOrgLevel') as HTMLInputElement | null;
+  if (eventOrgLevel !== null) {
+    eventOrgLevel.addEventListener('change', function (this: HTMLInputElement) {
       updateOrgIdDropdown(this.value);
     });
   }
 
-  // Color selection
-  document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
-    button.addEventListener('click', function (this: HTMLElement) {
-      // Remove active class from all color options
-      document.querySelectorAll('.color-option').forEach((option) => option.classList.remove('active'));
-      // Add active class to clicked option
-      this.classList.add('active');
-    });
-  });
+  // Color selection removed - color is auto-determined by org_level
 
   // All day checkbox
-  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
-  if (allDayCheckbox) {
+  const allDayCheckbox = $$('#eventAllDay');
+  if (allDayCheckbox !== null) {
     allDayCheckbox.addEventListener('change', function (this: HTMLInputElement) {
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
         if (this.checked) {
@@ -518,37 +969,23 @@ function setupEventListeners(): void {
   }
 
   // Add attendee button
-  const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+  const addAttendeeBtn = $$('#addAttendeeBtn');
   if (addAttendeeBtn) {
     addAttendeeBtn.addEventListener('click', () => {
-      modalManager.show('attendeesModal');
-      void loadEmployeesForAttendees();
+      // Only open modal if button is visible (for personal events)
+      const orgLevelInput = $$('#orgLevelInput') as HTMLInputElement | null;
+      if (orgLevelInput !== null && orgLevelInput.value === 'personal') {
+        modalManager.show('attendeesModal');
+        void loadEmployeesForAttendees();
+      } else {
+        console.warn('Attendees can only be added to personal events');
+      }
     });
   }
 
-  // Add selected attendees button
-  const addSelectedAttendeesBtn = document.getElementById('addSelectedAttendeesBtn');
-  if (addSelectedAttendeesBtn) {
-    addSelectedAttendeesBtn.addEventListener('click', () => {
-      const checkboxes = document.querySelectorAll<HTMLInputElement>('#attendeesList input[type="checkbox"]:checked');
-      checkboxes.forEach((checkbox) => {
-        const userId = parseInt(checkbox.value);
-        if (!selectedAttendees.includes(userId)) {
-          selectedAttendees.push(userId);
-        }
-      });
-      updateSelectedAttendees();
-      modalManager.hide('attendeesModal');
-    });
-  }
-
-  // Attendee search
-  const attendeeSearch = document.getElementById('attendeeSearch') as HTMLInputElement;
-  if (attendeeSearch) {
-    attendeeSearch.addEventListener('input', function (this: HTMLInputElement) {
-      searchAttendees(this.value);
-    });
-  }
+  // Note: Event listeners for addSelectedAttendeesBtn and attendeeSearch
+  // are now added dynamically in loadEmployeesForAttendees() function
+  // because the modal content is created dynamically
 
   // Setup custom dropdown event delegation
   document.addEventListener('click', (e) => {
@@ -559,9 +996,10 @@ function setupEventListeners(): void {
       e.preventDefault();
       e.stopPropagation();
 
-      const display = target.closest('.dropdown-display') as HTMLElement;
+      const display = target.closest('.dropdown-display');
+      if (!display) return;
       const wrapper = display.closest('.custom-dropdown');
-      const dropdown = wrapper?.querySelector('.dropdown-options') as HTMLElement;
+      const dropdown = wrapper?.querySelector('.dropdown-options');
 
       if (dropdown) {
         // Check which dropdown was clicked
@@ -571,8 +1009,10 @@ function setupEventListeners(): void {
           toggleReminderDropdown();
         } else if (wrapper?.id === 'recurrenceWrapper') {
           toggleRecurrenceDropdown();
-        } else if (wrapper?.id === 'orgIdWrapper' && !display.classList.contains('disabled')) {
-          toggleOrgIdDropdown();
+        } else if (wrapper?.id === 'departmentWrapper') {
+          toggleDepartmentDropdown();
+        } else if (wrapper?.id === 'teamWrapper') {
+          toggleTeamDropdown();
         }
       }
     }
@@ -582,21 +1022,22 @@ function setupEventListeners(): void {
       e.preventDefault();
       e.stopPropagation();
 
-      const option = target.closest('.dropdown-option') as HTMLElement;
+      const option = target.closest('.dropdown-option');
+      if (!option) return;
       const dropdown = option.closest('.dropdown-options');
 
       if (dropdown?.id === 'orgLevelDropdown') {
         // Extract value and text from the option
-        const value = option.dataset.value ?? '';
-        const text = option.textContent?.trim() ?? '';
+        const value = (option as HTMLElement).dataset.value ?? '';
+        const text = option.textContent.trim();
         selectOrgLevel(value, text);
       } else if (dropdown?.id === 'reminderDropdown') {
-        const value = option.dataset.value ?? '';
-        const text = option.textContent?.trim() ?? '';
+        const value = (option as HTMLElement).dataset.value ?? '';
+        const text = option.textContent.trim();
         selectReminder(value, text);
       } else if (dropdown?.id === 'recurrenceDropdown') {
-        const value = option.dataset.value ?? '';
-        const text = option.textContent?.trim() ?? '';
+        const value = (option as HTMLElement).dataset.value ?? '';
+        const text = option.textContent.trim();
         selectRecurrence(value, text);
       }
     }
@@ -615,7 +1056,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
   try {
     // Get token from localStorage
     const token = getAuthToken();
-    if (!token) {
+    if (token === null || token === '') {
       window.location.href = '/login';
       throw new Error('No token found');
     }
@@ -627,12 +1068,18 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
       filter: currentFilter,
     });
 
-    if (currentSearch) {
+    if (currentSearch !== '' && currentSearch.trim() !== '') {
       params.append('search', currentSearch);
     }
 
+    // Determine API endpoint based on feature flag
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? `/api/v2/calendar/events?${params}` : `/api/calendar?${params}`;
+
+    console.info('[CALENDAR] Loading events - v2:', useV2, 'URL:', apiUrl);
+
     // Fetch events with authentication
-    const response = await fetch(`/api/calendar?${params}`, {
+    const response = await fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -643,34 +1090,96 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
         window.location.href = '/login';
         throw new Error('Unauthorized');
       }
+      // Handle permission errors for specific filters
+      if (response.status === 403 && currentFilter !== 'personal') {
+        console.error('[CALENDAR] Permission denied for filter:', currentFilter);
+        // Fallback to personal filter
+        currentFilter = 'personal';
+        localStorage.setItem('calendarFilter', currentFilter);
+        // Update UI to reflect filter change
+        const filterButtons = $all('#levelFilter button.tab-btn') as NodeListOf<HTMLButtonElement>;
+        filterButtons.forEach((btn) => {
+          if (btn.dataset.value === 'personal') {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+        // Retry with personal filter
+        return await loadCalendarEvents(fetchInfo);
+      }
       throw new Error('Failed to load events');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as
+      | ApiResponse<CalendarEvent>
+      | LegacyApiResponse<CalendarEvent>
+      | CalendarEvent[];
+    console.info('[CALENDAR] API Response:', data);
 
     // Handle different response formats
     let events: CalendarEvent[] = [];
 
     if (Array.isArray(data)) {
-      // Direct array response
+      // Direct array response (v1)
       events = data;
-    } else if (data && Array.isArray(data.events)) {
+    } else if (
+      'success' in data &&
+      'data' in data &&
+      typeof data.data === 'object' &&
+      'data' in data.data &&
+      Array.isArray(data.data.data)
+    ) {
+      // v2 API response: {success, data: {data: [...], pagination: {...}}}
+      events = data.data.data;
+      console.info('[CALENDAR] v2 events found:', events.length);
+    } else if (
+      'success' in data &&
+      'data' in data &&
+      typeof data.data === 'object' &&
+      'events' in data.data &&
+      Array.isArray(data.data.events)
+    ) {
+      // v2 API response: {success, data: {events: [...], pagination: {...}}}
+      events = data.data.events as CalendarEvent[];
+      console.info('[CALENDAR] v2 events (from data.events) found:', events.length);
+    } else if ('events' in data && Array.isArray(data.events)) {
       // Paginated response with events array
       events = data.events;
-    } else if (data?.data && Array.isArray(data.data)) {
+    } else if ('data' in data && Array.isArray(data.data)) {
       // Standard API response format with data wrapper
       events = data.data;
-    } else if (data?.data && Array.isArray(data.data.events)) {
-      // Paginated response wrapped in data
-      events = data.data.events;
     } else {
       console.error('Calendar API returned unexpected response format:', data);
       showError('Kalenderdaten konnten nicht geladen werden. API-Fehler.');
       return [];
     }
 
-    return events.map(formatEventForCalendar);
-  } catch (error) {
+    // Map v2 API response fields if needed
+    if (useV2) {
+      events = events.map((event) => ({
+        ...event,
+        start_time: event.startTime ?? event.start_time,
+        end_time: event.endTime ?? event.end_time,
+        all_day: event.allDay ?? event.all_day,
+        org_level: event.orgLevel ?? event.org_level,
+        org_id: event.orgId ?? event.org_id,
+        created_by: event.createdBy ?? event.created_by,
+        created_at: event.createdAt ?? event.created_at,
+        updated_at: event.updatedAt ?? event.updated_at,
+        reminder_time: event.reminderMinutes ?? event.reminderTime ?? event.reminder_time,
+        creator_name: event.creatorName ?? event.creator_name,
+        department_name: event.departmentName ?? event.department_name,
+        team_name: event.teamName ?? event.team_name,
+        user_response: event.userResponse ?? event.user_response,
+      })) as CalendarEvent[];
+    }
+
+    console.info('[CALENDAR] Formatted events for display:', events);
+    const formattedEvents = events.map(formatEventForCalendar).filter((e): e is FullCalendarEventInput => e !== null);
+    console.info('[CALENDAR] Events to render:', formattedEvents);
+    return formattedEvents;
+  } catch (error: unknown) {
     console.error('Error loading events:', error);
     showError('Fehler beim Laden der Termine.');
     return [];
@@ -680,36 +1189,49 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
 /**
  * Format event for FullCalendar
  */
-function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput {
-  // Color based on organization level
-  let color = event.color ?? '#3788d8'; // Default blue
+function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput | null {
+  // Color based on organization level - matching the legend
+  let color = event.color ?? '#3498db'; // Default blue
 
-  if (!event.color) {
+  if (event.color === undefined || event.color === '') {
     switch (event.org_level) {
       case 'company':
-        color = '#28a745'; // Green for company
+        color = '#3498db'; // Blue for company (Firma)
         break;
       case 'department':
-        color = '#ffc107'; // Yellow for department
+        color = '#e67e22'; // Orange for department (Abteilung)
         break;
       case 'team':
-        color = '#17a2b8'; // Cyan for team
+        color = '#2ecc71'; // Green for team
         break;
       case 'personal':
-        color = '#6c757d'; // Gray for personal
+        color = '#9b59b6'; // Purple for personal (Persönlich)
+        break;
+      default:
+        color = '#3498db'; // Default blue
         break;
     }
   }
 
+  // Ensure we have valid dates
+  const startTime = event.start_time !== '' ? event.start_time : (event.startTime ?? '');
+  const endTime = event.end_time !== '' ? event.end_time : (event.endTime ?? '');
+
+  if (startTime === '' || endTime === '') {
+    console.error('[CALENDAR] Event missing time fields:', event);
+    return null;
+  }
+
   return {
-    id: event.id.toString(),
-    title: event.title,
-    start: event.start_time,
-    end: event.end_time,
+    id: event.id !== 0 ? event.id.toString() : '',
+    title: event.title !== '' ? event.title : 'Unbenannter Termin',
+    start: startTime,
+    end: endTime,
     allDay: event.all_day === 1 || event.all_day === '1' || event.all_day === true,
     backgroundColor: color,
     borderColor: color,
     textColor: '#ffffff',
+    classNames: [`fc-event-${event.org_level}`], // Add org_level as class
     extendedProps: {
       description: event.description,
       location: event.location,
@@ -732,13 +1254,18 @@ async function loadUpcomingEvents(): Promise<void> {
   try {
     // Get token from localStorage
     const token = getAuthToken();
-    if (!token) {
+    if (token === null || token === '') {
       window.location.href = '/login';
       throw new Error('No token found');
     }
 
+    // Determine API endpoint based on feature flag
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? '/api/v2/calendar/dashboard' : '/api/calendar/dashboard';
+    console.info('[CALENDAR] Loading dashboard - v2:', useV2, 'URL:', apiUrl);
+
     // Fetch upcoming events
-    const response = await fetch('/api/calendar/dashboard', {
+    const response = await fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -748,23 +1275,30 @@ async function loadUpcomingEvents(): Promise<void> {
       throw new Error('Failed to load upcoming events');
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as
+      | CalendarEvent[]
+      | ApiV2Response<CalendarEvent>
+      | ApiV1Response<CalendarEvent>;
+    console.info('[CALENDAR] Dashboard response:', data);
     let events: CalendarEvent[] = [];
 
     // Handle API response format
     if (Array.isArray(data)) {
       events = data;
-    } else if (data?.data && Array.isArray(data.data)) {
-      events = data.data;
+    } else if ('data' in data && data.data && Array.isArray((data as ApiV2Response<CalendarEvent>).data.data)) {
+      events = (data as ApiV2Response<CalendarEvent>).data.data;
+    } else if ('success' in data && data.success === true && 'data' in data && data.data) {
+      // v2 format: {success: true, data: [...]}
+      events = (data as ApiV1Response<CalendarEvent>).data ?? [];
     } else {
-      console.error('Unexpected response format from /api/calendar/dashboard:', data);
+      console.error('Unexpected response format from dashboard:', data);
       events = [];
     }
 
     displayUpcomingEvents(events);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading upcoming events:', error);
-    const upcomingEvents = document.getElementById('upcomingEvents') as HTMLElement;
+    const upcomingEvents = $$('#upcomingEvents');
     if (upcomingEvents) {
       upcomingEvents.innerHTML = '<p class="text-center">Fehler beim Laden der Termine.</p>';
     }
@@ -775,7 +1309,7 @@ async function loadUpcomingEvents(): Promise<void> {
  * Display upcoming events in the sidebar
  */
 function displayUpcomingEvents(events: CalendarEvent[]): void {
-  const container = document.getElementById('upcomingEvents') as HTMLElement;
+  const container = $$('#upcomingEvents');
 
   if (!container) {
     console.error('Upcoming events container not found');
@@ -784,7 +1318,7 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
 
   container.innerHTML = '';
 
-  if (!events || events.length === 0) {
+  if (events.length === 0) {
     container.innerHTML = '<p class="text-center">Keine anstehenden Termine gefunden.</p>';
     return;
   }
@@ -799,9 +1333,10 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
     const month = startDate.toLocaleDateString('de-DE', { month: 'short' });
 
     // Format time (only if not all day)
-    const timeStr = event.all_day
-      ? 'Ganztägig'
-      : `${startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+    const timeStr =
+      event.all_day === true || event.all_day === 1 || event.all_day === '1'
+        ? 'Ganztägig'
+        : `${startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
 
     // Determine level badge class
     let levelClass = 'event-level-personal';
@@ -820,28 +1355,70 @@ function displayUpcomingEvents(events: CalendarEvent[]): void {
 
     const eventItem = document.createElement('div');
     eventItem.className = 'event-item';
-    eventItem.setAttribute('data-id', event.id.toString());
+    eventItem.dataset.id = event.id.toString();
 
-    eventItem.innerHTML = `
-      <div class="event-date">
-        <span class="event-day">${day}</span>
-        <span class="event-month">${month}</span>
-        <span class="event-time">${timeStr}</span>
-      </div>
-      <div class="event-details">
-        <div class="event-title">${escapeHtml(event.title)}</div>
-        ${event.location ? `<div class="event-location"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(event.location)}</div>` : ''}
-        <span class="event-level ${levelClass}">${levelText}</span>
-        ${event.user_response ? `<span class="status-${event.user_response} event-response">Ihr Status: ${getResponseText(event.user_response)}</span>` : ''}
-      </div>
-    `;
+    // Create event date section
+    const dateDiv = document.createElement('div');
+    dateDiv.className = 'event-date';
+
+    const daySpan = document.createElement('span');
+    daySpan.className = 'event-day';
+    daySpan.textContent = day.toString();
+    dateDiv.append(daySpan);
+
+    const monthSpan = document.createElement('span');
+    monthSpan.className = 'event-month';
+    monthSpan.textContent = month;
+    dateDiv.append(monthSpan);
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'event-time';
+    timeSpan.textContent = timeStr;
+    dateDiv.append(timeSpan);
+
+    eventItem.append(dateDiv);
+
+    // Create event details section
+    const detailsDiv = document.createElement('div');
+    detailsDiv.className = 'event-details';
+
+    const titleDiv = document.createElement('div');
+    titleDiv.className = 'event-title';
+    titleDiv.textContent = event.title;
+    detailsDiv.append(titleDiv);
+
+    // Add location if present
+    if (event.location !== undefined && event.location !== '') {
+      const locationDiv = document.createElement('div');
+      locationDiv.className = 'event-location';
+      const locationIcon = document.createElement('i');
+      locationIcon.className = 'fas fa-map-marker-alt';
+      locationDiv.append(locationIcon);
+      locationDiv.append(document.createTextNode(' ' + event.location));
+      detailsDiv.append(locationDiv);
+    }
+
+    const levelSpan = document.createElement('span');
+    levelSpan.className = 'event-level ' + levelClass;
+    levelSpan.textContent = levelText;
+    detailsDiv.append(levelSpan);
+
+    // Add response status if present
+    if (event.user_response !== undefined) {
+      const responseSpan = document.createElement('span');
+      responseSpan.className = 'status-' + event.user_response + ' event-response';
+      responseSpan.textContent = 'Ihr Status: ' + getResponseText(event.user_response);
+      detailsDiv.append(responseSpan);
+    }
+
+    eventItem.append(detailsDiv);
 
     // Add click event
     eventItem.addEventListener('click', () => {
       void viewEvent(event.id);
     });
 
-    container.appendChild(eventItem);
+    container.append(eventItem);
   });
 }
 
@@ -868,13 +1445,32 @@ async function viewEvent(eventId: number): Promise<void> {
   try {
     // Get token from localStorage
     const token = getAuthToken();
-    if (!token) {
+    if (token === null || token === '') {
       window.location.href = '/login';
       throw new Error('No token found');
     }
 
+    // Ensure currentUserId and isAdmin are set
+    if (currentUserId === null || currentUserId === 0) {
+      const userStr = localStorage.getItem('user');
+      if (userStr !== null && userStr !== '') {
+        try {
+          const user = JSON.parse(userStr) as UserData;
+          currentUserId = user.id;
+          isAdmin = user.role === 'admin' || user.role === 'root';
+          console.info('[CALENDAR] Set from localStorage - currentUserId:', currentUserId, 'isAdmin:', isAdmin);
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
+        }
+      }
+    }
+
+    // Determine API endpoint based on feature flag
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+
     // Fetch event details with authentication
-    const response = await fetch(`/api/calendar/${eventId}`, {
+    const response = await fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -888,8 +1484,45 @@ async function viewEvent(eventId: number): Promise<void> {
       throw new Error('Failed to load event details');
     }
 
-    const data = await response.json();
-    const event: CalendarEvent = data.data ?? data;
+    const data = (await response.json()) as unknown;
+    // v2 API returns data.data.event, v1 API returns data directly
+    let eventData: CalendarEvent;
+    if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+      const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
+      if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
+        eventData = v2Data.data.event;
+      } else {
+        eventData = v2Data.data as CalendarEvent;
+      }
+    } else if (typeof data === 'object' && data !== null && 'data' in data) {
+      const v1Data = data as { data: CalendarEvent };
+      eventData = v1Data.data;
+    } else {
+      eventData = data as CalendarEvent;
+    }
+
+    // Map v2 API camelCase to snake_case for consistency
+    let event: CalendarEvent;
+    if (useV2) {
+      event = {
+        ...eventData,
+        start_time: eventData.startTime ?? eventData.start_time,
+        end_time: eventData.endTime ?? eventData.end_time,
+        all_day: eventData.allDay ?? eventData.all_day,
+        org_level: eventData.orgLevel ?? eventData.org_level,
+        org_id: eventData.orgId ?? eventData.org_id,
+        created_by: eventData.createdBy ?? eventData.created_by,
+        created_at: eventData.createdAt ?? eventData.created_at,
+        updated_at: eventData.updatedAt ?? eventData.updated_at,
+        reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
+        creator_name: eventData.creatorName ?? eventData.creator_name,
+        department_name: eventData.departmentName ?? eventData.department_name,
+        team_name: eventData.teamName ?? eventData.team_name,
+        user_response: eventData.userResponse ?? eventData.user_response,
+      };
+    } else {
+      event = eventData;
+    }
 
     // Format dates
     const startDate = new Date(event.start_time);
@@ -924,30 +1557,30 @@ async function viewEvent(eventId: number): Promise<void> {
     if (event.org_level === 'company') {
       levelText = 'Firmentermin';
     } else if (event.org_level === 'department') {
-      levelText = `Abteilungstermin${event.department_name ? `: ${event.department_name}` : ''}`;
+      levelText = `Abteilungstermin${event.department_name !== undefined && event.department_name !== '' ? `: ${event.department_name}` : ''}`;
     } else if (event.org_level === 'team') {
-      levelText = `Teamtermin${event.team_name ? `: ${event.team_name}` : ''}`;
+      levelText = `Teamtermin${event.team_name !== undefined && event.team_name !== '' ? `: ${event.team_name}` : ''}`;
     }
 
     // Build modal content
     let modalContent = `
       <h3>
-        <i class="fas fa-${event.all_day ? 'calendar-day' : 'clock'}"></i>
-        ${escapeHtml(event.title)}
+        <i class="fas fa-${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? 'calendar-day' : 'clock'}"></i>
+        ${escapeHtml(event.title !== '' ? event.title : 'Unbenannter Termin')}
       </h3>
-      ${event.description ? `<p>${escapeHtml(event.description)}</p>` : ''}
-      
+      ${event.description !== undefined && event.description !== '' ? `<p>${escapeHtml(event.description)}</p>` : ''}
+
       <div class="event-details-grid">
         <div class="detail-item">
           <i class="fas fa-calendar"></i>
-          <span><strong>Beginn:</strong> ${event.all_day ? formattedStartDate : `${formattedStartDate} um ${formattedStartTime}`}</span>
+          <span><strong>Beginn:</strong> ${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? formattedStartDate : `${formattedStartDate} um ${formattedStartTime}`}</span>
         </div>
         <div class="detail-item">
           <i class="fas fa-calendar-check"></i>
-          <span><strong>Ende:</strong> ${event.all_day ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
+          <span><strong>Ende:</strong> ${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
         </div>
         ${
-          event.location
+          event.location !== undefined && event.location !== ''
             ? `
         <div class="detail-item">
           <i class="fas fa-map-marker-alt"></i>
@@ -974,13 +1607,24 @@ async function viewEvent(eventId: number): Promise<void> {
       `;
 
       event.attendees.forEach((attendee) => {
+        // Handle both v1 and v2 API field names
+        const firstName = attendee.firstName ?? attendee.first_name ?? '';
+        const lastName = attendee.lastName ?? attendee.last_name ?? '';
+        const username = attendee.username ?? '';
+        // userId variable removed - not used
+        const responseStatus = attendee.responseStatus ?? attendee.response ?? 'pending';
+
         const name =
-          (`${attendee.first_name ?? ''} ${attendee.last_name ?? ''}`.trim() || attendee.username) ?? 'Unknown';
-        const statusIcon = getAttendeeStatusIcon(attendee.response);
+          `${firstName} ${lastName}`.trim() !== ''
+            ? `${firstName} ${lastName}`.trim()
+            : username !== ''
+              ? username
+              : 'Unknown';
+        const statusIcon = getAttendeeStatusIcon(responseStatus);
         modalContent += `
           <div class="attendee-item">
             <span>${escapeHtml(name)}</span>
-            <span class="attendee-status status-${attendee.response}" title="${getResponseText(attendee.response)}">
+            <span class="attendee-status status-${responseStatus}" title="${getResponseText(responseStatus)}">
               ${statusIcon}
             </span>
           </div>
@@ -991,9 +1635,17 @@ async function viewEvent(eventId: number): Promise<void> {
     }
 
     // Add user response buttons
-    if (event.attendees?.some((a) => a.user_id === currentUserId)) {
-      const currentAttendee = event.attendees.find((a) => a.user_id === currentUserId);
-      const currentResponse = currentAttendee?.response ?? 'pending';
+    if (
+      event.attendees?.some((a) => {
+        const userId = a.userId ?? a.user_id;
+        return userId === currentUserId;
+      }) === true
+    ) {
+      const currentAttendee = event.attendees.find((a) => {
+        const userId = a.userId ?? a.user_id;
+        return userId === currentUserId;
+      });
+      const currentResponse = currentAttendee?.responseStatus ?? currentAttendee?.response ?? 'pending';
 
       modalContent += `
         <div class="response-buttons">
@@ -1013,13 +1665,36 @@ async function viewEvent(eventId: number): Promise<void> {
       `;
     }
 
-    // Add action buttons if user is creator or admin
-    if (event.created_by === currentUserId || isAdmin) {
+    // Debug output to check values
+    console.info(
+      '[CALENDAR] viewEvent - created_by:',
+      event.created_by,
+      'currentUserId:',
+      currentUserId,
+      'isAdmin:',
+      isAdmin,
+    );
+
+    // Add action buttons based on permissions
+    // Only creator can edit, but creator or admin can delete
+    if (event.created_by === currentUserId) {
       modalContent += `
         <div class="modal-actions">
           <button class="btn btn-primary" onclick="editEvent(${event.id})">
             <i class="fas fa-edit"></i> Bearbeiten
           </button>
+          <button class="btn btn-danger" onclick="deleteEvent(${event.id})">
+            <i class="fas fa-trash"></i> Löschen
+          </button>
+          <button class="btn btn-secondary" data-action="close">
+            <i class="fas fa-times"></i> Schließen
+          </button>
+        </div>
+      `;
+    } else if (isAdmin) {
+      // Admin can delete but not edit
+      modalContent += `
+        <div class="modal-actions">
           <button class="btn btn-danger" onclick="deleteEvent(${event.id})">
             <i class="fas fa-trash"></i> Löschen
           </button>
@@ -1043,13 +1718,19 @@ async function viewEvent(eventId: number): Promise<void> {
       content: modalContent,
       onOpen: () => {
         // Content is already in the modal template
-        const modalBody = document.getElementById('eventDetailContent');
+        const modalBody = $$('#eventDetailContent');
         if (modalBody) {
-          modalBody.innerHTML = modalContent;
+          // Clear existing content
+          while (modalBody.firstChild) {
+            modalBody.firstChild.remove();
+          }
+          // Use setHTML from dom-utils for safe HTML setting
+          // modalContent is already escaped via escapeHtml() function
+          setHTML(modalBody, modalContent);
         }
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error viewing event:', error);
     showError('Fehler beim Laden der Termindetails.');
   }
@@ -1077,10 +1758,13 @@ function getAttendeeStatusIcon(status: string): string {
 async function respondToEvent(eventId: number, response: string): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
-    const apiResponse = await fetch(`/api/calendar/${eventId}/respond`, {
-      method: 'POST',
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}/attendees/response` : `/api/calendar/${eventId}/respond`;
+
+    const apiResponse = await fetch(apiUrl, {
+      method: useV2 ? 'PUT' : 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -1090,16 +1774,32 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
 
     if (apiResponse.ok) {
       showSuccess('Ihre Antwort wurde gespeichert.');
+
+      // Close both possible modals
       modalManager.hide('eventDetailsModal');
+      modalManager.hide('unreadEventsModal');
 
       // Refresh calendar and upcoming events
       calendar.refetchEvents();
       void loadUpcomingEvents();
+
+      // Update unread events count
+      void checkUnreadEvents();
+
+      // Update badge in navigation
+      if (window.unifiedNav) {
+        void window.unifiedNav.updateUnreadCalendarEvents();
+      }
+
+      // Reload the page to refresh everything
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } else {
-      const error = await apiResponse.json();
+      const error = (await apiResponse.json()) as { message?: string };
       showError(error.message ?? 'Fehler beim Speichern der Antwort');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error responding to event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
   }
@@ -1109,16 +1809,28 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
  * Open event form for creating/editing
  */
 function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date, allDay?: boolean): void {
-  console.log('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
+  console.info('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
+
+  // Check user role - only admins and root can create events
+  const userRole = localStorage.getItem('userRole');
+  if (userRole !== 'admin' && userRole !== 'root') {
+    console.warn('Calendar: Employees cannot create events');
+    showError('Sie haben keine Berechtigung, Termine zu erstellen.');
+    return;
+  }
 
   // Check if modalManager exists
-  console.log('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
-  console.log('Calendar: modalManager.show exists:', typeof modalManager?.show === 'function');
+  console.info('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
+  console.info('Calendar: modalManager.show exists:', typeof modalManager.show === 'function');
+
+  // Force re-register template to ensure latest version is used
+  const eventFormTemplate = getEventFormModalTemplate();
+  modalManager.registerTemplate('eventFormModal', eventFormTemplate);
 
   // Try to show the modal using modalManager
-  console.log('Calendar: Calling modalManager.show...');
+  console.info('Calendar: Calling modalManager.show...');
   const modal = modalManager.show('eventFormModal');
-  console.log('Calendar: modalManager.show returned:', !!modal);
+  console.info('Calendar: modalManager.show returned:', !!modal);
 
   if (!modal) {
     console.error('Calendar: Failed to show eventFormModal!');
@@ -1126,26 +1838,56 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
   }
 
   // Reset form
-  const form = document.getElementById('eventForm') as HTMLFormElement;
-  if (form) form.reset();
+  const form = $$('#eventForm') as HTMLFormElement | null;
+  if (form) {
+    form.reset();
+  }
 
-  // Reset color selection
-  document.querySelectorAll('.color-option').forEach((option) => {
-    option.classList.remove('selected');
-  });
-  document.querySelector('.color-option[data-color="#3498db"]')?.classList.add('selected');
-
-  // Setup color picker for this modal instance
-  setupModalColorPicker();
+  // No color selection needed anymore - color is determined by org_level
 
   // Setup event listeners for modal buttons
   setupModalEventListeners();
 
   // Clear attendees
   selectedAttendees = [];
-  updateSelectedAttendees();
 
-  if (eventId) {
+  // Set default org level and show info message
+  const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
+  const selectedOrgLevelSpan = $$('#selectedOrgLevel');
+
+  if (eventId === undefined || eventId === null) {
+    // For new events, set default to company and show appropriate UI
+    if (orgLevelInput) orgLevelInput.value = 'company';
+    if (selectedOrgLevelSpan) selectedOrgLevelSpan.textContent = 'Firma';
+
+    // Use setTimeout to ensure DOM is fully rendered before updating
+    setTimeout(() => {
+      // Show attendees section with company info by default
+      const attendeesGroup = $$('#attendeesGroup');
+      const attendeesContainer = $$('#attendeesContainer');
+      const addAttendeeBtn = $$('#addAttendeeBtn');
+
+      if (attendeesGroup) attendeesGroup.style.display = 'block';
+      if (addAttendeeBtn) addAttendeeBtn.style.display = 'none'; // Hide for company events
+      if (attendeesContainer) {
+        attendeesContainer.innerHTML =
+          '<p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>';
+      }
+
+      // Also update the department/team groups visibility for company events
+      const departmentGroup = $$('#departmentGroup');
+      const teamGroup = $$('#teamGroup');
+      if (departmentGroup) departmentGroup.style.display = 'none';
+      if (teamGroup) teamGroup.style.display = 'none';
+    }, 50);
+
+    // Don't call updateSelectedAttendees for company events as it would overwrite the info text
+  } else {
+    // Only update attendees display for edit mode
+    updateSelectedAttendees();
+  }
+
+  if (eventId !== undefined && eventId !== null) {
     // Update modal title for editing
     const modalTitle = modal.querySelector('.modal-title');
     if (modalTitle) {
@@ -1161,35 +1903,35 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     }
     // New event
     if (startDate) {
-      const startInput = document.getElementById('eventStartDate') as HTMLInputElement;
-      const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement;
+      const startInput = $$('#eventStartDate') as HTMLInputElement | null;
+      const startTimeInput = $$('#eventStartTime') as HTMLInputElement | null;
 
       if (startInput) {
         startInput.value = formatDateForInput(startDate);
       }
 
-      if (!allDay && startTimeInput) {
+      if (allDay !== true && startTimeInput) {
         startTimeInput.value = formatTimeForInput(startDate);
       }
     }
 
     if (endDate) {
-      const endInput = document.getElementById('eventEndDate') as HTMLInputElement;
-      const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement;
+      const endInput = $$('#eventEndDate') as HTMLInputElement | null;
+      const endTimeInput = $$('#eventEndTime') as HTMLInputElement | null;
 
       if (endInput) {
         endInput.value = formatDateForInput(endDate);
       }
 
-      if (!allDay && endTimeInput) {
+      if (allDay !== true && endTimeInput) {
         endTimeInput.value = formatTimeForInput(endDate);
       }
     }
 
-    const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
+    const allDayCheckbox = $$('#eventAllDay') as HTMLInputElement | null;
     if (allDayCheckbox && allDay !== undefined) {
       allDayCheckbox.checked = allDay;
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = allDay;
       });
@@ -1224,27 +1966,108 @@ function formatTimeForInput(date: Date): string {
  * Update organization ID dropdown based on level
  */
 function updateOrgIdDropdown(level: string): void {
-  const orgIdContainer = document.getElementById('orgIdGroup') as HTMLElement;
-  const orgIdDropdown = document.getElementById('orgIdDropdown') as HTMLElement;
-  const orgIdDisplay = document.getElementById('orgIdDisplay') as HTMLElement;
+  // Handle department dropdown
+  const departmentGroup = $$('#departmentGroup');
+  const departmentDropdown = $$('#departmentDropdown');
 
-  if (!orgIdContainer || !orgIdDropdown) return;
+  // Handle team dropdown
+  const teamGroup = $$('#teamGroup');
+  const teamDropdown = $$('#teamDropdown');
 
-  orgIdDropdown.innerHTML = '';
+  // Handle attendees section
+  const attendeesGroup = $$('#attendeesGroup');
+  const addAttendeeBtn = $$('#addAttendeeBtn');
+  const attendeesContainer = $$('#attendeesContainer');
+
+  // Clear dropdowns
+  if (departmentDropdown) departmentDropdown.innerHTML = '';
+  if (teamDropdown) teamDropdown.innerHTML = '';
+
+  // Hide all by default
+  if (departmentGroup) departmentGroup.style.display = 'none';
+  if (teamGroup) teamGroup.style.display = 'none';
+
+  // Handle attendees visibility based on org_level
+  if (attendeesGroup) {
+    if (level === 'personal') {
+      // Show attendees section for personal events
+      attendeesGroup.style.display = 'block';
+      if (addAttendeeBtn) addAttendeeBtn.style.display = 'inline-flex';
+      if (attendeesContainer && selectedAttendees.length === 0) {
+        // Clear existing content
+        while (attendeesContainer.firstChild) {
+          attendeesContainer.firstChild.remove();
+        }
+        const noPara = document.createElement('p');
+        noPara.className = 'text-muted';
+        noPara.textContent = 'Keine Teilnehmer ausgewählt';
+        attendeesContainer.append(noPara);
+      }
+    } else {
+      // Hide attendees section for other event types
+      attendeesGroup.style.display = 'block'; // Keep container visible for info text
+      if (addAttendeeBtn) addAttendeeBtn.style.display = 'none';
+
+      // Show info text about automatic attendees
+      if (attendeesContainer) {
+        // Clear existing content
+        while (attendeesContainer.firstChild) {
+          attendeesContainer.firstChild.remove();
+        }
+        // Create info paragraph
+        const infoPara = document.createElement('p');
+        infoPara.className = 'text-info';
+        const infoIcon = document.createElement('i');
+        infoIcon.className = 'fas fa-info-circle';
+        infoPara.append(infoIcon);
+        let infoMessage = '';
+        switch (level) {
+          case 'company':
+            infoMessage = ' Alle Mitarbeiter der Firma werden automatisch eingeladen';
+            break;
+          case 'department':
+            infoMessage = ' Alle Mitarbeiter der ausgewählten Abteilung werden automatisch eingeladen';
+            break;
+          case 'team':
+            infoMessage = ' Alle Mitglieder des ausgewählten Teams werden automatisch eingeladen';
+            break;
+        }
+        infoPara.append(document.createTextNode(infoMessage));
+        attendeesContainer.append(infoPara);
+      }
+
+      // Clear selected attendees for non-personal events
+      selectedAttendees = [];
+    }
+  }
 
   if (level === 'personal' || level === 'company') {
-    orgIdContainer.style.display = 'none';
+    // No additional selection needed
   } else if (level === 'department') {
-    orgIdContainer.style.display = 'block';
-    const label = orgIdContainer.querySelector('label');
-    if (label) label.textContent = 'Abteilung';
+    // Show only department selection
+    if (departmentGroup) {
+      departmentGroup.style.display = 'block';
 
-    // Enable the dropdown display
-    if (orgIdDisplay) {
-      orgIdDisplay.classList.remove('disabled');
+      // Populate dropdown with departments
+      departments.forEach((dept) => {
+        const option = document.createElement('div');
+        option.className = 'dropdown-option';
+        option.dataset.value = dept.id.toString();
+        option.textContent = dept.name;
+        option.onclick = (e) => {
+          e.preventDefault();
+          selectDepartment(dept.id, dept.name);
+          closeAllDropdowns();
+        };
+        departmentDropdown?.append(option);
+      });
     }
+  } else if (level === 'team' && departmentGroup && teamGroup) {
+    // Show both department and team selection
+    departmentGroup.style.display = 'block';
+    teamGroup.style.display = 'block';
 
-    // Populate dropdown with departments
+    // Populate department dropdown
     departments.forEach((dept) => {
       const option = document.createElement('div');
       option.className = 'dropdown-option';
@@ -1252,109 +2075,160 @@ function updateOrgIdDropdown(level: string): void {
       option.textContent = dept.name;
       option.onclick = (e) => {
         e.preventDefault();
-        selectOrgId(dept.id, dept.name);
+        selectDepartment(dept.id, dept.name);
+        // Load teams for this department
+        loadTeamsForDepartment(dept.id);
         closeAllDropdowns();
       };
-      orgIdDropdown.appendChild(option);
-    });
-  } else if (level === 'team') {
-    orgIdContainer.style.display = 'block';
-    const label = orgIdContainer.querySelector('label');
-    if (label) label.textContent = 'Team';
-
-    // Enable the dropdown display
-    if (orgIdDisplay) {
-      orgIdDisplay.classList.remove('disabled');
-    }
-
-    // Populate dropdown with teams
-    teams.forEach((team) => {
-      const option = document.createElement('div');
-      option.className = 'dropdown-option';
-      option.dataset.value = team.id.toString();
-      option.textContent = team.name;
-      option.onclick = (e) => {
-        e.preventDefault();
-        selectOrgId(team.id, team.name);
-        closeAllDropdowns();
-      };
-      orgIdDropdown.appendChild(option);
+      departmentDropdown?.append(option);
     });
   }
+}
+
+/**
+ * Select department
+ */
+function selectDepartment(departmentId: number, departmentName: string): void {
+  const selectedElement = $$('#selectedDepartment');
+  const inputElement = $$('#eventDepartmentId') as HTMLInputElement | null;
+
+  if (selectedElement) selectedElement.textContent = departmentName;
+  if (inputElement) inputElement.value = departmentId.toString();
+}
+
+/**
+ * Select team
+ */
+function selectTeam(teamId: number, teamName: string): void {
+  const selectedElement = $$('#selectedTeam');
+  const inputElement = $$('#eventTeamId') as HTMLInputElement | null;
+
+  if (selectedElement) selectedElement.textContent = teamName;
+  if (inputElement) inputElement.value = teamId.toString();
+}
+
+/**
+ * Load teams for selected department
+ */
+function loadTeamsForDepartment(departmentId: number): void {
+  const teamDropdown = $$('#teamDropdown');
+  if (!teamDropdown) return;
+
+  teamDropdown.innerHTML = '';
+
+  // Filter teams by department
+  // Handle both v1 (snake_case) and v2 (camelCase)
+  const departmentTeams = teams.filter((team) => {
+    const teamDeptId = team.department_id ?? team.departmentId;
+    return teamDeptId === departmentId;
+  });
+
+  departmentTeams.forEach((team) => {
+    const option = document.createElement('div');
+    option.className = 'dropdown-option';
+    option.dataset.value = team.id.toString();
+    option.textContent = team.name;
+    option.onclick = (e) => {
+      e.preventDefault();
+      selectTeam(team.id, team.name);
+      closeAllDropdowns();
+    };
+    teamDropdown.append(option);
+  });
+
+  // Reset team selection
+  const selectedTeam = $$('#selectedTeam');
+  if (selectedTeam) selectedTeam.textContent = '-- Team wählen --';
+  const teamInput = $$('#eventTeamId') as HTMLInputElement | null;
+  if (teamInput) teamInput.value = '';
 }
 
 /**
  * Save event
  */
 async function saveEvent(): Promise<void> {
-  console.log('saveEvent called');
+  console.info('saveEvent called');
 
-  const form = document.getElementById('eventForm') as HTMLFormElement;
-  if (!form) {
+  const form = $$('#eventForm');
+  if (form === null) {
     console.error('Form not found');
     return;
   }
 
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token === '') {
     console.error('No token found');
     return;
   }
 
   // Get form values directly from elements
-  const titleInput = document.getElementById('eventTitle') as HTMLInputElement;
-  const descriptionInput = document.getElementById('eventDescription') as HTMLTextAreaElement;
-  const startDateInput = document.getElementById('eventStartDate') as HTMLInputElement;
-  const startTimeInput = document.getElementById('eventStartTime') as HTMLInputElement;
-  const endDateInput = document.getElementById('eventEndDate') as HTMLInputElement;
-  const endTimeInput = document.getElementById('eventEndTime') as HTMLInputElement;
-  const allDayInput = document.getElementById('eventAllDay') as HTMLInputElement;
-  const locationInput = document.getElementById('eventLocation') as HTMLInputElement;
-  const orgLevelInput = document.getElementById('eventOrgLevel') as HTMLInputElement;
-  const orgIdInput = document.getElementById('eventOrgId') as HTMLInputElement;
-  const colorInput = document.getElementById('eventColor') as HTMLInputElement;
-  const reminderTimeInput = document.getElementById('eventReminderTime') as HTMLInputElement;
-  const eventIdInput = document.getElementById('eventId') as HTMLInputElement;
+  const titleInput = $$('#eventTitle') as HTMLInputElement | null;
+  const descriptionInput = $$('#eventDescription') as HTMLTextAreaElement | null;
+  const startDateInput = $$('#eventStartDate') as HTMLInputElement | null;
+  const startTimeInput = $$('#eventStartTime') as HTMLInputElement | null;
+  const endDateInput = $$('#eventEndDate') as HTMLInputElement | null;
+  const endTimeInput = $$('#eventEndTime') as HTMLInputElement | null;
+  const allDayInput = $$('#eventAllDay') as HTMLInputElement | null;
+  const locationInput = $$('#eventLocation') as HTMLInputElement | null;
+  const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
+  const departmentIdInput = $$('#eventDepartmentId') as HTMLInputElement | null;
+  const teamIdInput = $$('#eventTeamId') as HTMLInputElement | null;
+  const reminderTimeInput = $$('#eventReminderTime') as HTMLInputElement | null;
+  const eventIdInput = $$('#eventId') as HTMLInputElement | null;
 
   // Validate required fields
-  if (!titleInput?.value) {
+  if (titleInput?.value === undefined || titleInput.value === '') {
     showError('Bitte geben Sie einen Titel ein');
     return;
   }
 
-  if (!startDateInput?.value) {
+  if (startDateInput?.value === undefined || startDateInput.value === '') {
     showError('Bitte wählen Sie ein Startdatum');
     return;
   }
 
-  if (!endDateInput?.value) {
+  if (endDateInput?.value === undefined || endDateInput.value === '') {
     showError('Bitte wählen Sie ein Enddatum');
     return;
   }
 
-  if (!orgLevelInput?.value) {
+  if (orgLevelInput?.value === undefined || orgLevelInput.value === '') {
     showError('Bitte wählen Sie aus, wer den Termin sehen soll');
     return;
   }
 
-  // Get selected color
-  const selectedColor = document.querySelector('.color-option.selected') as HTMLElement;
-  const color = selectedColor?.dataset.color ?? (colorInput?.value || '#3498db');
+  // Set color automatically based on org_level
+  let color = '#3498db'; // Default blue
+  const orgLevel = orgLevelInput.value !== '' ? orgLevelInput.value : 'personal';
+  switch (orgLevel) {
+    case 'company':
+      color = '#3498db'; // Blue for company
+      break;
+    case 'department':
+      color = '#e67e22'; // Orange for department
+      break;
+    case 'team':
+      color = '#2ecc71'; // Green for team
+      break;
+    case 'personal':
+      color = '#9b59b6'; // Purple for personal
+      break;
+  }
 
   // Parse dates and times
-  const startDate = startDateInput.value;
-  const startTime = startTimeInput.value;
-  const endDate = endDateInput.value;
-  const endTime = endTimeInput.value;
-  const allDay = allDayInput.checked;
+  const startDate = startDateInput.value !== '' ? startDateInput.value : '';
+  const startTime = startTimeInput?.value ?? '';
+  const endDate = endDateInput.value !== '' ? endDateInput.value : '';
+  const endTime = endTimeInput?.value ?? '';
+  const allDay = allDayInput?.checked ?? false;
 
   // Validate time fields for non-all-day events
   if (!allDay) {
-    if (!startTime) {
+    if (startTime === '') {
       showError('Bitte wählen Sie eine Startzeit');
       return;
     }
-    if (!endTime) {
+    if (endTime === '') {
       showError('Bitte wählen Sie eine Endzeit');
       return;
     }
@@ -1372,46 +2246,125 @@ async function saveEvent(): Promise<void> {
   }
 
   // Get recurrence data
-  const recurrenceType = (document.getElementById('eventRecurrence') as HTMLInputElement)?.value;
+  const recurrenceTypeElement = $$('#eventRecurrence') as HTMLInputElement | null;
+  const recurrenceType = recurrenceTypeElement?.value;
   let recurrenceRule = '';
 
-  if (recurrenceType && recurrenceType !== '') {
+  if (recurrenceType !== undefined && recurrenceType !== '') {
     // Build recurrence rule based on selection
-    const recurrenceEnd = (document.getElementById('selectedRecurrenceEnd') as HTMLElement)?.textContent;
-    const recurrenceCount = (document.getElementById('recurrenceCount') as HTMLInputElement)?.value;
-    const recurrenceEndDate = (document.getElementById('recurrenceEndDate') as HTMLInputElement)?.value;
+    const recurrenceEnd = $$('#selectedRecurrenceEnd')?.textContent;
+    const recurrenceCountElement = $$('#recurrenceCount') as HTMLInputElement | null;
+    const recurrenceCount = recurrenceCountElement?.value;
+    const recurrenceEndDateElement = $$('#recurrenceEndDate') as HTMLInputElement | null;
+    const recurrenceEndDate = recurrenceEndDateElement?.value;
 
     // Build simplified recurrence rule
     recurrenceRule = recurrenceType;
 
-    if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount) {
+    if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount !== undefined && recurrenceCount !== '') {
       recurrenceRule += `;COUNT=${recurrenceCount}`;
-    } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate) {
+    } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate !== undefined && recurrenceEndDate !== '') {
       recurrenceRule += `;UNTIL=${recurrenceEndDate}`;
     }
   }
 
-  const eventData = {
-    title: titleInput.value,
-    description: descriptionInput.value,
-    start_time: startDateTime,
-    end_time: endDateTime,
-    all_day: allDay,
-    location: locationInput.value,
-    org_level: orgLevelInput.value ?? 'personal',
-    org_id: orgLevelInput.value === 'personal' || orgLevelInput.value === 'company' ? null : parseInt(orgIdInput.value),
-    color,
-    reminder_time: reminderTimeInput.value ? parseInt(reminderTimeInput.value) : null,
-    attendee_ids: selectedAttendees,
-    recurrence_rule: recurrenceRule ?? null,
-  };
+  // Determine department_id and team_id based on org_level
+  let departmentId = null;
+  let teamId = null;
 
-  console.log('Saving event data:', eventData); // Debug log
+  if (orgLevelInput.value === 'department') {
+    departmentId =
+      departmentIdInput !== null && departmentIdInput.value !== ''
+        ? Number.parseInt(departmentIdInput.value, 10)
+        : null;
+  } else if (orgLevelInput.value === 'team') {
+    departmentId =
+      departmentIdInput !== null && departmentIdInput.value !== ''
+        ? Number.parseInt(departmentIdInput.value, 10)
+        : null;
+    teamId = teamIdInput !== null && teamIdInput.value !== '' ? Number.parseInt(teamIdInput.value, 10) : null;
+  }
+
+  // Handle reminder_time properly - check if value is valid number
+  let reminderTime = undefined;
+  if (reminderTimeInput?.value !== undefined && reminderTimeInput.value !== '') {
+    const parsed = Number.parseInt(reminderTimeInput.value, 10);
+    if (!Number.isNaN(parsed) && parsed >= 0) {
+      reminderTime = parsed;
+    }
+  }
+
+  // Get requires response checkbox
+  const requiresResponseInput = $$('#eventRequiresResponse') as HTMLInputElement | null;
+  const requiresResponse = requiresResponseInput?.checked ?? false;
+
+  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+
+  // Build event data based on API version
+  let eventData: Record<string, unknown>;
+
+  if (useV2) {
+    // v2 API uses camelCase
+    eventData = {
+      title: titleInput.value !== '' ? titleInput.value : '',
+      description: descriptionInput !== null && descriptionInput.value !== '' ? descriptionInput.value : '',
+      startTime: startDateTime, // camelCase for v2
+      endTime: endDateTime, // camelCase for v2
+      allDay, // camelCase for v2
+      location: locationInput !== null && locationInput.value !== '' ? locationInput.value : '',
+      orgLevel: orgLevelInput.value !== '' ? orgLevelInput.value : 'personal', // camelCase for v2
+      color,
+      requiresResponse, // New field for status requests
+    };
+
+    // Only add optional fields if they have values (camelCase)
+    if (departmentId !== null && departmentId !== 0) eventData.departmentId = departmentId;
+    if (teamId !== null && teamId !== 0) eventData.teamId = teamId;
+    if (reminderTime !== undefined) eventData.reminderMinutes = reminderTime; // v2 uses reminderMinutes
+    if (selectedAttendees.length > 0) eventData.attendeeIds = selectedAttendees;
+    if (recurrenceRule !== '') eventData.recurrenceRule = recurrenceRule;
+  } else {
+    // v1 API uses snake_case
+    eventData = {
+      title: titleInput.value !== '' ? titleInput.value : '',
+      description: descriptionInput !== null && descriptionInput.value !== '' ? descriptionInput.value : '',
+      start_time: startDateTime,
+      end_time: endDateTime,
+      all_day: allDay,
+      location: locationInput !== null && locationInput.value !== '' ? locationInput.value : '',
+      org_level: orgLevelInput.value !== '' ? orgLevelInput.value : 'personal',
+      color,
+      requires_response: requiresResponse, // New field for status requests
+    };
+
+    // Only add optional fields if they have values (snake_case)
+    if (departmentId !== null && departmentId !== 0) eventData.department_id = departmentId;
+    if (teamId !== null && teamId !== 0) eventData.team_id = teamId;
+    if (reminderTime !== undefined) eventData.reminder_time = reminderTime;
+    if (selectedAttendees.length > 0) eventData.attendee_ids = selectedAttendees;
+    if (recurrenceRule !== '') eventData.recurrence_rule = recurrenceRule;
+
+    // For API v1 compatibility, add org_id based on org_level
+    if (orgLevelInput.value === 'department' && departmentId !== null && departmentId !== 0) {
+      eventData.org_id = departmentId;
+    } else if (orgLevelInput.value === 'team' && teamId !== null && teamId !== 0) {
+      eventData.org_id = teamId;
+    }
+  }
+
+  console.info('Saving event data:', eventData); // Debug log
 
   try {
-    const eventId = eventIdInput.value;
-    const url = eventId ? `/api/calendar/${eventId}` : '/api/calendar';
-    const method = eventId ? 'PUT' : 'POST';
+    const eventId = eventIdInput?.value;
+    const url =
+      eventId !== undefined && eventId !== ''
+        ? useV2
+          ? `/api/v2/calendar/events/${eventId}`
+          : `/api/calendar/${eventId}`
+        : useV2
+          ? '/api/v2/calendar/events'
+          : '/api/calendar';
+    const method = eventId !== undefined && eventId !== '' ? 'PUT' : 'POST';
 
     const response = await fetch(url, {
       method,
@@ -1423,17 +2376,22 @@ async function saveEvent(): Promise<void> {
     });
 
     if (response.ok) {
-      showSuccess(eventId ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!');
+      const result = (await response.json()) as { id?: number; message?: string };
+      console.info('[CALENDAR] Save successful:', result);
+      showSuccess(
+        eventId !== undefined && eventId !== '' ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!',
+      );
       modalManager.hide('eventFormModal');
 
       // Refresh calendar
       calendar.refetchEvents();
       void loadUpcomingEvents();
     } else {
-      const error = await response.json();
+      const error = (await response.json()) as { message?: string };
+      console.error('[CALENDAR] Save error:', error);
       showError(error.message ?? 'Fehler beim Speichern des Termins');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error saving event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
   }
@@ -1444,39 +2402,106 @@ async function saveEvent(): Promise<void> {
  */
 async function loadEventForEdit(eventId: number): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
-    const response = await fetch(`/api/calendar/${eventId}`, {
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+
+    const response = await fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (response.ok) {
-      const data = await response.json();
-      const event: CalendarEvent = data.data ?? data;
+      const data = (await response.json()) as unknown;
+      // v2 API returns data.data.event, v1 API returns data directly
+      let eventData: CalendarEvent;
+      if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+        const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
+        if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
+          eventData = v2Data.data.event;
+        } else {
+          eventData = v2Data.data as CalendarEvent;
+        }
+      } else if (typeof data === 'object' && data !== null && 'data' in data) {
+        const v1Data = data as { data: CalendarEvent };
+        eventData = v1Data.data;
+      } else {
+        eventData = data as CalendarEvent;
+      }
+
+      // Check if user is the creator
+      if (currentUserId === null || currentUserId === 0) {
+        const userStr = localStorage.getItem('user');
+        if (userStr !== null && userStr !== '') {
+          try {
+            const user = JSON.parse(userStr) as UserData;
+            currentUserId = user.id;
+          } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+          }
+        }
+      }
+
+      const createdBy = eventData.createdBy ?? eventData.created_by;
+      if (createdBy !== currentUserId) {
+        modalManager.hide('eventDetailModal');
+        modalManager.hide('eventFormModal');
+        showError(
+          'Sie haben keine Berechtigung, diesen Termin zu bearbeiten. Nur der Ersteller kann Termine bearbeiten. Bitte wenden Sie sich an den Ersteller des Termins.',
+        );
+        return;
+      }
+
+      // Map v2 API camelCase to snake_case for consistency
+      let event: CalendarEvent;
+      if (useV2) {
+        event = {
+          ...eventData,
+          start_time: eventData.startTime ?? eventData.start_time,
+          end_time: eventData.endTime ?? eventData.end_time,
+          all_day: eventData.allDay ?? eventData.all_day,
+          org_level: eventData.orgLevel ?? eventData.org_level,
+          org_id: eventData.orgId ?? eventData.org_id,
+          created_by: eventData.createdBy ?? eventData.created_by,
+          created_at: eventData.createdAt ?? eventData.created_at,
+          updated_at: eventData.updatedAt ?? eventData.updated_at,
+          reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
+          creator_name: eventData.creatorName ?? eventData.creator_name,
+          department_name: eventData.departmentName ?? eventData.department_name,
+          team_name: eventData.teamName ?? eventData.team_name,
+          user_response: eventData.userResponse ?? eventData.user_response,
+        };
+      } else {
+        event = eventData;
+      }
 
       // Fill form with event data
-      const form = document.getElementById('eventForm') as HTMLFormElement;
-      if (!form) return;
+      const form = $$('#eventForm') as HTMLFormElement | null;
+      if (form === null) return;
 
       // Set event ID
-      const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement;
-      if (eventIdInput) eventIdInput.value = event.id.toString();
+      const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement | null;
+      if (eventIdInput !== null && event.id !== 0) {
+        eventIdInput.value = event.id.toString();
+      } else {
+        console.error('[CALENDAR] loadEventForEdit - event.id is missing:', event);
+      }
 
       // Set basic fields
       const titleInput = form.elements.namedItem('title') as HTMLInputElement;
-      if (titleInput) titleInput.value = event.title;
+      titleInput.value = event.title;
 
       const descInput = form.elements.namedItem('description') as HTMLTextAreaElement;
-      if (descInput) descInput.value = event.description ?? '';
+      descInput.value = event.description ?? '';
 
       const locationInput = form.elements.namedItem('location') as HTMLInputElement;
-      if (locationInput) locationInput.value = event.location ?? '';
+      locationInput.value = event.location ?? '';
 
       // Set org level using custom dropdown
-      const selectedOrgLevelSpan = document.getElementById('selectedOrgLevel');
+      const selectedOrgLevelSpan = $$('#selectedOrgLevel');
       if (selectedOrgLevelSpan) {
         const orgLevelText =
           event.org_level === 'company'
@@ -1496,64 +2521,67 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
       // Set date fields
       const startDateInput = form.elements.namedItem('start_date') as HTMLInputElement;
-      if (startDateInput) startDateInput.value = formatDateForInput(startDate);
+      startDateInput.value = formatDateForInput(startDate);
 
       const endDateInput = form.elements.namedItem('end_date') as HTMLInputElement;
-      if (endDateInput) endDateInput.value = formatDateForInput(endDate);
+      endDateInput.value = formatDateForInput(endDate);
 
       // Set all day checkbox
       const allDayCheckbox = form.elements.namedItem('all_day') as HTMLInputElement;
-      if (allDayCheckbox) {
-        allDayCheckbox.checked = Boolean(event.all_day);
-      }
+      allDayCheckbox.checked = Boolean(event.all_day);
 
       // Set time fields
-      if (!event.all_day) {
+      if (event.all_day !== true) {
         const startTimeInput = form.elements.namedItem('start_time') as HTMLInputElement;
-        if (startTimeInput) startTimeInput.value = formatTimeForInput(startDate);
+        startTimeInput.value = formatTimeForInput(startDate);
 
         const endTimeInput = form.elements.namedItem('end_time') as HTMLInputElement;
-        if (endTimeInput) endTimeInput.value = formatTimeForInput(endDate);
+        endTimeInput.value = formatTimeForInput(endDate);
       }
 
       // Update time inputs disabled state
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = Boolean(event.all_day);
       });
 
       // Update org dropdown
       updateOrgIdDropdown(event.org_level);
-      if (event.org_id) {
+      if (event.org_id !== undefined && event.org_id !== 0) {
         const orgName = event.department_name ?? event.team_name ?? '';
         selectOrgId(event.org_id, orgName);
       }
 
-      // Select color
-      document.querySelectorAll('.color-option').forEach((option) => {
-        option.classList.remove('active');
-      });
-      const colorOption = document.querySelector(`.color-option[data-color="${event.color}"]`) as HTMLElement;
-      if (colorOption) {
-        colorOption.classList.add('active');
-      }
+      // No color selection needed - color is determined by org_level
 
       // Set reminder if field exists
-      const reminderSelect = document.getElementById('eventReminderTime') as HTMLSelectElement;
-      if (reminderSelect && event.reminder_time !== undefined && event.reminder_time !== null) {
+      const reminderSelect = $$('#eventReminderTime') as HTMLSelectElement | null;
+      if (reminderSelect !== null && event.reminder_time !== undefined) {
         reminderSelect.value = event.reminder_time.toString();
       }
 
-      // Load attendees
-      if (event.attendees) {
-        selectedAttendees = event.attendees.map((a) => a.user_id);
+      // Set requires response checkbox
+      const requiresResponseInput = $$('#eventRequiresResponse') as HTMLInputElement | null;
+      if (requiresResponseInput !== null) {
+        // Check both camelCase and snake_case fields
+        const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
+        requiresResponseInput.checked = requiresResponse;
+      }
+
+      // Load attendees only for personal events
+      if (event.org_level === 'personal' && event.attendees) {
+        selectedAttendees = event.attendees
+          .map((a) => a.user_id ?? a.userId)
+          .filter((id): id is number => id !== undefined);
         updateSelectedAttendees();
+      } else {
+        selectedAttendees = [];
       }
     } else {
       showError('Fehler beim Laden des Termins');
       modalManager.hide('eventFormModal');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading event:', error);
     showError('Ein Fehler ist aufgetreten');
     modalManager.hide('eventFormModal');
@@ -1563,58 +2591,56 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 /**
  * Delete event
  */
-async function deleteEvent(eventId: number): Promise<void> {
-  // Create confirmation modal dynamically
-  const modalHtml = `
-    <div class="modal-overlay" id="confirmationModal">
-      <div class="modal-container modal-sm">
-        <div class="modal-header">
-          <h2>Bestätigung</h2>
-          <button type="button" class="modal-close" onclick="window.closeConfirmationModal()">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="window.closeConfirmationModal()">Abbrechen</button>
-          <button type="button" class="btn btn-danger" onclick="window.confirmDeleteEvent(${eventId})">Löschen</button>
-        </div>
-      </div>
-    </div>
-  `;
+function deleteEvent(eventId: number): void {
+  console.info('[CALENDAR] deleteEvent called with ID:', eventId);
 
-  // Add modal to body if it doesn't exist
-  if (!document.getElementById('confirmationModal')) {
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-  }
+  // Store the event ID for later use
+  eventToDelete = eventId;
 
-  // Show modal
-  modalManager.show('confirmationModal');
-}
+  // Show confirmation modal using modalManager
+  modalManager.show('confirmationModal', {
+    onOpen: () => {
+      console.info('[CALENDAR] Confirmation modal opened, eventToDelete:', eventToDelete);
 
-/**
- * Close confirmation modal and remove from DOM
- */
-function closeConfirmationModal(): void {
-  const modal = document.getElementById('confirmationModal');
-  if (modal) {
-    modalManager.hide('confirmationModal');
-    // Remove modal from DOM after animation
-    setTimeout(() => {
-      modal.remove();
-    }, 300);
-  }
+      // Add click handler to the delete button when modal opens
+      const confirmBtn = $$('#confirmDeleteBtn');
+      if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          console.info('[CALENDAR] Confirm delete button clicked, eventToDelete:', eventToDelete);
+          void confirmDeleteEvent();
+        };
+      }
+    },
+  });
 }
 
 /**
  * Confirm and execute event deletion
  */
-async function confirmDeleteEvent(eventId: number): Promise<void> {
+async function confirmDeleteEvent(): Promise<void> {
+  console.info('[CALENDAR] confirmDeleteEvent called, eventToDelete:', eventToDelete);
+
+  if (eventToDelete === null) {
+    console.error('[CALENDAR] No event ID to delete');
+    modalManager.hide('confirmationModal');
+    return;
+  }
+
+  // Store the ID locally to avoid race conditions
+  const eventId = eventToDelete;
+  // Clear the global variable immediately to prevent race conditions
+  eventToDelete = null;
+
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
-    const response = await fetch(`/api/calendar/${eventId}`, {
+    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+
+    console.info('[CALENDAR] Deleting event - v2:', useV2, 'URL:', apiUrl);
+
+    const response = await fetch(apiUrl, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -1622,18 +2648,19 @@ async function confirmDeleteEvent(eventId: number): Promise<void> {
     });
 
     if (response.ok) {
+      console.info('[CALENDAR] Delete successful');
       showSuccess('Termin erfolgreich gelöscht!');
-      closeConfirmationModal();
-      modalManager.hide('eventDetailsModal');
+      modalManager.hide('confirmationModal');
+      modalManager.hide('eventDetailModal');
 
       // Refresh calendar
       calendar.refetchEvents();
       void loadUpcomingEvents();
     } else {
-      const error = await response.json();
+      const error = (await response.json()) as { message?: string };
       showError(error.message ?? 'Fehler beim Löschen des Termins');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error deleting event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
   }
@@ -1643,19 +2670,22 @@ async function confirmDeleteEvent(eventId: number): Promise<void> {
  * Search attendees
  */
 function searchAttendees(query: string): void {
-  const searchResults = document.getElementById('attendeeSearchResults') as HTMLElement;
+  const searchResults = $$('#attendeeSearchResults');
   if (!searchResults) return;
 
-  if (!query || query.length < 2) {
+  if (query === '' || query.length < 2) {
     searchResults.innerHTML = '';
     return;
   }
 
   // Filter employees based on query
   const filteredEmployees = employees.filter((emp) => {
-    const fullName = `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.toLowerCase();
-    const username = (emp.username ?? '').toLowerCase();
-    const email = (emp.email ?? '').toLowerCase();
+    // Handle both snake_case (v1) and camelCase (v2) field names
+    const firstName = emp.first_name ?? '';
+    const lastName = emp.last_name ?? '';
+    const fullName = `${firstName} ${lastName}`.toLowerCase();
+    const username = emp.username.toLowerCase();
+    const email = emp.email.toLowerCase();
     return (
       fullName.includes(query.toLowerCase()) ||
       username.includes(query.toLowerCase()) ||
@@ -1670,14 +2700,34 @@ function searchAttendees(query: string): void {
 
     const item = document.createElement('div');
     item.className = 'search-result-item';
-    const name = `${emp.first_name ?? ''} ${emp.last_name ?? ''}`.trim() || emp.username;
-    item.innerHTML = `
-      <span>${escapeHtml(name)}</span>
-      <button class="btn btn-sm btn-primary" onclick="addAttendee(${emp.id}, '${escapeHtml(name)}')">
-        <i class="fas fa-plus"></i>
-      </button>
-    `;
-    searchResults.appendChild(item);
+    // Handle both snake_case (v1) and camelCase (v2) field names
+    const firstName = emp.first_name ?? '';
+    const lastName = emp.last_name ?? '';
+    const name =
+      `${firstName} ${lastName}`.trim() !== ''
+        ? `${firstName} ${lastName}`.trim()
+        : emp.username !== ''
+          ? emp.username
+          : emp.email;
+    // Clear existing content
+    while (item.firstChild) {
+      item.firstChild.remove();
+    }
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = name;
+    item.append(nameSpan);
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn btn-sm btn-primary';
+    addBtn.onclick = () => {
+      addAttendee(emp.id, name);
+    };
+    const plusIcon = document.createElement('i');
+    plusIcon.className = 'fas fa-plus';
+    addBtn.append(plusIcon);
+    item.append(addBtn);
+    searchResults.append(item);
   });
 }
 
@@ -1690,10 +2740,10 @@ function addAttendee(userId: number, _name: string): void {
     updateSelectedAttendees();
 
     // Clear search
-    const searchInput = document.getElementById('attendeeSearch') as HTMLInputElement;
-    const searchResults = document.getElementById('attendeeSearchResults') as HTMLElement;
-    if (searchInput) searchInput.value = '';
-    if (searchResults) searchResults.innerHTML = '';
+    const searchInput = $$('#attendeeSearch') as HTMLInputElement | null;
+    const searchResults = $$('#attendeeSearchResults');
+    if (searchInput !== null) searchInput.value = '';
+    if (searchResults !== null) searchResults.innerHTML = '';
   }
 }
 
@@ -1710,7 +2760,7 @@ function removeAttendee(userId: number): void {
  */
 function checkLoggedIn(): void {
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token === '') {
     console.error('No authentication token found');
     window.location.href = '/login';
     throw new Error('No authentication token found');
@@ -1722,11 +2772,15 @@ function checkLoggedIn(): void {
  */
 async function fetchUserData(): Promise<UserData> {
   const token = getAuthToken();
-  if (!token) {
+  if (token === null || token === '') {
     throw new Error('No authentication token found');
   }
 
-  const response = await fetch('/api/user/profile', {
+  // Use AUTH feature flag for auth endpoints, not CALENDAR flag
+  const useV2Auth = featureFlags.isEnabled('USE_API_V2_AUTH');
+  const profileUrl = useV2Auth ? '/api/v2/users/me' : '/api/user/profile';
+
+  const response = await fetch(profileUrl, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -1736,7 +2790,7 @@ async function fetchUserData(): Promise<UserData> {
     throw new Error('Failed to fetch user data');
   }
 
-  return response.json();
+  return await (response.json() as Promise<UserData>);
 }
 
 /**
@@ -1744,42 +2798,114 @@ async function fetchUserData(): Promise<UserData> {
  */
 async function loadDepartmentsAndTeams(): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     // Load departments
-    const deptResponse = await fetch('/api/departments', {
+    const useV2Departments = featureFlags.isEnabled('USE_API_V2_DEPARTMENTS');
+    const deptUrl = useV2Departments ? '/api/v2/departments' : '/api/departments';
+    const deptResponse = await fetch(deptUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (deptResponse.ok) {
-      departments = await deptResponse.json();
+      const deptData = (await deptResponse.json()) as ApiV2Response<Department> | Department[];
+
+      // Safely extract departments array from response
+      if (useV2Departments && 'data' in deptData) {
+        // v2 API response structure
+        if (Array.isArray(deptData.data.data)) {
+          departments = deptData.data.data;
+        } else if (Array.isArray(deptData.data)) {
+          // Sometimes v2 API returns data directly under data
+          departments = deptData.data as unknown as Department[];
+        } else {
+          departments = [];
+        }
+      } else if (Array.isArray(deptData)) {
+        // v1 API response or direct array
+        departments = deptData;
+      } else {
+        departments = [];
+      }
     }
 
     // Load teams
-    const teamResponse = await fetch('/api/teams', {
+    const useV2Teams = featureFlags.isEnabled('USE_API_V2_TEAMS');
+    const teamUrl = useV2Teams ? '/api/v2/teams' : '/api/teams';
+    const teamResponse = await fetch(teamUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (teamResponse.ok) {
-      teams = await teamResponse.json();
+      const teamData = (await teamResponse.json()) as ApiV2Response<Team> | Team[];
+
+      // Safely extract teams array from response
+      if (useV2Teams && 'data' in teamData) {
+        // v2 API response structure
+        if (Array.isArray(teamData.data.data)) {
+          teams = teamData.data.data;
+        } else if (Array.isArray(teamData.data)) {
+          // Sometimes v2 API returns data directly under data
+          teams = teamData.data as unknown as Team[];
+        } else {
+          teams = [];
+        }
+      } else if (Array.isArray(teamData)) {
+        // v1 API response or direct array
+        teams = teamData;
+      } else {
+        teams = [];
+      }
     }
 
     // Load employees for attendees
-    const empResponse = await fetch('/api/users', {
+    const useV2Users = featureFlags.isEnabled('USE_API_V2_USERS');
+    const empUrl = useV2Users ? '/api/v2/users' : '/api/users';
+    const empResponse = await fetch(empUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (empResponse.ok) {
-      employees = await empResponse.json();
+      const empData = (await empResponse.json()) as ApiV2Response<User> | User[];
+      let allEmployees: User[] = [];
+
+      // Safely extract employees array from response
+      if (useV2Users && 'data' in empData) {
+        // v2 API response structure
+        if (Array.isArray(empData.data.data)) {
+          allEmployees = empData.data.data;
+        } else if (Array.isArray(empData.data)) {
+          // Sometimes v2 API returns data directly under data
+          allEmployees = empData.data as unknown as User[];
+        }
+      } else if (Array.isArray(empData)) {
+        // v1 API response or direct array
+        allEmployees = empData;
+      }
+
+      // Get current user ID to exclude from employees list
+      const userStr = localStorage.getItem('user');
+      let currentUserIdLocal = 0;
+      if (userStr !== null && userStr !== '') {
+        try {
+          const user = JSON.parse(userStr) as UserData;
+          currentUserIdLocal = user.id;
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
+        }
+      }
+
+      // Only filter if we have a valid array
+      employees = allEmployees.filter((emp: User) => emp.id !== currentUserIdLocal);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading departments, teams, and employees:', error);
   }
 }
@@ -1787,21 +2913,33 @@ async function loadDepartmentsAndTeams(): Promise<void> {
 /**
  * Utility function to escape HTML
  */
-function escapeHtml(text: string): string {
-  const map: { [key: string]: string } = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m]);
+function escapeHtml(text: string | null | undefined): string {
+  if (text === null || text === undefined || text === '') return '';
+  const str = text;
+  return str.replace(/["&'<>]/g, (m) => {
+    // Use switch to avoid object injection issues
+    switch (m) {
+      case '&':
+        return '&amp;';
+      case '<':
+        return '&lt;';
+      case '>':
+        return '&gt;';
+      case '"':
+        return '&quot;';
+      case "'":
+        return '&#039;';
+      default:
+        return m;
+    }
+  });
 }
 
 // Extend window for calendar functions
 declare global {
   interface Window {
     viewEvent: typeof viewEvent;
+    showEventDetails: typeof showEventDetails;
     editEvent: (eventId: number) => void;
     deleteEvent: typeof deleteEvent;
     respondToEvent: typeof respondToEvent;
@@ -1821,44 +2959,8 @@ declare global {
     toggleRecurrenceEndDropdown: typeof toggleRecurrenceEndDropdown;
     selectRecurrenceEnd: typeof selectRecurrenceEnd;
     closeAllDropdowns: typeof closeAllDropdowns;
-    closeConfirmationModal: typeof closeConfirmationModal;
     confirmDeleteEvent: typeof confirmDeleteEvent;
   }
-}
-
-/**
- * Setup color picker functionality
- */
-function setupColorPicker(): void {
-  // This function is now empty as we use setupModalColorPicker when modal opens
-}
-
-/**
- * Setup color picker for modal instance
- */
-function setupModalColorPicker(): void {
-  const colorOptions = document.querySelectorAll('.color-option');
-  const colorInput = document.getElementById('eventColor') as HTMLInputElement;
-
-  colorOptions.forEach((option) => {
-    // Remove existing listeners by cloning
-    const newOption = option.cloneNode(true) as HTMLElement;
-    option.parentNode?.replaceChild(newOption, option);
-
-    newOption.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Remove selected class from all
-      document.querySelectorAll('.color-option').forEach((opt) => opt.classList.remove('selected'));
-      // Add selected class to clicked
-      newOption.classList.add('selected');
-      // Update hidden input
-      if (colorInput) {
-        colorInput.value = newOption.dataset.color ?? '#3498db';
-      }
-    });
-  });
 }
 
 /**
@@ -1866,8 +2968,8 @@ function setupModalColorPicker(): void {
  */
 function setupModalEventListeners(): void {
   // Save event button
-  const saveEventBtn = document.getElementById('saveEventBtn') as HTMLButtonElement;
-  if (saveEventBtn) {
+  const saveEventBtn = $$('#saveEventBtn');
+  if (saveEventBtn !== null) {
     // Remove existing listeners by cloning
     const newButton = saveEventBtn.cloneNode(true) as HTMLButtonElement;
     saveEventBtn.parentNode?.replaceChild(newButton, saveEventBtn);
@@ -1875,13 +2977,13 @@ function setupModalEventListeners(): void {
     newButton.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      console.log('Save button clicked');
+      console.info('Save button clicked');
       void saveEvent();
     });
   }
 
   // Add attendee button
-  const addAttendeeBtn = document.getElementById('addAttendeeBtn');
+  const addAttendeeBtn = $$('#addAttendeeBtn');
   if (addAttendeeBtn) {
     const newButton = addAttendeeBtn.cloneNode(true) as HTMLButtonElement;
     addAttendeeBtn.parentNode?.replaceChild(newButton, addAttendeeBtn);
@@ -1895,13 +2997,13 @@ function setupModalEventListeners(): void {
   }
 
   // All day checkbox
-  const allDayCheckbox = document.getElementById('eventAllDay') as HTMLInputElement;
-  if (allDayCheckbox) {
+  const allDayCheckbox = $$('#eventAllDay');
+  if (allDayCheckbox !== null) {
     const newCheckbox = allDayCheckbox.cloneNode(true) as HTMLInputElement;
     allDayCheckbox.parentNode?.replaceChild(newCheckbox, allDayCheckbox);
 
-    newCheckbox.addEventListener('change', function () {
-      const timeInputs = document.querySelectorAll<HTMLInputElement>('.time-input');
+    newCheckbox.addEventListener('change', function (this: HTMLInputElement) {
+      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
       timeInputs.forEach((input) => {
         input.disabled = this.checked;
         if (this.checked) {
@@ -1911,17 +3013,13 @@ function setupModalEventListeners(): void {
     });
   }
 
-  // Organization level change
-  const eventOrgLevel = document.getElementById('eventOrgLevel') as HTMLInputElement;
-  if (eventOrgLevel) {
-    // This is already handled by the dropdown delegation
-    console.log('Organization level input found');
-  }
+  // Organization level change - handled by dropdown delegation
+  console.info('Organization level input found');
 }
 
 // Custom dropdown functions
 function toggleOrgLevelDropdown(): void {
-  const dropdown = document.getElementById('orgLevelDropdown');
+  const dropdown = $$('#orgLevelDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -1937,11 +3035,11 @@ function toggleOrgLevelDropdown(): void {
 }
 
 function selectOrgLevel(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedOrgLevel');
-  const inputElement = document.getElementById('eventOrgLevel') as HTMLInputElement;
+  const selectedElement = $$('#selectedOrgLevel');
+  const inputElement = $$('#eventOrgLevel') as HTMLInputElement | null;
 
-  if (selectedElement) selectedElement.textContent = text;
-  if (inputElement) inputElement.value = value;
+  if (selectedElement !== null) selectedElement.textContent = text;
+  if (inputElement !== null) inputElement.value = value;
 
   // Update org ID dropdown based on selection
   updateOrgIdDropdown(value);
@@ -1949,10 +3047,10 @@ function selectOrgLevel(value: string, text: string): void {
 }
 
 function toggleOrgIdDropdown(): void {
-  const display = document.getElementById('orgIdDisplay');
-  if (display?.classList.contains('disabled')) return;
+  const display = $$('#orgIdDisplay');
+  if (display?.classList.contains('disabled') === true) return;
 
-  const dropdown = document.getElementById('orgIdDropdown');
+  const dropdown = $$('#orgIdDropdown');
   if (dropdown && display) {
     if (dropdown.classList.contains('active')) {
       dropdown.classList.remove('active');
@@ -1966,7 +3064,7 @@ function toggleOrgIdDropdown(): void {
 }
 
 function toggleReminderDropdown(): void {
-  const dropdown = document.getElementById('reminderDropdown');
+  const dropdown = $$('#reminderDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -1982,16 +3080,48 @@ function toggleReminderDropdown(): void {
 }
 
 function selectReminder(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedReminder');
-  const inputElement = document.getElementById('eventReminderTime') as HTMLInputElement;
+  const selectedElement = $$('#selectedReminder');
+  const inputElement = $$('#eventReminderTime') as HTMLInputElement | null;
 
-  if (selectedElement) selectedElement.textContent = text;
-  if (inputElement) inputElement.value = value;
+  if (selectedElement !== null) selectedElement.textContent = text;
+  if (inputElement !== null) inputElement.value = value;
   closeAllDropdowns();
 }
 
 function toggleRecurrenceDropdown(): void {
-  const dropdown = document.getElementById('recurrenceDropdown');
+  const dropdown = $$('#recurrenceDropdown');
+  const display = dropdown?.previousElementSibling;
+
+  if (dropdown && display) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+      display.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+      display.classList.add('active');
+    }
+  }
+}
+
+function toggleDepartmentDropdown(): void {
+  const dropdown = $$('#departmentDropdown');
+  const display = dropdown?.previousElementSibling;
+
+  if (dropdown && display) {
+    if (dropdown.classList.contains('active')) {
+      dropdown.classList.remove('active');
+      display.classList.remove('active');
+    } else {
+      closeAllDropdowns();
+      dropdown.classList.add('active');
+      display.classList.add('active');
+    }
+  }
+}
+
+function toggleTeamDropdown(): void {
+  const dropdown = $$('#teamDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2007,23 +3137,23 @@ function toggleRecurrenceDropdown(): void {
 }
 
 function selectRecurrence(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedRecurrence');
-  const inputElement = document.getElementById('eventRecurrence') as HTMLInputElement;
+  const selectedElement = $$('#selectedRecurrence');
+  const inputElement = $$('#eventRecurrence') as HTMLInputElement | null;
 
-  if (selectedElement) selectedElement.textContent = text;
-  if (inputElement) inputElement.value = value;
+  if (selectedElement !== null) selectedElement.textContent = text;
+  if (inputElement !== null) inputElement.value = value;
 
   // Show/hide recurrence end options
-  const endWrapper = document.getElementById('recurrenceEndWrapper');
+  const endWrapper = $$('#recurrenceEndWrapper');
   if (endWrapper) {
-    endWrapper.style.display = value && value !== '' ? 'block' : 'none';
+    endWrapper.style.display = value !== '' ? 'block' : 'none';
   }
 
   closeAllDropdowns();
 }
 
 function toggleRecurrenceEndDropdown(): void {
-  const dropdown = document.getElementById('recurrenceEndDropdown');
+  const dropdown = $$('#recurrenceEndDropdown');
   const display = dropdown?.previousElementSibling;
 
   if (dropdown && display) {
@@ -2039,11 +3169,11 @@ function toggleRecurrenceEndDropdown(): void {
 }
 
 function selectRecurrenceEnd(value: string, text: string): void {
-  const selectedElement = document.getElementById('selectedRecurrenceEnd');
+  const selectedElement = $$('#selectedRecurrenceEnd');
   if (selectedElement) selectedElement.textContent = text;
 
-  const countWrapper = document.getElementById('recurrenceCountWrapper');
-  const dateWrapper = document.getElementById('recurrenceEndDateWrapper');
+  const countWrapper = $$('#recurrenceCountWrapper');
+  const dateWrapper = $$('#recurrenceEndDateWrapper');
 
   if (countWrapper && dateWrapper) {
     if (value === 'after') {
@@ -2062,13 +3192,13 @@ function selectRecurrenceEnd(value: string, text: string): void {
 }
 
 function closeAllDropdowns(): void {
-  document.querySelectorAll('.custom-dropdown').forEach((dropdown) => {
+  $all('.custom-dropdown').forEach((dropdown) => {
     dropdown.classList.remove('active');
   });
-  document.querySelectorAll('.dropdown-display').forEach((display) => {
+  $all('.dropdown-display').forEach((display) => {
     display.classList.remove('active');
   });
-  document.querySelectorAll('.dropdown-options').forEach((options) => {
+  $all('.dropdown-options').forEach((options) => {
     options.classList.remove('active');
   });
 }
@@ -2076,43 +3206,158 @@ function closeAllDropdowns(): void {
 // Load employees for attendees modal
 async function loadEmployeesForAttendees(): Promise<void> {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
-    const response = await fetch('/api/users', {
+    const userRole = localStorage.getItem('userRole');
+
+    // For employees, show a simple input field instead of user list
+    if (userRole === 'employee') {
+      const attendeesList = $$('#attendeesList');
+      if (attendeesList) {
+        attendeesList.innerHTML = `
+          <div class="form-group">
+            <label>Teilnehmer per E-Mail einladen:</label>
+            <input type="email" id="attendeeEmailInput" class="form-control" placeholder="email@example.com">
+            <button type="button" class="btn btn-primary mt-2" onclick="addAttendeeByEmail()">
+              <i class="fas fa-plus"></i> Hinzufügen
+            </button>
+            <div id="selectedAttendeesEmails" class="mt-3"></div>
+          </div>
+        `;
+      }
+      // Register event handler for add button
+      const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
+      if (addSelectedAttendeesBtn) {
+        addSelectedAttendeesBtn.style.display = 'none'; // Hide for employees
+      }
+      return;
+    }
+
+    // For admins, load user list as before
+    const useV2Users = featureFlags.isEnabled('USE_API_V2_USERS');
+    const apiUrl = useV2Users ? '/api/v2/users' : '/api/users';
+
+    const response = await fetch(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (response.ok) {
-      const users = await response.json();
-      const attendeesList = document.getElementById('attendeesList');
+      const data = (await response.json()) as ApiV2Response<User> | User[];
+      let users: User[] = [];
+
+      // Safely extract users array from response
+      if (useV2Users && 'data' in data) {
+        // v2 API response structure
+        if (Array.isArray(data.data.data)) {
+          users = data.data.data;
+        } else if (Array.isArray(data.data)) {
+          // Sometimes v2 API returns data directly under data
+          users = data.data as unknown as User[];
+        }
+      } else if (Array.isArray(data)) {
+        // v1 API response or direct array
+        users = data;
+      }
+
+      const attendeesList = $$('#attendeesList');
+
+      // Get current user ID to exclude from list
+      const userStr = localStorage.getItem('user');
+      let currentUserIdLocal = 0;
+      if (userStr !== null && userStr !== '') {
+        try {
+          const user = JSON.parse(userStr) as UserData;
+          currentUserIdLocal = user.id;
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
+        }
+      }
+
+      // Store employees for later use in updateSelectedAttendees
+      employees = users.filter((user: User) => user.id !== currentUserIdLocal);
 
       if (attendeesList) {
-        attendeesList.innerHTML = users
-          .map(
-            (user: User) => `
-          <div class="attendee-option">
-            <input type="checkbox" id="attendee-${user.id}" value="${user.id}" />
-            <label for="attendee-${user.id}">
-              ${escapeHtml(user.first_name ?? '')} ${escapeHtml(user.last_name ?? '')} 
-              (${escapeHtml(user.username)})
-            </label>
-          </div>
-        `,
-          )
-          .join('');
+        // Clear existing content
+        while (attendeesList.firstChild) {
+          attendeesList.firstChild.remove();
+        }
+
+        employees.forEach((user: User) => {
+          // Handle both snake_case (v1) and camelCase (v2) field names
+          const firstName = user.first_name ?? '';
+          const lastName = user.last_name ?? '';
+          const displayName =
+            `${firstName} ${lastName}`.trim() !== ''
+              ? `${firstName} ${lastName}`.trim()
+              : user.username !== ''
+                ? user.username
+                : user.email;
+
+          const optionDiv = document.createElement('div');
+          optionDiv.className = 'attendee-option';
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `attendee-${user.id}`;
+          checkbox.value = user.id.toString();
+          optionDiv.append(checkbox);
+
+          const label = document.createElement('label');
+          label.htmlFor = `attendee-${user.id}`;
+          label.textContent = `${displayName} (${user.email})`;
+          optionDiv.append(label);
+
+          attendeesList.append(optionDiv);
+        });
+      }
+
+      // Re-attach event listener for the "Add Selected" button after modal content is loaded
+      const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
+      if (addSelectedAttendeesBtn) {
+        // Remove any existing listeners by cloning
+        const newButton = addSelectedAttendeesBtn.cloneNode(true) as HTMLButtonElement;
+        addSelectedAttendeesBtn.parentNode?.replaceChild(newButton, addSelectedAttendeesBtn);
+
+        newButton.addEventListener('click', () => {
+          console.info('Add selected attendees button clicked');
+          const checkboxes = $all('#attendeesList input[type="checkbox"]:checked') as NodeListOf<HTMLInputElement>;
+          console.info('Found checked boxes:', checkboxes.length);
+
+          checkboxes.forEach((checkbox) => {
+            const userId = Number.parseInt(checkbox.value, 10);
+            if (!selectedAttendees.includes(userId)) {
+              selectedAttendees.push(userId);
+              console.info('Added attendee:', userId);
+            }
+          });
+
+          updateSelectedAttendees();
+          modalManager.hide('attendeesModal');
+        });
+      }
+
+      // Also re-attach the search functionality
+      const attendeeSearch = $$('#attendeeSearch');
+      if (attendeeSearch !== null) {
+        const newSearch = attendeeSearch.cloneNode(true) as HTMLInputElement;
+        attendeeSearch.parentNode?.replaceChild(newSearch, attendeeSearch);
+
+        newSearch.addEventListener('input', function (this: HTMLInputElement) {
+          searchAttendees(this.value);
+        });
       }
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error loading employees:', error);
   }
 }
 
 // Update selected attendees display
 function updateSelectedAttendees(): void {
-  const container = document.getElementById('attendeesContainer');
+  const container = $$('#attendeesContainer');
   if (!container) return;
 
   if (selectedAttendees.length === 0) {
@@ -2125,10 +3370,20 @@ function updateSelectedAttendees(): void {
     .map((userId) => {
       const employee = employees.find((emp) => emp.id === userId);
       if (employee) {
+        // Handle both snake_case (v1) and camelCase (v2) field names
+        const firstName = employee.first_name ?? '';
+        const lastName = employee.last_name ?? '';
+        const displayName =
+          `${firstName} ${lastName}`.trim() !== ''
+            ? `${firstName} ${lastName}`.trim()
+            : employee.username !== ''
+              ? employee.username
+              : employee.email;
+
         return `
         <div class="attendee-item">
           <span class="attendee-name">
-            ${escapeHtml(employee.first_name ?? '')} ${escapeHtml(employee.last_name ?? '')}
+            ${escapeHtml(displayName)}
           </span>
           <button type="button" class="remove-attendee" onclick="removeAttendee(${userId})">
             <i class="fas fa-times"></i>
@@ -2141,14 +3396,18 @@ function updateSelectedAttendees(): void {
     .filter((html) => html !== '')
     .join('');
 
-  container.innerHTML = attendeeHTML;
+  // Use setHTML from dom-utils for safe HTML setting
+  setHTML(container, attendeeHTML);
 }
 
 // Export functions to window for backwards compatibility
 if (typeof window !== 'undefined') {
-  console.log('Calendar: Exporting functions to window...');
+  console.info('Calendar: Exporting functions to window...');
   window.viewEvent = viewEvent;
-  window.editEvent = (eventId: number) => openEventForm(eventId);
+  window.showEventDetails = showEventDetails;
+  window.editEvent = (eventId: number) => {
+    openEventForm(eventId);
+  };
   window.deleteEvent = deleteEvent;
   window.respondToEvent = respondToEvent;
   window.openEventForm = openEventForm;
@@ -2171,10 +3430,9 @@ if (typeof window !== 'undefined') {
   window.closeAllDropdowns = closeAllDropdowns;
 
   // Confirmation modal functions
-  window.closeConfirmationModal = closeConfirmationModal;
   window.confirmDeleteEvent = confirmDeleteEvent;
 
-  console.log('Calendar: window.openEventForm available:', typeof window.openEventForm);
+  console.info('Calendar: window.openEventForm available:', typeof window.openEventForm);
 }
 
 /**
@@ -2199,13 +3457,13 @@ function getEventFormModalTemplate(): string {
               <label for="eventTitle">
                 <i class="fas fa-heading"></i> Titel <span class="required">*</span>
               </label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="eventTitle" 
+              <input
+                type="text"
+                class="form-control"
+                id="eventTitle"
                 name="title"
                 placeholder="Titel des Termins eingeben"
-                required 
+                required
               />
             </div>
 
@@ -2213,9 +3471,9 @@ function getEventFormModalTemplate(): string {
               <label for="eventDescription">
                 <i class="fas fa-align-left"></i> Beschreibung
               </label>
-              <textarea 
-                class="form-control" 
-                id="eventDescription" 
+              <textarea
+                class="form-control"
+                id="eventDescription"
                 name="description"
                 rows="4"
                 placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
@@ -2231,24 +3489,24 @@ function getEventFormModalTemplate(): string {
                 <label for="eventStartDate">
                   <i class="fas fa-calendar"></i> Startdatum <span class="required">*</span>
                 </label>
-                <input 
-                  type="date" 
-                  class="form-control" 
-                  id="eventStartDate" 
+                <input
+                  type="date"
+                  class="form-control"
+                  id="eventStartDate"
                   name="start_date"
-                  required 
+                  required
                 />
               </div>
               <div class="form-group col-md-6">
                 <label for="eventStartTime">
                   <i class="fas fa-clock"></i> Startzeit <span class="required">*</span>
                 </label>
-                <input 
-                  type="time" 
-                  class="form-control time-input" 
-                  id="eventStartTime" 
+                <input
+                  type="time"
+                  class="form-control time-input"
+                  id="eventStartTime"
                   name="start_time"
-                  required 
+                  required
                 />
               </div>
             </div>
@@ -2258,34 +3516,34 @@ function getEventFormModalTemplate(): string {
                 <label for="eventEndDate">
                   <i class="fas fa-calendar-check"></i> Enddatum <span class="required">*</span>
                 </label>
-                <input 
-                  type="date" 
-                  class="form-control" 
-                  id="eventEndDate" 
+                <input
+                  type="date"
+                  class="form-control"
+                  id="eventEndDate"
                   name="end_date"
-                  required 
+                  required
                 />
               </div>
               <div class="form-group col-md-6">
                 <label for="eventEndTime">
                   <i class="fas fa-clock"></i> Endzeit <span class="required">*</span>
                 </label>
-                <input 
-                  type="time" 
-                  class="form-control time-input" 
-                  id="eventEndTime" 
+                <input
+                  type="time"
+                  class="form-control time-input"
+                  id="eventEndTime"
                   name="end_time"
-                  required 
+                  required
                 />
               </div>
             </div>
 
             <div class="form-group">
               <div class="custom-control custom-checkbox">
-                <input 
-                  type="checkbox" 
-                  class="custom-control-input" 
-                  id="eventAllDay" 
+                <input
+                  type="checkbox"
+                  class="custom-control-input"
+                  id="eventAllDay"
                   name="all_day"
                 />
                 <label class="custom-control-label" for="eventAllDay">
@@ -2299,10 +3557,10 @@ function getEventFormModalTemplate(): string {
               <label for="eventLocation">
                 <i class="fas fa-map-marker-alt"></i> Ort
               </label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="eventLocation" 
+              <input
+                type="text"
+                class="form-control"
+                id="eventLocation"
                 name="location"
                 placeholder="z.B. Konferenzraum 1, Online Meeting, etc."
               />
@@ -2311,77 +3569,103 @@ function getEventFormModalTemplate(): string {
             <!-- Organisationseinheit -->
             <div class="form-group">
               <label>
-                <i class="fas fa-users"></i> Wer soll den Termin sehen? <span class="required">*</span>
+                <i class="fas fa-users"></i> Event-Ebene <span class="required">*</span>
               </label>
               <div class="custom-dropdown" id="orgLevelWrapper">
                 <div class="custom-select-display dropdown-display">
-                  <span id="selectedOrgLevel">-- Bitte wählen --</span>
+                  <span id="selectedOrgLevel">Firma</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
                 <div class="dropdown-options" id="orgLevelDropdown">
                   <div class="dropdown-option" data-value="company">
-                    <i class="fas fa-building"></i> Alle Mitarbeiter
+                    <i class="fas fa-building"></i> Firma (Alle Mitarbeiter)
                   </div>
                   <div class="dropdown-option" data-value="department">
-                    <i class="fas fa-sitemap"></i> Bestimmte Abteilung
+                    <i class="fas fa-sitemap"></i> Abteilung
                   </div>
                   <div class="dropdown-option" data-value="team">
-                    <i class="fas fa-user-friends"></i> Bestimmtes Team
+                    <i class="fas fa-user-friends"></i> Team
                   </div>
                   <div class="dropdown-option" data-value="personal">
-                    <i class="fas fa-user"></i> Nur für mich
+                    <i class="fas fa-user"></i> Persönlich
                   </div>
                 </div>
               </div>
-              <input type="hidden" id="eventOrgLevel" required />
+              <input type="hidden" id="eventOrgLevel" name="org_level" required value="company" />
             </div>
 
-            <div class="form-group" id="orgIdGroup" style="display: none;">
-              <label>Welche Abteilung/Team?</label>
-              <div class="custom-dropdown" id="orgIdWrapper">
-                <div class="custom-select-display dropdown-display disabled" id="orgIdDisplay">
-                  <span id="selectedOrgId">-- Bitte erst oben auswählen --</span>
+            <!-- Department Selection (nur bei department oder team Events) -->
+            <div class="form-group" id="departmentGroup" style="display: none;">
+              <label>
+                <i class="fas fa-sitemap"></i> Abteilung auswählen <span class="required">*</span>
+              </label>
+              <div class="custom-dropdown" id="departmentWrapper">
+                <div class="custom-select-display dropdown-display" id="departmentDisplay">
+                  <span id="selectedDepartment">-- Abteilung wählen --</span>
                   <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                   </svg>
                 </div>
-                <div class="dropdown-options" id="orgIdDropdown">
+                <div class="dropdown-options" id="departmentDropdown">
                   <!-- Wird dynamisch befüllt -->
                 </div>
               </div>
-              <input type="hidden" id="eventOrgId" />
+              <input type="hidden" id="eventDepartmentId" name="department_id" />
             </div>
 
-            <!-- Farbe -->
-            <div class="form-group">
+            <!-- Team Selection (nur bei team Events) -->
+            <div class="form-group" id="teamGroup" style="display: none;">
               <label>
-                <i class="fas fa-palette"></i> Farbe
+                <i class="fas fa-user-friends"></i> Team auswählen <span class="required">*</span>
               </label>
-              <div class="color-picker">
-                <div class="color-option selected" data-color="#3498db" style="background-color: #3498db" title="Blau"></div>
-                <div class="color-option" data-color="#2ecc71" style="background-color: #2ecc71" title="Grün"></div>
-                <div class="color-option" data-color="#e67e22" style="background-color: #e67e22" title="Orange"></div>
-                <div class="color-option" data-color="#e74c3c" style="background-color: #e74c3c" title="Rot"></div>
-                <div class="color-option" data-color="#9b59b6" style="background-color: #9b59b6" title="Lila"></div>
-                <div class="color-option" data-color="#f39c12" style="background-color: #f39c12" title="Gelb"></div>
-                <div class="color-option" data-color="#1abc9c" style="background-color: #1abc9c" title="Türkis"></div>
+              <div class="custom-dropdown" id="teamWrapper">
+                <div class="custom-select-display dropdown-display" id="teamDisplay">
+                  <span id="selectedTeam">-- Team wählen --</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="teamDropdown">
+                  <!-- Wird dynamisch befüllt basierend auf Department -->
+                </div>
               </div>
-              <input type="hidden" id="eventColor" value="#3498db" />
+              <input type="hidden" id="eventTeamId" name="team_id" />
             </div>
 
             <!-- Teilnehmer -->
-            <div class="form-group">
+            <div class="form-group" id="attendeesGroup" style="display: block;">
               <label>
                 <i class="fas fa-users"></i> Teilnehmer
               </label>
-              <div id="selectedAttendees">
-                <!-- Wird dynamisch befüllt -->
+              <div id="attendeesContainer">
+                <p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>
               </div>
-              <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn">
+              <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn" style="display: none;">
                 <i class="fas fa-plus"></i> Teilnehmer hinzufügen
               </button>
+            </div>
+
+            <!-- Statusanfrage -->
+            <div class="form-group" id="requiresResponseGroup">
+              <label>
+                <i class="fas fa-question-circle"></i> Statusanfrage
+              </label>
+              <div class="form-check form-switch">
+                <input
+                  type="checkbox"
+                  class="form-check-input"
+                  id="eventRequiresResponse"
+                  name="requires_response"
+                />
+                <label class="form-check-label" for="eventRequiresResponse">
+                  Teilnehmer müssen Zusage/Absage geben
+                </label>
+              </div>
+              <small class="form-text text-muted">
+                <i class="fas fa-info-circle"></i> Bei Aktivierung werden Teilnehmer aufgefordert, ihre Teilnahme zu bestätigen
+              </small>
             </div>
 
             <!-- Wiederkehrend -->
@@ -2442,7 +3726,7 @@ function getEventFormModalTemplate(): string {
                 </div>
               </div>
               <input type="hidden" id="eventRecurrenceEndType" value="never" />
-              
+
               <div class="mt-2" id="recurrenceEndDetails" style="display: none;">
                 <input type="number" class="form-control" id="eventRecurrenceCount" placeholder="Anzahl der Wiederholungen" min="1" style="display: none;" />
                 <input type="date" class="form-control" id="eventRecurrenceUntil" style="display: none;" />
@@ -2535,10 +3819,10 @@ function getAttendeesModalTemplate(): string {
         </div>
         <div class="modal-body">
           <div class="form-group">
-            <input 
-              type="text" 
-              class="form-control" 
-              id="attendeeSearch" 
+            <input
+              type="text"
+              class="form-control"
+              id="attendeeSearch"
               placeholder="Mitarbeiter suchen..."
             />
           </div>
@@ -2591,4 +3875,129 @@ function getEventResponseModalTemplate(): string {
       </div>
     </div>
   `;
+}
+
+/**
+ * Get confirmation modal template
+ */
+function getConfirmationModalTemplate(): string {
+  return `
+    <div class="modal-overlay" id="confirmationModal">
+      <div class="modal-container modal-sm">
+        <div class="modal-header">
+          <h2>Bestätigung</h2>
+          <button type="button" class="modal-close" data-action="close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="fas fa-trash"></i> Löschen
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Setup fullscreen controls for the calendar
+ */
+function setupFullscreenControls(): void {
+  const fullscreenBtn = $$('#fullscreenBtn');
+  const calendarContainer = $$('#calendarContainer');
+
+  if (!fullscreenBtn || !calendarContainer) {
+    console.warn('Calendar: Fullscreen elements not found');
+    return;
+  }
+
+  // Enter fullscreen
+  fullscreenBtn.addEventListener('click', () => {
+    void (async () => {
+      try {
+        // Check if already in fullscreen
+        const isFullscreen = document.fullscreenElement !== null;
+
+        if (!isFullscreen) {
+          // Enter fullscreen mode
+          document.body.classList.add('calendar-fullscreen-mode');
+
+          // Request fullscreen
+          if ('requestFullscreen' in calendarContainer) {
+            await calendarContainer.requestFullscreen();
+          } else if (
+            (calendarContainer as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> })
+              .webkitRequestFullscreen
+          ) {
+            const elem = calendarContainer as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
+            if (elem.webkitRequestFullscreen) {
+              void elem.webkitRequestFullscreen();
+            }
+          } else if (
+            (calendarContainer as HTMLElement & { msRequestFullscreen?: () => Promise<void> }).msRequestFullscreen
+          ) {
+            const elem = calendarContainer as HTMLElement & { msRequestFullscreen?: () => Promise<void> };
+            if (elem.msRequestFullscreen) {
+              void elem.msRequestFullscreen();
+            }
+          }
+
+          // Update button icon
+          const icon = fullscreenBtn.querySelector('i');
+          if (icon) {
+            icon.className = 'fas fa-compress';
+          }
+          fullscreenBtn.title = 'Vollbild beenden';
+        } else {
+          // Exit fullscreen mode
+          if ('exitFullscreen' in document) {
+            await document.exitFullscreen();
+          } else if ((document as Document & { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+            const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
+            if (doc.webkitExitFullscreen) {
+              await doc.webkitExitFullscreen();
+            }
+          } else if ((document as Document & { msExitFullscreen?: () => Promise<void> }).msExitFullscreen) {
+            const doc = document as Document & { msExitFullscreen?: () => Promise<void> };
+            if (doc.msExitFullscreen) {
+              await doc.msExitFullscreen();
+            }
+          }
+        }
+      } catch (error: unknown) {
+        console.error('Calendar: Fullscreen error:', error);
+        showError('Vollbild-Modus konnte nicht aktiviert werden');
+      }
+    })();
+  });
+
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', () => {
+    const isFullscreen = document.fullscreenElement !== null;
+    const icon = fullscreenBtn.querySelector('i');
+
+    if (isFullscreen) {
+      document.body.classList.add('calendar-fullscreen-mode');
+      if (icon) {
+        icon.className = 'fas fa-compress';
+      }
+      fullscreenBtn.title = 'Vollbild beenden';
+    } else {
+      document.body.classList.remove('calendar-fullscreen-mode');
+      if (icon) {
+        icon.className = 'fas fa-expand';
+      }
+      fullscreenBtn.title = 'Vollbild';
+    }
+
+    // Refresh calendar layout after fullscreen change
+    if (typeof calendar !== 'undefined') {
+      setTimeout(() => {
+        calendar.render();
+      }, 100);
+    }
+  });
 }

@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Assixx - Die SaaS-Lösung für Industriefirmen</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <!-- Outfit Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <!-- Import main styles with Outfit font -->
+    <link rel="stylesheet" href="/styles/fonts-outfit.css" />
     <style>
+      @import url('/styles/dashboard-theme.css');
       :root {
         /* Assixx Dark Theme - Konsistent mit Dashboard */
         --primary-color: #2196f3;
@@ -54,11 +58,12 @@
 
       body {
         font-family:
-          'Ubuntu',
+          'Outfit',
           -apple-system,
           BlinkMacSystemFont,
           'Segoe UI',
           Roboto,
+          Arial,
           sans-serif;
         background: #000000;
         color: var(--text-primary);
@@ -83,7 +88,6 @@
       .header {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         padding: 8px 16px;
         box-shadow: var(--shadow-sm);
         position: sticky;
@@ -155,13 +159,13 @@
 
       /* Glassmorphismus Buttons */
       .btn {
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         border: none;
         border-radius: var(--radius-sm);
         font-size: 14px;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -173,7 +177,7 @@
 
       .btn-primary {
         background: none;
-        color: white;
+        color: #fff;
         box-shadow:
           0 1px 4px rgba(33, 150, 243, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -273,7 +277,6 @@
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
-        transition: all 0.3s ease;
       }
 
       .feature-card:hover {
@@ -330,7 +333,7 @@
         position: relative;
         box-shadow: var(--shadow-sm);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
-        transition: all 0.3s ease;
+
         display: flex;
         flex-direction: column;
         min-height: 600px;
@@ -432,7 +435,6 @@
         align-items: center;
         justify-content: center;
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
       }
 
       .modal-content {
@@ -476,13 +478,13 @@
 
       .form-control {
         width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.04);
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: var(--radius-sm);
         color: var(--text-primary);
         font-size: 14px;
-        transition: all 0.3s ease;
+
         backdrop-filter: blur(5px);
       }
 
@@ -514,8 +516,8 @@
       .success {
         background: rgba(76, 175, 80, 0.15);
         backdrop-filter: blur(10px);
-        color: white;
-        padding: var(--spacing-md);
+        color: #fff;
+        padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         margin-bottom: var(--spacing-md);
         border: 1px solid rgba(76, 175, 80, 0.3);
@@ -559,7 +561,6 @@
         margin-top: 2rem;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -574,7 +575,7 @@
 
       .comparison-table th,
       .comparison-table td {
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         text-align: left;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
@@ -652,13 +653,11 @@
 
         /* Starker Glassmorphismus Effekt */
         backdrop-filter: blur(30px) saturate(120%);
-        -webkit-backdrop-filter: blur(30px) saturate(120%);
 
         /* Klarer Text ohne Schatten */
         color: #ffffff;
         text-shadow: none;
         -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
 
         /* Stärkerer Shadow Stack für mehr Kontrast */
         box-shadow:
@@ -750,7 +749,7 @@
       /* Responsive Design */
       @media (max-width: 768px) {
         .header {
-          padding: var(--spacing-sm) var(--spacing-md);
+          padding: var(--spacing-2sm);
         }
 
         .nav {
@@ -787,7 +786,7 @@
 
         .modal-content {
           width: 95%;
-          padding: var(--spacing-md);
+          padding: var(--spacing-2sm);
         }
 
         /* Comparison table responsive */
@@ -797,7 +796,7 @@
 
         .comparison-table th,
         .comparison-table td {
-          padding: var(--spacing-sm);
+          padding: var(--spacing-2sm);
         }
 
         .feature-comparison h3 {
@@ -805,6 +804,8 @@
         }
       }
     </style>
+    <!-- Feature Flags for API v2 Migration -->
+    <script src="/feature-flags.js"></script>
   </head>
   <body>
     <header class="header">
@@ -1421,7 +1422,7 @@
       handleBadgeScroll();
 
       function showSignup(plan = null) {
-        document.getElementById('signupModal').style.display = 'flex';
+        document.querySelector('#signupModal').style.display = 'flex';
         if (plan) {
           // Plan vorauswählen wenn von Preistabelle kommend
           localStorage.setItem('selectedPlan', plan);
@@ -1429,7 +1430,7 @@
       }
 
       function hideSignup() {
-        document.getElementById('signupModal').style.display = 'none';
+        document.querySelector('#signupModal').style.display = 'none';
       }
 
       // Subdomain-Validierung
@@ -1440,43 +1441,46 @@
 
         // Nur Kleinbuchstaben, Zahlen und Bindestriche
         if (!/^[a-z0-9-]*$/.test(value)) {
-          document.getElementById('subdomainError').textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt';
+          document.querySelector('#subdomainError').textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt';
         } else {
-          document.getElementById('subdomainError').textContent = '';
+          document.querySelector('#subdomainError').textContent = '';
         }
       });
 
       // Form Submit
-      document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
         try {
-          const response = await fetch('/api/signup', {
+          const response = await fetch('/api/v2/signup', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              ...data,
-              admin_email: data.email,
-              admin_password: data.password,
-              admin_first_name: data.first_name,
-              admin_last_name: data.last_name,
+              companyName: data.company_name,
+              subdomain: data.subdomain,
+              email: data.company_email,
+              phone: data.phone,
+              adminEmail: data.email,
+              adminPassword: data.password,
+              adminFirstName: data.first_name,
+              adminLastName: data.last_name,
               selectedPlan: localStorage.getItem('selectedPlan') || 'premium',
             }),
           });
 
-          if (response.ok) {
-            const result = await response.json();
+          const result = await response.json();
+
+          if (result.success) {
             alert(`Erfolg! Sie können sich jetzt unter ${data.subdomain}.assixx.com anmelden.`);
             // Später: Direkte Weiterleitung mit Auto-Login
             window.location.href = `/login`;
           } else {
-            const error = await response.json();
-            alert(error.message || 'Fehler bei der Registrierung');
+            alert(result.error?.message || 'Fehler bei der Registrierung');
           }
         } catch (error) {
           alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');

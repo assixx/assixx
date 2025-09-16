@@ -2,14 +2,18 @@
  * Blackboard Controller
  * Handles blackboard-related operations
  */
+import { Response } from 'express';
+import { Pool } from 'mysql2/promise';
 
-import { Request, Response } from "express";
-import { Pool } from "mysql2/promise";
+import blackboardService from '../services/blackboard.service';
+import { AuthenticatedRequest } from '../types/request.types';
 
-import blackboardService from "../services/blackboard.service";
+// Constants
+const DB_CONNECTION_ERROR = 'Database connection not available';
+const UNKNOWN_ERROR = 'Unknown error';
 
 // Extended Request interface with tenant database
-interface TenantRequest extends Request {
+interface TenantRequest extends AuthenticatedRequest {
   tenantDb?: Pool;
 }
 
@@ -20,7 +24,7 @@ interface BlackboardCreateRequest extends TenantRequest {
     title: string;
     content: string;
     category?: string | null;
-    priority?: "low" | "medium" | "high" | "urgent";
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
     is_pinned?: boolean;
     color?: string | null;
     tags?: string | string[] | null;
@@ -36,7 +40,7 @@ interface BlackboardUpdateRequest extends TenantRequest {
     title?: string;
     content?: string;
     category?: string | null;
-    priority?: "low" | "medium" | "high" | "urgent";
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
     is_pinned?: boolean;
     color?: string | null;
     tags?: string | null;
@@ -56,7 +60,7 @@ interface BlackboardGetRequest extends TenantRequest {
 interface BlackboardQueryRequest extends TenantRequest {
   query: {
     category?: string;
-    priority?: "low" | "medium" | "high" | "urgent";
+    priority?: 'low' | 'medium' | 'high' | 'urgent';
     is_pinned?: string;
     search?: string;
     page?: string;
@@ -64,30 +68,32 @@ interface BlackboardQueryRequest extends TenantRequest {
   };
 }
 
+/**
+ *
+ */
 class BlackboardController {
   /**
    * Holt alle Blackboard Einträge
    * GET /api/blackboard
+   * @param req - The request object
+   * @param res - The response object
    */
   async getAll(req: BlackboardQueryRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
-        return;
-      }
-
       // Parse query parameters to appropriate types
       const filters = {
         category: req.query.category,
         priority: req.query.priority,
-        is_pinned: req.query.is_pinned
-          ? req.query.is_pinned === "true"
-          : undefined,
+        is_pinned: req.query.is_pinned !== undefined ? req.query.is_pinned === 'true' : undefined,
         search: req.query.search,
-        page: req.query.page ? parseInt(req.query.page) : undefined,
-        limit: req.query.limit ? parseInt(req.query.limit) : undefined,
+        page: req.query.page !== undefined ? Number.parseInt(req.query.page) : undefined,
+        limit: req.query.limit !== undefined ? Number.parseInt(req.query.limit) : undefined,
       };
 
+      if (!req.tenantDb) {
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
+        return;
+      }
       const result = await blackboardService.getAll(
         req.tenantDb,
         filters,
@@ -95,11 +101,11 @@ class BlackboardController {
         req.user.id,
       );
       res.json(result);
-    } catch (error) {
-      console.error("Error in BlackboardController.getAll:", error);
+    } catch (error: unknown) {
+      console.error('Error in BlackboardController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -107,36 +113,33 @@ class BlackboardController {
   /**
    * Holt einen Blackboard Eintrag per ID
    * GET /api/blackboard/:id
+   * @param req - The request object
+   * @param res - The response object
    */
   async getById(req: BlackboardGetRequest, res: Response): Promise<void> {
     try {
+      const id = Number.parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: 'Invalid ID' });
+        return;
+      }
+
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
-
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
-        return;
-      }
-
       const result = await blackboardService.getById(
         req.tenantDb,
         id,
         req.user.tenant_id,
         req.user.id,
       );
-      if (!result) {
-        res.status(404).json({ error: "Nicht gefunden" });
-        return;
-      }
       res.json(result);
-    } catch (error) {
-      console.error("Error in BlackboardController.getById:", error);
+    } catch (error: unknown) {
+      console.error('Error in BlackboardController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -144,41 +147,41 @@ class BlackboardController {
   /**
    * Erstellt einen neuen Blackboard Eintrag
    * POST /api/blackboard
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: BlackboardCreateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
-        return;
-      }
-
       const createData = {
         ...req.body,
         tenant_id: req.user.tenant_id,
         created_by: req.user.id,
         author_id: req.user.id,
-        org_level: (req.body.org_level ?? "company") as
-          | "company"
-          | "department"
-          | "team",
+        org_level: (req.body.org_level ?? 'company') as 'company' | 'department' | 'team',
         org_id: req.body.org_id ?? null,
-        expires_at: req.body.expires_at
-          ? new Date(req.body.expires_at)
+        expires_at:
+          req.body.expires_at !== null && req.body.expires_at !== undefined ?
+            new Date(req.body.expires_at)
           : undefined,
-        tags: req.body.tags
-          ? typeof req.body.tags === "string"
-            ? req.body.tags.split(",")
+        tags:
+          req.body.tags !== null && req.body.tags !== undefined ?
+            typeof req.body.tags === 'string' ?
+              req.body.tags.split(',')
             : req.body.tags
           : undefined,
         color: req.body.color === null ? undefined : req.body.color,
       };
+      if (!req.tenantDb) {
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
+        return;
+      }
       const result = await blackboardService.create(req.tenantDb, createData);
       res.status(201).json(result);
-    } catch (error) {
-      console.error("Error in BlackboardController.create:", error);
+    } catch (error: unknown) {
+      console.error('Error in BlackboardController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Erstellen',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -186,30 +189,32 @@ class BlackboardController {
   /**
    * Aktualisiert einen Blackboard Eintrag
    * PUT /api/blackboard/:id
+   * @param req - The request object
+   * @param res - The response object
    */
   async update(req: BlackboardUpdateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
-        return;
-      }
-
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+      const id = Number.parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       const updateData = {
         ...req.body,
-        tags: req.body.tags
-          ? typeof req.body.tags === "string"
-            ? req.body.tags.split(",")
+        tags:
+          req.body.tags !== null && req.body.tags !== undefined ?
+            typeof req.body.tags === 'string' ?
+              req.body.tags.split(',')
             : req.body.tags
           : undefined,
         color: req.body.color === null ? undefined : req.body.color,
         category: req.body.category === null ? undefined : req.body.category,
       };
+      if (!req.tenantDb) {
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
+        return;
+      }
       const result = await blackboardService.update(
         req.tenantDb,
         id,
@@ -217,11 +222,11 @@ class BlackboardController {
         req.user.tenant_id,
       );
       res.json(result);
-    } catch (error) {
-      console.error("Error in BlackboardController.update:", error);
+    } catch (error: unknown) {
+      console.error('Error in BlackboardController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }
@@ -229,27 +234,28 @@ class BlackboardController {
   /**
    * Löscht einen Blackboard Eintrag
    * DELETE /api/blackboard/:id
+   * @param req - The request object
+   * @param res - The response object
    */
   async delete(req: BlackboardGetRequest, res: Response): Promise<void> {
     try {
+      const id = Number.parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: 'Invalid ID' });
+        return;
+      }
+
       if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
-
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
-        return;
-      }
-
       await blackboardService.delete(req.tenantDb, id, req.user.tenant_id);
       res.status(204).send();
-    } catch (error) {
-      console.error("Error in BlackboardController.delete:", error);
+    } catch (error: unknown) {
+      console.error('Error in BlackboardController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Löschen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Löschen',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
   }

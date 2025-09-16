@@ -1,0 +1,49 @@
+### Health Check
+GET http://localhost:3000/health
+
+### Get All Users
+GET http://localhost:3000/api/v2/users
+
+### Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### Get Users with Auth Token
+# @name login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+###
+# @name getUsersWithAuth
+GET http://localhost:3000/api/v2/users
+Authorization: Bearer {{login.response.body.token}}
+
+### Create New User
+POST http://localhost:3000/api/v2/users
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.token}}
+
+{
+  "username": "testuser",
+  "email": "test@example.com",
+  "password": "Test123!",
+  "role": "employee"
+}
+
+### Get Shifts
+GET http://localhost:3000/api/v2/shifts
+Authorization: Bearer {{login.response.body.token}}
+
+### Get Calendar Events
+GET http://localhost:3000/api/v2/calendar
+Authorization: Bearer {{login.response.body.token}}

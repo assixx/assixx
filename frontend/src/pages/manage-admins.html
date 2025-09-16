@@ -17,7 +17,7 @@
       })();
     </script>
 
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
@@ -46,7 +46,7 @@
       /* Container Styles */
       .container {
         padding: 24px;
-        margin-top: -37px !important; /* Align first container with sidebar user-info-card */
+        margin-top: -25px !important; /* Align first container with sidebar user-info-card */
       }
 
       /* Table Styles */
@@ -65,13 +65,6 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
 
-      .admin-table td {
-        padding-top: 15px;
-        padding-bottom: 15px;
-        color: var(--text-secondary);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
       .admin-table tr:hover {
         background: rgba(255, 255, 255, 0.02);
       }
@@ -82,7 +75,7 @@
         margin: 0 4px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 6px;
+        border-radius: var(--radius-md);
         color: var(--text-secondary);
         cursor: pointer;
         font-size: 12px;
@@ -234,7 +227,7 @@
 
       .form-control {
         width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -278,9 +271,6 @@
       .dropdown-display:hover {
         background: rgba(255, 255, 255, 0.05);
         border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .dropdown-display svg {
       }
 
       .dropdown-display.active svg {
@@ -346,7 +336,7 @@
 
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #ffffff;
         box-shadow:
           0 1px 4px rgba(33, 150, 243, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -385,12 +375,14 @@
         background: rgba(76, 175, 80, 0.2);
         color: #4caf50;
         border: 1px solid rgba(76, 175, 80, 0.3);
+        text-align: center;
       }
 
       .status-badge.inactive {
         background: rgba(255, 152, 0, 0.2);
         color: #ff9800;
         border: 1px solid rgba(255, 152, 0, 0.3);
+        text-align: center;
       }
 
       /* Checkbox Styling */
@@ -478,7 +470,7 @@
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         position: relative;
       }
 
@@ -494,7 +486,7 @@
         box-shadow: 0 0 20px rgba(33, 150, 243, 0.15);
       }
 
-      .radio-label input[type="radio"] {
+      .radio-label input[type='radio'] {
         appearance: none;
         width: 20px;
         height: 20px;
@@ -503,16 +495,16 @@
         margin-right: 12px;
         position: relative;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         flex-shrink: 0;
       }
 
-      .radio-label input[type="radio"]:checked {
+      .radio-label input[type='radio']:checked {
         border-color: var(--primary-color);
         background: rgba(33, 150, 243, 0.1);
       }
 
-      .radio-label input[type="radio"]:checked::after {
+      .radio-label input[type='radio']:checked::after {
         content: '';
         position: absolute;
         top: 50%;
@@ -557,7 +549,6 @@
         align-items: center;
         margin-bottom: 8px;
         cursor: pointer;
-        transition: all 0.3s ease;
       }
 
       .checkbox-label:last-child {
@@ -568,7 +559,7 @@
         color: rgba(255, 255, 255, 0.95);
       }
 
-      .checkbox-label input[type="checkbox"] {
+      .checkbox-label input[type='checkbox'] {
         appearance: none;
         width: 18px;
         height: 18px;
@@ -577,36 +568,36 @@
         margin-right: 10px;
         position: relative;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         flex-shrink: 0;
       }
 
-      .checkbox-label input[type="checkbox"]:hover {
+      .checkbox-label input[type='checkbox']:hover {
         border-color: rgba(33, 150, 243, 0.5);
       }
 
-      .checkbox-label input[type="checkbox"]:checked {
+      .checkbox-label input[type='checkbox']:checked {
         background: var(--primary-color);
         border-color: var(--primary-color);
       }
 
-      .checkbox-label input[type="checkbox"]:checked::after {
+      .checkbox-label input[type='checkbox']:checked::after {
         content: '✓';
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        color: white;
+        color: #ffffff;
         font-size: 12px;
         font-weight: bold;
       }
 
-      .checkbox-label input[type="checkbox"]:disabled {
+      .checkbox-label input[type='checkbox']:disabled {
         opacity: 0.6;
         cursor: not-allowed;
       }
 
-      .checkbox-label input[type="checkbox"]:disabled ~ .checkbox-text {
+      .checkbox-label input[type='checkbox']:disabled ~ .checkbox-text {
         opacity: 0.6;
         cursor: not-allowed;
       }
@@ -668,9 +659,10 @@
             <label class="form-label">E-Mail *</label>
             <input type="email" id="adminEmail" class="form-control" required />
           </div>
-          <div class="form-group">
+          <div class="form-group" id="emailConfirmGroup">
             <label class="form-label">E-Mail wiederholen *</label>
             <input type="email" id="adminEmailConfirm" class="form-control" required />
+            <small class="text-danger" id="email-error" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Personalnummer *</label>
@@ -694,6 +686,7 @@
           <div class="form-group" id="passwordConfirmGroup">
             <label class="form-label">Passwort wiederholen *</label>
             <input type="password" id="adminPasswordConfirm" class="form-control" />
+            <small class="text-danger" id="password-error" style="display: none">Passwörter stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Position *</label>
@@ -958,6 +951,14 @@
     </div>
 
     <!-- Scripts -->
+    <!-- Enable v2 API for root users -->
+    <script src="/feature-flags.js"></script>
+    <script>
+      window.FEATURE_FLAGS = window.FEATURE_FLAGS || {};
+      window.FEATURE_FLAGS.USE_API_V2_AUTH = true;
+      window.FEATURE_FLAGS.USE_API_V2_USERS = true;
+      window.FEATURE_FLAGS.USE_API_V2_ROOT = true;
+    </script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/manage-admins.ts"></script>
 
@@ -972,8 +973,8 @@
     <script>
       // Toggle Dropdown
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(type + 'Display');
+        const dropdown = document.querySelector(type + 'Dropdown');
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -989,10 +990,10 @@
 
       // Select Option
       function selectOption(type, value, text) {
-        document.getElementById(type + 'Display').querySelector('span').textContent = text;
-        document.getElementById(type + 'Value').value = value;
-        document.getElementById(type + 'Display').classList.remove('active');
-        document.getElementById(type + 'Dropdown').classList.remove('active');
+        document.querySelector(type + 'Display').querySelector('span').textContent = text;
+        document.querySelector(type + 'Value').value = value;
+        document.querySelector(type + 'Display').classList.remove('active');
+        document.querySelector(type + 'Dropdown').classList.remove('active');
       }
 
       // Click outside to close
@@ -1005,7 +1006,7 @@
 
       // Permissions Modal Functions
       function closePermissionsModal() {
-        document.getElementById('permissionsModal').classList.remove('active');
+        document.querySelector('#permissionsModal').classList.remove('active');
       }
 
       function switchPermTab(tab) {
@@ -1024,8 +1025,8 @@
         }
 
         // Update tab content
-        document.getElementById('departmentsTab').style.display = tab === 'departments' ? 'block' : 'none';
-        document.getElementById('groupsTab').style.display = tab === 'groups' ? 'block' : 'none';
+        document.querySelector('#departmentsTab').style.display = tab === 'departments' ? 'block' : 'none';
+        document.querySelector('#groupsTab').style.display = tab === 'groups' ? 'block' : 'none';
       }
 
       function selectAllDepartments() {

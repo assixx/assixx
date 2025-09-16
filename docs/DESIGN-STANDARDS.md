@@ -10,12 +10,12 @@ Dieses Dokument definiert die verbindlichen Design-Standards für das Assixx-Pro
 
 ## 📋 Inhaltsverzeichnis
 
-1. [Grundprinzipien](#grundprinzipien)
-2. [Farbpalette & Variablen](#farbpalette--variablen)
-3. [Glassmorphismus Design](#glassmorphismus-design)
-4. [Komponenten-Standards](#komponenten-standards)
-5. [Animationen & Übergänge](#animationen--übergänge)
-6. [Responsive Design](#responsive-design)
+1. [Grundprinzipien](#-grundprinzipien)
+2. [Farbpalette & Variablen](#-farbpalette--variablen)
+3. [Glassmorphismus Design](#-glassmorphismus-design)
+4. [Komponenten-Standards](#-komponenten-standards)
+5. [Animationen & Übergänge](#animationen-und-uebergange)
+6. [Responsive Design](#-responsive-design)
 7. [Best Practices](#best-practices)
 
 ---
@@ -163,7 +163,6 @@ body::after {
 .card {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
@@ -254,7 +253,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   height: 60px;
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
@@ -272,13 +270,12 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 .form-control,
 .form-input
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-2sm);
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
   border: 1px solid hsla(0,0%,100%,.1);
   border-radius: var(--radius-sm);
   color: #fff;
-  transition: all 0.3s ease;
 
 
 .form-control:focus,
@@ -367,14 +364,14 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-md);
+  padding: var(--spacing-2sm);
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(10px);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-sm);
   color: #fff;
   cursor: pointer;
-  transition: all 0.3s ease;
+
 }
 
 .dropdown-display:hover {
@@ -393,7 +390,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   right: 0;
   background: rgba(18, 18, 18, 0.8);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-sm);
   box-shadow:
@@ -404,7 +400,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   opacity: 0;
   visibility: hidden;
   transform: translateY(-10px);
-  transition: all 0.3s ease;
+
   z-index: 1001;
 }
 
@@ -418,7 +414,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: 10px 12px;
   color: var(--text-primary);
   cursor: pointer;
-  transition: all 0.2s ease;
+
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 ```
@@ -433,7 +429,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 /* First-Level: KEIN background, nur Shadow-Effekt */
 .btn-primary-first {
   background: none !important; /* Explizit kein Background */
-  color: white;
+  color: #fff;
   position: relative;
   overflow: hidden;
   padding: 10px 24px;
@@ -441,7 +437,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
+
   border: none;
   display: inline-flex;
   align-items: center;
@@ -456,7 +452,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 /* Second-Level Button (.btn-primary - mit Gradient) */
 .btn-primary {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  color: white;
+  color: #fff;
   position: relative;
   overflow: hidden;
   padding: 10px 24px;
@@ -464,7 +460,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
+
   border: none;
   display: inline-flex;
   align-items: center;
@@ -479,7 +475,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 /* Gemeinsamer Hover-Effekt */
 .btn-primary::before,
 .btn-primary-first::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: -100%;
@@ -535,7 +531,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
     font-weight: 500;
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.3s ease;
+
     border: none;
     display: inline-flex;
     align-items: center;
@@ -562,7 +558,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   border-radius: var(--radius-sm);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+
 }
 
 .btn-secondary:hover {
@@ -583,7 +579,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: 0.375rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 500;
-  transition: all 0.3s ease;
+
   backdrop-filter: blur(10px);
   cursor: pointer;
 }
@@ -604,7 +600,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   padding: 0.375rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 500;
-  transition: all 0.3s ease;
+
   backdrop-filter: blur(10px);
   cursor: pointer;
 }
@@ -624,11 +620,11 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 .btn-danger {
   background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
   border: 1px solid #bd2130;
-  color: white;
+  color: #fff;
   padding: 0.375rem 0.75rem;
   border-radius: var(--radius-sm);
   font-weight: 500;
-  transition: all 0.3s ease;
+
   cursor: pointer;
 }
 
@@ -674,9 +670,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   top: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -684,7 +678,6 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 .modal-content {
   backdrop-filter: blur(20px) saturate(580%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
   box-shadow:
@@ -725,7 +718,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: all 0.3s ease;
+
 }
 
 .modal-close:hover {
@@ -773,13 +766,13 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 #logout-btn {
   padding: 0.25rem 0.6rem;
   background: linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(185, 28, 28, 0.8));
-  color: white;
+  color: #fff;
   border: none;
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s ease;
+
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -797,14 +790,14 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 .compact-card {
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .compact-card::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   left: 0;
@@ -828,7 +821,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .compact-card .card-title::before {
-  content: "";
+  content: '';
   width: 4px;
   height: 20px;
   background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
@@ -843,7 +836,7 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 ### Schriftfamilie
 
 ```css
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Ubuntu", Roboto, sans-serif;
+font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sans-serif;
 ```
 
 ### Schriftgrößen
@@ -880,6 +873,8 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Ubuntu", Roboto, sa
 ```
 
 ---
+
+<a id="animationen-und-uebergange"></a>
 
 ## 🎬 Animationen & Übergänge
 
@@ -972,10 +967,10 @@ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Ubuntu", Roboto, sa
 
 ```css
 /* Standard Transition */
-transition: all 0.3s ease;
+
 
 /* Schnelle Interaktionen */
-transition: all 0.2s ease;
+
 
 /* Langsame, smooth Animationen */
 transition: all 0.6s ease-out;
@@ -989,8 +984,8 @@ transition: all 0.6s ease-out;
 
 ```javascript
 function showSuccessMessage() {
-  const overlay = document.createElement("div");
-  overlay.className = "success-overlay";
+  const overlay = document.createElement('div');
+  overlay.className = 'success-overlay';
   overlay.innerHTML = `
     <div class="success-message">
       <div class="success-icon">
@@ -1157,12 +1152,12 @@ function showSuccessMessage() {
   align-items: center;
   font-size: 11px;
   padding: 3px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   text-transform: uppercase;
   letter-spacing: 0.8px;
   font-weight: 700;
   width: fit-content;
-  transition: all 0.2s ease;
+
 }
 
 .badge-success {
@@ -1250,7 +1245,7 @@ function showSuccessMessage() {
 ```css
 .unread-badge {
   background: linear-gradient(135deg, #f44336, #e53935);
-  color: white;
+  color: #fff;
   border-radius: 10px;
   padding: 2px 6px;
   font-size: 0.75rem;
@@ -1271,7 +1266,7 @@ function showSuccessMessage() {
   color: var(--text-primary);
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+
   position: relative;
   overflow: hidden;
 }
@@ -1365,24 +1360,24 @@ function showSuccessMessage() {
 ```javascript
 // Modal anzeigen
 function showModal(modalId) {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector(modalId);
   if (modal) {
-    modal.style.display = "flex";
+    modal.style.display = 'flex';
   }
 }
 
 // Modal verstecken
 function hideModal(modalId) {
-  const modal = document.getElementById(modalId);
+  const modal = document.querySelector(modalId);
   if (modal) {
-    modal.style.display = "none";
+    modal.style.display = 'none';
   }
 }
 
 // Click-Outside-to-Close
-window.addEventListener("click", function (event) {
-  if (event.target.classList.contains("modal")) {
-    event.target.style.display = "none";
+window.addEventListener('click', function (event) {
+  if (event.target.classList.contains('modal')) {
+    event.target.style.display = 'none';
   }
 });
 ```
@@ -1392,34 +1387,34 @@ window.addEventListener("click", function (event) {
 ```javascript
 // Toggle Dropdown
 function toggleDropdown(type) {
-  const display = document.getElementById(type + "Display");
-  const dropdown = document.getElementById(type + "Dropdown");
+  const display = document.querySelector(type + 'Display');
+  const dropdown = document.querySelector(type + 'Dropdown');
 
   // Alle anderen schließen
-  document.querySelectorAll(".dropdown-display").forEach((d) => {
-    if (d !== display) d.classList.remove("active");
+  document.querySelectorAll('.dropdown-display').forEach((d) => {
+    if (d !== display) d.classList.remove('active');
   });
-  document.querySelectorAll(".dropdown-options").forEach((d) => {
-    if (d !== dropdown) d.classList.remove("active");
+  document.querySelectorAll('.dropdown-options').forEach((d) => {
+    if (d !== dropdown) d.classList.remove('active');
   });
 
-  display.classList.toggle("active");
-  dropdown.classList.toggle("active");
+  display.classList.toggle('active');
+  dropdown.classList.toggle('active');
 }
 
 // Option auswählen
 function selectOption(value, text) {
-  document.getElementById("myDropdownDisplay").querySelector("span").textContent = text;
-  document.getElementById("myDropdownValue").value = value;
-  document.getElementById("myDropdownDisplay").classList.remove("active");
-  document.getElementById("myDropdownDropdown").classList.remove("active");
+  document.querySelector('myDropdownDisplay').querySelector('span').textContent = text;
+  document.querySelector('myDropdownValue').value = value;
+  document.querySelector('myDropdownDisplay').classList.remove('active');
+  document.querySelector('myDropdownDropdown').classList.remove('active');
 }
 
 // Click-Outside-to-Close
-document.addEventListener("click", function (e) {
-  if (!e.target.closest(".custom-dropdown")) {
-    document.querySelectorAll(".dropdown-display").forEach((d) => d.classList.remove("active"));
-    document.querySelectorAll(".dropdown-options").forEach((d) => d.classList.remove("active"));
+document.addEventListener('click', function (e) {
+  if (!e.target.closest('.custom-dropdown')) {
+    document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
   }
 });
 ```
@@ -1428,7 +1423,7 @@ document.addEventListener("click", function (e) {
 
 ## 💬 Chat System Design Standards
 
-### WebSocket-Nachrichten Format:
+### WebSocket-Nachrichten Format
 
 ```javascript
 // Standard Message Format
@@ -1455,7 +1450,7 @@ document.addEventListener("click", function (e) {
 }
 ```
 
-### Chat UI Standards:
+### Chat UI Standards
 
 ```css
 /* Chat Container - Glassmorphismus */
@@ -1478,20 +1473,20 @@ document.addEventListener("click", function (e) {
 /* Unread Badge */
 .unread-badge {
   background: linear-gradient(135deg, #f44336, #e53935);
-  color: white;
+  color: #fff;
   border-radius: 10px;
   padding: 2px 6px;
   font-size: 0.75rem;
 }
 ```
 
-### Chat-Berechtigungen:
+### Chat-Berechtigungen
 
 - **Admins**: Können mit allen chatten (Employees und andere Admins)
 - **Employees**: Können nur mit anderen Employees und Admins chatten
 - **Tenant-Isolation**: Chats nur innerhalb des gleichen Tenants
 
-### Best Practices:
+### Best Practices
 
 1. **Buffer zu Base64**: Immer `Buffer.from(data).toString('base64')` für Attachments
 2. **Undefined-Checks**: Immer prüfen ob Conversation existiert bevor Zugriff
@@ -1578,7 +1573,6 @@ document.addEventListener("click", function (e) {
 .glass-card {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-md);
   box-shadow:
@@ -1586,7 +1580,7 @@ document.addEventListener("click", function (e) {
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   padding: var(--spacing-lg);
   animation: fadeInUp 0.6s ease-out;
-  transition: all 0.3s ease;
+
 }
 
 .glass-card:hover {
@@ -1616,7 +1610,7 @@ document.addEventListener("click", function (e) {
 }
 
 .card-title::before {
-  content: "";
+  content: '';
   width: 4px;
   height: 20px;
   background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
@@ -1644,7 +1638,6 @@ document.addEventListener("click", function (e) {
 .glass-form {
   background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-md);
   padding: var(--spacing-xl);
@@ -1662,7 +1655,7 @@ document.addEventListener("click", function (e) {
 
 Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemeinen CSS-Selektoren zu verwenden, da diese die Standard-Styles überschreiben können.
 
-#### ❌ FALSCH - Zu globale Selektoren:
+#### ❌ FALSCH - Zu globale Selektoren
 
 ```css
 /* NIEMALS so allgemein definieren! */
@@ -1677,7 +1670,7 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 }
 ```
 
-#### ✅ RICHTIG - Spezifische Selektoren:
+#### ✅ RICHTIG - Spezifische Selektoren
 
 ```css
 /* Immer mit spezifischem Kontext */
@@ -1691,7 +1684,7 @@ Bei der Entwicklung neuer Seiten ist es **kritisch wichtig**, keine zu allgemein
 }
 ```
 
-### Pflicht-Includes für konsistente Header:
+### Pflicht-Includes für konsistente Header
 
 Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 
@@ -1702,7 +1695,7 @@ Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 <link rel="stylesheet" href="/styles/user-info-update.css" />
 ```
 
-### Debugging-Tipps:
+### Debugging-Tipps
 
 1. **Vergleiche mit funktionierenden Seiten** (z.B. root-dashboard.html)
 2. **Prüfe alle CSS-Includes** - fehlende Dateien sind oft die Ursache
@@ -1712,7 +1705,7 @@ Jede Seite mit Standard-Header MUSS folgende CSS-Dateien einbinden:
 Für alle modals gilt bei:
 backdrop-filter: blur(20px) saturate(500%);
 
-## background: #1a1a1a4a;
+## background: #1a1a1a4a
 
 ## 🎯 Checkliste für neue Komponenten
 

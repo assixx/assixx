@@ -123,13 +123,13 @@ Authorization: Bearer <jwt-token>
 ### Response Helpers
 
 ```typescript
-import { successResponse, errorResponse, paginatedResponse } from "@/utils/apiResponse";
+import { errorResponse, paginatedResponse, successResponse } from '@/utils/apiResponse';
 
 // Success
-res.json(successResponse(data, "Optional message"));
+res.json(successResponse(data, 'Optional message'));
 
 // Error
-res.status(400).json(errorResponse("ERROR_CODE", "Message", details));
+res.status(400).json(errorResponse('ERROR_CODE', 'Message', details));
 
 // Paginated
 res.json(paginatedResponse(data, paginationMeta));
@@ -138,7 +138,7 @@ res.json(paginatedResponse(data, paginationMeta));
 ### Field Mapping
 
 ```typescript
-import { dbToApi, apiToDb } from "@/utils/fieldMapping";
+import { apiToDb, dbToApi } from '@/utils/fieldMapping';
 
 // Database → API (outgoing)
 const apiData = dbToApi(dbResult);

@@ -1,6 +1,5 @@
 // TypeScript Utility Functions for Type Safety
-
-import { User, DatabaseUser } from "../types/models";
+import { DatabaseUser, User } from '../types/models';
 
 /**
  * Converts database user format to application user format
@@ -12,7 +11,7 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
     email: dbUser.email,
     firstName: dbUser.first_name,
     lastName: dbUser.last_name,
-    role: dbUser.role as User["role"],
+    role: dbUser.role,
     tenant_id: dbUser.tenant_id,
     departmentId: dbUser.department_id,
     isActive: dbUser.is_active,
@@ -32,8 +31,8 @@ export function mapDatabaseUserToUser(dbUser: DatabaseUser): User {
 /**
  * Type guard to check if a value is a valid user role
  */
-export function isValidUserRole(role: string): role is User["role"] {
-  return ["admin", "employee", "root"].includes(role);
+export function isValidUserRole(role: string): role is User['role'] {
+  return ['admin', 'employee', 'root'].includes(role);
 }
 
 /**
@@ -54,11 +53,16 @@ export function createApiResponse<T>(
   success: boolean,
   data?: T,
   error?: string,
-) {
+): {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+} {
   return {
     success,
     ...(data !== undefined && { data }),
-    ...(error && { error, message: error }),
+    ...(error != null && error !== '' && { error, message: error }),
   };
 }
 
@@ -66,7 +70,7 @@ export function createApiResponse<T>(
  * Convert snake_case string to camelCase
  */
 export function snakeToCamelString(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  return str.replace(/_([a-z])/g, (_, letter: string) => letter.toUpperCase());
 }
 
 /**
@@ -79,53 +83,57 @@ export function camelToSnakeString(str: string): string {
 /**
  * Convert object keys from snake_case to camelCase
  */
-export function snakeToCamel<T = unknown>(obj: unknown): T {
+export function snakeToCamel(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
-    return obj as T;
+    return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => snakeToCamel(item)) as T;
+    return obj.map((item) => snakeToCamel(item));
   }
 
-  if (typeof obj !== "object" || obj instanceof Date) {
-    return obj as T;
+  if (typeof obj !== 'object' || obj instanceof Date) {
+    return obj;
   }
 
   const converted: Record<string, unknown> = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const camelKey = snakeToCamelString(key);
+      // ESLint disable needed: camelKey is derived from object's own properties (checked with hasOwnProperty)
+      // eslint-disable-next-line security/detect-object-injection
       converted[camelKey] = snakeToCamel((obj as Record<string, unknown>)[key]);
     }
   }
-  return converted as T;
+  return converted;
 }
 
 /**
  * Convert object keys from camelCase to snake_case
  */
-export function camelToSnake<T = unknown>(obj: unknown): T {
+export function camelToSnake(obj: unknown): unknown {
   if (obj === null || obj === undefined) {
-    return obj as T;
+    return obj;
   }
 
   if (Array.isArray(obj)) {
-    return obj.map((item) => camelToSnake(item)) as T;
+    return obj.map((item) => camelToSnake(item));
   }
 
-  if (typeof obj !== "object" || obj instanceof Date) {
-    return obj as T;
+  if (typeof obj !== 'object' || obj instanceof Date) {
+    return obj;
   }
 
   const converted: Record<string, unknown> = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
       const snakeKey = camelToSnakeString(key);
+      // ESLint disable needed: snakeKey is derived from object's own properties (checked with hasOwnProperty)
+      // eslint-disable-next-line security/detect-object-injection
       converted[snakeKey] = camelToSnake((obj as Record<string, unknown>)[key]);
     }
   }
-  return converted as T;
+  return converted;
 }
 
 /**
@@ -133,16 +141,16 @@ export function camelToSnake<T = unknown>(obj: unknown): T {
  * MySQL returns 0/1 for boolean fields, this converts them properly
  */
 export function normalizeMySQLBoolean(value: unknown): boolean {
-  if (typeof value === "boolean") {
+  if (typeof value === 'boolean') {
     return value;
   }
 
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     return value === 1;
   }
 
-  if (typeof value === "string") {
-    return value === "1" || value.toLowerCase() === "true";
+  if (typeof value === 'string') {
+    return value === '1' || value.toLowerCase() === 'true';
   }
 
   return false;

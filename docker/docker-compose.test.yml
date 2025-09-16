@@ -19,21 +19,11 @@ services:
       - assixx-network
     healthcheck:
       test:
-        [
-          "CMD",
-          "mysqladmin",
-          "ping",
-          "-h",
-          "localhost",
-          "-u",
-          "root",
-          "-pStrongP@ssw0rd!123",
-          "--silent",
-        ]
-      interval: 5s
-      timeout: 20s
+        ["CMD-SHELL", "mysql -h 127.0.0.1 -u root -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 30s
       retries: 30
-      start_period: 90s
+      start_period: 180s
 
   # Assixx Backend (Development Mode with Live Reload)
   backend:

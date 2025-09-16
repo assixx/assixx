@@ -4,12 +4,13 @@ services:
     image: mysql:8.0
     container_name: assixx-mysql
     restart: unless-stopped
-    command: --sql-mode=""
+    command: --sql-mode="" --default-time-zone='+02:00'
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-main}
       MYSQL_USER: ${MYSQL_USER:-assixx_user}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+      TZ: Europe/Berlin
     ports:
       - "3307:3306"
     volumes:
@@ -18,9 +19,21 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      timeout: 10s
-      retries: 5
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}",
+        ]
+      interval: 10s
+      timeout: 20s
+      retries: 10
+      start_period: 60s
 
   # Assixx Backend (Development Mode with Live Reload)
   backend:
@@ -46,6 +59,8 @@ services:
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
       DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
       DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
+      SCARF_ANALYTICS: false
+      DO_NOT_TRACK: 1
     ports:
       - "3000:3000"
     volumes:
@@ -89,7 +104,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    # Development command mit auto-install
+    # Development command mit auto-install - run as root but create files with user permissions
     command: sh -c "pnpm install --frozen-lockfile && pnpm run dev"
 
   # Optional: Redis für Sessions/Cache
@@ -169,8 +184,7 @@ services:
       timeout: 10s
       retries: 3
     # Worker command - use tsx directly
-    command:
-      ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
+    command: ["pnpm", "exec", "tsx", "/app/backend/src/workers/deletionWorker.ts"]
 
   # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
   phpmyadmin:
@@ -218,3 +232,4 @@ volumes:
   redis_data:
     name: assixx_redis_data
     external: true
+  pnpm-store:

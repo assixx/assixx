@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Registrieren - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap" rel="stylesheet" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -15,7 +15,18 @@
       /* Emoji Font Support */
       .country-option,
       #selectedFlag {
-        font-family: 'Ubuntu', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+        font-family:
+          'Outfit',
+          'Noto Color Emoji',
+          'Apple Color Emoji',
+          'Segoe UI Emoji',
+          'Segoe UI Symbol',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          Arial,
+          sans-serif;
       }
 
       body {
@@ -24,7 +35,7 @@
         align-items: center;
         justify-content: center;
         padding: 10px;
-        background: #121212;
+        background: #000000;
         position: relative;
         overflow-x: hidden;
       }
@@ -36,7 +47,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
+        /*background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);*/
         opacity: 0.9;
         z-index: -1;
       }
@@ -56,7 +67,6 @@
       .signup-container {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -280,7 +290,7 @@
 
       .country-option:hover {
         background: rgba(33, 150, 243, 0.2);
-        color: white;
+        color: #fff;
         padding-left: 16px;
       }
 
@@ -383,7 +393,7 @@
 
       .plan-option:hover {
         background: rgba(33, 150, 243, 0.2);
-        color: white;
+        color: #fff;
         padding-left: 20px;
       }
 
@@ -398,7 +408,7 @@
       }
 
       .plan-option:hover .plan-price {
-        color: white;
+        color: #fff;
       }
 
       .error-message {
@@ -448,7 +458,7 @@
       .submit-button {
         padding: 10px 24px;
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         border: none;
         border-radius: var(--radius-sm);
         font-size: 15px;
@@ -660,6 +670,8 @@
         }
       }
     </style>
+    <!-- Feature Flags for API v2 Migration -->
+    <script src="/feature-flags.js"></script>
   </head>
   <body>
     <!-- Back to Homepage Button -->
@@ -895,9 +907,9 @@
       }
 
       /* Pulse Animation für Logo */
-      .signup-logo {
-        /* animation: subtle-pulse 3s ease-in-out infinite; */
-      }
+      /* .signup-logo {
+        animation: subtle-pulse 3s ease-in-out infinite;
+      } */
 
       @keyframes subtle-pulse {
         0%,
@@ -931,7 +943,6 @@
         padding: 12px 20px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         color: var(--text-secondary);
@@ -969,16 +980,17 @@
     <script>
       // Custom Dropdown Functions
       let currentCountryCode = '+49';
-      let currentCountryFlag = '🇩🇪';
+      // currentCountryFlag is updated when country is selected
       let currentPlan = 'enterprise';
 
+      // Make functions global for onclick handlers
       // Country Dropdown
-      function toggleCountryDropdown() {
-        const dropdown = document.getElementById('countryDropdown');
+      window.toggleCountryDropdown = function () {
+        const dropdown = document.querySelector('#countryDropdown');
         const display = document.querySelector('.country-display');
 
         // Close plan dropdown if open
-        document.getElementById('planDropdown').classList.remove('active');
+        document.querySelector('#planDropdown').classList.remove('active');
         document.querySelector('.plan-display').classList.remove('active');
 
         dropdown.classList.toggle('active');
@@ -987,19 +999,19 @@
         if (dropdown.classList.contains('active')) {
           document.addEventListener('click', closeDropdownOutside);
         }
-      }
+      };
 
       function closeDropdownOutside(e) {
         const countrySelect = document.querySelector('.custom-country-select');
         const planSelect = document.querySelector('.custom-plan-select');
 
         if (!countrySelect.contains(e.target)) {
-          document.getElementById('countryDropdown').classList.remove('active');
+          document.querySelector('#countryDropdown').classList.remove('active');
           document.querySelector('.country-display').classList.remove('active');
         }
 
         if (!planSelect.contains(e.target)) {
-          document.getElementById('planDropdown').classList.remove('active');
+          document.querySelector('#planDropdown').classList.remove('active');
           document.querySelector('.plan-display').classList.remove('active');
         }
 
@@ -1008,24 +1020,24 @@
         }
       }
 
-      function selectCountry(flag, code) {
-        document.getElementById('selectedFlag').textContent = flag;
-        document.getElementById('selectedCode').textContent = code;
-        document.getElementById('countryCode').value = code;
+      window.selectCountry = function (flag, code) {
+        document.querySelector('#selectedFlag').textContent = flag;
+        document.querySelector('#selectedCode').textContent = code;
+        document.querySelector('#countryCode').value = code;
         currentCountryCode = code;
-        currentCountryFlag = flag;
+        // Update flag (used internally)
 
-        document.getElementById('countryDropdown').classList.remove('active');
+        document.querySelector('#countryDropdown').classList.remove('active');
         document.querySelector('.country-display').classList.remove('active');
-      }
+      };
 
       // Plan Dropdown
-      function togglePlanDropdown() {
-        const dropdown = document.getElementById('planDropdown');
+      window.togglePlanDropdown = function () {
+        const dropdown = document.querySelector('#planDropdown');
         const display = document.querySelector('.plan-display');
 
         // Close country dropdown if open
-        document.getElementById('countryDropdown').classList.remove('active');
+        document.querySelector('#countryDropdown').classList.remove('active');
         document.querySelector('.country-display').classList.remove('active');
 
         dropdown.classList.toggle('active');
@@ -1034,19 +1046,19 @@
         if (dropdown.classList.contains('active')) {
           document.addEventListener('click', closeDropdownOutside);
         }
-      }
+      };
 
-      function selectPlan(value, name) {
-        document.getElementById('selectedPlan').textContent = name;
-        document.getElementById('planValue').value = value;
+      window.selectPlan = function (value, name) {
+        document.querySelector('#selectedPlan').textContent = name;
+        document.querySelector('#planValue').value = value;
         currentPlan = value;
 
-        document.getElementById('planDropdown').classList.remove('active');
+        document.querySelector('#planDropdown').classList.remove('active');
         document.querySelector('.plan-display').classList.remove('active');
-      }
+      };
 
       // Help function
-      function showHelp() {
+      window.showHelp = function () {
         alert(
           'Hilfe zur Registrierung:\n\n' +
             '1. Geben Sie Ihre Firmendaten ein\n' +
@@ -1055,7 +1067,7 @@
             '4. 14 Tage kostenlos testen!\n\n' +
             'Bei Fragen: support@assixx.com',
         );
-      }
+      };
 
       // Get plan from URL parameter
       const urlParams = new URLSearchParams(window.location.search);
@@ -1066,7 +1078,7 @@
 
       // Subdomain validation
       const subdomainInput = document.querySelector('input[name="subdomain"]');
-      const subdomainError = document.getElementById('subdomainError');
+      const subdomainError = document.querySelector('#subdomainError');
 
       subdomainInput.addEventListener('input', (e) => {
         const value = e.target.value.toLowerCase();
@@ -1082,7 +1094,7 @@
       // Password confirmation with real-time validation
       const passwordInput = document.querySelector('input[name="password"]');
       const passwordConfirmInput = document.querySelector('input[name="password_confirm"]');
-      const passwordError = document.getElementById('passwordError');
+      const passwordError = document.querySelector('#passwordError');
 
       passwordConfirmInput.addEventListener('input', () => {
         if (passwordConfirmInput.value && passwordInput.value !== passwordConfirmInput.value) {
@@ -1096,11 +1108,11 @@
 
       // Phone validation
       const phoneInput = document.querySelector('input[name="phone"]');
-      const phoneError = document.getElementById('phoneError');
+      const phoneError = document.querySelector('#phoneError');
 
       phoneInput.addEventListener('input', () => {
         const phoneValue = phoneInput.value.trim();
-        const countryCode = document.getElementById('countryCode').value;
+        const countryCode = document.querySelector('#countryCode').value;
 
         // Check if phone starts with 0 for Germany/Austria/Switzerland
         if ((countryCode === '+49' || countryCode === '+43' || countryCode === '+41') && phoneValue.startsWith('0')) {
@@ -1124,7 +1136,7 @@
       // Email confirmation validation
       const emailInput = document.querySelector('input[name="email"]');
       const emailConfirmInput = document.querySelector('input[name="email_confirm"]');
-      const emailMatchError = document.getElementById('emailMatchError');
+      const emailMatchError = document.querySelector('#emailMatchError');
 
       emailConfirmInput.addEventListener('input', () => {
         if (emailConfirmInput.value && emailInput.value !== emailConfirmInput.value) {
@@ -1148,7 +1160,7 @@
       });
 
       // Form submission
-      document.getElementById('signupForm').addEventListener('submit', async (e) => {
+      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // Validate emails match
@@ -1197,27 +1209,49 @@
         const phoneNumber = data.phone;
         const fullPhone = `${currentCountryCode}${phoneNumber.replace(/\s+/g, '')}`;
 
-        // Add root user credentials
-        const signupData = {
-          company_name: data.company_name,
-          subdomain: data.subdomain,
-          email: data.email,
-          admin_email: data.email,
-          admin_password: data.password,
-          admin_first_name: data.first_name,
-          admin_last_name: data.last_name,
-          phone: fullPhone,
-          plan: currentPlan,
-        };
+        // Check if v2 API should be used
+        const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_SIGNUP;
+
+        // Add root user credentials - use camelCase for v2, snake_case for v1
+        const signupData = useV2
+          ? {
+              // v2 format (camelCase)
+              companyName: data.company_name,
+              subdomain: data.subdomain,
+              email: data.email,
+              adminEmail: data.email,
+              adminPassword: data.password,
+              adminFirstName: data.first_name,
+              adminLastName: data.last_name,
+              phone: fullPhone,
+              plan: currentPlan,
+            }
+          : {
+              // v1 format (snake_case)
+              company_name: data.company_name,
+              subdomain: data.subdomain,
+              email: data.email,
+              admin_email: data.email,
+              admin_password: data.password,
+              admin_first_name: data.first_name,
+              admin_last_name: data.last_name,
+              phone: fullPhone,
+              plan: currentPlan,
+            };
 
         const submitButton = e.target.querySelector('button[type="submit"]');
-        const originalText = submitButton.innerHTML;
+        const originalText = submitButton.textContent;
 
         try {
           submitButton.disabled = true;
-          submitButton.innerHTML = '⏳ Wird erstellt...';
+          submitButton.textContent = '⏳ Wird erstellt...';
 
-          const response = await fetch('/api/signup', {
+          // API URL based on feature flag (useV2 already defined above)
+          const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
+
+          console.info(`[Signup] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
+
+          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -1230,14 +1264,26 @@
 
           try {
             result = JSON.parse(responseText);
-          } catch (parseError) {
-            console.error('Failed to parse response:', responseText);
+          } catch (e) {
+            console.error('Failed to parse response:', responseText, e);
             result = { message: 'Server response was not valid JSON: ' + responseText };
           }
 
-          if (response.ok) {
-            document.getElementById('successMessage').style.display = 'block';
-            document.getElementById('successMessage').innerHTML =
+          // Handle v2 response format
+          if (useV2 && result.success === false) {
+            // v2 error format
+            const errorMessage = result.error?.message || result.message || 'Fehler bei der Registrierung';
+            alert(errorMessage);
+            submitButton.disabled = false;
+            submitButton.textContent = originalText;
+            return;
+          }
+
+          if (response.ok || (useV2 && result.success)) {
+            // v2 response handled, data extraction not needed here
+
+            document.querySelector('#successMessage').style.display = 'block';
+            document.querySelector('#successMessage').innerHTML =
               `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`;
 
             // Clear form
@@ -1248,15 +1294,16 @@
               window.location.href = '/login';
             }, 3000);
           } else {
+            // v1 error handling
             alert(result.message || 'Fehler bei der Registrierung');
             submitButton.disabled = false;
-            submitButton.innerHTML = originalText;
+            submitButton.textContent = originalText;
           }
         } catch (error) {
           console.error('Signup error:', error);
           alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
           submitButton.disabled = false;
-          submitButton.innerHTML = originalText;
+          submitButton.textContent = originalText;
         }
       });
     </script>

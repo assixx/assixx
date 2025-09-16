@@ -31,7 +31,7 @@ Eine einheitliche, dokumentierte API-Struktur für Assixx etablieren und alle In
 
 #### 09:15 - 09:45: Swagger UI Review (30 Min)
 
-- **Live-Demo:** http://localhost:3000/api-docs/
+- **Live-Demo:** <http://localhost:3000/api-docs/>
 - Gemeinsam durch alle Endpoints gehen
 - Inkonsistenzen dokumentieren auf Whiteboard
 - Fehlende Endpoints identifizieren
@@ -128,7 +128,7 @@ Eine einheitliche, dokumentierte API-Struktur für Assixx etablieren und alle In
 ### Technisch
 
 - [ ] Docker läuft lokal
-- [ ] Zugriff auf http://localhost:3000/api-docs/
+- [ ] Zugriff auf <http://localhost:3000/api-docs/>
 - [ ] Postman installiert
 - [ ] Git Repository geklont
 
@@ -162,7 +162,7 @@ Eine einheitliche, dokumentierte API-Struktur für Assixx etablieren und alle In
 
 ## 🔧 Benötigte Tools & Links
 
-- **Swagger UI:** http://localhost:3000/api-docs/
+- **Swagger UI:** <http://localhost:3000/api-docs/>
 - **Miro/Whiteboard:** [Link]
 - **Decision Matrix:** Google Sheets/Excel
 - **Postman:** Team Workspace

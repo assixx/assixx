@@ -6,11 +6,12 @@
  * the actual Calendar model/service which has specific event methods.
  * Should be refactored to use getAllEvents, createEvent, etc.
  */
+import { Request, Response } from 'express';
+import { Pool } from 'mysql2/promise';
 
-import { Request, Response } from "express";
-import { Pool } from "mysql2/promise";
+import calendarService from '../services/calendar.service';
 
-import calendarService from "../services/calendar.service";
+const UNKNOWN_ERROR_MESSAGE = 'Unknown error';
 
 // Extended Request interface with tenant database
 interface TenantRequest extends Request {
@@ -27,7 +28,7 @@ interface CalendarEventCreateRequest extends TenantRequest {
     start_time: string | Date;
     end_time: string | Date;
     all_day?: boolean;
-    org_level: "company" | "department" | "team" | "personal";
+    org_level: 'company' | 'department' | 'team' | 'personal';
     org_id?: number;
     created_by: number;
     reminder_time?: number | null;
@@ -43,9 +44,9 @@ interface CalendarEventUpdateRequest extends TenantRequest {
     start_time?: string | Date;
     end_time?: string | Date;
     all_day?: boolean;
-    org_level?: "company" | "department" | "team" | "personal";
+    org_level?: 'company' | 'department' | 'team' | 'personal';
     org_id?: number;
-    status?: "active" | "cancelled";
+    status?: 'active' | 'cancelled';
     reminder_time?: number | string | null;
     color?: string;
     created_by?: number;
@@ -63,33 +64,33 @@ interface CalendarEventGetRequest extends TenantRequest {
 
 interface CalendarEventQueryRequest extends TenantRequest {
   query: {
-    status?: "active" | "cancelled";
-    filter?: "all" | "company" | "department" | "team";
+    status?: 'active' | 'cancelled';
+    filter?: 'all' | 'company' | 'department' | 'team';
     search?: string;
     start_date?: string;
     end_date?: string;
     page?: string;
     limit?: string;
     sortBy?: string;
-    sortDir?: "ASC" | "DESC";
+    sortDir?: 'ASC' | 'DESC';
   };
 }
 
+/**
+ *
+ */
 class CalendarController {
   /**
    * Holt alle Calendar Einträge
    * GET /api/calendar
    * NOTE: This method should be refactored to use getAllEvents with proper tenantId and userId
+   * @param req - The request object
+   * @param res - The response object
    */
-  async getAll(req: CalendarEventQueryRequest, res: Response): Promise<void> {
+  getAll(req: CalendarEventQueryRequest, res: Response): void {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
-        return;
-      }
-
       console.warn(
-        "CalendarController.getAll: This method should be refactored to use specific event methods",
+        'CalendarController.getAll: This method should be refactored to use specific event methods',
       );
       // The calendarService.getAll method will throw an error as it needs refactoring
       try {
@@ -100,15 +101,15 @@ class CalendarController {
           search: req.query.search,
           start_date: req.query.start_date,
           end_date: req.query.end_date,
-          page: req.query.page ? parseInt(req.query.page) : undefined,
-          limit: req.query.limit ? parseInt(req.query.limit) : undefined,
+          page: req.query.page !== undefined ? Number.parseInt(req.query.page) : undefined,
+          limit: req.query.limit !== undefined ? Number.parseInt(req.query.limit) : undefined,
           sortBy: req.query.sortBy,
           sortDir: req.query.sortDir,
         };
 
         // Temporarily return paginated response format with empty events
         // TODO: Implement proper calendar event fetching with tenantId and userId
-        console.log("Calendar events requested with filters:", filters);
+        console.info('Calendar events requested with filters:', filters);
         res.json({
           events: [],
           pagination: {
@@ -121,17 +122,16 @@ class CalendarController {
       } catch {
         // Return a helpful error message for the migration period
         res.status(501).json({
-          error: "Method not implemented",
-          message:
-            "Calendar controller needs refactoring to use specific event methods",
-          suggestion: "Use /api/calendar/events endpoint instead",
+          error: 'Method not implemented',
+          message: 'Calendar controller needs refactoring to use specific event methods',
+          suggestion: 'Use /api/calendar/events endpoint instead',
         });
       }
-    } catch (error) {
-      console.error("Error in CalendarController.getAll:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarController.getAll:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -140,43 +140,40 @@ class CalendarController {
    * Holt einen Calendar Eintrag per ID
    * GET /api/calendar/:id
    * NOTE: This method should be refactored to use getEventById with proper tenantId and userId
+   * @param req - The request object
+   * @param res - The response object
    */
-  async getById(req: CalendarEventGetRequest, res: Response): Promise<void> {
+  getById(req: CalendarEventGetRequest, res: Response): void {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+      if (req.tenantDb === undefined) {
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+      const id = Number.parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       console.warn(
-        "CalendarController.getById: This method should be refactored to use getEventById",
+        'CalendarController.getById: This method should be refactored to use getEventById',
       );
       try {
-        const result = await calendarService.getById(req.tenantDb, id);
-        if (!result) {
-          res.status(404).json({ error: "Nicht gefunden" });
-          return;
-        }
+        const result = calendarService.getById(req.tenantDb, id);
         res.json(result);
       } catch {
         // Return a helpful error message for the migration period
         res.status(501).json({
-          error: "Method not implemented",
-          message:
-            "Calendar controller needs refactoring to use specific event methods",
+          error: 'Method not implemented',
+          message: 'Calendar controller needs refactoring to use specific event methods',
         });
       }
-    } catch (error) {
-      console.error("Error in CalendarController.getById:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarController.getById:', error);
       res.status(500).json({
-        error: "Fehler beim Abrufen der Daten",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Abrufen der Daten',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -185,16 +182,18 @@ class CalendarController {
    * Erstellt einen neuen Calendar Eintrag
    * POST /api/calendar
    * NOTE: This method should be refactored to use createEvent
+   * @param req - The request object
+   * @param res - The response object
    */
   async create(req: CalendarEventCreateRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+      if (req.tenantDb === undefined) {
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
       console.warn(
-        "CalendarController.create: This method should be refactored to use createEvent",
+        'CalendarController.create: This method should be refactored to use createEvent',
       );
       try {
         const result = await calendarService.create(req.tenantDb, req.body);
@@ -204,11 +203,11 @@ class CalendarController {
         const result = await calendarService.createEvent(req.body);
         res.status(201).json(result);
       }
-    } catch (error) {
-      console.error("Error in CalendarController.create:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarController.create:', error);
       res.status(500).json({
-        error: "Fehler beim Erstellen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Erstellen',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -217,39 +216,40 @@ class CalendarController {
    * Aktualisiert einen Calendar Eintrag
    * PUT /api/calendar/:id
    * NOTE: This method should be refactored to use updateEvent
+   * @param req - The request object
+   * @param res - The response object
    */
-  async update(req: CalendarEventUpdateRequest, res: Response): Promise<void> {
+  update(req: CalendarEventUpdateRequest, res: Response): void {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+      if (req.tenantDb === undefined) {
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+      const id = Number.parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       console.warn(
-        "CalendarController.update: This method should be refactored to use updateEvent",
+        'CalendarController.update: This method should be refactored to use updateEvent',
       );
       try {
-        const result = await calendarService.update(req.tenantDb, id, req.body);
+        const result = calendarService.update(req.tenantDb, id, req.body);
         res.json(result);
       } catch {
         // Return a helpful error message for the migration period
         res.status(501).json({
-          error: "Method not implemented",
-          message:
-            "Calendar controller needs refactoring to use specific event methods",
+          error: 'Method not implemented',
+          message: 'Calendar controller needs refactoring to use specific event methods',
         });
       }
-    } catch (error) {
-      console.error("Error in CalendarController.update:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarController.update:', error);
       res.status(500).json({
-        error: "Fehler beim Aktualisieren",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Aktualisieren',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -258,39 +258,40 @@ class CalendarController {
    * Löscht einen Calendar Eintrag
    * DELETE /api/calendar/:id
    * NOTE: This method should be refactored to use deleteEvent
+   * @param req - The request object
+   * @param res - The response object
    */
-  async delete(req: CalendarEventGetRequest, res: Response): Promise<void> {
+  delete(req: CalendarEventGetRequest, res: Response): void {
     try {
-      if (!req.tenantDb) {
-        res.status(400).json({ error: "Tenant database not available" });
+      if (req.tenantDb === undefined) {
+        res.status(400).json({ error: 'Tenant database not available' });
         return;
       }
 
-      const id = parseInt(req.params.id, 10);
-      if (isNaN(id)) {
-        res.status(400).json({ error: "Invalid ID" });
+      const id = Number.parseInt(req.params.id, 10);
+      if (Number.isNaN(id)) {
+        res.status(400).json({ error: 'Invalid ID' });
         return;
       }
 
       console.warn(
-        "CalendarController.delete: This method should be refactored to use deleteEvent",
+        'CalendarController.delete: This method should be refactored to use deleteEvent',
       );
       try {
-        await calendarService.delete(req.tenantDb, id);
+        calendarService.delete(req.tenantDb, id);
         res.status(204).send();
       } catch {
         // Return a helpful error message for the migration period
         res.status(501).json({
-          error: "Method not implemented",
-          message:
-            "Calendar controller needs refactoring to use specific event methods",
+          error: 'Method not implemented',
+          message: 'Calendar controller needs refactoring to use specific event methods',
         });
       }
-    } catch (error) {
-      console.error("Error in CalendarController.delete:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarController.delete:', error);
       res.status(500).json({
-        error: "Fehler beim Löschen",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Fehler beim Löschen',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }
@@ -300,24 +301,22 @@ class CalendarController {
   /**
    * Get all events (proper implementation)
    * GET /api/calendar/events
+   * @param _req - The _req parameter
+   * @param res - The response object
    */
-  async getAllEvents(
-    _req: CalendarEventQueryRequest,
-    res: Response,
-  ): Promise<void> {
+  getAllEvents(_req: CalendarEventQueryRequest, res: Response): void {
     try {
       // This would need tenantId and userId from the request
       // Implementation would depend on how these are extracted from the request
       res.status(501).json({
-        error: "Not implemented",
-        message:
-          "This endpoint should be implemented to replace the generic getAll method",
+        error: 'Not implemented',
+        message: 'This endpoint should be implemented to replace the generic getAll method',
       });
-    } catch (error) {
-      console.error("Error in CalendarController.getAllEvents:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarController.getAllEvents:', error);
       res.status(500).json({
-        error: "Server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        error: 'Server error',
+        message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
   }

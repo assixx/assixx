@@ -6,14 +6,14 @@
 
 ## 🎯 Aktuelle Situation
 
-### Konzept verstanden:
+### Konzept verstanden
 
 - **Root User** = IT-Admin der Firma (hat Signup gemacht)
 - Root ist aber auch möglicherweise ein **Bereichsleiter** (Admin-Rolle)
 - Root ist definitiv auch ein **Mitarbeiter** der Firma
 - Das System erlaubt flexible Rollenwechsel für realistische Szenarien
 
-### Aktuelle Implementierung:
+### Aktuelle Implementierung
 
 ```
 Root → Admin View ✅
@@ -24,7 +24,7 @@ Und jeweils zurück ✅
 
 ## 🔍 Sicherheitsanalyse
 
-### ✅ Was gut funktioniert:
+### ✅ Was gut funktioniert
 
 1. **Token-basierte Authentifizierung**
    - JWT enthält `role` (Original) und `activeRole` (aktuelle Ansicht)
@@ -102,8 +102,8 @@ Und jeweils zurück ✅
 ```javascript
 // Visueller Indikator für aktive Rolle
 if (user.isRoleSwitched) {
-  showBanner("Sie agieren als: " + user.activeRole);
-  document.body.classList.add("role-switched-mode");
+  showBanner('Sie agieren als: ' + user.activeRole);
+  document.body.classList.add('role-switched-mode');
 }
 ```
 
@@ -143,21 +143,21 @@ ALTER TABLE admin_logs ADD COLUMN was_role_switched BOOLEAN DEFAULT FALSE;
 
 ## 📋 Implementierungs-Checkliste
 
-### Kurzfristig (Sicherheit):
+### Kurzfristig (Sicherheit)
 
 - [ ] Visueller Indikator für Rollenwechsel
 - [ ] Einschränkungen für geswitchte Rollen
 - [ ] Automatisches Timeout nach Inaktivität
 - [ ] Erweiterte Logging für Compliance
 
-### Mittelfristig (Features):
+### Mittelfristig (Features)
 
 - [ ] Delegation/Stellvertretung System
 - [ ] Training Mode für Onboarding
 - [ ] Audit-Dashboard für Betriebsrat
 - [ ] Multi-Tab Session Sync
 
-### Langfristig (Enterprise):
+### Langfristig (Enterprise)
 
 - [ ] Break-Glass Emergency Access
 - [ ] Role-based Feature Flags

@@ -2,14 +2,12 @@
  * Settings v2 Routes
  * Manages system, tenant, and user settings
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import * as settingsController from "./settings.controller.js";
-import * as validation from "./settings.validation.js";
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as settingsController from './settings.controller.js';
+import * as validation from './settings.validation.js';
 
 const router = Router();
 
@@ -19,7 +17,7 @@ router.use(authenticateV2);
 // ==================== SYSTEM SETTINGS ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/system:
  *   get:
  *     summary: Get all system settings
@@ -48,14 +46,14 @@ router.use(authenticateV2);
  *         description: Access denied
  */
 router.get(
-  "/system",
+  '/system',
   validation.getSystemSettingsValidation,
   typed.auth(settingsController.getSystemSettings),
 );
 
 /**
- * @swagger
- * /api/v2/settings/system/{key}:
+
+ * /api/v2/settings/system/\{key\}:
  *   get:
  *     summary: Get single system setting
  *     description: Retrieve a specific system setting by key
@@ -75,13 +73,13 @@ router.get(
  *         description: Setting not found
  */
 router.get(
-  "/system/:key",
+  '/system/:key',
   validation.getSystemSettingValidation,
   typed.auth(settingsController.getSystemSetting),
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/system:
  *   post:
  *     summary: Create system setting
@@ -119,14 +117,14 @@ router.get(
  *         description: Access denied
  */
 router.post(
-  "/system",
+  '/system',
   validation.createSystemSettingValidation,
   typed.auth(settingsController.upsertSystemSetting),
 );
 
 /**
- * @swagger
- * /api/v2/settings/system/{key}:
+
+ * /api/v2/settings/system/\{key\}:
  *   put:
  *     summary: Update system setting
  *     description: Update an existing system setting (root only)
@@ -166,14 +164,14 @@ router.post(
  *         description: Access denied
  */
 router.put(
-  "/system/:key",
+  '/system/:key',
   validation.updateSystemSettingValidation,
   typed.auth(settingsController.upsertSystemSetting),
 );
 
 /**
- * @swagger
- * /api/v2/settings/system/{key}:
+
+ * /api/v2/settings/system/\{key\}:
  *   delete:
  *     summary: Delete system setting
  *     description: Delete a system setting (root only)
@@ -195,7 +193,7 @@ router.put(
  *         description: Setting not found
  */
 router.delete(
-  "/system/:key",
+  '/system/:key',
   validation.deleteSystemSettingValidation,
   typed.auth(settingsController.deleteSystemSetting),
 );
@@ -203,7 +201,7 @@ router.delete(
 // ==================== TENANT SETTINGS ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/tenant:
  *   get:
  *     summary: Get all tenant settings
@@ -226,14 +224,14 @@ router.delete(
  *         description: Settings retrieved successfully
  */
 router.get(
-  "/tenant",
+  '/tenant',
   validation.getTenantSettingsValidation,
   typed.auth(settingsController.getTenantSettings),
 );
 
 /**
- * @swagger
- * /api/v2/settings/tenant/{key}:
+
+ * /api/v2/settings/tenant/\{key\}:
  *   get:
  *     summary: Get single tenant setting
  *     description: Retrieve a specific tenant setting by key
@@ -253,13 +251,13 @@ router.get(
  *         description: Setting not found
  */
 router.get(
-  "/tenant/:key",
+  '/tenant/:key',
   validation.getTenantSettingValidation,
   typed.auth(settingsController.getTenantSetting),
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/tenant:
  *   post:
  *     summary: Create tenant setting
@@ -293,14 +291,14 @@ router.get(
  *         description: Access denied
  */
 router.post(
-  "/tenant",
+  '/tenant',
   validation.createTenantSettingValidation,
   typed.auth(settingsController.upsertTenantSetting),
 );
 
 /**
- * @swagger
- * /api/v2/settings/tenant/{key}:
+
+ * /api/v2/settings/tenant/\{key\}:
  *   put:
  *     summary: Update tenant setting
  *     description: Update an existing tenant setting (admin/root only)
@@ -336,14 +334,14 @@ router.post(
  *         description: Access denied
  */
 router.put(
-  "/tenant/:key",
+  '/tenant/:key',
   validation.updateTenantSettingValidation,
   typed.auth(settingsController.upsertTenantSetting),
 );
 
 /**
- * @swagger
- * /api/v2/settings/tenant/{key}:
+
+ * /api/v2/settings/tenant/\{key\}:
  *   delete:
  *     summary: Delete tenant setting
  *     description: Delete a tenant setting (admin/root only)
@@ -365,7 +363,7 @@ router.put(
  *         description: Setting not found
  */
 router.delete(
-  "/tenant/:key",
+  '/tenant/:key',
   validation.deleteTenantSettingValidation,
   typed.auth(settingsController.deleteTenantSetting),
 );
@@ -373,7 +371,7 @@ router.delete(
 // ==================== USER SETTINGS ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/user:
  *   get:
  *     summary: Get all user settings
@@ -396,14 +394,14 @@ router.delete(
  *         description: Settings retrieved successfully
  */
 router.get(
-  "/user",
+  '/user',
   validation.getUserSettingsValidation,
   typed.auth(settingsController.getUserSettings),
 );
 
 /**
- * @swagger
- * /api/v2/settings/user/{key}:
+
+ * /api/v2/settings/user/\{key\}:
  *   get:
  *     summary: Get single user setting
  *     description: Retrieve a specific user setting by key
@@ -423,13 +421,13 @@ router.get(
  *         description: Setting not found
  */
 router.get(
-  "/user/:key",
+  '/user/:key',
   validation.getUserSettingValidation,
   typed.auth(settingsController.getUserSetting),
 );
 
 /**
- * @swagger
+
  * /api/v2/settings/user:
  *   post:
  *     summary: Create user setting
@@ -461,14 +459,14 @@ router.get(
  *         description: Setting created successfully
  */
 router.post(
-  "/user",
+  '/user',
   validation.createUserSettingValidation,
   typed.auth(settingsController.upsertUserSetting),
 );
 
 /**
- * @swagger
- * /api/v2/settings/user/{key}:
+
+ * /api/v2/settings/user/\{key\}:
  *   put:
  *     summary: Update user setting
  *     description: Update an existing user setting
@@ -502,14 +500,14 @@ router.post(
  *         description: Setting updated successfully
  */
 router.put(
-  "/user/:key",
+  '/user/:key',
   validation.updateUserSettingValidation,
   typed.auth(settingsController.upsertUserSetting),
 );
 
 /**
- * @swagger
- * /api/v2/settings/user/{key}:
+
+ * /api/v2/settings/user/\{key\}:
  *   delete:
  *     summary: Delete user setting
  *     description: Delete a user setting
@@ -529,7 +527,7 @@ router.put(
  *         description: Setting not found
  */
 router.delete(
-  "/user/:key",
+  '/user/:key',
   validation.deleteUserSettingValidation,
   typed.auth(settingsController.deleteUserSetting),
 );
@@ -537,8 +535,8 @@ router.delete(
 // ==================== ADMIN USER SETTINGS ====================
 
 /**
- * @swagger
- * /api/v2/settings/admin/users/{userId}:
+
+ * /api/v2/settings/admin/users/\{userId\}:
  *   get:
  *     summary: Get another user's settings
  *     description: Retrieve settings for a specific user (admin/root only)
@@ -560,7 +558,7 @@ router.delete(
  *         description: User not found
  */
 router.get(
-  "/admin/users/:userId",
+  '/admin/users/:userId',
   validation.getAdminUserSettingsValidation,
   typed.auth(settingsController.getAdminUserSettings),
 );
@@ -568,7 +566,7 @@ router.get(
 // ==================== COMMON ====================
 
 /**
- * @swagger
+
  * /api/v2/settings/categories:
  *   get:
  *     summary: Get settings categories
@@ -580,10 +578,10 @@ router.get(
  *       200:
  *         description: Categories retrieved successfully
  */
-router.get("/categories", typed.auth(settingsController.getCategories));
+router.get('/categories', typed.auth(settingsController.getCategories));
 
 /**
- * @swagger
+
  * /api/v2/settings/bulk:
  *   put:
  *     summary: Bulk update settings
@@ -625,10 +623,6 @@ router.get("/categories", typed.auth(settingsController.getCategories));
  *       200:
  *         description: Settings updated successfully
  */
-router.put(
-  "/bulk",
-  validation.bulkUpdateValidation,
-  typed.auth(settingsController.bulkUpdate),
-);
+router.put('/bulk', validation.bulkUpdateValidation, typed.auth(settingsController.bulkUpdate));
 
 export default router;

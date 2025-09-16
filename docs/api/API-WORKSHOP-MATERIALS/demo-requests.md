@@ -75,7 +75,7 @@ curl -X POST http://localhost:3000/api/chat/channels \
 
 ## 🔄 Response Format Unterschied
 
-### Was Tests erwarten:
+### Was Tests erwarten
 
 ```json
 {
@@ -84,7 +84,7 @@ curl -X POST http://localhost:3000/api/chat/channels \
 }
 ```
 
-### Was API liefert:
+### Was API liefert
 
 ```json
 {
@@ -108,7 +108,7 @@ curl -X POST http://localhost:3000/api/chat/channels \
 
 ## 🔍 Swagger UI Demo
 
-1. Öffnen: http://localhost:3000/api-docs/
+1. Öffnen: <http://localhost:3000/api-docs/>
 2. Zeigen:
    - 38 dokumentierte Endpoints
    - Inkonsistente Naming Conventions

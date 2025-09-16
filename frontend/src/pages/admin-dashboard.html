@@ -18,580 +18,21 @@
         document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
       })();
     </script>
-    <style>
-      @import url('/styles/dashboard-theme.css');
-      @import url('/styles/breadcrumb-alignment.css');
-      /* Glassmorphismus Design-Standards */
+    <!-- Admin Dashboard CSS extracted to external file -->
+    <link rel="stylesheet" href="/styles/admin-dashboard.css" />
 
-      /* Fix for sidebar title alignment */
-      .sidebar-title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        padding: 12px 16px;
-        margin: 0 0 16px 0;
-        font-size: 1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: 12px;
-        border: 1px solid rgba(33, 150, 243, 0.2);
-      }
-
-      .sidebar-title .title-icon {
-        display: flex;
-        align-items: center;
-        font-size: 1.1rem;
-      }
-
-      /* Dramatischer Hintergrund-Gradient */
-      body {
-        position: relative;
-        min-height: 100vh;
-        overflow-x: hidden;
-        background: #000;
-      }
-
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
-        pointer-events: none;
-        z-index: -1;
-      }
-
-      /* Content sections alignment wird jetzt über breadcrumb-alignment.css gesteuert */
-
-      /* Stat-Cards nutzen jetzt die Standard-Styles aus dashboard-theme.css */
-
-      /* Glassmorphismus für Cards */
-      /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
-      /* .card und .compact-card verwenden die zentralen CSS-Variablen */
-
-      /* Ansprechendere Compact-Cards */
-      .compact-card {
-        position: relative;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-      }
-
-      .compact-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        opacity: 0;
-      }
-
-      .compact-card:hover::before {
-        opacity: 1;
-      }
-
-      .compact-card:hover {
-        transform: translateY(-5px);
-        box-shadow:
-          0 12px 40px rgba(0, 0, 0, 0.5),
-          inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.03);
-      }
-
-      .compact-card .card-header {
-        background: rgba(255, 255, 255, 0.01);
-        backdrop-filter: blur(10px);
-        padding: var(--spacing-md) var(--spacing-lg);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        border-radius: 10px 10px 0 0;
-      }
-
-      .compact-card .card-title {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: var(--text-primary);
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-      }
-
-      .compact-card .card-title::before {
-        content: '';
-        width: 4px;
-        height: 20px;
-        background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-        border-radius: 2px;
-      }
-
-      .compact-content {
-        padding: var(--spacing-lg);
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .compact-list {
-        margin: var(--spacing-md) 0;
-        flex: 1;
-      }
-
-      .compact-list .list-item {
-        padding: var(--spacing-sm) var(--spacing-md);
-        margin-bottom: var(--spacing-sm);
-        background: var(--glass-bg);
-        border-radius: var(--radius-sm);
-        border: var(--glass-border);
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-      }
-
-      .compact-list .list-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(0, 142, 255, 0.3);
-        transform: translateX(5px);
-        color: var(--text-primary);
-      }
-
-      .compact-list .list-item strong {
-        color: var(--text-primary);
-        font-weight: 500;
-      }
-
-      .view-all-link {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-        color: var(--primary-color);
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.85rem;
-        padding: 8px 0;
-        margin-top: auto;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-      }
-
-      .view-all-link:hover {
-        color: var(--primary-light);
-      }
-
-      .view-all-link .arrow {
-        font-size: 0.9rem;
-      }
-
-      .view-all-link:hover .arrow {
-        transform: translateX(3px);
-      }
-
-      /* Button in Compact-Cards */
-      .compact-card .btn-block {
-        width: 100%;
-        padding: 10px 16px;
-        font-weight: 500;
-        font-size: 0.9rem;
-        letter-spacing: 0.3px;
-        margin-bottom: var(--spacing-md);
-      }
-
-      /* Form-Controls mit Glassmorphismus */
-      .form-control,
-      .search-input {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        color: #fff;
-      }
-
-      .form-control:focus,
-      .search-input:focus {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 0 0 3px rgba(0, 142, 255, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        outline: none;
-      }
-
-      /* Deaktivierte Form-Controls */
-      .form-control:disabled {
-        background: rgba(255, 255, 255, 0.01);
-        border-color: rgba(255, 255, 255, 0.08);
-        color: rgba(255, 255, 255, 0.4);
-        cursor: not-allowed;
-        opacity: 0.6;
-      }
-
-      .form-control:disabled::placeholder {
-        color: rgba(255, 255, 255, 0.3);
-      }
-
-      /* Buttons mit Glassmorphismus und Shine-Effekt */
-      .btn {
-        position: relative;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .btn-primary {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
-      }
-
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
-      }
-
-      .btn::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        transform: rotate(45deg) translate(-70%, -70%);
-      }
-
-      .btn:hover::after {
-        transform: rotate(45deg) translate(-30%, -30%);
-      }
-
-      /* Tabellen mit Glassmorphismus */
-      .table {
-        background: transparent;
-      }
-
-      .table thead th {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .table tbody tr {
-        background: rgba(255, 255, 255, 0.01);
-      }
-
-      .table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.03);
-      }
-
-      /* Admin Grid - Gleiche Höhe für alle Cards */
-      .admin-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: var(--spacing-lg);
-        align-items: stretch;
-      }
-
-      @media (max-width: 1200px) {
-        .admin-grid {
-          grid-template-columns: repeat(2, 1fr);
-        }
-      }
-
-      @media (max-width: 768px) {
-        .admin-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      .admin-grid > div {
-        display: flex;
-      }
-
-      /* Animationen */
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* Animation für Cards - bei Bedarf aktivieren
-      .stat-card,
-      .card,
-      .compact-card {
-        animation: fadeInUp 0.6s ease-out;
-      }
-      */
-
-      @keyframes subtle-pulse {
-        0% {
-          box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-        50% {
-          box-shadow:
-            0 8px 32px rgba(0, 142, 255, 0.2),
-            inset 0 1px 0 rgba(255, 255, 255, 0.15);
-        }
-        100% {
-          box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        }
-      }
-
-      /* Action buttons in tables - equal width */
-      .table td:last-child .btn {
-        min-width: 110px;
-        margin: 2px;
-      }
-
-      /* Status buttons - Outline style like Secondary buttons */
-      .btn-status-active {
-        background: transparent;
-        border: 1px solid #ff6b35;
-        color: #ff6b35;
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-        backdrop-filter: blur(10px);
-      }
-
-      .btn-status-active:hover {
-        background: rgba(255, 107, 53, 0.1);
-        border-color: #ff5722;
-        color: #ff5722;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
-      }
-
-      .btn-status-inactive {
-        background: transparent;
-        border: 1px solid #28a745;
-        color: #28a745;
-        padding: 0.375rem 0.75rem;
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-        backdrop-filter: blur(10px);
-      }
-
-      .btn-status-inactive:hover {
-        background: rgba(40, 167, 69, 0.1);
-        border-color: #218838;
-        color: #218838;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
-      }
-
-      /* Blackboard Preview Styles */
-      .blackboard-preview {
-        min-height: 200px;
-      }
-
-      .blackboard-preview .list-item {
-        padding: 12px;
-        border-radius: 8px;
-        background: var(--glass-bg);
-        margin-bottom: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        position: relative;
-        overflow: hidden;
-      }
-
-      .blackboard-preview .list-item:hover {
-        background: rgba(255, 255, 255, 0.04);
-        border-color: rgba(255, 255, 255, 0.1);
-        transform: translateX(4px);
-      }
-
-      .blackboard-preview .list-item::before {
-        content: '📌';
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        font-size: 14px;
-        opacity: 0.8;
-      }
-
-      .blackboard-preview .list-item-content {
-        margin-left: 24px;
-      }
-
-      .blackboard-preview .list-item-title {
-        font-weight: 600;
-        color: var(--text-primary);
-        margin-bottom: 4px;
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .blackboard-preview .list-item-meta {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .blackboard-preview .priority-badge {
-        display: inline-flex;
-        align-items: center;
-        font-size: 0.75rem;
-        padding: 2px 8px;
-        border-radius: 12px;
-        font-weight: 500;
-      }
-
-      .blackboard-preview .priority-urgent {
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-        border: 1px solid rgba(244, 67, 54, 0.3);
-      }
-
-      .blackboard-preview .priority-high {
-        background: rgba(255, 152, 0, 0.2);
-        color: #ff9800;
-        border: 1px solid rgba(255, 152, 0, 0.3);
-      }
-
-      .blackboard-preview .priority-normal {
-        background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
-        border: 1px solid rgba(33, 150, 243, 0.3);
-      }
-
-      .blackboard-preview .priority-low {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-        border: 1px solid rgba(76, 175, 80, 0.3);
-      }
-
-      /* Skeleton Loading */
-      .loading-placeholder {
-        padding: 8px 0;
-      }
-
-      .skeleton {
-        background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
-        background-size: 200% 100%;
-        /* animation: skeleton-loading 1.5s infinite; */
-        border-radius: 4px;
-        margin-bottom: 8px;
-      }
-
-      .skeleton-text {
-        height: 48px;
-        width: 100%;
-      }
-
-      @keyframes skeleton-loading {
-        0% {
-          background-position: 200% 0;
-        }
-        100% {
-          background-position: -200% 0;
-        }
-      }
-
-      /* Empty State */
-      .blackboard-empty-state {
-        text-align: center;
-        padding: 40px 20px;
-        color: var(--text-secondary);
-      }
-
-      .blackboard-empty-state i {
-        font-size: 48px;
-        opacity: 0.3;
-        margin-bottom: 16px;
-      }
-
-      /* Additional Badge Styles */
-      .badge-warning {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffc107;
-      }
-
-      .badge-secondary {
-        background: rgba(108, 117, 125, 0.2);
-        color: #6c757d;
-      }
-
-      /* Info Button Style */
-      .btn-info {
-        background: rgba(23, 162, 184, 0.2);
-        border: 1px solid rgba(23, 162, 184, 0.3);
-        color: #17a2b8;
-      }
-
-      .btn-info:hover {
-        background: rgba(23, 162, 184, 0.3);
-        border-color: #17a2b8;
-        transform: translateY(-1px);
-      }
-
-      /* Global Layout Shift Prevention using CSS Custom Properties */
-      :root {
-        /* These are set by inline script above */
-        --sidebar-width: 250px;
-        --content-margin: 250px;
-        --grid-columns: 3;
-        --card-max-width: 100%;
-        --widget-padding: 1.5rem;
-      }
-
-      /* When sidebar is collapsed */
-      [data-sidebar='collapsed'] {
-        --sidebar-width: 60px;
-        --content-margin: 60px;
-        --grid-columns: 4;
-        --card-max-width: 100%;
-        --widget-padding: 2rem;
-      }
-
-      /* Apply to all main content */
-      .main-content {
-        margin-left: var(--content-margin);
-      }
-
-      /* Apply to all grids */
-      .admin-grid {
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        max-width: 100%;
-      }
-
-      /* Apply to all cards and widgets */
-      .card,
-      .widget,
-      .stat-card,
-      .blackboard-widget {
-        max-width: var(--card-max-width);
-      }
-
-      /* Prevent any layout shift during initial load */
-      body:not(.loaded) * {
-      }
-
-      /* Breadcrumb Styles sind jetzt in breadcrumb.js enthalten */
-    </style>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
+    <!-- Feature Flags -->
+    <script src="/feature-flags.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      // Make setHTML globally available for inline scripts
+      window.setHTML = setHTML;
+    </script>
   </head>
   <body class="admin-dashboard">
     <!-- Unified Navigation -->
@@ -628,7 +69,27 @@
             </div>
 
             <!-- Blackboard Widget -->
-            <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading"></div>
+            <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading">
+              <!-- Loading placeholder with same styles as final widget -->
+              <div class="blackboard-widget" style="animation: subtle-pulse 2s ease-in-out infinite">
+                <div class="blackboard-widget-header">
+                  <h3 class="blackboard-widget-title">
+                    <i class="fas fa-thumbtack"></i>
+                    Schwarzes Brett
+                  </h3>
+                  <a href="/blackboard" class="blackboard-widget-link" style="opacity: 0.5">
+                    Alle anzeigen
+                    <i class="fas fa-arrow-right"></i>
+                  </a>
+                </div>
+                <div id="blackboard-widget-content" style="min-height: 200px; display: flex; align-items: center; justify-content: center">
+                  <div style="text-align: center; color: var(--text-muted)">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem"></i>
+                    <p>Lade Einträge...</p>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <!-- Main Grid Container -->
             <div class="admin-grid">
@@ -639,14 +100,18 @@
                   <p class="text-secondary" class="u-mt-text">Mitarbeiter verwalten und hinzufügen</p>
                 </div>
                 <div class="compact-content">
-                  <button class="btn btn-primary btn-block mb-3" id="new-employee-button" onclick="showEmployeeModal()">
-                    Neuer Mitarbeiter
-                  </button>
+                  <a
+                    href="/pages/manage-employees.html"
+                    class="btn btn-primary btn-block mb-3"
+                    style="display: flex; align-items: center; justify-content: center; text-decoration: none"
+                  >
+                    Mitarbeiter verwalten
+                  </a>
                   <div class="compact-list" id="recent-employees">
                     <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
                   </div>
-                  <a href="#" class="view-all-link" id="manage-employees-link">
-                    Verwalten
+                  <a href="/manage-employees" class="view-all-link" id="manage-employees-link">
+                    Alle anzeigen
                     <span class="arrow">→</span>
                   </a>
                 </div>
@@ -677,7 +142,7 @@
                   <p class="text-secondary" class="u-mt-text">Abteilungsstruktur organisieren</p>
                 </div>
                 <div class="compact-content">
-                  <a href="/departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
+                  <a href="/manage-departments" class="btn btn-primary btn-block mb-3">Abteilungen verwalten</a>
                   <div class="compact-list" id="department-list">
                     <!-- Wird dynamisch gefüllt -->
                   </div>
@@ -695,11 +160,11 @@
                   <p class="text-secondary" class="u-mt-text">Teams erstellen und verwalten</p>
                 </div>
                 <div class="compact-content">
-                  <button class="btn btn-primary btn-block mb-3" onclick="showTeamModal()">Neues Team</button>
+                  <button class="btn btn-primary btn-block mb-3" data-action="show-team-modal">Neues Team</button>
                   <div class="compact-list" id="team-list">
                     <!-- Wird dynamisch gefüllt -->
                   </div>
-                  <a href="#" class="view-all-link" onclick="showAllTeams()">
+                  <a href="#" class="view-all-link" data-action="show-all-teams">
                     Verwalten
                     <span class="arrow">→</span>
                   </a>
@@ -762,127 +227,16 @@
 
           <!-- Payslips Section removed - now using documents-payroll.html -->
 
-          <!-- Employees Section -->
-          <section id="employees-section" class="content-section" class="u-hidden">
-            <div class="card">
-              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-                <div>
-                  <h2 class="card-title">Mitarbeiterübersicht</h2>
-                  <p class="text-secondary" class="u-mt-text">Alle Mitarbeiter verwalten und bearbeiten</p>
-                </div>
-              </div>
-              <div class="flex-between mb-3">
-                <div class="filter-buttons">
-                  <button id="show-all-employees" class="btn btn-sm btn-primary">Alle anzeigen</button>
-                  <button id="filter-employees-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-                  <button id="filter-employees-inactive" class="btn btn-sm btn-secondary">Inaktive anzeigen</button>
-                </div>
-                <div class="search-container">
-                  <input type="text" id="employee-search" class="search-input" placeholder="Name, E-Mail oder Position..." />
-                  <button id="employee-search-btn" class="btn btn-secondary">Suchen</button>
-                </div>
-              </div>
+          <!-- Employees Section moved to /manage-employees -->
 
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>E-Mail</th>
-                      <th>Mitarbeiter-ID</th>
-                      <th>Position</th>
-                      <th>Abteilung</th>
-                      <th>Status</th>
-                      <th>Verfügbarkeit</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="employees-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <!-- Documents Section -->
-          <section id="documents-section" class="content-section" class="u-hidden">
-            <div class="flex-between mb-3">
-              <div>
-                <button class="btn btn-primary" onclick="window.location.href='/document-upload'">
-                  <i class="fas fa-upload me-2"></i>
-                  Dokument hochladen
-                </button>
-                <a href="/documents" class="btn btn-secondary ms-2">Zur Dokumentenübersicht</a>
-              </div>
-              <div class="search-container">
-                <input type="text" id="document-search" class="search-input" placeholder="Dokumentname, Mitarbeiter oder Kategorie..." />
-                <button id="document-search-btn" class="btn btn-secondary">Suchen</button>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <button id="show-all-documents" class="btn btn-sm btn-secondary">Alle anzeigen</button>
-              <button id="filter-documents-archived" class="btn btn-sm btn-secondary">Archivierte anzeigen</button>
-              <button id="filter-documents-active" class="btn btn-sm btn-secondary">Aktive anzeigen</button>
-            </div>
-
-            <div class="card">
-              <div class="card-header">
-                <h2 class="card-title">Dokumentenübersicht</h2>
-                <p class="text-secondary" class="u-mt-text">Alle Dokumente verwalten und durchsuchen</p>
-              </div>
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Dateiname</th>
-                      <th>Mitarbeiter</th>
-                      <th>Kategorie</th>
-                      <th>Hochgeladen am</th>
-                      <th>Status</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="documents-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+          <!-- Departments Section -->
 
           <!-- Departments Section -->
           <!-- Departments Section wurde nach departments.html verschoben -->
 
-          <!-- Teams Section -->
-          <section id="teams-section" class="content-section" class="u-hidden">
-            <div class="card">
-              <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-                <div>
-                  <h2 class="card-title">Teamübersicht</h2>
-                  <p class="text-secondary" class="u-mt-text">Teams und Mitgliedschaften verwalten</p>
-                </div>
-                <button class="btn btn-primary" onclick="showTeamModal()">Neues Team</button>
-              </div>
-              <div class="table-responsive">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Abteilung</th>
-                      <th>Beschreibung</th>
-                      <th>Mitglieder</th>
-                      <th>Aktionen</th>
-                    </tr>
-                  </thead>
-                  <tbody id="teams-table-body">
-                    <!-- Wird dynamisch gefüllt -->
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
+          <!-- Teams Section moved to /manage-teams -->
+
+          <!-- Machines Section moved to /manage-machines -->
 
           <!-- Settings Section -->
           <section id="settings-section" class="content-section" class="u-hidden">
@@ -900,427 +254,33 @@
     <!-- Modals -->
     <!-- Department Modal wurde nach departments.html verschoben -->
 
-    <!-- Team Modal -->
-    <div id="team-modal" class="modal" class="u-hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Neues Team</h3>
-          <button class="modal-close" onclick="hideTeamModal()">&times;</button>
-        </div>
-        <form id="team-form">
-          <div class="form-group">
-            <label class="form-label">Name</label>
-            <input type="text" name="name" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Beschreibung</label>
-            <textarea name="description" class="form-control" rows="3"></textarea>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Abteilung</label>
-            <select name="department_id" class="form-control">
-              <option value="">Keine Abteilung</option>
-              <!-- Wird dynamisch gefüllt -->
-            </select>
-          </div>
-          <button type="submit" class="btn btn-primary">Team erstellen</button>
-        </form>
-      </div>
-    </div>
+    <!-- Team Modal moved to /manage-teams -->
 
     <!-- Employee Status Modal -->
-    <div id="employee-status-modal" class="modal" class="u-hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Mitarbeiter-Status ändern</h3>
-          <button class="modal-close" onclick="hideModal('employee-status-modal')">&times;</button>
-        </div>
-        <form id="employee-status-form">
-          <input type="hidden" id="status-employee-id" />
-          <div class="form-group">
-            <label class="form-label">Mitarbeiter</label>
-            <input type="text" id="status-employee-name" class="form-control" readonly />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="employee-status-display" onclick="toggleDropdown('employee-status')">
-                <span>Verfügbar</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div class="dropdown-options" id="employee-status-dropdown" class="u-hidden">
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'available', 'Verfügbar')">
-                  <span class="badge badge-success">Verfügbar</span>
-                </div>
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'vacation', 'Urlaub')">
-                  <span class="badge badge-warning">Urlaub</span>
-                </div>
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'sick', 'Krank')">
-                  <span class="badge badge-danger">Krank</span>
-                </div>
-                <div class="dropdown-option" onclick="selectDropdownOption('employee-status', 'unavailable', 'Beurlaubt')">
-                  <span class="badge badge-secondary">Beurlaubt</span>
-                </div>
-              </div>
-              <input type="hidden" name="status" id="employee-status-select" value="available" />
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Von Datum</label>
-            <input type="date" name="start_date" id="availability-start-date" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Bis Datum</label>
-            <input type="date" name="end_date" id="availability-end-date" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Notiz (optional)</label>
-            <textarea name="notes" class="form-control" rows="3" placeholder="z.B. Familienurlaub, Krankmeldung bis..."></textarea>
-          </div>
-          <div class="button-group">
-            <button type="submit" class="btn btn-primary">Status speichern</button>
-            <button type="button" class="btn btn-secondary" onclick="hideModal('employee-status-modal')">Abbrechen</button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <!-- Employee Status Modal removed - functionality moved to manage-employees.html -->
 
-    <!-- Employee Modal -->
-    <div id="employee-modal" class="modal" data-debug="employee-modal" style="display: none">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Neuer Mitarbeiter</h3>
-          <button class="modal-close" id="close-employee-modal">&times;</button>
-        </div>
-        <form id="create-employee-form" style="padding: var(--spacing-lg)">
-          <div class="form-group">
-            <label class="form-label">E-Mail</label>
-            <input type="email" name="email" id="email" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">E-Mail bestätigen</label>
-            <input type="email" name="email_confirm" id="email_confirm" class="form-control" required />
-            <small id="email-error" class="error-message" style="color: red; display: none">
-              Die E-Mail-Adressen stimmen nicht überein
-            </small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Passwort</label>
-            <input type="password" name="password" id="password" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Passwort bestätigen</label>
-            <input type="password" name="password_confirm" id="password_confirm" class="form-control" required />
-            <small id="password-error" class="error-message" style="color: red; display: none">Die Passwörter stimmen nicht überein</small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Vorname</label>
-            <input type="text" name="first_name" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Nachname</label>
-            <input type="text" name="last_name" class="form-control" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Alter</label>
-            <input type="number" name="age" class="form-control" min="18" max="100" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Personalnummer *</label>
-            <input
-              type="text"
-              name="employee_number"
-              class="form-control"
-              placeholder="z.B. ABC-123 oder 2025-001"
-              maxlength="10"
-              pattern="[A-Za-z0-9\-]{1,10}"
-              required
-            />
-            <small class="form-text" style="color: var(--text-secondary); font-size: 12px">
-              Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)
-            </small>
-          </div>
-          <!-- Mitarbeiter-ID wird automatisch generiert -->
-          <!-- IBAN-Feld wurde entfernt -->
-          <div class="form-group">
-            <label class="form-label">Position</label>
-            <input type="text" name="position" class="form-control" />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Abteilung</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="employee-department-display" onclick="toggleDropdown('employee-department')">
-                <span>Keine Abteilung</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div class="dropdown-options" id="employee-department-dropdown" style="display: none">
-                <div class="dropdown-option" data-value="" onclick="selectDropdownOption('employee-department', '', 'Keine Abteilung')">
-                  Keine Abteilung
-                </div>
-                <!-- Wird dynamisch gefüllt -->
-              </div>
-              <input type="hidden" name="department_id" id="employee-department-select" />
-            </div>
-          </div>
-          <div class="button-group">
-            <button type="button" class="btn btn-secondary" id="cancel-employee-button">Abbrechen</button>
-            <button type="submit" class="btn btn-primary">Speichern</button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Document Modal -->
-    <div id="document-modal" class="modal" class="u-hidden">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Dokument hochladen</h3>
-          <button class="modal-close" onclick="hideModal('document-modal')">&times;</button>
-        </div>
-        <form id="document-upload-form" enctype="multipart/form-data">
-          <div class="form-group">
-            <label class="form-label">Mitarbeiter auswählen</label>
-            <select name="employeeId" id="upload-employee-select" class="form-control" required>
-              <option value="">Bitte wählen...</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Dokumenttyp</label>
-            <select name="category" class="form-control">
-              <option value="payslip">Lohnabrechnung</option>
-              <option value="contract">Vertrag</option>
-              <option value="certificate">Bescheinigung</option>
-              <option value="other">Sonstiges</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Datei auswählen</label>
-            <input type="file" name="document" class="form-control" accept="application/pdf" required />
-          </div>
-          <button type="submit" class="btn btn-primary">Dokument hochladen</button>
-        </form>
-      </div>
-    </div>
+    <!-- Document Modal removed - functionality moved to /document-upload page -->
 
     <!-- Department Modal ist bereits weiter oben definiert -->
     <!-- Team Modal ist bereits weiter oben definiert -->
 
     <!-- Modal Styles -->
-    <style>
-      .modal {
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(10px);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-
-      .modal-content {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        width: 90%;
-        max-width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-      }
-
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: var(--spacing-lg);
-        border-bottom: 1px solid var(--border-color);
-      }
-
-      .modal-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--primary-color);
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-sm);
-      }
-
-      .modal-close:hover {
-        background-color: var(--background-dark);
-        color: var(--error-color);
-      }
-
-      /* Form Styles für Modals */
-      .modal .form-group {
-        margin-bottom: 20px;
-      }
-
-      .modal .form-label {
-        display: block;
-        margin-bottom: 8px;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-
-      .modal .form-control {
-        width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        color: #fff;
-      }
-
-      .modal .form-control:focus {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 0 0 3px rgba(0, 142, 255, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        outline: none;
-      }
-
-      .modal .button-group {
-        display: flex;
-        justify-content: space-between;
-        gap: 15px;
-        margin-top: 20px;
-      }
-
-      .table-row-inactive {
-        background-color: rgba(255, 165, 0, 0.1);
-      }
-
-      .table-row-archived {
-        background-color: rgba(128, 128, 128, 0.1);
-      }
-
-      .modal form {
-        padding: var(--spacing-lg);
-      }
-
-      /* Button Group Styles */
-      .btn-group {
-        display: inline-flex;
-        vertical-align: middle;
-        gap: 4px;
-      }
-
-      .btn-group > .btn {
-        position: relative;
-        flex: 0 1 auto;
-      }
-
-      /* Utility Classes */
-      .me-1 {
-        margin-right: 0.25rem !important;
-      }
-
-      /* Better button styles for tables */
-      .table .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
-        line-height: 1.5;
-        border-radius: var(--radius-sm);
-      }
-    </style>
 
     <!-- Custom Dropdown Styles -->
-    <style>
-      .custom-dropdown {
-        position: relative;
-        width: 100%;
-      }
-
-      .dropdown-display {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 12px;
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: 8px;
-        color: #fff;
-        cursor: pointer;
-      }
-
-      .dropdown-display:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .dropdown-display.active svg {
-        transform: rotate(180deg);
-      }
-
-      .dropdown-display svg {
-      }
-
-      .dropdown-options {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        right: 0;
-        background: rgba(18, 18, 18, 0.98);
-        backdrop-filter: var(--glass-backdrop);
-        -webkit-backdrop-filter: var(--glass-backdrop);
-        border: var(--glass-border);
-        border-radius: 8px;
-        box-shadow: var(--shadow-sm);
-        max-height: 200px;
-        overflow-y: auto;
-        z-index: 1001;
-      }
-
-      .dropdown-option {
-        padding: 10px 12px;
-        color: rgba(255, 255, 255, 0.8);
-        cursor: pointer;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .dropdown-option:last-child {
-        border-bottom: none;
-      }
-    </style>
 
     <!-- JavaScript -->
     <!-- Verhindert mehrfache Bestätigungsdialoge -->
     <script type="module" src="/scripts/confirm-once.ts"></script>
 
     <script>
-      console.log('Admin dashboard HTML loaded');
+      console.info('Admin dashboard HTML loaded');
 
       // Globale Modal-Funktionen direkt definieren
       window.showModal = function (modalId) {
-        console.log('showModal called with:', modalId);
-        const modal = document.getElementById(modalId);
+        console.info('showModal called with:', modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
-          console.log('Modal element found, showing it');
+          console.info('Modal element found, showing it');
           modal.style.display = 'flex';
         } else {
           console.error('Modal element not found:', modalId);
@@ -1328,7 +288,7 @@
       };
 
       window.hideModal = function (modalId) {
-        const modal = document.getElementById(modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
           modal.style.display = 'none';
         } else {
@@ -1349,14 +309,14 @@
           const url = args[0];
           const startTime = performance.now();
 
-          console.log(`[Performance] Request #${requestId} starting: ${url}`);
+          console.info(`[Performance] Request #${requestId} starting: ${url}`);
 
           return originalFetch
             .apply(this, args)
             .then((response) => {
               const endTime = performance.now();
               const duration = (endTime - startTime).toFixed(2);
-              console.log(`[Performance] Request #${requestId} completed: ${url} - ${duration}ms (Status: ${response.status})`);
+              console.info(`[Performance] Request #${requestId} completed: ${url} - ${duration}ms (Status: ${response.status})`);
               return response;
             })
             .catch((error) => {
@@ -1371,10 +331,10 @@
         window.addEventListener('load', () => {
           const perfData = performance.getEntriesByType('navigation')[0];
           if (perfData) {
-            console.log('[Performance] Page Load Metrics:');
-            console.log(`  - DOM Content Loaded: ${perfData.domContentLoadedEventEnd.toFixed(2)}ms`);
-            console.log(`  - Load Complete: ${perfData.loadEventEnd.toFixed(2)}ms`);
-            console.log(`  - Total Resources: ${performance.getEntriesByType('resource').length}`);
+            console.info('[Performance] Page Load Metrics:');
+            console.info(`  - DOM Content Loaded: ${perfData.domContentLoadedEventEnd.toFixed(2)}ms`);
+            console.info(`  - Load Complete: ${perfData.loadEventEnd.toFixed(2)}ms`);
+            console.info(`  - Total Resources: ${performance.getEntriesByType('resource').length}`);
           }
         });
       })();
@@ -1384,18 +344,22 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/show-section.ts"></script>
     <script type="module" src="/scripts/admin-dashboard.ts"></script>
-    <script type="module" src="/scripts/employee-deletion.ts"></script>
     <script type="module" src="/scripts/role-switch.ts"></script>
 
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+
       // Breadcrumb wird automatisch generiert basierend auf der URL
       initBreadcrumb();
     </script>
 
     <!-- Initialize dashboard on page load -->
     <script type="module">
+      // Import ApiClient for dropdown functions
+      import { ApiClient } from '/utils/api-client.js';
+      window.ApiClient = ApiClient;
+
       // Check if user should be on admin dashboard by reading from JWT token
       const token = localStorage.getItem('token');
       let activeRole = null;
@@ -1414,7 +378,7 @@
             localStorage.setItem('userRole', userRole);
           }
 
-          console.log('[Admin Dashboard] Token analysis:', {
+          console.info('[Admin Dashboard] Token analysis:', {
             tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
             finalActiveRole: activeRole,
@@ -1430,22 +394,22 @@
       // Admin and root users can access admin dashboard when in admin mode
       if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
         // User is correctly on admin dashboard
-        console.log('[Admin Dashboard] User has admin access');
+        console.info('[Admin Dashboard] User has admin access');
       } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'employee') {
         // User has switched to employee role - redirect
-        console.log('[Admin Dashboard] User has switched to employee - redirecting');
+        console.info('[Admin Dashboard] User has switched to employee - redirecting');
         window.location.replace('/employee-dashboard');
       } else if (userRole === 'root' && activeRole === 'root') {
         // Root user is in root mode - redirect to root dashboard
-        console.log('[Admin Dashboard] Root user in root mode - redirecting to root dashboard');
+        console.info('[Admin Dashboard] Root user in root mode - redirecting to root dashboard');
         window.location.replace('/root-dashboard');
       } else if (userRole === 'employee') {
         // Employee trying to access admin dashboard - redirect
-        console.log('[Admin Dashboard] Employee detected - redirecting to employee dashboard');
+        console.info('[Admin Dashboard] Employee detected - redirecting to employee dashboard');
         window.location.replace('/employee-dashboard');
       } else if (!userRole) {
         // No user role - redirect to login
-        console.log('[Admin Dashboard] No user role - redirecting to login');
+        console.info('[Admin Dashboard] No user role - redirecting to login');
         window.location.replace('/login');
       }
 
@@ -1459,20 +423,15 @@
 
           // If no specific section or 'dashboard-section' requested, show dashboard
           if (!requestedSection || requestedSection === 'dashboard-section' || requestedSection === 'dashboard') {
-            // Use showSection directly (it's already imported statically)
-            if (typeof showSection === 'function') {
-              showSection('dashboard');
-            } else {
-              // Fallback if function not available
-              const dashboardSection = document.getElementById('dashboard-section');
-              if (dashboardSection) {
-                // Hide all sections
-                document.querySelectorAll('.content-section').forEach((section) => {
-                  section.style.display = 'none';
-                });
-                // Show dashboard
-                dashboardSection.style.display = 'block';
-              }
+            // Fallback to direct DOM manipulation since showSection is not imported
+            const dashboardSection = document.querySelector('#dashboard-section');
+            if (dashboardSection) {
+              // Hide all sections
+              document.querySelectorAll('.content-section').forEach((section) => {
+                section.style.display = 'none';
+              });
+              // Show dashboard
+              dashboardSection.style.display = 'block';
             }
           }
         }, 100);
@@ -1480,116 +439,309 @@
     </script>
     <script>
       // Direkte Event-Listener hinzufügen
-      console.log('Adding direct event listeners');
-
-      // Performance monitoring helper
-      function measurePerformance(label, fn) {
-        const startTime = performance.now();
-        console.log(`[Performance] Starting: ${label}`);
-
-        const result = fn();
-
-        if (result && result.then) {
-          // Handle promises
-          return result
-            .then((res) => {
-              const endTime = performance.now();
-              console.log(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
-              return res;
-            })
-            .catch((err) => {
-              const endTime = performance.now();
-              console.error(`[Performance] Failed: ${label} - ${(endTime - startTime).toFixed(2)}ms`, err);
-              throw err;
-            });
-        } else {
-          // Handle synchronous functions
-          const endTime = performance.now();
-          console.log(`[Performance] Completed: ${label} - ${(endTime - startTime).toFixed(2)}ms`);
-          return result;
-        }
-      }
+      console.info('Adding direct event listeners');
 
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('[Performance] DOMContentLoaded event fired');
-        const pageStartTime = performance.now();
-        // Event-Listener für das Schließen des Mitarbeiter-Modals
-        const closeEmployeeModalBtn = document.getElementById('close-employee-modal');
-        const cancelEmployeeBtn = document.getElementById('cancel-employee-button');
-        const employeeModal = document.getElementById('employee-modal');
+        console.info('[Performance] DOMContentLoaded event fired');
+        // Event-Listener für das Schließen des Mitarbeiter-Modals (neu mit data-action)
+        const employeeModal = document.querySelector('#employee-modal');
 
-        if (closeEmployeeModalBtn && employeeModal) {
-          console.log('Close employee modal button found, adding event listener');
-          closeEmployeeModalBtn.addEventListener('click', function () {
-            console.log('Close button clicked, hiding employee modal');
-            employeeModal.style.display = 'none';
+        // Handler für alle Buttons mit data-action="close-employee-modal"
+        document.querySelectorAll('[data-action="close-employee-modal"]').forEach((button) => {
+          button.addEventListener('click', function () {
+            console.info('Close employee modal button clicked');
+            if (employeeModal) {
+              employeeModal.style.display = 'none';
+            }
           });
-        }
-
-        if (cancelEmployeeBtn && employeeModal) {
-          console.log('Cancel employee button found, adding event listener');
-          cancelEmployeeBtn.addEventListener('click', function () {
-            console.log('Cancel button clicked, hiding employee modal');
-            employeeModal.style.display = 'none';
-          });
-        }
+        });
 
         // Schließen des Modals beim Klick außerhalb
         employeeModal?.addEventListener('click', function (event) {
           if (event.target === employeeModal) {
-            console.log('Clicked outside modal content, hiding employee modal');
+            console.info('Clicked outside modal content, hiding employee modal');
             employeeModal.style.display = 'none';
           }
         });
-        console.log('DOM loaded, setting up debugging handlers');
+
+        // Neue dedizierte Funktionen für Active Status Dropdown (Aktiv/Inaktiv)
+        window.toggleActiveStatusDropdown = function () {
+          console.info('toggleActiveStatusDropdown called');
+          const dropdown = document.querySelector('#employee-active-status-dropdown');
+          const display = document.querySelector('#employee-active-status-display');
+
+          if (dropdown && display) {
+            // Close all other dropdowns first
+            document.querySelectorAll('.dropdown-options').forEach((d) => {
+              if (d !== dropdown) d.classList.remove('active', 'show');
+            });
+            document.querySelectorAll('.dropdown-display').forEach((d) => {
+              if (d !== display) d.classList.remove('active');
+            });
+
+            // Toggle this dropdown
+            const isActive = dropdown.classList.contains('active');
+            if (isActive) {
+              dropdown.classList.remove('active', 'show');
+              display.classList.remove('active');
+              console.info('Active Status dropdown closed');
+            } else {
+              dropdown.classList.add('active', 'show');
+              display.classList.add('active');
+              console.info('Active Status dropdown opened - should be visible now!');
+              console.info('Dropdown element:', dropdown);
+              console.info('Classes on dropdown:', dropdown.className);
+            }
+          } else {
+            console.error('Active Status dropdown elements not found');
+          }
+        };
+
+        window.selectActiveStatusOption = function (value, text) {
+          console.info('selectActiveStatusOption called:', value, text);
+          const hiddenInput = document.querySelector('#employee-active-status-select');
+          const display = document.querySelector('#employee-active-status-display');
+          const dropdown = document.querySelector('#employee-active-status-dropdown');
+
+          if (hiddenInput && display && dropdown) {
+            hiddenInput.value = value;
+            const span = display.querySelector('span');
+            if (span) {
+              span.textContent = text;
+            }
+            dropdown.classList.remove('active', 'show');
+            display.classList.remove('active');
+            console.info('Active Status selected:', value, text);
+          }
+        };
+
+        // Global click handler to close dropdown when clicking outside
+        document.addEventListener('click', function (e) {
+          if (!e.target.closest('#employeeActiveStatusWrapper')) {
+            const dropdown = document.querySelector('#employee-active-status-dropdown');
+            const display = document.querySelector('#employee-active-status-display');
+            if (dropdown && display) {
+              dropdown.classList.remove('active', 'show');
+              display.classList.remove('active');
+            }
+          }
+        });
+
+        // Helper functions for notifications
+        function showSuccess(message) {
+          // Create success toast/notification
+          console.info('Success:', message);
+          Toastify({
+            text: message,
+            duration: 3000,
+            gravity: 'top',
+            position: 'right',
+            backgroundColor: '#22c55e',
+          }).showToast();
+        }
+
+        function showError(message) {
+          // Create error toast/notification
+          console.error('Error:', message);
+          Toastify({
+            text: 'Fehler: ' + message,
+            duration: 3000,
+            gravity: 'top',
+            position: 'right',
+            backgroundColor: '#ef4444',
+          }).showToast();
+        }
+
+        // Employee form submit handler
+        const employeeForm = document.querySelector('#create-employee-form');
+        if (employeeForm) {
+          employeeForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const mode = this.dataset.mode || 'create';
+            const employeeId = this.dataset.employeeId;
+
+            // Convert FormData to object (safe from injection)
+            const data = Object.create(null); // Use null prototype to prevent prototype pollution
+            formData.forEach((value, key) => {
+              // Convert to camelCase for API v2
+              const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+              // Validate key to prevent injection
+              if (typeof camelKey === 'string' && camelKey.length > 0) {
+                // eslint-disable-next-line security/detect-object-injection
+                data[camelKey] = value;
+              }
+            });
+
+            // Get dropdown values
+            data.departmentId = document.querySelector('#employee-department-select')?.value || null;
+            data.teamId = document.querySelector('#employee-team-select')?.value || null;
+            data.isActive = document.querySelector('#employee-active-status-select')?.value === '1';
+
+            console.info('Submitting employee data:', data, 'Mode:', mode);
+
+            try {
+              const token = localStorage.getItem('token');
+              let response;
+
+              if (mode === 'edit' && employeeId) {
+                // Update existing employee
+                response = await fetch(`/api/v2/users/${employeeId}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(data),
+                });
+              } else {
+                // Create new employee
+                data.password = data.password || 'AssixxTemp123!'; // Default password for new users
+                response = await fetch('/api/v2/users', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(data),
+                });
+              }
+
+              if (response.ok) {
+                await response.json();
+                showSuccess(mode === 'edit' ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
+
+                // Close modal
+                document.querySelector('#employee-modal').style.display = 'none';
+
+                // Reset form
+                employeeForm.reset();
+                delete employeeForm.dataset.mode;
+                delete employeeForm.dataset.employeeId;
+
+                // Reload employees table if function exists
+                if (typeof window.loadEmployeesTable === 'function') {
+                  window.loadEmployeesTable();
+                }
+              } else {
+                const error = await response.json();
+                showError(error.message || 'Fehler beim Speichern');
+              }
+            } catch (error) {
+              console.error('Error saving employee:', error);
+              showError('Fehler beim Speichern des Mitarbeiters');
+            }
+          });
+        }
+
+        // Function to show new employee modal
+        window.showNewEmployeeModal = function () {
+          const modal = document.querySelector('#employee-modal');
+          const form = document.querySelector('#create-employee-form');
+
+          if (modal && form) {
+            // Reset form
+            form.reset();
+            delete form.dataset.mode;
+            delete form.dataset.employeeId;
+
+            // Reset modal title
+            const modalTitle = modal.querySelector('.modal-title');
+            if (modalTitle) {
+              modalTitle.textContent = 'Neuer Mitarbeiter';
+            }
+
+            // Make password fields required again for new employee
+            const passwordInput = form.querySelector('input[name="password"]');
+            const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
+            if (passwordInput) passwordInput.setAttribute('required', 'required');
+            if (passwordConfirmInput) passwordConfirmInput.setAttribute('required', 'required');
+
+            // Show email confirm field again
+            const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
+            if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
+
+            // Reset submit button
+            const submitBtn = document.querySelector('#employee-submit-btn');
+            if (submitBtn) {
+              submitBtn.innerHTML = '<i class="fas fa-save"></i> <span>Mitarbeiter erstellen</span>';
+            }
+
+            // Reset dropdowns
+            if (typeof window.selectDropdownOption === 'function') {
+              window.selectDropdownOption('employee-department', '', 'Keine Abteilung');
+              window.selectDropdownOption('employee-team', '', 'Kein Team');
+            }
+            if (typeof window.selectActiveStatusOption === 'function') {
+              window.selectActiveStatusOption('1', 'Aktiv');
+            }
+
+            // Show modal
+            modal.style.display = 'flex';
+
+            // Load departments for dropdown
+            if (typeof window.loadDepartmentsForEmployeeSelect === 'function') {
+              window.loadDepartmentsForEmployeeSelect();
+            }
+          }
+        };
+
+        console.info('DOM loaded, setting up debugging handlers');
 
         // Debug-Funktionen für alle Buttons (ENTFERNT - blockiert role-switch)
         // document.querySelectorAll('button').forEach((button) => {
-        //   console.log('Found button:', button.textContent || button.innerHTML);
+        //   console.info('Found button:', button.textContent || button.innerHTML);
         //   button.addEventListener('click', function (e) {
-        //     console.log('Button clicked:', this.textContent || this.innerHTML);
+        //     console.info('Button clicked:', this.textContent || this.innerHTML);
         //   });
         // });
 
         // Spezieller Listener für den Dokument-Upload-Button
         const docUploadBtn = document.querySelector('button[type="submit"]');
         if (docUploadBtn && docUploadBtn.textContent.includes('Gehaltsabrechnung hochladen')) {
-          console.log('Dokument Upload Button gefunden:', docUploadBtn.textContent);
+          console.info('Dokument Upload Button gefunden:', docUploadBtn.textContent);
           // Button ist bereits Teil eines Formulars, kein zusätzlicher Listener nötig
         } else {
-          console.log('Dokument Upload Button ist ein Submit-Button im Formular');
+          console.info('Dokument Upload Button ist ein Submit-Button im Formular');
         }
 
         // Direkter Link für Sidebar-Links
         document.querySelectorAll('.sidebar-link').forEach((link) => {
-          console.log('Found sidebar link:', link.textContent);
           link.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
-            console.log('Sidebar link clicked:', href);
 
             if (href === '#departments') {
               e.preventDefault();
-              window.location.href = '/departments';
+              window.location.href = '/manage-departments';
             } else if (href === '#employees') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing employees section');
-              showSection('employees');
+              console.info('Showing employees section');
+              if (typeof window.showSection === 'function') {
+                window.showSection('employees');
+              }
             } else if (href === '#documents') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing documents section');
-              showSection('documents');
+              console.info('Showing documents section');
+              if (typeof window.showSection === 'function') {
+                window.showSection('documents');
+              }
             } else if (href === '#teams') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing teams section');
-              showSection('teams');
+              console.info('Showing teams section');
+              if (typeof window.showSection === 'function') {
+                window.showSection('teams');
+              }
             } else if (href === '#settings') {
               e.preventDefault();
               e.stopPropagation();
-              console.log('Showing settings section');
-              showSection('settings');
+              console.info('Showing settings section');
+              if (typeof window.showSection === 'function') {
+                window.showSection('settings');
+              }
             }
           });
         });
@@ -1600,45 +752,134 @@
       });
     </script>
     <script>
-      // Custom Dropdown Funktionen
+      // Custom Dropdown Funktionen - Global definiert für Employee Modal
+      // Using the same pattern as chat.html that works!
       function toggleDropdown(dropdownId) {
-        const dropdown = document.getElementById(dropdownId + '-dropdown');
-        const display = document.getElementById(dropdownId + '-display');
+        console.info('toggleDropdown called for:', dropdownId);
+        const dropdown = document.querySelector(dropdownId + '-dropdown');
+        const display = document.querySelector(dropdownId + '-display');
 
         if (dropdown && display) {
-          dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-          display.classList.toggle('active');
+          // Close all other dropdowns
+          document.querySelectorAll('.dropdown-display').forEach((d) => {
+            if (d !== display) d.classList.remove('active');
+          });
+          document.querySelectorAll('.dropdown-options').forEach((d) => {
+            if (d !== dropdown) d.classList.remove('active');
+          });
 
-          // Optional: Close when clicking outside
-          if (dropdown.style.display === 'block') {
-            setTimeout(() => {
-              document.addEventListener('click', function closeDropdown(e) {
-                if (!e.target.closest('.custom-dropdown')) {
-                  dropdown.style.display = 'none';
-                  display.classList.remove('active');
-                  document.removeEventListener('click', closeDropdown);
-                }
-              });
-            }, 100);
-          }
+          // Toggle current dropdown
+          display.classList.toggle('active');
+          dropdown.classList.toggle('active');
+
+          console.info('Dropdown toggled:', dropdown.classList.contains('active') ? 'opened' : 'closed');
+        } else {
+          console.error('Dropdown elements not found for:', dropdownId);
         }
       }
 
+      // Add global click handler like in chat.html
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Event Delegation for all data-action buttons (replacing onclick handlers)
+      /* global showTeamModal, closeTeamModal, saveTeam, showMachineModal, closeMachineModal, saveMachine, showAreaModal, closeAreaModal, saveArea, showEmployeeModal, showAllTeams, hideModal, toggleDropdown, selectDropdownOption */
+      document.addEventListener('click', function (e) {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.dataset.action;
+
+        switch (action) {
+          // Modal controls
+          case 'show-team-modal':
+            if (typeof showTeamModal === 'function') showTeamModal();
+            break;
+          case 'close-team-modal':
+            if (typeof closeTeamModal === 'function') closeTeamModal();
+            break;
+          case 'save-team':
+            if (typeof saveTeam === 'function') saveTeam();
+            break;
+          case 'show-machine-modal':
+            if (typeof showMachineModal === 'function') showMachineModal();
+            break;
+          case 'close-machine-modal':
+            if (typeof closeMachineModal === 'function') closeMachineModal();
+            break;
+          case 'save-machine':
+            if (typeof saveMachine === 'function') saveMachine();
+            break;
+          case 'show-area-modal':
+            if (typeof showAreaModal === 'function') showAreaModal();
+            break;
+          case 'close-area-modal':
+            if (typeof closeAreaModal === 'function') closeAreaModal();
+            break;
+          case 'save-area':
+            if (typeof saveArea === 'function') saveArea();
+            break;
+          case 'show-employee-modal':
+            if (typeof showEmployeeModal === 'function') showEmployeeModal();
+            break;
+          case 'show-all-teams':
+            e.preventDefault();
+            if (typeof showAllTeams === 'function') showAllTeams();
+            break;
+          case 'hide-modal': {
+            const modalId = target.dataset.modal;
+            if (modalId && typeof hideModal === 'function') hideModal(modalId);
+            break;
+          }
+
+          // Dropdown controls
+          case 'toggle-dropdown': {
+            const dropdownId = target.dataset.dropdown;
+            if (dropdownId && typeof toggleDropdown === 'function') toggleDropdown(dropdownId);
+            break;
+          }
+          case 'select-dropdown': {
+            const dropdown = target.dataset.dropdown;
+            const value = target.dataset.value || '';
+            const display = target.dataset.display || '';
+            if (typeof selectDropdownOption === 'function') {
+              selectDropdownOption(dropdown, value, display);
+            }
+            break;
+          }
+        }
+      });
+
       function selectDropdownOption(dropdownId, value, text) {
-        const hiddenInput = document.getElementById(dropdownId + '-select');
-        const display = document.getElementById(dropdownId + '-display');
-        const dropdown = document.getElementById(dropdownId + '-dropdown');
+        console.info('selectDropdownOption called:', dropdownId, value, text);
+        // Try both ID formats for compatibility
+        let hiddenInput = document.querySelector(dropdownId + '-select');
+        if (!hiddenInput) {
+          hiddenInput = document.querySelector(dropdownId + 'Select');
+        }
+        const display = document.querySelector(dropdownId + '-display');
+        const dropdown = document.querySelector(dropdownId + '-dropdown');
 
         if (hiddenInput && display && dropdown) {
           hiddenInput.value = value;
-          display.querySelector('span').textContent = text;
-          dropdown.style.display = 'none';
+          const span = display.querySelector('span');
+          if (span) {
+            span.textContent = text;
+          }
+          dropdown.classList.remove('active'); // USE ACTIVE NOT SHOW!
           display.classList.remove('active');
+
+          // Log successful selection
+          console.info('✅ dropdown selected:', { dropdownId, value, text });
 
           // Spezielle Logik für Employee Status Dropdown
           if (dropdownId === 'employee-status') {
-            const startDateInput = document.getElementById('availability-start-date');
-            const endDateInput = document.getElementById('availability-end-date');
+            const startDateInput = document.querySelector('#availability-start-date');
+            const endDateInput = document.querySelector('#availability-end-date');
 
             if (startDateInput && endDateInput) {
               if (value === 'available') {
@@ -1658,21 +899,30 @@
               }
             }
           }
+
+          // Trigger change event for dependent dropdowns
+          if (dropdownId === 'employeeDepartment') {
+            // Reload teams when department changes
+            if (typeof window.loadTeamsForEmployeeSelect === 'function') {
+              window.loadTeamsForEmployeeSelect();
+            }
+          }
+        } else {
+          console.error('Dropdown elements not found for selection:', dropdownId);
         }
       }
+
+      // Ensure functions are available globally
+      window.toggleDropdown = toggleDropdown;
+      window.selectDropdownOption = selectDropdownOption;
     </script>
     <script>
+      /* global DOMPurify */
       // Funktionstabelle direkt definieren
-
-      // Departments-Tabelle wurde nach departments.html verschoben
-
-      // Department-Funktionen wurden nach departments.html verschoben
-
-      // Department-Funktionen wurden nach departments.html verschoben
 
       // Load documents table
       async function loadDocumentsTable() {
-        console.log('Loading documents table');
+        console.info('Loading documents table');
         const token = localStorage.getItem('token');
 
         try {
@@ -1683,11 +933,12 @@
           if (response.ok) {
             const data = await response.json();
             const documents = data.documents || data;
-            console.log(`Loaded ${documents.length} documents`);
+            console.info(`Loaded ${documents.length} documents`);
 
-            const tbody = document.getElementById('documents-table-body');
+            const tbody = document.querySelector('#documents-table-body');
             if (tbody) {
-              tbody.innerHTML = documents
+              // Safe: HTML is generated from server data and sanitized with dom-utils
+              const htmlContent = documents
                 .map((doc) => {
                   // Bestimme den Empfänger-Text basierend auf recipient_type
                   let recipientDisplay = '-';
@@ -1717,21 +968,21 @@
                       </td>
                       <td>
                         <div class="btn-group" role="group">
-                          <button class="btn btn-sm btn-primary" onclick="downloadDocument(${doc.id})" title="Herunterladen">
+                          <button class="btn btn-sm btn-primary" data-action="download-document" data-doc-id="${doc.id}" title="Herunterladen">
                             <i class="fas fa-download me-1"></i>
                             Download
                           </button>
                           ${
                             !doc.is_archived
                               ? `
-                            <button class="btn btn-sm btn-warning" onclick="archiveDocument(${doc.id})" title="Archivieren">
+                            <button class="btn btn-sm btn-warning" data-action="archive-document" data-doc-id="${doc.id}" title="Archivieren">
                               <i class="fas fa-archive me-1"></i>
                               Archiv
                             </button>
                           `
                               : ''
                           }
-                          <button class="btn btn-sm btn-danger" onclick="deleteDocument(${doc.id})" title="Löschen">
+                          <button class="btn btn-sm btn-danger" data-action="delete-document" data-doc-id="${doc.id}" title="Löschen">
                             <i class="fas fa-trash me-1"></i>
                             Löschen
                           </button>
@@ -1741,6 +992,32 @@
                   `;
                 })
                 .join('');
+              // Use dom-utils setHTML for safe sanitization
+              window.setHTML(tbody, htmlContent);
+
+              // Event delegation for document actions
+              if (!tbody.dataset.delegationInitialized) {
+                tbody.dataset.delegationInitialized = 'true';
+                tbody.addEventListener('click', (e) => {
+                  const button = e.target.closest('[data-action]');
+                  if (button) {
+                    const action = button.dataset.action;
+                    const docId = button.dataset.docId;
+
+                    switch (action) {
+                      case 'download-document':
+                        if (window.downloadDocument) window.downloadDocument(parseInt(docId));
+                        break;
+                      case 'archive-document':
+                        if (window.archiveDocument) window.archiveDocument(parseInt(docId));
+                        break;
+                      case 'delete-document':
+                        if (window.deleteDocument) window.deleteDocument(parseInt(docId));
+                        break;
+                    }
+                  }
+                });
+              }
             }
           }
         } catch (error) {
@@ -1749,15 +1026,22 @@
       }
 
       // Mitarbeiter-Status ändern
-      async function changeEmployeeStatus(employeeId) {
-        console.log(`Changing status for employee ${employeeId}`);
+      window.changeEmployeeStatus = async function (employeeId) {
+        console.info(`Changing status for employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
         try {
           // Mitarbeiter-Daten laden
-          const response = await fetch(`/api/users/${employeeId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+            ? fetch(`/api/v2/users/${employeeId}`, {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
+              })
+            : fetch(`/api/users/${employeeId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+              }));
 
           if (!response.ok) {
             console.error('Response not OK:', response.status, response.statusText);
@@ -1766,16 +1050,30 @@
             throw new Error('Failed to load employee data');
           }
 
-          const employee = await response.json();
-          console.log('Employee data loaded:', employee);
+          const responseData = await response.json();
+          // Handle v2 API response structure
+          const employee =
+            window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined ? responseData.data || {} : responseData;
+          console.info('Employee data loaded:', employee);
 
           // Modal-Felder befüllen
-          const employeeIdInput = document.getElementById('status-employee-id');
-          const employeeName = document.getElementById('status-employee-name');
-          const statusDropdown = document.getElementById('employee-status-dropdown');
-          const statusDisplay = document.getElementById('employee-status-display');
+          console.info('Looking for modal elements...');
+          const modal = document.querySelector('#employee-status-modal');
+          console.info('Modal found:', !!modal);
 
-          console.log('DOM Elements:', {
+          const employeeIdInput = document.querySelector('#status-employee-id');
+          const employeeName = document.querySelector('#status-employee-name');
+          const statusDropdown = document.querySelector('#employee-status-dropdown');
+          const statusDisplay = document.querySelector('#employee-status-display');
+
+          console.info('Elements found:', {
+            employeeIdInput: !!employeeIdInput,
+            employeeName: !!employeeName,
+            statusDropdown: !!statusDropdown,
+            statusDisplay: !!statusDisplay,
+          });
+
+          console.info('DOM Elements:', {
             employeeIdInput: employeeIdInput,
             employeeName: employeeName,
             employeeNameType: employeeName ? employeeName.tagName : 'null',
@@ -1783,32 +1081,47 @@
 
           if (employeeIdInput) {
             employeeIdInput.value = employeeId;
-            console.log('Set employee ID:', employeeId);
+            console.info('Set employee ID:', employeeId);
           }
           if (employeeName) {
-            const fullName = `${employee.first_name || ''} ${employee.last_name || ''}`;
+            // Handle both v1 (snake_case) and v2 (camelCase) field names
+            const firstName = employee.firstName || employee.first_name || '';
+            const lastName = employee.lastName || employee.last_name || '';
+            const fullName = `${firstName} ${lastName}`;
             employeeName.value = fullName;
-            console.log('Set employee name:', fullName);
+            console.info('Set employee name:', fullName);
           } else {
-            console.error('Employee name input not found!');
+            console.error('Employee name input not found! Element might not exist in DOM.');
+            // Try to recover by checking if modal exists
+            const modalCheck = document.querySelector('#employee-status-modal');
+            if (!modalCheck) {
+              console.error('Modal itself not found! Cannot proceed.');
+              alert('Ein Fehler ist aufgetreten. Bitte laden Sie die Seite neu.');
+              return;
+            }
           }
 
-          // Aktuellen Status setzen
-          const currentStatus = employee.availability_status || 'available';
+          // Aktuellen Status setzen - handle both v1 and v2 field names
+          let currentStatus = employee.availabilityStatus || employee.availability_status || 'available';
+          // Map v2 API's "other" back to "unavailable" for display
+          if (window.FEATURE_FLAGS?.USE_API_V2_USERS && currentStatus === 'other') {
+            currentStatus = 'unavailable';
+          }
           if (statusDisplay) {
-            const statusText =
-              {
-                available: 'Verfügbar',
-                vacation: 'Urlaub',
-                sick: 'Krank',
-                unavailable: 'Nicht verfügbar',
-              }[currentStatus] || 'Verfügbar';
+            // Use Map to avoid object injection vulnerability
+            const statusMap = new Map([
+              ['available', 'Verfügbar'],
+              ['vacation', 'Urlaub'],
+              ['sick', 'Krank'],
+              ['unavailable', 'Nicht verfügbar'],
+            ]);
+            const statusText = statusMap.get(currentStatus) || 'Verfügbar';
             statusDisplay.querySelector('span').textContent = statusText;
           }
 
           // Datumsfelder initial setzen
-          const startDateInput = document.getElementById('availability-start-date');
-          const endDateInput = document.getElementById('availability-end-date');
+          const startDateInput = document.querySelector('#availability-start-date');
+          const endDateInput = document.querySelector('#availability-end-date');
 
           if (startDateInput && endDateInput) {
             if (currentStatus === 'available') {
@@ -1836,15 +1149,14 @@
             }
           }
 
-          // Modal öffnen
-          const modal = document.getElementById('employee-status-modal');
+          // Modal öffnen (reuse the already declared modal variable)
           if (modal) {
             modal.style.display = 'flex';
-            console.log('Modal opened');
+            console.info('Modal opened');
 
             // Form zurücksetzen - NACH dem Setzen der Werte!
             // Das war das Problem - form.reset() löscht alle Werte
-            const form = document.getElementById('employee-status-form');
+            const form = document.querySelector('#employee-status-form');
             if (form) {
               // Nur die Date-Felder und Notes zurücksetzen, nicht alle Felder
               const startDate = form.querySelector('input[name="start_date"]');
@@ -1864,35 +1176,73 @@
           console.error('Error loading employee for status change:', error);
           alert('Fehler beim Laden der Mitarbeiterdaten');
         }
-      }
+      };
 
       // Employee Status Form Submit Handler
       document.addEventListener('DOMContentLoaded', () => {
-        const statusForm = document.getElementById('employee-status-form');
+        const statusForm = document.querySelector('#employee-status-form');
         if (statusForm) {
           statusForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const formData = new FormData(statusForm);
-            const employeeId = document.getElementById('status-employee-id').value;
+            const employeeId = document.querySelector('#status-employee-id').value;
             const token = localStorage.getItem('token');
 
-            const statusData = {
-              availability_status: formData.get('status'),
-              availability_start: formData.get('start_date'),
-              availability_end: formData.get('end_date'),
-              availability_notes: formData.get('notes'),
-            };
+            // Get the status and map "unavailable" to "other" for v2 API
+            const rawStatus = formData.get('status');
+            const v2Status = rawStatus === 'unavailable' ? 'other' : rawStatus;
+
+            // Get dates and convert to ISO format for v2
+            const startDate = formData.get('start_date');
+            const endDate = formData.get('end_date');
+
+            // Build the data object based on API version
+            const statusData = window.FEATURE_FLAGS?.USE_API_V2_USERS
+              ? (() => {
+                  // v2 API expects camelCase and specific status values
+                  const data = {
+                    availabilityStatus: v2Status,
+                  };
+                  // Only include dates if they have values (v2 validation expects ISO format or nothing)
+                  if (startDate) {
+                    data.availabilityStart = new Date(startDate).toISOString();
+                  }
+                  if (endDate) {
+                    data.availabilityEnd = new Date(endDate).toISOString();
+                  }
+                  const notes = formData.get('notes');
+                  if (notes) {
+                    data.availabilityNotes = notes;
+                  }
+                  return data;
+                })()
+              : {
+                  // v1 API expects snake_case
+                  availability_status: formData.get('status'),
+                  availability_start: formData.get('start_date'),
+                  availability_end: formData.get('end_date'),
+                  availability_notes: formData.get('notes'),
+                };
 
             try {
-              const response = await fetch(`/api/users/${employeeId}/availability`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(statusData),
-              });
+              const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+                ? fetch(`/api/v2/users/${employeeId}/availability`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                    },
+                    body: JSON.stringify(statusData),
+                  })
+                : fetch(`/api/users/${employeeId}/availability`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(statusData),
+                  }));
 
               if (response.ok) {
                 alert('Verfügbarkeitsstatus erfolgreich aktualisiert');
@@ -1900,8 +1250,15 @@
                 // Seite neu laden für vollständige Aktualisierung
                 window.location.reload();
               } else {
-                const error = await response.json();
-                alert(`Fehler: ${error.message || 'Status konnte nicht aktualisiert werden'}`);
+                const errorData = await response.json();
+                console.error('API Error Response:', errorData);
+                // Handle v2 API error format
+                const errorMessage = window.FEATURE_FLAGS?.USE_API_V2_USERS
+                  ? errorData.error?.message || errorData.message || 'Status konnte nicht aktualisiert werden'
+                  : errorData.message || 'Status konnte nicht aktualisiert werden';
+                alert(`Fehler: ${errorMessage}`);
+                // Log the full request data for debugging
+                console.info('Request data sent was:', statusData);
               }
             } catch (error) {
               console.error('Error updating availability status:', error);
@@ -1912,8 +1269,8 @@
       });
 
       // Abteilung löschen
-      async function deleteDepartment(departmentId) {
-        console.log(`Deleting department ${departmentId}`);
+      window.deleteDepartment = async function (departmentId) {
+        console.info(`Deleting department ${departmentId}`);
         if (!confirm('Sind Sie sicher, dass Sie diese Abteilung löschen möchten?')) {
           return;
         }
@@ -1921,14 +1278,23 @@
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch(`/api/departments/${departmentId}`, {
-            method: 'DELETE',
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
+            ? fetch(`/api/v2/departments/${departmentId}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
+              })
+            : fetch(`/api/departments/${departmentId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+              }));
 
           if (response.ok) {
             alert('Abteilung erfolgreich gelöscht');
-            loadDepartmentsTable();
+            if (typeof window.loadDepartmentsTable === 'function') {
+              window.loadDepartmentsTable();
+            }
           } else {
             const error = await response.json();
             alert(`Fehler: ${error.message}`);
@@ -1937,286 +1303,15 @@
           console.error('Error deleting department:', error);
           alert('Ein Fehler ist aufgetreten.');
         }
-      }
+      };
 
-      // Mitarbeiter bearbeiten
-      async function editEmployeeAsync(employeeId) {
-        console.log(`Editing employee ${employeeId}`);
-        const token = localStorage.getItem('token');
+      // OLD editEmployeeAsync - REMOVED (replaced by new editEmployee function above)
 
-        try {
-          const response = await fetch(`/api/users/${employeeId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-            const employee = await response.json();
-            console.log('Employee data:', employee);
-
-            // Erstelle ein Modal für die Bearbeitung
-            const modalHTML = `
-                        <div class="modal" id="edit-employee-modal" style="display: flex;">
-                            <div class="modal-content" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
-                                <div class="modal-header">
-                                    <h3 class="modal-title">Mitarbeiter bearbeiten</h3>
-                                    <button type="button" class="modal-close" onclick="document.getElementById('edit-employee-modal').remove()">&times;</button>
-                                </div>
-                                <form id="edit-employee-form">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                        <div class="form-group">
-                                            <label class="form-label">Benutzername</label>
-                                            <input type="text" name="username" class="form-control" value="${employee.username || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">E-Mail</label>
-                                            <input type="email" name="email" class="form-control" value="${employee.email || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Vorname</label>
-                                            <input type="text" name="first_name" class="form-control" value="${employee.first_name || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Nachname</label>
-                                            <input type="text" name="last_name" class="form-control" value="${employee.last_name || ''}" required>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Telefon</label>
-                                            <input type="tel" name="phone" class="form-control" value="${employee.phone || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Position</label>
-                                            <input type="text" name="position" class="form-control" value="${employee.position || ''}">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Abteilung</label>
-                                            <div class="custom-dropdown">
-                                                <div class="dropdown-display" id="edit-employee-department-display" onclick="toggleDropdown('edit-employee-department')">
-                                                    <span>${employee.department || 'Keine Abteilung'}</span>
-                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                                    </svg>
-                                                </div>
-                                                <div class="dropdown-options" id="edit-employee-department-dropdown" class="u-hidden">
-                                                    <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
-                                                        Keine Abteilung
-                                                    </div>
-                                                    <!-- Wird dynamisch gefüllt -->
-                                                </div>
-                                                <input type="hidden" name="department_id" id="edit-employee-department-select" value="${employee.department_id || ''}" />
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Geburtsdatum</label>
-                                            <input type="date" name="birthday" class="form-control" value="${employee.birthday ? employee.birthday.split('T')[0] : ''}">
-                                        </div>
-                                        <div class="form-group" style="grid-column: span 2;">
-                                            <label class="form-label">Notizen</label>
-                                            <textarea name="notes" class="form-control" rows="3">${employee.notes || ''}</textarea>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Status</label>
-                                            <div class="custom-dropdown">
-                                                <div class="dropdown-display" id="edit-employee-status-display" onclick="toggleDropdown('edit-employee-status')">
-                                                    <span>${employee.is_active ? 'Aktiv' : 'Inaktiv'}</span>
-                                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                                                        <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                                                    </svg>
-                                                </div>
-                                                <div class="dropdown-options" id="edit-employee-status-dropdown" class="u-hidden">
-                                                    <div class="dropdown-option" data-value="1" onclick="selectDropdownOption('edit-employee-status', '1', 'Aktiv')">
-                                                        Aktiv
-                                                    </div>
-                                                    <div class="dropdown-option" data-value="0" onclick="selectDropdownOption('edit-employee-status', '0', 'Inaktiv')">
-                                                        Inaktiv
-                                                    </div>
-                                                </div>
-                                                <input type="hidden" name="is_active" id="edit-employee-status-select" value="${employee.is_active ? '1' : '0'}" />
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Neues Passwort (optional)</label>
-                                            <input type="password" name="password" id="edit-employee-password" class="form-control" placeholder="Leer lassen für keine Änderung">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Passwort bestätigen</label>
-                                            <input type="password" name="password_confirm" id="edit-employee-password-confirm" class="form-control" placeholder="Passwort wiederholen">
-                                        </div>
-                                    </div>
-                                    <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
-                                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('edit-employee-modal').remove()">
-                                            Abbrechen
-                                        </button>
-                                        <button type="button" class="btn btn-primary" onclick="updateEmployee(${employeeId})">
-                                            <i class="fas fa-save"></i> Änderungen speichern
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    `;
-
-            // Modal zum Body hinzufügen
-            document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-            // Lade Abteilungen für das Custom Dropdown
-            const departmentDropdown = document.getElementById('edit-employee-department-dropdown');
-            if (departmentDropdown) {
-              // Hilfsfunktion zum Laden der Abteilungen
-              const loadDepts = async () => {
-                try {
-                  const deptResponse = await fetch('/api/departments', {
-                    headers: { Authorization: `Bearer ${token}` },
-                  });
-
-                  if (deptResponse.ok) {
-                    const departments = await deptResponse.json();
-
-                    // Clear existing options and add placeholder
-                    departmentDropdown.innerHTML = `
-                      <div class="dropdown-option" data-value="" onclick="selectDropdownOption('edit-employee-department', '', 'Keine Abteilung')">
-                        Keine Abteilung
-                      </div>
-                    `;
-
-                    // Add department options
-                    departments.forEach((dept) => {
-                      const optionDiv = document.createElement('div');
-                      optionDiv.className = 'dropdown-option';
-                      optionDiv.setAttribute('data-value', dept.id.toString());
-                      optionDiv.textContent = dept.name;
-                      optionDiv.onclick = () => {
-                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
-                      };
-                      departmentDropdown.appendChild(optionDiv);
-
-                      // If this is the current department, select it
-                      if (dept.id == employee.department_id) {
-                        selectDropdownOption('edit-employee-department', dept.id.toString(), dept.name);
-                      }
-                    });
-                  }
-                } catch (err) {
-                  console.error('Error loading departments:', err);
-                }
-              };
-
-              loadDepts();
-            }
-          } else {
-            console.error('Failed to load employee data');
-            alert('Fehler beim Laden der Mitarbeiterdaten.');
-          }
-        } catch (error) {
-          console.error('Error loading employee:', error);
-          alert('Ein Fehler ist aufgetreten.');
-        }
-      }
-
-      // Mitarbeiter aktualisieren
-      async function updateEmployee(employeeId) {
-        console.log(`Updating employee ${employeeId}`);
-        const token = localStorage.getItem('token');
-        const form = document.getElementById('edit-employee-form');
-
-        if (!form) {
-          console.error('Edit employee form not found');
-          return;
-        }
-
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-
-        // Password validation
-        if (data.password && data.password.trim() !== '') {
-          if (data.password !== data.password_confirm) {
-            alert('Die Passwörter stimmen nicht überein!');
-            return;
-          }
-          // Remove password_confirm from data as it's not needed for the API
-          delete data.password_confirm;
-        } else {
-          // Remove both password fields if empty
-          delete data.password;
-          delete data.password_confirm;
-        }
-
-        // Convert string values to proper types
-        if (data.department_id === '') {
-          data.department_id = null;
-        } else if (data.department_id) {
-          data.department_id = parseInt(data.department_id);
-        }
-
-        // Convert is_active to boolean and add status field
-        data.is_active = data.is_active === '1';
-        // Also set the status field based on is_active
-        data.status = data.is_active ? 'active' : 'inactive';
-
-        // Clean up empty values but keep is_active and status even if false
-        Object.keys(data).forEach((key) => {
-          if (key !== 'is_active' && key !== 'status' && (data[key] === '' || data[key] === null)) {
-            delete data[key];
-          }
-        });
-
-        // Debug log to check what we're sending
-        console.log('Sending update data:', data);
-
-        try {
-          const response = await fetch(`/api/users/${employeeId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(data),
-          });
-
-          if (response.ok) {
-            alert('Mitarbeiter erfolgreich aktualisiert');
-            // Modal schließen
-            const modal = document.getElementById('edit-employee-modal');
-            if (modal) modal.remove();
-            // Tabelle neu laden
-            if (typeof loadEmployeesTable === 'function') {
-              loadEmployeesTable();
-            }
-            // Diese Funktionen sind möglicherweise nicht global verfügbar
-            if (typeof window.loadRecentEmployees === 'function') {
-              window.loadRecentEmployees();
-            }
-            if (typeof window.loadDashboardStats === 'function') {
-              window.loadDashboardStats();
-            }
-            // Als Fallback die Seite neu laden um alle Daten zu aktualisieren
-            if (typeof loadEmployeesTable !== 'function') {
-              window.location.reload();
-            }
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message || 'Unbekannter Fehler'}`);
-          }
-        } catch (error) {
-          console.error('Error updating employee:', error);
-          alert('Ein Fehler ist aufgetreten beim Aktualisieren des Mitarbeiters.');
-        }
-      }
-
-      // Mitarbeiter löschen
-      async function deleteEmployee(employeeId) {
-        // This function is now handled by employee-deletion.ts
-        // Call the enhanced delete dialog from employee-deletion.ts
-        if (window.deleteEmployee) {
-          window.deleteEmployee(employeeId);
-        } else {
-          console.error('Delete employee function not loaded from employee-deletion.ts');
-          alert('Löschfunktion nicht verfügbar. Bitte laden Sie die Seite neu.');
-        }
-      }
+      // Mitarbeiter löschen - moved to manage-employees.ts
 
       // Mitarbeiterstatus ändern
-      async function toggleEmployeeStatus(employeeId, currentStatus) {
-        console.log(`Toggling employee ${employeeId} status from ${currentStatus}`);
+      window.toggleEmployeeStatus = async function (employeeId, currentStatus) {
+        console.info(`Toggling employee ${employeeId} status from ${currentStatus}`);
         const token = localStorage.getItem('token');
         const newStatus = currentStatus === 'inactive' ? 'active' : 'inactive';
 
@@ -2241,7 +1336,7 @@
           console.error('Error toggling employee status:', error);
           alert('Ein Fehler ist aufgetreten.');
         }
-      }
+      };
 
       // Add event listener for payslip upload form
       document.addEventListener('DOMContentLoaded', () => {
@@ -2274,10 +1369,10 @@
 
       // Modal functions redefined for redundancy
       function showModal(modalId) {
-        console.log('Inline showModal called with:', modalId);
-        const modal = document.getElementById(modalId);
+        console.info('Inline showModal called with:', modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
-          console.log('Modal element found in inline function, showing it');
+          console.info('Modal element found in inline function, showing it');
           modal.style.display = 'flex';
         } else {
           console.error('Modal element not found in inline function:', modalId);
@@ -2285,96 +1380,316 @@
       }
 
       function hideModal(modalId) {
-        console.log('hideModal called for:', modalId);
-        const modal = document.getElementById(modalId);
+        console.info('hideModal called for:', modalId);
+        const modal = document.querySelector(modalId);
         if (modal) {
-          console.log('Modal element found in hideModal, hiding it');
+          console.info('Modal element found in hideModal, hiding it');
           modal.style.display = 'none';
         } else {
           console.error('Modal element not found in hideModal:', modalId);
         }
       }
 
-      function showEmployeeModal() {
-        console.log('showEmployeeModal function called');
-        const modal = document.getElementById('employee-modal');
-        if (modal) {
-          console.log('employee-modal found, showing directly');
-          modal.style.display = 'flex';
-          // Abteilungen für das Formular laden
-          if (typeof loadDepartmentsForEmployeeSelect === 'function') {
-            loadDepartmentsForEmployeeSelect();
-          } else {
-            console.error('loadDepartmentsForEmployeeSelect is not a function');
+      // REMOVED: Duplicate dropdown functions - using the ones defined earlier (line 2011)
+
+      // Lade Abteilungen für Employee Modal
+      // Cache for departments to prevent multiple API calls
+      let departmentsCache = null;
+      let departmentsCacheTime = 0;
+      const CACHE_DURATION = 30000; // 30 seconds
+
+      async function loadDepartmentsForEmployeeSelect() {
+        try {
+          // Check cache first
+          if (departmentsCache && Date.now() - departmentsCacheTime < CACHE_DURATION) {
+            const dropdown = document.querySelector('#employeeDepartment-dropdown');
+            if (dropdown && departmentsCache) {
+              updateDepartmentDropdown(dropdown, departmentsCache);
+            }
+            return;
           }
+
+          // Ensure ApiClient is available and create instance
+          if (typeof ApiClient === 'undefined') {
+            console.error('ApiClient not loaded yet');
+            return;
+          }
+
+          const apiClient = new ApiClient();
+          const response = await apiClient.get('/departments');
+
+          // API v2 returns { success: true, data: [...] }
+          const departments = response.data || response;
+
+          // Store in cache (atomic update to prevent race condition)
+          // eslint-disable-next-line require-atomic-updates
+          departmentsCache = departments;
+          // eslint-disable-next-line require-atomic-updates
+          departmentsCacheTime = Date.now();
+
+          const dropdown = document.querySelector('#employeeDepartment-dropdown');
+
+          if (dropdown && departments) {
+            updateDepartmentDropdown(dropdown, departments);
+          }
+        } catch (error) {
+          console.error('Error loading departments:', error);
+        }
+      }
+
+      function updateDepartmentDropdown(dropdown, departments) {
+        if (dropdown && departments) {
+          // Clear existing options and add default
+          dropdown.innerHTML = `
+              <div class="dropdown-option" data-value="" data-action="select-dropdown" data-dropdown="employeeDepartment" data-display="Keine Abteilung">
+                <i class="fas fa-times-circle"></i> Keine Abteilung
+              </div>
+            `;
+
+          // Add department options
+          departments.forEach((dept) => {
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'dropdown-option';
+            optionDiv.setAttribute('data-value', dept.id.toString());
+            optionDiv.setAttribute('data-text', dept.name);
+            // Escape HTML to prevent XSS
+            const textNode = document.createTextNode(dept.name);
+            const iconElement = document.createElement('i');
+            iconElement.className = 'fas fa-building';
+            optionDiv.append(iconElement);
+            optionDiv.append(document.createTextNode(' '));
+            optionDiv.append(textNode);
+            dropdown.append(optionDiv);
+          });
+
+          // Setup event delegation for dropdown clicks
+          const dropdownEl = document.querySelector('#employee-department-dropdown');
+          if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
+            dropdownEl.setAttribute('data-listener-attached', 'true');
+            dropdownEl.addEventListener('click', (event) => {
+              const target = event.target;
+              const option = target.closest('.dropdown-option');
+              if (option) {
+                const value = option.getAttribute('data-value') || '';
+                const text = option.getAttribute('data-text') || '';
+                if (typeof window.selectDropdownOption === 'function') {
+                  window.selectDropdownOption('employeeDepartment', value, text);
+                }
+              }
+            });
+          }
+
+          console.info('Loaded departments for employee select:', departments.length);
+        } else {
+          console.error('[loadDepartmentsForEmployeeSelect] Missing dropdown or departments!');
+          console.error('Dropdown:', dropdown);
+          console.error('Departments:', departments);
+        }
+      }
+
+      // Lade Teams für Employee Modal
+      async function loadTeamsForEmployeeSelect() {
+        try {
+          // Ensure ApiClient is available
+          if (typeof ApiClient === 'undefined') {
+            console.error('ApiClient not loaded yet');
+            return;
+          }
+
+          const apiClient = new ApiClient();
+
+          // Get selected department to filter teams
+          const selectedDeptId = document.querySelector('#employeeDepartmentSelect')?.value;
+
+          const response = await apiClient.get('/teams');
+          // API v2 returns { success: true, data: [...] }
+          const allTeams = response.data || response;
+          const dropdown = document.querySelector('#employeeTeam-dropdown');
+
+          if (dropdown && allTeams) {
+            // Filter teams by department if one is selected
+            let teams = allTeams;
+            if (selectedDeptId) {
+              teams = allTeams.filter((team) => team.departmentId == selectedDeptId);
+            }
+
+            // Clear existing options and add default
+            dropdown.innerHTML = `
+              <div class="dropdown-option" data-value="" data-action="select-dropdown" data-dropdown="employeeTeam" data-display="Kein Team">
+                <i class="fas fa-times-circle"></i> Kein Team
+              </div>
+            `;
+
+            // Add team options
+            teams.forEach((team) => {
+              const optionDiv = document.createElement('div');
+              optionDiv.className = 'dropdown-option';
+              optionDiv.setAttribute('data-value', team.id.toString());
+              const teamDisplay = team.departmentName ? `${team.name} (${team.departmentName})` : team.name;
+              optionDiv.setAttribute('data-text', teamDisplay);
+              // Escape HTML to prevent XSS
+              const textNode = document.createTextNode(teamDisplay);
+              const iconElement = document.createElement('i');
+              iconElement.className = 'fas fa-users';
+              optionDiv.append(iconElement);
+              optionDiv.append(document.createTextNode(' '));
+              optionDiv.append(textNode);
+              dropdown.append(optionDiv);
+            });
+
+            // Setup event delegation for dropdown clicks
+            const dropdownEl = document.querySelector('#employee-team-dropdown');
+            if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
+              dropdownEl.setAttribute('data-listener-attached', 'true');
+              dropdownEl.addEventListener('click', (event) => {
+                const target = event.target;
+                const option = target.closest('.dropdown-option');
+                if (option) {
+                  const value = option.getAttribute('data-value') || '';
+                  const text = option.getAttribute('data-text') || '';
+                  if (typeof window.selectDropdownOption === 'function') {
+                    window.selectDropdownOption('employeeTeam', value, text);
+                  }
+                }
+              });
+            }
+
+            console.info(
+              `Loaded teams for employee select: ${teams.length} teams ${selectedDeptId ? 'for department ' + selectedDeptId : '(all)'}`,
+            );
+          }
+        } catch (error) {
+          console.error('Error loading teams:', error);
+        }
+      }
+
+      function showEmployeeModal() {
+        console.info('showEmployeeModal function called');
+        const modal = document.querySelector('#employee-modal');
+        if (modal) {
+          console.info('employee-modal found, showing directly');
+          modal.style.display = 'flex';
+
+          // Warte kurz bis Modal vollständig gerendert ist
+          setTimeout(() => {
+            console.info('Loading departments and teams for employee modal...');
+
+            // Abteilungen für das Formular laden
+            if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+              loadDepartmentsForEmployeeSelect();
+            } else {
+              console.error('loadDepartmentsForEmployeeSelect is not a function');
+            }
+
+            // Teams für das Formular laden
+            if (typeof loadTeamsForEmployeeSelect === 'function') {
+              loadTeamsForEmployeeSelect();
+            } else {
+              console.warn('loadTeamsForEmployeeSelect is not defined yet');
+            }
+          }, 100);
         } else {
           console.error('employee-modal not found');
           alert('Das Mitarbeiterformular konnte nicht geöffnet werden.');
         }
       }
 
-      function showDocumentModal() {
-        console.log('Document upload modal requested');
-        const modal = document.getElementById('document-modal');
-        if (modal) {
-          console.log('Modal found, showing it');
-          modal.style.display = 'flex';
-          // Mitarbeiter-Select füllen
-          loadEmployeesForSelect();
-        } else {
-          console.error('Modal element not found!');
-          alert('Dokument-Upload-Formular konnte nicht geladen werden.');
+      // showDocumentModal removed - functionality moved to /document-upload page
+
+      // Make functions globally available
+      window.showEmployeeModal = showEmployeeModal;
+      window.loadDepartmentsForEmployeeSelect = loadDepartmentsForEmployeeSelect;
+      window.loadTeamsForEmployeeSelect = loadTeamsForEmployeeSelect;
+      window.showModal = showModal;
+      window.hideModal = hideModal;
+      // eslint-disable-next-line no-undef
+      window.toggleDropdown = toggleDropdown;
+      // selectDropdownOption is defined above in line 1636
+      // Safe to use here as it's defined in the same scope
+      // eslint-disable-next-line no-undef
+      window.selectDropdownOption = selectDropdownOption;
+
+      // Global click handler to close dropdowns when clicking outside
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.custom-dropdown') && !e.target.closest('.dropdown-display')) {
+          document.querySelectorAll('.dropdown-options').forEach((d) => {
+            d.classList.remove('active', 'show');
+          });
+          document.querySelectorAll('.dropdown-display').forEach((d) => {
+            d.classList.remove('active');
+          });
         }
-      }
+      });
 
       // showDepartmentModal wurde nach departments.html verschoben
 
-      function showTeamModal() {
+      window.showTeamModal = function () {
         showModal('team-modal');
         // Abteilungen für Select laden
-        loadDepartmentsForSelect();
-      }
+        if (typeof window.loadDepartmentsForSelect === 'function') {
+          window.loadDepartmentsForSelect();
+        }
+      };
 
-      function hideTeamModal() {
+      window.hideTeamModal = function () {
         hideModal('team-modal');
-      }
+      };
 
       // Modal schließen bei Klick außerhalb
       window.addEventListener('click', function (event) {
-        const modals = ['employee-modal', 'document-modal', 'team-modal'];
+        const modals = ['employee-modal', 'team-modal'];
         modals.forEach((modalId) => {
-          const modal = document.getElementById(modalId);
+          const modal = document.querySelector(modalId);
           if (event.target == modal) {
-            console.log(`Clicked outside of ${modalId}, closing it`);
+            console.info(`Clicked outside of ${modalId}, closing it`);
             modal.style.display = 'none';
           }
         });
       });
 
       // Placeholder functions for "view all" links
-      function showAllEmployees() {
-        console.log('Show all employees');
-      }
+      window.showAllEmployees = function () {
+        console.info('Show all employees');
+      };
 
       // Load employees table
       async function loadEmployeesTable() {
-        console.log('Loading employees table...');
+        console.info('Loading employees table...');
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch('/api/users?role=employee', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
+          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
+            ? fetch('/api/v2/users?role=employee', {
+                method: 'GET',
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
+              })
+            : fetch('/api/users?role=employee', {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }));
 
           if (!response.ok) {
             throw new Error('Failed to load employees');
           }
 
-          const employees = await response.json();
-          console.log('Loaded employees:', employees); // Debug
-          const tableBody = document.getElementById('employees-table-body');
+          const responseData = await response.json();
+          console.info('Loaded employees response:', responseData); // Debug
+
+          // Handle v2 API response structure
+          let employees;
+          if (window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined) {
+            // v2 API returns { success: true, data: [...] }
+            employees = responseData.data || [];
+          } else {
+            // v1 API returns array directly
+            employees = responseData;
+          }
+
+          console.info('Processed employees:', employees); // Debug
+          const tableBody = document.querySelector('#employees-table-body');
 
           if (!tableBody) {
             console.error('employees-table-body not found');
@@ -2383,7 +1698,7 @@
 
           tableBody.innerHTML = '';
 
-          if (employees.length === 0) {
+          if (!employees || !Array.isArray(employees) || employees.length === 0) {
             tableBody.innerHTML = `
               <tr>
                 <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
@@ -2395,31 +1710,40 @@
           employees.forEach((employee) => {
             const row = document.createElement('tr');
 
+            // Handle both v1 (snake_case) and v2 (camelCase) field names for availability
+            let availabilityStatus = employee.availabilityStatus || employee.availability_status || 'available';
+            // Map v2 API's "other" back to "unavailable" for display
+            if (window.FEATURE_FLAGS?.USE_API_V2_USERS && availabilityStatus === 'other') {
+              availabilityStatus = 'unavailable';
+            }
+            const availabilityStart = employee.availabilityStart || employee.availability_start;
+            const availabilityEnd = employee.availabilityEnd || employee.availability_end;
+
             // Verfügbarkeitsstatus bestimmen - prüfe ob innerhalb des Datumbereichs
-            let effectiveStatus = employee.availability_status || 'available';
+            let effectiveStatus = availabilityStatus;
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Zeit auf Mitternacht setzen für korrekten Vergleich
 
             // Debug-Ausgabe für ersten Mitarbeiter
             if (employee.id === 19) {
-              console.log('Employee 19 debug:', {
-                availability_status: employee.availability_status,
-                availability_start: employee.availability_start,
-                availability_end: employee.availability_end,
+              console.info('Employee 19 debug:', {
+                availability_status: availabilityStatus,
+                availability_start: availabilityStart,
+                availability_end: availabilityEnd,
                 today: today.toISOString(),
               });
             }
 
             // Prüfe ob Verfügbarkeitsdaten vorhanden sind und ob wir im Zeitraum sind
-            if (employee.availability_status !== 'available' && employee.availability_start && employee.availability_end) {
-              const startDate = new Date(employee.availability_start);
-              const endDate = new Date(employee.availability_end);
+            if (availabilityStatus !== 'available' && availabilityStart && availabilityEnd) {
+              const startDate = new Date(availabilityStart);
+              const endDate = new Date(availabilityEnd);
               startDate.setHours(0, 0, 0, 0);
               endDate.setHours(23, 59, 59, 999);
 
               // Debug für Employee 19
               if (employee.id === 19) {
-                console.log('Date comparison:', {
+                console.info('Date comparison:', {
                   startDate: startDate.toISOString(),
                   endDate: endDate.toISOString(),
                   todayIsAfterStart: today >= startDate,
@@ -2434,31 +1758,37 @@
               }
             }
 
-            const availabilityBadgeClass =
-              {
-                available: 'badge-success',
-                vacation: 'badge-warning',
-                sick: 'badge-danger',
-                unavailable: 'badge-secondary',
-              }[effectiveStatus] || 'badge-success';
+            // Use Map to avoid object injection vulnerability
+            const badgeClassMap = new Map([
+              ['available', 'badge-success'],
+              ['vacation', 'badge-warning'],
+              ['sick', 'badge-danger'],
+              ['unavailable', 'badge-secondary'],
+            ]);
+            const availabilityBadgeClass = badgeClassMap.get(effectiveStatus) || 'badge-success';
 
-            const availabilityText =
-              {
-                available: 'Verfügbar',
-                vacation: 'Urlaub',
-                sick: 'Krank',
-                unavailable: 'Beurlaubt',
-              }[effectiveStatus] || 'Verfügbar';
+            // Use Map to avoid object injection vulnerability
+            const availabilityTextMap = new Map([
+              ['available', 'Verfügbar'],
+              ['vacation', 'Urlaub'],
+              ['sick', 'Krank'],
+              ['unavailable', 'Beurlaubt'],
+            ]);
+            const availabilityText = availabilityTextMap.get(effectiveStatus) || 'Verfügbar';
 
-            row.innerHTML = `
-              <td>${employee.first_name || ''} ${employee.last_name || ''}</td>
+            // Handle both v1 (snake_case) and v2 (camelCase) field names
+            const firstName = employee.firstName || employee.first_name || '';
+            const lastName = employee.lastName || employee.last_name || '';
+
+            // Safe: HTML is generated from server data and sanitized with dom-utils
+            const rowHtml = `
+              <td>${firstName} ${lastName}</td>
               <td>${employee.email || ''}</td>
-              <td>${employee.id || ''}</td>
-              <td>${employee.position || 'Mitarbeiter'}</td>
-              <td>${employee.department || 'Keine Abteilung'}</td>
+              <td>${employee.employeeId || employee.employee_id || employee.id || ''}</td>
+              <td>${employee.departmentName || employee.department || 'Keine Abteilung'}</td>
               <td>
-                <span class="badge ${employee.is_active ? 'badge-success' : 'badge-danger'}">
-                  ${employee.is_active ? 'Aktiv' : 'Inaktiv'}
+                <span class="badge ${(employee.isActive ?? employee.is_active) ? 'badge-success' : 'badge-danger'}">
+                  ${(employee.isActive ?? employee.is_active) ? 'Aktiv' : 'Inaktiv'}
                 </span>
               </td>
               <td>
@@ -2466,28 +1796,51 @@
                   ${availabilityText}
                 </span>
                 ${
-                  effectiveStatus !== 'available' && employee.availability_start && employee.availability_end
-                    ? `<br><small class="text-muted">${new Date(employee.availability_start).toLocaleDateString('de-DE')} - ${new Date(employee.availability_end).toLocaleDateString('de-DE')}</small>`
+                  effectiveStatus !== 'available' && availabilityStart && availabilityEnd
+                    ? `<br><small class="text-muted">${new Date(availabilityStart).toLocaleDateString('de-DE')} - ${new Date(availabilityEnd).toLocaleDateString('de-DE')}</small>`
                     : ''
                 }
               </td>
               <td>
-                <button class="btn btn-sm btn-info" onclick="changeEmployeeStatus(${employee.id})">
+                <button class="btn btn-sm btn-info" data-action="change-employee-status" data-employee-id="${employee.id}">
                   <i class="fas fa-user-clock"></i> Status ändern
                 </button>
-                <button class="btn btn-sm btn-secondary" onclick="editEmployee(${employee.id})">
+                <button class="btn btn-sm btn-secondary" data-action="edit-employee" data-employee-id="${employee.id}">
                   <i class="fas fa-edit"></i> Bearbeiten
                 </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteEmployee(${employee.id})">
-                  <i class="fas fa-trash"></i> Löschen
-                </button>
+                <a href="/manage-employees" class="btn btn-sm btn-danger">
+                  <i class="fas fa-users-cog"></i> Verwalten
+                </a>
               </td>
             `;
-            tableBody.appendChild(row);
+            // Use dom-utils setHTML for safe sanitization
+            window.setHTML(row, rowHtml);
+            tableBody.append(row);
           });
+
+          // Event delegation for employee actions
+          if (!tableBody.dataset.delegationInitialized) {
+            tableBody.dataset.delegationInitialized = 'true';
+            tableBody.addEventListener('click', (e) => {
+              const button = e.target.closest('[data-action]');
+              if (button) {
+                const action = button.dataset.action;
+                const employeeId = button.dataset.employeeId;
+
+                switch (action) {
+                  case 'change-employee-status':
+                    if (window.changeEmployeeStatus) window.changeEmployeeStatus(parseInt(employeeId));
+                    break;
+                  case 'edit-employee':
+                    if (window.editEmployee) window.editEmployee(parseInt(employeeId));
+                    break;
+                }
+              }
+            });
+          }
         } catch (error) {
           console.error('Error loading employees:', error);
-          const tableBody = document.getElementById('employees-table-body');
+          const tableBody = document.querySelector('#employees-table-body');
           if (tableBody) {
             tableBody.innerHTML = `
               <tr>
@@ -2502,15 +1855,13 @@
       document.addEventListener('DOMContentLoaded', () => {
         window.loadEmployeesTable = loadEmployeesTable;
         window.editEmployee = editEmployee;
-        window.editEmployeeAsync = editEmployeeAsync;
-        window.updateEmployee = updateEmployee;
-        window.deleteEmployee = deleteEmployee;
-        window.loadDocumentsTable = loadDocumentsTable || (() => console.log('loadDocumentsTable not implemented'));
+        // deleteEmployee moved to manage-employees.ts
+        window.loadDocumentsTable = loadDocumentsTable || (() => console.info('loadDocumentsTable not implemented'));
         // loadPayslipsTable removed - now using documents-payroll.html
         // loadEmployeesForPayslipSelect removed - now using documents-payroll.html
         // Define loadDepartmentsTable function
         window.loadDepartmentsTable = function () {
-          console.log('loadDepartmentsTable called - redirecting to departments page');
+          console.info('loadDepartmentsTable called - redirecting to departments page');
           // Since we're using a separate departments page, just reload if needed
           if (window.location.pathname.includes('departments')) {
             window.location.reload();
@@ -2520,64 +1871,158 @@
         window.loadTeamsTable =
           window.loadTeamsTable ||
           function () {
-            console.log('loadTeamsTable called but not yet implemented');
+            console.info('loadTeamsTable called but not yet implemented');
             // TODO: Implement team loading functionality
           };
-        window.loadRecentEmployees = window.loadRecentEmployees || (() => console.log('loadRecentEmployees not implemented'));
-        window.loadDashboardStats = window.loadDashboardStats || (() => console.log('loadDashboardStats not implemented'));
+        window.loadRecentEmployees = window.loadRecentEmployees || (() => console.info('loadRecentEmployees not implemented'));
+        window.loadDashboardStats = window.loadDashboardStats || (() => console.info('loadDashboardStats not implemented'));
       });
 
-      // Edit employee - Placeholder function, actual implementation below
-      function editEmployee(employeeId) {
-        // This is overridden by the async function below
-        window.editEmployeeAsync(employeeId);
-      }
-
-      // Delete employee
-      async function deleteEmployee(employeeId) {
-        if (!confirm('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?')) {
-          return;
-        }
-
+      // Edit employee - Opens the employee modal with existing data
+      async function editEmployee(employeeId) {
+        console.info(`Editing employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
         try {
-          const response = await fetch(`/api/users/${employeeId}`, {
-            method: 'DELETE',
+          // Load employee data
+          const response = await fetch(`/api/v2/users/${employeeId}`, {
+            method: 'GET',
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
 
-          if (response.ok) {
-            alert('Mitarbeiter erfolgreich gelöscht');
-            loadEmployeesTable(); // Reload the table
-            loadRecentEmployees(); // Update recent employees
-            loadDashboardStats(); // Update statistics
-          } else {
-            const error = await response.json();
-            alert(`Fehler: ${error.message}`);
+          if (!response.ok) {
+            throw new Error('Failed to load employee data');
+          }
+
+          const responseData = await response.json();
+          const employee = responseData.data || responseData;
+          console.info('Employee data loaded:', employee);
+
+          // Open the employee modal
+          const modal = document.querySelector('#employee-modal');
+          if (modal) {
+            modal.style.display = 'flex';
+
+            // Change modal title
+            const modalTitle = modal.querySelector('.modal-title');
+            if (modalTitle) {
+              modalTitle.textContent = 'Mitarbeiter bearbeiten';
+            }
+
+            // Fill the form with employee data
+            const form = document.querySelector('#create-employee-form');
+            if (form) {
+              // Store employee ID for update
+              form.dataset.employeeId = employeeId;
+              form.dataset.mode = 'edit';
+
+              // Make password fields optional for edit mode
+              const passwordInput = form.querySelector('input[name="password"]');
+              const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
+              if (passwordInput) passwordInput.removeAttribute('required');
+              if (passwordConfirmInput) passwordConfirmInput.removeAttribute('required');
+
+              // Hide email confirm field for edit mode
+              const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
+              if (emailConfirmGroup) emailConfirmGroup.style.display = 'none';
+
+              // Fill basic fields
+              const usernameInput = form.querySelector('input[name="username"]');
+              if (usernameInput) usernameInput.value = employee.username || '';
+
+              const emailInput = form.querySelector('input[name="email"]');
+              if (emailInput) emailInput.value = employee.email || '';
+
+              const firstNameInput = form.querySelector('input[name="firstName"]');
+              if (firstNameInput) firstNameInput.value = employee.first_name || employee.firstName || '';
+
+              const lastNameInput = form.querySelector('input[name="lastName"]');
+              if (lastNameInput) lastNameInput.value = employee.last_name || employee.lastName || '';
+
+              const phoneInput = form.querySelector('input[name="phone"]');
+              if (phoneInput) phoneInput.value = employee.phone || '';
+
+              const positionInput = form.querySelector('input[name="position"]');
+              if (positionInput) positionInput.value = employee.position || '';
+
+              const employeeNumberInput = form.querySelector('input[name="employeeNumber"]');
+              if (employeeNumberInput) employeeNumberInput.value = employee.employee_id || employee.employeeId || '';
+
+              const birthdayInput = form.querySelector('input[name="birthday"]');
+              if (birthdayInput && employee.birthday) {
+                birthdayInput.value = employee.birthday.split('T')[0];
+              }
+
+              // Set department dropdown
+              if (employee.department_id || employee.departmentId) {
+                const deptId = employee.department_id || employee.departmentId;
+                const deptName = employee.department_name || employee.departmentName || 'Unbekannte Abteilung';
+                if (typeof window.selectDropdownOption === 'function') {
+                  window.selectDropdownOption('employee-department', deptId, deptName);
+                }
+              }
+
+              // Set team dropdown if exists
+              if (employee.team_id || employee.teamId) {
+                const teamId = employee.team_id || employee.teamId;
+                const teamName = employee.team_name || employee.teamName || 'Unbekanntes Team';
+                if (typeof window.selectDropdownOption === 'function') {
+                  window.selectDropdownOption('employee-team', teamId, teamName);
+                }
+              }
+
+              // Set active status
+              const isActive = employee.is_active !== undefined ? employee.is_active : 1;
+              if (typeof window.selectActiveStatusOption === 'function') {
+                window.selectActiveStatusOption(isActive ? '1' : '0', isActive ? 'Aktiv' : 'Inaktiv');
+              }
+
+              // Change submit button text
+              const submitBtn = form.querySelector('button[type="submit"]');
+              if (submitBtn) {
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Änderungen speichern';
+              }
+
+              // Load departments and teams for dropdowns
+              if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+                loadDepartmentsForEmployeeSelect();
+              }
+              if (employee.department_id || employee.departmentId) {
+                const deptId = employee.department_id || employee.departmentId;
+                if (typeof loadTeamsForEmployeeSelect === 'function') {
+                  loadTeamsForEmployeeSelect(deptId);
+                }
+              }
+            }
           }
         } catch (error) {
-          console.error('Error deleting employee:', error);
-          alert('Ein Fehler ist aufgetreten');
+          console.error('Error loading employee:', error);
+          if (typeof window.showError === 'function') {
+            window.showError('Fehler beim Laden der Mitarbeiterdaten');
+          } else {
+            alert('Fehler beim Laden der Mitarbeiterdaten');
+          }
         }
       }
 
-      function showAllDocuments() {
-        console.log('Show all documents');
-      }
+      // Delete employee functionality moved to manage-employees.ts
 
-      function showAllDepartments() {
-        window.location.href = '/departments';
-      }
+      window.showAllDocuments = function () {
+        console.info('Show all documents');
+      };
 
-      function showAllTeams() {
-        console.log('Show all teams');
-      }
+      window.showAllDepartments = function () {
+        window.location.href = '/manage-departments';
+      };
+
+      window.showAllTeams = function () {
+        console.info('Show all teams');
+      };
 
       // Dokument herunterladen
-      async function downloadDocument(documentId) {
+      window.downloadDocument = async function (documentId) {
         const token = localStorage.getItem('token');
         try {
           window.location.href = `/api/documents/download/${documentId}?token=${token}`;
@@ -2585,10 +2030,10 @@
           console.error('Error downloading document:', error);
           alert('Fehler beim Herunterladen des Dokuments');
         }
-      }
+      };
 
       // Dokument archivieren
-      async function archiveDocument(documentId) {
+      window.archiveDocument = async function (documentId) {
         if (!confirm('Möchten Sie dieses Dokument archivieren?')) {
           return;
         }
@@ -2614,10 +2059,10 @@
           console.error('Error archiving document:', error);
           alert('Fehler beim Archivieren des Dokuments');
         }
-      }
+      };
 
       // Dokument löschen
-      async function deleteDocument(documentId) {
+      window.deleteDocument = async function (documentId) {
         if (
           !confirm(
             'Sind Sie sicher, dass Sie dieses Dokument dauerhaft löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.',
@@ -2644,248 +2089,437 @@
           console.error('Error deleting document:', error);
           alert('Fehler beim Löschen des Dokuments');
         }
-      }
+      };
 
       // Section Navigation is now handled by show-section.ts module
     </script>
 
-    <style>
-      /* Search Styles */
-      .search-container {
-        display: flex;
-        gap: var(--spacing-sm);
-        margin-left: auto;
-      }
+    <!-- Floating Action Buttons -->
+    <button class="add-employee-btn" id="floating-add-employee" data-action="show-employee-modal" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-team" data-action="show-team-modal" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-machine" data-action="show-machine-modal" style="display: none">+</button>
+    <button class="add-employee-btn" id="floating-add-area" data-action="show-area-modal" style="display: none">+</button>
 
-      .search-input {
-        min-width: 300px;
-        padding: var(--spacing-sm) var(--spacing-md);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        background-color: var(--background-dark);
-        color: var(--text-primary);
-      }
+    <!-- Team Creation Modal -->
+    <div class="modal-overlay" id="teamModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-users"></i>
+            Neues Team erstellen
+          </h2>
+          <button type="button" class="modal-close" data-action="close-team-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="teamForm">
+            <div class="form-group">
+              <label for="teamName">
+                <i class="fas fa-tag"></i>
+                Team Name
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" id="teamName" name="name" placeholder="z.B. Produktionsteam Alpha" required />
+            </div>
 
-      .search-input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
-      }
+            <div class="form-group">
+              <label for="teamDescription">
+                <i class="fas fa-align-left"></i>
+                Beschreibung
+              </label>
+              <textarea
+                class="form-control"
+                id="teamDescription"
+                name="description"
+                rows="3"
+                placeholder="Beschreibung des Teams"
+              ></textarea>
+            </div>
 
-      .flex-between {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: var(--spacing-md);
-      }
+            <div class="form-row">
+              <div class="form-group">
+                <label for="teamType">
+                  <i class="fas fa-th-list"></i>
+                  Team Typ
+                </label>
+                <select class="form-control" id="teamType" name="teamType">
+                  <option value="production">Produktion</option>
+                  <option value="quality">Qualität</option>
+                  <option value="maintenance">Wartung</option>
+                  <option value="logistics">Logistik</option>
+                  <option value="administration">Verwaltung</option>
+                  <option value="other">Sonstiges</option>
+                </select>
+              </div>
 
-      /* Modal Styles */
-      .modal {
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: none;
-        align-items: center;
-        justify-content: center;
-      }
+              <div class="form-group">
+                <label for="teamStatus">
+                  <i class="fas fa-info-circle"></i>
+                  Status
+                </label>
+                <select class="form-control" id="teamStatus" name="status">
+                  <option value="active">Aktiv</option>
+                  <option value="inactive">Inaktiv</option>
+                  <option value="restructuring">Umstrukturierung</option>
+                </select>
+              </div>
+            </div>
 
-      .button-group {
-        display: flex;
-        justify-content: space-between;
-        gap: 15px;
-        margin-top: 20px;
-      }
+            <div class="form-row">
+              <div class="form-group">
+                <label for="teamMaxMembers">
+                  <i class="fas fa-users"></i>
+                  Max. Mitglieder
+                </label>
+                <input type="number" class="form-control" id="teamMaxMembers" name="maxMembers" min="1" max="100" placeholder="z.B. 15" />
+              </div>
 
-      .modal-content {
-        /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
-        /* Verwendet die CSS-Variablen aus dem zentralen Theme */
-        padding: var(--spacing-lg);
-        width: 90%;
-        max-width: 500px;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow: var(--shadow-sm);
-        /* animation: fadeInUp 0.3s ease-out; */
-      }
+              <div class="form-group">
+                <label for="teamDepartment">
+                  <i class="fas fa-building"></i>
+                  Abteilung
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="team-department-display" data-action="toggle-dropdown" data-dropdown="team-department">
+                    <span>Keine Abteilung</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="team-department-dropdown">
+                    <div
+                      class="dropdown-option"
+                      data-value=""
+                      data-action="select-dropdown"
+                      data-dropdown="team-department"
+                      data-display="Keine Abteilung"
+                    >
+                      Keine Abteilung
+                    </div>
+                    <!-- Will be populated dynamically -->
+                  </div>
+                  <input type="hidden" name="departmentId" id="team-department-select" />
+                </div>
+              </div>
+            </div>
 
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: var(--spacing-lg);
-      }
+            <div class="form-group">
+              <label for="teamMachines">
+                <i class="fas fa-cogs"></i>
+                Zugewiesene Maschinen
+              </label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="team-machines-display" data-action="toggle-dropdown" data-dropdown="team-machines">
+                  <span>Keine Maschinen zugewiesen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="team-machines-dropdown" style="max-height: 200px; overflow-y: auto">
+                  <!-- Will be populated with checkboxes for multiple selection -->
+                </div>
+                <input type="hidden" name="machineIds" id="team-machines-select" />
+              </div>
+            </div>
 
-      .modal-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--primary-color);
-      }
+            <div class="form-group">
+              <label for="teamUsers">
+                <i class="fas fa-users"></i>
+                Team-Mitglieder
+              </label>
+              <div class="custom-dropdown">
+                <div class="dropdown-display" id="team-users-display" data-action="toggle-dropdown" data-dropdown="team-users">
+                  <span>Keine Mitglieder zugewiesen</span>
+                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                    <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  </svg>
+                </div>
+                <div class="dropdown-options" id="team-users-dropdown" style="max-height: 200px; overflow-y: auto">
+                  <!-- Will be populated with checkboxes for multiple user selection -->
+                </div>
+                <input type="hidden" name="userIds" id="team-users-select" />
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close-team-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" data-action="save-team">
+            <i class="fas fa-save"></i>
+            Team erstellen
+          </button>
+        </div>
+      </div>
+    </div>
 
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        color: var(--text-secondary);
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: var(--radius-sm);
-      }
+    <!-- Machine Creation Modal -->
+    <div class="modal-overlay" id="machineModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-cogs"></i>
+            Neue Maschine hinzufügen
+          </h2>
+          <button type="button" class="modal-close" data-action="close-machine-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="machineForm">
+            <div class="form-group">
+              <label for="machineName">
+                <i class="fas fa-tag"></i>
+                Maschinen Name
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" id="machineName" name="name" placeholder="z.B. CNC Fräsmaschine 001" required />
+            </div>
 
-      .modal-close:hover {
-        background-color: var(--background-dark);
-        color: var(--error-color);
-      }
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineModel">
+                  <i class="fas fa-cube"></i>
+                  Modell
+                </label>
+                <input type="text" class="form-control" id="machineModel" name="model" placeholder="z.B. DMU 50" />
+              </div>
 
-      .table-responsive {
-        overflow-x: auto;
-        margin-top: var(--spacing-md);
-      }
+              <div class="form-group">
+                <label for="machineManufacturer">
+                  <i class="fas fa-industry"></i>
+                  Hersteller
+                </label>
+                <input type="text" class="form-control" id="machineManufacturer" name="manufacturer" placeholder="z.B. DMG MORI" />
+              </div>
+            </div>
 
-      .btn-group {
-        display: flex;
-        gap: var(--spacing-sm);
-      }
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineSerialNumber">
+                  <i class="fas fa-barcode"></i>
+                  Seriennummer
+                </label>
+                <input type="text" class="form-control" id="machineSerialNumber" name="serialNumber" placeholder="z.B. SN-2024-001" />
+              </div>
 
-      .badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        border-radius: 20px;
-      }
+              <div class="form-group">
+                <label for="machineAssetNumber">
+                  <i class="fas fa-hashtag"></i>
+                  Inventarnummer
+                </label>
+                <input type="text" class="form-control" id="machineAssetNumber" name="assetNumber" placeholder="z.B. ASSET-001" />
+              </div>
+            </div>
 
-      .badge-primary {
-        background-color: var(--primary-color);
-        color: white;
-      }
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineType">
+                  <i class="fas fa-th-list"></i>
+                  Maschinen Typ
+                </label>
+                <select class="form-control" id="machineType" name="machineType">
+                  <option value="production">Produktion</option>
+                  <option value="packaging">Verpackung</option>
+                  <option value="quality_control">Qualitätskontrolle</option>
+                  <option value="logistics">Logistik</option>
+                  <option value="utility">Versorgung</option>
+                  <option value="other">Sonstiges</option>
+                </select>
+              </div>
 
-      .badge-secondary {
-        background-color: var(--secondary-color);
-        color: white;
-      }
+              <div class="form-group">
+                <label for="machineStatus">
+                  <i class="fas fa-info-circle"></i>
+                  Status
+                </label>
+                <select class="form-control" id="machineStatus" name="status">
+                  <option value="operational">Betriebsbereit</option>
+                  <option value="maintenance">In Wartung</option>
+                  <option value="repair">In Reparatur</option>
+                  <option value="standby">Standby</option>
+                  <option value="decommissioned">Außer Betrieb</option>
+                </select>
+              </div>
+            </div>
 
-      .badge-success {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11px;
-        color: rgba(76, 175, 80, 0.9);
-        background: rgba(76, 175, 80, 0.1);
-        padding: 3px 8px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 700;
-        border: 1px solid rgba(76, 175, 80, 0.2);
-        width: fit-content;
-      }
+            <div class="form-row">
+              <div class="form-group">
+                <label for="machineDepartment">
+                  <i class="fas fa-building"></i>
+                  Abteilung
+                </label>
+                <div class="custom-dropdown">
+                  <div
+                    class="dropdown-display"
+                    id="machine-department-display"
+                    data-action="toggle-dropdown"
+                    data-dropdown="machine-department"
+                  >
+                    <span>Keine Abteilung</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="machine-department-dropdown">
+                    <div
+                      class="dropdown-option"
+                      data-value=""
+                      data-action="select-dropdown"
+                      data-dropdown="machine-department"
+                      data-display="Keine Abteilung"
+                    >
+                      Keine Abteilung
+                    </div>
+                    <!-- Will be populated dynamically -->
+                  </div>
+                  <input type="hidden" name="departmentId" id="machine-department-select" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="machineArea">
+                  <i class="fas fa-map-marker-alt"></i>
+                  Bereich
+                </label>
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="machine-area-display" data-action="toggle-dropdown" data-dropdown="machine-area">
+                    <span>Kein Bereich</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="machine-area-dropdown">
+                    <div
+                      class="dropdown-option"
+                      data-value=""
+                      data-action="select-dropdown"
+                      data-dropdown="machine-area"
+                      data-display="Kein Bereich"
+                    >
+                      Kein Bereich
+                    </div>
+                    <!-- Will be populated dynamically -->
+                  </div>
+                  <input type="hidden" name="areaId" id="machine-area-select" />
+                </div>
+              </div>
+            </div>
 
-      .badge-danger {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11px;
-        color: rgba(244, 67, 54, 0.9);
-        background: rgba(244, 67, 54, 0.1);
-        padding: 3px 8px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 700;
-        border: 1px solid rgba(244, 67, 54, 0.2);
-        width: fit-content;
-      }
+            <div class="form-group">
+              <label for="machineLocation">
+                <i class="fas fa-map-marker-alt"></i>
+                Standort
+              </label>
+              <input type="text" class="form-control" id="machineLocation" name="location" placeholder="z.B. Halle A, Bereich 3" />
+            </div>
 
-      tr:hover .badge-success {
-        background: rgba(76, 175, 80, 0.15);
-        border-color: rgba(76, 175, 80, 0.3);
-      }
+            <div class="form-group">
+              <label for="machineNotes">
+                <i class="fas fa-sticky-note"></i>
+                Notizen
+              </label>
+              <textarea
+                class="form-control"
+                id="machineNotes"
+                name="notes"
+                rows="3"
+                placeholder="Zusätzliche Informationen zur Maschine"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close-machine-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" data-action="save-machine">
+            <i class="fas fa-save"></i>
+            Maschine hinzufügen
+          </button>
+        </div>
+      </div>
+    </div>
 
-      tr:hover .badge-danger {
-        background: rgba(244, 67, 54, 0.15);
-        border-color: rgba(244, 67, 54, 0.3);
-      }
-
-      .badge-warning {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11px;
-        color: rgba(255, 152, 0, 0.9);
-        background: rgba(255, 152, 0, 0.1);
-        padding: 3px 8px;
-        border-radius: 6px;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        font-weight: 700;
-        border: 1px solid rgba(255, 152, 0, 0.2);
-        width: fit-content;
-      }
-
-      tr:hover .badge-warning {
-        background: rgba(255, 152, 0, 0.15);
-        border-color: rgba(255, 152, 0, 0.3);
-      }
-
-      .department-list,
-      .team-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--spacing-sm);
-      }
-
-      .department-item,
-      .team-item {
-        padding: var(--spacing-sm);
-        background-color: var(--background-dark);
-        border-radius: var(--radius-sm);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      /* Floating Action Button */
-      .add-employee-btn {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 60px;
-        height: 60px;
-        background: rgba(33, 150, 243, 0.2);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(33, 150, 243, 0.3);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        color: var(--primary-color);
-        cursor: pointer;
-        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
-        transition: all 0.3s ease;
-        z-index: 100;
-      }
-
-      .add-employee-btn:hover {
-        background: rgba(33, 150, 243, 0.3);
-        transform: scale(1.1);
-        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
-      }
-    </style>
-
-    <!-- Floating Action Button for Employees -->
-    <button class="add-employee-btn" id="floating-add-employee" onclick="showEmployeeModal()" style="display: none">+</button>
+    <!-- Area Creation Modal -->
+    <div class="modal-overlay" id="areaModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 class="modal-title">
+            <i class="fas fa-map-marker-alt"></i>
+            Neuen Bereich erstellen
+          </h2>
+          <button type="button" class="modal-close" data-action="close-area-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="areaForm">
+            <div class="form-group">
+              <label for="areaName">
+                <i class="fas fa-tag"></i>
+                Bereichsname
+                <span class="required">*</span>
+              </label>
+              <input type="text" class="form-control" id="areaName" name="name" placeholder="z.B. Halle A" required />
+            </div>
+            <div class="form-group">
+              <label for="areaDescription">
+                <i class="fas fa-align-left"></i>
+                Beschreibung
+              </label>
+              <textarea
+                class="form-control"
+                id="areaDescription"
+                name="description"
+                rows="3"
+                placeholder="Beschreibung des Bereichs"
+              ></textarea>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="areaType">
+                  <i class="fas fa-th-list"></i>
+                  Bereichstyp
+                </label>
+                <select class="form-control" id="areaType" name="type">
+                  <option value="production">Produktion</option>
+                  <option value="warehouse">Lager</option>
+                  <option value="office">Büro</option>
+                  <option value="building">Gebäude</option>
+                  <option value="outdoor">Außenbereich</option>
+                  <option value="other">Sonstiges</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="areaCapacity">
+                  <i class="fas fa-users"></i>
+                  Kapazität
+                </label>
+                <input type="number" class="form-control" id="areaCapacity" name="capacity" min="1" placeholder="z.B. 50" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="areaAddress">
+                <i class="fas fa-map-marked-alt"></i>
+                Adresse
+              </label>
+              <textarea
+                class="form-control"
+                id="areaAddress"
+                name="address"
+                rows="2"
+                placeholder="Vollständige Adresse des Bereichs"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-action="close-area-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" data-action="save-area">
+            <i class="fas fa-save"></i>
+            Bereich erstellen
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Mark body as loaded after all scripts -->
     <script>
@@ -2898,17 +2532,31 @@
 
       // Show/hide floating button based on section
       document.addEventListener('DOMContentLoaded', function () {
-        const floatingBtn = document.getElementById('floating-add-employee');
+        const floatingBtnEmployee = document.querySelector('#floating-add-employee');
+        const floatingBtnTeam = document.querySelector('#floating-add-team');
+        const floatingBtnMachine = document.querySelector('#floating-add-machine');
+        const floatingBtnArea = document.querySelector('#floating-add-area');
 
-        // Function to check if employees section is active
+        // Function to check which section is active
         function updateFloatingButton() {
           const urlParams = new URLSearchParams(window.location.search);
           const section = urlParams.get('section');
 
-          if (section === 'employees' && floatingBtn) {
-            floatingBtn.style.display = 'flex';
-          } else if (floatingBtn) {
-            floatingBtn.style.display = 'none';
+          // Hide all buttons first
+          if (floatingBtnEmployee) floatingBtnEmployee.style.display = 'none';
+          if (floatingBtnTeam) floatingBtnTeam.style.display = 'none';
+          if (floatingBtnMachine) floatingBtnMachine.style.display = 'none';
+          if (floatingBtnArea) floatingBtnArea.style.display = 'none';
+
+          // Show the appropriate button
+          if (section === 'employees' && floatingBtnEmployee) {
+            floatingBtnEmployee.style.display = 'flex';
+          } else if (section === 'teams' && floatingBtnTeam) {
+            floatingBtnTeam.style.display = 'flex';
+          } else if (section === 'machines' && floatingBtnMachine) {
+            floatingBtnMachine.style.display = 'flex';
+          } else if (section === 'areas' && floatingBtnArea) {
+            floatingBtnArea.style.display = 'flex';
           }
         }
 
@@ -2919,7 +2567,7 @@
         window.addEventListener('popstate', updateFloatingButton);
 
         // Listen for section changes
-        const observer = new MutationObserver(function (mutations) {
+        const observer = new MutationObserver(function () {
           updateFloatingButton();
         });
 

@@ -10,13 +10,13 @@ Wir haben ein kritisches Problem mit unseren Unit Tests entdeckt:
 
 ## Problem Impact
 
-### Blockiert:
+### Blockiert
 
 - ❗ CI/CD Pipeline (alle PRs scheitern)
 - ❗ Neue Feature-Entwicklung
 - ❗ Code-Qualitätssicherung
 
-### Beispiel:
+### Beispiel
 
 - Tests erwarten: `/api/chat/channels`
 - API bietet: `/api/chat/conversations` (komplett anderes Konzept!)

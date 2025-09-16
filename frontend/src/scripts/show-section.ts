@@ -23,7 +23,7 @@ export function showSection(sectionName: string): void {
     sectionId = `${sectionName}-section`;
   }
 
-  const targetSection = document.getElementById(sectionId);
+  const targetSection = document.querySelector<HTMLElement>(`#${sectionId}`);
   if (targetSection) {
     targetSection.style.display = 'block';
     targetSection.classList.add('active');
@@ -33,7 +33,7 @@ export function showSection(sectionName: string): void {
     navItems.forEach((item: HTMLElement) => {
       item.classList.remove('active');
       // Compare with original sectionName (without -section)
-      const itemSection = item.getAttribute('data-section');
+      const itemSection = item.dataset.section;
       if (itemSection === sectionName || itemSection === sectionId) {
         item.classList.add('active');
       }
@@ -105,7 +105,7 @@ export function initSectionFromURL(): void {
   const urlParams = new URLSearchParams(window.location.search);
   const section = urlParams.get('section');
 
-  if (section) {
+  if (section !== null) {
     showSection(section);
   }
 }

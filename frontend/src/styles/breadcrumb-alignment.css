@@ -10,7 +10,7 @@
 
 /* General fallback - gilt für alle nicht spezifisch definierten Elemente */
 #breadcrumb-container + * {
-  margin-top: -37px !important;
+  margin-top: -25px !important;
 }
 
 /* Spezifische Selektoren für Klarheit (nutzen auch -37px) */
@@ -23,7 +23,7 @@
 #breadcrumb-container + .current-usage,
 #breadcrumb-container + #upload-success,
 #breadcrumb-container + #content-area {
-  margin-top: -37px !important;
+  margin-top: -25px !important;
 }
 
 /* ========================================
@@ -47,9 +47,15 @@ body[data-page="blackboard"] #breadcrumb-container + * {
   margin-top: -15px !important;
 }
 
-/* KVP page - benötigt großen negativen Abstand */
-.kvp-page #breadcrumb-container + * {
-  margin-top: -61px !important;
+/* KVP page - benötigt großen negativen Abstand nur für Admin/Root */
+.kvp-page.role-admin #breadcrumb-container + *,
+.kvp-page.role-root #breadcrumb-container + * {
+  margin-top: -49px !important;
+}
+
+/* KVP page - normaler Abstand für Employees */
+.kvp-page.role-employee #breadcrumb-container + * {
+  margin-top: 0;
 }
 
 /* ========================================
@@ -57,14 +63,18 @@ body[data-page="blackboard"] #breadcrumb-container + * {
    ======================================== */
 
 /* Admin Dashboard - benötigt mehr negativen Abstand */
+/* REMOVED - Now using standard -37px like other pages
 .admin-dashboard #breadcrumb-container + * {
   margin-top: -22px !important;
 }
+*/
 
 /* Document Upload - benötigt dieselben Anpassungen wie Admin Dashboard */
+/* REMOVED - Now using standard -37px like other pages
 .document-upload #breadcrumb-container + * {
   margin-top: -22px !important;
 }
+*/
 
 /* Root features page - minimal spacing */
 #breadcrumb-container + .plan-header {

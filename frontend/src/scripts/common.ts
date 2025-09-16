@@ -4,9 +4,21 @@
  */
 
 import type { User, BlackboardEntry } from '../types/api.types';
-
+import { apiClient } from '../utils/api-client';
+import { ResponseAdapter } from '../utils/response-adapter';
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 import { initPageProtection } from './pageProtection';
+import { setHTML } from '../utils/dom-utils';
+
+// Extend window interface
+declare global {
+  interface Window {
+    apiClient: typeof apiClient;
+  }
+}
+
+// Make apiClient globally available
+window.apiClient = apiClient;
 
 // Navigation initialization
 document.addEventListener('DOMContentLoaded', () => {
@@ -24,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners(): void {
   document.addEventListener('click', (e: MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target && target.id === 'logoutBtn') {
+    if (target.id === 'logoutBtn') {
       void logout();
     }
   });
@@ -35,37 +47,55 @@ function setupEventListeners(): void {
  */
 async function loadNavigation(): Promise<void> {
   try {
-    const navPlaceholder = document.getElementById('navigation-placeholder');
-    if (!navPlaceholder) return;
+    const navPlaceholder = document.querySelector('#navigation-placeholder');
+    if (!navPlaceholder || !(navPlaceholder instanceof HTMLElement)) return;
 
     const token = getAuthToken();
     let userRole: string | null = null;
     let userData: User | null = null;
 
-    if (token) {
-      const userResponse = await fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    if (token !== null && token !== '') {
+      // Check if v2 API should be used
+      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
 
-      if (userResponse.ok) {
-        userData = await userResponse.json();
-        userRole = userData?.role ?? 'employee';
-      } else {
-        navPlaceholder.innerHTML = createGuestNavigation();
+      try {
+        if (useV2 === true) {
+          // Use API client for v2
+          const response = await apiClient.get<User>('/users/me');
+          // Convert v2 response to v1 format
+          userData = ResponseAdapter.adaptUserResponse(response) as User;
+          userRole = userData.role;
+        } else {
+          // Use traditional fetch for v1
+          const userResponse = await fetch('/api/user/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (userResponse.ok) {
+            userData = (await userResponse.json()) as User;
+            userRole = userData.role;
+          } else {
+            setHTML(navPlaceholder, createGuestNavigation());
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        setHTML(navPlaceholder, createGuestNavigation());
         return;
       }
     } else {
-      navPlaceholder.innerHTML = createGuestNavigation();
+      setHTML(navPlaceholder, createGuestNavigation());
       return;
     }
 
     // Load proper navigation based on role
-    if (userData && (userRole === 'admin' || userRole === 'root')) {
-      navPlaceholder.innerHTML = createAdminNavigation(userData);
-    } else if (userData) {
-      navPlaceholder.innerHTML = createEmployeeNavigation(userData);
+    if (userRole === 'admin' || userRole === 'root') {
+      setHTML(navPlaceholder, createAdminNavigation(userData));
+    } else {
+      setHTML(navPlaceholder, createEmployeeNavigation(userData));
     }
 
     // Initialize Bootstrap components
@@ -110,7 +140,7 @@ function createAdminNavigation(user: User): string {
               </a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="/departments">
+              <a class="nav-link" href="/manage-departments">
                 <i class="fas fa-building me-1"></i> Abteilungen
               </a>
             </li>
@@ -240,18 +270,33 @@ function createGuestNavigation(): string {
 async function checkUnreadNotifications(): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
-    const response = await fetch('/api/notifications/unread-count', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Check if v2 API should be used
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_NOTIFICATIONS;
 
-    if (response.ok) {
-      const data = await response.json();
-      const count = data.count ?? 0;
-      updateNotificationBadge(count);
+    if (useV2 === true) {
+      try {
+        // Use API client for v2
+        const response = await apiClient.get<{ count?: number }>('/notifications/unread-count');
+        const count = response.count ?? 0;
+        updateNotificationBadge(count);
+      } catch (error) {
+        console.error('Error checking notifications (v2):', error);
+      }
+    } else {
+      // Use traditional fetch for v1
+      const response = await fetch('/api/notifications/unread-count', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as { count: number };
+        const count = data.count;
+        updateNotificationBadge(count);
+      }
     }
   } catch (error) {
     console.error('Error checking notifications:', error);
@@ -262,8 +307,8 @@ async function checkUnreadNotifications(): Promise<void> {
  * Update notification badge
  */
 function updateNotificationBadge(count: number): void {
-  const badge = document.getElementById('notificationCount');
-  if (badge) {
+  const badge = document.querySelector('#notificationCount');
+  if (badge instanceof HTMLElement) {
     if (count > 0) {
       badge.textContent = count.toString();
       badge.style.display = 'inline-block';
@@ -278,9 +323,7 @@ function updateNotificationBadge(count: number): void {
  */
 function initializeBootstrapComponents(): void {
   // Bootstrap type declaration
-  interface BootstrapTooltip {
-    new (element: Element): unknown;
-  }
+  type BootstrapTooltip = new (element: Element) => unknown;
 
   interface WindowWithBootstrap extends Window {
     bootstrap?: {
@@ -290,7 +333,7 @@ function initializeBootstrapComponents(): void {
 
   // Initialize tooltips if Bootstrap is available
   if (typeof (window as WindowWithBootstrap).bootstrap !== 'undefined') {
-    const tooltipTriggerList = Array.from(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipTriggerList = [...document.querySelectorAll('[data-bs-toggle="tooltip"]')];
     tooltipTriggerList.forEach((tooltipTriggerEl) => {
       const bootstrap = (window as WindowWithBootstrap).bootstrap;
       if (bootstrap?.Tooltip) {
@@ -335,17 +378,39 @@ export function createBlackboardWidget(): string {
 export async function loadBlackboardPreview(): Promise<void> {
   try {
     const token = getAuthToken();
-    if (!token) return;
+    if (token === null || token === '') return;
 
-    const response = await fetch('/api/blackboard?limit=5', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Check if v2 API should be used
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD;
 
-    if (response.ok) {
-      const entries = await response.json();
-      displayBlackboardItems(entries);
+    if (useV2 === true) {
+      try {
+        // Use API client for v2
+        const response = await apiClient.get<
+          BlackboardEntry[] | { data?: BlackboardEntry[]; items?: BlackboardEntry[] }
+        >('/blackboard?limit=5');
+        // v2 response might have different format, adapt if needed
+        const entries = Array.isArray(response)
+          ? response
+          : ((response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).data ??
+            (response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).items ??
+            []);
+        displayBlackboardItems(entries);
+      } catch (error) {
+        console.error('Error loading blackboard (v2):', error);
+      }
+    } else {
+      // Use traditional fetch for v1
+      const response = await fetch('/api/blackboard?limit=5', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const entries = (await response.json()) as BlackboardEntry[];
+        displayBlackboardItems(entries);
+      }
     }
   } catch (error) {
     console.error('Error loading blackboard:', error);
@@ -356,17 +421,19 @@ export async function loadBlackboardPreview(): Promise<void> {
  * Display blackboard items
  */
 function displayBlackboardItems(entries: BlackboardEntry[]): void {
-  const container = document.getElementById('blackboard-items');
-  if (!container) return;
+  const container = document.querySelector('#blackboard-items');
+  if (!container || !(container instanceof HTMLElement)) return;
 
   if (entries.length === 0) {
-    container.innerHTML = '<p class="text-muted">Keine Einträge vorhanden.</p>';
+    setHTML(container, '<p class="text-muted">Keine Einträge vorhanden.</p>');
     return;
   }
 
-  container.innerHTML = entries
-    .map(
-      (entry) => `
+  setHTML(
+    container,
+    entries
+      .map(
+        (entry) => `
         <a href="/pages/blackboard.html#entry-${entry.id}" class="list-group-item list-group-item-action">
           <div class="d-flex w-100 justify-content-between">
             <h6 class="mb-1">${escapeHtml(entry.title)}</h6>
@@ -376,8 +443,9 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
           <small class="text-muted">von ${entry.created_by_name ?? 'Unbekannt'}</small>
         </a>
       `,
-    )
-    .join('');
+      )
+      .join(''),
+  );
 }
 
 /**
@@ -385,7 +453,7 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
  */
 function checkTokenExpiry(): void {
   const token = getAuthToken();
-  if (!token) return;
+  if (token === null || token === '') return;
 
   try {
     const payload = parseJwt(token);
@@ -448,8 +516,8 @@ export function showSection(sectionId: string): void {
   });
 
   // Show selected section
-  const selectedSection = document.getElementById(sectionId);
-  if (selectedSection) {
+  const selectedSection = document.querySelector(`#${sectionId}`);
+  if (selectedSection instanceof HTMLElement) {
     selectedSection.style.display = 'block';
   }
 
@@ -466,10 +534,12 @@ export function showSection(sectionId: string): void {
 
 /**
  * Logout user
+ * Must be async to match interface definition in auth.ts
  */
 export async function logout(): Promise<void> {
   removeAuthToken();
   window.location.href = '/login';
+  await Promise.resolve(); // Keep async for interface consistency
 }
 
 // Extend window for common functions
@@ -482,7 +552,7 @@ declare global {
     formatDateTime: typeof formatDateTime;
     escapeHtml: typeof escapeHtml;
     showSection: typeof showSection;
-    logout: typeof logout;
+    logout: () => Promise<void>;
   }
 }
 

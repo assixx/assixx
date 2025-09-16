@@ -8,7 +8,7 @@ Die Unit Tests erwarten andere API-Endpunkte als tatsächlich implementiert sind
 
 ## Calendar API
 
-### Was Tests erwarten:
+### Was Tests erwarten
 
 - `POST /api/calendar/events`
 - `GET /api/calendar/events`
@@ -18,7 +18,7 @@ Die Unit Tests erwarten andere API-Endpunkte als tatsächlich implementiert sind
 - `GET /api/calendar/availability`
 - `GET /api/calendar/availability/free-slots`
 
-### Was tatsächlich existiert:
+### Was tatsächlich existiert
 
 - `GET /api/calendar`
 - `POST /api/calendar`
@@ -27,7 +27,7 @@ Die Unit Tests erwarten andere API-Endpunkte als tatsächlich implementiert sind
 - `DELETE /api/calendar/:id`
 - ❌ Keine `/availability` Endpoints
 
-### Weitere Probleme:
+### Weitere Probleme
 
 - Tests erwarten `response.body.data.eventId`, API gibt komplettes Event-Objekt
 - Tests erwarten Validation-Fehler mit `path`, API gibt `field`
@@ -35,7 +35,7 @@ Die Unit Tests erwarten andere API-Endpunkte als tatsächlich implementiert sind
 
 ## Chat API
 
-### Was Tests erwarten:
+### Was Tests erwarten
 
 - `POST /api/chat/channels`
 - `GET /api/chat/channels`
@@ -44,7 +44,7 @@ Die Unit Tests erwarten andere API-Endpunkte als tatsächlich implementiert sind
 - `PUT /api/chat/messages/:id`
 - `DELETE /api/chat/messages/:id`
 
-### Was tatsächlich existiert:
+### Was tatsächlich existiert
 
 - `POST /api/chat/conversations`
 - `GET /api/chat/conversations`
@@ -55,7 +55,7 @@ Die Unit Tests erwarten andere API-Endpunkte als tatsächlich implementiert sind
 - `GET /api/chat/users`
 - `GET /api/chat/unread-count`
 
-### Konzeptuelle Unterschiede:
+### Konzeptuelle Unterschiede
 
 - Tests denken in "channels", API nutzt "conversations"
 - Messages sind unter conversations geschachtelt, nicht top-level
@@ -63,7 +63,7 @@ Die Unit Tests erwarten andere API-Endpunkte als tatsächlich implementiert sind
 
 ## Shifts API
 
-### Status:
+### Status
 
 - Auth funktioniert ✅
 - Nur 6/66 Tests bestehen (9%)

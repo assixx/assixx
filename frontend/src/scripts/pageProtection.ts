@@ -6,7 +6,7 @@
 import { getAuthToken, parseJwt } from './auth';
 
 // Define page permissions (same as server-side)
-const pagePermissions: Record<string, string[]> = {
+const pagePermissions: Partial<Record<string, string[]>> = {
   // Admin pages
   'admin-dashboard': ['admin', 'root'],
   'admin-profile': ['admin', 'root'],
@@ -15,6 +15,11 @@ const pagePermissions: Record<string, string[]> = {
   'survey-admin': ['admin', 'root'],
   'org-management': ['admin', 'root'],
   'archived-employees': ['admin', 'root'],
+  'manage-teams': ['admin', 'root'],
+  'manage-machines': ['admin', 'root'],
+  'manage-departments': ['admin', 'root'],
+  'manage-areas': ['admin', 'root'],
+  'manage-employees': ['admin', 'root'],
 
   // Employee pages
   'employee-dashboard': ['employee', 'admin', 'root'],
@@ -72,7 +77,7 @@ export function checkPageAccess(): void {
   // Get user token and role
   const token = getAuthToken();
 
-  if (!token) {
+  if (token === null || token === '') {
     console.warn('No token found, redirecting to login');
     window.location.href = '/login';
     return;
@@ -80,16 +85,17 @@ export function checkPageAccess(): void {
 
   // Parse token to get user role
   const tokenData = parseJwt(token);
-  if (!tokenData?.role) {
+  if (tokenData === null || tokenData.role === '') {
     console.error('Invalid token data, redirecting to login');
     window.location.href = '/login';
     return;
   }
 
   // Check if page exists in permissions
+  // eslint-disable-next-line security/detect-object-injection -- pageName kommt aus window.location.pathname (eigene URL), kein externer User-Input
   const allowedRoles = pagePermissions[pageName];
 
-  if (!allowedRoles) {
+  if (allowedRoles === undefined) {
     // Page not in permissions list, allow access
     console.warn(`Page ${pageName} not in permissions list`);
     return;
@@ -106,7 +112,7 @@ export function checkPageAccess(): void {
   }
 
   // Access allowed
-  console.log(`Access granted to ${pageName} for role ${tokenData.role}`);
+  console.info(`Access granted to ${pageName} for role ${tokenData.role}`);
 }
 
 /**
@@ -127,9 +133,9 @@ export function initPageProtection(): void {
   setInterval(
     () => {
       const token = getAuthToken();
-      if (token) {
+      if (token !== null && token !== '') {
         const tokenData = parseJwt(token);
-        if (tokenData?.exp) {
+        if (tokenData !== null) {
           const now = Date.now() / 1000;
           if (tokenData.exp < now) {
             console.warn('Token expired, redirecting to login');

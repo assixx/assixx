@@ -1,32 +1,38 @@
-import { executeQuery as query } from "../../../config/database";
-import { Plan as PlanModel } from "../../../models/plan";
-import { RootLog } from "../../../models/rootLog";
-
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import PlanModel from '../../../models/plan';
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import RootLog from '../../../models/rootLog';
+import { query } from '../../../utils/db';
 import {
+  CostCalculation,
+  CurrentPlanResponse,
+  DbAddonResult,
+  DbPlan,
+  DbPlanFeature,
+  DbTenantAddon,
+  DbTenantPlan,
   Plan,
   PlanFeature,
   PlanWithFeatures,
-  TenantPlan,
   TenantAddon,
   TenantAddons,
   TenantCosts,
-  CurrentPlanResponse,
+  TenantPlan,
   UpdateAddonsRequest,
-  CostCalculation,
-  DbPlan,
-  DbPlanFeature,
-  DbTenantPlan,
-  DbTenantAddon,
-  DbAddonResult,
-} from "./types";
+} from './types';
 
 // Type helper to cast Model types to our types
 type ModelDbPlan = DbPlan & { description?: string };
 type ModelDbTenantPlan = DbTenantPlan & { expires_at?: Date | null };
 
+/**
+ * Plans service with static methods
+ */
+// eslint-disable-next-line @typescript-eslint/no-extraneous-class
 export class PlansService {
   /**
    * Convert DB plan to API format (snake_case to camelCase)
+   * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiPlan(dbPlan: DbPlan): Plan {
     return {
@@ -34,7 +40,7 @@ export class PlansService {
       code: dbPlan.code,
       name: dbPlan.name,
       description: dbPlan.description,
-      basePrice: parseFloat(String(dbPlan.base_price)),
+      basePrice: Number.parseFloat(String(dbPlan.base_price)),
       maxEmployees: dbPlan.max_employees ?? 0,
       maxAdmins: dbPlan.max_admins ?? 0,
       maxStorageGb: dbPlan.max_storage_gb ?? 0,
@@ -47,6 +53,7 @@ export class PlansService {
 
   /**
    * Convert DB plan feature to API format
+   * @param dbFeature - The dbFeature parameter
    */
   private static dbToApiFeature(dbFeature: DbPlanFeature): PlanFeature {
     return {
@@ -60,6 +67,7 @@ export class PlansService {
 
   /**
    * Convert DB tenant plan to API format
+   * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiTenantPlan(dbPlan: DbTenantPlan): TenantPlan {
     return {
@@ -68,48 +76,44 @@ export class PlansService {
       planId: dbPlan.plan_id,
       planCode: dbPlan.plan_code,
       planName: dbPlan.plan_name,
-      status: dbPlan.status as "active" | "cancelled" | "trial" | "expired",
+      status: dbPlan.status as 'active' | 'cancelled' | 'trial' | 'expired',
       startedAt: dbPlan.started_at.toISOString(),
       expiresAt: dbPlan.expires_at?.toISOString(),
       customPrice: dbPlan.custom_price ?? undefined,
-      billingCycle: dbPlan.billing_cycle as "monthly" | "yearly",
+      billingCycle: dbPlan.billing_cycle as 'monthly' | 'yearly',
     };
   }
 
   /**
    * Convert DB addon to API format
+   * @param dbAddon - The dbAddon parameter
    */
   private static dbToApiAddon(dbAddon: DbTenantAddon): TenantAddon {
     return {
       id: dbAddon.id,
       tenantId: dbAddon.tenant_id,
-      addonType: dbAddon.addon_type as "employees" | "admins" | "storage_gb",
+      addonType: dbAddon.addon_type as 'employees' | 'admins' | 'storage_gb',
       quantity: dbAddon.quantity,
       unitPrice: dbAddon.unit_price,
       totalPrice: dbAddon.total_price,
-      status: dbAddon.status as "active" | "cancelled",
+      status: dbAddon.status as 'active' | 'cancelled',
     };
   }
 
   /**
    * Get all available plans
+   * @param includeInactive - The includeInactive parameter
    */
-  static async getAllPlans(
-    includeInactive = false,
-  ): Promise<PlanWithFeatures[]> {
+  static async getAllPlans(includeInactive = false): Promise<PlanWithFeatures[]> {
     // Get all plans based on includeInactive filter
     const dbPlans = await PlanModel.findAll();
-    const filteredPlans = includeInactive
-      ? dbPlans
-      : dbPlans.filter((p) => p.is_active);
+    const filteredPlans = includeInactive ? dbPlans : dbPlans.filter((p) => p.is_active);
 
-    const plansWithFeatures = await Promise.all(
+    return await Promise.all(
       filteredPlans.map(async (dbPlan) => {
         const dbFeatures = await PlanModel.getPlanFeatures(dbPlan.id);
         const plan = this.dbToApiPlan(dbPlan as ModelDbPlan);
-        const features = dbFeatures
-          .filter((f) => f.is_included)
-          .map((f) => this.dbToApiFeature(f));
+        const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
 
         return {
           ...plan,
@@ -117,18 +121,14 @@ export class PlansService {
         };
       }),
     );
-
-    return plansWithFeatures;
   }
 
   /**
    * Get plan by ID
+   * @param planId - The planId parameter
    */
   static async getPlanById(planId: number): Promise<PlanWithFeatures | null> {
-    const [dbPlans] = await query<DbPlan[]>(
-      "SELECT * FROM plans WHERE id = ?",
-      [planId],
-    );
+    const [dbPlans] = await query<DbPlan[]>('SELECT * FROM plans WHERE id = ?', [planId]);
 
     if (dbPlans.length === 0) {
       return null;
@@ -138,9 +138,7 @@ export class PlansService {
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
 
     const plan = this.dbToApiPlan(dbPlan);
-    const features = dbFeatures
-      .filter((f) => f.is_included)
-      .map((f) => this.dbToApiFeature(f));
+    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
 
     return {
       ...plan,
@@ -150,10 +148,9 @@ export class PlansService {
 
   /**
    * Get current plan for tenant
+   * @param tenantId - The tenant ID
    */
-  static async getCurrentPlan(
-    tenantId: number,
-  ): Promise<CurrentPlanResponse | null> {
+  static async getCurrentPlan(tenantId: number): Promise<CurrentPlanResponse | null> {
     const dbTenantPlan = await PlanModel.getTenantPlan(tenantId);
 
     if (!dbTenantPlan) {
@@ -162,20 +159,16 @@ export class PlansService {
 
     const dbPlan = await PlanModel.findByCode(dbTenantPlan.plan_code);
     if (!dbPlan) {
-      throw new Error("Plan details not found");
+      throw new Error('Plan details not found');
     }
 
     const dbFeatures = await PlanModel.getPlanFeatures(dbTenantPlan.plan_id);
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
     const costs = await PlanModel.calculateTenantCost(tenantId);
 
-    const tenantPlan = this.dbToApiTenantPlan(
-      dbTenantPlan as ModelDbTenantPlan,
-    );
+    const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan as ModelDbTenantPlan);
     const planDetails = this.dbToApiPlan(dbPlan as ModelDbPlan);
-    const features = dbFeatures
-      .filter((f) => f.is_included)
-      .map((f) => this.dbToApiFeature(f));
+    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
     const addons = dbAddons.map((a) => this.dbToApiAddon(a));
 
     const apiCosts: TenantCosts = {
@@ -199,6 +192,10 @@ export class PlansService {
 
   /**
    * Upgrade/downgrade plan
+   * @param tenantId - The tenant ID
+   * @param newPlanCode - The newPlanCode parameter
+   * @param effectiveDate - The effectiveDate parameter
+   * @param userId - The user ID
    */
   static async upgradePlan(
     tenantId: number,
@@ -215,7 +212,7 @@ export class PlansService {
     // Get current plan
     const currentPlan = await PlanModel.getTenantPlan(tenantId);
     if (!currentPlan) {
-      throw new Error("No active plan found for tenant");
+      throw new Error('No active plan found for tenant');
     }
 
     // Change the plan
@@ -230,14 +227,13 @@ export class PlansService {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,
-        action: "plan_upgrade",
-        entity_type: "tenant_plans",
+        action: 'plan_upgrade',
+        entity_type: 'tenant_plans',
         entity_id: newPlan.id,
         old_values: { plan_id: currentPlan.plan_id },
         new_values: {
           plan_id: newPlan.id,
-          effective_date:
-            effectiveDate?.toISOString() ?? new Date().toISOString(),
+          effective_date: effectiveDate?.toISOString() ?? new Date().toISOString(),
         },
       });
     }
@@ -245,7 +241,7 @@ export class PlansService {
     // Return updated plan info
     const result = await this.getCurrentPlan(tenantId);
     if (!result) {
-      throw new Error("Failed to retrieve updated plan");
+      throw new Error('Failed to retrieve updated plan');
     }
 
     return result;
@@ -253,6 +249,7 @@ export class PlansService {
 
   /**
    * Get plan features
+   * @param planId - The planId parameter
    */
   static async getPlanFeatures(planId: number): Promise<PlanFeature[]> {
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
@@ -261,14 +258,15 @@ export class PlansService {
 
   /**
    * Get tenant addons (simple counts)
+   * @param tenantId - The tenant ID
    */
   static async getTenantAddons(tenantId: number): Promise<TenantAddons> {
     const [dbAddons] = await query<DbAddonResult[]>(
-      `SELECT 
+      `SELECT
         COALESCE(MAX(CASE WHEN addon_type = 'employees' THEN quantity END), 0) as extra_employees,
         COALESCE(MAX(CASE WHEN addon_type = 'admins' THEN quantity END), 0) as extra_admins,
         COALESCE(MAX(CASE WHEN addon_type = 'storage_gb' THEN quantity END), 0) as extra_storage_gb
-      FROM tenant_addons 
+      FROM tenant_addons
       WHERE tenant_id = ? AND status = 'active'`,
       [tenantId],
     );
@@ -282,14 +280,15 @@ export class PlansService {
     }
 
     return {
-      employees: dbAddons[0].extra_employees ?? 0,
-      admins: dbAddons[0].extra_admins ?? 0,
-      storageGb: dbAddons[0].extra_storage_gb ?? 0,
+      employees: dbAddons[0].extra_employees,
+      admins: dbAddons[0].extra_admins,
+      storageGb: dbAddons[0].extra_storage_gb,
     };
   }
 
   /**
    * Get tenant addon details (full records)
+   * @param tenantId - The tenant ID
    */
   static async getTenantAddonDetails(tenantId: number): Promise<TenantAddon[]> {
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
@@ -298,6 +297,9 @@ export class PlansService {
 
   /**
    * Update tenant addons
+   * @param tenantId - The tenant ID
+   * @param addons - The addons parameter
+   * @param userId - The user ID
    */
   static async updateAddons(
     tenantId: number,
@@ -306,11 +308,9 @@ export class PlansService {
   ): Promise<TenantAddons> {
     // Map camelCase to snake_case for model
     const addonUpdate: Record<string, number> = {};
-    if (addons.employees !== undefined)
-      addonUpdate.employees = addons.employees;
+    if (addons.employees !== undefined) addonUpdate.employees = addons.employees;
     if (addons.admins !== undefined) addonUpdate.admins = addons.admins;
-    if (addons.storageGb !== undefined)
-      addonUpdate.storage_gb = addons.storageGb;
+    if (addons.storageGb !== undefined) addonUpdate.storage_gb = addons.storageGb;
 
     await PlanModel.updateTenantAddons({
       tenantId,
@@ -322,8 +322,8 @@ export class PlansService {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,
-        action: "addon_update",
-        entity_type: "tenant_addons",
+        action: 'addon_update',
+        entity_type: 'tenant_addons',
         entity_id: tenantId,
         new_values: addons as Record<string, unknown>,
       });
@@ -335,6 +335,7 @@ export class PlansService {
 
   /**
    * Calculate tenant costs
+   * @param tenantId - The tenant ID
    */
   static async calculateCosts(tenantId: number): Promise<CostCalculation> {
     const costs = await PlanModel.calculateTenantCost(tenantId);
@@ -348,7 +349,7 @@ export class PlansService {
         storage: addons.storageGb * 0.1, // 0.10€ per GB
       },
       totalMonthlyCost: costs.totalCost,
-      currency: "EUR",
+      currency: 'EUR',
     };
   }
 }

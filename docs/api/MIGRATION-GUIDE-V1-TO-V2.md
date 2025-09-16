@@ -226,21 +226,21 @@ Add refresh token logic:
 
 ```javascript
 // Store tokens
-localStorage.setItem("accessToken", response.data.accessToken);
-localStorage.setItem("refreshToken", response.data.refreshToken);
+localStorage.setItem('accessToken', response.data.accessToken);
+localStorage.setItem('refreshToken', response.data.refreshToken);
 
 // Refresh when access token expires
 async function refreshAccessToken() {
-  const response = await fetch("/api/v2/auth/refresh", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/v2/auth/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      refreshToken: localStorage.getItem("refreshToken"),
+      refreshToken: localStorage.getItem('refreshToken'),
     }),
   });
 
   if (response.success) {
-    localStorage.setItem("accessToken", response.data.accessToken);
+    localStorage.setItem('accessToken', response.data.accessToken);
   }
 }
 ```
@@ -252,13 +252,13 @@ Use structured error codes:
 ```javascript
 function handleApiError(error) {
   switch (error.code) {
-    case "UNAUTHORIZED":
+    case 'UNAUTHORIZED':
       // Redirect to login
       break;
-    case "TOKEN_EXPIRED":
+    case 'TOKEN_EXPIRED':
       // Refresh token
       break;
-    case "VALIDATION_ERROR":
+    case 'VALIDATION_ERROR':
       // Show validation errors
       error.details.forEach((detail) => {
         showFieldError(detail.field, detail.message);
@@ -285,7 +285,7 @@ Monitor these headers and plan migration accordingly.
 
 ## Testing
 
-1. **Use Swagger Documentation**: http://localhost:3000/api-docs/v2
+1. **Use Swagger Documentation**: <http://localhost:3000/api-docs/v2>
 2. **Test with curl**:
 
    ```bash
@@ -300,9 +300,9 @@ Monitor these headers and plan migration accordingly.
 
 ## Support
 
-- **Documentation**: http://localhost:3000/api-docs/v2
+- **Documentation**: <http://localhost:3000/api-docs/v2>
 - **Migration Issues**: Create issue in GitHub repository
-- **Questions**: Contact support@scs-technik.de
+- **Questions**: Contact <support@scs-technik.de>
 
 ## Endpoint Mapping
 

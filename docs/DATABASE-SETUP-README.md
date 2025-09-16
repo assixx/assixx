@@ -1,6 +1,6 @@
 # 🚀 ASSIXX - Database Setup Guide
 
-**SaaS Platform für Industrieunternehmen**  
+**SaaS Platform für Industrieunternehmen**
 _Komplette Anleitung für neue Entwickler_
 
 ---
@@ -486,7 +486,7 @@ Das Assixx-System verwendet **55+ Haupttabellen** in 10 Kategorien:
 - `plan_features` - Plan ↔ Feature-Zuordnung
 - `feature_usage_logs` - Nutzungsstatistiken
 
-##### Feature-Tabellen-Details:
+##### Feature-Tabellen-Details
 
 **features:**
 
@@ -597,7 +597,7 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
 
 1. **Root-Dashboard:**
 
-   ```
+   ```text
    http://localhost:3000/root-features
    ```
 
@@ -638,10 +638,10 @@ Das Feature-Management-System ermöglicht es, einzelne Funktionen für jeden Ten
 
 ```javascript
 // In Routes mit Middleware
-router.use(checkFeature("surveys"));
+router.use(checkFeature('surveys'));
 
 // In Frontend prüfen
-const hasFeature = tenantFeatures.some((f) => f.code === "surveys" && f.is_available);
+const hasFeature = tenantFeatures.some((f) => f.code === 'surveys' && f.is_available);
 ```
 
 ---
@@ -658,7 +658,7 @@ Assixx verwendet eine **Shared Database, Shared Schema**-Architektur mit Tenant-
 
 1. **Neues Unternehmen registrieren:**
 
-   ```
+   ```text
    http://localhost:3000/signup.html
    ```
 
@@ -756,7 +756,7 @@ ALLOWED_FILE_TYPES=pdf,jpg,jpeg,png,doc,docx,xls,xlsx
 
 ### 🔐 Sicherheits-Secrets generieren
 
-#### Linux/WSL:
+#### Linux/WSL
 
 ```bash
 # JWT Secret (64 Zeichen)
@@ -769,7 +769,7 @@ openssl rand -base64 64
 openssl rand -hex 64
 ```
 
-#### Windows PowerShell:
+#### Windows PowerShell
 
 ```powershell
 # Zufällige Secrets generieren
@@ -778,7 +778,7 @@ openssl rand -hex 64
 
 ### 🗂️ Verzeichnisstruktur
 
-```
+```text
 Assixx/
 ├── database-setup.sql          # Komplettes DB-Schema
 ├── setup-wsl-ubuntu.sh        # Automatisches WSL Setup
@@ -1054,11 +1054,11 @@ npm run build
 
 ### 🔗 Nützliche Links
 
-- **Node.js**: https://nodejs.org/
-- **MySQL**: https://dev.mysql.com/doc/
-- **Express.js**: https://expressjs.com/
-- **Bootstrap**: https://getbootstrap.com/
-- **JWT.io**: https://jwt.io/
+- **Node.js**: <https://nodejs.org/>
+- **MySQL**: <https://dev.mysql.com/doc/>
+- **Express.js**: <https://expressjs.com/>
+- **Bootstrap**: <https://getbootstrap.com/>
+- **JWT.io**: <https://jwt.io/>
 
 ### 🆘 Support
 
@@ -1090,7 +1090,7 @@ if (survey.is_anonymous) {
 }
 
 // ✅ RICHTIG - explizite Prüfung
-if (survey.is_anonymous === "1" || survey.is_anonymous === 1 || survey.is_anonymous === true) {
+if (survey.is_anonymous === '1' || survey.is_anonymous === 1 || survey.is_anonymous === true) {
   // Wird nur bei true ausgeführt
 }
 ```
@@ -1118,14 +1118,14 @@ const userId = req.user.id; // Bereits Number aus Auth
 1. **Immer Datentypen prüfen:**
 
    ```javascript
-   console.log("Type:", typeof value, "Value:", value);
+   console.info('Type:', typeof value, 'Value:', value);
    ```
 
 2. **Explizite Boolean-Checks:**
 
    ```javascript
-   const isTrue = value === "1" || value === 1 || value === true;
-   const isFalse = value === "0" || value === 0 || value === false;
+   const isTrue = value === '1' || value === 1 || value === true;
+   const isFalse = value === '0' || value === 0 || value === false;
    ```
 
 3. **Konsistente ID-Behandlung:**
@@ -1154,5 +1154,5 @@ const userId = req.user.id; // Bereits Number aus Auth
 
 **🎉 Herzlichen Glückwunsch! Assixx ist jetzt einsatzbereit!**
 
-_Generiert am: 2025-05-29_  
+_Generiert am: 2025-05-29_
 _Version: 2025-05-29_

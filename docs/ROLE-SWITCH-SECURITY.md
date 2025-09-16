@@ -45,7 +45,7 @@ Bei neuen Seiten muss die Access Control Map in `access-control.ts` aktualisiert
 
 ```typescript
 const accessMap: Record<string, UserRole[]> = {
-  "/neue-seite": ["admin", "root"], // Definiere erlaubte Rollen
+  '/neue-seite': ['admin', 'root'], // Definiere erlaubte Rollen
   // ...
 };
 ```

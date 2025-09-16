@@ -3,7 +3,13 @@
  * Handles admin profile functionality with limited edit capabilities
  */
 
-import { getAuthToken } from './auth';
+import { ApiClient } from '../utils/api-client';
+import { showError } from './auth';
+import { $$ } from '../utils/dom-utils';
+import { showSuccessAlert } from './utils/alerts';
+
+// Initialize API client
+const apiClient = ApiClient.getInstance();
 
 interface UserProfile {
   id: number;
@@ -17,9 +23,18 @@ interface UserProfile {
   tenant_id: number;
 }
 
-interface PositionMap {
-  [key: string]: string;
+interface ExtendedUserProfile extends UserProfile {
+  profilePictureUrl?: string;
+  profilePicture?: string;
+  profile_picture?: string;
+  avatar?: string;
+  picture?: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
 }
+
+type PositionMap = Record<string, string>;
 
 // Position display mapping
 const positionMap: PositionMap = {
@@ -39,17 +54,17 @@ document.addEventListener('DOMContentLoaded', () => {
     console.info('Admin profile script loaded');
 
     // Check authentication
-    const token = getAuthToken();
+    const token = localStorage.getItem('token');
     const userRole = localStorage.getItem('userRole');
 
-    if (!token || userRole !== 'admin') {
+    if (token === null || token === '' || userRole !== 'admin') {
       window.location.href = '/login';
       return;
     }
 
     // Set initial placeholder
-    const display = document.getElementById('profile-picture-display') as HTMLElement;
-    if (display && !display.innerHTML.trim()) {
+    const display = document.querySelector('#profile-picture-display');
+    if (display !== null && display.innerHTML.trim().length === 0) {
       display.innerHTML = '...';
     }
 
@@ -67,34 +82,32 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function loadUserProfile(): Promise<void> {
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    // Always use API v2 with apiClient - use /me endpoint
+    const profile = await apiClient.get<UserProfile>('/users/me');
 
-    if (response.ok) {
-      const data = await response.json();
-      const profile = data.data ?? data.user ?? data;
+    populateProfileForm(profile);
 
-      populateProfileForm(profile);
+    // Try different possible field names for profile picture
+    // API v2 uses profilePictureUrl (not profilePicture!)
+    const extProfile = profile as ExtendedUserProfile;
+    const pictureUrl =
+      extProfile.profilePictureUrl ??
+      extProfile.profilePicture ??
+      extProfile.profile_picture_url ??
+      extProfile.profile_picture ??
+      extProfile.avatar ??
+      extProfile.picture;
 
-      // Try different possible field names for profile picture
-      const pictureUrl =
-        profile.profile_picture_url ??
-        profile.profilePictureUrl ??
-        profile.profile_picture ??
-        profile.avatar ??
-        profile.picture;
+    console.info('Profile picture URL:', pictureUrl);
+    console.info('Full profile data:', profile);
 
-      updateProfilePicture(pictureUrl, profile.first_name, profile.last_name);
-    } else {
-      showMessage('Fehler beim Laden des Profils', 'error');
-    }
+    // Use camelCase for v2 API
+    const firstName = extProfile.firstName ?? profile.first_name;
+    const lastName = extProfile.lastName ?? profile.last_name;
+    updateProfilePicture(pictureUrl, firstName, lastName);
   } catch (error) {
     console.error('Error loading profile:', error);
-    showMessage('Netzwerkfehler beim Laden des Profils', 'error');
+    showMessage('Fehler beim Laden des Profils', 'error');
   }
 }
 
@@ -102,31 +115,55 @@ async function loadUserProfile(): Promise<void> {
  * Populate form with profile data
  */
 function populateProfileForm(profile: UserProfile): void {
+  // Handle both snake_case (v1) and camelCase (v2)
+  const extProfile = profile as ExtendedUserProfile;
+  const firstName = extProfile.firstName ?? profile.first_name;
+  const lastName = extProfile.lastName ?? profile.last_name;
+  const companyName = extProfile.companyName ?? profile.company_name;
+
   // Editable fields
-  (document.getElementById('first_name') as HTMLInputElement).value = profile.first_name ?? '';
-  (document.getElementById('last_name') as HTMLInputElement).value = profile.last_name ?? '';
+  const firstNameInput = $$('#first_name');
+  if (firstNameInput instanceof HTMLInputElement) {
+    firstNameInput.value = firstName ?? '';
+  }
+
+  const lastNameInput = $$('#last_name');
+  if (lastNameInput instanceof HTMLInputElement) {
+    lastNameInput.value = lastName ?? '';
+  }
 
   // Read-only fields
-  (document.getElementById('email') as HTMLInputElement).value = profile.email ?? '';
-  (document.getElementById('position') as HTMLInputElement).value = profile.position
-    ? positionMap[profile.position] || profile.position
-    : '-';
-  (document.getElementById('company') as HTMLInputElement).value = profile.company_name ?? '-';
+  const emailInput = $$('#email');
+  if (emailInput instanceof HTMLInputElement) {
+    emailInput.value = profile.email;
+  }
+  const positionInput = $$('#position');
+  if (positionInput instanceof HTMLInputElement) {
+    positionInput.value =
+      profile.position !== undefined && profile.position.length > 0
+        ? (positionMap[profile.position] ?? profile.position)
+        : '-';
+  }
+
+  const companyInput = $$('#company');
+  if (companyInput instanceof HTMLInputElement) {
+    companyInput.value = companyName ?? '-';
+  }
 }
 
 /**
  * Update profile picture display
  */
 function updateProfilePicture(url?: string, firstName?: string, lastName?: string): void {
-  const display = document.getElementById('profile-picture-display') as HTMLElement;
-  const removeBtn = document.getElementById('remove-picture-btn') as HTMLButtonElement;
+  const display = document.querySelector('#profile-picture-display');
+  const removeBtn = document.querySelector('#remove-picture-btn');
 
   if (!display) {
     console.error('Profile picture display element not found!');
     return;
   }
 
-  if (url) {
+  if (url !== undefined && url.length > 0) {
     // Clear any existing content
     display.innerHTML = '';
     display.classList.remove('avatar-initials');
@@ -144,19 +181,31 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
     img.onerror = () => {
       console.error('Failed to load profile picture:', url);
       // Show initials on error
-      showInitials(display, firstName, lastName);
+      if (display instanceof HTMLElement) {
+        showInitials(display, firstName, lastName);
+      }
+      // Hide remove button on error
+      if (removeBtn instanceof HTMLElement) {
+        removeBtn.style.display = 'none';
+      }
     };
 
-    display.appendChild(img);
+    display.append(img);
 
-    if (removeBtn) {
-      removeBtn.style.display = 'inline-flex';
+    // Show remove button when picture exists
+    if (removeBtn instanceof HTMLElement) {
+      removeBtn.style.display = 'inline-block';
+      console.info('Remove button shown for picture:', url);
     }
   } else {
     // Show initials instead of icon
-    showInitials(display, firstName, lastName);
-    if (removeBtn) {
+    if (display instanceof HTMLElement) {
+      showInitials(display, firstName, lastName);
+    }
+    // Hide remove button when no picture
+    if (removeBtn instanceof HTMLElement) {
       removeBtn.style.display = 'none';
+      console.info('Remove button hidden - no picture');
     }
   }
 }
@@ -165,12 +214,12 @@ function updateProfilePicture(url?: string, firstName?: string, lastName?: strin
  * Show initials in the profile picture display
  */
 function showInitials(display: HTMLElement, firstName?: string, lastName?: string): void {
-  const firstInitial = (firstName ?? '').charAt(0).toUpperCase() || '';
-  const lastInitial = (lastName ?? '').charAt(0).toUpperCase() || '';
-  const initials = `${firstInitial}${lastInitial}` || 'U';
+  const firstInitial = (firstName ?? '').charAt(0).toUpperCase();
+  const lastInitial = (lastName ?? '').charAt(0).toUpperCase();
+  const initials = firstInitial.length > 0 || lastInitial.length > 0 ? `${firstInitial}${lastInitial}` : 'U';
 
   display.classList.add('avatar-initials');
-  display.innerHTML = initials;
+  display.textContent = initials;
 }
 
 /**
@@ -178,18 +227,30 @@ function showInitials(display: HTMLElement, firstName?: string, lastName?: strin
  */
 function setupFormHandlers(): void {
   // Profile form
-  const profileForm = document.getElementById('profile-form') as HTMLFormElement;
-  profileForm.addEventListener('submit', (e) => void handleProfileUpdate(e));
+  const profileForm = $$('#profile-form');
+  if (profileForm !== null) {
+    profileForm.addEventListener('submit', (e) => {
+      void handleProfileUpdate(e);
+    });
+  }
 
   // Password form
-  const passwordForm = document.getElementById('password-form') as HTMLFormElement;
-  passwordForm.addEventListener('submit', (e) => void handlePasswordChange(e));
+  const passwordForm = $$('#password-form');
+  if (passwordForm !== null) {
+    passwordForm.addEventListener('submit', (e) => {
+      void handlePasswordChange(e);
+    });
+  }
 
   // Logout button
-  const logoutBtn = document.getElementById('logout-btn');
+  const logoutBtn = document.querySelector('#logout-btn');
   logoutBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    // TODO: Implement proper confirmation modal
+    showError('Abmeldebestätigung: Feature noch nicht implementiert');
+    // Code below will be activated once confirmation modal is implemented
+    /*
     void (async () => {
-      e.preventDefault();
       if (confirm('Möchten Sie sich wirklich abmelden?')) {
         try {
           // Import and use the logout function from auth module
@@ -202,6 +263,7 @@ function setupFormHandlers(): void {
         }
       }
     })();
+    */
   });
 }
 
@@ -209,33 +271,40 @@ function setupFormHandlers(): void {
  * Setup profile picture handlers
  */
 function setupProfilePictureHandlers(): void {
-  const fileInput = document.getElementById('profile-picture-input') as HTMLInputElement;
-  const removeBtn = document.getElementById('remove-picture-btn') as HTMLButtonElement;
+  const fileInput = $$('#profile-picture-input');
+  const removeBtn = document.querySelector('#remove-picture-btn');
 
   // File upload
-  fileInput.addEventListener('change', (e) => {
-    void (async () => {
-      const target = e.target as HTMLInputElement;
-      const file = target.files?.[0];
+  if (fileInput !== null) {
+    fileInput.addEventListener('change', (e) => {
+      void (async () => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0];
 
-      if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-          showMessage('Datei zu groß (max. 5MB)', 'error');
-          return;
+        if (file) {
+          if (file.size > 5 * 1024 * 1024) {
+            showMessage('Datei zu groß (max. 5MB)', 'error');
+            return;
+          }
+
+          await uploadProfilePicture(file);
         }
-
-        await uploadProfilePicture(file);
-      }
-    })();
-  });
+      })();
+    });
+  }
 
   // Remove picture
-  removeBtn.addEventListener('click', () => {
+  removeBtn?.addEventListener('click', () => {
+    // TODO: Implement proper confirmation modal
+    showError('Löschbestätigung für Profilbild: Feature noch nicht implementiert');
+    // Code below will be activated once confirmation modal is implemented
+    /*
     void (async () => {
       if (confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) {
         await removeProfilePicture();
       }
     })();
+    */
   });
 }
 
@@ -255,24 +324,19 @@ async function handleProfileUpdate(event: Event): Promise<void> {
   };
 
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(updateData),
-    });
+    // Always use API v2 with apiClient
+    // Convert to camelCase for v2
+    const v2UpdateData = {
+      firstName: updateData.first_name,
+      lastName: updateData.last_name,
+    };
 
-    if (response.ok) {
-      showMessage('Profil erfolgreich aktualisiert', 'success');
-      // Reload to update header info
-      setTimeout(() => window.location.reload(), 1500);
-    } else {
-      const error = await response.json();
-      showMessage(error.message ?? 'Fehler beim Aktualisieren des Profils', 'error');
-    }
+    await apiClient.put('/users/me/profile', v2UpdateData);
+    showMessage('Profil erfolgreich aktualisiert', 'success');
+    // Reload to update header info
+    setTimeout(() => {
+      window.location.reload();
+    }, 1500);
   } catch (error) {
     console.error('Error updating profile:', error);
     showMessage('Netzwerkfehler beim Aktualisieren', 'error');
@@ -286,9 +350,13 @@ async function handlePasswordChange(event: Event): Promise<void> {
   event.preventDefault();
 
   const form = event.target as HTMLFormElement;
-  const currentPassword = (document.getElementById('current_password') as HTMLInputElement).value;
-  const newPassword = (document.getElementById('new_password') as HTMLInputElement).value;
-  const confirmPassword = (document.getElementById('confirm_password') as HTMLInputElement).value;
+  const currentPasswordInput = $$('#current_password');
+  const newPasswordInput = $$('#new_password');
+  const confirmPasswordInput = $$('#confirm_password');
+
+  const currentPassword = currentPasswordInput instanceof HTMLInputElement ? currentPasswordInput.value : '';
+  const newPassword = newPasswordInput instanceof HTMLInputElement ? newPasswordInput.value : '';
+  const confirmPassword = confirmPasswordInput instanceof HTMLInputElement ? confirmPasswordInput.value : '';
 
   // Validate passwords match
   if (newPassword !== confirmPassword) {
@@ -303,27 +371,15 @@ async function handlePasswordChange(event: Event): Promise<void> {
   }
 
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/users/profile/password', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        currentPassword: currentPassword,
-        newPassword: newPassword,
-      }),
+    // Use API v2 with apiClient
+    await apiClient.put('/users/me/password', {
+      currentPassword,
+      newPassword,
     });
 
-    if (response.ok) {
-      showMessage('Passwort erfolgreich geändert', 'success');
-      showSuccessOverlay('Passwort erfolgreich geändert!');
-      form.reset();
-    } else {
-      const error = await response.json();
-      showMessage(error.message ?? 'Fehler beim Ändern des Passworts', 'error');
-    }
+    showMessage('Passwort erfolgreich geändert', 'success');
+    showSuccessAlert('Passwort erfolgreich geändert!');
+    form.reset();
   } catch (error) {
     console.error('Error changing password:', error);
     showMessage('Netzwerkfehler beim Ändern des Passworts', 'error');
@@ -335,109 +391,60 @@ async function handlePasswordChange(event: Event): Promise<void> {
  */
 async function uploadProfilePicture(file: File): Promise<void> {
   const formData = new FormData();
-  formData.append('profilePicture', file);
+  formData.append('profilePicture', file); // v2 uses camelCase
 
   try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile-picture', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    });
+    // Always use API v2 with apiClient
+    // Note: apiClient.post supports FormData
+    const result = await apiClient.post<{ profilePictureUrl?: string }>('/users/me/profile-picture', formData);
 
-    if (response.ok) {
-      const result = await response.json();
-      // Check different possible response formats
-      const pictureUrl =
-        result.profilePictureUrl ?? result.profile_picture_url ?? result.url ?? result.data?.profile_picture_url;
-      // Get current name values for initials
-      const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
-      const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
-      updateProfilePicture(pictureUrl, firstName, lastName);
-      showMessage('Profilbild erfolgreich hochgeladen', 'success');
-      // Reload profile to ensure we have the latest data
-      setTimeout(() => {
-        void loadUserProfile();
-      }, 500);
-    } else {
-      const error = await response.json();
-      showMessage(error.message ?? 'Fehler beim Hochladen des Profilbilds', 'error');
-    }
+    const pictureUrl = result.profilePictureUrl;
+    console.info('Upload response:', result);
+
+    const firstNameInput = $$('#first_name');
+    const lastNameInput = $$('#last_name');
+    const firstName = firstNameInput instanceof HTMLInputElement ? firstNameInput.value : '';
+    const lastName = lastNameInput instanceof HTMLInputElement ? lastNameInput.value : '';
+
+    updateProfilePicture(pictureUrl ?? undefined, firstName, lastName);
+    showMessage('Profilbild erfolgreich hochgeladen', 'success');
+
+    // Reload page to update header
+    setTimeout(() => {
+      window.location.reload();
+    }, 100);
   } catch (error) {
     console.error('Error uploading profile picture:', error);
     showMessage('Netzwerkfehler beim Hochladen', 'error');
   }
 }
 
-/**
- * Remove profile picture
- */
-async function removeProfilePicture(): Promise<void> {
-  try {
-    const token = getAuthToken();
-    const response = await fetch('/api/user/profile-picture', {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      // Get current name values for initials
-      const firstName = (document.getElementById('first_name') as HTMLInputElement).value;
-      const lastName = (document.getElementById('last_name') as HTMLInputElement).value;
-      updateProfilePicture(undefined, firstName, lastName);
-      showMessage('Profilbild erfolgreich entfernt', 'success');
-    } else {
-      const error = await response.json();
-      showMessage(error.message ?? 'Fehler beim Entfernen des Profilbilds', 'error');
-    }
-  } catch (error) {
-    console.error('Error removing profile picture:', error);
-    showMessage('Netzwerkfehler beim Entfernen', 'error');
-  }
-}
+// Function removed - will be implemented when confirmation modal is ready
+// async function removeProfilePicture(): Promise<void> { ... }
 
 /**
  * Show message to user
  */
 function showMessage(message: string, type: 'success' | 'error'): void {
-  const container = document.getElementById('message-container') as HTMLElement;
-  container.innerHTML = `
-    <div class="alert alert-${type}">
-      <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-      ${message}
-    </div>
-  `;
+  const container = document.querySelector('#message-container');
+  if (!container) return;
+
+  const alertDiv = document.createElement('div');
+  alertDiv.className = `alert alert-${type}`;
+
+  const icon = document.createElement('i');
+  icon.className = `fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}`;
+
+  alertDiv.append(icon);
+  alertDiv.append(document.createTextNode(' ' + message));
+
+  container.textContent = '';
+  container.append(alertDiv);
 
   // Auto-hide after 5 seconds
   setTimeout(() => {
-    container.innerHTML = '';
+    container.textContent = '';
   }, 5000);
 }
 
-/**
- * Show success overlay animation
- */
-function showSuccessOverlay(text: string = 'Erfolgreich!'): void {
-  const overlay = document.createElement('div');
-  overlay.className = 'success-overlay';
-  overlay.innerHTML = `
-    <div class="success-message">
-      <div class="success-icon">
-        <i class="fas fa-check-circle"></i>
-      </div>
-      <div class="success-text">
-        ${text}
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  // Remove after animation
-  setTimeout(() => {
-    overlay.remove();
-  }, 2000);
-}
+// showSuccessOverlay removed - use showSuccessAlert from alerts.ts instead

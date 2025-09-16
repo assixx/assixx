@@ -6,19 +6,19 @@
 
 **Was läuft dort:** NUR Tests OHNE Datenbank-Abhängigkeiten
 
-#### Unit Tests (KEINE DB):
+#### Unit Tests (KEINE DB)
 
 - ✅ `errorHandler.test.ts` - Utility Funktion
 - ✅ `health.test.ts` - Simple Endpoint Test
 
-#### Code Quality Checks:
+#### Code Quality Checks
 
 - ✅ TypeScript Compilation
 - ✅ ESLint
 - ✅ Prettier
 - ✅ Docker Build Test
 
-#### Was läuft NICHT auf GitHub:
+#### Was läuft NICHT auf GitHub
 
 - ❌ KEINE Integration Tests
 - ❌ KEINE Tests mit `pool.execute()`
@@ -32,7 +32,7 @@
 
 **Was läuft dort:** ALLE Tests MIT Datenbank-Abhängigkeiten
 
-#### Integration Tests (MIT DB):
+#### Integration Tests (MIT DB)
 
 - ✅ `auth.test.ts`
 - ✅ `auth-refactored.test.ts`
@@ -52,7 +52,7 @@
 - ✅ `tenantDeletion.service.test.ts`
 - ✅ `documents.test.ts`
 
-#### Vorteile:
+#### Vorteile
 
 - ✅ Echte MySQL Datenbank
 - ✅ Kein Schema-Drift
@@ -63,7 +63,7 @@
 
 ## 📁 Datei-Struktur
 
-### GitHub Workflows:
+### GitHub Workflows
 
 ```
 .github/workflows/
@@ -71,7 +71,7 @@
 └── test.yml          # ❌ DEAKTIVIERT/GELÖSCHT
 ```
 
-### Lokale Scripts:
+### Lokale Scripts
 
 ```
 scripts/
@@ -84,19 +84,19 @@ scripts/
 
 ## 🔧 Implementierung
 
-### 1. GitHub Actions anpassen:
+### 1. GitHub Actions anpassen
 
 - Alte `test.yml` → `test.yml.disabled` umbenennen
 - Nur `unit-tests.yml` aktiv lassen
 - KEINE DB Services in GitHub Actions
 
-### 2. Lokale Test-Umgebung:
+### 2. Lokale Test-Umgebung
 
 - `test-local.sh` für alle DB-Tests
 - Nutzt Docker MySQL direkt
 - Keine Schema-Sync nötig
 
-### 3. Entwickler-Workflow:
+### 3. Entwickler-Workflow
 
 ```bash
 # Vor dem Commit - Lokal testen:

@@ -109,15 +109,15 @@ curl -X POST http://localhost:3000/api/chat/channels \
 
 ## 🖥 Screen Sharing Setup
 
-### Browser Tabs vorbereiten:
+### Browser Tabs vorbereiten
 
-1. **Tab 1**: Swagger UI (http://localhost:3000/api-docs/)
+1. **Tab 1**: Swagger UI (<http://localhost:3000/api-docs/>)
 2. **Tab 2**: Postman mit importierter Collection
 3. **Tab 3**: VS Code mit Workshop-Dateien
 4. **Tab 4**: Terminal für Live-Demos
 5. **Tab 5**: Miro/Whiteboard für Brainstorming
 
-### VS Code Split View:
+### VS Code Split View
 
 ```
 Links: decision-matrix.md
@@ -127,7 +127,7 @@ Terminal: Bereit für curl commands
 
 ## 🎯 Whiteboard/Miro Template
 
-### Board-Struktur erstellen:
+### Board-Struktur erstellen
 
 ```
 +------------------+------------------+------------------+
@@ -139,7 +139,7 @@ Terminal: Bereit für curl commands
 +------------------+------------------+------------------+
 ```
 
-### Sticky Notes vorbereiten:
+### Sticky Notes vorbereiten
 
 - 🔴 Rot: Probleme/Blocker
 - 🟡 Gelb: Ideen/Vorschläge
@@ -148,7 +148,7 @@ Terminal: Bereit für curl commands
 
 ## 📡 Backup Plan
 
-### Falls Swagger UI nicht läuft:
+### Falls Swagger UI nicht läuft
 
 ```bash
 # Alternative: JSON direkt anzeigen
@@ -159,7 +159,7 @@ python -m http.server 8080
 # Dann: http://localhost:8080/docs/api/current-openapi-spec.json
 ```
 
-### Falls Docker Probleme macht:
+### Falls Docker Probleme macht
 
 ```bash
 # Logs prüfen
@@ -172,17 +172,17 @@ docker-compose restart mysql
 
 ## 📋 Workshop Moderation Tools
 
-### Timer/Timeboxing:
+### Timer/Timeboxing
 
-- https://pomofocus.io/ (für Phasen)
+- <https://pomofocus.io/> (für Phasen)
 - Oder: `countdown 25m` im Terminal
 
-### Voting/Priorisierung:
+### Voting/Priorisierung
 
 - Dot-Voting in Miro
 - Oder: Einfache Handzeichen (1-5 Finger)
 
-### Dokumentation:
+### Dokumentation
 
 ```bash
 # Live-Mitschrift Template
@@ -205,7 +205,7 @@ EOF
 
 ## 🎆 Nach dem Workshop
 
-### Sofort erfassen:
+### Sofort erfassen
 
 ```bash
 # Screenshot von Whiteboard
@@ -217,7 +217,7 @@ git add docs/API-WORKSHOP-MATERIALS/
 git commit -m "docs: API Workshop results and decisions"
 ```
 
-### Follow-Up Template:
+### Follow-Up Template
 
 ```markdown
 ## API Workshop Follow-Up

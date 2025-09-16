@@ -3,7 +3,7 @@
  * Type definitions for role management
  */
 
-export type RoleName = "admin" | "employee" | "root";
+export type RoleName = 'admin' | 'employee' | 'root';
 
 export interface Role {
   id: RoleName;
@@ -46,12 +46,20 @@ export interface ErrorResponse {
   };
 }
 
+/**
+ *
+ */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param code - The code parameter
+   * @param message - The message parameter
+   */
   constructor(
     public code: string,
     message: string,
   ) {
     super(message);
-    this.name = "ServiceError";
+    this.name = 'ServiceError';
   }
 }

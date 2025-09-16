@@ -1,14 +1,34 @@
-import { Response, NextFunction } from "express";
+import { NextFunction, Response } from 'express';
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { logger } from "../../../utils/logger.js";
+import rootLog from '../../../models/rootLog';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { logger } from '../../../utils/logger.js';
+import { departmentService } from './departments.service.js';
 
-import { departmentService } from "./departments.service.js";
+const DEFAULT_ERROR_MESSAGE = 'Error occurred';
+const INTERNAL_SERVER_ERROR = 'Internal server error';
 
+interface Department {
+  id: number;
+  name: string;
+  description?: string;
+  manager_id?: number;
+  parent_id?: number;
+  status: string;
+  visibility: string;
+  [key: string]: unknown;
+}
+
+/**
+ *
+ */
 export class DepartmentController {
   /**
    * Get all departments
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartments(
     req: AuthenticatedRequest,
@@ -16,7 +36,7 @@ export class DepartmentController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const includeExtended = req.query.includeExtended !== "false";
+      const includeExtended = req.query.includeExtended !== 'false';
 
       const departments = await departmentService.getDepartments(
         req.user.tenant_id,
@@ -24,35 +44,34 @@ export class DepartmentController {
       );
 
       res.json(successResponse(departments));
-    } catch (error) {
-      logger.error("Error in getDepartments:", error);
+    } catch (error: unknown) {
+      logger.error('Error in getDepartments:', error);
       const errorObj = error as {
         code?: number;
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? "Error occurred",
-              errorObj.details as
-                | { field: string; message: string }[]
-                | undefined,
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+              errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("DEPT_500", "Internal server error"));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
 
   /**
    * Get department by ID
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartmentById(
     req: AuthenticatedRequest,
@@ -60,12 +79,10 @@ export class DepartmentController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
-        res
-          .status(400)
-          .json(errorResponse("DEPT_400", "Invalid department ID"));
+      if (Number.isNaN(departmentId)) {
+        res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
 
@@ -75,35 +92,34 @@ export class DepartmentController {
       );
 
       res.json(successResponse(department));
-    } catch (error) {
-      logger.error("Error in getDepartmentById:", error);
+    } catch (error: unknown) {
+      logger.error('Error in getDepartmentById:', error);
       const errorObj = error as {
         code?: number;
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? "Error occurred",
-              errorObj.details as
-                | { field: string; message: string }[]
-                | undefined,
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+              errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("DEPT_500", "Internal server error"));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
 
   /**
    * Create a new department
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async createDepartment(
     req: AuthenticatedRequest,
@@ -112,15 +128,10 @@ export class DepartmentController {
   ): Promise<void> {
     try {
       // Admin/Root only check
-      if (req.user.role !== "admin" && req.user.role !== "root") {
+      if (req.user.role !== 'admin' && req.user.role !== 'root') {
         res
           .status(403)
-          .json(
-            errorResponse(
-              "FORBIDDEN",
-              "Access denied. Admin or root role required.",
-            ),
-          );
+          .json(errorResponse('FORBIDDEN', 'Access denied. Admin or root role required.'));
         return;
       }
 
@@ -129,6 +140,7 @@ export class DepartmentController {
         description?: string;
         managerId?: number;
         parentId?: number;
+        areaId?: number;
         status?: string;
         visibility?: string;
       };
@@ -139,48 +151,68 @@ export class DepartmentController {
           description: body.description,
           managerId: body.managerId,
           parentId: body.parentId,
+          areaId: body.areaId,
           status: body.status,
           visibility: body.visibility,
         },
         req.user.tenant_id,
       );
 
-      res
-        .status(201)
-        .json(successResponse(department, "Department created successfully"));
-    } catch (error) {
-      logger.error("Error in createDepartment:", error);
+      // Log department creation
+      await rootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: 'create',
+        entity_type: 'department',
+        entity_id: (department as unknown as Department).id,
+        details: `Erstellt: ${body.name}`,
+        new_values: {
+          name: body.name,
+          description: body.description,
+          manager_id: body.managerId,
+          parent_id: body.parentId,
+          status: body.status,
+          visibility: body.visibility,
+          created_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get('user-agent'),
+        was_role_switched: false,
+      });
+
+      res.status(201).json(successResponse(department, 'Department created successfully'));
+    } catch (error: unknown) {
+      logger.error('Error in createDepartment:', error);
       const errorObj = error as {
         code?: number;
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         const errorCode =
-          errorObj.code === 400 && errorObj.message?.includes("required")
-            ? "VALIDATION_ERROR"
-            : `DEPT_${errorObj.code}`;
+          errorObj.code === 400 && errorObj.message?.includes('required') === true ?
+            'VALIDATION_ERROR'
+          : `DEPT_${errorObj.code}`;
         res
           .status(errorObj.code)
           .json(
             errorResponse(
               errorCode,
-              errorObj.message ?? "Error occurred",
-              errorObj.details as
-                | { field: string; message: string }[]
-                | undefined,
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+              errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("DEPT_500", "Internal server error"));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
 
   /**
    * Update a department
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async updateDepartment(
     req: AuthenticatedRequest,
@@ -189,24 +221,17 @@ export class DepartmentController {
   ): Promise<void> {
     try {
       // Admin/Root only check
-      if (req.user.role !== "admin" && req.user.role !== "root") {
+      if (req.user.role !== 'admin' && req.user.role !== 'root') {
         res
           .status(403)
-          .json(
-            errorResponse(
-              "FORBIDDEN",
-              "Access denied. Admin or root role required.",
-            ),
-          );
+          .json(errorResponse('FORBIDDEN', 'Access denied. Admin or root role required.'));
         return;
       }
 
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
-        res
-          .status(400)
-          .json(errorResponse("DEPT_400", "Invalid department ID"));
+      if (Number.isNaN(departmentId)) {
+        res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
 
@@ -215,9 +240,16 @@ export class DepartmentController {
         description?: string;
         managerId?: number;
         parentId?: number;
+        areaId?: number;
         status?: string;
         visibility?: string;
       };
+
+      // Get old department data for logging
+      const oldDepartment = await departmentService.getDepartmentById(
+        departmentId,
+        req.user.tenant_id,
+      );
 
       const department = await departmentService.updateDepartment(
         departmentId,
@@ -226,42 +258,72 @@ export class DepartmentController {
           description: body.description,
           managerId: body.managerId,
           parentId: body.parentId,
+          areaId: body.areaId,
           status: body.status,
           visibility: body.visibility,
         },
         req.user.tenant_id,
       );
 
-      res.json(successResponse(department, "Department updated successfully"));
-    } catch (error) {
-      logger.error("Error in updateDepartment:", error);
+      // Log department update
+      await rootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: 'update',
+        entity_type: 'department',
+        entity_id: departmentId,
+        details: `Aktualisiert: ${body.name ?? 'Unbekannt'}`,
+        old_values: {
+          name: (oldDepartment as unknown as Department | null)?.name,
+          description: (oldDepartment as unknown as Department | null)?.description,
+          manager_id: (oldDepartment as unknown as Department | null)?.manager_id,
+          parent_id: (oldDepartment as unknown as Department | null)?.parent_id,
+          status: (oldDepartment as unknown as Department | null)?.status,
+          visibility: (oldDepartment as unknown as Department | null)?.visibility,
+        },
+        new_values: {
+          name: body.name,
+          description: body.description,
+          manager_id: body.managerId,
+          parent_id: body.parentId,
+          status: body.status,
+          visibility: body.visibility,
+          updated_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get('user-agent'),
+        was_role_switched: false,
+      });
+
+      res.json(successResponse(department, 'Department updated successfully'));
+    } catch (error: unknown) {
+      logger.error('Error in updateDepartment:', error);
       const errorObj = error as {
         code?: number;
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? "Error occurred",
-              errorObj.details as
-                | { field: string; message: string }[]
-                | undefined,
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+              errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("DEPT_500", "Internal server error"));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
 
   /**
    * Delete a department
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async deleteDepartment(
     req: AuthenticatedRequest,
@@ -270,67 +332,83 @@ export class DepartmentController {
   ): Promise<void> {
     try {
       // Admin/Root only check
-      if (req.user.role !== "admin" && req.user.role !== "root") {
+      if (req.user.role !== 'admin' && req.user.role !== 'root') {
         res
           .status(403)
-          .json(
-            errorResponse(
-              "FORBIDDEN",
-              "Access denied. Admin or root role required.",
-            ),
-          );
+          .json(errorResponse('FORBIDDEN', 'Access denied. Admin or root role required.'));
         return;
       }
 
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
-        res
-          .status(400)
-          .json(errorResponse("DEPT_400", "Invalid department ID"));
+      if (Number.isNaN(departmentId)) {
+        res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
 
-      await departmentService.deleteDepartment(
+      // Get department data before deletion for logging
+      const deletedDepartment = await departmentService.getDepartmentById(
         departmentId,
         req.user.tenant_id,
       );
 
+      await departmentService.deleteDepartment(departmentId, req.user.tenant_id);
+
+      // Log department deletion
+      await rootLog.create({
+        tenant_id: req.user.tenant_id,
+        user_id: req.user.id,
+        action: 'delete',
+        entity_type: 'department',
+        entity_id: departmentId,
+        details: `Gelöscht: ${String((deletedDepartment as unknown as Department | null)?.name)}`,
+        old_values: {
+          name: (deletedDepartment as unknown as Department | null)?.name,
+          description: (deletedDepartment as unknown as Department | null)?.description,
+          manager_id: (deletedDepartment as unknown as Department | null)?.manager_id,
+          status: (deletedDepartment as unknown as Department | null)?.status,
+          visibility: (deletedDepartment as unknown as Department | null)?.visibility,
+          deleted_by: req.user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get('user-agent'),
+        was_role_switched: false,
+      });
+
       res.json(
         successResponse(
-          { message: "Department deleted successfully" },
-          "Department deleted successfully",
+          { message: 'Department deleted successfully' },
+          'Department deleted successfully',
         ),
       );
-    } catch (error) {
-      logger.error("Error in deleteDepartment:", error);
+    } catch (error: unknown) {
+      logger.error('Error in deleteDepartment:', error);
       const errorObj = error as {
         code?: number;
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? "Error occurred",
-              errorObj.details as
-                | { field: string; message: string }[]
-                | undefined,
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+              errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("DEPT_500", "Internal server error"));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
 
   /**
    * Get department members
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartmentMembers(
     req: AuthenticatedRequest,
@@ -338,12 +416,10 @@ export class DepartmentController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const departmentId = parseInt(req.params.id);
+      const departmentId = Number.parseInt(req.params.id);
 
-      if (isNaN(departmentId)) {
-        res
-          .status(400)
-          .json(errorResponse("DEPT_400", "Invalid department ID"));
+      if (Number.isNaN(departmentId)) {
+        res.status(400).json(errorResponse('DEPT_400', 'Invalid department ID'));
         return;
       }
 
@@ -353,35 +429,34 @@ export class DepartmentController {
       );
 
       res.json(successResponse(members));
-    } catch (error) {
-      logger.error("Error in getDepartmentMembers:", error);
+    } catch (error: unknown) {
+      logger.error('Error in getDepartmentMembers:', error);
       const errorObj = error as {
         code?: number;
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? "Error occurred",
-              errorObj.details as
-                | { field: string; message: string }[]
-                | undefined,
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+              errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("DEPT_500", "Internal server error"));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }
 
   /**
    * Get department statistics
+   * @param req - The request object
+   * @param res - The response object
+   * @param _next - The _next parameter
    */
   async getDepartmentStats(
     req: AuthenticatedRequest,
@@ -389,34 +464,28 @@ export class DepartmentController {
     _next: NextFunction,
   ): Promise<void> {
     try {
-      const stats = await departmentService.getDepartmentStats(
-        req.user.tenant_id,
-      );
+      const stats = await departmentService.getDepartmentStats(req.user.tenant_id);
 
       res.json(successResponse(stats));
-    } catch (error) {
-      logger.error("Error in getDepartmentStats:", error);
+    } catch (error: unknown) {
+      logger.error('Error in getDepartmentStats:', error);
       const errorObj = error as {
         code?: number;
         message?: string;
         details?: unknown;
       };
-      if (errorObj.code) {
+      if (errorObj.code !== undefined) {
         res
           .status(errorObj.code)
           .json(
             errorResponse(
               `DEPT_${errorObj.code}`,
-              errorObj.message ?? "Error occurred",
-              errorObj.details as
-                | { field: string; message: string }[]
-                | undefined,
+              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+              errorObj.details as { field: string; message: string }[] | undefined,
             ),
           );
       } else {
-        res
-          .status(500)
-          .json(errorResponse("DEPT_500", "Internal server error"));
+        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
       }
     }
   }

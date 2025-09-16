@@ -22,7 +22,7 @@ declare -A replacements=(
     ['style="margin-top: 4px"']='class="u-mt-text"'
     ['style="text-align: center"']='class="u-text-center"'
     ['style="text-align: center;"']='class="u-text-center"'
-    
+
     # Common patterns from analysis
     ['style="flex: 1"']='class="u-flex-1"'
     ['style="margin-right: 8px"']='class="u-mr-8"'
@@ -39,7 +39,7 @@ declare -A replacements=(
     ['style="font-size: 1.5rem; margin-bottom: var(--spacing-sm)"']='class="u-fs-xl u-mb-sm"'
     ['style="font-size: 0.9rem; opacity: 0.8"']='class="u-fs-09rem u-opacity-80"'
     ['style="display: block; margin-bottom: 12px; cursor: pointer"']='class="u-block u-mb-12 u-cursor-pointer"'
-    
+
     # Additional patterns
     ['style="padding: 0"']='class="u-p-0"'
     ['style="padding: 24px"']='class="u-p-container"'
@@ -58,10 +58,10 @@ merge_classes() {
     local file=$1
     local pattern=$2
     local new_classes=$3
-    
+
     # Extract just the class names from the replacement
     local classes_only=$(echo "$new_classes" | sed -E 's/class="([^"]+)"/\1/')
-    
+
     # Replace pattern when there's already a class attribute
     sed -i -E "s/class=\"([^\"]+)\"\s+${pattern}/class=\"\1 ${classes_only}\"/g" "$file"
     # Replace pattern when class comes after
@@ -73,32 +73,32 @@ replace_inline_styles() {
     local file=$1
     local changes=0
     local replacements_made=0
-    
+
     # Create temp file
     temp_file=$(mktemp)
     cp "$file" "$temp_file"
-    
+
     # Process each replacement pattern
     for pattern in "${!replacements[@]}"; do
         local replacement="${replacements[$pattern]}"
-        
+
         # Count occurrences before replacement
         local before_count=$(grep -c "$pattern" "$temp_file" || true)
-        
+
         if [ $before_count -gt 0 ]; then
             # Simple replacement
             sed -i "s/${pattern}/${replacement}/g" "$temp_file"
-            
+
             # Handle cases where element already has a class
             merge_classes "$temp_file" "$pattern" "$replacement"
-            
+
             # Count how many replacements were made
             local after_count=$(grep -c "$pattern" "$temp_file" || true)
             local replaced=$((before_count - after_count))
             replacements_made=$((replacements_made + replaced))
         fi
     done
-    
+
     # Check if file changed
     if ! cmp -s "$file" "$temp_file"; then
         changes=1
@@ -107,7 +107,7 @@ replace_inline_styles() {
     else
         rm "$temp_file"
     fi
-    
+
     return $changes
 }
 
@@ -133,9 +133,9 @@ while IFS= read -r file; do
         if [[ "$file" == *.bak ]]; then
             continue
         fi
-        
+
         echo -n "Processing ${file#./}... "
-        
+
         # Replace inline styles
         if replace_inline_styles "$file"; then
             echo "✅ Updated"

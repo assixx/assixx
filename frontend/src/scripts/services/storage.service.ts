@@ -5,25 +5,33 @@
 
 import type { StorageItem } from '../../types/utils.types';
 
+/**
+ *
+ */
 export class StorageService {
   private prefix: string;
 
-  constructor(prefix: string = 'assixx_') {
+  /**
+   *
+   * @param prefix
+   */
+  constructor(prefix = 'assixx_') {
     this.prefix = prefix;
   }
 
   /**
    * Get item from storage
+   * @param key
    */
-  get<T = unknown>(key: string): T | null {
+  get(key: string): unknown {
     try {
       const item = localStorage.getItem(this.prefix + key);
-      if (!item) return null;
+      if (item === null || item === '') return null;
 
-      const parsed: StorageItem<T> = JSON.parse(item);
+      const parsed = JSON.parse(item) as StorageItem;
 
       // Check if item has expired
-      if (parsed.expiry && Date.now() > parsed.expiry) {
+      if (parsed.expiry !== undefined && Date.now() > parsed.expiry) {
         this.remove(key);
         return null;
       }
@@ -37,16 +45,20 @@ export class StorageService {
 
   /**
    * Set item in storage with optional expiration
+   * @param key
+   * @param value
+   * @param expiryMinutes
    */
-  set<T = unknown>(key: string, value: T, expiryMinutes?: number): void {
+  set(key: string, value: unknown, expiryMinutes?: number): void {
     try {
-      const item: StorageItem<T> = {
+      const item: StorageItem = {
         key: this.prefix + key,
         value,
       };
 
-      if (expiryMinutes) {
-        item.expiry = Date.now() + expiryMinutes * 60 * 1000;
+      if (expiryMinutes !== undefined && expiryMinutes > 0) {
+        const milliseconds = expiryMinutes * 60 * 1000;
+        item.expiry = Date.now() + milliseconds;
       }
 
       localStorage.setItem(this.prefix + key, JSON.stringify(item));
@@ -57,6 +69,7 @@ export class StorageService {
 
   /**
    * Remove item from storage
+   * @param key
    */
   remove(key: string): void {
     localStorage.removeItem(this.prefix + key);
@@ -76,6 +89,7 @@ export class StorageService {
 
   /**
    * Check if key exists
+   * @param key
    */
   has(key: string): boolean {
     return localStorage.getItem(this.prefix + key) !== null;
@@ -99,7 +113,7 @@ export class StorageService {
 
     keys.forEach((key) => {
       const item = localStorage.getItem(this.prefix + key);
-      if (item) {
+      if (item !== null && item !== '') {
         size += item.length;
       }
     });
@@ -116,9 +130,9 @@ export class StorageService {
     keys.forEach((key) => {
       try {
         const item = localStorage.getItem(this.prefix + key);
-        if (item) {
-          const parsed: StorageItem = JSON.parse(item);
-          if (parsed.expiry && Date.now() > parsed.expiry) {
+        if (item !== null && item !== '') {
+          const parsed = JSON.parse(item) as StorageItem;
+          if (parsed.expiry !== undefined && Date.now() > parsed.expiry) {
             this.remove(key);
           }
         }

@@ -20,7 +20,7 @@ Assixx digitalisiert bestehende Papierprozesse in Industrieunternehmen. Wir nehm
 
 ## ⚡ Schnellstart
 
-### 🐳 Docker Setup (Empfohlen):
+### 🐳 Docker Setup (Empfohlen)
 
 Für die schnellste und einfachste Einrichtung der Entwicklungsumgebung:
 
@@ -76,7 +76,7 @@ Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisunge
 
 ## 🎯 Kernfeatures
 
-### ✅ Bereits verfügbar:
+### ✅ Bereits verfügbar
 
 - **Benutzerverwaltung** (Multi-Tenant, Rollen)
 - **Multi-Tenant Security** (Verbesserte Tenant-Isolation)
@@ -89,13 +89,13 @@ Siehe **[DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)** für detaillierte Anweisunge
 - **Schichtplanung** (Wochenansicht, Drag & Drop)
 - **Chat-System** (Echtzeit, Gruppen, Dateianhänge)
 
-### 🚨 Deal-Breaker Features (in Entwicklung):
+### 🚨 Deal-Breaker Features (in Entwicklung)
 
 - **TPM-System** - Wartungsplanung für Maschinen (KRITISCH laut docs/QUESTIONS.md)
 - **Gehaltsabrechnung** - Sichere Lohndokumente (KRITISCH laut docs/QUESTIONS.md)
 - **Urlaubsantrag** - Digitaler Workflow (KRITISCH laut docs/QUESTIONS.md)
 
-### 🔮 Geplant:
+### 🔮 Geplant
 
 - **Microsoft Integration** (Outlook, Azure AD, SharePoint)
 - **Mobile App** (iOS/Android)
@@ -105,7 +105,7 @@ Siehe [FEATURES.md](./docs/FEATURES.md) für Details und Preise.
 
 ## 🛠️ Tech Stack
 
-- **Backend**: Node.js + Express.js + TypeScript (100% Type-Safe - [Architecture Guide](./backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md))
+- **Backend**: Node.js + Express.js + TypeScript (100% Type-Safe - [Architecture Guide](./docs/TYPESCRIPT-STANDARDS.md))
 - **Frontend**: Vanilla JS + Vite Build System
 - **Datenbank**: MySQL mit Multi-Tenant Architektur
 - **Echtzeit**: WebSocket für Chat & Notifications
@@ -161,19 +161,19 @@ Link: </api/v2>; rel="successor-version"
 
 ```javascript
 // v2 Login
-const response = await fetch("/api/v2/auth/login", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
+const response = await fetch('/api/v2/auth/login', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    email: "user@example.com",
-    password: "password",
+    email: 'user@example.com',
+    password: 'password',
   }),
 });
 
 const data = await response.json();
 if (data.success) {
-  localStorage.setItem("accessToken", data.data.accessToken);
-  localStorage.setItem("refreshToken", data.data.refreshToken);
+  localStorage.setItem('accessToken', data.data.accessToken);
+  localStorage.setItem('refreshToken', data.data.refreshToken);
 }
 ```
 
@@ -308,7 +308,7 @@ Details siehe [FINAL-TEST-STRATEGY.md](./docs/FINAL-TEST-STRATEGY.md)
 ## 👥 Team & Kontakt
 
 - **Entwicklung**: SCS-Technik Team
-- **Support**: support@assixx.com
+- **Support**: <support@assixx.com>
 - **GitHub**: [SCS-Technik/Assixx](https://github.com/SCS-Technik/Assixx)
 
 ## 📄 Lizenz

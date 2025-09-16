@@ -3,9 +3,11 @@
  * Shared functionality for all document category pages
  */
 
+import domPurify from 'dompurify';
 import type { Document } from '../types/api.types';
-
-import { fetchWithAuth, showError, showSuccess } from './auth';
+import { ApiClient } from '../utils/api-client';
+import { showErrorAlert, showSuccessAlert } from './utils/alerts';
+import { $$id } from '../utils/dom-utils';
 
 // Document scope type
 export type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';
@@ -23,7 +25,7 @@ export class DocumentBase {
   protected pageSubtitle: string;
   protected showSearch: boolean;
   protected currentViewMode: ViewMode = 'active';
-  protected favoriteDocIds: Set<number> = new Set();
+  protected favoriteDocIds = new Set<number>();
 
   constructor(scope: DocumentScope, title: string, subtitle: string, showSearch = true) {
     this.currentScope = scope;
@@ -40,6 +42,8 @@ export class DocumentBase {
       this.loadFavorites();
       this.updatePageHeader();
       if (this.currentScope !== 'all') {
+        // Show loading state
+        this.showLoadingState();
         await this.loadDocuments();
         this.updateStats();
         this.renderDocuments();
@@ -48,7 +52,9 @@ export class DocumentBase {
       this.addViewModeToggle();
     } catch (error) {
       console.error('Error initializing documents:', error);
-      showError('Fehler beim Laden der Dokumente');
+      showErrorAlert('Fehler beim Laden der Dokumente');
+      // Clear loading state on error
+      this.hideLoadingState();
     }
   }
 
@@ -56,8 +62,8 @@ export class DocumentBase {
    * Update page header
    */
   protected updatePageHeader(): void {
-    const titleElement = document.getElementById('page-title');
-    const subtitleElement = document.getElementById('page-subtitle');
+    const titleElement = document.querySelector('#page-title');
+    const subtitleElement = document.querySelector('#page-subtitle');
 
     if (titleElement) {
       titleElement.textContent = this.pageTitle;
@@ -67,7 +73,7 @@ export class DocumentBase {
     }
 
     // Hide/show search based on page type
-    const searchContainer = document.getElementById('search-container');
+    const searchContainer = $$id('search-container');
     if (searchContainer) {
       searchContainer.style.display = this.showSearch ? 'block' : 'none';
     }
@@ -83,21 +89,21 @@ export class DocumentBase {
     const toggleContainer = document.createElement('div');
     toggleContainer.className = 'view-mode-toggle';
     toggleContainer.innerHTML = `
-      <button class="toggle-btn active" data-mode="active" onclick="window.documentBase?.setViewMode('active')">
+      <button class="toggle-btn view-mode-btn active" data-mode="active">
         <i class="fas fa-folder"></i> Aktive
       </button>
-      <button class="toggle-btn" data-mode="archived" onclick="window.documentBase?.setViewMode('archived')">
+      <button class="toggle-btn view-mode-btn" data-mode="archived">
         <i class="fas fa-archive"></i> Archiviert
       </button>
-      <button class="toggle-btn" data-mode="all" onclick="window.documentBase?.setViewMode('all')">
+      <button class="toggle-btn view-mode-btn" data-mode="all">
         <i class="fas fa-folder-open"></i> Alle
       </button>
     `;
 
-    controlLeft.appendChild(toggleContainer);
+    controlLeft.append(toggleContainer);
 
-    // Make instance available globally for onclick handlers
-    window.documentBase = this;
+    // Event delegation instead of global window object
+    this.setupEventDelegation();
   }
 
   /**
@@ -106,8 +112,8 @@ export class DocumentBase {
   protected setupEventListeners(): void {
     // Search input (only for search page)
     if (this.currentScope === 'all') {
-      const searchInput = document.getElementById('searchInput') as HTMLInputElement | null;
-      if (searchInput) {
+      const searchInput = document.querySelector('#searchInput');
+      if (searchInput instanceof HTMLInputElement) {
         searchInput.addEventListener('input', (e: Event) => {
           const target = e.target as HTMLInputElement | null;
           if (target) {
@@ -122,17 +128,17 @@ export class DocumentBase {
     }
 
     // Sort dropdown
-    const sortDropdown = document.getElementById('sortDropdown');
+    const sortDropdown = document.querySelector('#sortDropdown');
     if (sortDropdown) {
       sortDropdown.addEventListener('click', (e) => {
         const target = e.target as HTMLElement | null;
-        if (target?.classList.contains('dropdown-option')) {
-          const sortValue = target.dataset.sort as SortOption;
-          if (sortValue) {
+        if (target?.classList.contains('dropdown-option') === true) {
+          const sortValue = target.dataset.sort as SortOption | undefined;
+          if (sortValue !== undefined) {
             this.currentSort = sortValue;
             this.sortDocuments();
             this.renderDocuments();
-            this.updateSortDisplay(target.textContent ?? '');
+            this.updateSortDisplay(target.textContent !== '' ? target.textContent : 'Sortierung');
           }
         }
       });
@@ -152,13 +158,10 @@ export class DocumentBase {
    */
   protected async loadDocuments(): Promise<void> {
     try {
-      const response = await fetchWithAuth('/api/documents/v2');
-
-      if (!response.ok) {
-        throw new Error('Failed to load documents');
-      }
-
-      const result = await response.json();
+      const apiClient = ApiClient.getInstance();
+      const result = await apiClient.request<{ data?: Document[]; documents?: Document[] }>('/documents', {
+        method: 'GET',
+      });
 
       // Backend returns {data: Document[], pagination: {...}}
       this.allDocuments = result.data ?? result.documents ?? [];
@@ -169,6 +172,36 @@ export class DocumentBase {
       console.error('Error loading documents:', error);
       throw error;
     }
+  }
+
+  /**
+   * Set up event delegation for dynamic elements
+   */
+  protected setupEventDelegation(): void {
+    // Delegate click events for favorite buttons
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const favoriteBtn = target.closest('.favorite-btn');
+
+      if (favoriteBtn instanceof HTMLElement) {
+        e.stopPropagation();
+        const docId = favoriteBtn.dataset.docId;
+        if (docId !== undefined && docId !== '') {
+          this.toggleFavorite(Number(docId));
+        }
+      }
+    });
+
+    // Delegate click events for view mode buttons
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('view-mode-btn')) {
+        const mode = target.dataset.mode as ViewMode | undefined;
+        if (mode !== undefined) {
+          this.setViewMode(mode);
+        }
+      }
+    });
   }
 
   /**
@@ -187,9 +220,9 @@ export class DocumentBase {
 
     // Filter by view mode
     if (this.currentViewMode === 'active') {
-      filtered = filtered.filter((doc) => !doc.is_archived);
+      filtered = filtered.filter((doc) => doc.is_archived !== true);
     } else if (this.currentViewMode === 'archived') {
-      filtered = filtered.filter((doc) => doc.is_archived);
+      filtered = filtered.filter((doc) => doc.is_archived === true);
     }
     // 'all' mode shows everything
 
@@ -200,7 +233,7 @@ export class DocumentBase {
    * Perform search across all documents
    */
   protected async performSearch(): Promise<void> {
-    if (!this.currentSearch.trim()) {
+    if (this.currentSearch.trim() === '') {
       this.filteredDocuments = [];
       this.renderDocuments();
       return;
@@ -215,9 +248,9 @@ export class DocumentBase {
       // Search across all documents
       this.filteredDocuments = this.allDocuments.filter(
         (doc) =>
-          (doc.file_name.toLowerCase().includes(this.currentSearch) ||
-            doc.description?.toLowerCase().includes(this.currentSearch)) ??
-          doc.uploaded_by_name?.toLowerCase().includes(this.currentSearch),
+          doc.file_name.toLowerCase().includes(this.currentSearch) ||
+          doc.description?.toLowerCase().includes(this.currentSearch) === true ||
+          doc.uploaded_by_name?.toLowerCase().includes(this.currentSearch) === true,
       );
 
       // Sort results
@@ -227,7 +260,7 @@ export class DocumentBase {
       this.renderDocuments();
     } catch (error) {
       console.error('Error performing search:', error);
-      showError('Fehler bei der Suche');
+      showErrorAlert('Fehler bei der Suche');
     }
   }
 
@@ -236,7 +269,7 @@ export class DocumentBase {
    */
   protected updateStats(): void {
     const totalDocs = this.filteredDocuments.length;
-    const unreadDocs = this.filteredDocuments.filter((doc) => !doc.is_read).length;
+    const unreadDocs = this.filteredDocuments.filter((doc) => doc.is_read !== true).length;
 
     // Calculate documents from this week
     const oneWeekAgo = new Date();
@@ -253,7 +286,7 @@ export class DocumentBase {
    * Update count element
    */
   protected updateCount(elementId: string, count: number): void {
-    const element = document.getElementById(elementId);
+    const element = document.querySelector(`#${elementId}`);
     if (element) {
       element.textContent = count.toString();
     }
@@ -274,7 +307,7 @@ export class DocumentBase {
         this.filteredDocuments.sort((a, b) => a.file_name.localeCompare(b.file_name));
         break;
       case 'size':
-        this.filteredDocuments.sort((a, b) => (b.file_size || 0) - (a.file_size || 0));
+        this.filteredDocuments.sort((a, b) => b.file_size - a.file_size);
         break;
     }
   }
@@ -283,22 +316,35 @@ export class DocumentBase {
    * Render documents grid
    */
   protected renderDocuments(): void {
-    const container = document.getElementById('documentsContainer');
+    const container = document.querySelector('#documentsContainer');
     if (!container) return;
+
+    // Clear container first (removes loading spinner)
+    container.innerHTML = '';
 
     if (this.filteredDocuments.length === 0) {
       const emptyMessage =
-        this.currentScope === 'all' && this.currentSearch
+        this.currentScope === 'all' && this.currentSearch !== ''
           ? 'Keine Dokumente gefunden. Versuchen Sie eine andere Suche.'
           : 'Keine Dokumente in dieser Kategorie vorhanden.';
 
-      container.innerHTML = `
-        <div class="empty-state">
-          <i class="fas fa-folder-open"></i>
-          <h3>${this.currentScope === 'all' ? 'Suche starten' : 'Keine Dokumente'}</h3>
-          <p>${emptyMessage}</p>
-        </div>
-      `;
+      // Create empty state with DOM methods
+      const emptyState = document.createElement('div');
+      emptyState.className = 'empty-state';
+
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-folder-open';
+      emptyState.append(icon);
+
+      const heading = document.createElement('h3');
+      heading.textContent = this.currentScope === 'all' ? 'Suche starten' : 'Keine Dokumente';
+      emptyState.append(heading);
+
+      const paragraph = document.createElement('p');
+      paragraph.textContent = emptyMessage;
+      emptyState.append(paragraph);
+
+      container.append(emptyState);
       return;
     }
 
@@ -306,11 +352,10 @@ export class DocumentBase {
     grid.className = 'documents-grid';
 
     this.filteredDocuments.forEach((doc) => {
-      grid.appendChild(this.createDocumentCard(doc));
+      grid.append(this.createDocumentCard(doc));
     });
 
-    container.innerHTML = '';
-    container.appendChild(grid);
+    container.append(grid);
   }
 
   /**
@@ -319,19 +364,23 @@ export class DocumentBase {
   protected createDocumentCard(doc: Document): HTMLElement {
     const card = document.createElement('div');
     card.className = 'document-card';
-    card.onclick = () => this.viewDocument(doc.id);
+    card.onclick = () => {
+      this.viewDocument(doc.id);
+    };
 
     const icon = this.getFileIcon(doc.mime_type ?? doc.file_name);
-    const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
-    const archivedBadge = doc.is_archived ? '<span class="document-badge archived">ARCHIVIERT</span>' : '';
+    const readBadge = doc.is_read !== true ? '<span class="document-badge unread">NEU</span>' : '';
+    const archivedBadge = doc.is_archived === true ? '<span class="document-badge archived">ARCHIVIERT</span>' : '';
     const scopeInfo =
       this.currentScope === 'all' ? `<div class="document-scope">${this.getScopeLabel(doc.scope)}</div>` : '';
     const isFavorite = this.favoriteDocIds.has(doc.id);
 
-    card.innerHTML = `
+    // Use domPurify for complex HTML with user data
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    card.innerHTML = domPurify.sanitize(`
       ${readBadge}
       ${archivedBadge}
-      <button class="favorite-btn ${isFavorite ? 'active' : ''}" onclick="event.stopPropagation(); window.documentBase?.toggleFavorite(${doc.id})" title="${isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
+      <button class="favorite-btn ${isFavorite ? 'active' : ''}" data-doc-id="${doc.id}" title="${isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'}">
         <i class="${isFavorite ? 'fas' : 'far'} fa-star"></i>
       </button>
       <div class="document-icon">
@@ -351,7 +400,7 @@ export class DocumentBase {
           <span>${this.escapeHtml(doc.uploaded_by_name ?? 'System')}</span>
         </div>
         ${
-          doc.file_size
+          doc.file_size !== 0
             ? `
           <div class="document-meta-item">
             <i class="fas fa-weight"></i>
@@ -361,7 +410,7 @@ export class DocumentBase {
             : ''
         }
       </div>
-    `;
+    `);
 
     return card;
   }
@@ -369,29 +418,33 @@ export class DocumentBase {
   /**
    * View document in modal
    */
-  protected async viewDocument(documentId: number): Promise<void> {
+  protected viewDocument(documentId: number): void {
     try {
       const doc = this.allDocuments.find((d) => d.id === documentId);
       if (!doc) {
-        showError('Dokument nicht gefunden');
+        showErrorAlert('Dokument nicht gefunden');
         return;
       }
 
       // Mark as read
-      fetchWithAuth(`/api/documents/${documentId}/read`, { method: 'POST' })
-        .then(() => {
+      void (async () => {
+        try {
+          const apiClient = ApiClient.getInstance();
+          await apiClient.request(`/documents/${documentId}/read`, { method: 'POST' });
           // Update local state
           doc.is_read = true;
           this.updateStats();
           this.renderDocuments();
-        })
-        .catch(console.error);
+        } catch (error) {
+          console.error(error);
+        }
+      })();
 
       // Show document preview modal
       this.showDocumentModal(doc);
     } catch (error) {
       console.error('Error viewing document:', error);
-      showError('Fehler beim Öffnen des Dokuments');
+      showErrorAlert('Fehler beim Öffnen des Dokuments');
     }
   }
 
@@ -399,48 +452,61 @@ export class DocumentBase {
    * Show document preview modal
    */
   protected showDocumentModal(doc: Document): void {
-    const modal = document.getElementById('documentPreviewModal');
+    const modal = document.querySelector('#documentPreviewModal');
     if (!modal) return;
 
     // Update modal content
-    this.updateElement('modalDocumentTitle', doc.file_name || 'Dokument');
+    this.updateElement('modalDocumentTitle', doc.file_name !== '' ? doc.file_name : 'Dokument');
     this.updateElement('modalFileName', doc.file_name);
-    this.updateElement('modalFileSize', this.formatFileSize(doc.file_size || 0));
+    this.updateElement('modalFileSize', this.formatFileSize(doc.file_size));
     this.updateElement('modalUploadedBy', doc.uploaded_by_name ?? 'System');
     this.updateElement('modalUploadDate', this.formatDate(doc.created_at));
 
     // Setup preview
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
-    const previewError = document.getElementById('previewError');
+    const previewFrame = document.querySelector('#documentPreviewFrame');
+    const previewError = document.querySelector('#previewError');
 
     if (previewFrame && previewError) {
-      fetchWithAuth(`/api/documents/preview/${doc.id}`)
-        .then((response) => {
+      void (async () => {
+        try {
+          const apiClient = ApiClient.getInstance();
+          const response = await apiClient.request<Response>(`/documents/preview/${doc.id}`, { method: 'GET' });
           if (!response.ok) throw new Error('Preview failed');
-          return response.blob();
-        })
-        .then((blob) => {
+          const blob = await response.blob();
           const blobUrl = URL.createObjectURL(blob);
-          previewFrame.src = blobUrl;
-          previewFrame.style.display = 'block';
-          previewError.style.display = 'none';
-          previewFrame.dataset.blobUrl = blobUrl;
-        })
-        .catch((error) => {
+
+          if (previewFrame instanceof HTMLIFrameElement) {
+            previewFrame.src = blobUrl;
+            previewFrame.style.display = 'block';
+          }
+          if (previewError instanceof HTMLElement) {
+            previewError.style.display = 'none';
+          }
+          if (previewFrame instanceof HTMLElement) {
+            previewFrame.dataset.blobUrl = blobUrl;
+          }
+        } catch (error) {
           console.error('Preview error:', error);
-          previewFrame.style.display = 'none';
-          previewError.style.display = 'block';
-        });
+          if (previewFrame instanceof HTMLElement) {
+            previewFrame.style.display = 'none';
+          }
+          if (previewError instanceof HTMLElement) {
+            previewError.style.display = 'block';
+          }
+        }
+      })();
     }
 
     // Store document ID for download
-    const downloadBtn = document.getElementById('downloadButton');
-    if (downloadBtn) {
-      downloadBtn.setAttribute('data-document-id', doc.id.toString());
+    const downloadBtn = document.querySelector('#downloadButton');
+    if (downloadBtn instanceof HTMLElement) {
+      downloadBtn.dataset.documentId = doc.id.toString();
     }
 
     // Show modal
-    modal.style.display = 'flex';
+    if (modal instanceof HTMLElement) {
+      modal.style.display = 'flex';
+    }
   }
 
   /**
@@ -493,7 +559,8 @@ export class DocumentBase {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    // eslint-disable-next-line security/detect-object-injection -- i is mathematically bounded by log calculation
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
   }
 
   protected escapeHtml(text: string): string {
@@ -503,14 +570,14 @@ export class DocumentBase {
   }
 
   protected updateElement(id: string, value: string | number): void {
-    const element = document.getElementById(id);
+    const element = document.querySelector(`#${id}`);
     if (element) {
       element.textContent = value.toString();
     }
   }
 
   protected updateSortDisplay(text: string): void {
-    const display = document.getElementById('sortDisplay');
+    const display = document.querySelector('#sortDisplay');
     if (display) {
       const span = display.querySelector('span');
       if (span) {
@@ -520,8 +587,12 @@ export class DocumentBase {
   }
 
   protected closeAllDropdowns(): void {
-    document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-    document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+    document.querySelectorAll('.dropdown-display').forEach((d) => {
+      d.classList.remove('active');
+    });
+    document.querySelectorAll('.dropdown-options').forEach((d) => {
+      d.classList.remove('active');
+    });
   }
 
   /**
@@ -532,7 +603,9 @@ export class DocumentBase {
 
     // Update toggle buttons
     document.querySelectorAll('.view-mode-toggle .toggle-btn').forEach((btn) => {
-      btn.classList.toggle('active', btn.getAttribute('data-mode') === mode);
+      if (btn instanceof HTMLElement) {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      }
     });
 
     // Re-filter and render
@@ -546,12 +619,12 @@ export class DocumentBase {
    */
   protected loadFavorites(): void {
     const stored = localStorage.getItem('favoriteDocuments');
-    if (stored) {
+    if (stored !== null && stored !== '') {
       try {
-        const favorites = JSON.parse(stored);
+        const favorites = JSON.parse(stored) as number[];
         this.favoriteDocIds = new Set(favorites);
-      } catch (e) {
-        console.error('Error loading favorites:', e);
+      } catch (error) {
+        console.error('Error loading favorites:', error);
       }
     }
   }
@@ -560,7 +633,7 @@ export class DocumentBase {
    * Save favorites to localStorage
    */
   protected saveFavorites(): void {
-    localStorage.setItem('favoriteDocuments', JSON.stringify(Array.from(this.favoriteDocIds)));
+    localStorage.setItem('favoriteDocuments', JSON.stringify([...this.favoriteDocIds]));
   }
 
   /**
@@ -569,13 +642,41 @@ export class DocumentBase {
   public toggleFavorite(docId: number): void {
     if (this.favoriteDocIds.has(docId)) {
       this.favoriteDocIds.delete(docId);
-      showSuccess('Aus Favoriten entfernt');
+      showSuccessAlert('Aus Favoriten entfernt');
     } else {
       this.favoriteDocIds.add(docId);
-      showSuccess('Zu Favoriten hinzugefügt');
+      showSuccessAlert('Zu Favoriten hinzugefügt');
     }
     this.saveFavorites();
     this.renderDocuments();
+  }
+
+  /**
+   * Show loading state
+   */
+  protected showLoadingState(): void {
+    const container = document.querySelector('#documentsContainer');
+    if (container !== null) {
+      container.innerHTML = `
+        <div class="loading-spinner">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Dokumente werden geladen...</p>
+        </div>
+      `;
+    }
+  }
+
+  /**
+   * Hide loading state
+   */
+  protected hideLoadingState(): void {
+    const container = document.querySelector('#documentsContainer');
+    if (container !== null) {
+      const loadingSpinner = container.querySelector('.loading-spinner');
+      if (loadingSpinner !== null) {
+        loadingSpinner.remove();
+      }
+    }
   }
 }
 
@@ -591,15 +692,15 @@ declare global {
 
 // Close document modal
 window.closeDocumentModal = function (): void {
-  const modal = document.getElementById('documentPreviewModal');
-  if (modal) {
+  const modal = document.querySelector('#documentPreviewModal');
+  if (modal instanceof HTMLElement) {
     modal.style.display = 'none';
 
     // Clean up blob URL
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement | null;
-    if (previewFrame) {
+    const previewFrame = document.querySelector('#documentPreviewFrame');
+    if (previewFrame instanceof HTMLIFrameElement) {
       const blobUrl = previewFrame.dataset.blobUrl;
-      if (blobUrl) {
+      if (blobUrl !== undefined && blobUrl !== '') {
         URL.revokeObjectURL(blobUrl);
         delete previewFrame.dataset.blobUrl;
       }
@@ -613,16 +714,16 @@ window.downloadDocument = function (docId?: string | number): void {
   void (async () => {
     let documentId: string;
 
-    if (docId) {
+    if (docId !== undefined) {
       documentId = String(docId);
     } else {
-      const downloadBtn = document.getElementById('downloadButton');
-      if (!downloadBtn) {
+      const downloadBtn = document.querySelector('#downloadButton');
+      if (!(downloadBtn instanceof HTMLElement)) {
         console.error('Download button not found');
         return;
       }
-      const dataId = downloadBtn.getAttribute('data-document-id');
-      if (!dataId) {
+      const dataId = downloadBtn.dataset.documentId;
+      if (dataId === undefined || dataId === '') {
         console.error('No document ID found');
         return;
       }
@@ -630,7 +731,8 @@ window.downloadDocument = function (docId?: string | number): void {
     }
 
     try {
-      const response = await fetchWithAuth(`/api/documents/download/${documentId}`);
+      const apiClient = ApiClient.getInstance();
+      const response = await apiClient.request<Response>(`/documents/download/${documentId}`, { method: 'GET' });
 
       if (!response.ok) {
         throw new Error(`Download failed: ${response.status}`);
@@ -642,26 +744,26 @@ window.downloadDocument = function (docId?: string | number): void {
       link.href = url;
       link.download = 'document.pdf';
       link.style.display = 'none';
-      document.body.appendChild(link);
+      document.body.append(link);
       link.click();
 
       setTimeout(() => {
-        document.body.removeChild(link);
+        link.remove();
         window.URL.revokeObjectURL(url);
       }, 100);
 
-      showSuccess('Dokument wird heruntergeladen');
+      showSuccessAlert('Dokument wird heruntergeladen');
     } catch (error) {
       console.error('Error downloading document:', error);
-      showError('Fehler beim Herunterladen des Dokuments');
+      showErrorAlert('Fehler beim Herunterladen des Dokuments');
     }
   })();
 };
 
 // Toggle dropdown
 window.toggleDropdown = function (type: string): void {
-  const display = document.getElementById(`${type}Display`);
-  const dropdown = document.getElementById(`${type}Dropdown`);
+  const display = document.querySelector(`#${type}Display`);
+  const dropdown = document.querySelector(`#${type}Dropdown`);
 
   if (!display || !dropdown) return;
 

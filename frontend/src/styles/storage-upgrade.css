@@ -1,0 +1,227 @@
+/* CSS Import - WICHTIG: Lädt dashboard-theme.css ZUERST */
+@import "/styles/dashboard-theme.css";
+@import "/styles/breadcrumb-alignment.css";
+
+/* ========================================
+     GLASSMORPHISMUS ÜBERSCHREIBUNGEN
+     ======================================== */
+
+/* Body Background - Dramatischer Verlauf */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Storage Plans Grid */
+.storage-plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+  margin: var(--spacing-xl) 0;
+}
+
+/* Storage Plan Card */
+.storage-plan-card {
+  display: flex;
+  flex-direction: column;
+
+  padding: var(--spacing-xl);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  text-align: center;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.storage-plan-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-color);
+  box-shadow:
+    0 10px 40px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.storage-plan-card.current {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 5%);
+}
+
+.storage-size {
+  margin: var(--spacing-lg) 0;
+
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-shadow: 0 0 10px rgb(33 150 243 / 50%);
+}
+
+.storage-price {
+  margin-bottom: var(--spacing-lg);
+  font-size: 1.5rem;
+  color: var(--text-primary);
+}
+
+.storage-price span {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+.storage-features {
+  flex-grow: 1;
+
+  margin: var(--spacing-lg) 0;
+  padding: 0;
+
+  text-align: left;
+  list-style: none;
+}
+
+.storage-features li {
+  position: relative;
+  padding: var(--spacing-sm) 0;
+  padding-left: var(--spacing-xl);
+  color: var(--text-secondary);
+}
+
+.storage-features li::before {
+  content: "✓";
+
+  position: absolute;
+  left: 0;
+
+  font-weight: 700;
+  color: var(--success-color);
+}
+
+/* Current Usage */
+.current-usage {
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-xl);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.usage-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.usage-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.usage-text {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.usage-progress {
+  overflow: hidden;
+
+  width: 100%;
+  height: 20px;
+  margin-bottom: var(--spacing-md);
+  border-radius: 10px;
+
+  background: rgb(255 255 255 / 10%);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+.usage-progress-bar {
+  position: relative;
+
+  overflow: hidden;
+
+  height: 100%;
+  border-radius: 10px;
+
+  background: var(--success-color);
+
+  transition:
+    width 0.5s ease,
+    background-color 0.3s ease;
+}
+
+.usage-progress-bar::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    45deg,
+    transparent 25%,
+    rgb(255 255 255 / 20%) 25%,
+    rgb(255 255 255 / 20%) 50%,
+    transparent 50%,
+    transparent 75%,
+    rgb(255 255 255 / 20%) 75%,
+    rgb(255 255 255 / 20%)
+  );
+  background-size: 20px 20px;
+
+  /* animation: progress-stripes 1s linear infinite; */
+}
+
+@keyframes progress-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 20px 20px;
+  }
+}
+
+/* FAQ Section */
+.faq-section {
+  margin-top: calc(var(--spacing-xl) * 2);
+}
+
+.faq-item {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 4px 16px rgb(0 0 0 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.faq-question {
+  margin-bottom: var(--spacing-sm);
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.faq-answer {
+  line-height: 1.6;
+  color: var(--text-secondary);
+}

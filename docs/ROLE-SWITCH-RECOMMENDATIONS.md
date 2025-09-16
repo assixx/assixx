@@ -60,7 +60,7 @@ private showRoleSwitchIndicator(): void {
 
 .role-switch-warning button {
   background: #333;
-  color: white;
+  color: #fff;
   border: none;
   padding: 5px 15px;
   border-radius: 20px;
@@ -70,20 +70,20 @@ private showRoleSwitchIndicator(): void {
 
 ## 2️⃣ Backend Restrictions für Employee-View
 
-### In sensitiven Routes ergänzen:
+### In sensitiven Routes ergänzen
 
 ```typescript
 // z.B. in /backend/src/routes/users.ts
 router.get(
-  "/api/users/:id/private-data",
+  '/api/users/:id/private-data',
   ...security.user(),
   typed.params<{ id: string }>(async (req, res) => {
     // NEU: Check für Role-Switch
-    if (req.user.isRoleSwitched && req.user.activeRole === "employee") {
+    if (req.user.isRoleSwitched && req.user.activeRole === 'employee') {
       // Nur eigene Daten erlauben
       if (parseInt(req.params.id) !== req.user.id) {
         return res.status(403).json({
-          message: "Im Employee-Modus können Sie nur Ihre eigenen Daten einsehen",
+          message: 'Im Employee-Modus können Sie nur Ihre eigenen Daten einsehen',
         });
       }
     }
@@ -95,7 +95,7 @@ router.get(
 
 ## 3️⃣ Auto-Timeout nach Inaktivität
 
-### Backend Middleware:
+### Backend Middleware
 
 ```typescript
 // Neue Datei: /backend/src/middleware/roleSwitchTimeout.ts
@@ -116,12 +116,12 @@ export function checkRoleSwitchTimeout(req: Request, res: Response, next: NextFu
         isRoleSwitched: false,
       },
       process.env.JWT_SECRET!,
-      { expiresIn: "8h" },
+      { expiresIn: '8h' },
     );
 
-    res.cookie("token", originalToken);
+    res.cookie('token', originalToken);
     return res.status(401).json({
-      message: "Role-Switch Timeout - Sie wurden zur Original-Rolle zurückgesetzt",
+      message: 'Role-Switch Timeout - Sie wurden zur Original-Rolle zurückgesetzt',
       newToken: originalToken,
     });
   }
@@ -134,7 +134,7 @@ export function checkRoleSwitchTimeout(req: Request, res: Response, next: NextFu
 
 ## 4️⃣ Erweiterte Audit-Logs
 
-### SQL Migration:
+### SQL Migration
 
 ```sql
 -- Neue Felder für besseres Tracking
@@ -147,7 +147,7 @@ ADD COLUMN viewed_sensitive_data JSON;
 CREATE INDEX idx_role_switch_logs ON admin_logs(was_role_switched, created_at);
 ```
 
-### Im Code:
+### Im Code
 
 ```typescript
 // Bei jedem sensitiven Zugriff loggen
@@ -155,13 +155,13 @@ if (req.user.isRoleSwitched) {
   await AdminLog.create({
     user_id: req.user.id,
     tenant_id: req.user.tenant_id,
-    action: "viewed_employee_data",
-    entity_type: "user",
+    action: 'viewed_employee_data',
+    entity_type: 'user',
     entity_id: targetUserId,
     was_role_switched: true,
     switched_from_role: req.user.role,
     viewed_sensitive_data: {
-      dataType: "salary",
+      dataType: 'salary',
       timestamp: new Date(),
     },
   });
@@ -170,16 +170,16 @@ if (req.user.isRoleSwitched) {
 
 ## 5️⃣ Multi-Tab Sync
 
-### Frontend BroadcastChannel:
+### Frontend BroadcastChannel
 
 ```typescript
 // Role-Switch Event Broadcasting
-const channel = new BroadcastChannel("role_switch_channel");
+const channel = new BroadcastChannel('role_switch_channel');
 
 // Beim Rollenwechsel
 function notifyRoleSwitch(newRole: string) {
   channel.postMessage({
-    type: "ROLE_SWITCHED",
+    type: 'ROLE_SWITCHED',
     newRole: newRole,
     timestamp: Date.now(),
   });
@@ -187,7 +187,7 @@ function notifyRoleSwitch(newRole: string) {
 
 // In allen Tabs lauschen
 channel.onmessage = (event) => {
-  if (event.data.type === "ROLE_SWITCHED") {
+  if (event.data.type === 'ROLE_SWITCHED') {
     // UI aktualisieren
     location.reload(); // Oder eleganter mit State Update
   }
@@ -196,19 +196,19 @@ channel.onmessage = (event) => {
 
 ## 🚀 Implementierungs-Prioritäten
 
-### Phase 1 (Diese Woche):
+### Phase 1 (Diese Woche)
 
 1. ✅ Visueller Banner für Role-Switch
 2. ✅ Basis-Restrictions für Employee View
 3. ✅ Erweiterte Logs mit was_role_switched Flag
 
-### Phase 2 (Nächste Woche):
+### Phase 2 (Nächste Woche)
 
 1. Auto-Timeout Middleware
 2. Multi-Tab Synchronisation
 3. Audit-Dashboard (Read-only für Betriebsrat)
 
-### Phase 3 (Später):
+### Phase 3 (Später)
 
 1. Delegation System
 2. Emergency Access

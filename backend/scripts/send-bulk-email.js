@@ -8,16 +8,16 @@
  * node scripts/send-bulk-email.js --department=1 --template=notification --subject="Wichtige Mitteilung"
  */
 
-require("dotenv").config();
-const emailService = require("../utils/emailService");
-const User = require("../models/user");
-const Feature = require("../models/feature");
-const logger = require("../utils/logger");
-const db = require("../database");
+require('dotenv').config();
+const emailService = require('../utils/emailService');
+const User = require('../models/user');
+const Feature = require('../models/feature');
+const logger = require('../utils/logger');
+const db = require('../database');
 
 // Kommandozeilenargumente parsen
 const args = process.argv.slice(2).reduce((acc, arg) => {
-  const [key, value] = arg.replace(/^--/, "").split("=");
+  const [key, value] = arg.replace(/^--/, '').split('=');
   acc[key] = value;
   return acc;
 }, {});
@@ -26,7 +26,7 @@ const args = process.argv.slice(2).reduce((acc, arg) => {
 const emailConfig = {
   host: process.env.EMAIL_HOST,
   port: parseInt(process.env.EMAIL_PORT) || 587,
-  secure: process.env.EMAIL_SECURE === "true",
+  secure: process.env.EMAIL_SECURE === 'true',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASSWORD,
@@ -38,31 +38,25 @@ async function sendBulkEmails() {
   try {
     // SMTP-Transporter initialisieren
     emailService.initializeTransporter(emailConfig);
-    logger.info("E-Mail-Transporter initialisiert");
+    logger.info('E-Mail-Transporter initialisiert');
 
     // Parameter für die E-Mail-Kampagne
     const departmentId = args.department || null;
-    const template = args.template || "notification";
-    const subject = args.subject || "Wichtige Mitteilung von Assixx";
-    const message =
-      args.message || "Dies ist eine wichtige Mitteilung für alle Mitarbeiter.";
+    const template = args.template || 'notification';
+    const subject = args.subject || 'Wichtige Mitteilung von Assixx';
+    const message = args.message || 'Dies ist eine wichtige Mitteilung für alle Mitarbeiter.';
     const tenantId = args.tenant || 1;
 
     // Feature-Prüfung
-    const hasEmailFeature = await Feature.checkTenantAccess(
-      tenantId,
-      "email_notifications",
-    );
+    const hasEmailFeature = await Feature.checkTenantAccess(tenantId, 'email_notifications');
     if (!hasEmailFeature) {
-      logger.error(
-        `Tenant ${tenantId} hat keine Berechtigung für E-Mail-Benachrichtigungen.`,
-      );
+      logger.error(`Tenant ${tenantId} hat keine Berechtigung für E-Mail-Benachrichtigungen.`);
       process.exit(1);
     }
 
     // Parameter für die Benutzersuche
     const filters = {
-      role: "employee",
+      role: 'employee',
       is_archived: false,
     };
 
@@ -76,9 +70,7 @@ async function sendBulkEmails() {
     logger.info(`${users.length} Benutzer gefunden für E-Mail-Versand`);
 
     if (users.length === 0) {
-      logger.warn(
-        "Keine Benutzer gefunden, die den Filterkriterien entsprechen",
-      );
+      logger.warn('Keine Benutzer gefunden, die den Filterkriterien entsprechen');
       process.exit(0);
     }
 
@@ -90,18 +82,15 @@ async function sendBulkEmails() {
       replacements: {
         message,
         subject,
-        actionUrl: process.env.APP_URL || "https://app.assixx.de",
-        actionText: "Zur Plattform",
+        actionUrl: process.env.APP_URL || 'https://app.assixx.de',
+        actionText: 'Zur Plattform',
       },
       checkFeature: true,
       userId: 1, // Admin/System-ID
     };
 
     // E-Mails senden
-    const result = await emailService.sendBulkNotification(
-      users,
-      messageOptions,
-    );
+    const result = await emailService.sendBulkNotification(users, messageOptions);
 
     if (result.success) {
       logger.info(result.message);
@@ -109,13 +98,13 @@ async function sendBulkEmails() {
       // Da die E-Mails in einer Queue verarbeitet werden, starten wir die Verarbeitung manuell
       await emailService.processQueue();
 
-      logger.info("E-Mail-Queue erfolgreich verarbeitet");
+      logger.info('E-Mail-Queue erfolgreich verarbeitet');
     } else {
-      logger.error("Fehler beim Senden der E-Mails:", result.error);
+      logger.error('Fehler beim Senden der E-Mails:', result.error);
     }
 
     // Feature-Nutzung protokollieren
-    await Feature.logUsage(tenantId, "email_notifications", 1, {
+    await Feature.logUsage(tenantId, 'email_notifications', 1, {
       recipients: users.length,
       subject,
       template,
@@ -123,9 +112,9 @@ async function sendBulkEmails() {
 
     // Verbindung schließen
     await db.end();
-    logger.info("Skript erfolgreich abgeschlossen");
+    logger.info('Skript erfolgreich abgeschlossen');
   } catch (error) {
-    logger.error("Fehler beim Ausführen des Skripts:", error);
+    logger.error('Fehler beim Ausführen des Skripts:', error);
     process.exit(1);
   }
 }

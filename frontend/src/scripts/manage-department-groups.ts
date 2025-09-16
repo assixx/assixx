@@ -1,13 +1,23 @@
 // Department Groups Management
+import domPurify from 'dompurify';
+import { ApiClient } from '../utils/api-client';
+import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
+// import { $id } from '../utils/dom-utils'; // Currently not used
+
 (() => {
+  // Constants
+  const CREATE_GROUP_MODAL_SELECTOR = '#createGroupModal';
+
   // Auth check
-  const token = localStorage.getItem('token');
   const userRole = localStorage.getItem('userRole');
 
-  if (!token || userRole !== 'root') {
+  if (userRole !== 'root') {
     window.location.href = '/login';
     return;
   }
+
+  // Initialize API client
+  const apiClient = ApiClient.getInstance();
 
   interface Department {
     id: number;
@@ -32,39 +42,22 @@
   // Load groups
   async function loadGroups() {
     try {
-      const response = await fetch('/api/department-groups/hierarchy', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+      const data = await apiClient.request<{ data: DepartmentGroup[] }>('/department-groups', {
+        method: 'GET',
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        groups = result.data ?? [];
-        renderGroupTree();
-      } else {
-        showError('Fehler beim Laden der Gruppen');
-      }
+      groups = data.data;
+      renderGroupTree();
     } catch (error) {
       console.error('Error loading groups:', error);
-      showError('Netzwerkfehler beim Laden der Gruppen');
+      showErrorAlert('Netzwerkfehler beim Laden der Gruppen');
     }
   }
 
   // Load departments
   async function loadDepartments() {
     try {
-      const response = await fetch('/api/departments', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        departments = await response.json();
-      }
+      departments = await apiClient.request<Department[]>('/departments', { method: 'GET' });
     } catch (error) {
       console.error('Error loading departments:', error);
     }
@@ -72,7 +65,7 @@
 
   // Render group tree
   function renderGroupTree() {
-    const container = document.getElementById('groupTree');
+    const container = document.querySelector('#groupTree');
     if (!container) return;
 
     if (groups.length === 0) {
@@ -88,16 +81,17 @@
       return;
     }
 
-    container.innerHTML = renderGroupItems(groups);
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    container.innerHTML = domPurify.sanitize(renderGroupItems(groups));
   }
 
   // Render group items recursively
-  function renderGroupItems(items: DepartmentGroup[], level: number = 0): string {
+  function renderGroupItems(items: DepartmentGroup[], level = 0): string {
     return items
       .map(
         (group) => `
     <div style="margin-left: ${level * 20}px;">
-      <div class="tree-item ${selectedGroupId === group.id ? 'active' : ''}" 
+      <div class="tree-item ${selectedGroupId === group.id ? 'active' : ''}"
            onclick="selectGroup(${group.id})"
            data-group-id="${group.id}">
         <i class="fas fa-folder tree-item-icon"></i>
@@ -147,13 +141,14 @@
     const group = findGroupById(groupId);
     if (!group) return;
 
-    const container = document.getElementById('groupDetails');
+    const container = document.querySelector('#groupDetails');
     if (!container) return;
 
-    container.innerHTML = `
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    container.innerHTML = domPurify.sanitize(`
     <div class="detail-section">
       <h3>${group.name}</h3>
-      ${group.description ? `<p class="text-secondary">${group.description}</p>` : ''}
+      ${group.description !== undefined && group.description !== '' ? `<p class="text-secondary">${group.description}</p>` : ''}
     </div>
 
     <div class="detail-section">
@@ -187,7 +182,7 @@
         <i class="fas fa-trash"></i> Löschen
       </button>
     </div>
-  `;
+  `);
   }
 
   // Find group by ID recursively
@@ -204,7 +199,7 @@
 
   // Close modal
   function closeModal() {
-    const modal = document.getElementById('createGroupModal');
+    const modal = document.querySelector(CREATE_GROUP_MODAL_SELECTOR);
     if (modal) {
       modal.classList.remove('show');
     }
@@ -215,9 +210,12 @@
   // Show create group modal
   (window as unknown as ManageDeptGroupsWindow).showCreateGroupModal = function () {
     editingGroupId = null;
-    const modalTitle = document.getElementById('modalTitle');
+    const modalTitle = document.querySelector('#modalTitle');
     if (modalTitle) modalTitle.textContent = 'Neue Abteilungsgruppe erstellen';
-    (document.getElementById('createGroupForm') as HTMLFormElement)?.reset();
+    const form = document.querySelector('#createGroupForm');
+    if (form instanceof HTMLFormElement) {
+      form.reset();
+    }
 
     // Load parent groups
     updateParentGroupSelect();
@@ -225,7 +223,7 @@
     // Load departments
     updateDepartmentChecklist([]);
 
-    document.getElementById('createGroupModal')?.classList.add('active');
+    document.querySelector(CREATE_GROUP_MODAL_SELECTOR)?.classList.add('active');
   };
 
   // Edit group
@@ -234,109 +232,128 @@
     if (!group) return;
 
     editingGroupId = groupId;
-    const modalTitle = document.getElementById('modalTitle');
+    const modalTitle = document.querySelector('#modalTitle');
     if (modalTitle) modalTitle.textContent = 'Gruppe bearbeiten';
 
     // Fill form
-    (document.getElementById('groupName') as HTMLInputElement).value = group.name;
-    (document.getElementById('groupDescription') as HTMLTextAreaElement).value = group.description ?? '';
-    (document.getElementById('parentGroup') as HTMLSelectElement).value = group.parent_group_id?.toString() ?? '';
+    const groupNameInput = document.querySelector('#groupName');
+    if (groupNameInput instanceof HTMLInputElement) {
+      groupNameInput.value = group.name;
+    }
+
+    const groupDescInput = document.querySelector('#groupDescription');
+    if (groupDescInput instanceof HTMLTextAreaElement) {
+      groupDescInput.value = group.description ?? '';
+    }
+
+    const parentGroupSelect = document.querySelector('#parentGroup');
+    if (parentGroupSelect instanceof HTMLSelectElement) {
+      parentGroupSelect.value = group.parent_group_id?.toString() ?? '';
+    }
 
     // Update selects
     updateParentGroupSelect(groupId);
     updateDepartmentChecklist(group.departments?.map((d) => d.id) ?? []);
 
-    document.getElementById('createGroupModal')?.classList.add('active');
+    document.querySelector(CREATE_GROUP_MODAL_SELECTOR)?.classList.add('active');
   };
 
   // Update parent group select
   function updateParentGroupSelect(excludeId?: number) {
-    const select = document.getElementById('parentGroup') as HTMLSelectElement;
-    if (!select) return;
+    const select = document.querySelector('#parentGroup');
+    if (!(select instanceof HTMLSelectElement)) return;
 
     select.innerHTML = '<option value="">Keine (Hauptgruppe)</option>';
 
-    function addOptions(items: DepartmentGroup[], level: number = 0) {
+    function addOptions(items: DepartmentGroup[], targetSelect: HTMLSelectElement, level = 0) {
       items.forEach((group) => {
         if (group.id !== excludeId) {
           const option = document.createElement('option');
           option.value = group.id.toString();
           option.textContent = '  '.repeat(level) + group.name;
-          select.appendChild(option);
+          targetSelect.append(option);
 
           if (group.subgroups) {
-            addOptions(group.subgroups, level + 1);
+            addOptions(group.subgroups, targetSelect, level + 1);
           }
         }
       });
     }
 
-    addOptions(groups);
+    addOptions(groups, select);
   }
 
   // Update department checklist
   function updateDepartmentChecklist(selectedIds: number[]) {
-    const container = document.getElementById('departmentChecklist');
+    const container = document.querySelector('#departmentChecklist');
     if (!container) return;
 
-    container.innerHTML = departments
-      .map(
-        (dept) => `
+    // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+    container.innerHTML = domPurify.sanitize(
+      departments
+        .map(
+          (dept) => `
     <label class="department-checkbox">
-      <input type="checkbox" name="department" value="${dept.id}" 
+      <input type="checkbox" name="department" value="${dept.id}"
              ${selectedIds.includes(dept.id) ? 'checked' : ''} />
       <span>${dept.name}</span>
     </label>
   `,
-      )
-      .join('');
+        )
+        .join(''),
+    );
   }
 
   // Close modal
   (window as unknown as ManageDeptGroupsWindow).closeModal = function () {
-    document.getElementById('createGroupModal')?.classList.remove('active');
+    document.querySelector(CREATE_GROUP_MODAL_SELECTOR)?.classList.remove('active');
     editingGroupId = null;
   };
 
   // Form submit
-  document.getElementById('createGroupForm')?.addEventListener('submit', (e) => {
+  document.querySelector('#createGroupForm')?.addEventListener('submit', (e) => {
     void (async () => {
       e.preventDefault();
 
+      const groupNameInput = document.querySelector('#groupName');
+      const groupDescInput = document.querySelector('#groupDescription');
+      const parentGroupSelect = document.querySelector('#parentGroup');
+
+      if (
+        !(groupNameInput instanceof HTMLInputElement) ||
+        !(groupDescInput instanceof HTMLTextAreaElement) ||
+        !(parentGroupSelect instanceof HTMLSelectElement)
+      ) {
+        showErrorAlert('Formularfelder nicht gefunden');
+        return;
+      }
+
       const formData = {
-        name: (document.getElementById('groupName') as HTMLInputElement).value,
-        description: (document.getElementById('groupDescription') as HTMLTextAreaElement).value,
-        parentGroupId: (document.getElementById('parentGroup') as HTMLSelectElement).value ?? null,
-        departmentIds: Array.from(document.querySelectorAll('input[name="department"]:checked')).map((cb) =>
-          parseInt((cb as HTMLInputElement).value),
+        name: groupNameInput.value,
+        description: groupDescInput.value,
+        parentGroupId: parentGroupSelect.value !== '' ? parentGroupSelect.value : null,
+        // eslint-disable-next-line promise/prefer-await-to-callbacks -- map is synchronous, not async callback
+        departmentIds: [...document.querySelectorAll('input[name="department"]:checked')].map((cb) =>
+          Number.parseInt((cb as HTMLInputElement).value, 10),
         ),
       };
 
       try {
-        const url = editingGroupId ? `/api/department-groups/${editingGroupId}` : '/api/department-groups';
+        const url = editingGroupId !== null ? `/department-groups/${editingGroupId}` : '/department-groups';
 
-        const method = editingGroupId ? 'PUT' : 'POST';
+        const method = editingGroupId !== null ? 'PUT' : 'POST';
 
-        const response = await fetch(url, {
+        await apiClient.request(url, {
           method,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
           body: JSON.stringify(formData),
         });
 
-        if (response.ok) {
-          showSuccess(editingGroupId ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
-          closeModal();
-          await loadGroups();
-        } else {
-          const error = await response.json();
-          showError(error.error ?? 'Fehler beim Speichern');
-        }
+        showSuccessAlert(editingGroupId !== null ? 'Gruppe aktualisiert' : 'Gruppe erstellt');
+        closeModal();
+        await loadGroups();
       } catch (error) {
         console.error('Error saving group:', error);
-        showError('Netzwerkfehler beim Speichern');
+        showErrorAlert('Netzwerkfehler beim Speichern');
       }
     })();
   });
@@ -346,26 +363,21 @@
     const group = findGroupById(groupId);
     if (!group) return;
 
-    if (!confirm(`Möchten Sie die Gruppe "${group.name}" wirklich löschen?`)) {
+    // Use custom confirmation dialog
+    const userConfirmed = await showConfirm(`Möchten Sie die Gruppe "${group.name}" wirklich löschen?`);
+    if (!userConfirmed) {
       return;
     }
 
     try {
-      const response = await fetch(`/api/department-groups/${groupId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      await apiClient.request(`/department-groups/${groupId}`, { method: 'DELETE' });
 
-      if (response.ok) {
-        showSuccess('Gruppe gelöscht');
-        selectedGroupId = null;
-        await loadGroups();
-        const groupDetails = document.getElementById('groupDetails');
-        if (groupDetails) {
-          groupDetails.innerHTML = `
+      showSuccessAlert('Gruppe gelöscht');
+      selectedGroupId = null;
+      await loadGroups();
+      const groupDetails = document.querySelector('#groupDetails');
+      if (groupDetails) {
+        groupDetails.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">
             <i class="fas fa-info-circle"></i>
@@ -373,31 +385,23 @@
           <div>Wählen Sie eine Gruppe aus, um Details anzuzeigen</div>
         </div>
       `;
-        }
-      } else {
-        const error = await response.json();
-        showError(error.error ?? 'Fehler beim Löschen');
       }
     } catch (error) {
       console.error('Error deleting group:', error);
-      showError('Netzwerkfehler beim Löschen');
+      showErrorAlert('Netzwerkfehler beim Löschen');
     }
   };
 
   // Add departments to group
-  (window as unknown as ManageDeptGroupsWindow).addDepartmentsToGroup = async function (groupId: number) {
+  (window as unknown as ManageDeptGroupsWindow).addDepartmentsToGroup = async function (
+    groupId: number,
+  ): Promise<void> {
     // For now, just open edit modal
     (window as unknown as ManageDeptGroupsWindow).editGroup(groupId);
+    await Promise.resolve();
   };
 
-  // Helper functions
-  function showError(message: string) {
-    alert(`Fehler: ${message}`);
-  }
-
-  function showSuccess(message: string) {
-    alert(`Erfolg: ${message}`);
-  }
+  // Note: showError, showSuccess, and showConfirmDialog are now imported from utils/alerts
 
   // Initialize
   document.addEventListener('DOMContentLoaded', () => {
@@ -409,7 +413,7 @@
 
   // Close modal on outside click
   window.addEventListener('click', (e) => {
-    const modal = document.getElementById('createGroupModal');
+    const modal = document.querySelector(CREATE_GROUP_MODAL_SELECTOR);
     if (e.target === modal) {
       closeModal();
     }

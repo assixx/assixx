@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Employee Service
  * Handles employee-related business logic
@@ -6,11 +7,11 @@
  * It should probably use '../models/user' instead.
  * This needs to be fixed in a separate refactoring step.
  */
-
 // TODO: Fix import - employee model doesn't exist, using user model instead
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
-import User, { DbUser, UserCreateData, UserFilter } from "../models/user";
+import User, { DbUser, UserCreateData, UserFilter } from '../models/user';
+
 /**
  * Employee Service
  * Handles employee-related business logic
@@ -32,65 +33,69 @@ type EmployeeFilters = UserFilter;
 
 // NOTE: Class is named UserService but exported as employee service
 // This naming inconsistency should be fixed
+/**
+ *
+ */
 class UserService {
   /**
    * Holt alle User Einträge für einen Tenant
+   * @param _tenantDb - The _tenantDb parameter
+   * @param filters - The filter criteria
    */
-  async getAll(
-    _tenantDb: Pool,
-    filters: EmployeeFilters,
-  ): Promise<EmployeeData[]> {
+  async getAll(_tenantDb: Pool, filters: EmployeeFilters): Promise<EmployeeData[]> {
     try {
       // Use the search method which supports filtering
       return await User.search(filters);
-    } catch (error) {
-      console.error("Error in UserService.getAll:", error);
+    } catch (error: unknown) {
+      console.error('Error in UserService.getAll:', error);
       throw error;
     }
   }
 
   /**
    * Holt einen User Eintrag per ID
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
-  async getById(
-    _tenantDb: Pool,
-    id: number,
-    tenantId: number,
-  ): Promise<EmployeeData | null> {
+  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<EmployeeData | null> {
     try {
       const user = await User.findById(id, tenantId);
       return user ?? null;
-    } catch (error) {
-      console.error("Error in UserService.getById:", error);
+    } catch (error: unknown) {
+      console.error('Error in UserService.getById:', error);
       throw error;
     }
   }
 
   /**
    * Erstellt einen neuen User Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
-  async create(
-    _tenantDb: Pool,
-    data: EmployeeCreateData,
-  ): Promise<EmployeeData> {
+  async create(_tenantDb: Pool, data: EmployeeCreateData): Promise<EmployeeData> {
     try {
-      if (!data.tenant_id) {
-        throw new Error("Tenant ID is required for user creation");
+      if (data.tenant_id == null || data.tenant_id === 0) {
+        throw new Error('Tenant ID is required for user creation');
       }
       const id = await User.create(data);
       const created = await User.findById(id, data.tenant_id);
       if (!created) {
-        throw new Error("Failed to retrieve created user");
+        throw new Error('Failed to retrieve created user');
       }
       return created;
-    } catch (error) {
-      console.error("Error in UserService.create:", error);
+    } catch (error: unknown) {
+      console.error('Error in UserService.create:', error);
       throw error;
     }
   }
 
   /**
    * Aktualisiert einen User Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param data - The data object
    */
   async update(
     _tenantDb: Pool,
@@ -105,20 +110,22 @@ class UserService {
         return updated ?? null;
       }
       return null;
-    } catch (error) {
-      console.error("Error in UserService.update:", error);
+    } catch (error: unknown) {
+      console.error('Error in UserService.update:', error);
       throw error;
     }
   }
 
   /**
    * Löscht einen User Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param id - The resource ID
    */
   async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {
       return await User.delete(id);
-    } catch (error) {
-      console.error("Error in UserService.delete:", error);
+    } catch (error: unknown) {
+      console.error('Error in UserService.delete:', error);
       throw error;
     }
   }

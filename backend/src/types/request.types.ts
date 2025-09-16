@@ -2,12 +2,11 @@
  * Central Request Type Definitions
  * These types extend Express Request with authentication and file upload support
  */
+import { Request } from 'express';
+import { ParamsDictionary } from 'express-serve-static-core';
+import { ParsedQs } from 'qs';
 
-import { Request } from "express";
-import { ParamsDictionary } from "express-serve-static-core";
-import { ParsedQs } from "qs";
-
-import { TenantInfo } from "./tenant.types";
+import { TenantInfo } from './tenant.types';
 
 // User object that gets attached to authenticated requests
 export interface AuthUser {
@@ -21,20 +20,20 @@ export interface AuthUser {
   first_name?: string;
   last_name?: string;
   department_id?: number | null;
+  team_id?: number | null;
   position?: string | null;
   activeRole?: string; // For role switching functionality
   isRoleSwitched?: boolean; // Flag to indicate if role is switched
 }
 
 // Base authenticated request
-export interface AuthenticatedRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+export interface AuthenticatedRequest extends Request<ParamsDictionary, unknown, unknown> {
   user: AuthUser;
   tenant?: TenantInfo | null;
   tenant_id?: number | null;
-  tenantId?: number | null; // v2 API camelCase version
+  tenantId?: number; // v2 API camelCase version - only undefined or number, never null
   subdomain?: string;
-  userId?: number; // Convenience property
+  userId?: number; // Convenience property - only undefined or number, never null
 }
 
 // Use Express.Multer.File from express-extensions.d.ts
@@ -52,7 +51,7 @@ export interface PaginatedRequest extends AuthenticatedRequest {
     limit?: string;
     offset?: string;
     sort?: string;
-    order?: "asc" | "desc";
+    order?: 'asc' | 'desc';
   };
   pagination?: {
     page: number;
@@ -73,8 +72,7 @@ export interface BodyRequest<T = unknown> extends AuthenticatedRequest {
 }
 
 // Request with typed query
-export interface QueryRequest<T extends ParsedQs = ParsedQs>
-  extends AuthenticatedRequest {
+export interface QueryRequest<T extends ParsedQs = ParsedQs> extends AuthenticatedRequest {
   query: T;
 }
 
@@ -104,15 +102,13 @@ export interface DocumentRequest extends AuthenticatedRequest {
 }
 
 // Public Request (no authentication required)
-export interface PublicRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+export interface PublicRequest extends Request<ParamsDictionary, unknown, unknown> {
   subdomain?: string;
   tenantId?: number | null;
 }
 
 // Optional Auth Request (authentication optional)
-export interface OptionalAuthRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+export interface OptionalAuthRequest extends Request<ParamsDictionary, unknown, unknown> {
   user?: AuthUser;
   tenant?: TenantInfo | null;
   tenantId?: number | null;
@@ -120,8 +116,7 @@ export interface OptionalAuthRequest
 }
 
 // API Key Request
-export interface ApiKeyRequest
-  extends Request<ParamsDictionary, unknown, unknown, ParsedQs> {
+export interface ApiKeyRequest extends Request<ParamsDictionary, unknown, unknown> {
   apiKey?: string;
   apiKeyPermissions?: string[];
   tenantId?: number;

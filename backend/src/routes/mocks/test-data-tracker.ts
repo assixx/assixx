@@ -5,10 +5,10 @@
 
 export class TestDataTracker {
   private static instance: TestDataTracker;
-  private createdTenantIds: Set<number> = new Set();
-  private createdUserIds: Set<number> = new Set();
-  private createdDepartmentIds: Set<number> = new Set();
-  private createdTeamIds: Set<number> = new Set();
+  private createdTenantIds = new Set<number>();
+  private createdUserIds = new Set<number>();
+  private createdDepartmentIds = new Set<number>();
+  private createdTeamIds = new Set<number>();
 
   private constructor() {}
 
@@ -38,19 +38,19 @@ export class TestDataTracker {
 
   // Get tracked IDs
   getTenantIds(): number[] {
-    return Array.from(this.createdTenantIds);
+    return [...this.createdTenantIds];
   }
 
   getUserIds(): number[] {
-    return Array.from(this.createdUserIds);
+    return [...this.createdUserIds];
   }
 
   getDepartmentIds(): number[] {
-    return Array.from(this.createdDepartmentIds);
+    return [...this.createdDepartmentIds];
   }
 
   getTeamIds(): number[] {
-    return Array.from(this.createdTeamIds);
+    return [...this.createdTeamIds];
   }
 
   // Clear all tracked data
@@ -74,18 +74,11 @@ export class TestDataTracker {
     const teamIds = this.getTeamIds();
 
     return {
-      tenants:
-        tenantIds.length > 0
-          ? `WHERE id IN (${tenantIds.join(",")})`
-          : "WHERE 1=0", // Never delete if no test tenants
-      users:
-        userIds.length > 0 ? `WHERE id IN (${userIds.join(",")})` : "WHERE 1=0",
+      tenants: tenantIds.length > 0 ? `WHERE id IN (${String(tenantIds.join(','))})` : 'WHERE 1=0', // Never delete if no test tenants
+      users: userIds.length > 0 ? `WHERE id IN (${String(userIds.join(','))})` : 'WHERE 1=0',
       departments:
-        departmentIds.length > 0
-          ? `WHERE id IN (${departmentIds.join(",")})`
-          : "WHERE 1=0",
-      teams:
-        teamIds.length > 0 ? `WHERE id IN (${teamIds.join(",")})` : "WHERE 1=0",
+        departmentIds.length > 0 ? `WHERE id IN (${String(departmentIds.join(','))})` : 'WHERE 1=0',
+      teams: teamIds.length > 0 ? `WHERE id IN (${String(teamIds.join(','))})` : 'WHERE 1=0',
     };
   }
 }

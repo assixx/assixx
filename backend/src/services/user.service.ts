@@ -1,13 +1,13 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * User Service
  * Handles user-related business logic
  */
+import bcrypt from 'bcryptjs';
 
-import bcrypt from "bcryptjs";
-
-import User from "../models/user";
-import type { DbUser } from "../models/user";
-import { logger } from "../utils/logger";
+import User from '../models/user';
+import type { DbUser } from '../models/user';
+import { logger } from '../utils/logger';
 
 // Import types from User model
 
@@ -64,29 +64,31 @@ interface UpdateUserData {
   role?: never;
 }
 
+/**
+ *
+ */
 class UserService {
   /**
    * Get user by ID
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
    */
-  async getUserById(
-    userId: number,
-    tenantId: number,
-  ): Promise<UserData | null> {
+  async getUserById(userId: number, tenantId: number): Promise<UserData | null> {
     try {
       const user = await User.findById(userId, tenantId);
 
       if (user) {
         // Remove sensitive data
         const userWithoutPassword =
-          "password" in user
-            ? (() => {
-                const { password: _password, ...rest } = user;
-                return rest;
-              })()
-            : user;
+          'password' in user ?
+            (() => {
+              const { password: _password, ...rest } = user;
+              return rest;
+            })()
+          : user;
 
         // Ensure tenant_id is present (required field)
-        if (!userWithoutPassword.tenant_id) {
+        if (userWithoutPassword.tenant_id == null || userWithoutPassword.tenant_id === 0) {
           logger.error(`User ${userId} has no tenant_id`);
           return null;
         }
@@ -95,14 +97,15 @@ class UserService {
       }
 
       return null;
-    } catch (error) {
-      logger.error("Error getting user by ID:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting user by ID:', error);
       throw error;
     }
   }
 
   /**
    * Get user by username
+   * @param username - The username parameter
    */
   async getUserByUsername(username: string): Promise<UserData | null> {
     try {
@@ -110,7 +113,7 @@ class UserService {
 
       if (user) {
         // Ensure tenant_id is present (required field)
-        if (!user.tenant_id) {
+        if (user.tenant_id == null || user.tenant_id === 0) {
           logger.error(`User ${username} has no tenant_id`);
           return null;
         }
@@ -119,30 +122,31 @@ class UserService {
       }
 
       return null;
-    } catch (error) {
-      logger.error("Error getting user by username:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting user by username:', error);
       throw error;
     }
   }
 
   /**
    * Get all users with pagination
+   * @param options - The options object
    */
   async getUsers(options: GetUsersOptions = {}): Promise<UsersResponse> {
     try {
       const { page = 1, limit = 10, role, tenantId } = options;
       // const offset = (page - 1) * limit; // Not used by User.findAll
 
-      if (!tenantId) {
-        throw new Error("Tenant ID is required");
+      if (tenantId == null || tenantId === 0) {
+        throw new Error('Tenant ID is required');
       }
 
-      const users = (await User.findAll({
+      const users = await User.findAll({
         limit,
         // offset, // offset is not part of UserFilter
         role,
         tenant_id: tenantId,
-      })) as DbUser[];
+      });
 
       // Map to response format
       const total = users.length; // Would need proper count from DB
@@ -150,12 +154,12 @@ class UserService {
 
       const data = users.map((user: DbUser) => {
         const userData =
-          "password" in user
-            ? (() => {
-                const { password: _password, ...rest } = user;
-                return rest;
-              })()
-            : user;
+          'password' in user ?
+            (() => {
+              const { password: _password, ...rest } = user;
+              return rest;
+            })()
+          : user;
         return userData as UserData;
       });
 
@@ -166,14 +170,17 @@ class UserService {
         limit,
         totalPages,
       };
-    } catch (error) {
-      logger.error("Error getting users:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting users:', error);
       throw error;
     }
   }
 
   /**
    * Update user profile
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param updateData - The updateData parameter
    */
   async updateUser(
     userId: number,
@@ -191,57 +198,56 @@ class UserService {
 
       await User.update(userId, cleanUpdateData, tenantId);
       return await this.getUserById(userId, tenantId);
-    } catch (error) {
-      logger.error("Error updating user:", error);
+    } catch (error: unknown) {
+      logger.error('Error updating user:', error);
       throw error;
     }
   }
 
   /**
    * Update user password
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param newPassword - The newPassword parameter
    */
-  async updatePassword(
-    userId: number,
-    tenantId: number,
-    newPassword: string,
-  ): Promise<boolean> {
+  async updatePassword(userId: number, tenantId: number, newPassword: string): Promise<boolean> {
     try {
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       await User.update(userId, { password: hashedPassword }, tenantId);
       return true;
-    } catch (error) {
-      logger.error("Error updating password:", error);
+    } catch (error: unknown) {
+      logger.error('Error updating password:', error);
       throw error;
     }
   }
 
   /**
    * Delete user (soft delete)
+   * @param userId - The user ID
    */
   async deleteUser(userId: number): Promise<boolean> {
     try {
       await User.delete(userId);
       return true;
-    } catch (error) {
-      logger.error("Error deleting user:", error);
+    } catch (error: unknown) {
+      logger.error('Error deleting user:', error);
       throw error;
     }
   }
 
   /**
    * Archive/Unarchive user
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param archived - The archived parameter
    */
-  async archiveUser(
-    userId: number,
-    tenantId: number,
-    archived: boolean = true,
-  ): Promise<boolean> {
+  async archiveUser(userId: number, tenantId: number, archived = true): Promise<boolean> {
     try {
       await User.update(userId, { is_archived: archived }, tenantId);
       return true;
-    } catch (error) {
-      logger.error("Error archiving user:", error);
+    } catch (error: unknown) {
+      logger.error('Error archiving user:', error);
       throw error;
     }
   }

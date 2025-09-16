@@ -2,37 +2,32 @@
  * Session Security Best Practices
  * Implementiert Security-Monitoring ohne User Experience zu beeinträchtigen
  */
-
-import { Request } from "express";
+import { Request } from 'express';
 
 interface SecurityEvent {
   userId: number;
-  eventType:
-    | "login"
-    | "fingerprint_change"
-    | "ip_change"
-    | "suspicious_activity";
+  eventType: 'login' | 'fingerprint_change' | 'ip_change' | 'suspicious_activity';
   details: Record<string, unknown>;
   timestamp: Date;
   ip?: string;
   userAgent?: string;
 }
 
-export class SessionSecurity {
+export const SessionSecurity = {
   /**
    * Best Practice Security Checks (wie Google, Facebook, etc.)
    * - Erkennt verdächtige Muster
    * - Blockiert nur bei echten Bedrohungen
    * - Stört normale User nicht
    */
-  static async checkSession(
+  checkSession(
     _req: Request,
     _userId: number,
-  ): Promise<{
+  ): {
     isValid: boolean;
     shouldWarn: boolean;
     reason?: string;
-  }> {
+  } {
     // Immer erlauben für normale Nutzung
     // Nur bei extremen Fällen blockieren:
 
@@ -52,52 +47,52 @@ export class SessionSecurity {
       isValid: true,
       shouldWarn: false,
     };
-  }
+  },
 
   /**
    * Log Security Events für spätere Analyse
    */
-  static async logSecurityEvent(event: SecurityEvent): Promise<void> {
+  logSecurityEvent(event: SecurityEvent): void {
     // In Produktion: In Datenbank speichern
-    // Für jetzt: Nur console.log
+    // Für jetzt: Nur console.info
 
-    if (event.eventType === "suspicious_activity") {
-      console.warn("[SECURITY-ALERT]", event);
+    if (event.eventType === 'suspicious_activity') {
+      console.warn('[SECURITY-ALERT]', event);
     } else {
-      console.info("[SECURITY-LOG]", {
+      console.info('[SECURITY-LOG]', {
         userId: event.userId,
         type: event.eventType,
         time: event.timestamp,
       });
     }
-  }
+  },
 
   /**
    * Smart Session Validation
    * Wie große Plattformen es machen
    */
-  static getSecurityLevel(changes: {
+  getSecurityLevel(changes: {
     fingerprintChanged: boolean;
     ipChanged: boolean;
     countryChanged: boolean;
     deviceChanged: boolean;
-  }): "allow" | "verify" | "block" {
+  }): 'allow' | 'verify' | 'block' {
     // Normal changes → Allow
     if (changes.fingerprintChanged && !changes.countryChanged) {
-      return "allow"; // Browser update, neue Extension, etc.
+      return 'allow'; // Browser update, neue Extension, etc.
     }
 
     // Suspicious → Verify (z.B. 2FA)
     if (changes.countryChanged && changes.deviceChanged) {
-      return "verify"; // Reise + neues Gerät
+      return 'verify'; // Reise + neues Gerät
     }
 
     // Highly suspicious → Block
     // Nur in extremen Fällen!
 
-    return "allow";
-  }
-}
+    return 'allow';
+  },
+} as const;
 
 /**
  * Best Practices Summary:

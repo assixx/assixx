@@ -5,21 +5,10 @@
 
 version: 2
 updates:
-  # Backend dependencies (pnpm compatible)
+  # Root workspace dependencies (pnpm workspace)
+  # IMPORTANT: Only update from root for pnpm workspaces
   - package-ecosystem: "npm"
     directory: "/"
-    schedule:
-      interval: "monthly"
-    open-pull-requests-limit: 10
-    # Reduce update frequency by grouping updates
-    groups:
-      dependencies:
-        patterns:
-          - "*"
-
-  # Frontend dependencies (pnpm compatible)
-  - package-ecosystem: "npm"
-    directory: "/frontend"
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 10

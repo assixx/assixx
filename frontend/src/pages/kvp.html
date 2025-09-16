@@ -18,6 +18,7 @@
         root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
 
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
@@ -80,12 +81,12 @@
       .filter-btn.active {
         background: var(--primary-color);
         border-color: var(--primary-color);
-        color: white;
+        color: #fff;
       }
 
       .filter-btn .badge {
         background: rgba(255, 255, 255, 0.2);
-        color: white;
+        color: #fff;
         padding: 2px 8px;
         border-radius: 12px;
         font-size: 0.8rem;
@@ -107,7 +108,7 @@
 
       .secondary-filters select,
       .secondary-filters input {
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -128,7 +129,7 @@
         background: rgba(255, 182, 107, 0.1);
         border: 1px solid rgba(255, 182, 107, 0.3);
         border-radius: var(--radius-md);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-top: var(--spacing-lg);
         margin-bottom: var(--spacing-lg);
         display: flex;
@@ -139,6 +140,38 @@
       .admin-info-box i {
         color: #ff6b6b;
         font-size: 1.5rem;
+      }
+
+      /* Unified Card Style - consistent across all pages */
+      .card {
+        backdrop-filter: blur(20px) saturate(180%);
+        background: hsla(0, 0%, 100%, 0.02);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+        overflow: hidden;
+      }
+
+      .card-header {
+        padding: var(--spacing-lg);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .card-body {
+        padding: var(--spacing-lg);
+      }
+
+      .card-title {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .text-secondary {
+        color: rgba(255, 255, 255, 0.6);
+        margin-top: 0.25rem;
       }
 
       /* KVP Suggestions Grid */
@@ -218,7 +251,6 @@
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        padding: 4px 10px;
         border-radius: 16px;
         font-size: 0.75rem;
         margin-top: var(--spacing-sm);
@@ -227,13 +259,22 @@
       .visibility-badge.department {
         background: rgba(78, 205, 196, 0.2);
         color: #4ecdc4;
+        padding: 6px 12px;
         border: 1px solid rgba(78, 205, 196, 0.5);
       }
 
       .visibility-badge.company {
         background: rgba(102, 126, 234, 0.2);
         color: #667eea;
+        padding: 6px 12px;
         border: 1px solid rgba(102, 126, 234, 0.5);
+      }
+
+      .visibility-badge.team {
+        background: rgba(255, 159, 67, 0.2);
+        color: #ff9f43;
+        padding: 6px 12px;
+        border: 1px solid rgba(255, 159, 67, 0.5);
       }
 
       /* Suggestion Content */
@@ -308,7 +349,7 @@
         padding: 6px 12px;
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
+        border-radius: var(--radius-md);
         color: var(--text-primary);
         font-size: 0.85rem;
         cursor: pointer;
@@ -328,26 +369,31 @@
         background: rgba(33, 150, 243, 0.1);
       }
 
-      /* Create New Button */
+      /* Floating Add Button - same as manage-employees */
       .create-new-btn {
         position: fixed;
-        bottom: 2rem;
-        right: 2rem;
+        bottom: 30px;
+        right: 30px;
         width: 60px;
         height: 60px;
-        background: var(--primary-color);
-        border: none;
+        background: rgba(33, 150, 243, 0.2);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(33, 150, 243, 0.3);
         border-radius: 50%;
-        color: white;
-        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: var(--primary-color);
         cursor: pointer;
-        box-shadow: 0 8px 24px rgba(33, 150, 243, 0.4);
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
         z-index: 100;
       }
 
       .create-new-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
         transform: scale(1.1);
-        box-shadow: 0 12px 32px rgba(33, 150, 243, 0.6);
+        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
       }
 
       /* Empty State */
@@ -382,7 +428,7 @@
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-md);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         text-align: center;
         box-shadow: var(--shadow-sm);
       }
@@ -425,7 +471,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -440,9 +486,6 @@
         border-color: rgba(255, 255, 255, 0.2);
       }
 
-      .dropdown-display svg {
-      }
-
       .dropdown-display.active svg {
         transform: rotate(180deg);
       }
@@ -454,7 +497,6 @@
         right: 0;
         background: rgba(18, 18, 18, 0.8);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-sm);
         box-shadow: var(--shadow-sm);
@@ -512,7 +554,6 @@
         height: 100%;
         background-color: rgba(0, 0, 0, 0.7);
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -526,9 +567,8 @@
       }
 
       .modal-content {
-        background: #1a1a1a4a;
+        background: hsla(0, 0%, 8.2%, 0.84);
         backdrop-filter: blur(20px) saturate(500%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
@@ -606,7 +646,7 @@
 
       .form-control {
         width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -645,7 +685,7 @@
 
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         box-shadow:
           0 1px 4px rgba(33, 150, 243, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -676,7 +716,7 @@
         background: rgba(255, 152, 0, 0.1);
         border: 1px solid rgba(255, 152, 0, 0.3);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-lg);
         display: flex;
         align-items: flex-start;
@@ -775,7 +815,7 @@
         top: 4px;
         right: 4px;
         background: rgba(244, 67, 54, 0.9);
-        color: white;
+        color: #fff;
         border: none;
         border-radius: 50%;
         width: 24px;
@@ -850,119 +890,137 @@
             </div>
           </div>
 
-          <!-- Filter Bar -->
-          <div class="kvp-filter-bar">
-            <button class="filter-btn active" data-filter="all">
-              <i class="fas fa-list"></i>
-              Alle
-              <span class="badge" id="badgeAll">0</span>
-            </button>
-            <button class="filter-btn" data-filter="mine">
-              <i class="fas fa-user"></i>
-              Meine
-              <span class="badge" id="badgeMine">0</span>
-            </button>
-            <button class="filter-btn" data-filter="department">
-              <i class="fas fa-building"></i>
-              Abteilung
-              <span class="badge" id="badgeDepartment">0</span>
-            </button>
-            <button class="filter-btn" data-filter="company">
-              <i class="fas fa-globe"></i>
-              Firmenweit
-              <span class="badge" id="badgeCompany">0</span>
-            </button>
-            <button class="filter-btn admin-only" data-filter="manage" class="u-hidden">
-              <i class="fas fa-tasks"></i>
-              Verwalten
-            </button>
-            <button class="filter-btn admin-only" data-filter="archived" class="u-hidden">
-              <i class="fas fa-archive"></i>
-              Archiv
-              <span class="badge" id="badgeArchived">0</span>
-            </button>
-          </div>
-
-          <!-- Secondary Filters -->
-          <div class="secondary-filters">
-            <!-- Status Filter Dropdown -->
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="statusDisplay" onclick="toggleDropdown('status')">
-                <span>Alle Status</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+          <!-- Main Card Container -->
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">KVP-Vorschläge</h2>
+                <p class="text-secondary">Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere Abläufe</p>
               </div>
-              <div class="dropdown-options" id="statusDropdown">
-                <div class="dropdown-option" onclick="selectStatus('', 'Alle Status')">Alle Status</div>
-                <div class="dropdown-option" onclick="selectStatus('new', 'Neu')">Neu</div>
-                <div class="dropdown-option" onclick="selectStatus('in_review', 'In Prüfung')">In Prüfung</div>
-                <div class="dropdown-option" onclick="selectStatus('approved', 'Genehmigt')">Genehmigt</div>
-                <div class="dropdown-option" onclick="selectStatus('implemented', 'Umgesetzt')">Umgesetzt</div>
-                <div class="dropdown-option" onclick="selectStatus('rejected', 'Abgelehnt')">Abgelehnt</div>
-              </div>
-              <input type="hidden" name="statusFilter" id="statusFilterValue" />
             </div>
-
-            <!-- Category Filter Dropdown -->
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="categoryDisplay" onclick="toggleDropdown('category')">
-                <span>Alle Kategorien</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+            <div class="card-body">
+              <!-- Filter Bar -->
+              <div class="kvp-filter-bar">
+                <button class="filter-btn active" data-filter="all">
+                  <i class="fas fa-list"></i>
+                  Alle
+                  <span class="badge" id="badgeAll">0</span>
+                </button>
+                <button class="filter-btn" data-filter="mine">
+                  <i class="fas fa-user"></i>
+                  Meine
+                  <span class="badge" id="badgeMine">0</span>
+                </button>
+                <button class="filter-btn" data-filter="team">
+                  <i class="fas fa-users"></i>
+                  Team
+                  <span class="badge" id="badgeTeam">0</span>
+                </button>
+                <button class="filter-btn" data-filter="department">
+                  <i class="fas fa-building"></i>
+                  Abteilung
+                  <span class="badge" id="badgeDepartment">0</span>
+                </button>
+                <button class="filter-btn" data-filter="company">
+                  <i class="fas fa-globe"></i>
+                  Firmenweit
+                  <span class="badge" id="badgeCompany">0</span>
+                </button>
+                <button class="filter-btn admin-only" data-filter="manage" class="u-hidden">
+                  <i class="fas fa-tasks"></i>
+                  Verwalten
+                </button>
+                <button class="filter-btn admin-only" data-filter="archived" class="u-hidden">
+                  <i class="fas fa-archive"></i>
+                  Archiv
+                  <span class="badge" id="badgeArchived">0</span>
+                </button>
               </div>
-              <div class="dropdown-options" id="categoryDropdown">
-                <div class="dropdown-option" onclick="selectCategory('', 'Alle Kategorien')">Alle Kategorien</div>
+
+              <!-- Secondary Filters -->
+              <div class="secondary-filters">
+                <!-- Status Filter Dropdown -->
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="statusDisplay" data-dropdown="status">
+                    <span>Alle Status</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="statusDropdown">
+                    <div class="dropdown-option" data-action="select-status" data-value="" data-text="Alle Status">Alle Status</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="new" data-text="Neu">Neu</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="in_review" data-text="In Prüfung">In Prüfung</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="approved" data-text="Genehmigt">Genehmigt</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="implemented" data-text="Umgesetzt">Umgesetzt</div>
+                    <div class="dropdown-option" data-action="select-status" data-value="rejected" data-text="Abgelehnt">Abgelehnt</div>
+                  </div>
+                  <input type="hidden" name="statusFilter" id="statusFilterValue" />
+                </div>
+
+                <!-- Category Filter Dropdown -->
+                <div class="custom-dropdown">
+                  <div class="dropdown-display" id="categoryDisplay" data-dropdown="category">
+                    <span>Alle Kategorien</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="categoryDropdown">
+                    <div class="dropdown-option" data-action="select-category" data-value="" data-text="Alle Kategorien">
+                      Alle Kategorien
+                    </div>
+                    <!-- Dynamisch geladen -->
+                  </div>
+                  <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
+                </div>
+
+                <!-- Department Filter Dropdown -->
+                <div class="custom-dropdown admin-only" class="u-hidden">
+                  <div class="dropdown-display" id="departmentDisplay" data-dropdown="department">
+                    <span>Alle Abteilungen</span>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+                      <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                  </div>
+                  <div class="dropdown-options" id="departmentDropdown">
+                    <div class="dropdown-option" data-action="select-department" data-value="" data-text="Alle Abteilungen">
+                      Alle Abteilungen
+                    </div>
+                    <!-- Dynamisch geladen für Admins -->
+                  </div>
+                  <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
+                </div>
+
+                <input type="text" id="searchFilter" placeholder="Suchen..." />
+              </div>
+
+              <!-- Suggestions Container -->
+              <div class="kvp-suggestions-grid" id="suggestionsContainer">
                 <!-- Dynamisch geladen -->
               </div>
-              <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
-            </div>
 
-            <!-- Department Filter Dropdown -->
-            <div class="custom-dropdown admin-only" class="u-hidden">
-              <div class="dropdown-display" id="departmentDisplay" onclick="toggleDropdown('department')">
-                <span>Alle Abteilungen</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
+              <!-- Empty State -->
+              <div class="empty-state" id="emptyState" class="u-hidden">
+                <i class="fas fa-inbox"></i>
+                <h3>Keine Vorschläge gefunden</h3>
+                <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
               </div>
-              <div class="dropdown-options" id="departmentDropdown">
-                <div class="dropdown-option" onclick="selectDepartment('', 'Alle Abteilungen')">Alle Abteilungen</div>
-                <!-- Dynamisch geladen für Admins -->
-              </div>
-              <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
             </div>
-
-            <input type="text" id="searchFilter" placeholder="Suchen..." />
           </div>
-
-          <!-- Suggestions Container -->
-          <div class="kvp-suggestions-grid" id="suggestionsContainer">
-            <!-- Dynamisch geladen -->
-          </div>
-
-          <!-- Empty State -->
-          <div class="empty-state" id="emptyState" class="u-hidden">
-            <i class="fas fa-inbox"></i>
-            <h3>Keine Vorschläge gefunden</h3>
-            <p>Ändern Sie Ihre Filter oder erstellen Sie einen neuen Vorschlag</p>
-          </div>
-
-          <!-- Create New Button -->
-          <button class="create-new-btn" id="createNewBtn" title="Neuen Vorschlag erstellen">
-            <i class="fas fa-plus"></i>
-          </button>
         </div>
       </main>
     </div>
+
+    <!-- Floating Add Button (only for employees) -->
+    <button class="create-new-btn" id="createNewBtn" title="Neuen Vorschlag erstellen">+</button>
 
     <!-- Create KVP Modal -->
     <div id="createKvpModal" class="modal">
       <div class="modal-content">
         <div class="modal-header">
           <h3 class="modal-title">Neuer KVP-Vorschlag</h3>
-          <button class="modal-close" onclick="window.hideCreateModal()">&times;</button>
+          <button class="modal-close" data-action="close-modal">&times;</button>
         </div>
         <form id="createKvpForm">
           <div class="modal-body">
@@ -984,6 +1042,7 @@
                 <label class="form-label" for="kvpTitle">
                   Titel
                   <span class="required">*</span>
+                  <small style="color: rgba(255, 255, 255, 0.6); font-weight: normal">(3-255 Zeichen)</small>
                 </label>
                 <input
                   type="text"
@@ -992,6 +1051,7 @@
                   class="form-control"
                   placeholder="Kurze, prägnante Beschreibung"
                   required
+                  minlength="3"
                   maxlength="255"
                 />
               </div>
@@ -1001,6 +1061,7 @@
                 <label class="form-label" for="kvpDescription">
                   Beschreibung
                   <span class="required">*</span>
+                  <small style="color: rgba(255, 255, 255, 0.6); font-weight: normal">(10-5000 Zeichen)</small>
                 </label>
                 <textarea
                   id="kvpDescription"
@@ -1009,6 +1070,8 @@
                   placeholder="Detaillierte Beschreibung des Vorschlags..."
                   rows="4"
                   required
+                  minlength="10"
+                  maxlength="5000"
                 ></textarea>
               </div>
               <!-- Category -->
@@ -1018,7 +1081,7 @@
                   <span class="required">*</span>
                 </label>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="kvpCategoryDisplay" onclick="toggleDropdown('kvpCategory')">
+                  <div class="dropdown-display" id="kvpCategoryDisplay" data-dropdown="kvpCategory">
                     <span>Bitte wählen</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -1035,17 +1098,17 @@
               <div class="form-group">
                 <label class="form-label" for="kvpPriority">Priorität</label>
                 <div class="custom-dropdown">
-                  <div class="dropdown-display" id="kvpPriorityDisplay" onclick="toggleDropdown('kvpPriority')">
+                  <div class="dropdown-display" id="kvpPriorityDisplay" data-dropdown="kvpPriority">
                     <span>Normal</span>
                     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
                       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                     </svg>
                   </div>
                   <div class="dropdown-options" id="kvpPriorityDropdown">
-                    <div class="dropdown-option" onclick="selectKvpPriority('low', 'Niedrig')">Niedrig</div>
-                    <div class="dropdown-option" onclick="selectKvpPriority('normal', 'Normal')">Normal</div>
-                    <div class="dropdown-option" onclick="selectKvpPriority('high', 'Hoch')">Hoch</div>
-                    <div class="dropdown-option" onclick="selectKvpPriority('urgent', 'Dringend')">Dringend</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="low" data-text="Niedrig">Niedrig</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="normal" data-text="Normal">Normal</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="high" data-text="Hoch">Hoch</div>
+                    <div class="dropdown-option" data-action="select-priority" data-value="urgent" data-text="Dringend">Dringend</div>
                   </div>
                   <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
                 </div>
@@ -1071,16 +1134,8 @@
                 <small class="text-muted">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</small>
               </label>
               <div class="photo-upload-area">
-                <input
-                  type="file"
-                  id="kvpPhotos"
-                  name="photos"
-                  accept="image/jpeg,image/jpg,image/png"
-                  multiple
-                  class="u-hidden"
-                  onchange="handlePhotoSelection(this)"
-                />
-                <div class="upload-box" onclick="document.getElementById('kvpPhotos').click()">
+                <input type="file" id="kvpPhotos" name="photos" accept="image/jpeg,image/jpg,image/png" multiple class="u-hidden" />
+                <div class="upload-box" data-action="upload-photos">
                   <i class="fas fa-camera"></i>
                   <p>Klicken Sie hier, um Fotos auszuwählen</p>
                   <p class="small text-muted">oder ziehen Sie Dateien hierher</p>
@@ -1091,7 +1146,7 @@
           </div>
 
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="window.hideCreateModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" data-action="close-modal">Abbrechen</button>
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-save"></i>
               Vorschlag einreichen
@@ -1101,12 +1156,106 @@
       </div>
     </div>
 
-    <!-- Dropdown Functions -->
+    <!-- Event Delegation for KVP Page (without DOMPurify) -->
     <script>
-      // Toggle Dropdown
+      // Photo upload handling
+      let selectedPhotos = [];
+      window.selectedPhotos = selectedPhotos;
+
+      // Event Delegation Handler
+      document.addEventListener('click', function (e) {
+        const target = e.target;
+
+        // Dropdown toggle
+        const dropdownDisplay = target.closest('[data-dropdown]');
+        if (dropdownDisplay) {
+          e.preventDefault();
+          e.stopPropagation();
+          const type = dropdownDisplay.dataset.dropdown;
+          toggleDropdown(type);
+          return;
+        }
+
+        // Status selection
+        const statusOption = target.closest('[data-action="select-status"]');
+        if (statusOption) {
+          e.preventDefault();
+          selectStatus(statusOption.dataset.value, statusOption.dataset.text);
+          return;
+        }
+
+        // Category selection
+        const categoryOption = target.closest('[data-action="select-category"]');
+        if (categoryOption) {
+          e.preventDefault();
+          selectCategory(categoryOption.dataset.value, categoryOption.dataset.text);
+          return;
+        }
+
+        // Department selection
+        const departmentOption = target.closest('[data-action="select-department"]');
+        if (departmentOption) {
+          e.preventDefault();
+          selectDepartment(departmentOption.dataset.value, departmentOption.dataset.text);
+          return;
+        }
+
+        // Priority selection
+        const priorityOption = target.closest('[data-action="select-priority"]');
+        if (priorityOption) {
+          e.preventDefault();
+          selectKvpPriority(priorityOption.dataset.value, priorityOption.dataset.text);
+          return;
+        }
+
+        // Modal close
+        const modalClose = target.closest('[data-action="close-modal"]');
+        if (modalClose) {
+          e.preventDefault();
+          hideCreateModal();
+          return;
+        }
+
+        // Photo upload trigger
+        const uploadBox = target.closest('[data-action="upload-photos"]');
+        if (uploadBox) {
+          e.preventDefault();
+          document.querySelector('#kvpPhotos').click();
+          return;
+        }
+
+        // Remove photo
+        const removePhotoBtn = target.closest('[data-action="remove-photo"]');
+        if (removePhotoBtn) {
+          e.preventDefault();
+          const index = parseInt(removePhotoBtn.dataset.index);
+          removePhoto(index);
+          return;
+        }
+
+        // Close dropdowns when clicking outside
+        if (!target.closest('.custom-dropdown')) {
+          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
+          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+        }
+      });
+
+      // Click outside modal to close
+      document.querySelector('#createKvpModal')?.addEventListener('click', function (e) {
+        if (e.target === this) {
+          hideCreateModal();
+        }
+      });
+
+      // File input change handler
+      document.querySelector('#kvpPhotos')?.addEventListener('change', function (e) {
+        handlePhotoSelection(this);
+      });
+
+      // Helper Functions
       function toggleDropdown(type) {
-        const display = document.getElementById(type + 'Display');
-        const dropdown = document.getElementById(type + 'Dropdown');
+        const display = document.querySelector(`#${type}Display`);
+        const dropdown = document.querySelector(`#${type}Dropdown`);
 
         // Close all other dropdowns
         document.querySelectorAll('.dropdown-display').forEach((d) => {
@@ -1120,96 +1269,71 @@
         dropdown.classList.toggle('active');
       }
 
-      // Select Status
       function selectStatus(value, text) {
-        document.getElementById('statusDisplay').querySelector('span').textContent = text;
-        document.getElementById('statusFilterValue').value = value;
-        document.getElementById('statusDisplay').classList.remove('active');
-        document.getElementById('statusDropdown').classList.remove('active');
+        document.querySelector('#statusDisplay').querySelector('span').textContent = text;
+        document.querySelector('#statusFilterValue').value = value;
+        document.querySelector('#statusDisplay').classList.remove('active');
+        document.querySelector('#statusDropdown').classList.remove('active');
 
         // Trigger filter event
         const event = new Event('change');
-        document.getElementById('statusFilterValue').dispatchEvent(event);
+        document.querySelector('#statusFilterValue').dispatchEvent(event);
       }
 
-      // Select Category
       function selectCategory(value, text) {
-        document.getElementById('categoryDisplay').querySelector('span').textContent = text;
-        document.getElementById('categoryFilterValue').value = value;
-        document.getElementById('categoryDisplay').classList.remove('active');
-        document.getElementById('categoryDropdown').classList.remove('active');
+        document.querySelector('#categoryDisplay').querySelector('span').textContent = text;
+        document.querySelector('#categoryFilterValue').value = value;
+        document.querySelector('#categoryDisplay').classList.remove('active');
+        document.querySelector('#categoryDropdown').classList.remove('active');
 
         // Trigger filter event
         const event = new Event('change');
-        document.getElementById('categoryFilterValue').dispatchEvent(event);
+        document.querySelector('#categoryFilterValue').dispatchEvent(event);
       }
 
-      // Select Department
       function selectDepartment(value, text) {
-        document.getElementById('departmentDisplay').querySelector('span').textContent = text;
-        document.getElementById('departmentFilterValue').value = value;
-        document.getElementById('departmentDisplay').classList.remove('active');
-        document.getElementById('departmentDropdown').classList.remove('active');
+        document.querySelector('#departmentDisplay').querySelector('span').textContent = text;
+        document.querySelector('#departmentFilterValue').value = value;
+        document.querySelector('#departmentDisplay').classList.remove('active');
+        document.querySelector('#departmentDropdown').classList.remove('active');
 
         // Trigger filter event
         const event = new Event('change');
-        document.getElementById('departmentFilterValue').dispatchEvent(event);
+        document.querySelector('#departmentFilterValue').dispatchEvent(event);
       }
 
-      // Select KVP Category
       function selectKvpCategory(value, text) {
-        document.getElementById('kvpCategoryDisplay').querySelector('span').textContent = text;
-        document.getElementById('kvpCategoryValue').value = value;
-        document.getElementById('kvpCategoryDisplay').classList.remove('active');
-        document.getElementById('kvpCategoryDropdown').classList.remove('active');
+        document.querySelector('#kvpCategoryDisplay').querySelector('span').textContent = text;
+        document.querySelector('#kvpCategoryValue').value = value;
+        document.querySelector('#kvpCategoryDisplay').classList.remove('active');
+        document.querySelector('#kvpCategoryDropdown').classList.remove('active');
       }
 
-      // Select KVP Priority
       function selectKvpPriority(value, text) {
-        document.getElementById('kvpPriorityDisplay').querySelector('span').textContent = text;
-        document.getElementById('kvpPriorityValue').value = value;
-        document.getElementById('kvpPriorityDisplay').classList.remove('active');
-        document.getElementById('kvpPriorityDropdown').classList.remove('active');
+        document.querySelector('#kvpPriorityDisplay').querySelector('span').textContent = text;
+        document.querySelector('#kvpPriorityValue').value = value;
+        document.querySelector('#kvpPriorityDisplay').classList.remove('active');
+        document.querySelector('#kvpPriorityDropdown').classList.remove('active');
       }
 
-      // Click outside to close
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-        }
-      });
-
-      // Simple modal functions as fallback
-      window.showCreateModal = function () {
-        const modal = document.getElementById('createKvpModal');
+      function showCreateModal() {
+        const modal = document.querySelector('#createKvpModal');
         if (modal) {
           modal.classList.add('active');
         }
-      };
+      }
 
-      window.hideCreateModal = function () {
-        const modal = document.getElementById('createKvpModal');
+      function hideCreateModal() {
+        const modal = document.querySelector('#createKvpModal');
         if (modal) {
           modal.classList.remove('active');
           // Clear selected photos when closing modal
           selectedPhotos = [];
           window.selectedPhotos = selectedPhotos;
-          const preview = document.getElementById('photoPreview');
-          if (preview) preview.innerHTML = '';
+          const preview = document.querySelector('#photoPreview');
+          if (preview) preview.innerHTML = ''; // Safe here because we control the content
         }
-      };
-
-      // Click outside modal to close
-      document.getElementById('createKvpModal')?.addEventListener('click', function (e) {
-        if (e.target === this) {
-          window.hideCreateModal();
-        }
-      });
-
-      // Photo upload handling
-      let selectedPhotos = [];
-      window.selectedPhotos = selectedPhotos; // Make it globally accessible
+      }
 
       function handlePhotoSelection(input) {
         const files = Array.from(input.files);
@@ -1225,7 +1349,7 @@
 
         validFiles.forEach((file) => {
           selectedPhotos.push(file);
-          window.selectedPhotos = selectedPhotos; // Keep window reference updated
+          window.selectedPhotos = selectedPhotos;
           displayPhotoPreview(file, selectedPhotos.length - 1);
         });
 
@@ -1236,35 +1360,47 @@
       function displayPhotoPreview(file, index) {
         const reader = new FileReader();
         reader.onload = function (e) {
-          const preview = document.getElementById('photoPreview');
+          const preview = document.querySelector('#photoPreview');
           const item = document.createElement('div');
           item.className = 'photo-preview-item';
-          item.innerHTML = `
-            <img src="${e.target.result}" alt="Vorschau">
-            <button class="remove-photo" onclick="removePhoto(${index})" type="button">&times;</button>
-          `;
-          preview.appendChild(item);
+
+          // Create elements safely without innerHTML
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          img.alt = 'Vorschau';
+
+          const removeBtn = document.createElement('button');
+          removeBtn.className = 'remove-photo';
+          removeBtn.setAttribute('data-action', 'remove-photo');
+          removeBtn.setAttribute('data-index', index.toString());
+          removeBtn.type = 'button';
+          removeBtn.textContent = '×';
+
+          item.append(img);
+          item.append(removeBtn);
+          preview.append(item);
         };
         reader.readAsDataURL(file);
       }
 
       function removePhoto(index) {
         selectedPhotos.splice(index, 1);
-        window.selectedPhotos = selectedPhotos; // Keep window reference updated
+        window.selectedPhotos = selectedPhotos;
         refreshPhotoPreview();
       }
 
       function refreshPhotoPreview() {
-        const preview = document.getElementById('photoPreview');
-        preview.innerHTML = '';
+        const preview = document.querySelector('#photoPreview');
+        preview.innerHTML = ''; // Safe - we're just clearing
         selectedPhotos.forEach((file, index) => {
           displayPhotoPreview(file, index);
         });
       }
 
-      // Make functions globally available
-      window.handlePhotoSelection = handlePhotoSelection;
-      window.removePhoto = removePhoto;
+      // Make functions globally available for TypeScript module
+      window.showCreateModal = showCreateModal;
+      window.hideCreateModal = hideCreateModal;
+      window.selectKvpCategory = selectKvpCategory;
     </script>
 
     <!-- Scripts -->
@@ -1272,6 +1408,7 @@
     <script type="module" src="/scripts/utils/modal-manager.ts"></script>
     <script type="module" src="/scripts/pages/kvp.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
 
     <!-- Breadcrumb Component -->
     <script type="module">

@@ -1,31 +1,26 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Blackboard Model
  * Handles database operations for the blackboard entries and confirmations
  */
-
-import {
-  query as executeQuery,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger";
-
-import User from "./user";
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
+import { logger } from '../utils/logger';
+import User from './user';
 
 // Database interfaces
 interface DbBlackboardEntry extends RowDataPacket {
   id: number;
   tenant_id: number;
   title: string;
-  content: string | Buffer | { type: "Buffer"; data: number[] };
-  org_level: "company" | "department" | "team";
+  content: string | Buffer | { type: 'Buffer'; data: number[] };
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   author_id: number;
   expires_at?: Date | null;
-  priority: "low" | "medium" | "high" | "urgent";
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   color: string;
   requires_confirmation: boolean | number;
-  status: "active" | "archived";
+  status: 'active' | 'archived';
   created_at: Date;
   updated_at: Date;
   // Extended fields from joins
@@ -69,13 +64,13 @@ interface DbConfirmationUser extends RowDataPacket {
 }
 
 export interface EntryQueryOptions {
-  status?: "active" | "archived";
-  filter?: "all" | "company" | "department" | "team";
+  status?: 'active' | 'archived';
+  filter?: 'all' | 'company' | 'department' | 'team';
   search?: string;
   page?: number;
   limit?: number;
   sortBy?: string;
-  sortDir?: "ASC" | "DESC";
+  sortDir?: 'ASC' | 'DESC';
   priority?: string;
   requiresConfirmation?: boolean;
 }
@@ -84,11 +79,11 @@ export interface EntryCreateData {
   tenant_id: number;
   title: string;
   content: string;
-  org_level: "company" | "department" | "team";
+  org_level: 'company' | 'department' | 'team';
   org_id: number | null;
   author_id: number;
   expires_at?: Date | null;
-  priority?: "low" | "medium" | "high" | "urgent";
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   color?: string;
   tags?: string[];
   requires_confirmation?: boolean;
@@ -97,12 +92,12 @@ export interface EntryCreateData {
 export interface EntryUpdateData {
   title?: string;
   content?: string;
-  org_level?: "company" | "department" | "team";
+  org_level?: 'company' | 'department' | 'team';
   org_id?: number;
   expires_at?: Date | null;
-  priority?: "low" | "medium" | "high" | "urgent";
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
   color?: string;
-  status?: "active" | "archived";
+  status?: 'active' | 'archived';
   requires_confirmation?: boolean;
   tags?: string[];
   author_id?: number;
@@ -112,35 +107,33 @@ interface CountResult extends RowDataPacket {
   total: number;
 }
 
-export class Blackboard {
-  /**
-   * Get all blackboard entries visible to the user
-   */
-  static async getAllEntries(
-    tenant_id: number,
-    userId: number,
-    options: EntryQueryOptions = {},
-  ) {
-    try {
-      const {
-        status = "active",
-        filter = "all",
-        search = "",
-        page = 1,
-        limit = 10,
-        sortBy = "created_at",
-        sortDir = "DESC",
-        priority,
-        requiresConfirmation,
-      } = options;
+/**
+ * Get all blackboard entries visible to the user
+ */
+export async function getAllEntries(
+  tenant_id: number,
+  userId: number,
+  options: EntryQueryOptions = {},
+): Promise<unknown> {
+  try {
+    const {
+      status = 'active',
+      filter = 'all',
+      search = '',
+      page = 1,
+      limit = 10,
+      sortBy = 'created_at',
+      sortDir = 'DESC',
+      priority,
+      requiresConfirmation,
+    } = options;
 
-      // Determine user's department and team for access control
-      const { role, departmentId, teamId } =
-        await User.getUserDepartmentAndTeam(userId);
+    // Determine user's department and team for access control
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-      // Build base query
-      let query = `
-        SELECT e.*, 
+    // Build base query
+    let query = `
+        SELECT e.*,
                u.username as author_name,
                u.first_name as author_first_name,
                u.last_name as author_last_name,
@@ -153,159 +146,146 @@ export class Blackboard {
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-      const queryParams: unknown[] = [userId, tenant_id, status];
+    const queryParams: unknown[] = [userId, tenant_id, status];
 
-      // Apply org level filter
-      if (filter !== "all") {
-        query += " AND e.org_level = ?";
-        queryParams.push(filter);
-      }
+    // Apply org level filter
+    if (filter !== 'all') {
+      query += ' AND e.org_level = ?';
+      queryParams.push(filter);
+    }
 
-      // Apply access control for non-admin users
-      if (role !== "admin" && role !== "root") {
-        query += ` AND (
-          e.org_level = 'company' OR 
+    // Apply access control for non-admin users
+    if (role !== 'admin' && role !== 'root') {
+      query += ` AND (
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.org_id = ?) OR
           (e.org_level = 'team' AND e.org_id = ?)
         )`;
-        queryParams.push(departmentId ?? 0, teamId ?? 0);
-      }
+      queryParams.push(departmentId ?? 0, teamId ?? 0);
+    }
 
-      // Apply search filter
-      if (search) {
-        query += " AND (e.title LIKE ? OR e.content LIKE ?)";
-        const searchTerm = `%${search}%`;
-        queryParams.push(searchTerm, searchTerm);
-      }
+    // Apply search filter
+    if (search !== '') {
+      query += ' AND (e.title LIKE ? OR e.content LIKE ?)';
+      const searchTerm = `%${search}%`;
+      queryParams.push(searchTerm, searchTerm);
+    }
 
-      // Apply priority filter
-      if (priority) {
-        query += " AND e.priority = ?";
-        queryParams.push(priority);
-      }
+    // Apply priority filter
+    if (priority !== undefined && priority !== '') {
+      query += ' AND e.priority = ?';
+      queryParams.push(priority);
+    }
 
-      // Apply requires confirmation filter
-      if (requiresConfirmation !== undefined) {
-        query += " AND e.requires_confirmation = ?";
-        queryParams.push(requiresConfirmation ? 1 : 0);
-      }
+    // Apply requires confirmation filter
+    if (requiresConfirmation !== undefined) {
+      query += ' AND e.requires_confirmation = ?';
+      queryParams.push(requiresConfirmation ? 1 : 0);
+    }
 
-      // Apply sorting
-      query += ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}`;
+    // Apply sorting
+    query += ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}`;
 
-      // Apply pagination
-      const offset = (page - 1) * limit;
-      query += " LIMIT ? OFFSET ?";
-      queryParams.push(parseInt(limit.toString(), 10), offset);
+    // Apply pagination
+    const offset = (page - 1) * limit;
+    query += ' LIMIT ? OFFSET ?';
+    queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
-      // Execute query
-      const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        query,
-        queryParams,
+    // Execute query
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(query, queryParams);
+
+    // Debug log when no entries found
+    if (entries.length === 0 && status === 'active') {
+      logger.warn(
+        `[Blackboard.getAllEntries] No entries found for user ${userId} (role: ${String(role)})`,
       );
+      logger.debug(`Query params: tenant_id=${tenant_id}, status=${status}, filter=${filter}`);
+      logger.debug(`User access: departmentId=${String(departmentId)}, teamId=${String(teamId)}`);
+    }
 
-      // Debug log when no entries found
-      if (entries.length === 0 && status === "active") {
-        logger.warn(
-          `[Blackboard.getAllEntries] No entries found for user ${userId} (role: ${role})`,
-        );
-        logger.debug(
-          `Query params: tenant_id=${tenant_id}, status=${status}, filter=${filter}`,
-        );
-        logger.debug(
-          `User access: departmentId=${departmentId}, teamId=${teamId}`,
-        );
+    // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries
+    for (const entry of entries) {
+      if (Buffer.isBuffer(entry.content)) {
+        entry.content = entry.content.toString('utf8');
+      } else if (
+        typeof entry.content === 'object' &&
+        'type' in entry.content &&
+        Array.isArray(entry.content.data)
+      ) {
+        entry.content = Buffer.from(entry.content.data).toString('utf8');
       }
 
-      // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries
-      for (const entry of entries) {
-        if (entry.content && Buffer.isBuffer(entry.content)) {
-          entry.content = entry.content.toString("utf8");
-        } else if (
-          entry.content &&
-          typeof entry.content === "object" &&
-          "type" in entry.content &&
-          entry.content.type === "Buffer" &&
-          Array.isArray(entry.content.data)
-        ) {
-          entry.content = Buffer.from(entry.content.data).toString("utf8");
-        }
-
-        // Load attachments for entries with any attachments
-        if (entry.attachment_count && entry.attachment_count > 0) {
-          entry.attachments = await this.getEntryAttachments(entry.id);
-        }
+      // Load attachments for entries with any attachments
+      if (entry.attachment_count != null && entry.attachment_count > 0) {
+        entry.attachments = await getEntryAttachments(entry.id);
       }
+    }
 
-      // Count total entries for pagination
-      let countQuery = `
-        SELECT COUNT(*) as total 
+    // Count total entries for pagination
+    let countQuery = `
+        SELECT COUNT(*) as total
         FROM blackboard_entries e
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-      const countParams: unknown[] = [tenant_id, status];
+    const countParams: unknown[] = [tenant_id, status];
 
-      // Apply org level filter for count
-      if (filter !== "all") {
-        countQuery += " AND e.org_level = ?";
-        countParams.push(filter);
-      }
+    // Apply org level filter for count
+    if (filter !== 'all') {
+      countQuery += ' AND e.org_level = ?';
+      countParams.push(filter);
+    }
 
-      // Apply access control for non-admin users for count
-      if (role !== "admin" && role !== "root") {
-        countQuery += ` AND (
-          e.org_level = 'company' OR 
+    // Apply access control for non-admin users for count
+    if (role !== 'admin' && role !== 'root') {
+      countQuery += ` AND (
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.org_id = ?) OR
           (e.org_level = 'team' AND e.org_id = ?)
         )`;
-        countParams.push(departmentId ?? 0, teamId ?? 0);
-      }
-
-      // Apply search filter for count
-      if (search) {
-        countQuery += " AND (e.title LIKE ? OR e.content LIKE ?)";
-        const searchTerm = `%${search}%`;
-        countParams.push(searchTerm, searchTerm);
-      }
-
-      const [countResult] = await executeQuery<CountResult[]>(
-        countQuery,
-        countParams,
-      );
-      const totalEntries = countResult[0].total;
-
-      return {
-        entries,
-        pagination: {
-          total: totalEntries,
-          page: parseInt(page.toString(), 10),
-          limit: parseInt(limit.toString(), 10),
-          totalPages: Math.ceil(totalEntries / limit),
-        },
-      };
-    } catch (error) {
-      logger.error("Error in getAllEntries:", error);
-      throw error;
+      countParams.push(departmentId ?? 0, teamId ?? 0);
     }
+
+    // Apply search filter for count
+    if (search !== '') {
+      countQuery += ' AND (e.title LIKE ? OR e.content LIKE ?)';
+      const searchTerm = `%${search}%`;
+      countParams.push(searchTerm, searchTerm);
+    }
+
+    const [countResult] = await executeQuery<CountResult[]>(countQuery, countParams);
+    const totalEntries = countResult[0].total;
+
+    return {
+      entries,
+      pagination: {
+        total: totalEntries,
+        page: Number.parseInt(page.toString(), 10),
+        limit: Number.parseInt(limit.toString(), 10),
+        totalPages: Math.ceil(totalEntries / limit),
+      },
+    };
+  } catch (error: unknown) {
+    logger.error('Error in getAllEntries:', error);
+    throw error;
   }
+}
 
-  /**
-   * Get a specific blackboard entry by ID
-   */
-  static async getEntryById(
-    id: number,
-    tenant_id: number,
-    userId: number,
-  ): Promise<DbBlackboardEntry | null> {
-    try {
-      // Determine user's department and team for access control
-      const { role, departmentId, teamId } =
-        await User.getUserDepartmentAndTeam(userId);
+/**
+ * Get a specific blackboard entry by ID
+ */
+export async function getEntryById(
+  id: number,
+  tenant_id: number,
+  userId: number,
+): Promise<DbBlackboardEntry | null> {
+  try {
+    // Determine user's department and team for access control
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-      // Query the entry with confirmation status
-      const query = `
-        SELECT e.*, 
+    // Query the entry with confirmation status
+    const query = `
+        SELECT e.*,
                u.username as author_name,
                u.first_name as author_first_name,
                u.last_name as author_last_name,
@@ -318,324 +298,296 @@ export class Blackboard {
         WHERE e.id = ? AND e.tenant_id = ?
       `;
 
-      const [entries] = await executeQuery<DbBlackboardEntry[]>(query, [
-        userId,
-        id,
-        tenant_id,
-      ]);
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(query, [userId, id, tenant_id]);
 
-      if (entries.length === 0) {
-        return null;
-      }
-
-      const entry = entries[0];
-
-      // Konvertiere Buffer-Inhalte zu Strings
-      if (entry.content && Buffer.isBuffer(entry.content)) {
-        entry.content = entry.content.toString("utf8");
-      } else if (
-        entry.content &&
-        typeof entry.content === "object" &&
-        "type" in entry.content &&
-        entry.content.type === "Buffer" &&
-        Array.isArray(entry.content.data)
-      ) {
-        entry.content = Buffer.from(entry.content.data).toString("utf8");
-      }
-
-      // Check access control for non-admin users
-      if (role !== "admin" && role !== "root") {
-        const hasAccess =
-          entry.org_level === "company" ||
-          (entry.org_level === "department" && entry.org_id === departmentId) ||
-          (entry.org_level === "team" && entry.org_id === teamId);
-
-        if (!hasAccess) {
-          return null; // User doesn't have access to this entry
-        }
-      }
-
-      // Load attachments for the entry
-      entry.attachments = await this.getEntryAttachments(id);
-
-      // Load tags for the entry
-      entry.tags = await this.getEntryTags(id);
-
-      return entry;
-    } catch (error) {
-      logger.error("Error in getEntryById:", error);
-      throw error;
+    if (entries.length === 0) {
+      return null;
     }
+
+    const entry = entries[0];
+
+    // Konvertiere Buffer-Inhalte zu Strings
+    if (Buffer.isBuffer(entry.content)) {
+      entry.content = entry.content.toString('utf8');
+    } else if (
+      typeof entry.content === 'object' &&
+      'type' in entry.content &&
+      Array.isArray(entry.content.data)
+    ) {
+      entry.content = Buffer.from(entry.content.data).toString('utf8');
+    }
+
+    // Check access control for non-admin users
+    if (role !== 'admin' && role !== 'root') {
+      const hasAccess =
+        entry.org_level === 'company' ||
+        (entry.org_level === 'department' && entry.org_id === departmentId) ||
+        (entry.org_level === 'team' && entry.org_id === teamId);
+
+      if (!hasAccess) {
+        return null; // User doesn't have access to this entry
+      }
+    }
+
+    // Load attachments for the entry
+    entry.attachments = await getEntryAttachments(id);
+
+    // Load tags for the entry
+    entry.tags = await getEntryTags(id);
+
+    return entry;
+  } catch (error: unknown) {
+    logger.error('Error in getEntryById:', error);
+    throw error;
   }
+}
 
-  /**
-   * Create a new blackboard entry
-   */
-  static async createEntry(
-    entryData: EntryCreateData,
-  ): Promise<DbBlackboardEntry | null> {
-    try {
-      const {
-        tenant_id,
-        title,
-        content,
-        org_level,
-        org_id,
-        author_id,
-        expires_at = null,
-        priority = "medium",
-        color = "blue",
-        tags = [],
-        requires_confirmation = false,
-      } = entryData;
+/**
+ * Create a new blackboard entry
+ */
+export async function createEntry(entryData: EntryCreateData): Promise<DbBlackboardEntry | null> {
+  try {
+    const {
+      tenant_id,
+      title,
+      content,
+      org_level,
+      org_id,
+      author_id,
+      expires_at = null,
+      priority = 'medium',
+      color = 'blue',
+      tags = [],
+      requires_confirmation = false,
+    } = entryData;
 
-      // Validate required fields
-      if (!tenant_id || !title || !content || !org_level || !author_id) {
-        throw new Error("Missing required fields");
-      }
+    // Validate required fields
+    if (!tenant_id || !title || !content) {
+      throw new Error('Missing required fields');
+    }
 
-      // Validate org_id based on org_level
-      if (org_level !== "company" && !org_id) {
-        throw new Error(
-          "org_id is required for department or team level entries",
-        );
-      }
+    // Validate org_id based on org_level
+    if (org_level !== 'company' && org_id == null) {
+      throw new Error('org_id is required for department or team level entries');
+    }
 
-      // Insert new entry
-      const query = `
-        INSERT INTO blackboard_entries 
+    // Insert new entry
+    const query = `
+        INSERT INTO blackboard_entries
         (tenant_id, title, content, org_level, org_id, author_id, expires_at, priority, color, requires_confirmation)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      const [result] = await executeQuery<ResultSetHeader>(query, [
-        tenant_id,
-        title,
-        content,
-        org_level,
-        org_id,
-        author_id,
-        expires_at,
-        priority,
-        color,
-        requires_confirmation ? 1 : 0,
-      ]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [
+      tenant_id,
+      title,
+      content,
+      org_level,
+      org_id,
+      author_id,
+      expires_at,
+      priority,
+      color,
+      requires_confirmation ? 1 : 0,
+    ]);
 
-      // Handle tags if provided
-      if (tags && tags.length > 0) {
-        await this.addTagsToEntry(result.insertId, tags, tenant_id);
-      }
-
-      // Get the created entry
-      const createdEntry = await this.getEntryById(
-        result.insertId,
-        tenant_id,
-        author_id,
-      );
-      return createdEntry;
-    } catch (error) {
-      logger.error("Error in createEntry:", error);
-      throw error;
+    // Handle tags if provided
+    if (tags.length > 0) {
+      await addTagsToEntry(result.insertId, tags, tenant_id);
     }
+
+    // Get the created entry
+    return await getEntryById(result.insertId, tenant_id, author_id);
+  } catch (error: unknown) {
+    logger.error('Error in createEntry:', error);
+    throw error;
   }
+}
 
-  /**
-   * Update a blackboard entry
-   */
-  static async updateEntry(
-    id: number,
-    entryData: EntryUpdateData,
-    tenant_id: number,
-  ): Promise<DbBlackboardEntry | null> {
-    try {
-      const {
-        title,
-        content,
-        org_level,
-        org_id,
-        expires_at,
-        priority,
-        color,
-        status,
-        requires_confirmation,
-      } = entryData;
+/**
+ * Update a blackboard entry
+ */
+export async function updateEntry(
+  id: number,
+  entryData: EntryUpdateData,
+  tenant_id: number,
+): Promise<DbBlackboardEntry | null> {
+  try {
+    const {
+      title,
+      content,
+      org_level,
+      org_id,
+      expires_at,
+      priority,
+      color,
+      status,
+      requires_confirmation,
+    } = entryData;
 
-      // Build query dynamically based on provided fields
-      let query = "UPDATE blackboard_entries SET updated_at = NOW()";
-      const queryParams: unknown[] = [];
+    // Build query dynamically based on provided fields
+    let query = 'UPDATE blackboard_entries SET updated_at = NOW()';
+    const queryParams: unknown[] = [];
 
-      if (title !== undefined) {
-        query += ", title = ?";
-        queryParams.push(title);
-      }
-
-      if (content !== undefined) {
-        query += ", content = ?";
-        queryParams.push(content);
-      }
-
-      if (org_level !== undefined) {
-        query += ", org_level = ?";
-        queryParams.push(org_level);
-      }
-
-      if (org_id !== undefined) {
-        query += ", org_id = ?";
-        queryParams.push(org_id);
-      }
-
-      if (expires_at !== undefined) {
-        query += ", expires_at = ?";
-        queryParams.push(expires_at);
-      }
-
-      if (priority !== undefined) {
-        query += ", priority = ?";
-        queryParams.push(priority);
-      }
-
-      if (color !== undefined) {
-        query += ", color = ?";
-        queryParams.push(color);
-      }
-
-      if (status !== undefined) {
-        query += ", status = ?";
-        queryParams.push(status);
-      }
-
-      if (requires_confirmation !== undefined) {
-        query += ", requires_confirmation = ?";
-        queryParams.push(requires_confirmation ? 1 : 0);
-      }
-
-      // Finish query
-      query += " WHERE id = ? AND tenant_id = ?";
-      queryParams.push(id, tenant_id);
-
-      // Execute update
-      await executeQuery(query, queryParams);
-
-      // Handle tags if provided
-      if (entryData.tags !== undefined) {
-        // Remove existing tags
-        await executeQuery(
-          "DELETE FROM blackboard_entry_tags WHERE entry_id = ?",
-          [id],
-        );
-
-        // Add new tags if any
-        if (entryData.tags && entryData.tags.length > 0) {
-          await this.addTagsToEntry(id, entryData.tags, tenant_id);
-        }
-      }
-
-      // Get the updated entry
-      const updatedEntry = await this.getEntryById(
-        id,
-        tenant_id,
-        entryData.author_id ?? 0,
-      );
-      return updatedEntry;
-    } catch (error) {
-      logger.error("Error in updateEntry:", error);
-      throw error;
+    if (title !== undefined) {
+      query += ', title = ?';
+      queryParams.push(title);
     }
-  }
 
-  /**
-   * Delete a blackboard entry
-   */
-  static async deleteEntry(id: number, tenant_id: number): Promise<boolean> {
-    try {
-      // Delete entry
-      const query =
-        "DELETE FROM blackboard_entries WHERE id = ? AND tenant_id = ?";
-      const [result] = await executeQuery<ResultSetHeader>(query, [
-        id,
-        tenant_id,
-      ]);
-
-      return result.affectedRows > 0;
-    } catch (error) {
-      logger.error("Error in deleteEntry:", error);
-      throw error;
+    if (content !== undefined) {
+      query += ', content = ?';
+      queryParams.push(content);
     }
-  }
 
-  /**
-   * Confirm a blackboard entry as read
-   */
-  static async confirmEntry(entryId: number, userId: number): Promise<boolean> {
-    try {
-      // Get user's tenant_id
-      interface UserRow extends RowDataPacket {
-        tenant_id: number;
-      }
-      const [users] = await executeQuery<UserRow[]>(
-        "SELECT tenant_id FROM users WHERE id = ?",
-        [userId],
-      );
-      if (users.length === 0) {
-        return false; // User doesn't exist
-      }
-      const userTenantId = users[0].tenant_id;
-
-      // Check if entry exists, requires confirmation, and belongs to same tenant
-      const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        "SELECT * FROM blackboard_entries WHERE id = ? AND tenant_id = ? AND requires_confirmation = 1",
-        [entryId, userTenantId],
-      );
-
-      if (entries.length === 0) {
-        return false; // Entry doesn't exist, doesn't require confirmation, or wrong tenant
-      }
-
-      // Check if already confirmed
-      const [confirmations] = await executeQuery<RowDataPacket[]>(
-        "SELECT * FROM blackboard_confirmations WHERE entry_id = ? AND user_id = ?",
-        [entryId, userId],
-      );
-
-      if (confirmations.length > 0) {
-        return true; // Already confirmed
-      }
-
-      // Add confirmation
-      await executeQuery(
-        "INSERT INTO blackboard_confirmations (tenant_id, entry_id, user_id) VALUES (?, ?, ?)",
-        [userTenantId, entryId, userId],
-      );
-
-      return true;
-    } catch (error) {
-      logger.error("Error in confirmEntry:", error);
-      throw error;
+    if (org_level !== undefined) {
+      query += ', org_level = ?';
+      queryParams.push(org_level);
     }
-  }
 
-  /**
-   * Get confirmation status for an entry
-   */
-  static async getConfirmationStatus(
-    entryId: number,
-    tenant_id: number,
-  ): Promise<DbConfirmationUser[]> {
-    try {
-      // Get the entry first
-      const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        "SELECT * FROM blackboard_entries WHERE id = ? AND tenant_id = ?",
-        [entryId, tenant_id],
-      );
+    if (org_id !== undefined) {
+      query += ', org_id = ?';
+      queryParams.push(org_id);
+    }
 
-      if (entries.length === 0 || !entries[0].requires_confirmation) {
-        return [];
+    if (expires_at !== undefined) {
+      query += ', expires_at = ?';
+      queryParams.push(expires_at);
+    }
+
+    if (priority !== undefined) {
+      query += ', priority = ?';
+      queryParams.push(priority);
+    }
+
+    if (color !== undefined) {
+      query += ', color = ?';
+      queryParams.push(color);
+    }
+
+    if (status !== undefined) {
+      query += ', status = ?';
+      queryParams.push(status);
+    }
+
+    if (requires_confirmation !== undefined) {
+      query += ', requires_confirmation = ?';
+      queryParams.push(requires_confirmation ? 1 : 0);
+    }
+
+    // Finish query
+    query += ' WHERE id = ? AND tenant_id = ?';
+    queryParams.push(id, tenant_id);
+
+    // Execute update
+    await executeQuery(query, queryParams);
+
+    // Handle tags if provided
+    if (entryData.tags !== undefined) {
+      // Remove existing tags
+      await executeQuery('DELETE FROM blackboard_entry_tags WHERE entry_id = ?', [id]);
+
+      // Add new tags if any
+      if (entryData.tags.length > 0) {
+        await addTagsToEntry(id, entryData.tags, tenant_id);
       }
+    }
 
-      const entry = entries[0];
+    // Get the updated entry
+    return await getEntryById(id, tenant_id, entryData.author_id ?? 0);
+  } catch (error: unknown) {
+    logger.error('Error in updateEntry:', error);
+    throw error;
+  }
+}
 
-      // Get all users who should see this entry
-      let usersQuery = `
+/**
+ * Delete a blackboard entry
+ */
+export async function deleteEntry(id: number, tenant_id: number): Promise<boolean> {
+  try {
+    // Delete entry
+    const query = 'DELETE FROM blackboard_entries WHERE id = ? AND tenant_id = ?';
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenant_id]);
+
+    return result.affectedRows > 0;
+  } catch (error: unknown) {
+    logger.error('Error in deleteEntry:', error);
+    throw error;
+  }
+}
+
+/**
+ * Confirm a blackboard entry as read
+ */
+export async function confirmEntry(entryId: number, userId: number): Promise<boolean> {
+  try {
+    // Get user's tenant_id
+    interface UserRow extends RowDataPacket {
+      tenant_id: number;
+    }
+    const [users] = await executeQuery<UserRow[]>('SELECT tenant_id FROM users WHERE id = ?', [
+      userId,
+    ]);
+    if (users.length === 0) {
+      return false; // User doesn't exist
+    }
+    const userTenantId = users[0].tenant_id;
+
+    // Check if entry exists, requires confirmation, and belongs to same tenant
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(
+      'SELECT * FROM blackboard_entries WHERE id = ? AND tenant_id = ? AND requires_confirmation = 1',
+      [entryId, userTenantId],
+    );
+
+    if (entries.length === 0) {
+      return false; // Entry doesn't exist, doesn't require confirmation, or wrong tenant
+    }
+
+    // Check if already confirmed
+    const [confirmations] = await executeQuery<RowDataPacket[]>(
+      'SELECT * FROM blackboard_confirmations WHERE entry_id = ? AND user_id = ?',
+      [entryId, userId],
+    );
+
+    if (confirmations.length > 0) {
+      return true; // Already confirmed
+    }
+
+    // Add confirmation
+    await executeQuery(
+      'INSERT INTO blackboard_confirmations (tenant_id, entry_id, user_id) VALUES (?, ?, ?)',
+      [userTenantId, entryId, userId],
+    );
+
+    return true;
+  } catch (error: unknown) {
+    logger.error('Error in confirmEntry:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get confirmation status for an entry
+ */
+export async function getConfirmationStatus(
+  entryId: number,
+  tenant_id: number,
+): Promise<DbConfirmationUser[]> {
+  try {
+    // Get the entry first
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(
+      'SELECT * FROM blackboard_entries WHERE id = ? AND tenant_id = ?',
+      [entryId, tenant_id],
+    );
+
+    if (entries.length === 0 || entries[0].requires_confirmation !== 1) {
+      return [];
+    }
+
+    const entry = entries[0];
+
+    // Get all users who should see this entry
+    let usersQuery = `
         SELECT u.id, u.username, u.email, u.first_name, u.last_name,
                CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as confirmed,
                c.confirmed_at
@@ -644,45 +596,41 @@ export class Blackboard {
         WHERE u.tenant_id = ?
       `;
 
-      const queryParams: unknown[] = [entryId, tenant_id];
+    const queryParams: unknown[] = [entryId, tenant_id];
 
-      // Filter by org level
-      if (entry.org_level === "department") {
-        usersQuery += " AND u.department_id = ?";
-        queryParams.push(entry.org_id);
-      } else if (entry.org_level === "team") {
-        usersQuery += " AND u.team_id = ?";
-        queryParams.push(entry.org_id);
-      }
-
-      const [users] = await executeQuery<DbConfirmationUser[]>(
-        usersQuery,
-        queryParams,
-      );
-
-      return users;
-    } catch (error) {
-      logger.error("Error in getConfirmationStatus:", error);
-      throw error;
+    // Filter by org level
+    if (entry.org_level === 'department') {
+      usersQuery += ' AND u.department_id = ?';
+      queryParams.push(entry.org_id);
+    } else if (entry.org_level === 'team') {
+      usersQuery += ' AND u.team_id = ?';
+      queryParams.push(entry.org_id);
     }
+
+    const [users] = await executeQuery<DbConfirmationUser[]>(usersQuery, queryParams);
+
+    return users;
+  } catch (error: unknown) {
+    logger.error('Error in getConfirmationStatus:', error);
+    throw error;
   }
+}
 
-  /**
-   * Get dashboard entries for a user
-   */
-  static async getDashboardEntries(
-    tenant_id: number,
-    userId: number,
-    limit = 3,
-  ): Promise<DbBlackboardEntry[]> {
-    try {
-      // Get user info for access control
-      const { role, departmentId, teamId } =
-        await User.getUserDepartmentAndTeam(userId);
+/**
+ * Get dashboard entries for a user
+ */
+export async function getDashboardEntries(
+  tenant_id: number,
+  userId: number,
+  limit = 3,
+): Promise<DbBlackboardEntry[]> {
+  try {
+    // Get user info for access control
+    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-      // Build query for dashboard entries
-      let query = `
-        SELECT e.*, 
+    // Build query for dashboard entries
+    let query = `
+        SELECT e.*,
                u.username as author_name,
                u.first_name as author_first_name,
                u.last_name as author_last_name,
@@ -695,269 +643,255 @@ export class Blackboard {
         WHERE e.tenant_id = ? AND e.status = 'active'
       `;
 
-      const queryParams: unknown[] = [userId, tenant_id];
+    const queryParams: unknown[] = [userId, tenant_id];
 
-      // Apply access control for non-admin users
-      if (role !== "admin" && role !== "root") {
-        query += ` AND (
-          e.org_level = 'company' OR 
+    // Apply access control for non-admin users
+    if (role !== 'admin' && role !== 'root') {
+      query += ` AND (
+          e.org_level = 'company' OR
           (e.org_level = 'department' AND e.org_id = ?) OR
           (e.org_level = 'team' AND e.org_id = ?)
         )`;
-        queryParams.push(departmentId ?? 0, teamId ?? 0);
-      }
+      queryParams.push(departmentId ?? 0, teamId ?? 0);
+    }
 
-      // Prioritize unconfirmed entries that require confirmation
-      query += `
-        ORDER BY 
+    // Prioritize unconfirmed entries that require confirmation
+    query += `
+        ORDER BY
           (e.requires_confirmation = 1 AND c.id IS NULL) DESC,
-          e.priority = 'urgent' DESC, 
-          e.priority = 'high' DESC, 
+          e.priority = 'urgent' DESC,
+          e.priority = 'high' DESC,
           e.created_at DESC
         LIMIT ?
       `;
-      queryParams.push(parseInt(limit.toString(), 10));
+    queryParams.push(Number.parseInt(limit.toString(), 10));
 
-      const [entries] = await executeQuery<DbBlackboardEntry[]>(
-        query,
-        queryParams,
-      );
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(query, queryParams);
 
-      // Konvertiere Buffer-Inhalte zu Strings (wie in getAllEntries) und load attachments for direct attachment entries
-      for (const entry of entries) {
-        if (entry.content && Buffer.isBuffer(entry.content)) {
-          entry.content = entry.content.toString("utf8");
-        } else if (
-          entry.content &&
-          typeof entry.content === "object" &&
-          "type" in entry.content &&
-          entry.content.type === "Buffer" &&
-          Array.isArray(entry.content.data)
-        ) {
-          entry.content = Buffer.from(entry.content.data).toString("utf8");
-        }
-
-        // Load attachments for entries with any attachments
-        if (entry.attachment_count && entry.attachment_count > 0) {
-          entry.attachments = await this.getEntryAttachments(entry.id);
-        }
+    // Konvertiere Buffer-Inhalte zu Strings (wie in getAllEntries) und load attachments for direct attachment entries
+    for (const entry of entries) {
+      if (Buffer.isBuffer(entry.content)) {
+        entry.content = entry.content.toString('utf8');
+      } else if (
+        typeof entry.content === 'object' &&
+        'type' in entry.content &&
+        Array.isArray(entry.content.data)
+      ) {
+        entry.content = Buffer.from(entry.content.data).toString('utf8');
       }
 
-      return entries;
-    } catch (error) {
-      logger.error("Error in getDashboardEntries:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Add tags to an entry
-   */
-  static async addTagsToEntry(
-    entryId: number,
-    tagNames: string[],
-    tenant_id: number,
-  ): Promise<void> {
-    try {
-      for (const tagName of tagNames) {
-        // Get or create tag
-        const tagId = await this.getOrCreateTag(tagName.trim(), tenant_id);
-
-        // Link tag to entry
-        await executeQuery(
-          "INSERT IGNORE INTO blackboard_entry_tags (entry_id, tag_id) VALUES (?, ?)",
-          [entryId, tagId],
-        );
+      // Load attachments for entries with any attachments
+      if (entry.attachment_count != null && entry.attachment_count > 0) {
+        entry.attachments = await getEntryAttachments(entry.id);
       }
-    } catch (error) {
-      logger.error("Error adding tags to entry:", error);
-      throw error;
     }
+
+    return entries;
+  } catch (error: unknown) {
+    logger.error('Error in getDashboardEntries:', error);
+    throw error;
   }
+}
 
-  /**
-   * Get or create a tag
-   */
-  static async getOrCreateTag(
-    tagName: string,
-    tenant_id: number,
-  ): Promise<number> {
-    try {
-      // Check if tag exists
-      const [existingTags] = await executeQuery<DbBlackboardTag[]>(
-        "SELECT id FROM blackboard_tags WHERE name = ? AND tenant_id = ?",
-        [tagName, tenant_id],
+/**
+ * Add tags to an entry
+ */
+export async function addTagsToEntry(
+  entryId: number,
+  tagNames: string[],
+  tenant_id: number,
+): Promise<void> {
+  try {
+    for (const tagName of tagNames) {
+      // Get or create tag
+      const tagId = await getOrCreateTag(tagName.trim(), tenant_id);
+
+      // Link tag to entry
+      await executeQuery(
+        'INSERT IGNORE INTO blackboard_entry_tags (entry_id, tag_id) VALUES (?, ?)',
+        [entryId, tagId],
       );
-
-      if (existingTags.length > 0) {
-        return existingTags[0].id;
-      }
-
-      // Create new tag
-      const [result] = await executeQuery<ResultSetHeader>(
-        "INSERT INTO blackboard_tags (name, tenant_id, color) VALUES (?, ?, ?)",
-        [tagName, tenant_id, "blue"],
-      );
-
-      return result.insertId;
-    } catch (error) {
-      logger.error("Error getting or creating tag:", error);
-      throw error;
     }
+  } catch (error: unknown) {
+    logger.error('Error adding tags to entry:', error);
+    throw error;
   }
+}
 
-  /**
-   * Get all available tags for a tenant
-   */
-  static async getAllTags(tenant_id: number): Promise<DbBlackboardTag[]> {
-    try {
-      const [tags] = await executeQuery<DbBlackboardTag[]>(
-        "SELECT * FROM blackboard_tags WHERE tenant_id = ? ORDER BY name",
-        [tenant_id],
-      );
-      return tags;
-    } catch (error) {
-      logger.error("Error getting tags:", error);
-      throw error;
+/**
+ * Get or create a tag
+ */
+export async function getOrCreateTag(tagName: string, tenant_id: number): Promise<number> {
+  try {
+    // Check if tag exists
+    const [existingTags] = await executeQuery<DbBlackboardTag[]>(
+      'SELECT id FROM blackboard_tags WHERE name = ? AND tenant_id = ?',
+      [tagName, tenant_id],
+    );
+
+    if (existingTags.length > 0) {
+      return existingTags[0].id;
     }
-  }
 
-  /**
-   * Get tags for a specific entry
-   */
-  static async getEntryTags(entryId: number): Promise<DbBlackboardTag[]> {
-    try {
-      const [tags] = await executeQuery<DbBlackboardTag[]>(
-        `
+    // Create new tag
+    const [result] = await executeQuery<ResultSetHeader>(
+      'INSERT INTO blackboard_tags (name, tenant_id, color) VALUES (?, ?, ?)',
+      [tagName, tenant_id, 'blue'],
+    );
+
+    return result.insertId;
+  } catch (error: unknown) {
+    logger.error('Error getting or creating tag:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get all available tags for a tenant
+ */
+export async function getAllTags(tenant_id: number): Promise<DbBlackboardTag[]> {
+  try {
+    const [tags] = await executeQuery<DbBlackboardTag[]>(
+      'SELECT * FROM blackboard_tags WHERE tenant_id = ? ORDER BY name',
+      [tenant_id],
+    );
+    return tags;
+  } catch (error: unknown) {
+    logger.error('Error getting tags:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get tags for a specific entry
+ */
+export async function getEntryTags(entryId: number): Promise<DbBlackboardTag[]> {
+  try {
+    const [tags] = await executeQuery<DbBlackboardTag[]>(
+      `
         SELECT t.* FROM blackboard_tags t
         JOIN blackboard_entry_tags et ON t.id = et.tag_id
         WHERE et.entry_id = ?
         ORDER BY t.name
       `,
-        [entryId],
-      );
-      return tags;
-    } catch (error) {
-      logger.error("Error getting entry tags:", error);
-      throw error;
-    }
+      [entryId],
+    );
+    return tags;
+  } catch (error: unknown) {
+    logger.error('Error getting entry tags:', error);
+    throw error;
   }
+}
 
-  /**
-   * Add attachment to blackboard entry
-   */
-  static async addAttachment(
-    entryId: number,
-    attachment: {
-      filename: string;
-      originalName: string;
-      fileSize: number;
-      mimeType: string;
-      filePath: string;
-      uploadedBy: number;
-    },
-  ): Promise<number> {
-    try {
-      const [result] = await executeQuery<ResultSetHeader>(
-        `INSERT INTO blackboard_attachments 
-         (entry_id, filename, original_name, file_size, mime_type, file_path, uploaded_by) 
+/**
+ * Add attachment to blackboard entry
+ */
+export async function addAttachment(
+  entryId: number,
+  attachment: {
+    filename: string;
+    originalName: string;
+    fileSize: number;
+    mimeType: string;
+    filePath: string;
+    uploadedBy: number;
+  },
+): Promise<number> {
+  try {
+    const [result] = await executeQuery<ResultSetHeader>(
+      `INSERT INTO blackboard_attachments
+         (entry_id, filename, original_name, file_size, mime_type, file_path, uploaded_by)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          entryId,
-          attachment.filename,
-          attachment.originalName,
-          attachment.fileSize,
-          attachment.mimeType,
-          attachment.filePath,
-          attachment.uploadedBy,
-        ],
-      );
+      [
+        entryId,
+        attachment.filename,
+        attachment.originalName,
+        attachment.fileSize,
+        attachment.mimeType,
+        attachment.filePath,
+        attachment.uploadedBy,
+      ],
+    );
 
-      // Note: attachment_count is calculated dynamically in SELECT queries, not stored
+    // Note: attachment_count is calculated dynamically in SELECT queries, not stored
 
-      return result.insertId;
-    } catch (error) {
-      logger.error("Error adding attachment:", error);
-      throw error;
-    }
+    return result.insertId;
+  } catch (error: unknown) {
+    logger.error('Error adding attachment:', error);
+    throw error;
   }
+}
 
-  /**
-   * Get attachments for an entry
-   */
-  static async getEntryAttachments(
-    entryId: number,
-  ): Promise<DbBlackboardAttachment[]> {
-    try {
-      const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
-        `SELECT a.*, u.username as uploader_name 
+/**
+ * Get attachments for an entry
+ */
+export async function getEntryAttachments(entryId: number): Promise<DbBlackboardAttachment[]> {
+  try {
+    const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
+      `SELECT a.*, u.username as uploader_name
          FROM blackboard_attachments a
          LEFT JOIN users u ON a.uploaded_by = u.id
          WHERE a.entry_id = ?
          ORDER BY a.uploaded_at DESC`,
-        [entryId],
-      );
-      return attachments;
-    } catch (error) {
-      logger.error("Error getting attachments:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get single attachment by ID
-   */
-  static async getAttachmentById(
-    attachmentId: number,
-    tenant_id: number,
-  ): Promise<DbBlackboardAttachment | null> {
-    try {
-      const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
-        `SELECT a.* 
-         FROM blackboard_attachments a
-         INNER JOIN blackboard_entries e ON a.entry_id = e.id
-         WHERE a.id = ? AND e.tenant_id = ?`,
-        [attachmentId, tenant_id],
-      );
-      return attachments[0] ?? null;
-    } catch (error) {
-      logger.error("Error getting attachment by ID:", error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete attachment
-   */
-  static async deleteAttachment(
-    attachmentId: number,
-    tenant_id: number,
-  ): Promise<boolean> {
-    try {
-      // First get the attachment to ensure it belongs to the tenant
-      const attachment = await this.getAttachmentById(attachmentId, tenant_id);
-      if (!attachment) {
-        return false;
-      }
-
-      // Delete from database
-      const [result] = await executeQuery<ResultSetHeader>(
-        "DELETE FROM blackboard_attachments WHERE id = ?",
-        [attachmentId],
-      );
-
-      // Note: attachment_count is calculated dynamically in SELECT queries, not stored
-
-      return result.affectedRows > 0;
-    } catch (error) {
-      logger.error("Error deleting attachment:", error);
-      throw error;
-    }
+      [entryId],
+    );
+    return attachments;
+  } catch (error: unknown) {
+    logger.error('Error getting attachments:', error);
+    throw error;
   }
 }
 
-// Export individual functions for backward compatibility
-export const {
+/**
+ * Get single attachment by ID
+ */
+export async function getAttachmentById(
+  attachmentId: number,
+  tenant_id: number,
+): Promise<DbBlackboardAttachment | null> {
+  try {
+    const [attachments] = await executeQuery<DbBlackboardAttachment[]>(
+      `SELECT a.*
+         FROM blackboard_attachments a
+         INNER JOIN blackboard_entries e ON a.entry_id = e.id
+         WHERE a.id = ? AND e.tenant_id = ?`,
+      [attachmentId, tenant_id],
+    );
+    return attachments[0] ?? null;
+  } catch (error: unknown) {
+    logger.error('Error getting attachment by ID:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete attachment
+ */
+export async function deleteAttachment(attachmentId: number, tenant_id: number): Promise<boolean> {
+  try {
+    // First get the attachment to ensure it belongs to the tenant
+    const attachment = await getAttachmentById(attachmentId, tenant_id);
+    if (!attachment) {
+      return false;
+    }
+
+    // Delete from database
+    const [result] = await executeQuery<ResultSetHeader>(
+      'DELETE FROM blackboard_attachments WHERE id = ?',
+      [attachmentId],
+    );
+
+    // Note: attachment_count is calculated dynamically in SELECT queries, not stored
+
+    return result.affectedRows > 0;
+  } catch (error: unknown) {
+    logger.error('Error deleting attachment:', error);
+    throw error;
+  }
+}
+
+// Backward compatibility object
+const Blackboard = {
   getAllEntries,
   getEntryById,
   createEntry,
@@ -973,15 +907,10 @@ export const {
   getEntryAttachments,
   getAttachmentById,
   deleteAttachment,
-} = Blackboard;
+};
 
 // Type exports
-export type {
-  DbBlackboardEntry,
-  DbBlackboardAttachment,
-  DbBlackboardTag,
-  DbConfirmationUser,
-};
+export type { DbBlackboardEntry, DbBlackboardAttachment, DbBlackboardTag, DbConfirmationUser };
 
 // Default export
 export default Blackboard;

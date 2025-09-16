@@ -2,14 +2,8 @@
  * Admin Permission Service
  * Handles department and group permissions for admin users
  */
-
-import {
-  execute,
-  getConnection,
-  RowDataPacket,
-  ResultSetHeader,
-} from "../utils/db";
-import { logger } from "../utils/logger.js";
+import { ResultSetHeader, RowDataPacket, execute, getConnection } from '../utils/db';
+import { logger } from '../utils/logger.js';
 
 interface Permission {
   can_read: boolean;
@@ -20,21 +14,28 @@ interface Permission {
 interface DepartmentWithPermission {
   id: number;
   name: string;
-  description?: string;
+  description?: string | null;
   can_read: boolean;
   can_write: boolean;
   can_delete: boolean;
 }
 
+/**
+ *
+ */
 class AdminPermissionService {
   /**
    * Check if admin has access to a specific department
+   * @param adminId - The adminId parameter
+   * @param departmentId - The departmentId parameter
+   * @param tenantId - The tenant ID
+   * @param requiredPermission - The requiredPermission parameter
    */
   async hasAccess(
     adminId: number,
     departmentId: number,
     tenantId: number,
-    requiredPermission: "read" | "write" | "delete" = "read",
+    requiredPermission: 'read' | 'write' | 'delete' = 'read',
   ): Promise<boolean> {
     try {
       // First check direct department permissions
@@ -69,22 +70,27 @@ class AdminPermissionService {
       }
 
       return false;
-    } catch (error) {
-      logger.error("Error checking admin access:", error);
+    } catch (error: unknown) {
+      logger.error('Error checking admin access:', error);
       return false;
     }
   }
 
+  /**
+   *
+   * @param permission - The permission parameter
+   * @param requiredLevel - The requiredLevel parameter
+   */
   private checkPermissionLevel(
     permission: RowDataPacket,
-    requiredLevel: "read" | "write" | "delete",
+    requiredLevel: 'read' | 'write' | 'delete',
   ): boolean {
     switch (requiredLevel) {
-      case "read":
+      case 'read':
         return permission.can_read === 1;
-      case "write":
+      case 'write':
         return permission.can_write === 1;
-      case "delete":
+      case 'delete':
         return permission.can_delete === 1;
       default:
         return false;
@@ -93,6 +99,8 @@ class AdminPermissionService {
 
   /**
    * Get all departments an admin has access to (direct + via groups)
+   * @param adminId - The adminId parameter
+   * @param tenantId - The tenant ID
    */
   async getAdminDepartments(
     adminId: number,
@@ -115,8 +123,7 @@ class AdminPermissionService {
       );
 
       const hasAllAccess =
-        adminInfo[0].dept_count === totalDepts[0].total &&
-        totalDepts[0].total > 0;
+        adminInfo[0].dept_count === totalDepts[0].total && totalDepts[0].total > 0;
 
       // Get direct department permissions
       const [directDepts] = await execute<RowDataPacket[]>(
@@ -147,10 +154,10 @@ class AdminPermissionService {
 
       // Add direct permissions
       directDepts.forEach((dept) => {
-        departmentMap.set(dept.id, {
-          id: dept.id,
-          name: dept.name,
-          description: dept.description,
+        departmentMap.set(dept.id as number, {
+          id: dept.id as number,
+          name: dept.name as string,
+          description: dept.description as string | null,
           can_read: dept.can_read === 1,
           can_write: dept.can_write === 1,
           can_delete: dept.can_delete === 1,
@@ -159,17 +166,17 @@ class AdminPermissionService {
 
       // Add/update with group permissions (taking maximum permissions)
       groupDepts.forEach((dept) => {
-        const existing = departmentMap.get(dept.id);
+        const existing = departmentMap.get(dept.id as number);
         if (existing) {
           // Take maximum permissions
-          existing.can_read = existing.can_read ?? dept.can_read === 1;
-          existing.can_write = existing.can_write ?? dept.can_write === 1;
-          existing.can_delete = existing.can_delete ?? dept.can_delete === 1;
+          existing.can_read = existing.can_read || dept.can_read === 1;
+          existing.can_write = existing.can_write || dept.can_write === 1;
+          existing.can_delete = existing.can_delete || dept.can_delete === 1;
         } else {
-          departmentMap.set(dept.id, {
-            id: dept.id,
-            name: dept.name,
-            description: dept.description,
+          departmentMap.set(dept.id as number, {
+            id: dept.id as number,
+            name: dept.name as string,
+            description: dept.description as string | null,
             can_read: dept.can_read === 1,
             can_write: dept.can_write === 1,
             can_delete: dept.can_delete === 1,
@@ -178,17 +185,22 @@ class AdminPermissionService {
       });
 
       return {
-        departments: Array.from(departmentMap.values()),
+        departments: [...departmentMap.values()],
         hasAllAccess,
       };
-    } catch (error) {
-      logger.error("Error getting admin departments:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting admin departments:', error);
       return { departments: [], hasAllAccess: false };
     }
   }
 
   /**
    * Set department permissions for an admin (overwrites existing)
+   * @param adminId - The adminId parameter
+   * @param departmentIds - The departmentIds parameter
+   * @param assignedBy - The assignedBy parameter
+   * @param tenantId - The tenant ID
+   * @param permissions - The permissions parameter
    */
   async setPermissions(
     adminId: number,
@@ -246,9 +258,7 @@ class AdminPermissionService {
           sampleValue: values[0],
         });
 
-        const placeholders = departmentIds
-          .map(() => "(?, ?, ?, ?, ?, ?, ?)")
-          .join(", ");
+        const placeholders = departmentIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
 
         await connection.execute(
           `INSERT INTO admin_department_permissions 
@@ -265,25 +275,23 @@ class AdminPermissionService {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
-          "modify",
+          'modify',
           adminId,
           0, // No specific target, batch operation
-          "department",
+          'department',
           assignedBy,
           JSON.stringify(oldPerms),
-          JSON.stringify(
-            departmentIds.map((id) => ({ department_id: id, ...permissions })),
-          ),
+          JSON.stringify(departmentIds.map((id) => ({ department_id: id, ...permissions }))),
         ],
       );
 
       await connection.commit();
       logger.info(`[DEBUG] Successfully set permissions for admin ${adminId}`);
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
-      logger.error("Error setting admin permissions:", error);
-      logger.error("[DEBUG] Error details:", {
+      logger.error('Error setting admin permissions:', error);
+      logger.error('[DEBUG] Error details:', {
         message: (error as Error).message,
         code: (error as { code?: string }).code,
         sqlMessage: (error as { sqlMessage?: string }).sqlMessage,
@@ -296,6 +304,11 @@ class AdminPermissionService {
 
   /**
    * Set group permissions for an admin
+   * @param adminId - The adminId parameter
+   * @param groupIds - The groupIds parameter
+   * @param assignedBy - The assignedBy parameter
+   * @param tenantId - The tenant ID
+   * @param permissions - The permissions parameter
    */
   async setGroupPermissions(
     adminId: number,
@@ -332,9 +345,7 @@ class AdminPermissionService {
           assignedBy,
         ]);
 
-        const placeholders = groupIds
-          .map(() => "(?, ?, ?, ?, ?, ?, ?)")
-          .join(", ");
+        const placeholders = groupIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
 
         await connection.execute(
           `INSERT INTO admin_group_permissions 
@@ -346,9 +357,9 @@ class AdminPermissionService {
 
       await connection.commit();
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       await connection.rollback();
-      logger.error("Error setting admin group permissions:", error);
+      logger.error('Error setting admin group permissions:', error);
       return false;
     } finally {
       connection.release();
@@ -357,6 +368,9 @@ class AdminPermissionService {
 
   /**
    * Remove specific department permission
+   * @param adminId - The adminId parameter
+   * @param departmentId - The departmentId parameter
+   * @param tenantId - The tenant ID
    */
   async removePermission(
     adminId: number,
@@ -371,14 +385,17 @@ class AdminPermissionService {
       );
 
       return result.affectedRows > 0;
-    } catch (error) {
-      logger.error("Error removing admin permission:", error);
+    } catch (error: unknown) {
+      logger.error('Error removing admin permission:', error);
       return false;
     }
   }
 
   /**
    * Remove specific group permission
+   * @param adminId - The adminId parameter
+   * @param groupId - The groupId parameter
+   * @param tenantId - The tenant ID
    */
   async removeGroupPermission(
     adminId: number,
@@ -393,20 +410,28 @@ class AdminPermissionService {
       );
 
       return result.affectedRows > 0;
-    } catch (error) {
-      logger.error("Error removing admin group permission:", error);
+    } catch (error: unknown) {
+      logger.error('Error removing admin group permission:', error);
       return false;
     }
   }
 
   /**
    * Log permission change for audit trail
+   * @param action - The action parameter
+   * @param adminId - The adminId parameter
+   * @param targetId - The targetId parameter
+   * @param targetType - The targetType parameter
+   * @param changedBy - The changedBy parameter
+   * @param tenantId - The tenant ID
+   * @param oldPermissions - The oldPermissions parameter
+   * @param newPermissions - The newPermissions parameter
    */
   async logPermissionChange(
-    action: "grant" | "revoke" | "modify",
+    action: 'grant' | 'revoke' | 'modify',
     adminId: number,
     targetId: number,
-    targetType: "department" | "group",
+    targetType: 'department' | 'group',
     changedBy: number,
     tenantId: number,
     oldPermissions?: unknown,
@@ -424,12 +449,12 @@ class AdminPermissionService {
           targetId,
           targetType,
           changedBy,
-          oldPermissions ? JSON.stringify(oldPermissions) : null,
-          newPermissions ? JSON.stringify(newPermissions) : null,
+          oldPermissions != null ? JSON.stringify(oldPermissions) : null,
+          newPermissions != null ? JSON.stringify(newPermissions) : null,
         ],
       );
-    } catch (error) {
-      logger.error("Error logging permission change:", error);
+    } catch (error: unknown) {
+      logger.error('Error logging permission change:', error);
     }
   }
 }

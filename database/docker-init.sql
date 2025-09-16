@@ -24,6 +24,10 @@ USE assixx;
 -- =====================================================
 
 -- --------------------------------------------
+-- Table: absences
+-- --------------------------------------------
+DROP TABLE IF EXISTS `absences`;
+CREATE TABLE `absences` (
   `id` int NOT NULL AUTO_INCREMENT,
   `tenant_id` int NOT NULL,
   `user_id` int NOT NULL,

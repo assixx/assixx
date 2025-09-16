@@ -2,53 +2,54 @@
  * KVP Permission Service
  * Handles permission checks and department visibility for KVP suggestions
  */
-
-import { query as executeQuery, RowDataPacket } from "../utils/db";
-import { logger } from "../utils/logger.js";
-
-import adminPermissionService from "./adminPermission.service.js";
+import { RowDataPacket, query as executeQuery } from '../utils/db';
+import { logger } from '../utils/logger.js';
+import adminPermissionService from './adminPermission.service.js';
 
 interface KvpVisibilityQuery {
   userId: number;
-  role: "root" | "admin" | "employee";
+  role: 'root' | 'admin' | 'employee';
   tenantId: number;
   includeArchived?: boolean;
   statusFilter?: string;
   departmentFilter?: number;
 }
 
+/**
+ *
+ */
 class KvpPermissionService {
   /**
    * Get all departments an admin has access to
+   * @param adminId - The adminId parameter
+   * @param tenantId - The tenant ID
    */
-  async getAdminDepartments(
-    adminId: number,
-    tenantId: number,
-  ): Promise<number[]> {
+  async getAdminDepartments(adminId: number, tenantId: number): Promise<number[]> {
     try {
-      const result = await adminPermissionService.getAdminDepartments(
-        adminId,
-        tenantId,
-      );
+      const result = await adminPermissionService.getAdminDepartments(adminId, tenantId);
       return result.departments.map((dept) => dept.id);
-    } catch (error) {
-      logger.error("Error getting admin departments:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting admin departments:', error);
       return [];
     }
   }
 
   /**
    * Check if user can view a specific KVP suggestion
+   * @param userId - The user ID
+   * @param suggestionId - The suggestionId parameter
+   * @param role - The role parameter
+   * @param tenantId - The tenant ID
    */
   async canViewSuggestion(
     userId: number,
     suggestionId: number,
-    role: "root" | "admin" | "employee",
+    role: 'root' | 'admin' | 'employee',
     tenantId: number,
   ): Promise<boolean> {
     try {
       // Root can see everything
-      if (role === "root") return true;
+      if (role === 'root') return true;
 
       // Get suggestion details
       const [suggestions] = await executeQuery<RowDataPacket[]>(
@@ -65,48 +66,52 @@ class KvpPermissionService {
       if (suggestion.tenant_id !== tenantId) return false;
 
       // Employee logic
-      if (role === "employee") {
+      if (role === 'employee') {
         // Can see own suggestions
         if (suggestion.submitted_by === userId) return true;
 
         // Can see company-wide suggestions
-        if (suggestion.org_level === "company") return true;
+        if (suggestion.org_level === 'company') return true;
 
         // Can see department suggestions if in same department
         const [userInfo] = await executeQuery<RowDataPacket[]>(
-          "SELECT department_id FROM users WHERE id = ?",
+          'SELECT department_id FROM users WHERE id = ?',
           [userId],
         );
 
-        if (userInfo.length > 0 && suggestion.org_level === "department") {
+        if (userInfo.length > 0 && suggestion.org_level === 'department') {
           return userInfo[0].department_id === suggestion.department_id;
         }
       }
 
       // Admin logic
-      if (role === "admin") {
+      if (role === 'admin') {
         // Can see company-wide
-        if (suggestion.org_level === "company") return true;
+        if (suggestion.org_level === 'company') return true;
 
         // Check if admin manages this department
         const adminDepts = await this.getAdminDepartments(userId, tenantId);
-        return adminDepts.includes(suggestion.department_id);
+        return adminDepts.includes(suggestion.department_id as number);
       }
 
       return false;
-    } catch (error) {
-      logger.error("Error checking view permission:", error);
+    } catch (error: unknown) {
+      logger.error('Error checking view permission:', error);
       return false;
     }
   }
 
   /**
    * Check if user can edit a specific KVP suggestion
+   * @param userId - The user ID
+   * @param suggestionId - The suggestionId parameter
+   * @param role - The role parameter
+   * @param tenantId - The tenant ID
    */
   async canEditSuggestion(
     userId: number,
     suggestionId: number,
-    role: "root" | "admin" | "employee",
+    role: 'root' | 'admin' | 'employee',
     tenantId: number,
   ): Promise<boolean> {
     try {
@@ -125,125 +130,114 @@ class KvpPermissionService {
       if (suggestion.tenant_id !== tenantId) return false;
 
       // Root can edit everything
-      if (role === "root") return true;
+      if (role === 'root') return true;
 
       // Employee can only edit their own suggestions in 'new' status
-      if (role === "employee") {
-        return (
-          suggestion.submitted_by === userId && suggestion.status === "new"
-        );
+      if (role === 'employee') {
+        return suggestion.submitted_by === userId && suggestion.status === 'new';
       }
 
-      // Admin logic
-      if (role === "admin") {
-        // For company-wide suggestions, only the original sharer can edit
-        if (suggestion.org_level === "company") {
-          return suggestion.shared_by === userId;
-        }
-
-        // For department suggestions, check admin permissions
-        const adminDepts = await this.getAdminDepartments(userId, tenantId);
-        return adminDepts.includes(suggestion.department_id);
+      // Admin logic - at this point role must be "admin"
+      // For company-wide suggestions, only the original sharer can edit
+      if (suggestion.org_level === 'company') {
+        return suggestion.shared_by === userId;
       }
 
-      return false;
-    } catch (error) {
-      logger.error("Error checking edit permission:", error);
+      // For department suggestions, check admin permissions
+      const adminDepts = await this.getAdminDepartments(userId, tenantId);
+      return adminDepts.includes(suggestion.department_id as number);
+    } catch (error: unknown) {
+      logger.error('Error checking edit permission:', error);
       return false;
     }
   }
 
   /**
    * Build SQL WHERE clause for visibility filtering
+   * @param params - The parameters object
    */
   async buildVisibilityQuery(params: KvpVisibilityQuery): Promise<{
     whereClause: string;
     queryParams: (string | number)[];
   }> {
-    const {
-      userId,
-      role,
-      tenantId,
-      includeArchived,
-      statusFilter,
-      departmentFilter,
-    } = params;
-    const conditions: string[] = ["s.tenant_id = ?"];
+    const { userId, role, tenantId, includeArchived, statusFilter, departmentFilter } = params;
+    const conditions: string[] = ['s.tenant_id = ?'];
     const queryParams: (string | number)[] = [tenantId];
 
     // Root sees everything
-    if (role === "root") {
+    if (role === 'root') {
       // No additional filters needed
-    } else if (role === "employee") {
+    } else if (role === 'employee') {
       // Get user's department
       const [userInfo] = await executeQuery<RowDataPacket[]>(
-        "SELECT department_id FROM users WHERE id = ?",
+        'SELECT department_id FROM users WHERE id = ?',
         [userId],
       );
 
-      const userDeptId = userInfo[0]?.department_id ?? null;
+      const userDeptId = userInfo[0]?.department_id as number | null;
 
       // Employee sees: own + department + company-wide
       const visibilityConditions = [
-        "s.submitted_by = ?",
-        "(s.org_level = ? AND s.department_id = ?)",
-        "s.org_level = ?",
+        's.submitted_by = ?',
+        '(s.org_level = ? AND s.department_id = ?)',
+        's.org_level = ?',
       ];
 
-      conditions.push(`(${visibilityConditions.join(" OR ")})`);
+      conditions.push(`(${visibilityConditions.join(' OR ')})`);
       queryParams.push(
         userId,
-        "department",
+        'department',
         userDeptId ?? 0, // Use 0 as fallback for NULL department
-        "company",
+        'company',
       );
-    } else if (role === "admin") {
-      // Get admin's managed departments
+    } else {
+      // Admin role - Get admin's managed departments
       const adminDepts = await this.getAdminDepartments(userId, tenantId);
 
       if (adminDepts.length > 0) {
-        const deptPlaceholders = adminDepts.map(() => "?").join(",");
-        conditions.push(
-          `(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`,
-        );
-        queryParams.push(...adminDepts, "company");
+        const deptPlaceholders = adminDepts.map(() => '?').join(',');
+        conditions.push(`(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`);
+        queryParams.push(...adminDepts, 'company');
       } else {
         // Admin with no departments only sees company-wide
-        conditions.push("s.org_level = ?");
-        queryParams.push("company");
+        conditions.push('s.org_level = ?');
+        queryParams.push('company');
       }
     }
 
     // Status filter
-    if (!includeArchived) {
-      conditions.push("s.status != ?");
-      queryParams.push("archived");
+    if (includeArchived === false) {
+      conditions.push('s.status != ?');
+      queryParams.push('archived');
     }
 
-    if (statusFilter && statusFilter !== "all") {
-      if (statusFilter === "active") {
-        conditions.push("s.status NOT IN (?, ?)");
-        queryParams.push("archived", "rejected");
+    if (statusFilter != null && statusFilter !== '' && statusFilter !== 'all') {
+      if (statusFilter === 'active') {
+        conditions.push('s.status NOT IN (?, ?)');
+        queryParams.push('archived', 'rejected');
       } else {
-        conditions.push("s.status = ?");
+        conditions.push('s.status = ?');
         queryParams.push(statusFilter);
       }
     }
 
     // Department filter (for admins)
-    if (departmentFilter && role === "admin") {
-      conditions.push("s.department_id = ?");
+    if (departmentFilter != null && departmentFilter !== 0 && role === 'admin') {
+      conditions.push('s.department_id = ?');
       queryParams.push(departmentFilter);
     }
 
     return {
-      whereClause: conditions.join(" AND "),
+      whereClause: conditions.join(' AND '),
       queryParams,
     };
   }
 
   /**
    * Check if admin can share a suggestion company-wide
+   * @param adminId - The adminId parameter
+   * @param suggestionId - The suggestionId parameter
+   * @param tenantId - The tenant ID
    */
   async canShareSuggestion(
     adminId: number,
@@ -266,25 +260,32 @@ class KvpPermissionService {
       if (suggestion.tenant_id !== tenantId) return false;
 
       // Already company-wide
-      if (suggestion.org_level === "company") return false;
+      if (suggestion.org_level === 'company') return false;
 
       // Check if admin manages this department
       const adminDepts = await this.getAdminDepartments(adminId, tenantId);
-      return adminDepts.includes(suggestion.department_id);
-    } catch (error) {
-      logger.error("Error checking share permission:", error);
+      return adminDepts.includes(suggestion.department_id as number);
+    } catch (error: unknown) {
+      logger.error('Error checking share permission:', error);
       return false;
     }
   }
 
   /**
    * Log admin action for audit trail
+   * @param adminId - The adminId parameter
+   * @param action - The action parameter
+   * @param entityId - The entityId parameter
+   * @param entityType - The entityType parameter
+   * @param tenantId - The tenant ID
+   * @param oldValue - The oldValue parameter
+   * @param newValue - The newValue parameter
    */
   async logAdminAction(
     adminId: number,
     action: string,
     entityId: number,
-    entityType: string = "kvp_suggestion",
+    entityType = 'kvp_suggestion',
     tenantId: number,
     oldValue?: unknown,
     newValue?: unknown,
@@ -300,20 +301,23 @@ class KvpPermissionService {
           action,
           entityType,
           entityId,
-          oldValue ? JSON.stringify(oldValue) : null,
-          newValue ? JSON.stringify(newValue) : null,
+          oldValue != null ? JSON.stringify(oldValue) : null,
+          newValue != null ? JSON.stringify(newValue) : null,
         ],
       );
-    } catch (error) {
-      logger.error("Error logging admin action:", error);
+    } catch (error: unknown) {
+      logger.error('Error logging admin action:', error);
     }
   }
 
   /**
    * Get suggestion statistics for a department or company
+   * @param scope - The scope parameter
+   * @param scopeId - The scopeId parameter
+   * @param tenantId - The tenant ID
    */
   async getSuggestionStats(
-    scope: "company" | "department",
+    scope: 'company' | 'department',
     scopeId: number,
     tenantId: number,
   ): Promise<{
@@ -323,11 +327,11 @@ class KvpPermissionService {
     totalSavings: number;
   }> {
     try {
-      let whereClause = "s.tenant_id = ?";
+      let whereClause = 's.tenant_id = ?';
       const params: (string | number)[] = [tenantId];
 
-      if (scope === "department") {
-        whereClause += " AND s.department_id = ?";
+      if (scope === 'department') {
+        whereClause += ' AND s.department_id = ?';
         params.push(scopeId);
       }
 
@@ -360,27 +364,24 @@ class KvpPermissionService {
       // Build result
       const byStatus: Record<string, number> = {};
       statusCounts.forEach((row: RowDataPacket) => {
-        byStatus[row.status] = row.count;
+        byStatus[row.status as string] = row.count as number;
       });
 
       const byPriority: Record<string, number> = {};
       priorityCounts.forEach((row: RowDataPacket) => {
-        byPriority[row.priority] = row.count;
+        byPriority[row.priority as string] = row.count as number;
       });
 
-      const total = Object.values(byStatus).reduce(
-        (sum, count) => sum + count,
-        0,
-      );
+      const total = Object.values(byStatus).reduce((sum, count) => sum + count, 0);
 
       return {
         total,
         byStatus,
         byPriority,
-        totalSavings: parseFloat(savings[0].total_savings) ?? 0,
+        totalSavings: Number.parseFloat(savings[0].total_savings as string) || 0,
       };
-    } catch (error) {
-      logger.error("Error getting suggestion stats:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting suggestion stats:', error);
       return {
         total: 0,
         byStatus: {},

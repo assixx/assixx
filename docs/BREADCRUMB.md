@@ -46,7 +46,6 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-radius: 12px;
   box-shadow:
     0 0px 4px rgba(33, 150, 243, 0.3),
@@ -67,9 +66,8 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
 .breadcrumb-link {
   color: var(--text-secondary);
   text-decoration: none;
-  transition: all 0.3s ease;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 
 .breadcrumb-link:hover {
@@ -85,7 +83,7 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
 
 /* Aktuelle Seite (nicht klickbar) */
 .breadcrumb-current {
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   color: var(--text-primary);
   font-weight: 600;
   padding: 4px 8px;
@@ -125,11 +123,11 @@ Jede HTML-Seite kann die Breadcrumb einfach importieren:
 <!-- In jeder HTML-Datei -->
 <div id="breadcrumb-container"></div>
 <script type="module">
-  import { initBreadcrumb } from "/scripts/components/breadcrumb.js";
+  import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
 
   initBreadcrumb([
-    { label: "Home", href: "/", icon: "fa-home" },
-    { label: "Admin Dashboard", icon: "fa-tachometer-alt", current: true },
+    { label: 'Home', href: '/', icon: 'fa-home' },
+    { label: 'Admin Dashboard', icon: 'fa-tachometer-alt', current: true },
   ]);
 </script>
 ```
@@ -192,15 +190,15 @@ initBreadcrumb();
 
 // Manuelle Definition
 initBreadcrumb([
-  { label: "Home", href: "/", icon: "fa-home" },
-  { label: "Verwaltung", href: "/admin", icon: "fa-cog" },
-  { label: "Benutzer", icon: "fa-users", current: true },
+  { label: 'Home', href: '/', icon: 'fa-home' },
+  { label: 'Verwaltung', href: '/admin', icon: 'fa-cog' },
+  { label: 'Benutzer', icon: 'fa-users', current: true },
 ]);
 
 // Mit Custom-Optionen
 initBreadcrumb(items, {
-  container: "#my-breadcrumb",
-  separator: "/",
+  container: '#my-breadcrumb',
+  separator: '/',
   showIcons: true,
 });
 ```

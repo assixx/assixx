@@ -2,12 +2,13 @@
  * Reports/Analytics v2 Service
  * Business logic for generating reports and analytics
  */
+import { log, error as logError } from 'console';
 
-import { log, error as logError } from "console"; // For debugging
+import { ServiceError } from '../../../utils/ServiceError.js';
+// For debugging
 
-import { executeQuery } from "../../../database.js";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
+import { query as executeQuery } from '../../../utils/db.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
 
 interface DateRangeFilter {
   dateFrom?: string;
@@ -23,55 +24,40 @@ interface ReportFilters extends DateRangeFilter {
 
 /**
  * Get company overview report with KPIs
+ * @param filters - The filter criteria containing tenantId, dateFrom, and dateTo
  */
 export async function getOverviewReport(filters: {
   tenantId: number;
   dateFrom?: string;
   dateTo?: string;
-}) {
+}): Promise<Record<string, unknown>> {
   try {
-    log("[Reports Service] getOverviewReport called with:", filters);
+    log('[Reports Service] getOverviewReport called with:', filters);
 
     const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
     const dateTo = filters.dateTo ?? getDefaultDateTo();
 
     // Get employee metrics
-    log("[Reports Service] Getting employee metrics...");
-    const employeeMetrics = await getEmployeeMetrics(
-      filters.tenantId,
-      dateFrom,
-      dateTo,
-    );
+    log('[Reports Service] Getting employee metrics...');
+    const employeeMetrics = await getEmployeeMetrics(filters.tenantId, dateFrom, dateTo);
 
     // Get department metrics
-    log("[Reports Service] Getting department metrics...");
-    const departmentMetrics = await getDepartmentMetrics(
-      filters.tenantId,
-      dateFrom,
-      dateTo,
-    );
+    log('[Reports Service] Getting department metrics...');
+    const departmentMetrics = await getDepartmentMetrics(filters.tenantId, dateFrom, dateTo);
 
     // Get shift metrics
-    log("[Reports Service] Getting shift metrics...");
-    const shiftMetrics = await getShiftMetrics(
-      filters.tenantId,
-      dateFrom,
-      dateTo,
-    );
+    log('[Reports Service] Getting shift metrics...');
+    const shiftMetrics = await getShiftMetrics(filters.tenantId, dateFrom, dateTo);
 
     // Get KVP metrics
-    log("[Reports Service] Getting KVP metrics...");
+    log('[Reports Service] Getting KVP metrics...');
     const kvpMetrics = await getKvpMetrics(filters.tenantId, dateFrom, dateTo);
 
     // Get survey metrics
-    log("[Reports Service] Getting survey metrics...");
-    const surveyMetrics = await getSurveyMetrics(
-      filters.tenantId,
-      dateFrom,
-      dateTo,
-    );
+    log('[Reports Service] Getting survey metrics...');
+    const surveyMetrics = await getSurveyMetrics(filters.tenantId, dateFrom, dateTo);
 
-    log("[Reports Service] Overview report generated successfully");
+    log('[Reports Service] Overview report generated successfully');
     return {
       period: {
         from: dateFrom,
@@ -83,37 +69,24 @@ export async function getOverviewReport(filters: {
       kvp: kvpMetrics,
       surveys: surveyMetrics,
     };
-  } catch (error) {
-    logError("[Reports Service] Error in getOverviewReport:", error);
+  } catch (error: unknown) {
+    logError('[Reports Service] Error in getOverviewReport:', error);
     throw error;
   }
 }
 
 /**
  * Get detailed employee report
+ * @param filters - The filter criteria
  */
-export async function getEmployeeReport(filters: ReportFilters) {
+export async function getEmployeeReport(filters: ReportFilters): Promise<Record<string, unknown>> {
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
   const dateTo = filters.dateTo ?? getDefaultDateTo();
-
-  // Build query conditions
-  const conditions = [`u.tenant_id = ?`];
-  const params: (string | number)[] = [filters.tenantId];
-
-  if (filters.departmentId) {
-    conditions.push(`u.department_id = ?`);
-    params.push(filters.departmentId);
-  }
-
-  if (filters.teamId) {
-    conditions.push(`tm.team_id = ?`);
-    params.push(filters.teamId);
-  }
 
   // Get headcount trend
   const [headcountTrendRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       DATE(created_at) as date,
       COUNT(*) as count
     FROM users
@@ -125,10 +98,10 @@ export async function getEmployeeReport(filters: ReportFilters) {
   `,
     [filters.tenantId, dateFrom, dateTo],
   );
-  const headcountTrend = headcountTrendRows || [];
+  const headcountTrend = headcountTrendRows;
 
   // Get attendance metrics
-  const attendanceData = await getAttendanceMetrics(
+  const attendanceData = getAttendanceMetrics(
     filters.tenantId,
     dateFrom,
     dateTo,
@@ -155,9 +128,7 @@ export async function getEmployeeReport(filters: ReportFilters) {
       teamId: filters.teamId,
     },
     headcount: {
-      trend: (headcountTrend as Array<Record<string, unknown>>).map((row) =>
-        dbToApi(row),
-      ),
+      trend: (headcountTrend as Record<string, unknown>[]).map((row) => dbToApi(row)),
     },
     attendance: attendanceData,
     performance: performanceData,
@@ -166,20 +137,21 @@ export async function getEmployeeReport(filters: ReportFilters) {
 
 /**
  * Get department performance report
+ * @param filters - The filter criteria
  */
 export async function getDepartmentReport(filters: {
   tenantId: number;
   dateFrom?: string;
   dateTo?: string;
-}) {
-  log("[Reports Service] getDepartmentReport called with:", filters);
+}): Promise<Record<string, unknown>> {
+  log('[Reports Service] getDepartmentReport called with:', filters);
 
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
   const dateTo = filters.dateTo ?? getDefaultDateTo();
 
   const departmentData = await executeQuery(
     `
-    SELECT 
+    SELECT
       d.id as department_id,
       d.name as department_name,
       COUNT(DISTINCT u.id) as employees,
@@ -190,11 +162,11 @@ export async function getDepartmentReport(filters: {
     FROM departments d
     LEFT JOIN users u ON u.department_id = d.id AND u.tenant_id = d.tenant_id
     LEFT JOIN teams t ON t.department_id = d.id
-    LEFT JOIN kvp_suggestions k ON k.org_id = d.id 
-      AND k.org_level = 'department' 
+    LEFT JOIN kvp_suggestions k ON k.org_id = d.id
+      AND k.org_level = 'department'
       AND k.created_at BETWEEN ? AND ?
     LEFT JOIN (
-      SELECT 
+      SELECT
         department_id,
         1 as coverage_rate,
         0 as overtime_hours
@@ -210,33 +182,32 @@ export async function getDepartmentReport(filters: {
     [dateFrom, dateTo, filters.tenantId, dateFrom, dateTo, filters.tenantId],
   );
 
-  log("[Reports Service] Department data query result:", departmentData);
+  log('[Reports Service] Department data query result:', departmentData);
 
   // executeQuery returns [rows, fields], we need just the rows
-  const rows = departmentData[0] || [];
+  const rows = departmentData[0];
 
-  const result = (rows as Array<Record<string, unknown>>).map(
-    (dept: Record<string, unknown>) => ({
-      departmentId: dept.department_id,
-      departmentName: dept.department_name,
-      metrics: {
-        employees: parseInt(String(dept.employees)) || 0,
-        teams: parseInt(String(dept.teams)) || 0,
-        kvpSuggestions: parseInt(String(dept.kvp_suggestions)) || 0,
-        shiftCoverage: parseFloat(String(dept.shift_coverage)) || 0,
-        avgOvertime: parseFloat(String(dept.avg_overtime)) || 0,
-      },
-    }),
-  );
+  const result = (rows as Record<string, unknown>[]).map((dept: Record<string, unknown>) => ({
+    departmentId: dept.department_id,
+    departmentName: dept.department_name,
+    metrics: {
+      employees: Number(dept.employees) || 0,
+      teams: Number(dept.teams) || 0,
+      kvpSuggestions: Number(dept.kvp_suggestions) || 0,
+      shiftCoverage: Number(dept.shift_coverage) || 0,
+      avgOvertime: Number(dept.avg_overtime) || 0,
+    },
+  }));
 
-  log("[Reports Service] Mapped department result:", result);
-  return result;
+  log('[Reports Service] Mapped department result:', result);
+  return { departments: result };
 }
 
 /**
  * Get shift analytics report
+ * @param filters - The filter criteria
  */
-export async function getShiftReport(filters: ReportFilters) {
+export async function getShiftReport(filters: ReportFilters): Promise<Record<string, unknown>> {
   const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
   const dateTo = filters.dateTo ?? getDefaultDateTo();
 
@@ -260,7 +231,7 @@ export async function getShiftReport(filters: ReportFilters) {
   // Get shift summary
   const [shiftSummaryRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       COUNT(*) as total_shifts,
       SUM(required_employees) as total_required,
       SUM(required_employees) as total_filled,
@@ -268,16 +239,16 @@ export async function getShiftReport(filters: ReportFilters) {
       0 as total_overtime_hours,
       0 as total_overtime_cost
     FROM shifts s
-    WHERE ${conditions.join(" AND ")}
+    WHERE ${conditions.join(' AND ')}
   `,
     params,
   );
-  const shiftSummary = shiftSummaryRows || [];
+  const shiftSummary = shiftSummaryRows;
 
   // Get overtime by department
   const [overtimeByDeptRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       d.id as department_id,
       d.name as department_name,
       0 as overtime_hours,
@@ -293,12 +264,12 @@ export async function getShiftReport(filters: ReportFilters) {
   `,
     [filters.tenantId, dateFrom, dateTo],
   );
-  const overtimeByDept = overtimeByDeptRows || [];
+  const overtimeByDept = overtimeByDeptRows;
 
   // Get peak hours analysis
   const [peakHoursRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       type as shift_type,
       COUNT(*) as count,
       1 as fill_rate
@@ -310,50 +281,45 @@ export async function getShiftReport(filters: ReportFilters) {
   `,
     [filters.tenantId, dateFrom, dateTo],
   );
-  const peakHours = peakHoursRows || [];
+  const peakHours = peakHoursRows;
 
-  const summary = (shiftSummary as Array<Record<string, unknown>>)[0] ?? {};
+  const summary = (shiftSummary as Record<string, unknown>[])[0] ?? {};
 
   return {
     period: {
       from: dateFrom,
       to: dateTo,
     },
-    totalShifts: parseInt(String(summary.total_shifts)) || 0,
+    totalShifts: Number(summary.total_shifts) || 0,
     coverage: {
-      scheduled: parseInt(String(summary.total_required)) || 0,
-      filled: parseInt(String(summary.total_filled)) || 0,
-      rate: parseFloat(String(summary.coverage_rate)) || 0,
+      scheduled: Number(summary.total_required) || 0,
+      filled: Number(summary.total_filled) || 0,
+      rate: Number(summary.coverage_rate) || 0,
     },
     overtime: {
-      totalHours: parseFloat(String(summary.total_overtime_hours)) || 0,
-      totalCost: parseFloat(String(summary.total_overtime_cost)) || 0,
-      byDepartment: (overtimeByDept as Array<Record<string, unknown>>).map(
-        (row) => dbToApi(row),
-      ),
+      totalHours: Number(summary.total_overtime_hours) || 0,
+      totalCost: Number(summary.total_overtime_cost) || 0,
+      byDepartment: (overtimeByDept as Record<string, unknown>[]).map((row) => dbToApi(row)),
     },
     patterns: {
-      peakHours: (peakHours as Array<Record<string, unknown>>).map((row) =>
-        dbToApi(row),
-      ),
-      understaffedShifts:
-        parseInt(String(summary.total_shifts)) -
-        (parseInt(String(summary.total_filled ?? "0")) || 0),
+      peakHours: (peakHours as Record<string, unknown>[]).map((row) => dbToApi(row)),
+      understaffedShifts: (Number(summary.total_shifts) || 0) - (Number(summary.total_filled) || 0),
     },
   };
 }
 
 /**
  * Get KVP ROI report
+ * @param filters - The filter criteria containing tenantId, dateFrom, dateTo, and optional categoryId
  */
 export async function getKvpReport(filters: {
   tenantId: number;
   dateFrom?: string;
   dateTo?: string;
   categoryId?: number;
-}) {
+}): Promise<Record<string, unknown>> {
   try {
-    log("[Reports Service] getKvpReport called with:", filters);
+    log('[Reports Service] getKvpReport called with:', filters);
 
     const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
     const dateTo = filters.dateTo ?? getDefaultDateTo();
@@ -373,22 +339,22 @@ export async function getKvpReport(filters: {
     // Get KVP summary
     const [kvpSummaryRows] = await executeQuery(
       `
-    SELECT 
+    SELECT
       COUNT(*) as total_suggestions,
       COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
       SUM(CASE WHEN status = 'implemented' THEN estimated_cost ELSE 0 END) as total_cost,
       SUM(CASE WHEN status = 'implemented' THEN actual_savings ELSE 0 END) as total_savings
     FROM kvp_suggestions k
-    WHERE ${conditions.join(" AND ")}
+    WHERE ${conditions.join(' AND ')}
   `,
       params,
     );
-    const kvpSummary = kvpSummaryRows || [];
+    const kvpSummary = kvpSummaryRows;
 
     // Get metrics by category
     const [byCategoryRows] = await executeQuery(
       `
-    SELECT 
+    SELECT
       c.id as category_id,
       c.name as category_name,
       COUNT(k.id) as suggestions,
@@ -403,12 +369,12 @@ export async function getKvpReport(filters: {
   `,
       [filters.tenantId, dateFrom, dateTo],
     );
-    const byCategory = byCategoryRows || [];
+    const byCategory = byCategoryRows;
 
     // Get top performers
     const [topPerformersRows] = await executeQuery(
       `
-    SELECT 
+    SELECT
       u.id as user_id,
       CONCAT(u.first_name, ' ', u.last_name) as name,
       COUNT(k.id) as suggestions,
@@ -424,14 +390,13 @@ export async function getKvpReport(filters: {
   `,
       [filters.tenantId, dateFrom, dateTo],
     );
-    const topPerformers = topPerformersRows || [];
+    const topPerformers = topPerformersRows;
 
-    const summary = (kvpSummary as Array<Record<string, unknown>>)[0] ?? {};
+    const summary = (kvpSummary as Record<string, unknown>[])[0] ?? {};
     const roi =
-      Number(summary.total_cost) > 0
-        ? (Number(summary.total_savings) - Number(summary.total_cost)) /
-          Number(summary.total_cost)
-        : 0;
+      Number(summary.total_cost) > 0 ?
+        (Number(summary.total_savings) - Number(summary.total_cost)) / Number(summary.total_cost)
+      : 0;
 
     return {
       period: {
@@ -439,29 +404,26 @@ export async function getKvpReport(filters: {
         to: dateTo,
       },
       summary: {
-        totalSuggestions: parseInt(String(summary.total_suggestions)) || 0,
-        implemented: parseInt(String(summary.implemented)) || 0,
-        totalCost: parseFloat(String(summary.total_cost)) || 0,
-        totalSavings: parseFloat(String(summary.total_savings)) || 0,
+        totalSuggestions: Number.parseInt(String(summary.total_suggestions)) || 0,
+        implemented: Number.parseInt(String(summary.implemented)) || 0,
+        totalCost: Number.parseFloat(String(summary.total_cost)) || 0,
+        totalSavings: Number.parseFloat(String(summary.total_savings)) || 0,
         roi: roi,
       },
-      byCategory: (byCategory as Array<Record<string, unknown>>).map((row) =>
-        dbToApi(row),
-      ),
-      topPerformers: (topPerformers as Array<Record<string, unknown>>).map(
-        (row) => dbToApi(row),
-      ),
+      byCategory: (byCategory as Record<string, unknown>[]).map((row) => dbToApi(row)),
+      topPerformers: (topPerformers as Record<string, unknown>[]).map((row) => dbToApi(row)),
     };
-  } catch (error) {
-    logError("[Reports Service] Error in getKvpReport:", error);
+  } catch (error: unknown) {
+    logError('[Reports Service] Error in getKvpReport:', error);
     throw error;
   }
 }
 
 /**
  * Get attendance report
+ * @param filters - The filter criteria
  */
-export async function getAttendanceReport(filters: ReportFilters) {
+export function getAttendanceReport(filters: ReportFilters): Record<string, unknown> {
   // For now, return mock data
   // In production, this would analyze shift attendance data
 
@@ -488,7 +450,7 @@ export async function getAttendanceReport(filters: ReportFilters) {
 
   for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
     daily.push({
-      date: d.toISOString().split("T")[0],
+      date: d.toISOString().split('T')[0],
       rate: 0.88 + Math.random() * 0.1,
     });
   }
@@ -512,13 +474,14 @@ export async function getAttendanceReport(filters: ReportFilters) {
 
 /**
  * Get compliance report
+ * @param filters - The filter criteria containing tenantId, dateFrom, dateTo, and optional departmentId
  */
-export async function getComplianceReport(filters: {
+export function getComplianceReport(filters: {
   tenantId: number;
   dateFrom: string;
   dateTo: string;
   departmentId?: number;
-}) {
+}): Record<string, unknown> {
   // For now, return mock compliance data
   // In production, this would analyze working hours, breaks, etc.
 
@@ -534,9 +497,9 @@ export async function getComplianceReport(filters: {
   const riskEmployees = [];
   for (let i = 1; i <= 5; i++) {
     const issues = [];
-    if (Math.random() > 0.5) issues.push("Exceeded max working hours");
-    if (Math.random() > 0.5) issues.push("Missing required breaks");
-    if (Math.random() > 0.5) issues.push("Insufficient rest period");
+    if (Math.random() > 0.5) issues.push('Exceeded max working hours');
+    if (Math.random() > 0.5) issues.push('Missing required breaks');
+    if (Math.random() > 0.5) issues.push('Insufficient rest period');
 
     if (issues.length > 0) {
       riskEmployees.push({
@@ -575,50 +538,40 @@ interface CustomReportParams {
   groupBy?: string;
 }
 
-export async function generateCustomReport(params: CustomReportParams) {
-  const reportId = `RPT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+/**
+ *
+ * @param params - The parameters object
+ */
+export async function generateCustomReport(
+  params: CustomReportParams,
+): Promise<Record<string, unknown>> {
+  const reportId = `RPT-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   const data: Record<string, unknown> = {};
 
   // Generate data for each requested metric
   for (const metric of params.metrics) {
     switch (metric) {
-      case "employees":
-        data.employees = await getEmployeeMetrics(
-          params.tenantId,
-          params.dateFrom,
-          params.dateTo,
-        );
+      case 'employees':
+        data.employees = await getEmployeeMetrics(params.tenantId, params.dateFrom, params.dateTo);
         break;
-      case "departments":
+      case 'departments':
         data.departments = await getDepartmentReport({
           tenantId: params.tenantId,
           dateFrom: params.dateFrom,
           dateTo: params.dateTo,
         });
         break;
-      case "shifts":
-        data.shifts = await getShiftMetrics(
-          params.tenantId,
-          params.dateFrom,
-          params.dateTo,
-        );
+      case 'shifts':
+        data.shifts = await getShiftMetrics(params.tenantId, params.dateFrom, params.dateTo);
         break;
-      case "kvp":
-        data.kvp = await getKvpMetrics(
-          params.tenantId,
-          params.dateFrom,
-          params.dateTo,
-        );
+      case 'kvp':
+        data.kvp = await getKvpMetrics(params.tenantId, params.dateFrom, params.dateTo);
         break;
-      case "attendance":
-        data.attendance = await getAttendanceMetrics(
-          params.tenantId,
-          params.dateFrom,
-          params.dateTo,
-        );
+      case 'attendance':
+        data.attendance = getAttendanceMetrics(params.tenantId, params.dateFrom, params.dateTo);
         break;
-      case "compliance":
-        data.compliance = await getComplianceReport({
+      case 'compliance':
+        data.compliance = getComplianceReport({
           tenantId: params.tenantId,
           dateFrom: params.dateFrom,
           dateTo: params.dateTo,
@@ -647,7 +600,7 @@ export async function generateCustomReport(params: CustomReportParams) {
 interface ExportReportParams {
   tenantId: number;
   reportType: string;
-  format: "pdf" | "excel" | "csv";
+  format: 'pdf' | 'excel' | 'csv';
   filters: {
     dateFrom?: string;
     dateTo?: string;
@@ -656,25 +609,31 @@ interface ExportReportParams {
   };
 }
 
-export async function exportReport(params: ExportReportParams) {
+/**
+ *
+ * @param params - The parameters object
+ */
+export async function exportReport(
+  params: ExportReportParams,
+): Promise<{ filename: string; content: Buffer | string; mimeType: string }> {
   // Get report data based on type
   let reportData: Record<string, unknown> | Buffer | unknown[];
 
   switch (params.reportType) {
-    case "overview":
+    case 'overview':
       reportData = await getOverviewReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom,
         dateTo: params.filters.dateTo,
       });
       break;
-    case "employees":
+    case 'employees':
       reportData = await getEmployeeReport({
         tenantId: params.tenantId,
         ...params.filters,
       });
       break;
-    case "departments":
+    case 'departments':
       reportData = {
         departments: await getDepartmentReport({
           tenantId: params.tenantId,
@@ -683,21 +642,21 @@ export async function exportReport(params: ExportReportParams) {
         }),
       };
       break;
-    case "shifts":
+    case 'shifts':
       reportData = await getShiftReport({
         tenantId: params.tenantId,
         ...params.filters,
       });
       break;
-    case "kvp":
+    case 'kvp':
       reportData = await getKvpReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom,
         dateTo: params.filters.dateTo,
       });
       break;
-    case "attendance":
-      reportData = await getAttendanceReport({
+    case 'attendance':
+      reportData = getAttendanceReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom ?? getDefaultDateFrom(),
         dateTo: params.filters.dateTo ?? getDefaultDateTo(),
@@ -705,8 +664,8 @@ export async function exportReport(params: ExportReportParams) {
         teamId: params.filters.teamId,
       });
       break;
-    case "compliance":
-      reportData = await getComplianceReport({
+    case 'compliance':
+      reportData = getComplianceReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom ?? getDefaultDateFrom(),
         dateTo: params.filters.dateTo ?? getDefaultDateTo(),
@@ -714,50 +673,77 @@ export async function exportReport(params: ExportReportParams) {
       });
       break;
     default:
-      throw new ServiceError("Invalid report type", "INVALID_REPORT_TYPE", 400);
+      throw new ServiceError('Invalid report type', 'INVALID_REPORT_TYPE', 400);
   }
 
   // For now, return the data as-is
   // In production, this would generate actual PDF/Excel/CSV files
+  const timestamp = new Date().toISOString().split('T')[0];
   switch (params.format) {
-    case "pdf":
+    case 'pdf':
       // Would use something like puppeteer or pdfkit
-      return Buffer.from(JSON.stringify(reportData, null, 2));
-    case "excel":
+      return {
+        filename: `report-${params.reportType}-${timestamp}.pdf`,
+        content: Buffer.from(JSON.stringify(reportData, null, 2)),
+        mimeType: 'application/pdf',
+      };
+    case 'excel':
       // Would use something like exceljs
-      return Buffer.from(JSON.stringify(reportData, null, 2));
-    case "csv":
+      return {
+        filename: `report-${params.reportType}-${timestamp}.xlsx`,
+        content: Buffer.from(JSON.stringify(reportData, null, 2)),
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      };
+    case 'csv':
       // Would convert to CSV format
-      return convertToCSV(reportData as Record<string, unknown>);
+      return {
+        filename: `report-${params.reportType}-${timestamp}.csv`,
+        content: convertToCSV(reportData),
+        mimeType: 'text/csv',
+      };
     default:
-      throw new ServiceError(
-        "Invalid export format",
-        "INVALID_EXPORT_FORMAT",
-        400,
-      );
+      throw new ServiceError('Invalid export format', 'INVALID_EXPORT_FORMAT', 400);
   }
 }
 
 // Helper functions
 
+/**
+ *
+ */
 function getDefaultDateFrom(): string {
   const date = new Date();
   date.setDate(date.getDate() - 30);
-  return date.toISOString().split("T")[0];
+  return date.toISOString().split('T')[0];
 }
 
+/**
+ *
+ */
 function getDefaultDateTo(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Date().toISOString().split('T')[0];
 }
 
+/**
+ *
+ * @param tenantId - The tenant ID
+ * @param _dateFrom - The _dateFrom parameter
+ * @param _dateTo - The _dateTo parameter
+ */
 async function getEmployeeMetrics(
   tenantId: number,
   _dateFrom: string,
   _dateTo: string,
-) {
+): Promise<{
+  total: number;
+  active: number;
+  newThisMonth: number;
+  departments: number;
+  avgPerDepartment: number;
+}> {
   const [resultRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       COUNT(*) as total,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
       COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as new_this_month
@@ -768,22 +754,30 @@ async function getEmployeeMetrics(
     [tenantId],
   );
 
-  const metrics = (resultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (resultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    total: parseInt(String(metrics.total)) || 0,
-    active: parseInt(String(metrics.active)) || 0,
-    newThisMonth: parseInt(String(metrics.new_this_month)) || 0,
+    total: Number.parseInt(String(metrics.total)) || 0,
+    active: Number.parseInt(String(metrics.active)) || 0,
+    newThisMonth: Number.parseInt(String(metrics.new_this_month)) || 0,
+    departments: 0, // TODO: Implement department count
+    avgPerDepartment: 0, // TODO: Implement average per department
   };
 }
 
+/**
+ *
+ * @param tenantId - The tenant ID
+ * @param _dateFrom - The _dateFrom parameter
+ * @param _dateTo - The _dateTo parameter
+ */
 async function getDepartmentMetrics(
   tenantId: number,
   _dateFrom: string,
   _dateTo: string,
-) {
+): Promise<{ total: number; avgEmployees: number }> {
   const [deptResultRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       COUNT(DISTINCT d.id) as total,
       AVG(emp_count) as avg_employees
     FROM departments d
@@ -798,21 +792,27 @@ async function getDepartmentMetrics(
     [tenantId, tenantId],
   );
 
-  const metrics = (deptResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (deptResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    total: parseInt(String(metrics.total)) || 0,
-    avgEmployeesPerDept: parseFloat(String(metrics.avg_employees)) || 0,
+    total: Number.parseInt(String(metrics.total)) || 0,
+    avgEmployees: Number.parseFloat(String(metrics.avg_employees)) || 0,
   };
 }
 
+/**
+ *
+ * @param tenantId - The tenant ID
+ * @param dateFrom - The dateFrom parameter
+ * @param dateTo - The dateTo parameter
+ */
 async function getShiftMetrics(
   tenantId: number,
   dateFrom: string,
   dateTo: string,
-) {
+): Promise<{ totalScheduled: number; overtimeHours: number; coverageRate: number }> {
   const [shiftResultRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       COUNT(*) as total_scheduled,
       0 as overtime_hours,
       1 as coverage_rate
@@ -823,26 +823,38 @@ async function getShiftMetrics(
     [tenantId, dateFrom, dateTo],
   );
 
-  const metrics = (shiftResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (shiftResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    totalScheduled: parseInt(String(metrics.total_scheduled)) || 0,
-    overtimeHours: parseFloat(String(metrics.overtime_hours)) || 0,
-    coverageRate: parseFloat(String(metrics.coverage_rate)) || 0,
+    totalScheduled: Number.parseInt(String(metrics.total_scheduled)) || 0,
+    overtimeHours: Number.parseFloat(String(metrics.overtime_hours)) || 0,
+    coverageRate: Number.parseFloat(String(metrics.coverage_rate)) || 0,
   };
 }
 
+/**
+ * Get KVP metrics for the given period
+ * @param tenantId - The tenant ID
+ * @param dateFrom - Start date for metrics
+ * @param dateTo - End date for metrics
+ * @returns KVP metrics object
+ */
 async function getKvpMetrics(
   tenantId: number,
   dateFrom: string,
   dateTo: string,
-) {
+): Promise<{
+  totalSuggestions: number;
+  implemented: number;
+  totalSavings: number;
+  avgROI: number;
+}> {
   const [kvpResultRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       COUNT(*) as total_suggestions,
       COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
       SUM(CASE WHEN status = 'implemented' THEN actual_savings ELSE 0 END) as total_savings,
-      AVG(CASE WHEN status = 'implemented' AND estimated_cost > 0 
+      AVG(CASE WHEN status = 'implemented' AND estimated_cost > 0
           THEN (actual_savings - estimated_cost) / estimated_cost ELSE NULL END) as avg_roi
     FROM kvp_suggestions
     WHERE tenant_id = ?
@@ -851,31 +863,43 @@ async function getKvpMetrics(
     [tenantId, dateFrom, dateTo],
   );
 
-  const metrics = (kvpResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (kvpResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    totalSuggestions: parseInt(String(metrics.total_suggestions)) || 0,
-    implemented: parseInt(String(metrics.implemented)) || 0,
-    totalSavings: parseFloat(String(metrics.total_savings)) || 0,
-    avgROI: parseFloat(String(metrics.avg_roi)) || 0,
+    totalSuggestions: Number.parseInt(String(metrics.total_suggestions)) || 0,
+    implemented: Number.parseInt(String(metrics.implemented)) || 0,
+    totalSavings: Number.parseFloat(String(metrics.total_savings)) || 0,
+    avgROI: Number.parseFloat(String(metrics.avg_roi)) || 0,
   };
 }
 
+/**
+ * Get survey metrics for the given period
+ * @param tenantId - The tenant ID
+ * @param dateFrom - Start date for metrics
+ * @param dateTo - End date for metrics
+ * @returns Survey metrics object
+ */
 async function getSurveyMetrics(
   tenantId: number,
   dateFrom: string,
   dateTo: string,
-) {
+): Promise<{
+  totalSurveys: number;
+  completedSurveys: number;
+  avgParticipation: number;
+  avgSatisfaction: number;
+}> {
   const [surveyResultRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       COUNT(DISTINCT s.id) as active_surveys,
       AVG(response_rate) as avg_response_rate
     FROM surveys s
     LEFT JOIN (
-      SELECT 
+      SELECT
         survey_id,
         COUNT(DISTINCT user_id) / (
-          SELECT COUNT(*) FROM users 
+          SELECT COUNT(*) FROM users
           WHERE tenant_id = ? AND role = 'employee'
         ) as response_rate
       FROM survey_responses
@@ -888,20 +912,34 @@ async function getSurveyMetrics(
     [tenantId, dateFrom, dateTo, tenantId],
   );
 
-  const metrics = (surveyResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const metrics = (surveyResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    active: parseInt(String(metrics.active_surveys)) || 0,
-    avgResponseRate: parseFloat(String(metrics.avg_response_rate)) || 0,
+    totalSurveys: Number.parseInt(String(metrics.active_surveys)) || 0,
+    completedSurveys: 0, // Not available in current query
+    avgParticipation: Number.parseFloat(String(metrics.avg_response_rate)) || 0,
+    avgSatisfaction: 0, // Not available in current query
   };
 }
 
-async function getAttendanceMetrics(
+/**
+ * Get attendance metrics for the given period
+ * @param _tenantId - The tenant ID
+ * @param _dateFrom - Start date for metrics
+ * @param _dateTo - End date for metrics
+ * @param _departmentId - Optional department ID to filter by
+ * @param _teamId - Optional team ID to filter by
+ * @returns Attendance metrics object
+ */
+function getAttendanceMetrics(
   _tenantId: number,
   _dateFrom: string,
   _dateTo: string,
   _departmentId?: number,
   _teamId?: number,
-) {
+): {
+  avgRate: number;
+  absences: number;
+} {
   // Mock implementation for now
   return {
     avgRate: 0.92,
@@ -909,17 +947,30 @@ async function getAttendanceMetrics(
   };
 }
 
+/**
+ * Get performance metrics for the given period
+ * @param tenantId - The tenant ID
+ * @param dateFrom - Start date for metrics
+ * @param dateTo - End date for metrics
+ * @param _departmentId - Optional department ID to filter by
+ * @param _teamId - Optional team ID to filter by
+ * @returns Performance metrics object
+ */
 async function getPerformanceMetrics(
   tenantId: number,
   dateFrom: string,
   dateTo: string,
   _departmentId?: number,
   _teamId?: number,
-) {
+): Promise<{
+  kvpParticipation: number;
+  surveyCompletion: number;
+  overallScore: number;
+}> {
   // Get KVP participation rate
   const [kvpResultRows] = await executeQuery(
     `
-    SELECT 
+    SELECT
       COUNT(DISTINCT submitted_by) as participants,
       (SELECT COUNT(*) FROM users WHERE tenant_id = ? AND role = 'employee') as total_employees
     FROM kvp_suggestions
@@ -929,47 +980,50 @@ async function getPerformanceMetrics(
     [tenantId, tenantId, dateFrom, dateTo],
   );
 
-  const kvpData = (kvpResultRows as Array<Record<string, unknown>>)[0] ?? {};
+  const kvpData = (kvpResultRows as Record<string, unknown>[])[0] ?? {};
   const kvpParticipation =
-    Number(kvpData.total_employees) > 0
-      ? Number(kvpData.participants) / Number(kvpData.total_employees)
-      : 0;
+    Number(kvpData.total_employees) > 0 ?
+      Number(kvpData.participants) / Number(kvpData.total_employees)
+    : 0;
 
   // Mock shift completion rate for now
   const avgShiftCompletion = 0.88 + Math.random() * 0.1;
 
   return {
     kvpParticipation,
-    avgShiftCompletion,
+    surveyCompletion: 0, // Not available in current implementation
+    overallScore: avgShiftCompletion,
   };
 }
 
+/**
+ *
+ * @param data - The data object
+ */
+/**
+ * Convert data to CSV format
+ * @param data - The data to convert
+ * @returns CSV data as Buffer
+ */
 function convertToCSV(data: Record<string, unknown>): Buffer {
   // Simple CSV conversion for demonstration
   // In production, use a proper CSV library
   const lines = [];
-  lines.push("Assixx Report Export");
+  lines.push('Assixx Report Export');
   lines.push(`Generated: ${new Date().toISOString()}`);
-  lines.push("");
+  lines.push('');
 
   // Flatten the data structure and convert to CSV
-  const flattenObject = (
-    obj: Record<string, unknown>,
-    prefix = "",
-  ): string[] => {
+  const flattenObject = (obj: Record<string, unknown>, prefix = ''): string[] => {
     const rows: string[] = [];
     for (const [key, value] of Object.entries(obj)) {
       const fullKey = prefix ? `${prefix}.${key}` : key;
-      if (
-        typeof value === "object" &&
-        value !== null &&
-        !Array.isArray(value)
-      ) {
+      if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         rows.push(...flattenObject(value as Record<string, unknown>, fullKey));
       } else if (Array.isArray(value)) {
         rows.push(`"${fullKey}","${value.length} items"`);
       } else {
-        rows.push(`"${fullKey}","${value}"`);
+        rows.push(`"${fullKey}","${String(value)}"`);
       }
     }
     return rows;
@@ -977,5 +1031,5 @@ function convertToCSV(data: Record<string, unknown>): Buffer {
 
   lines.push(...flattenObject(data));
 
-  return Buffer.from(lines.join("\n"));
+  return Buffer.from(lines.join('\n'));
 }

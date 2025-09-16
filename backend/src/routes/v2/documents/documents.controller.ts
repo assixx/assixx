@@ -1,20 +1,29 @@
 /**
  * Documents v2 Controller
  * Handles HTTP requests and responses for document management
- * @swagger
+
  * tags:
  *   name: Documents v2
  *   description: Document management API v2
  */
+import { Response } from 'express';
+import multer from 'multer';
 
-import { Response } from "express";
-import multer from "multer";
+import rootLog from '../../../models/rootLog';
+import type { AuthenticatedRequest } from '../../../types/request.types';
+import { errorResponse, successResponse } from '../../../utils/apiResponse';
+import { logger } from '../../../utils/logger';
+import { ServiceError, documentsService } from './documents.service';
 
-import { AuthenticatedRequest } from "../../../types/request.types";
-import { successResponse, errorResponse } from "../../../utils/apiResponse";
-import { logger } from "../../../utils/logger";
-
-import { documentsService, ServiceError } from "./documents.service";
+interface Document {
+  id: number;
+  filename: string;
+  category?: string;
+  fileSize?: number;
+  mimeType?: string;
+  recipientType?: string;
+  [key: string]: unknown;
+}
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
@@ -23,20 +32,26 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
+  // eslint-disable-next-line promise/prefer-await-to-callbacks
   fileFilter: (_req, file, cb) => {
     // Only allow PDF files
-    if (file.mimetype === "application/pdf") {
+    if (file.mimetype === 'application/pdf') {
+      // Multer requires callback-style, cannot use async/await
+      // eslint-disable-next-line promise/prefer-await-to-callbacks
       cb(null, true);
     } else {
-      cb(new Error("Only PDF files are allowed"));
+      // eslint-disable-next-line promise/prefer-await-to-callbacks
+      cb(new Error('Only PDF files are allowed'));
     }
   },
 });
 
-export const uploadMiddleware = upload.single("document");
+export const uploadMiddleware = upload.single('document');
 
 /**
- * @swagger
+ * @param req - The request object
+ * @param res - The response object
+
  * /api/v2/documents:
  *   get:
  *     summary: List documents with filters
@@ -119,56 +134,45 @@ export const uploadMiddleware = upload.single("document");
  *       500:
  *         description: Server error
  */
-export async function listDocuments(req: AuthenticatedRequest, res: Response) {
+export async function listDocuments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    logger.info("Documents v2: listDocuments called", {
-      userId: req.user?.id,
-      tenantId: req.user?.tenant_id,
+    logger.info('Documents v2: listDocuments called', {
+      userId: req.user.id,
+      tenantId: req.user.tenant_id,
     });
     const filters = {
       category: req.query.category as string,
       recipientType: req.query.recipientType as string,
-      userId: req.query.userId
-        ? parseInt(req.query.userId as string)
-        : undefined,
-      teamId: req.query.teamId
-        ? parseInt(req.query.teamId as string)
-        : undefined,
-      departmentId: req.query.departmentId
-        ? parseInt(req.query.departmentId as string)
-        : undefined,
-      year: req.query.year ? parseInt(req.query.year as string) : undefined,
-      month: req.query.month ? parseInt(req.query.month as string) : undefined,
-      isArchived: req.query.isArchived === "true",
+      userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
+      teamId: req.query.teamId ? Number.parseInt(req.query.teamId as string) : undefined,
+      departmentId:
+        req.query.departmentId ? Number.parseInt(req.query.departmentId as string) : undefined,
+      year: req.query.year ? Number.parseInt(req.query.year as string) : undefined,
+      month: req.query.month ? Number.parseInt(req.query.month as string) : undefined,
+      isArchived: req.query.isArchived === 'true',
       search: req.query.search as string,
-      page: req.query.page ? parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? parseInt(req.query.limit as string) : 20,
+      page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+      limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
     };
 
-    const result = await documentsService.listDocuments(
-      req.user.id,
-      req.user.tenant_id,
-      filters,
-    );
+    const result = await documentsService.listDocuments(req.user.id, req.user.tenant_id, filters);
 
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`List documents error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to list documents"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to list documents'));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/documents/{id}:
+ * @param req - The request object
+ * @param res - The response object
+
+ * /api/v2/documents/\{id\}:
  *   get:
  *     summary: Get document by ID
  *     tags: [Documents v2]
@@ -197,12 +201,9 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response) {
  *       500:
  *         description: Server error
  */
-export async function getDocumentById(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function getDocumentById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     const document = await documentsService.getDocumentById(
       documentId,
@@ -211,22 +212,20 @@ export async function getDocumentById(
     );
 
     res.json(successResponse(document));
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Get document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get document'));
     }
   }
 }
 
 /**
- * @swagger
+ * @param req - The request object
+ * @param res - The response object
+
  * /api/v2/documents:
  *   post:
  *     summary: Upload a new document
@@ -293,10 +292,10 @@ export async function getDocumentById(
  *       500:
  *         description: Server error
  */
-export async function createDocument(req: AuthenticatedRequest, res: Response) {
+export async function createDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     if (!req.file) {
-      res.status(400).json(errorResponse("BAD_REQUEST", "No file uploaded"));
+      res.status(400).json(errorResponse('BAD_REQUEST', 'No file uploaded'));
       return;
     }
 
@@ -311,14 +310,14 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
       mimeType: req.file.mimetype,
       category: body.category,
       recipientType: body.recipientType,
-      userId: body.userId ? parseInt(body.userId) : undefined,
-      teamId: body.teamId ? parseInt(body.teamId) : undefined,
-      departmentId: body.departmentId ? parseInt(body.departmentId) : undefined,
+      userId: body.userId ? Number.parseInt(body.userId) : undefined,
+      teamId: body.teamId ? Number.parseInt(body.teamId) : undefined,
+      departmentId: body.departmentId ? Number.parseInt(body.departmentId) : undefined,
       description: body.description,
-      year: body.year ? parseInt(body.year) : undefined,
-      month: body.month ? parseInt(body.month) : undefined,
-      tags: body.tags ? JSON.parse(body.tags) : undefined,
-      isPublic: body.isPublic === "true",
+      year: body.year ? Number.parseInt(body.year) : undefined,
+      month: body.month ? Number.parseInt(body.month) : undefined,
+      tags: body.tags ? (JSON.parse(body.tags) as string[]) : undefined,
+      isPublic: body.isPublic === 'true',
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
     };
 
@@ -328,24 +327,43 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
       req.user.tenant_id,
     );
 
+    // Log document upload
+    await rootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: 'upload',
+      entity_type: 'document',
+      entity_id: (document as unknown as Document).id,
+      details: `Hochgeladen: ${(document as unknown as Document).filename || documentData.filename}`,
+      new_values: {
+        filename: (document as unknown as Document).filename || documentData.filename,
+        category: documentData.category,
+        file_size: documentData.fileSize,
+        mime_type: documentData.mimeType,
+        recipient_type: documentData.recipientType,
+        uploaded_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get('user-agent'),
+      was_role_switched: false,
+    });
+
     res.status(201).json(successResponse(document));
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Create document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to create document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to create document'));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/documents/{id}:
+ * @param req - The request object
+ * @param res - The response object
+
+ * /api/v2/documents/\{id\}:
  *   put:
  *     summary: Update document metadata
  *     tags: [Documents v2]
@@ -400,9 +418,9 @@ export async function createDocument(req: AuthenticatedRequest, res: Response) {
  *       500:
  *         description: Server error
  */
-export async function updateDocument(req: AuthenticatedRequest, res: Response) {
+export async function updateDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
     interface UpdateDocumentBody {
       filename?: string;
       category?: string;
@@ -423,31 +441,24 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
     };
 
-    const document = await documentsService.updateDocument(
-      documentId,
-      updateData,
-      req.user.id,
-      req.user.tenant_id,
-    );
+    await documentsService.updateDocument(documentId, updateData, req.user.id, req.user.tenant_id);
 
-    res.json(successResponse(document));
-  } catch (error) {
+    res.json(successResponse({ message: 'Document updated successfully' }));
+  } catch (error: unknown) {
     logger.error(`Update document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to update document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to update document'));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/documents/{id}:
+ * @param req - The request object
+ * @param res - The response object
+
+ * /api/v2/documents/\{id\}:
  *   delete:
  *     summary: Delete a document
  *     tags: [Documents v2]
@@ -484,34 +495,56 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response) {
  *       500:
  *         description: Server error
  */
-export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
+export async function deleteDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
-    const result = await documentsService.deleteDocument(
+    // Get document details before deletion for logging
+    const document = await documentsService.getDocumentById(
       documentId,
       req.user.id,
       req.user.tenant_id,
     );
 
-    res.json(successResponse(result));
-  } catch (error) {
+    await documentsService.deleteDocument(documentId, req.user.id, req.user.tenant_id);
+
+    // Log document deletion
+    await rootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: 'delete',
+      entity_type: 'document',
+      entity_id: documentId,
+      details: `Gelöscht: ${(document as unknown as Document | null)?.filename ?? 'unknown'}`,
+      old_values: {
+        filename: (document as unknown as Document | null)?.filename ?? 'unknown',
+        category: (document as unknown as Document | null)?.category ?? 'unknown',
+        file_size: (document as unknown as Document | null)?.fileSize ?? 0,
+        mime_type: (document as unknown as Document | null)?.mimeType ?? 'unknown',
+        recipient_type: (document as unknown as Document | null)?.recipientType ?? 'unknown',
+        deleted_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get('user-agent'),
+      was_role_switched: false,
+    });
+
+    res.json(successResponse({ message: 'Document deleted successfully' }));
+  } catch (error: unknown) {
     logger.error(`Delete document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to delete document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to delete document'));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/documents/{id}/archive:
+ * @param req - The request object
+ * @param res - The response object
+
+ * /api/v2/documents/\{id\}/archive:
  *   post:
  *     summary: Archive a document
  *     tags: [Documents v2]
@@ -548,39 +581,29 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response) {
  *       500:
  *         description: Server error
  */
-export async function archiveDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function archiveDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
     logger.info(`Archiving document ${documentId} for user ${req.user.id}`);
 
-    const result = await documentsService.archiveDocument(
-      documentId,
-      true,
-      req.user.id,
-      req.user.tenant_id,
-    );
+    await documentsService.archiveDocument(documentId, true, req.user.id, req.user.tenant_id);
 
-    res.json(successResponse(result));
-  } catch (error) {
+    res.json(successResponse({ message: 'Document archived successfully' }));
+  } catch (error: unknown) {
     logger.error(`Archive document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to archive document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to archive document'));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/documents/{id}/unarchive:
+ * @param req - The request object
+ * @param res - The response object
+
+ * /api/v2/documents/\{id\}/unarchive:
  *   post:
  *     summary: Unarchive a document
  *     tags: [Documents v2]
@@ -617,38 +640,28 @@ export async function archiveDocument(
  *       500:
  *         description: Server error
  */
-export async function unarchiveDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function unarchiveDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
-    const result = await documentsService.archiveDocument(
-      documentId,
-      false,
-      req.user.id,
-      req.user.tenant_id,
-    );
+    await documentsService.archiveDocument(documentId, false, req.user.id, req.user.tenant_id);
 
-    res.json(successResponse(result));
-  } catch (error) {
+    res.json(successResponse({ message: 'Document unarchived successfully' }));
+  } catch (error: unknown) {
     logger.error(`Unarchive document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to unarchive document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to unarchive document'));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/documents/{id}/download:
+ * @param req - The request object
+ * @param res - The response object
+
+ * /api/v2/documents/\{id\}/download:
  *   get:
  *     summary: Download a document file
  *     tags: [Documents v2]
@@ -678,12 +691,9 @@ export async function unarchiveDocument(
  *       500:
  *         description: Server error
  */
-export async function downloadDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function downloadDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     const documentContent = await documentsService.getDocumentContent(
       documentId,
@@ -692,32 +702,27 @@ export async function downloadDocument(
     );
 
     // Set headers for download
-    res.setHeader("Content-Type", documentContent.mimeType);
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${documentContent.filename}"`,
-    );
-    res.setHeader("Content-Length", documentContent.size.toString());
+    res.setHeader('Content-Type', documentContent.mimeType);
+    res.setHeader('Content-Disposition', `attachment; filename="${documentContent.originalName}"`);
+    res.setHeader('Content-Length', documentContent.fileSize.toString());
 
     // Send file content
     res.send(documentContent.content);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Download document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to download document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to download document'));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/documents/{id}/preview:
+ * @param req - The request object
+ * @param res - The response object
+
+ * /api/v2/documents/\{id\}/preview:
  *   get:
  *     summary: Preview a document inline
  *     tags: [Documents v2]
@@ -747,12 +752,9 @@ export async function downloadDocument(
  *       500:
  *         description: Server error
  */
-export async function previewDocument(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function previewDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = parseInt(req.params.id);
+    const documentId = Number.parseInt(req.params.id);
 
     const documentContent = await documentsService.getDocumentContent(
       documentId,
@@ -761,31 +763,26 @@ export async function previewDocument(
     );
 
     // Set headers for inline viewing
-    res.setHeader("Content-Type", documentContent.mimeType);
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${documentContent.filename}"`,
-    );
-    res.setHeader("Content-Length", documentContent.size.toString());
+    res.setHeader('Content-Type', documentContent.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${documentContent.originalName}"`);
+    res.setHeader('Content-Length', documentContent.fileSize.toString());
 
     // Send file content
     res.send(documentContent.content);
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Preview document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to preview document"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to preview document'));
     }
   }
 }
 
 /**
- * @swagger
+ * @param req - The request object
+ * @param res - The response object
+
  * /api/v2/documents/stats:
  *   get:
  *     summary: Get document statistics
@@ -824,27 +821,17 @@ export async function previewDocument(
  *       500:
  *         description: Server error
  */
-export async function getDocumentStats(
-  req: AuthenticatedRequest,
-  res: Response,
-) {
+export async function getDocumentStats(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const stats = await documentsService.getDocumentStats(
-      req.user.id,
-      req.user.tenant_id,
-    );
+    const stats = await documentsService.getDocumentStats(req.user.id, req.user.tenant_id);
 
     res.json(successResponse(stats));
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error(`Get document stats error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
-      res
-        .status(error.statusCode)
-        .json(errorResponse(error.code, error.message));
+      res.status(error.statusCode).json(errorResponse(error.code, error.message));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Failed to get document stats"));
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to get document stats'));
     }
   }
 }

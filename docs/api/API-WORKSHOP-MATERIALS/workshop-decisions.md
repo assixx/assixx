@@ -8,7 +8,7 @@
 
 ## Phase 1: IST-Analyse ✅
 
-### Identifizierte Hauptprobleme:
+### Identifizierte Hauptprobleme
 
 1. **Wartbarkeit** - API ist schwer zu warten
 2. **Inkonsistenz** - Verschiedene Patterns überall
@@ -16,7 +16,7 @@
 4. **Naming Chaos** - channels vs conversations
 5. **Fehlende Endpoints** - z.B. DELETE für Calendar
 
-### Priorität festgelegt:
+### Priorität festgelegt
 
 **Sicherheit > Saubere Standards > Schnelle Hacks**
 
@@ -24,7 +24,7 @@
 
 ## Phase 2: API Standards ✅
 
-### Entschiedene Standards:
+### Entschiedene Standards
 
 #### 1. Resource Naming
 
@@ -86,7 +86,7 @@
 
 ## Phase 3: Endpoint-Entscheidungen 🔄 (In Progress)
 
-### ✅ Entschieden:
+### ✅ Entschieden
 
 #### 4. API Versionierung
 
@@ -229,7 +229,7 @@ interface PaginationResponse<T> {
 
 ## Phase 3 ABGESCHLOSSEN ✅
 
-### Zusammenfassung der Kern-Entscheidungen:
+### Zusammenfassung der Kern-Entscheidungen
 
 1. **URL-basierte Versionierung:** `/api/v2/...`
 2. **Immer Plural:** `/users`, `/events`, `/conversations`
@@ -309,7 +309,7 @@ res.setHeader('Link', '</api/v2>; rel="successor-version"');
 
 ## Dokumentation Updates ✅
 
-### TYPESCRIPT-STANDARDS.md aktualisiert mit:
+### TYPESCRIPT-STANDARDS.md aktualisiert mit
 
 1. **camelCase für API Fields** (nicht snake_case!)
 2. **API Response Standards** (success flag + meta)
@@ -318,14 +318,14 @@ res.setHeader('Link', '</api/v2>; rel="successor-version"');
 5. **API Versioning** (/api/v2/...)
 6. **Type-Safe API Client** Beispiel
 
-### Automatische Konvertierung:
+### Automatische Konvertierung
 
 - API (camelCase) ↔ DB (snake_case)
 - Utility Functions in TYPESCRIPT-STANDARDS.md dokumentiert
 
 ---
 
-## Nächste Schritte:
+## Nächste Schritte
 
 1. Endpoint-Entscheidungen abschließen
 2. Migration Timeline planen

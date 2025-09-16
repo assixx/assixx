@@ -28,6 +28,8 @@ export interface CreateAdminRequest {
   lastName?: string;
   company?: string;
   notes?: string;
+  employeeNumber?: string;
+  position?: string;
 }
 
 export interface UpdateAdminRequest {
@@ -39,6 +41,8 @@ export interface UpdateAdminRequest {
   company?: string;
   notes?: string;
   isActive?: boolean;
+  employeeNumber?: string;
+  position?: string;
 }
 
 // Root User Types
@@ -50,6 +54,8 @@ export interface RootUser {
   lastName: string;
   position?: string;
   notes?: string;
+  employeeNumber?: string;
+  departmentId?: number;
   isActive: boolean;
   employeeId?: string;
   createdAt: Date;
@@ -64,6 +70,8 @@ export interface CreateRootUserRequest {
   lastName: string;
   position?: string;
   notes?: string;
+  employeeNumber?: string;
+  departmentId?: number;
   isActive?: boolean;
 }
 
@@ -73,6 +81,8 @@ export interface UpdateRootUserRequest {
   email?: string;
   position?: string;
   notes?: string;
+  employeeNumber?: string;
+  departmentId?: number;
   isActive?: boolean;
 }
 
@@ -82,7 +92,7 @@ export interface Tenant {
   companyName: string;
   subdomain: string;
   currentPlan?: string;
-  status: "active" | "inactive" | "suspended" | "deleted";
+  status: 'active' | 'inactive' | 'suspended' | 'deleted';
   maxUsers?: number;
   maxAdmins?: number;
   industry?: string;
@@ -102,13 +112,14 @@ export interface TenantDeletionStatus {
   queueId: number;
   tenantId: number;
   status:
-    | "pending"
-    | "approved"
-    | "executing"
-    | "completed"
-    | "failed"
-    | "cancelled"
-    | "stopped";
+    | 'pending'
+    | 'pending_approval'
+    | 'approved'
+    | 'executing'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+    | 'stopped';
   requestedBy: number;
   requestedByName?: string;
   requestedAt: Date;
@@ -117,6 +128,7 @@ export interface TenantDeletionStatus {
   scheduledFor?: Date;
   reason?: string;
   errorMessage?: string;
+  coolingOffHours: number;
   canCancel: boolean;
   canApprove: boolean;
 }
@@ -142,9 +154,9 @@ export interface DashboardStats {
   tenantCount?: number;
   activeFeatures?: string[];
   systemHealth?: {
-    database: "healthy" | "degraded" | "down";
-    storage: "healthy" | "degraded" | "down";
-    services: "healthy" | "degraded" | "down";
+    database: 'healthy' | 'degraded' | 'down';
+    storage: 'healthy' | 'degraded' | 'down';
+    services: 'healthy' | 'degraded' | 'down';
   };
 }
 
@@ -212,4 +224,16 @@ export interface DeletionDryRunReport {
   storageToFree: number;
   warnings: string[];
   canProceed: boolean;
+}
+
+// MySQL Error Type
+export interface MySQLError extends Error {
+  code?: string;
+  errno?: number;
+  sql?: string;
+  sqlState?: string;
+  sqlMessage?: string;
+  fieldCount?: number;
+  affectedRows?: number;
+  insertId?: number;
 }

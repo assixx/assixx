@@ -13,7 +13,7 @@ export interface SetPermissionsRequest {
 
 export interface BulkPermissionsRequest {
   adminIds: number[];
-  operation: "assign" | "remove";
+  operation: 'assign' | 'remove';
   departmentIds?: number[];
   groupIds?: number[];
   permissions?: PermissionSet;
@@ -60,20 +60,20 @@ export interface PermissionSet {
   canDelete: boolean;
 }
 
-export type PermissionLevel = "read" | "write" | "delete";
+export type PermissionLevel = 'read' | 'write' | 'delete';
 
 // Service Layer Types
 export interface PermissionCheckResult {
   hasAccess: boolean;
-  source?: "direct" | "group";
+  source?: 'direct' | 'group';
   permissions?: PermissionSet;
 }
 
 export interface PermissionLogEntry {
-  action: "grant" | "revoke";
+  action: 'grant' | 'revoke';
   adminId: number;
   targetId: number;
-  targetType: "department" | "group";
+  targetType: 'department' | 'group';
   permissions: PermissionSet;
   changedBy: number;
   changedAt: Date;

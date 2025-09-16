@@ -5,26 +5,26 @@
 
 // Question types supported by the survey system
 export type QuestionType =
-  | "text"
-  | "single_choice"
-  | "multiple_choice"
-  | "rating"
-  | "number"
-  | "yes_no"; // Alias for single_choice with Yes/No options
+  | 'text'
+  | 'single_choice'
+  | 'multiple_choice'
+  | 'rating'
+  | 'number'
+  | 'yes_no'; // Alias for single_choice with Yes/No options
 
 // Map yes_no to single_choice for database
 export function mapQuestionType(type: string): string {
-  if (type === "yes_no") {
-    return "single_choice";
+  if (type === 'yes_no') {
+    return 'single_choice';
   }
   return type;
 }
 
 // Survey status
-export type SurveyStatus = "draft" | "active" | "closed" | "archived";
+export type SurveyStatus = 'draft' | 'active' | 'closed' | 'archived';
 
 // Survey assignment types
-export type AssignmentType = "company" | "department" | "team" | "individual";
+export type AssignmentType = 'company' | 'department' | 'team' | 'individual';
 
 // Database survey record
 export interface DbSurvey {
@@ -116,10 +116,10 @@ export interface SurveyStatistics {
   completedResponses: number;
   responseRate: number;
   averageCompletionTime?: number;
-  questionStats?: Array<{
+  questionStats?: {
     questionId: number;
     questionText: string;
     responseCount: number;
     answers?: Record<string, unknown>;
-  }>;
+  }[];
 }

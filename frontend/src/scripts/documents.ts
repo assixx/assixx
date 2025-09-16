@@ -3,9 +3,11 @@
  * Central document management with smart filters
  */
 
+import domPurify from 'dompurify';
 import type { Document } from '../types/api.types';
-
-import { fetchWithAuth, showError, showSuccess } from './auth';
+import { ApiClient } from '../utils/api-client';
+import { showErrorAlert, showSuccessAlert } from './utils/alerts';
+import { $$id } from '../utils/dom-utils';
 
 // Document scope type
 type DocumentScope = 'all' | 'company' | 'department' | 'team' | 'personal' | 'payroll';
@@ -29,12 +31,17 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 async function initializeDocuments(): Promise<void> {
   try {
+    // Show loading state
+    showLoadingState();
+
     await loadDocuments();
     updateStats();
     renderDocuments();
   } catch (error) {
     console.error('Error initializing documents:', error);
-    showError('Fehler beim Laden der Dokumente');
+    showErrorAlert('Fehler beim Laden der Dokumente');
+    // Hide loading state on error
+    hideLoadingState();
   }
 }
 
@@ -47,16 +54,16 @@ function setupEventListeners(): void {
   filterPills.forEach((pill) => {
     pill.addEventListener('click', (e) => {
       const target = e.currentTarget as HTMLElement;
-      const filter = target.dataset.filter as DocumentScope;
-      if (filter) {
+      const filter = target.dataset.filter as DocumentScope | undefined;
+      if (filter !== undefined) {
         setActiveFilter(filter);
       }
     });
   });
 
   // Search input
-  const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-  if (searchInput) {
+  const searchInput = document.querySelector('#searchInput');
+  if (searchInput !== null) {
     searchInput.addEventListener(
       'input',
       debounce((e) => {
@@ -82,13 +89,9 @@ function setupEventListeners(): void {
  */
 async function loadDocuments(): Promise<void> {
   try {
-    const response = await fetchWithAuth('/api/documents/v2');
+    const apiClient = ApiClient.getInstance();
+    const data = await apiClient.request<{ documents?: Document[] }>('/documents', { method: 'GET' });
 
-    if (!response.ok) {
-      throw new Error('Failed to load documents');
-    }
-
-    const data = await response.json();
     allDocuments = data.documents ?? [];
 
     // Update document counts
@@ -116,7 +119,7 @@ function updateCounts(): void {
     if (doc.scope === 'company') counts.company++;
     else if (doc.scope === 'department') counts.department++;
     else if (doc.scope === 'team') counts.team++;
-    else if (doc.scope === 'personal') counts.personal++;
+    else counts.personal++;
 
     // Count payroll documents (Gehaltsabrechnungen) based on category
     if (doc.category === 'salary') counts.payroll++;
@@ -135,7 +138,7 @@ function updateCounts(): void {
  * Update count element
  */
 function updateCount(elementId: string, count: number): void {
-  const element = document.getElementById(elementId);
+  const element = $$id(elementId);
   if (element) {
     element.textContent = count.toString();
   }
@@ -146,7 +149,7 @@ function updateCount(elementId: string, count: number): void {
  */
 function updateStats(): void {
   const totalDocs = allDocuments.length;
-  const unreadDocs = allDocuments.filter((doc) => !doc.is_read).length;
+  const unreadDocs = allDocuments.filter((doc) => doc.is_read !== true).length;
 
   // Calculate documents from this week
   const oneWeekAgo = new Date();
@@ -195,12 +198,12 @@ function applyFilters(): void {
   }
 
   // Apply search filter
-  if (currentSearch) {
+  if (currentSearch !== '') {
     filteredDocuments = filteredDocuments.filter(
       (doc) =>
-        (doc.file_name.toLowerCase().includes(currentSearch) ||
-          doc.description?.toLowerCase().includes(currentSearch)) ??
-        doc.uploaded_by_name?.toLowerCase().includes(currentSearch),
+        doc.file_name.toLowerCase().includes(currentSearch) ||
+        doc.description?.toLowerCase().includes(currentSearch) === true ||
+        doc.uploaded_by_name?.toLowerCase().includes(currentSearch) === true,
     );
   }
 
@@ -226,7 +229,7 @@ function sortDocuments(): void {
       filteredDocuments.sort((a, b) => a.file_name.localeCompare(b.file_name));
       break;
     case 'size':
-      filteredDocuments.sort((a, b) => (b.file_size || 0) - (a.file_size || 0));
+      filteredDocuments.sort((a, b) => b.file_size - a.file_size);
       break;
   }
 }
@@ -235,8 +238,11 @@ function sortDocuments(): void {
  * Render documents grid
  */
 function renderDocuments(): void {
-  const container = document.getElementById('documentsContainer');
+  const container = document.querySelector('#documentsContainer');
   if (!container) return;
+
+  // Clear loading state first
+  hideLoadingState();
 
   if (filteredDocuments.length === 0) {
     container.innerHTML = `
@@ -253,11 +259,11 @@ function renderDocuments(): void {
   grid.className = 'documents-grid';
 
   filteredDocuments.forEach((doc) => {
-    grid.appendChild(createDocumentCard(doc));
+    grid.append(createDocumentCard(doc));
   });
 
   container.innerHTML = '';
-  container.appendChild(grid);
+  container.append(grid);
 }
 
 /**
@@ -266,12 +272,16 @@ function renderDocuments(): void {
 function createDocumentCard(doc: Document): HTMLElement {
   const card = document.createElement('div');
   card.className = 'document-card';
-  card.onclick = () => void viewDocument(doc.id);
+  card.onclick = () => {
+    viewDocument(doc.id);
+  };
 
   const icon = getFileIcon(doc.mime_type ?? doc.file_name);
-  const readBadge = !doc.is_read ? '<span class="document-badge unread">NEU</span>' : '';
+  const readBadge = doc.is_read !== true ? '<span class="document-badge unread">NEU</span>' : '';
 
-  card.innerHTML = `
+  // Use domPurify for complex HTML with user data
+  // eslint-disable-next-line no-unsanitized/property -- sanitized with domPurify
+  card.innerHTML = domPurify.sanitize(`
     ${readBadge}
     <div class="document-icon">
       <i class="${icon}"></i>
@@ -289,7 +299,7 @@ function createDocumentCard(doc: Document): HTMLElement {
         <span>${escapeHtml(doc.uploaded_by_name ?? 'System')}</span>
       </div>
       ${
-        doc.file_size
+        doc.file_size !== 0
           ? `
         <div class="document-meta-item">
           <i class="fas fa-weight"></i>
@@ -303,7 +313,7 @@ function createDocumentCard(doc: Document): HTMLElement {
         <span>${getScopeLabel(doc.scope)}</span>
       </div>
     </div>
-  `;
+  `);
 
   return card;
 }
@@ -351,32 +361,36 @@ let currentDocument: Document | null = null;
 /**
  * View document in modal
  */
-async function viewDocument(documentId: number): Promise<void> {
+function viewDocument(documentId: number): void {
   try {
     // Find the document in our data
     const doc = allDocuments.find((d) => d.id === documentId);
     if (!doc) {
-      showError('Dokument nicht gefunden');
+      showErrorAlert('Dokument nicht gefunden');
       return;
     }
 
     currentDocument = doc;
 
     // Mark as read
-    fetchWithAuth(`/api/documents/${documentId}/read`, { method: 'POST' })
-      .then(() => {
+    void (async () => {
+      try {
+        const apiClient = ApiClient.getInstance();
+        await apiClient.request(`/documents/${documentId}/read`, { method: 'POST' });
         // Update local state
         doc.is_read = true;
         updateStats();
         renderDocuments();
-      })
-      .catch(console.error);
+      } catch (error) {
+        console.error(error);
+      }
+    })();
 
     // Show modal with document info
     showDocumentModal(doc);
   } catch (error) {
     console.error('Error viewing document:', error);
-    showError('Fehler beim Öffnen des Dokuments');
+    showErrorAlert('Fehler beim Öffnen des Dokuments');
   }
 }
 
@@ -385,40 +399,39 @@ async function viewDocument(documentId: number): Promise<void> {
  */
 function showDocumentModal(doc: Document): void {
   // Update modal content
-  const modal = document.getElementById('documentPreviewModal');
+  const modal = document.querySelector('#documentPreviewModal');
   if (!modal) return;
 
   // Update info
-  updateElement('modalDocumentTitle', doc.file_name || 'Dokument');
+  updateElement('modalDocumentTitle', doc.file_name !== '' ? doc.file_name : 'Dokument');
   updateElement('modalFileName', doc.file_name);
-  updateElement('modalFileSize', formatFileSize(doc.file_size || 0));
+  updateElement('modalFileSize', formatFileSize(doc.file_size));
   updateElement('modalUploadedBy', doc.uploaded_by_name ?? 'System');
   updateElement('modalUploadDate', formatDate(doc.created_at));
 
   // Setup preview
-  const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement;
-  const previewError = document.getElementById('previewError');
+  const previewFrame = document.querySelector('#documentPreviewFrame');
+  const previewError = document.querySelector('#previewError');
 
-  if (previewFrame && previewError) {
+  if (previewFrame instanceof HTMLIFrameElement && previewError instanceof HTMLElement) {
     // Create preview URL with authentication token
     const token = localStorage.getItem('token');
-    if (!token) {
+    if (token === null || token === '') {
       previewFrame.style.display = 'none';
       previewError.style.display = 'block';
       return;
     }
 
     // Try to show PDF preview with authentication
-    const previewUrl = `/api/documents/preview/${doc.id}`;
-
     // For iframe, we need to handle authentication differently
     // First, try to fetch the document
-    fetchWithAuth(previewUrl)
-      .then((response) => {
+    void (async () => {
+      try {
+        const apiClient = ApiClient.getInstance();
+        const response = await apiClient.request<Response>(`/documents/preview/${doc.id}`, { method: 'GET' });
         if (!response.ok) throw new Error('Preview failed');
-        return response.blob();
-      })
-      .then((blob) => {
+        const blob = await response.blob();
+
         // Create object URL from blob
         const blobUrl = URL.createObjectURL(blob);
         previewFrame.src = blobUrl;
@@ -427,38 +440,40 @@ function showDocumentModal(doc: Document): void {
 
         // Clean up blob URL when modal closes
         previewFrame.dataset.blobUrl = blobUrl;
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('Preview error:', error);
         previewFrame.style.display = 'none';
         previewError.style.display = 'block';
-      });
+      }
+    })();
   }
 
   // Store document ID for download
-  const downloadBtn = document.getElementById('downloadButton');
-  if (downloadBtn) {
-    downloadBtn.setAttribute('data-document-id', doc.id.toString());
+  const downloadBtn = document.querySelector('#downloadButton');
+  if (downloadBtn instanceof HTMLElement) {
+    downloadBtn.dataset.documentId = doc.id.toString();
   }
 
   // Show modal
-  modal.style.display = 'flex';
+  if (modal instanceof HTMLElement) {
+    modal.style.display = 'flex';
+  }
 }
 
 /**
  * Close document modal
  */
 function closeDocumentModal(): void {
-  const modal = document.getElementById('documentPreviewModal');
-  if (modal) {
+  const modal = document.querySelector('#documentPreviewModal');
+  if (modal instanceof HTMLElement) {
     modal.style.display = 'none';
 
     // Clear iframe and clean up blob URL
-    const previewFrame = document.getElementById('documentPreviewFrame') as HTMLIFrameElement;
-    if (previewFrame) {
+    const previewFrame = document.querySelector('#documentPreviewFrame');
+    if (previewFrame instanceof HTMLIFrameElement) {
       // Clean up blob URL if exists
       const blobUrl = previewFrame.dataset.blobUrl;
-      if (blobUrl) {
+      if (blobUrl !== undefined && blobUrl !== '') {
         URL.revokeObjectURL(blobUrl);
         delete previewFrame.dataset.blobUrl;
       }
@@ -475,19 +490,19 @@ function closeDocumentModal(): void {
 async function downloadDocument(docId?: string | number): Promise<void> {
   let documentId: string;
 
-  if (docId) {
+  if (docId !== undefined) {
     // Called with parameter from employee-dashboard
     documentId = String(docId);
   } else {
     // Called without parameter from documents page
-    const downloadBtn = document.getElementById('downloadButton');
-    if (!downloadBtn) {
+    const downloadBtn = document.querySelector('#downloadButton');
+    if (!(downloadBtn instanceof HTMLElement)) {
       console.error('Download button not found');
       return;
     }
 
-    const dataId = downloadBtn.getAttribute('data-document-id');
-    if (!dataId) {
+    const dataId = downloadBtn.dataset.documentId;
+    if (dataId === undefined || dataId === '') {
       console.error('No document ID found');
       return;
     }
@@ -495,18 +510,19 @@ async function downloadDocument(docId?: string | number): Promise<void> {
   }
 
   try {
-    console.log('Downloading document:', documentId);
+    console.info('Downloading document:', documentId);
 
     // Check if we have a token
     const token = localStorage.getItem('token');
-    if (!token) {
-      showError('Nicht angemeldet. Bitte melden Sie sich erneut an.');
+    if (token === null || token === '') {
+      showErrorAlert('Nicht angemeldet. Bitte melden Sie sich erneut an.');
       window.location.href = '/login';
       return;
     }
 
     // Fetch with authentication
-    const response = await fetchWithAuth(`/api/documents/download/${documentId}`);
+    const apiClient = ApiClient.getInstance();
+    const response = await apiClient.request<Response>(`/documents/download/${documentId}`, { method: 'GET' });
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -530,24 +546,24 @@ async function downloadDocument(docId?: string | number): Promise<void> {
     link.href = url;
     link.download = currentDocument?.file_name ?? 'document.pdf';
     link.style.display = 'none';
-    document.body.appendChild(link);
+    document.body.append(link);
 
     // Trigger download
     link.click();
 
     // Cleanup
     setTimeout(() => {
-      document.body.removeChild(link);
+      link.remove();
       window.URL.revokeObjectURL(url);
     }, 100);
 
-    showSuccess('Dokument wird heruntergeladen');
+    showSuccessAlert('Dokument wird heruntergeladen');
   } catch (error) {
     console.error('Error downloading document:', error);
     if (error instanceof TypeError && error.message.includes('NetworkError')) {
-      showError('Netzwerkfehler beim Herunterladen. Bitte überprüfen Sie Ihre Verbindung.');
+      showErrorAlert('Netzwerkfehler beim Herunterladen. Bitte überprüfen Sie Ihre Verbindung.');
     } else {
-      showError('Fehler beim Herunterladen des Dokuments');
+      showErrorAlert('Fehler beim Herunterladen des Dokuments');
     }
   }
 }
@@ -556,7 +572,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
  * Update element text content
  */
 function updateElement(id: string, value: string | number): void {
-  const element = document.getElementById(id);
+  const element = $$id(id);
   if (element) {
     element.textContent = value.toString();
   }
@@ -566,8 +582,8 @@ function updateElement(id: string, value: string | number): void {
  * Toggle dropdown
  */
 window.toggleDropdown = function (type: string): void {
-  const display = document.getElementById(`${type}Display`);
-  const dropdown = document.getElementById(`${type}Dropdown`);
+  const display = document.querySelector(`#${type}Display`);
+  const dropdown = document.querySelector(`#${type}Dropdown`);
 
   if (!display || !dropdown) return;
 
@@ -584,11 +600,11 @@ window.toggleDropdown = function (type: string): void {
 window.selectSort = function (value: SortOption, text: string): void {
   currentSort = value;
 
-  const display = document.getElementById('sortDisplay');
-  const dropdown = document.getElementById('sortDropdown');
-  const input = document.getElementById('sortValue') as HTMLInputElement;
+  const display = document.querySelector('#sortDisplay');
+  const dropdown = document.querySelector('#sortDropdown');
+  const input = document.querySelector('#sortValue');
 
-  if (display && dropdown && input) {
+  if (display !== null && dropdown !== null && input instanceof HTMLInputElement) {
     const span = display.querySelector('span');
     if (span) {
       span.textContent = text;
@@ -605,8 +621,12 @@ window.selectSort = function (value: SortOption, text: string): void {
  * Close all dropdowns
  */
 function closeAllDropdowns(): void {
-  document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-  document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
+  document.querySelectorAll('.dropdown-display').forEach((d) => {
+    d.classList.remove('active');
+  });
+  document.querySelectorAll('.dropdown-options').forEach((d) => {
+    d.classList.remove('active');
+  });
 }
 
 /**
@@ -631,7 +651,8 @@ function formatFileSize(bytes: number): string {
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  // eslint-disable-next-line security/detect-object-injection -- i is mathematically bounded by log calculation
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 /**
@@ -660,6 +681,34 @@ function debounce<T extends (...args: unknown[]) => unknown>(func: T, wait: numb
   };
 }
 
+/**
+ * Show loading state
+ */
+function showLoadingState(): void {
+  const container = document.querySelector('#documentsContainer');
+  if (container !== null) {
+    container.innerHTML = `
+      <div class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        Lade Dokumente...
+      </div>
+    `;
+  }
+}
+
+/**
+ * Hide loading state
+ */
+function hideLoadingState(): void {
+  const container = document.querySelector('#documentsContainer');
+  if (container !== null) {
+    const loadingState = container.querySelector('.loading-state');
+    if (loadingState !== null) {
+      loadingState.remove();
+    }
+  }
+}
+
 // Extend window for global functions
 declare global {
   interface Window {
@@ -672,6 +721,8 @@ declare global {
 
 // Make functions available globally
 window.closeDocumentModal = closeDocumentModal;
-window.downloadDocument = (docId?: string | number) => void downloadDocument(docId);
+window.downloadDocument = (docId?: string | number) => {
+  void downloadDocument(docId);
+};
 
 export { loadDocuments, setActiveFilter, viewDocument };

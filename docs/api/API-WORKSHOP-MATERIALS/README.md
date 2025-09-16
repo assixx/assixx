@@ -69,21 +69,21 @@ Technische Vorbereitung:
 
 ## 🚀 Quick Start
 
-### Vor dem Workshop:
+### Vor dem Workshop
 
 1. Tools Setup durchführen (siehe workshop-tools-setup.md)
 2. Präsentation öffnen (workshop-presentation.md)
 3. Decision Matrix ausdrucken/teilen
 4. Quick Reference für alle Teilnehmer
 
-### Während des Workshops:
+### Während des Workshops
 
 1. Agenda strikt befolgen
 2. Entscheidungen in Decision Matrix dokumentieren
 3. Standards gemeinsam festlegen
 4. Action Items mit Verantwortlichen notieren
 
-### Nach dem Workshop:
+### Nach dem Workshop
 
 1. Entscheidungen in OpenAPI Spec übertragen
 2. Migration Timeline finalisieren
@@ -103,7 +103,7 @@ Technische Vorbereitung:
 Bei Fragen zum Workshop oder den Materialien:
 
 - Slack: #api-migration
-- Email: tech-lead@assixx.com
+- Email: <tech-lead@assixx.com>
 
 ---
 

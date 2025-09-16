@@ -20,6 +20,8 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
+    <script src="/js/purify.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -52,7 +54,6 @@
       .details-card {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
@@ -145,7 +146,7 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-md);
         display: flex;
         align-items: center;
@@ -159,7 +160,7 @@
         width: 30px;
         height: 30px;
         background: var(--primary-color);
-        color: white;
+        color: #fff;
         border-radius: 50%;
         font-weight: 600;
         font-size: 0.9rem;
@@ -192,7 +193,7 @@
         font-weight: 500;
         font-size: 14px;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         border: none;
         display: inline-flex;
         align-items: center;
@@ -203,7 +204,7 @@
 
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         position: relative;
         overflow: hidden;
         box-shadow:
@@ -250,7 +251,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: var(--radius-sm);
@@ -267,7 +268,7 @@
         height: 40px;
         border-radius: 50%;
         background: var(--primary-color);
-        color: white;
+        color: #fff;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -317,22 +318,33 @@
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <div id="content-area">
-            <div class="loading">
-              <div class="spinner"></div>
-              <p>Lade Umfrage-Details...</p>
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">Umfrage-Details</h2>
+                <p class="text-secondary">Detaillierte Ansicht der Umfrage</p>
+              </div>
+            </div>
+            <div class="card-body" id="content-area">
+              <div class="loading">
+                <div class="spinner"></div>
+                <p>Lade Umfrage-Details...</p>
+              </div>
             </div>
           </div>
         </div>
       </main>
     </div>
 
-    <script>
+    <script type="module">
+      /* global DOMPurify */
+      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
+
       let surveyId = null;
       let surveyData = null;
 
       document.addEventListener('DOMContentLoaded', () => {
-        console.log('Survey Details page loaded');
+        console.info('Survey Details page loaded');
 
         // URL-Parameter auslesen
         const urlParams = new URLSearchParams(window.location.search);
@@ -352,8 +364,10 @@
       async function loadSurveyDetails() {
         try {
           const token = localStorage.getItem('token');
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
 
-          const response = await fetch(`/api/surveys/${surveyId}`, {
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -364,7 +378,8 @@
           }
 
           const result = await response.json();
-          surveyData = result.data;
+          // Handle v2 API response structure
+          surveyData = useV2 && result.success ? result.data : result.data || result;
 
           renderDetails();
         } catch (error) {
@@ -374,14 +389,15 @@
       }
 
       function renderDetails() {
-        const contentArea = document.getElementById('content-area');
+        const contentArea = document.querySelector('#content-area');
 
         if (!surveyData) {
           showError('Keine Daten verfügbar');
           return;
         }
 
-        contentArea.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        contentArea.innerHTML = DOMPurify.sanitize(`
                 <!-- Allgemeine Informationen -->
                 <div class="details-card">
                     <div class="details-header">
@@ -418,7 +434,7 @@
                                 <span class="info-value">${escapeHtml(surveyData.allow_multiple_responses ? 'Erlaubt' : 'Nicht erlaubt')}</span>
                             </div>
                         </div>
-                        
+
                         ${
                           surveyData.description
                             ? `
@@ -433,7 +449,7 @@
                         }
                     </div>
                 </div>
-                
+
                 <!-- Fragen -->
                 <div class="details-card">
                     <div class="details-header">
@@ -445,7 +461,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Aktionen -->
                 <div class="action-buttons">
                     <button class="btn btn-primary" onclick="editSurvey()">
@@ -461,7 +477,7 @@
                         <i class="fas fa-trash"></i> Löschen
                     </button>
                 </div>
-            `;
+            `);
       }
 
       function renderQuestions() {
@@ -478,7 +494,7 @@
                         <div class="question-content">
                             <p class="question-text">${escapeHtml(question.question_text)}</p>
                             <div class="question-meta">
-                                ${escapeHtml(getQuestionTypeLabel(question.type))} 
+                                ${escapeHtml(getQuestionTypeLabel(question.type))}
                                 ${escapeHtml(question.is_required ? '• Pflichtfeld' : '• Optional')}
                             </div>
                         </div>
@@ -494,6 +510,7 @@
           active: 'Aktiv',
           completed: 'Abgeschlossen',
         };
+        // eslint-disable-next-line security/detect-object-injection
         return labels[status] || status;
       }
 
@@ -507,6 +524,7 @@
           number: 'Zahl',
           date: 'Datum',
         };
+        // eslint-disable-next-line security/detect-object-injection
         return labels[type] || type;
       }
 
@@ -529,9 +547,10 @@
       }
 
       function showError(message) {
-        const contentArea = document.getElementById('content-area');
+        const contentArea = document.querySelector('#content-area');
         const safeMessage = escapeHtml(message);
-        contentArea.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property -- Using DOMPurify.sanitize() for XSS protection
+        contentArea.innerHTML = DOMPurify.sanitize(`
                 <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
                     <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">❌</div>
                     <p>${safeMessage}</p>
@@ -539,33 +558,36 @@
                         Zurück zur Übersicht
                     </button>
                 </div>
-            `;
+            `);
       }
 
       function editSurvey() {
         // Placeholder - sollte zum Bearbeitungsmodus führen
-        alert('Bearbeitungsfunktion wird implementiert...');
+        showAlert('Bearbeitungsfunktion wird implementiert...');
       }
 
       function viewResults(id) {
         window.location.href = `/survey-results?id=${encodeURIComponent(id || surveyId)}`;
       }
 
-      function duplicateSurvey() {
-        if (confirm('Möchten Sie diese Umfrage duplizieren?')) {
+      async function duplicateSurvey() {
+        if (await showConfirm('Möchten Sie diese Umfrage duplizieren?')) {
           // Placeholder für Duplizierung
-          alert('Duplizierungsfunktion wird implementiert...');
+          showAlert('Duplizierungsfunktion wird implementiert...');
         }
       }
 
       async function deleteSurvey() {
-        if (!confirm('Möchten Sie diese Umfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        if (!(await showConfirm('Möchten Sie diese Umfrage wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.'))) {
           return;
         }
 
         try {
           const token = localStorage.getItem('token');
-          const response = await fetch(`/api/surveys/${surveyId}`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+
+          const response = await fetch(endpoint, {
             method: 'DELETE',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -573,19 +595,23 @@
           });
 
           if (response.ok) {
-            alert('Umfrage wurde erfolgreich gelöscht');
-            window.location.href = '/survey-admin';
+            showSuccessAlert('Umfrage wurde erfolgreich gelöscht');
+            // Avoid race condition by using setTimeout
+            setTimeout(() => {
+              window.location.href = '/survey-admin';
+            }, 100);
           } else {
             throw new Error('Fehler beim Löschen der Umfrage');
           }
         } catch (error) {
           console.error('Error:', error);
-          alert(error.message);
+          showErrorAlert(error.message);
         }
       }
     </script>
 
     <!-- Unified Navigation -->
+    <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>

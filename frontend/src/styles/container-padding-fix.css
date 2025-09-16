@@ -48,7 +48,7 @@
 }
 
 /* Mobile Anpassung */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   .container,
   .profile-container,
   .survey-container,
@@ -69,6 +69,6 @@
   }
 
   .main-content > .container:first-child {
-    padding: var(--spacing-md);
+    padding: var(--spacing-2sm);
   }
 }

@@ -40,7 +40,7 @@
 
 ```typescript
 // NIEMALS SO:
-if (process.env.NODE_ENV === "test") {
+if (process.env.NODE_ENV === 'test') {
   // Anderer Code für Tests
 } else {
   // Produktions-Code
@@ -89,12 +89,15 @@ Erst wenn ALLE grün sind → committen und pushen!
 **Lösung:**
 
 ```javascript
+// 3. ERST DANN imports
+import { authenticateToken } from '../auth-refactored';
+
 // 1. DB Connection verhindern VOR allen Imports
-process.env.DB_HOST = "mock";
-process.env.NODE_ENV = "test";
+process.env.DB_HOST = 'mock';
+process.env.NODE_ENV = 'test';
 
 // 2. Mock mit expliziter Funktion
-jest.mock("../../database", () => {
+jest.mock('../../database', () => {
   const mockExecuteQuery = jest.fn();
   return {
     executeQuery: mockExecuteQuery,
@@ -103,9 +106,6 @@ jest.mock("../../database", () => {
     },
   };
 });
-
-// 3. ERST DANN imports
-import { authenticateToken } from "../auth-refactored";
 ```
 
 **Lessons Learned:**
@@ -127,16 +127,16 @@ import { authenticateToken } from "../auth-refactored";
 - Mock-Strategie statt echte Test-DB für Unit Tests
 - Integration Tests separat mit echter DB
 
-### Jest console.log Debugging (22.07.2025)
+### Jest console.info Debugging (22.07.2025)
 
-**Problem:** console.log zeigt nichts in Jest Tests
+**Problem:** console.info zeigt nichts in Jest Tests
 **Symptom:** Keine Ausgabe trotz `--silent=false` oder `--verbose`
 
 **Lösung mit Error Throwing:**
 
 ```javascript
-// STATT console.log (wird oft unterdrückt):
-console.log("Response:", response.status, response.body);
+// STATT console.info (wird oft unterdrückt):
+console.info('Response:', response.status, response.body);
 
 // BESSER - Error werfen (wird IMMER angezeigt):
 if (response.status !== 201) {
@@ -155,13 +155,13 @@ if (response.status !== 201) {
 2. **Absichtlich falscher Expect**:
 
    ```javascript
-   expect(response.body).toBe("DEBUG: " + JSON.stringify(response.body));
+   expect(response.body).toBe('DEBUG: ' + JSON.stringify(response.body));
    ```
 
-3. **console.error statt console.log**:
+3. **console.error statt console.info**:
 
    ```javascript
-   console.error("DEBUG:", data); // Wird manchmal angezeigt
+   console.error('DEBUG:', data); // Wird manchmal angezeigt
    ```
 
 4. **Jest Flags kombinieren**:
@@ -171,14 +171,15 @@ if (response.status !== 201) {
    ```
 
 5. **DEBUG Environment Variable**:
+
    ```bash
    DEBUG=* npm test
    ```
 
 **Lessons Learned:**
 
-- Jest unterdrückt console.log standardmäßig
+- Jest unterdrückt console.info standardmäßig
 - Errors werden IMMER in der Ausgabe gezeigt
 - Bei kritischem Debugging: Error werfen statt loggen
 - Verschiedene Jest-Versionen verhalten sich unterschiedlich
-  siehe: https://stackoverflow.com/questions/48695717/console-log-statements-output-nothing-at-all-in-jest
+  siehe: <https://stackoverflow.com/questions/48695717/console-log-statements-output-nothing-at-all-in-jest>

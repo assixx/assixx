@@ -81,7 +81,7 @@ Validation Errors:
   - value (optional)
 ```
 
-#### Beispiel Standardisierung:
+#### Beispiel Standardisierung
 
 ```javascript
 // Calendar Events
@@ -110,14 +110,14 @@ DELETE /api/chat/messages/:id         // Direkt für Delete
 
 ### Phase 3: Entscheidungen treffen (1.5h)
 
-#### Für jeden Endpoint entscheiden:
+#### Für jeden Endpoint entscheiden
 
 1. **Keep** - Bleibt wie es ist
 2. **Deprecate** - Auslaufen lassen
 3. **Change** - Breaking Change
 4. **Add** - Neuer Endpoint
 
-#### Beispiel Decision Matrix:
+#### Beispiel Decision Matrix
 
 | Endpoint | Current             | Proposed         | Decision | Migration |
 | -------- | ------------------- | ---------------- | -------- | --------- |
@@ -126,14 +126,14 @@ DELETE /api/chat/messages/:id         // Direkt für Delete
 
 ### Phase 4: Implementation Plan (1h)
 
-#### Prioritäten:
+#### Prioritäten
 
 1. **Critical** - Blockt Features
 2. **High** - Wichtig für UX
 3. **Medium** - Nice to have
 4. **Low** - Kann warten
 
-#### Timeline:
+#### Timeline
 
 ```mermaid
 gantt
@@ -174,7 +174,7 @@ gantt
 
 ## Nach dem Workshop
 
-### Deliverables:
+### Deliverables
 
 1. [ ] Finalisierte OpenAPI 3.0 Spec
 2. [ ] Migration Guide für Frontend
@@ -182,7 +182,7 @@ gantt
 4. [ ] API Changelog
 5. [ ] Timeline mit Milestones
 
-### Communication:
+### Communication
 
 ```markdown
 # An alle Entwickler
@@ -224,7 +224,7 @@ Wir standardisieren unsere API...
 
 ---
 
-## 🚀 Quick Start für Workshop:
+## 🚀 Quick Start für Workshop
 
 ```bash
 # 1. Swagger UI öffnen

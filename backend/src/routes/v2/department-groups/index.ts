@@ -2,23 +2,21 @@
  * Department Groups Routes v2
  * Handles hierarchical department group management
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { departmentGroupsController } from "./controller.js";
+import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validate } from '../../../middleware/validation.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { departmentGroupsController } from './controller.js';
 import {
-  createGroupValidation,
-  updateGroupValidation,
-  getGroupValidation,
-  deleteGroupValidation,
   addDepartmentsValidation,
-  removeDepartmentValidation,
+  createGroupValidation,
+  deleteGroupValidation,
   getGroupDepartmentsValidation,
-} from "./validation.js";
+  getGroupValidation,
+  removeDepartmentValidation,
+  updateGroupValidation,
+} from './validation.js';
 
 const router = Router();
 
@@ -26,7 +24,7 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * @swagger
+
  * /api/v2/department-groups:
  *   get:
  *     summary: Get all department groups
@@ -89,15 +87,15 @@ router.use(authenticateToken);
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/",
+  '/',
   typed.auth(async (req, res) => {
     await departmentGroupsController.getGroups(req, res);
   }),
 );
 
 /**
- * @swagger
- * /api/v2/department-groups/{id}:
+
+ * /api/v2/department-groups/\{id\}:
  *   get:
  *     summary: Get a department group by ID
  *     description: Get a single department group by its ID
@@ -131,7 +129,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id",
+  '/:id',
   validate(getGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.getGroupById(req, res);
@@ -139,7 +137,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/department-groups:
  *   post:
  *     summary: Create a new department group
@@ -201,7 +199,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/",
+  '/',
   validate(createGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.createGroup(req, res);
@@ -209,8 +207,8 @@ router.post(
 );
 
 /**
- * @swagger
- * /api/v2/department-groups/{id}:
+
+ * /api/v2/department-groups/\{id\}:
  *   put:
  *     summary: Update a department group
  *     description: Update a department group (root only)
@@ -267,7 +265,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.put(
-  "/:id",
+  '/:id',
   validate(updateGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.updateGroup(req, res);
@@ -275,8 +273,8 @@ router.put(
 );
 
 /**
- * @swagger
- * /api/v2/department-groups/{id}:
+
+ * /api/v2/department-groups/\{id\}:
  *   delete:
  *     summary: Delete a department group
  *     description: Delete a department group (root only). Cannot delete if group has admin permissions or subgroups.
@@ -314,7 +312,7 @@ router.put(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:id",
+  '/:id',
   validate(deleteGroupValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.deleteGroup(req, res);
@@ -322,8 +320,8 @@ router.delete(
 );
 
 /**
- * @swagger
- * /api/v2/department-groups/{id}/departments:
+
+ * /api/v2/department-groups/\{id\}/departments:
  *   post:
  *     summary: Add departments to a group
  *     description: Add one or more departments to a department group (root only)
@@ -376,7 +374,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/:id/departments",
+  '/:id/departments',
   validate(addDepartmentsValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.addDepartments(req, res);
@@ -384,8 +382,8 @@ router.post(
 );
 
 /**
- * @swagger
- * /api/v2/department-groups/{id}/departments/{departmentId}:
+
+ * /api/v2/department-groups/\{id\}/departments/\{departmentId\}:
  *   delete:
  *     summary: Remove a department from a group
  *     description: Remove a department from a department group (root only)
@@ -427,7 +425,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:id/departments/:departmentId",
+  '/:id/departments/:departmentId',
   validate(removeDepartmentValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.removeDepartment(req, res);
@@ -435,8 +433,8 @@ router.delete(
 );
 
 /**
- * @swagger
- * /api/v2/department-groups/{id}/departments:
+
+ * /api/v2/department-groups/\{id\}/departments:
  *   get:
  *     summary: Get departments in a group
  *     description: Get all departments in a department group
@@ -483,7 +481,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id/departments",
+  '/:id/departments',
   validate(getGroupDepartmentsValidation),
   typed.auth(async (req, res) => {
     await departmentGroupsController.getGroupDepartments(req, res);

@@ -2,10 +2,9 @@
  * Helper Functions
  * Common utility functions used across the application
  */
+import crypto from 'crypto';
 
-import crypto from "crypto";
-
-import { PAGINATION } from "./constants";
+import { PAGINATION } from './constants';
 
 // Interfaces
 interface QueryParams {
@@ -34,8 +33,8 @@ interface PaginationResponse {
  * @param length - Length of the string
  * @returns Random string
  */
-export function generateRandomString(length: number = 32): string {
-  return crypto.randomBytes(length).toString("hex");
+export function generateRandomString(length = 32): string {
+  return crypto.randomBytes(length).toString('hex');
 }
 
 /**
@@ -44,9 +43,9 @@ export function generateRandomString(length: number = 32): string {
  * @returns Parsed pagination object
  */
 export function parsePagination(query: QueryParams): PaginationResult {
-  const page = parseInt(String(query.page)) ?? PAGINATION.DEFAULT_PAGE;
+  const page = Number.parseInt(String(query.page)) || PAGINATION.DEFAULT_PAGE;
   const limit = Math.min(
-    parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
+    Number.parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
     PAGINATION.MAX_LIMIT,
   );
   const offset = (page - 1) * limit;
@@ -84,11 +83,11 @@ export function formatPaginationResponse(
  * @returns Sanitized input
  */
 export function sanitizeInput(input: unknown): unknown {
-  if (typeof input !== "string") return input;
+  if (typeof input !== 'string') return input;
 
   return input
     .trim()
-    .replace(/[<>]/g, "") // Remove potential HTML tags
+    .replace(/[<>]/g, '') // Remove potential HTML tags
     .slice(0, 1000); // Limit length
 }
 
@@ -101,9 +100,9 @@ export function generateSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "") // Remove special characters
-    .replace(/[\s_-]+/g, "-") // Replace spaces with -
-    .replace(/^-+|-+$/g, ""); // Remove leading/trailing -
+    .replace(/[^\s\w-]/g, '') // Remove special characters
+    .replace(/[\s\-_]+/g, '-') // Replace spaces with -
+    .replace(/^-+|-+$/g, ''); // Remove leading/trailing -
 }
 
 /**
@@ -112,13 +111,13 @@ export function generateSlug(text: string): string {
  * @returns Formatted date string
  */
 export function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return "";
+  if (date == null) return '';
 
   const d = new Date(date);
-  return d.toLocaleDateString("de-DE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+  return d.toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
 }
 
@@ -128,15 +127,15 @@ export function formatDate(date: Date | string | null | undefined): string {
  * @returns Formatted datetime string
  */
 export function formatDateTime(date: Date | string | null | undefined): string {
-  if (!date) return "";
+  if (date == null) return '';
 
   const d = new Date(date);
-  return d.toLocaleDateString("de-DE", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
+  return d.toLocaleDateString('de-DE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -157,7 +156,7 @@ export function calculatePercentage(value: number, total: number): number {
  * @returns Cloned object
  */
 export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj));
+  return JSON.parse(JSON.stringify(obj)) as T;
 }
 
 /**
@@ -175,10 +174,15 @@ export function isEmpty(obj: object): boolean {
  * @param key - Key to group by
  * @returns Grouped object
  */
-export function groupBy<T>(array: T[], key: keyof T): { [key: string]: T[] } {
-  return array.reduce((result: { [key: string]: T[] }, item: T) => {
+export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
+  return array.reduce((result: Record<string, T[]>, item: T) => {
+    // ESLint disable needed: key is typed as keyof T, ensuring it's a valid property
+    // eslint-disable-next-line security/detect-object-injection
     const group = String(item[key]);
-    if (!result[group]) result[group] = [];
+    // ESLint disable needed: group is derived from controlled input (keyof T)
+    // eslint-disable-next-line security/detect-object-injection
+    result[group] ??= [];
+    // eslint-disable-next-line security/detect-object-injection
     result[group].push(item);
     return result;
   }, {});
@@ -193,6 +197,8 @@ export function groupBy<T>(array: T[], key: keyof T): { [key: string]: T[] } {
 export function removeDuplicates<T>(array: T[], key: keyof T): T[] {
   const seen = new Set();
   return array.filter((item: T) => {
+    // ESLint disable needed: key is typed as keyof T, ensuring it's a valid property
+    // eslint-disable-next-line security/detect-object-injection
     const value = item[key];
     if (seen.has(value)) return false;
     seen.add(value);

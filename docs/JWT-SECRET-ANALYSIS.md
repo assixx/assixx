@@ -2,14 +2,14 @@
 
 ## Methode: `openssl rand -base64 32`
 
-### ✅ Vorteile:
+### ✅ Vorteile
 
 1. **Kryptographisch sicher**: OpenSSL nutzt `/dev/urandom` (CSPRNG)
 2. **256-Bit Entropie**: Weit über empfohlenen Standards
 3. **Base64 kodiert**: Sicher für alle Systeme
 4. **Plattformübergreifend**: Funktioniert auf Linux/Mac/WSL
 
-### 📊 Sicherheitsanalyse:
+### 📊 Sicherheitsanalyse
 
 | Aspekt                | Bewertung  | Details                           |
 | --------------------- | ---------- | --------------------------------- |
@@ -18,7 +18,7 @@
 | Länge                 | ⭐⭐⭐⭐⭐ | 44 Zeichen Base64                 |
 | Brute-Force Resistenz | ⭐⭐⭐⭐⭐ | Praktisch unknackbar              |
 
-### 🔐 Alternative Methoden (gleich sicher):
+### 🔐 Alternative Methoden (gleich sicher)
 
 ```bash
 # Option 1: OpenSSL (unsere Wahl)
@@ -28,13 +28,13 @@ openssl rand -base64 32
 head -c 32 /dev/urandom | base64
 
 # Option 3: Node.js crypto
-node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+node -e "console.info(require('crypto').randomBytes(32).toString('base64'))"
 
 # Option 4: Python secrets
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 ```
 
-### ⚠️ Was NICHT zu verwenden:
+### ⚠️ Was NICHT zu verwenden
 
 ```bash
 # SCHLECHT: Vorhersehbar
@@ -47,14 +47,14 @@ openssl rand -base64 8
 echo $RANDOM | sha256sum
 ```
 
-### 📈 Industriestandards:
+### 📈 Industriestandards
 
 1. **Auth0**: Empfiehlt mindestens 256 Bits
 2. **OWASP**: "Use a key with at least 256 bits"
 3. **RFC 7518**: HS256 benötigt mindestens 256-Bit Keys
 4. **AWS**: Verwendet 256-Bit Secrets für Cognito
 
-### 🎯 Fazit:
+### 🎯 Fazit
 
 **JA, es ist Best Practice!** Die Methode erfüllt und übertrifft alle Sicherheitsstandards:
 
@@ -63,7 +63,7 @@ echo $RANDOM | sha256sum
 - ✅ Industriestandard-konform
 - ✅ Zukunftssicher (Quantum-resistant bis ~128 Bit)
 
-### 💡 Zusätzliche Empfehlungen:
+### 💡 Zusätzliche Empfehlungen
 
 1. **Rotation**: Secrets alle 3-6 Monate ändern
 2. **Monitoring**: Logs auf verdächtige Token-Aktivität prüfen

@@ -9,6 +9,9 @@ frontend/dist/
 *.min.js
 *.min.css
 
+# Legacy v1 Routes (deprecated)
+backend/src/routes/v1/
+
 # Logs
 logs/
 *.log
@@ -46,3 +49,10 @@ frontend/src/scripts/lib/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# Test files - excluded due to syntax issues
+**/__tests__/**
+*.test.ts
+*.test.js
+*.spec.ts
+*.spec.js

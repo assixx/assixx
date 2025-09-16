@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bereiche verwalten - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Google Fonts - Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+      })();
+    </script>
+    <script src="/feature-flags.js"></script>
+    <!-- Dashboard Styles -->
+    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+      @import url('/styles/breadcrumb-alignment.css');
+      /* Glassmorphismus Design-Standards */
+
+      /* Dramatischer Hintergrund-Gradient */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Glassmorphismus für Cards */
+
+      /* Form-Controls mit Glassmorphismus */
+      .form-control,
+      .search-input {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        color: #fff;
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        font-size: 0.95rem;
+      }
+
+      .form-control:focus,
+      .search-input:focus {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(0, 142, 255, 0.5);
+        box-shadow:
+          0 0 0 3px rgba(0, 142, 255, 0.15),
+          inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        outline: none;
+      }
+
+      /* Buttons mit Glassmorphismus und Shine-Effekt */
+      .btn {
+        position: relative;
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 10px 20px;
+        border-radius: var(--radius-sm);
+        color: #fff;
+        font-weight: 500;
+        cursor: pointer;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+      }
+
+      .btn-secondary {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.875rem;
+      }
+
+      .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-sm);
+      }
+
+      .btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+        transform: rotate(45deg) translate(-70%, -70%);
+        transition: transform 0.6s;
+      }
+
+      .btn:hover::after {
+        transform: rotate(45deg) translate(-30%, -30%);
+      }
+
+      /* Tabellen mit Glassmorphismus */
+      .table {
+        width: 100%;
+        background: transparent;
+        border-collapse: collapse;
+      }
+
+      .table thead th {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 12px;
+        text-align: left;
+        color: var(--text-secondary);
+        font-weight: 500;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .table tbody tr {
+        background: rgba(255, 255, 255, 0.01);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .table tbody td {
+        padding: 12px;
+        color: var(--text-primary);
+      }
+
+      /* Layout styles */
+      .page-layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      .content-header {
+        margin-bottom: var(--spacing-xl);
+      }
+
+      .page-title {
+        font-size: 1.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 var(--spacing-sm) 0;
+      }
+
+      .page-subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+      }
+
+      /* Filter and search controls */
+      .controls-wrapper {
+        padding: var(--spacing-lg);
+      }
+
+      .flex-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: var(--spacing-md);
+        flex-wrap: wrap;
+      }
+
+      .filter-buttons {
+        display: flex;
+        gap: var(--spacing-sm);
+        flex-wrap: wrap;
+      }
+
+      .search-container {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+      }
+
+      .search-input {
+        width: 250px;
+      }
+
+      /* Badge styles */
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .badge-success {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        border: 1px solid rgba(76, 175, 80, 0.3);
+      }
+
+      .badge-warning {
+        background: rgba(255, 152, 0, 0.2);
+        color: #ff9800;
+        border: 1px solid rgba(255, 152, 0, 0.3);
+      }
+
+      .badge-info {
+        background: rgba(33, 150, 243, 0.2);
+        color: #2196f3;
+        border: 1px solid rgba(33, 150, 243, 0.3);
+      }
+
+      /* Action buttons */
+      .action-buttons {
+        display: flex;
+        gap: var(--spacing-xs);
+      }
+
+      .btn-action {
+        padding: 6px 10px;
+        font-size: 0.875rem;
+        min-width: auto;
+      }
+
+      /* Empty state */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+      }
+
+      .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      .empty-state-title {
+        font-size: 1.25rem;
+        font-weight: 500;
+        margin-bottom: var(--spacing-sm);
+      }
+
+      .empty-state-text {
+        font-size: 0.95rem;
+      }
+
+      /* Loading state */
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: var(--text-secondary);
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Modal styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        backdrop-filter: blur(5px);
+        z-index: 9999;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        overflow-y: auto;
+        backdrop-filter: blur(20px) saturate(180%);
+        background: #121212c4;
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow:
+          0 8px 32px #0006,
+          inset 0 1px #ffffff1a;
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh !important;
+        max-width: 600px;
+        transform: translateY(0);
+        width: 90%;
+      }
+
+      .modal-header {
+        align-items: center;
+        background: #ffffff05;
+        display: flex;
+        justify-content: space-between;
+        padding: var(--spacing-lg);
+      }
+
+      .modal-title {
+        color: var(--primary-color);
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .modal-close {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-sm);
+        transition: all 0.2s;
+      }
+
+      .modal-close:hover {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+      }
+
+      .modal-body {
+        padding: var(--spacing-lg);
+      }
+
+      .modal-footer {
+        background: #ffffff05 !important;
+        border-top: 0 !important;
+        display: flex !important;
+        flex-shrink: 0 !important;
+        gap: var(--spacing-md) !important;
+        justify-content: center !important;
+        margin-top: 0 !important;
+        padding: var(--spacing-lg) !important;
+      }
+
+      /* Form styles */
+      .form-group {
+        margin-bottom: var(--spacing-md);
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: var(--spacing-xs);
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+      }
+
+      .form-control {
+        width: 100%;
+      }
+
+      select.form-control {
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
+        background-size: 20px;
+        padding-right: 40px;
+      }
+
+      textarea.form-control {
+        resize: vertical;
+        min-height: 100px;
+      }
+
+      /* Utility classes */
+      .mb-3 {
+        margin-bottom: var(--spacing-lg);
+      }
+
+      .text-secondary {
+        color: var(--text-secondary);
+      }
+
+      .u-hidden {
+        display: none !important;
+      }
+
+      /* Media queries */
+      @media (max-width: 768px) {
+        .main-content {
+          margin-left: 0;
+          padding: var(--spacing-md);
+        }
+
+        .flex-between {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .search-input {
+          width: 100%;
+        }
+
+        .modal-content {
+          width: 95%;
+          margin: var(--spacing-md);
+        }
+      }
+
+      /* Floating Add Button - wie bei departments */
+      .add-area-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: rgba(33, 150, 243, 0.15);
+        border: 2px solid rgba(33, 150, 243, 0.4);
+        color: var(--primary-color);
+        font-size: 28px;
+        font-weight: 300;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+        backdrop-filter: blur(10px);
+        z-index: 1000;
+      }
+
+      .add-area-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: scale(1.1);
+        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
+      }
+
+      /* admin-table styles */
+
+      /* Action Buttons - wie bei departments */
+      .action-btn {
+        padding: 6px 12px;
+        margin: 0 4px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-color);
+        cursor: pointer;
+
+        font-size: 12px;
+        border-radius: var(--radius-md);
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      .action-btn.edit {
+        border-color: rgba(33, 150, 243, 0.4);
+        color: #2196f3;
+      }
+
+      .action-btn.edit:hover {
+        background: rgba(33, 150, 243, 0.1);
+      }
+
+      .action-btn.deactivate {
+        border-color: rgba(255, 152, 0, 0.4);
+        color: #ff9800;
+      }
+
+      .action-btn.deactivate:hover {
+        background: rgba(255, 152, 0, 0.1);
+      }
+
+      .action-btn.delete {
+        border-color: rgba(244, 67, 54, 0.4);
+        color: #f44336;
+      }
+
+      .action-btn.delete:hover {
+        background: rgba(244, 67, 54, 0.1);
+      }
+    </style>
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+
+    <!-- Common Scripts with ApiClient -->
+    <script type="module" src="/scripts/common.js"></script>
+  </head>
+  <body>
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
+
+        <div class="container">
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">Bereichsübersicht</h2>
+                <p class="text-secondary">Verwalten Sie alle Bereiche, Standorte und Zonen</p>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <div id="areas-loading" class="loading u-hidden">
+                <div class="spinner"></div>
+                <p>Bereiche werden geladen...</p>
+              </div>
+
+              <div id="areas-table-content">
+                <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+
+              <div id="areas-empty" class="empty-state u-hidden">
+                <div class="empty-state-icon">📍</div>
+                <div class="empty-state-title">Keine Bereiche gefunden</div>
+                <div class="empty-state-text">Erstellen Sie Ihren ersten Bereich, um Standorte und Zonen zu verwalten.</div>
+              </div>
+            </div>
+          </div>
+          <!-- End of card -->
+        </div>
+        <!-- End of container -->
+      </main>
+    </div>
+
+    <!-- Add/Edit Area Modal -->
+    <div id="area-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="area-modal-title">Neuer Bereich</h3>
+          <button class="modal-close" id="close-area-modal">&times;</button>
+        </div>
+        <form id="area-form">
+          <div class="modal-body">
+            <input type="hidden" id="area-id" />
+
+            <div class="form-group">
+              <label class="form-label" for="area-name">Name *</label>
+              <input type="text" id="area-name" name="name" class="form-control" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="area-description">Beschreibung</label>
+              <textarea id="area-description" name="description" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="area-type">Typ *</label>
+              <select id="area-type" name="type" class="form-control" required>
+                <option value="">Bitte wählen...</option>
+                <option value="building">Gebäude</option>
+                <option value="warehouse">Lager</option>
+                <option value="office">Büro</option>
+                <option value="production">Produktion</option>
+                <option value="outdoor">Außenbereich</option>
+                <option value="other">Sonstiges</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="area-capacity">Kapazität</label>
+              <input type="number" id="area-capacity" name="capacity" class="form-control" min="0" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="area-address">Adresse</label>
+              <input type="text" id="area-address" name="address" class="form-control" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="area-parent">Übergeordneter Bereich</label>
+              <select id="area-parent" name="parent_id" class="form-control">
+                <option value="">Kein übergeordneter Bereich</option>
+                <!-- Wird dynamisch gefüllt -->
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="area-status">Status</label>
+              <select id="area-status" name="status" class="form-control">
+                <option value="active">Aktiv</option>
+                <option value="inactive">Inaktiv</option>
+                <option value="maintenance">Wartung</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cancel-area-modal">Abbrechen</button>
+            <button type="submit" class="btn btn-primary">Speichern</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-area-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">Bereich löschen</h3>
+          <button class="modal-close" id="close-delete-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Möchten Sie diesen Bereich wirklich löschen?</p>
+          <p class="text-secondary">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+          <input type="hidden" id="delete-area-id" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
+          <button type="button" class="btn btn-primary" id="confirm-delete-area">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Add Button -->
+    <button id="add-area-btn" class="add-area-btn">+</button>
+
+    <!-- Navigation Components -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+
+    <!-- Page Script -->
+    <script type="module" src="/scripts/manage-areas.js"></script>
+  </body>
+</html>

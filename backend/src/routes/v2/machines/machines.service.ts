@@ -1,41 +1,55 @@
-import MachineModel, {
-  Machine,
-  MachineMaintenanceHistory,
-} from "../../../models/machine.js";
-import { RootLog } from "../../../models/rootLog.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
+import machineModel, { Machine, MachineMaintenanceHistory } from '../../../models/machine.js';
+import rootLog from '../../../models/rootLog';
+import { ServiceError } from '../../../utils/ServiceError.js';
 import {
-  MachineResponse,
-  MaintenanceHistoryResponse,
-  MachineCreateRequest,
-  MachineUpdateRequest,
-  MaintenanceRecordRequest,
-  MachineStatistics,
   MachineCategory,
+  MachineCreateRequest,
   MachineFilters,
-} from "./types.js";
+  MachineResponse,
+  MachineStatistics,
+  MachineUpdateRequest,
+  MaintenanceHistoryResponse,
+  MaintenanceRecordRequest,
+} from './types.js';
 
+/**
+ *
+ */
 export class MachinesService {
   // List all machines with filters
-  async listMachines(
-    tenantId: number,
-    filters: MachineFilters = {},
-  ): Promise<MachineResponse[]> {
-    const machines = await MachineModel.findAll(tenantId, filters);
+  /**
+   *
+   * @param tenantId - The tenant ID
+   * @param filters - The filter criteria
+   */
+  async listMachines(tenantId: number, filters: MachineFilters = {}): Promise<MachineResponse[]> {
+    const machines = await machineModel.findAll(tenantId, filters);
     return machines.map((machine) => this.formatMachineResponse(machine));
   }
 
   // Get machine by ID
+  /**
+   *
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   */
   async getMachineById(id: number, tenantId: number): Promise<MachineResponse> {
-    const machine = await MachineModel.findById(id, tenantId);
+    const machine = await machineModel.findById(id, tenantId);
     if (!machine) {
-      throw new ServiceError("NOT_FOUND", "Machine not found");
+      throw new ServiceError('NOT_FOUND', 'Machine not found');
     }
     return this.formatMachineResponse(machine);
   }
 
   // Create new machine
+  /**
+   *
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
+   */
   async createMachine(
     data: MachineCreateRequest,
     tenantId: number,
@@ -45,18 +59,15 @@ export class MachinesService {
   ): Promise<MachineResponse> {
     // Validate serial number uniqueness if provided
     if (data.serialNumber) {
-      const existingMachines = await MachineModel.findAll(tenantId, {
+      const existingMachines = await machineModel.findAll(tenantId, {
         search: data.serialNumber,
       });
-      const duplicate = existingMachines.find(
-        (m) => m.serial_number === data.serialNumber,
-      );
+      const duplicate = existingMachines.find((m) => m.serial_number === data.serialNumber);
       if (duplicate) {
-        throw new ServiceError(
-          "VALIDATION_ERROR",
-          "Serial number already exists",
-          { field: "serialNumber", message: "Serial number already exists" },
-        );
+        throw new ServiceError('VALIDATION_ERROR', 'Serial number already exists', {
+          field: 'serialNumber',
+          message: 'Serial number already exists',
+        });
       }
     }
 
@@ -71,23 +82,13 @@ export class MachinesService {
       department_id: data.departmentId,
       area_id: data.areaId,
       location: data.location,
-      machine_type: data.machineType ?? "production",
-      status: data.status ?? "operational",
-      purchase_date: data.purchaseDate
-        ? new Date(data.purchaseDate)
-        : undefined,
-      installation_date: data.installationDate
-        ? new Date(data.installationDate)
-        : undefined,
-      warranty_until: data.warrantyUntil
-        ? new Date(data.warrantyUntil)
-        : undefined,
-      last_maintenance: data.lastMaintenance
-        ? new Date(data.lastMaintenance)
-        : undefined,
-      next_maintenance: data.nextMaintenance
-        ? new Date(data.nextMaintenance)
-        : undefined,
+      machine_type: data.machineType ?? 'production',
+      status: data.status ?? 'operational',
+      purchase_date: data.purchaseDate ? new Date(data.purchaseDate) : undefined,
+      installation_date: data.installationDate ? new Date(data.installationDate) : undefined,
+      warranty_until: data.warrantyUntil ? new Date(data.warrantyUntil) : undefined,
+      last_maintenance: data.lastMaintenance ? new Date(data.lastMaintenance) : undefined,
+      next_maintenance: data.nextMaintenance ? new Date(data.nextMaintenance) : undefined,
       operating_hours: data.operatingHours,
       production_capacity: data.productionCapacity,
       energy_consumption: data.energyConsumption,
@@ -98,24 +99,104 @@ export class MachinesService {
       updated_by: userId,
     };
 
-    const machineId = await MachineModel.create(dbData as Partial<Machine>);
+    const machineId = await machineModel.create(dbData as Partial<Machine>);
 
     // Log the action
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: tenantId,
       user_id: userId,
-      action: "create_machine",
-      entity_type: "machine",
+      action: 'create_machine',
+      entity_type: 'machine',
       entity_id: machineId,
       new_values: data as unknown as Record<string, unknown>,
       ip_address: ipAddress,
       user_agent: userAgent,
     });
 
-    return this.getMachineById(machineId, tenantId);
+    return await this.getMachineById(machineId, tenantId);
+  }
+
+  /**
+   * Helper to convert date string to Date object or undefined
+   * @param dateString - The date string to convert
+   */
+  private convertToDate(dateString: string | undefined): Date | undefined {
+    return dateString ? new Date(dateString) : undefined;
+  }
+
+  /**
+   * Map simple fields from API to DB format
+   * @param data - The machine update data
+   * @param dbData - The DB data object to populate
+   */
+  private mapSimpleFields(data: MachineUpdateRequest, dbData: Partial<Machine>): void {
+    if (data.name !== undefined) dbData.name = data.name;
+    if (data.model !== undefined) dbData.model = data.model;
+    if (data.manufacturer !== undefined) dbData.manufacturer = data.manufacturer;
+    if (data.serialNumber !== undefined) dbData.serial_number = data.serialNumber;
+    if (data.assetNumber !== undefined) dbData.asset_number = data.assetNumber;
+    if (data.departmentId !== undefined) dbData.department_id = data.departmentId;
+    if (data.areaId !== undefined) dbData.area_id = data.areaId;
+    if (data.location !== undefined) dbData.location = data.location;
+    if (data.machineType !== undefined) dbData.machine_type = data.machineType;
+    if (data.status !== undefined) dbData.status = data.status;
+    if (data.operatingHours !== undefined) dbData.operating_hours = data.operatingHours;
+    if (data.productionCapacity !== undefined) dbData.production_capacity = data.productionCapacity;
+    if (data.energyConsumption !== undefined) dbData.energy_consumption = data.energyConsumption;
+    if (data.manualUrl !== undefined) dbData.manual_url = data.manualUrl;
+    if (data.qrCode !== undefined) dbData.qr_code = data.qrCode;
+    if (data.notes !== undefined) dbData.notes = data.notes;
+    if (data.isActive !== undefined) dbData.is_active = data.isActive;
+  }
+
+  /**
+   * Map date fields from API to DB format
+   * @param data - The machine update data
+   * @param dbData - The DB data object to populate
+   */
+  private mapDateFields(data: MachineUpdateRequest, dbData: Partial<Machine>): void {
+    if (data.purchaseDate !== undefined) {
+      dbData.purchase_date = this.convertToDate(data.purchaseDate);
+    }
+    if (data.installationDate !== undefined) {
+      dbData.installation_date = this.convertToDate(data.installationDate);
+    }
+    if (data.warrantyUntil !== undefined) {
+      dbData.warranty_until = this.convertToDate(data.warrantyUntil);
+    }
+    if (data.lastMaintenance !== undefined) {
+      dbData.last_maintenance = this.convertToDate(data.lastMaintenance);
+    }
+    if (data.nextMaintenance !== undefined) {
+      dbData.next_maintenance = this.convertToDate(data.nextMaintenance);
+    }
+  }
+
+  /**
+   * Convert API fields to DB fields for update
+   * @param data - The machine update data
+   * @param userId - The user ID for updated_by field
+   */
+  private convertUpdateFieldsToDb(data: MachineUpdateRequest, userId: number): Partial<Machine> {
+    const dbData: Partial<Machine> = {};
+
+    this.mapSimpleFields(data, dbData);
+    this.mapDateFields(data, dbData);
+
+    dbData.updated_by = userId;
+    return dbData;
   }
 
   // Update machine
+  /**
+   *
+   * @param id - The resource ID
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
+   */
   async updateMachine(
     id: number,
     data: MachineUpdateRequest,
@@ -128,84 +209,33 @@ export class MachinesService {
     const existingMachine = await this.getMachineById(id, tenantId);
 
     // Validate serial number uniqueness if changed
-    if (
-      data.serialNumber &&
-      data.serialNumber !== existingMachine.serialNumber
-    ) {
-      const machines = await MachineModel.findAll(tenantId, {
+    if (data.serialNumber && data.serialNumber !== existingMachine.serialNumber) {
+      const machines = await machineModel.findAll(tenantId, {
         search: data.serialNumber,
       });
-      const duplicate = machines.find(
-        (m) => m.serial_number === data.serialNumber && m.id !== id,
-      );
+      const duplicate = machines.find((m) => m.serial_number === data.serialNumber && m.id !== id);
       if (duplicate) {
-        throw new ServiceError(
-          "VALIDATION_ERROR",
-          "Serial number already exists",
-          { field: "serialNumber", message: "Serial number already exists" },
-        );
+        throw new ServiceError('VALIDATION_ERROR', 'Serial number already exists', {
+          field: 'serialNumber',
+          message: 'Serial number already exists',
+        });
       }
     }
 
     // Convert API fields to DB fields
-    const dbData: Partial<Machine> = {};
-    if (data.name !== undefined) dbData.name = data.name;
-    if (data.model !== undefined) dbData.model = data.model;
-    if (data.manufacturer !== undefined)
-      dbData.manufacturer = data.manufacturer;
-    if (data.serialNumber !== undefined)
-      dbData.serial_number = data.serialNumber;
-    if (data.assetNumber !== undefined) dbData.asset_number = data.assetNumber;
-    if (data.departmentId !== undefined)
-      dbData.department_id = data.departmentId;
-    if (data.areaId !== undefined) dbData.area_id = data.areaId;
-    if (data.location !== undefined) dbData.location = data.location;
-    if (data.machineType !== undefined) dbData.machine_type = data.machineType;
-    if (data.status !== undefined) dbData.status = data.status;
-    if (data.purchaseDate !== undefined)
-      dbData.purchase_date = data.purchaseDate
-        ? new Date(data.purchaseDate)
-        : undefined;
-    if (data.installationDate !== undefined)
-      dbData.installation_date = data.installationDate
-        ? new Date(data.installationDate)
-        : undefined;
-    if (data.warrantyUntil !== undefined)
-      dbData.warranty_until = data.warrantyUntil
-        ? new Date(data.warrantyUntil)
-        : undefined;
-    if (data.lastMaintenance !== undefined)
-      dbData.last_maintenance = data.lastMaintenance
-        ? new Date(data.lastMaintenance)
-        : undefined;
-    if (data.nextMaintenance !== undefined)
-      dbData.next_maintenance = data.nextMaintenance
-        ? new Date(data.nextMaintenance)
-        : undefined;
-    if (data.operatingHours !== undefined)
-      dbData.operating_hours = data.operatingHours;
-    if (data.productionCapacity !== undefined)
-      dbData.production_capacity = data.productionCapacity;
-    if (data.energyConsumption !== undefined)
-      dbData.energy_consumption = data.energyConsumption;
-    if (data.manualUrl !== undefined) dbData.manual_url = data.manualUrl;
-    if (data.qrCode !== undefined) dbData.qr_code = data.qrCode;
-    if (data.notes !== undefined) dbData.notes = data.notes;
-    if (data.isActive !== undefined) dbData.is_active = data.isActive;
+    const dbData = this.convertUpdateFieldsToDb(data, userId);
 
-    dbData.updated_by = userId;
-
-    const success = await MachineModel.update(id, tenantId, dbData);
+    const success = await machineModel.update(id, tenantId, dbData);
     if (!success) {
-      throw new ServiceError("UPDATE_FAILED", "Failed to update machine", 500);
+      throw new ServiceError('UPDATE_FAILED', 'Failed to update machine', 500);
     }
 
     // Log the action
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: tenantId,
       user_id: userId,
-      action: "update_machine",
-      entity_type: "machine",
+      action: 'update_machine',
+      entity_type: 'machine',
       entity_id: id,
       old_values: existingMachine as unknown as Record<string, unknown>,
       new_values: data as unknown as Record<string, unknown>,
@@ -213,10 +243,18 @@ export class MachinesService {
       user_agent: userAgent,
     });
 
-    return this.getMachineById(id, tenantId);
+    return await this.getMachineById(id, tenantId);
   }
 
-  // Delete machine (soft delete)
+  // Delete machine (hard delete)
+  /**
+   *
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
+   */
   async deleteMachine(
     id: number,
     tenantId: number,
@@ -226,17 +264,17 @@ export class MachinesService {
   ): Promise<void> {
     const machine = await this.getMachineById(id, tenantId);
 
-    const success = await MachineModel.delete(id, tenantId);
+    const success = await machineModel.delete(id, tenantId);
     if (!success) {
-      throw new ServiceError("DELETE_FAILED", "Failed to delete machine", 500);
+      throw new ServiceError('DELETE_FAILED', 'Failed to delete machine', 500);
     }
 
     // Log the action
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: tenantId,
       user_id: userId,
-      action: "delete_machine",
-      entity_type: "machine",
+      action: 'delete_machine',
+      entity_type: 'machine',
       entity_id: id,
       old_values: machine as unknown as Record<string, unknown>,
       ip_address: ipAddress,
@@ -244,7 +282,88 @@ export class MachinesService {
     });
   }
 
+  // Deactivate machine
+  /**
+   *
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
+   */
+  async deactivateMachine(
+    id: number,
+    tenantId: number,
+    userId: number,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    // Verify machine exists
+    await this.getMachineById(id, tenantId);
+
+    const success = await machineModel.deactivate(id, tenantId);
+    if (!success) {
+      throw new ServiceError('UPDATE_FAILED', 'Failed to deactivate machine', 500);
+    }
+
+    // Log the action
+    await rootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: 'deactivate_machine',
+      entity_type: 'machine',
+      entity_id: id,
+      old_values: { is_active: true },
+      new_values: { is_active: false },
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    });
+  }
+
+  // Activate machine
+  /**
+   *
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
+   */
+  async activateMachine(
+    id: number,
+    tenantId: number,
+    userId: number,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<void> {
+    // Verify machine exists
+    await this.getMachineById(id, tenantId);
+
+    const success = await machineModel.activate(id, tenantId);
+    if (!success) {
+      throw new ServiceError('UPDATE_FAILED', 'Failed to activate machine', 500);
+    }
+
+    // Log the action
+    await rootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: 'activate_machine',
+      entity_type: 'machine',
+      entity_id: id,
+      old_values: { is_active: false },
+      new_values: { is_active: true },
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    });
+  }
+
   // Get maintenance history
+  /**
+   *
+   * @param machineId - The machineId parameter
+   * @param tenantId - The tenant ID
+   */
   async getMaintenanceHistory(
     machineId: number,
     tenantId: number,
@@ -252,14 +371,19 @@ export class MachinesService {
     // Verify machine exists and belongs to tenant
     await this.getMachineById(machineId, tenantId);
 
-    const history = await MachineModel.getMaintenanceHistory(
-      machineId,
-      tenantId,
-    );
+    const history = await machineModel.getMaintenanceHistory(machineId, tenantId);
     return history.map((record) => this.formatMaintenanceResponse(record));
   }
 
   // Add maintenance record
+  /**
+   *
+   * @param data - The data object
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param ipAddress - The ipAddress parameter
+   * @param userAgent - The userAgent parameter
+   */
   async addMaintenanceRecord(
     data: MaintenanceRecordRequest,
     tenantId: number,
@@ -282,24 +406,23 @@ export class MachinesService {
       parts_replaced: data.partsReplaced,
       cost: data.cost,
       duration_hours: data.durationHours,
-      status_after: data.statusAfter ?? "operational",
-      next_maintenance_date: data.nextMaintenanceDate
-        ? new Date(data.nextMaintenanceDate)
-        : undefined,
+      status_after: data.statusAfter ?? 'operational',
+      next_maintenance_date:
+        data.nextMaintenanceDate ? new Date(data.nextMaintenanceDate) : undefined,
       report_url: data.reportUrl,
       created_by: userId,
     };
 
-    const recordId = await MachineModel.addMaintenanceRecord(
+    const recordId = await machineModel.addMaintenanceRecord(
       dbData as Partial<MachineMaintenanceHistory>,
     );
 
     // Log the action
-    await RootLog.create({
+    await rootLog.create({
       tenant_id: tenantId,
       user_id: userId,
-      action: "add_maintenance_record",
-      entity_type: "machine_maintenance",
+      action: 'add_maintenance_record',
+      entity_type: 'machine_maintenance',
       entity_id: recordId,
       new_values: data as unknown as Record<string, unknown>,
       ip_address: ipAddress,
@@ -307,44 +430,50 @@ export class MachinesService {
     });
 
     // Get the created record
-    const history = await MachineModel.getMaintenanceHistory(
-      data.machineId,
-      tenantId,
-    );
+    const history = await machineModel.getMaintenanceHistory(data.machineId, tenantId);
     const record = history.find((h) => h.id === recordId);
     if (!record) {
-      throw new ServiceError("NOT_FOUND", "Maintenance record not found");
+      throw new ServiceError('NOT_FOUND', 'Maintenance record not found');
     }
 
     return this.formatMaintenanceResponse(record);
   }
 
   // Get upcoming maintenance
-  async getUpcomingMaintenance(
-    tenantId: number,
-    days: number = 30,
-  ): Promise<MachineResponse[]> {
-    const machines = await MachineModel.getUpcomingMaintenance(tenantId, days);
+  /**
+   *
+   * @param tenantId - The tenant ID
+   * @param days - The days parameter
+   */
+  async getUpcomingMaintenance(tenantId: number, days = 30): Promise<MachineResponse[]> {
+    const machines = await machineModel.getUpcomingMaintenance(tenantId, days);
     return machines.map((machine) => this.formatMachineResponse(machine));
   }
 
   // Get statistics
+  /**
+   *
+   * @param tenantId - The tenant ID
+   */
   async getStatistics(tenantId: number): Promise<MachineStatistics> {
-    const stats = await MachineModel.getStatistics(tenantId);
+    const stats = await machineModel.getStatistics(tenantId);
     return {
-      totalMachines: parseInt(String(stats.total_machines)) || 0,
-      operational: parseInt(String(stats.operational)) || 0,
-      inMaintenance: parseInt(String(stats.in_maintenance)) || 0,
-      inRepair: parseInt(String(stats.in_repair)) || 0,
-      standby: parseInt(String(stats.standby)) || 0,
-      decommissioned: parseInt(String(stats.decommissioned)) || 0,
-      needsMaintenanceSoon: parseInt(String(stats.needs_maintenance_soon)) || 0,
+      totalMachines: Number.parseInt(String(stats.total_machines)) || 0,
+      operational: Number.parseInt(String(stats.operational)) || 0,
+      inMaintenance: Number.parseInt(String(stats.in_maintenance)) || 0,
+      inRepair: Number.parseInt(String(stats.in_repair)) || 0,
+      standby: Number.parseInt(String(stats.standby)) || 0,
+      decommissioned: Number.parseInt(String(stats.decommissioned)) || 0,
+      needsMaintenanceSoon: Number.parseInt(String(stats.needs_maintenance_soon)) || 0,
     };
   }
 
   // Get machine categories
+  /**
+   *
+   */
   async getCategories(): Promise<MachineCategory[]> {
-    const categories = await MachineModel.getCategories();
+    const categories = await machineModel.getCategories();
     return categories.map((cat) => ({
       id: cat.id,
       name: cat.name,
@@ -356,6 +485,10 @@ export class MachinesService {
   }
 
   // Helper: Format machine response
+  /**
+   *
+   * @param machine - The machine parameter
+   */
   private formatMachineResponse(
     machine: Machine & {
       department_name?: string;
@@ -399,6 +532,10 @@ export class MachinesService {
   }
 
   // Helper: Format maintenance response
+  /**
+   *
+   * @param record - The record parameter
+   */
   private formatMaintenanceResponse(
     record: MachineMaintenanceHistory & {
       performed_by_name?: string;
@@ -416,10 +553,9 @@ export class MachinesService {
       externalCompany: record.external_company,
       description: record.description,
       partsReplaced: record.parts_replaced,
-      cost: record.cost ? parseFloat(String(record.cost)) : undefined,
-      durationHours: record.duration_hours
-        ? parseFloat(String(record.duration_hours))
-        : undefined,
+      cost: record.cost ? Number.parseFloat(String(record.cost)) : undefined,
+      durationHours:
+        record.duration_hours ? Number.parseFloat(String(record.duration_hours)) : undefined,
       statusAfter: record.status_after,
       nextMaintenanceDate: record.next_maintenance_date?.toISOString(),
       reportUrl: record.report_url,

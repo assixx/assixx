@@ -49,7 +49,7 @@ Updated file serving endpoints to validate paths before sending:
 ### Testing Performed
 
 - TypeScript compilation successful (`pnpm run type-check`)
-- Build process completed without errors (`pnpm run build:ts`)
+- Build process completed without errors (`pnpm run build`)
 - All unused imports removed to fix linting issues
 
 ### Recommendations

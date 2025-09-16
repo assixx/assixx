@@ -20,7 +20,7 @@ Error: Incorrect arguments to mysqld_stmt_execute
 
 MySQL 8.0.22 und höher haben einen bekannten Bug bei der Verwendung von Prepared Statements über die `execute()` Methode in der mysql2 Node.js Library.
 
-**GitHub Issue:** https://github.com/sidorares/node-mysql2/issues/1239
+**GitHub Issue:** <https://github.com/sidorares/node-mysql2/issues/1239>
 
 ### Technische Details
 
@@ -35,13 +35,13 @@ Alle `execute()` Aufrufe wurden durch `query()` ersetzt.
 ### Beispiel Vorher (Fehler)
 
 ```typescript
-const [results] = await pool.execute("SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?", [tenantId, id]);
+const [results] = await pool.execute('SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?', [tenantId, id]);
 ```
 
 ### Beispiel Nachher (Funktioniert)
 
 ```typescript
-const [results] = await pool.query("SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?", [tenantId, id]);
+const [results] = await pool.query('SELECT * FROM kvp_suggestions WHERE tenant_id = ? AND id = ?', [tenantId, id]);
 ```
 
 ## Betroffene Dateien
@@ -107,7 +107,7 @@ Bei der Umstellung wurde auch ein Encoding-Problem mit deutschen Umlauten festge
 
 ```typescript
 const connection = await pool.getConnection();
-await connection.query("SET NAMES utf8mb4");
+await connection.query('SET NAMES utf8mb4');
 // ... queries ...
 connection.release();
 ```

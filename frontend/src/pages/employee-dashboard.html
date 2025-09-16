@@ -18,6 +18,7 @@
         root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -60,7 +61,7 @@
         box-shadow: var(--shadow-sm);
         border-radius: var(--radius-md);
         padding: var(--spacing-lg) var(--spacing-xl);
-        color: white;
+        color: #fff;
         margin-bottom: var(--spacing-xl);
         position: relative;
         overflow: hidden;
@@ -147,13 +148,12 @@
         background: var(--glass-bg-hover);
         backdrop-filter: var(--glass-backdrop);
         border-radius: var(--radius-md);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         border: var(--glass-border);
         box-shadow:
           0 4px 16px rgba(0, 0, 0, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.1);
         min-width: 80px;
-        transition: all 0.3s ease;
       }
 
       .welcome-stat:hover {
@@ -215,6 +215,146 @@
         right: 25%;
         animation-delay: -4s;
       }
+      .floating-dot:nth-child(5) {
+        top: 80%;
+        left: 35%;
+        animation-delay: -5s;
+        width: 3px;
+        height: 3px;
+      }
+      .floating-dot:nth-child(6) {
+        top: 10%;
+        right: 40%;
+        animation-delay: -6s;
+        width: 5px;
+        height: 5px;
+      }
+      .floating-dot:nth-child(7) {
+        bottom: 20%;
+        left: 45%;
+        animation-delay: -7s;
+        width: 3px;
+        height: 3px;
+      }
+      .floating-dot:nth-child(8) {
+        top: 45%;
+        right: 5%;
+        animation-delay: -8s;
+        width: 6px;
+        height: 6px;
+      }
+      .floating-dot:nth-child(9) {
+        top: 5%;
+        left: 50%;
+        animation-delay: -2.5s;
+        width: 2px;
+        height: 2px;
+      }
+      .floating-dot:nth-child(10) {
+        bottom: 10%;
+        right: 60%;
+        animation-delay: -3.5s;
+        width: 5px;
+        height: 5px;
+      }
+      .floating-dot:nth-child(11) {
+        top: 70%;
+        left: 8%;
+        animation-delay: -4.5s;
+        width: 3px;
+        height: 3px;
+      }
+      .floating-dot:nth-child(12) {
+        top: 35%;
+        left: 60%;
+        animation-delay: -5.5s;
+        width: 4px;
+        height: 4px;
+      }
+      .floating-dot:nth-child(13) {
+        bottom: 30%;
+        left: 15%;
+        animation-delay: -1.2s;
+        width: 2px;
+        height: 2px;
+      }
+      .floating-dot:nth-child(14) {
+        top: 15%;
+        right: 30%;
+        animation-delay: -2.2s;
+        width: 6px;
+        height: 6px;
+      }
+      .floating-dot:nth-child(15) {
+        bottom: 50%;
+        right: 10%;
+        animation-delay: -3.2s;
+        width: 3px;
+        height: 3px;
+      }
+      .floating-dot:nth-child(16) {
+        top: 55%;
+        left: 25%;
+        animation-delay: -4.2s;
+        width: 5px;
+        height: 5px;
+      }
+      .floating-dot:nth-child(17) {
+        top: 25%;
+        left: 75%;
+        animation-delay: -1.8s;
+        width: 2px;
+        height: 2px;
+      }
+      .floating-dot:nth-child(18) {
+        bottom: 5%;
+        left: 55%;
+        animation-delay: -2.8s;
+        width: 4px;
+        height: 4px;
+      }
+      .floating-dot:nth-child(19) {
+        top: 85%;
+        right: 20%;
+        animation-delay: -3.8s;
+        width: 3px;
+        height: 3px;
+      }
+      .floating-dot:nth-child(20) {
+        top: 40%;
+        right: 45%;
+        animation-delay: -4.8s;
+        width: 5px;
+        height: 5px;
+      }
+      .floating-dot:nth-child(21) {
+        bottom: 25%;
+        right: 70%;
+        animation-delay: -1.5s;
+        width: 2px;
+        height: 2px;
+      }
+      .floating-dot:nth-child(22) {
+        top: 65%;
+        left: 70%;
+        animation-delay: -2.5s;
+        width: 6px;
+        height: 6px;
+      }
+      .floating-dot:nth-child(23) {
+        top: 12%;
+        left: 30%;
+        animation-delay: -3.5s;
+        width: 3px;
+        height: 3px;
+      }
+      .floating-dot:nth-child(24) {
+        bottom: 35%;
+        left: 85%;
+        animation-delay: -4.5s;
+        width: 4px;
+        height: 4px;
+      }
 
       @keyframes float {
         0%,
@@ -242,7 +382,7 @@
         box-shadow: var(--shadow-sm);
         border-radius: var(--radius-md);
         padding: var(--spacing-xl);
-        transition: all 0.3s ease;
+
         cursor: pointer;
         position: relative;
         overflow: hidden;
@@ -265,12 +405,11 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       }
 
       .feature-icon {
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+        background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
         width: 60px;
         height: 60px;
         border-radius: var(--radius-md);
@@ -279,8 +418,7 @@
         justify-content: center;
         margin-bottom: var(--spacing-md);
         font-size: 1.5rem;
-        color: white;
-        box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+        color: #fff;
       }
 
       .feature-title {
@@ -298,9 +436,10 @@
       }
 
       .feature-badge {
-        background: var(--primary-color);
-        color: white;
-        padding: var(--spacing-xs) var(--spacing-sm);
+        background: linear-gradient(0deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.08));
+        /*background: linear-gradient(0deg, rgba(33, 125, 243, 0.41), rgba(33, 150, 243, 0.47));*/
+        color: #fff;
+        padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         font-size: 0.8rem;
         font-weight: 500;
@@ -322,7 +461,6 @@
         border-radius: var(--radius-md);
         padding: var(--spacing-lg);
         text-align: center;
-        transition: all 0.3s ease;
       }
 
       .info-label {
@@ -368,11 +506,11 @@
         background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         backdrop-filter: blur(10px);
         border: 1px solid rgba(0, 142, 255, 0.3);
-        color: white;
+        color: #fff;
         border-radius: var(--radius-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         cursor: pointer;
-        transition: all 0.3s ease;
+
         position: relative;
         overflow: hidden;
       }
@@ -411,9 +549,9 @@
       .activity-item {
         display: flex;
         align-items: center;
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        transition: all 0.3s ease;
+
         background: transparent;
       }
 
@@ -435,7 +573,7 @@
         justify-content: center;
         margin-right: var(--spacing-md);
         font-size: 1.2rem;
-        color: white;
+        color: #fff;
       }
 
       .activity-icon.document {
@@ -502,7 +640,7 @@
 
         .welcome-stat {
           min-width: 70px;
-          padding: var(--spacing-sm);
+          padding: var(--spacing-2sm);
         }
 
         .info-grid {
@@ -514,10 +652,6 @@
         text-align: center;
         padding: var(--spacing-xl);
         color: var(--text-secondary);
-      }
-
-      .pulse {
-        /* animation: pulse 2s infinite; */
       }
 
       @keyframes pulse {
@@ -569,7 +703,6 @@
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
       }
 
       .btn-secondary {
@@ -600,6 +733,19 @@
     </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <!-- DOMPurify CDN für inline Scripts -->
+    <script src="/js/purify.min.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      // Make setHTML globally available for inline scripts
+      window.setHTML = setHTML;
+    </script>
+
+    <!-- Common Scripts with ApiClient -->
+    <script type="module" src="/scripts/common.js"></script>
+    <!-- Employee Dashboard TypeScript Module -->
+    <script type="module" src="/scripts/employee-dashboard.ts"></script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -616,6 +762,26 @@
           <!-- Welcome Hero Section -->
           <div class="welcome-hero">
             <div class="floating-elements">
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
+              <div class="floating-dot"></div>
               <div class="floating-dot"></div>
               <div class="floating-dot"></div>
               <div class="floating-dot"></div>
@@ -649,12 +815,12 @@
           <!-- Employee Info Grid -->
           <div class="info-grid">
             <div class="info-card">
-              <div class="info-label">Mitarbeiter-ID</div>
-              <div class="info-value" id="employee-id">-</div>
-            </div>
-            <div class="info-card">
               <div class="info-label">Abteilung</div>
               <div class="info-value" id="employee-department">-</div>
+            </div>
+            <div class="info-card">
+              <div class="info-label">Team</div>
+              <div class="info-value" id="employee-team">-</div>
             </div>
             <div class="info-card">
               <div class="info-label">Position</div>
@@ -669,7 +835,7 @@
           <!-- Quick Access Features -->
           <div class="dashboard-grid">
             <!-- Documents Card -->
-            <div class="feature-card" onclick="window.location.href='/documents'">
+            <div class="feature-card" data-action="navigate" data-href="/documents">
               <div class="feature-icon">📄</div>
               <h3 class="feature-title">Meine Dokumente</h3>
               <p class="feature-description">Zugriff auf Lohnabrechnungen, Bescheinigungen und wichtige Dokumente</p>
@@ -677,7 +843,7 @@
             </div>
 
             <!-- Calendar Card -->
-            <div class="feature-card" onclick="window.location.href='/calendar'">
+            <div class="feature-card" data-action="navigate" data-href="/calendar">
               <div class="feature-icon">📅</div>
               <h3 class="feature-title">Firmenkalender</h3>
               <p class="feature-description">Termine, Events und wichtige Firmentermine im Überblick</p>
@@ -685,7 +851,7 @@
             </div>
 
             <!-- Blackboard Card -->
-            <div class="feature-card" onclick="window.location.href='/blackboard'">
+            <div class="feature-card" data-action="navigate" data-href="/blackboard">
               <div class="feature-icon">📋</div>
               <h3 class="feature-title">Schwarzes Brett</h3>
               <p class="feature-description">Aktuelle Ankündigungen und wichtige Informationen der Geschäftsführung</p>
@@ -693,7 +859,7 @@
             </div>
 
             <!-- KVP Card -->
-            <div class="feature-card" onclick="window.location.href='/kvp'">
+            <div class="feature-card" data-action="navigate" data-href="/kvp">
               <div class="feature-icon">💡</div>
               <h3 class="feature-title">Verbesserungsvorschläge</h3>
               <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>
@@ -701,7 +867,7 @@
             </div>
 
             <!-- Shifts Card -->
-            <div class="feature-card" onclick="window.location.href='/shifts'">
+            <div class="feature-card" data-action="navigate" data-href="/shifts">
               <div class="feature-icon">🕒</div>
               <h3 class="feature-title">Schichtplanung</h3>
               <p class="feature-description">Ihre Schichtpläne und Arbeitszeiten in der Übersicht</p>
@@ -709,7 +875,7 @@
             </div>
 
             <!-- Profile Card -->
-            <div class="feature-card" onclick="window.location.href='/employee-profile'">
+            <div class="feature-card" data-action="navigate" data-href="/employee-profile">
               <div class="feature-icon">👤</div>
               <h3 class="feature-title">Mein Profil</h3>
               <p class="feature-description">Persönliche Daten verwalten und Einstellungen anpassen</p>
@@ -721,7 +887,7 @@
           <div class="quick-stats">
             <div class="stats-header">
               <h2 class="stats-title">Auf einen Blick</h2>
-              <button class="stats-refresh" onclick="loadDashboardData()">
+              <button class="stats-refresh" data-action="refresh-dashboard">
                 <i class="fas fa-sync-alt"></i>
                 Aktualisieren
               </button>
@@ -761,51 +927,19 @@
     </div>
 
     <script>
+      /* global DOMPurify */
       let currentUser = null;
 
       // Initialize on page load
       document.addEventListener('DOMContentLoaded', function () {
         checkAuth();
-        loadUserInfo();
+        // loadUserInfo() removed - unified-navigation handles this
         loadDashboardData();
 
         // Logout wird von unified-navigation behandelt
       });
 
-      async function loadUserInfo() {
-        try {
-          const token = localStorage.getItem('token');
-          const response = await fetch('/api/user/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            const userName = document.getElementById('user-name');
-            const userAvatar = document.getElementById('user-avatar');
-
-            // Display first and last name
-            const displayName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.username || 'Benutzer';
-            userName.textContent = displayName;
-
-            // Update avatar if available
-            if (userData.profile_picture_url) {
-              userAvatar.src = userData.profile_picture_url;
-              userAvatar.onerror = function () {
-                this.src = '/assets/images/default-avatar.svg';
-              };
-            }
-          }
-        } catch (error) {
-          console.error('Error loading user info:', error);
-          // Fallback to local storage
-          const user = JSON.parse(localStorage.getItem('user') || '{}');
-          const userName = document.getElementById('user-name');
-          userName.textContent = user.username || 'Benutzer';
-        }
-      }
+      // loadUserInfo() removed - unified-navigation handles user display in header
 
       function checkAuth() {
         const token = localStorage.getItem('token');
@@ -818,15 +952,15 @@
           const payload = JSON.parse(atob(token.split('.')[1]));
           currentUser = payload;
 
-          // User info is now handled by loadUserInfo()
+          // User info is handled by unified-navigation
 
           // Update welcome message
-          document.getElementById('employee-name').textContent = `${payload.first_name || payload.username}`;
+          document.querySelector('#employee-name').textContent = `${payload.first_name || payload.username}`;
 
           // Redirect if not employee (but allow admins and root viewing as employee)
           const isAdminAsEmployee = payload.role === 'admin' && payload.activeRole === 'employee';
           const isRootAsEmployee = payload.role === 'root' && payload.activeRole === 'employee';
-          console.log('[Employee Dashboard Auth] Role check:', {
+          console.info('[Employee Dashboard Auth] Role check:', {
             role: payload.role,
             activeRole: payload.activeRole,
             isRoleSwitched: payload.isRoleSwitched,
@@ -835,35 +969,15 @@
           });
 
           if (payload.role !== 'employee' && !isAdminAsEmployee && !isRootAsEmployee) {
-            console.log('[Employee Dashboard Auth] Redirecting - not authorized');
+            console.info('[Employee Dashboard Auth] Redirecting - not authorized');
             window.location.href = payload.role === 'admin' ? '/admin-dashboard' : payload.role === 'root' ? '/root-dashboard' : '/login';
           } else {
-            console.log('[Employee Dashboard Auth] Access granted');
+            console.info('[Employee Dashboard Auth] Access granted');
           }
         } catch (e) {
           localStorage.removeItem('token');
           window.location.href = '/login';
         }
-      }
-
-      async function apiCall(url, options = {}) {
-        const token = localStorage.getItem('token');
-        const defaultOptions = {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        };
-
-        const response = await fetch(url, { ...defaultOptions, ...options });
-
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-          return;
-        }
-
-        return response;
       }
 
       async function loadDashboardData() {
@@ -886,14 +1000,22 @@
 
       async function loadEmployeeProfile() {
         try {
-          const response = await apiCall('/api/user/profile');
-          const data = await response.json();
+          const user = await apiClient.get('/users/me');
 
-          if (data.success) {
-            const user = data.data;
-            document.getElementById('employee-id').textContent = user.employee_id || 'Nicht zugewiesen';
-            document.getElementById('employee-department').textContent = user.department || 'Nicht zugewiesen';
-            document.getElementById('employee-position').textContent = user.position || 'Mitarbeiter';
+          // employee-id element was removed, skip it
+          const deptElement = document.querySelector('#employee-department');
+          if (deptElement) {
+            deptElement.textContent = user.departmentName || 'Nicht zugewiesen';
+          }
+
+          const teamElement = document.querySelector('#employee-team');
+          if (teamElement) {
+            teamElement.textContent = user.teamName || user.team_name || 'Kein Team';
+          }
+
+          const posElement = document.querySelector('#employee-position');
+          if (posElement) {
+            posElement.textContent = user.position || 'Mitarbeiter';
           }
         } catch (error) {
           console.error('Error loading profile:', error);
@@ -903,12 +1025,12 @@
       async function loadDocumentCount() {
         try {
           // This would be an API call to get document count
-          document.getElementById('document-count').textContent = '12';
-          document.getElementById('new-documents-count').textContent = '3';
+          document.querySelector('#document-count').textContent = '12';
+          document.querySelector('#new-documents-count').textContent = '3';
 
           // Update badge visibility
           const newDocsCount = 3;
-          const badge = document.getElementById('new-documents-badge');
+          const badge = document.querySelector('#new-documents-badge');
           if (newDocsCount > 0) {
             badge.textContent = `${newDocsCount} neue`;
             badge.style.display = 'inline-block';
@@ -923,13 +1045,13 @@
       async function loadDashboardStats() {
         try {
           // Simulated data - replace with actual API calls
-          document.getElementById('unread-announcements-count').textContent = '2';
-          document.getElementById('next-appointment').textContent = 'Morgen 14:00';
-          document.getElementById('kvp-points').textContent = '125';
+          document.querySelector('#unread-announcements-count').textContent = '2';
+          document.querySelector('#next-appointment').textContent = 'Morgen 14:00';
+          document.querySelector('#kvp-points').textContent = '125';
 
           // Update badges
           const unreadCount = 2;
-          const announcementsBadge = document.getElementById('unread-announcements-badge');
+          const announcementsBadge = document.querySelector('#unread-announcements-badge');
           if (unreadCount > 0) {
             announcementsBadge.textContent = `${unreadCount} neue`;
             announcementsBadge.style.display = 'inline-block';
@@ -971,32 +1093,53 @@
             },
           ];
 
-          const activityList = document.getElementById('activity-list');
-          activityList.innerHTML = activities
+          const activityList = document.querySelector('#activity-list');
+          // Safe: HTML is generated from hardcoded data and sanitized with dom-utils
+          const htmlContent = activities
             .map(
               (activity) => `
-                    <div class="activity-item">
-                        <div class="activity-icon ${activity.type}">
-                            ${activity.icon}
-                        </div>
-                        <div class="activity-content">
-                            <div class="activity-title">${activity.title}</div>
-                            <div class="activity-time">${activity.time}</div>
-                        </div>
-                    </div>
-                `,
+                  <div class="activity-item">
+                      <div class="activity-icon ${activity.type}">
+                          ${activity.icon}
+                      </div>
+                      <div class="activity-content">
+                          <div class="activity-title">${activity.title}</div>
+                          <div class="activity-time">${activity.time}</div>
+                      </div>
+                  </div>
+              `,
             )
             .join('');
+          // Use dom-utils setHTML for safe sanitization
+          if (activityList) {
+            window.setHTML(activityList, htmlContent);
+          }
         } catch (error) {
           console.error('Error loading activity:', error);
-          document.getElementById('activity-list').innerHTML = '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
+          document.querySelector('#activity-list').innerHTML = '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>';
         }
       }
 
-      // Add click handlers for feature cards
+      // Event delegation for navigation and actions
       document.addEventListener('click', function (e) {
-        if (e.target.closest('.feature-card[onclick]')) {
-          // Handle click
+        const target = e.target.closest('[data-action]');
+        if (target) {
+          const action = target.dataset.action;
+
+          switch (action) {
+            case 'navigate': {
+              const href = target.dataset.href;
+              if (href) {
+                window.location.href = href;
+              }
+              break;
+            }
+            case 'refresh-dashboard':
+              if (window.loadDashboardData) {
+                window.loadDashboardData();
+              }
+              break;
+          }
         }
       });
     </script>
@@ -1025,7 +1168,7 @@
             localStorage.setItem('userRole', userRole);
           }
 
-          console.log('[Employee Dashboard] Token analysis:', {
+          console.info('[Employee Dashboard] Token analysis:', {
             tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
             finalActiveRole: activeRole,
@@ -1041,18 +1184,18 @@
       // All users can access employee dashboard when in employee mode
       if (activeRole === 'employee') {
         // User is correctly on employee dashboard
-        console.log('[Employee Dashboard] User in employee mode');
+        console.info('[Employee Dashboard] User in employee mode');
       } else if (userRole === 'root' && activeRole === 'root') {
         // Root user in root mode - redirect to root dashboard
-        console.log('[Employee Dashboard] Root user in root mode - redirecting');
+        console.info('[Employee Dashboard] Root user in root mode - redirecting');
         window.location.replace('/root-dashboard');
       } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
         // Admin/Root user in admin mode - redirect to admin dashboard
-        console.log('[Employee Dashboard] User in admin mode - redirecting');
+        console.info('[Employee Dashboard] User in admin mode - redirecting');
         window.location.replace('/admin-dashboard');
       } else if (!userRole) {
         // No user role - redirect to login
-        console.log('[Employee Dashboard] No user role - redirecting to login');
+        console.info('[Employee Dashboard] No user role - redirecting to login');
         window.location.replace('/login');
       }
 

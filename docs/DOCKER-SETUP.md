@@ -35,9 +35,9 @@ cd docker && docker-compose up -d
 
 ## Zugriff
 
-- App: http://localhost:3000
-- phpMyAdmin: http://localhost:8080
-- Health: http://localhost:3000/health
+- App: <http://localhost:3000>
+- phpMyAdmin: <http://localhost:8080>
+- Health: <http://localhost:3000/health>
 
 ## Wichtige Befehle
 
@@ -82,5 +82,5 @@ docker exec -it assixx-mysql mysql -u assixx_user -pAssixxP@ss2025!
 
 ## Test-Accounts
 
-- Root: simon@scs-technik.de / Test123!
-- Neue Firma: http://localhost:3000/pages/signup.html
+- Root: <simon@scs-technik.de> / Test123!
+- Neue Firma: <http://localhost:3000/pages/signup.html>

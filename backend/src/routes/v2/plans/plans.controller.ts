@@ -1,18 +1,17 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import { security } from "../../../middleware/security";
-import { successResponse, errorResponse } from "../../../utils/apiResponse";
-import { getErrorMessage } from "../../../utils/errorHandler";
-import { typed } from "../../../utils/routeHandlers";
-
-import { PlansService } from "./plans.service";
-import { plansValidation } from "./plans.validation";
-import { UpgradePlanRequest, UpdateAddonsRequest } from "./types";
+import { security } from '../../../middleware/security';
+import { errorResponse, successResponse } from '../../../utils/apiResponse';
+import { getErrorMessage } from '../../../utils/errorHandler';
+import { typed } from '../../../utils/routeHandlers';
+import { PlansService } from './plans.service';
+import { plansValidation } from './plans.validation';
+import type { UpdateAddonsRequest, UpgradePlanRequest } from './types';
 
 const router = Router();
 
 /**
- * @swagger
+
  * /api/v2/plans:
  *   get:
  *     summary: Get all available plans
@@ -76,22 +75,22 @@ const router = Router();
  *         description: Server error
  */
 router.get(
-  "/",
+  '/',
   typed.public(async (req, res) => {
     try {
-      const includeInactive = req.query.includeInactive === "true";
+      const includeInactive = req.query.includeInactive === 'true';
       const plans = await PlansService.getAllPlans(includeInactive);
 
       res.json(successResponse(plans));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("PLANS_FETCH_ERROR", message));
+      res.status(500).json(errorResponse('PLANS_FETCH_ERROR', message));
     }
   }),
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/current:
  *   get:
  *     summary: Get current tenant plan
@@ -124,7 +123,7 @@ router.get(
  *         description: No active plan found
  */
 router.get(
-  "/current",
+  '/current',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -132,22 +131,20 @@ router.get(
       const currentPlan = await PlansService.getCurrentPlan(tenantId);
 
       if (!currentPlan) {
-        res
-          .status(404)
-          .json(errorResponse("PLAN_NOT_FOUND", "No active plan found"));
+        res.status(404).json(errorResponse('PLAN_NOT_FOUND', 'No active plan found'));
         return;
       }
 
       res.json(successResponse(currentPlan));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("CURRENT_PLAN_ERROR", message));
+      res.status(500).json(errorResponse('CURRENT_PLAN_ERROR', message));
     }
   }),
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/addons:
  *   get:
  *     summary: Get tenant addons
@@ -178,7 +175,7 @@ router.get(
  *         description: Unauthorized
  */
 router.get(
-  "/addons",
+  '/addons',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -186,15 +183,15 @@ router.get(
       const addons = await PlansService.getTenantAddons(tenantId);
 
       res.json(successResponse(addons));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("ADDONS_FETCH_ERROR", message));
+      res.status(500).json(errorResponse('ADDONS_FETCH_ERROR', message));
     }
   }),
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/addons:
  *   put:
  *     summary: Update tenant addons
@@ -251,28 +248,24 @@ router.get(
  *         description: Admin access required
  */
 router.put(
-  "/addons",
+  '/addons',
   ...security.admin(),
   plansValidation.updateAddons,
   typed.body<UpdateAddonsRequest>(async (req, res) => {
     try {
       const tenantId = req.user.tenant_id;
-      const result = await PlansService.updateAddons(
-        tenantId,
-        req.body,
-        req.user.id,
-      );
+      const result = await PlansService.updateAddons(tenantId, req.body, req.user.id);
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("ADDONS_UPDATE_ERROR", message));
+      res.status(500).json(errorResponse('ADDONS_UPDATE_ERROR', message));
     }
   }),
 );
 
 /**
- * @swagger
+
  * /api/v2/plans/costs:
  *   get:
  *     summary: Calculate tenant costs
@@ -315,7 +308,7 @@ router.put(
  *         description: Server error
  */
 router.get(
-  "/costs",
+  '/costs',
   ...security.user(),
   typed.auth(async (req, res) => {
     try {
@@ -323,16 +316,15 @@ router.get(
       const costs = await PlansService.calculateCosts(tenantId);
 
       res.json(successResponse(costs));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("COSTS_CALC_ERROR", message));
+      res.status(500).json(errorResponse('COSTS_CALC_ERROR', message));
     }
   }),
 );
 
 /**
- * @swagger
- * /api/v2/plans/{id}:
+ * /api/v2/plans/\{id\}:
  *   get:
  *     summary: Get plan by ID
  *     description: Retrieve a specific plan by its ID
@@ -377,29 +369,28 @@ router.get(
  *         description: Server error
  */
 router.get(
-  "/:id",
+  '/:id',
   plansValidation.getPlanById,
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const planId = parseInt(req.params.id, 10);
+      const planId = Number.parseInt(req.params.id, 10);
       const plan = await PlansService.getPlanById(planId);
 
       if (!plan) {
-        res.status(404).json(errorResponse("PLAN_NOT_FOUND", "Plan not found"));
+        res.status(404).json(errorResponse('PLAN_NOT_FOUND', 'Plan not found'));
         return;
       }
 
       res.json(successResponse(plan));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("PLAN_FETCH_ERROR", message));
+      res.status(500).json(errorResponse('PLAN_FETCH_ERROR', message));
     }
   }),
 );
 
 /**
- * @swagger
- * /api/v2/plans/{id}/features:
+ * /api/v2/plans/\{id\}/features:
  *   get:
  *     summary: Get plan features
  *     description: Retrieve all features included in a specific plan
@@ -442,24 +433,23 @@ router.get(
  *         description: Server error
  */
 router.get(
-  "/:id/features",
+  '/:id/features',
   plansValidation.getPlanById,
   typed.params<{ id: string }>(async (req, res) => {
     try {
-      const planId = parseInt(req.params.id, 10);
+      const planId = Number.parseInt(req.params.id, 10);
       const features = await PlansService.getPlanFeatures(planId);
 
       res.json(successResponse(features));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("FEATURES_FETCH_ERROR", message));
+      res.status(500).json(errorResponse('FEATURES_FETCH_ERROR', message));
     }
   }),
 );
 
 /**
- * @swagger
- * /api/v2/plans/{id}/upgrade:
+ * /api/v2/plans/\{id\}/upgrade:
  *   put:
  *     summary: Upgrade or downgrade plan
  *     description: Change the subscription plan for the authenticated tenant
@@ -518,7 +508,7 @@ router.get(
  *         description: Server error or upgrade failed
  */
 router.put(
-  "/:id/upgrade",
+  '/:id/upgrade',
   ...security.admin(),
   plansValidation.upgradePlan,
   typed.body<UpgradePlanRequest>(async (req, res) => {
@@ -534,9 +524,9 @@ router.put(
       );
 
       res.json(successResponse(result));
-    } catch (error) {
+    } catch (error: unknown) {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse("PLAN_UPGRADE_ERROR", message));
+      res.status(500).json(errorResponse('PLAN_UPGRADE_ERROR', message));
     }
   }),
 );

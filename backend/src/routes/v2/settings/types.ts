@@ -5,7 +5,7 @@
 export interface SystemSetting {
   setting_key: string;
   setting_value: string | number | boolean | Record<string, unknown>;
-  value_type?: "string" | "number" | "boolean" | "json";
+  value_type?: 'string' | 'number' | 'boolean' | 'json';
   category?: string;
   is_public?: boolean;
   description?: string;
@@ -14,7 +14,7 @@ export interface SystemSetting {
 export interface UserSetting {
   setting_key: string;
   setting_value: string | number | boolean | Record<string, unknown>;
-  value_type?: "string" | "number" | "boolean" | "json";
+  value_type?: 'string' | 'number' | 'boolean' | 'json';
   category?: string;
   description?: string;
 }
@@ -45,13 +45,13 @@ export interface GeneralSettings {
 }
 
 export interface BulkUpdateRequest {
-  type: "system" | "tenant" | "user";
-  settings: Array<{
+  type: 'system' | 'tenant' | 'user';
+  settings: {
     setting_key: string;
     setting_value: string | number | boolean | Record<string, unknown>;
-    value_type?: "string" | "number" | "boolean" | "json";
+    value_type?: 'string' | 'number' | 'boolean' | 'json';
     category?: string;
     is_public?: boolean;
     description?: string;
-  }>;
+  }[];
 }

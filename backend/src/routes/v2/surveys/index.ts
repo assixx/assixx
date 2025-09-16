@@ -1,26 +1,27 @@
 /**
  * Surveys API v2 Routes
  * Route definitions for survey management
- * @swagger
+
  * tags:
  *   - name: Surveys v2
  *     description: Survey management API v2
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import * as surveysController from "./surveys.controller.js";
-import { surveysValidation } from "./surveys.validation.js";
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+// Survey Response Endpoints
+import * as responsesController from './responses.controller.js';
+import * as responsesValidation from './responses.validation.js';
+import * as surveysController from './surveys.controller.js';
+import { surveysValidation } from './surveys.validation.js';
 
 const router = Router();
 
 // All routes require authentication
 
 /**
- * @swagger
+
  * /api/v2/surveys:
  *   get:
  *     summary: List surveys based on user role and permissions
@@ -72,14 +73,14 @@ const router = Router();
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/",
+  '/',
   authenticateV2,
   surveysValidation.listSurveys,
   typed.auth(surveysController.listSurveys),
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys/templates:
  *   get:
  *     summary: Get available survey templates
@@ -105,15 +106,15 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/templates",
+  '/templates',
   authenticateV2,
   surveysValidation.getTemplates,
   typed.auth(surveysController.getTemplates),
 );
 
 /**
- * @swagger
- * /api/v2/surveys/templates/{templateId}:
+
+ * /api/v2/surveys/templates/\{templateId\}:
  *   post:
  *     summary: Create survey from template
  *     description: Create a new survey based on an existing template
@@ -151,15 +152,15 @@ router.get(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.post(
-  "/templates/:templateId",
+  '/templates/:templateId',
   authenticateV2,
   surveysValidation.createFromTemplate,
   typed.auth(surveysController.createFromTemplate),
 );
 
 /**
- * @swagger
- * /api/v2/surveys/{id}:
+
+ * /api/v2/surveys/\{id\}:
  *   get:
  *     summary: Get survey by ID
  *     description: Retrieve a specific survey with all questions and assignments
@@ -193,14 +194,14 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2,
   surveysValidation.getSurveyById,
   typed.auth(surveysController.getSurveyById),
 );
 
 /**
- * @swagger
+
  * /api/v2/surveys:
  *   post:
  *     summary: Create a new survey
@@ -234,15 +235,15 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.post(
-  "/",
+  '/',
   authenticateV2,
   surveysValidation.createSurvey,
   typed.auth(surveysController.createSurvey),
 );
 
 /**
- * @swagger
- * /api/v2/surveys/{id}:
+
+ * /api/v2/surveys/\{id\}:
  *   put:
  *     summary: Update a survey
  *     description: Update an existing survey (admin/root only, cannot update if responses exist)
@@ -290,15 +291,15 @@ router.post(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2,
   surveysValidation.updateSurvey,
   typed.auth(surveysController.updateSurvey),
 );
 
 /**
- * @swagger
- * /api/v2/surveys/{id}:
+
+ * /api/v2/surveys/\{id\}:
  *   delete:
  *     summary: Delete a survey
  *     description: Delete a survey (admin/root only, cannot delete if responses exist)
@@ -341,15 +342,15 @@ router.put(
  *               $ref: '#/components/schemas/ApiErrorResponse'
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2,
   surveysValidation.deleteSurvey,
   typed.auth(surveysController.deleteSurvey),
 );
 
 /**
- * @swagger
- * /api/v2/surveys/{id}/statistics:
+
+ * /api/v2/surveys/\{id\}/statistics:
  *   get:
  *     summary: Get survey statistics and response analytics
  *     description: Get detailed statistics and analytics for survey responses (admin/root only)
@@ -383,17 +384,70 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id/statistics",
+  '/:id/statistics',
   authenticateV2,
   surveysValidation.getStatistics,
   typed.auth(surveysController.getStatistics),
 );
 
-// TODO: Implement survey response endpoints in a separate module
-// - POST /api/v2/surveys/{id}/responses - Submit a response
-// - GET /api/v2/surveys/{id}/responses - Get all responses (admin only)
-// - GET /api/v2/surveys/{id}/responses/{responseId} - Get specific response
-// - PUT /api/v2/surveys/{id}/responses/{responseId} - Update response (if allowed)
-// - GET /api/v2/surveys/{id}/responses/export - Export responses (CSV/Excel)
+/**
+ * Submit a response to a survey
+ */
+router.post(
+  '/:id/responses',
+  authenticateV2,
+  responsesValidation.submitResponseValidation,
+  typed.auth(responsesController.submitResponse),
+);
+
+/**
+ * Get all responses for a survey (admin only)
+ */
+router.get(
+  '/:id/responses',
+  authenticateV2,
+  responsesValidation.getAllResponsesValidation,
+  typed.auth(responsesController.getAllResponses),
+);
+
+/**
+ * Get user's own response to a survey
+ */
+router.get(
+  '/:id/my-response',
+  authenticateV2,
+  responsesValidation.getMyResponseValidation,
+  typed.auth(responsesController.getMyResponse),
+);
+
+/**
+ * Export survey responses (CSV/Excel)
+ */
+router.get(
+  '/:id/export',
+  authenticateV2,
+  responsesValidation.exportResponsesValidation,
+  typed.auth(responsesController.exportResponses),
+);
+
+/**
+ * Get a specific response by ID
+ */
+router.get(
+  '/:id/responses/:responseId',
+  authenticateV2,
+  responsesValidation.getResponseByIdValidation,
+  typed.auth(responsesController.getResponseById),
+);
+
+/**
+ * Update a response (if allowed)
+ */
+router.put(
+  '/:id/responses/:responseId',
+  authenticateV2,
+  responsesValidation.updateResponseValidation,
+  typed.auth(responsesController.updateResponse),
+);
 
 export default router;

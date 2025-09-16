@@ -3,7 +3,7 @@
 > **Zeitaufwand:** ~3 Minuten (inklusive TypeScript Check)  
 > **Primäre Methode:** Ein einziger Befehl führt alle Checks aus!
 
-## ⚠️ PFLICHT: Diesen einen Befehl IMMER ausführen!
+## ⚠️ PFLICHT: Diesen einen Befehl IMMER ausführen
 
 ```bash
 # Führt ALLE Checks aus (inklusive TypeScript Check!)

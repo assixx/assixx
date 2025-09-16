@@ -2,22 +2,17 @@
  * Signup Routes v2
  * Handles user registration and subdomain validation
  */
+import { Request, Response, Router } from 'express';
 
-import { Router, Request, Response } from "express";
-
-import {
-  authLimiter,
-  apiLimiter,
-} from "../../../middleware/security-enhanced.js";
-import { validate } from "../../../middleware/validation.js";
-
-import { signupController } from "./controller.js";
-import { signupValidation, checkSubdomainValidation } from "./validation.js";
+import { apiLimiter, authLimiter } from '../../../middleware/security-enhanced.js';
+import { validate } from '../../../middleware/validation.js';
+import { signupController } from './controller.js';
+import { checkSubdomainValidation, signupValidation } from './validation.js';
 
 const router = Router();
 
 /**
- * @swagger
+
  * /api/v2/signup:
  *   post:
  *     summary: Register a new tenant
@@ -52,11 +47,11 @@ const router = Router();
  *                 type: string
  *                 format: email
  *                 description: Company contact email
- *                 example: contact@acme.com
+ *                 example: contact\@acme.com
  *               phone:
  *                 type: string
  *                 description: Phone number with country code
- *                 pattern: ^\+[0-9]{7,29}$
+ *                 pattern: ^\+[0-9]\{7,29\}$
  *                 example: +491234567890
  *               address:
  *                 type: string
@@ -66,7 +61,7 @@ const router = Router();
  *                 type: string
  *                 format: email
  *                 description: Admin user email
- *                 example: admin@acme.com
+ *                 example: admin\@acme.com
  *               adminPassword:
  *                 type: string
  *                 format: password
@@ -131,17 +126,34 @@ const router = Router();
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/",
+  '/',
   authLimiter, // Rate limiting for registration
   validate(signupValidation),
   async (req: Request, res: Response) => {
-    await signupController.signup(req, res);
+    console.info('[SIGNUP ROUTE] Request received');
+    console.info('[SIGNUP ROUTE] Body:', req.body);
+    console.info('[SIGNUP ROUTE] About to call controller');
+    try {
+      console.info('[SIGNUP ROUTE] Inside try block');
+      await signupController.signup(req, res);
+      console.info('[SIGNUP ROUTE] Controller call completed');
+    } catch (error: unknown) {
+      console.error('[SIGNUP ROUTE] Error caught in route handler:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'ROUTE_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+        },
+      });
+    }
   },
 );
 
 /**
- * @swagger
- * /api/v2/signup/check-subdomain/{subdomain}:
+
+ * /api/v2/signup/check-subdomain/\{subdomain\}:
  *   get:
  *     summary: Check subdomain availability
  *     description: Check if a subdomain is available for registration
@@ -190,7 +202,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/check-subdomain/:subdomain",
+  '/check-subdomain/:subdomain',
   apiLimiter, // Rate limiting for API calls
   validate(checkSubdomainValidation),
   async (req: Request, res: Response) => {

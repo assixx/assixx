@@ -2,15 +2,13 @@
  * Combined Security Middleware
  * Provides easy-to-use security stacks for different endpoint types
  */
+import { RequestHandler, Router } from 'express';
 
-import { RequestHandler, Router } from "express";
-
-import { ValidationMiddleware } from "../types/middleware.types";
-import { RateLimiterType } from "../types/security.types";
-
-import { authenticateToken, requireRole } from "./auth-refactored";
-import { rateLimiter } from "./rateLimiter";
-import { validateTenantIsolation } from "./tenantIsolation";
+import { ValidationMiddleware } from '../types/middleware.types';
+import { RateLimiterType } from '../types/security.types';
+import { authenticateToken, requireRole } from './auth-refactored';
+import { rateLimiter } from './rateLimiter';
+import { validateTenantIsolation } from './tenantIsolation';
 
 // Security middleware stacks for different endpoint types
 export const security = {
@@ -63,7 +61,7 @@ export const security = {
       rateLimiter.admin,
       authenticateToken as RequestHandler,
       validateTenantIsolation as RequestHandler,
-      requireRole("admin") as RequestHandler,
+      requireRole('admin') as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -79,7 +77,7 @@ export const security = {
     const stack: RequestHandler[] = [
       rateLimiter.admin,
       authenticateToken as RequestHandler,
-      requireRole("root") as RequestHandler,
+      requireRole('root') as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -107,10 +105,7 @@ export const security = {
    * Special rate limiting for uploads
    */
   upload: (validation?: ValidationMiddleware): RequestHandler[] => {
-    const stack: RequestHandler[] = [
-      rateLimiter.upload,
-      authenticateToken as RequestHandler,
-    ];
+    const stack: RequestHandler[] = [rateLimiter.upload, authenticateToken as RequestHandler];
     if (validation) {
       stack.push(...validation);
     }
@@ -130,20 +125,18 @@ export const security = {
     const stack: RequestHandler[] = [];
 
     // Add rate limiter
-    if (options.rateLimit) {
+    if (options.rateLimit != null) {
       const rateLimitMiddleware = rateLimiter[options.rateLimit];
-      if (rateLimitMiddleware) {
-        stack.push(rateLimitMiddleware);
-      }
+      stack.push(rateLimitMiddleware);
     }
 
     // Add authentication
-    if (options.authenticate) {
+    if (options.authenticate === true) {
       stack.push(authenticateToken as RequestHandler);
     }
 
     // Add role authorization
-    if (options.roles) {
+    if (options.roles != null) {
       stack.push(requireRole(options.roles) as RequestHandler);
     }
 
@@ -190,10 +183,7 @@ export const securityStacks: Record<string, RequestHandler[]> = {
 };
 
 // Helper function to apply security to entire router
-export function applySecurityToRouter(
-  router: Router,
-  defaultSecurity: RequestHandler[],
-): void {
+export function applySecurityToRouter(router: Router, defaultSecurity: RequestHandler[]): void {
   // Store original methods
   const originalGet = router.get.bind(router);
   const originalPost = router.post.bind(router);
@@ -205,38 +195,23 @@ export function applySecurityToRouter(
   // Type-safe method override for complex Express router signatures
   type RouterMethod = (path: string, ...handlers: RequestHandler[]) => Router;
 
-  (router.get as RouterMethod) = (
-    path: string,
-    ...handlers: RequestHandler[]
-  ) => {
+  (router.get as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
     return originalGet(path, ...defaultSecurity, ...handlers);
   };
 
-  (router.post as RouterMethod) = (
-    path: string,
-    ...handlers: RequestHandler[]
-  ) => {
+  (router.post as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
     return originalPost(path, ...defaultSecurity, ...handlers);
   };
 
-  (router.put as RouterMethod) = (
-    path: string,
-    ...handlers: RequestHandler[]
-  ) => {
+  (router.put as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
     return originalPut(path, ...defaultSecurity, ...handlers);
   };
 
-  (router.patch as RouterMethod) = (
-    path: string,
-    ...handlers: RequestHandler[]
-  ) => {
+  (router.patch as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
     return originalPatch(path, ...defaultSecurity, ...handlers);
   };
 
-  (router.delete as RouterMethod) = (
-    path: string,
-    ...handlers: RequestHandler[]
-  ) => {
+  (router.delete as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
     return originalDelete(path, ...defaultSecurity, ...handlers);
   };
 }

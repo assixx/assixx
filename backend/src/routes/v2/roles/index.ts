@@ -2,15 +2,13 @@
  * Roles Routes v2
  * Handles role management and information
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { rolesController } from "./controller.js";
-import { getRoleValidation, checkRoleValidation } from "./validation.js";
+import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validate } from '../../../middleware/validation.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { rolesController } from './controller.js';
+import { checkRoleValidation, getRoleValidation } from './validation.js';
 
 const router = Router();
 
@@ -18,7 +16,7 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * @swagger
+
  * /api/v2/roles:
  *   get:
  *     summary: Get all available roles
@@ -65,14 +63,14 @@ router.use(authenticateToken);
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/",
-  typed.auth(async (req, res) => {
-    await rolesController.getAllRoles(req, res);
+  '/',
+  typed.auth((req, res) => {
+    rolesController.getAllRoles(req, res);
   }),
 );
 
 /**
- * @swagger
+
  * /api/v2/roles/hierarchy:
  *   get:
  *     summary: Get role hierarchy
@@ -111,14 +109,14 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/hierarchy",
-  typed.auth(async (req, res) => {
-    await rolesController.getRoleHierarchy(req, res);
+  '/hierarchy',
+  typed.auth((req, res) => {
+    rolesController.getRoleHierarchy(req, res);
   }),
 );
 
 /**
- * @swagger
+
  * /api/v2/roles/assignable:
  *   get:
  *     summary: Get assignable roles
@@ -146,15 +144,14 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/assignable",
-  typed.auth(async (req, res) => {
-    await rolesController.getAssignableRoles(req, res);
+  '/assignable',
+  typed.auth((req, res) => {
+    rolesController.getAssignableRoles(req, res);
   }),
 );
 
 /**
- * @swagger
- * /api/v2/roles/{id}:
+ * /api/v2/roles/\{id\}:
  *   get:
  *     summary: Get a specific role
  *     description: Get details of a specific role by ID
@@ -191,15 +188,15 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id",
+  '/:id',
   validate(getRoleValidation),
-  typed.auth(async (req, res) => {
-    await rolesController.getRoleById(req, res);
+  typed.auth((req, res) => {
+    rolesController.getRoleById(req, res);
   }),
 );
 
 /**
- * @swagger
+
  * /api/v2/roles/check:
  *   post:
  *     summary: Check user role
@@ -263,7 +260,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/check",
+  '/check',
   validate(checkRoleValidation),
   typed.auth(async (req, res) => {
     await rolesController.checkUserRole(req, res);

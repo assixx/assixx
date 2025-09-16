@@ -19,7 +19,8 @@
         root.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script src="/feature-flags.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
       /* CSS Import - WICHTIG: Lädt dashboard-theme.css ZUERST */
@@ -138,12 +139,10 @@
       .stat-box {
         background: var(--glass-bg);
         backdrop-filter: var(--glass-backdrop);
-        -webkit-backdrop-filter: var(--glass-backdrop);
         padding: 24px;
         border-radius: var(--radius-md);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         box-shadow: var(--shadow-sm);
-        transition: all 0.3s ease;
       }
 
       .stat-box:hover {
@@ -221,7 +220,7 @@
         border-radius: var(--radius-sm);
         color: var(--text-primary);
         font-size: 15px;
-        transition: all 0.3s ease;
+
         backdrop-filter: blur(5px);
       }
 
@@ -241,20 +240,20 @@
 
       /* Buttons - Glassmorphismus */
       .btn {
-        padding: 10px 24px;
+        /*padding: 10px 24px;*/
         border: none;
         border-radius: var(--radius-sm);
         font-size: 14px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         position: relative;
         overflow: hidden;
       }
 
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         box-shadow:
           0 1px 4px rgba(33, 150, 243, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -292,7 +291,6 @@
       .btn-secondary:hover {
         background: rgba(255, 255, 255, 0.08);
         border-color: var(--primary-color);
-        transform: translateY(-1px);
       }
 
       /* Table - Glassmorphismus */
@@ -318,10 +316,6 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         color: var(--text-primary);
         font-size: 14px;
-      }
-
-      .table tbody tr {
-        transition: all 0.2s ease;
       }
 
       .table tbody tr:hover {
@@ -359,14 +353,12 @@
       /* Responsive Table */
       .table-responsive {
         overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
       }
 
       /* Logs Widget Styles */
       .logs-widget {
         background: var(--glass-bg);
         backdrop-filter: var(--glass-backdrop);
-        -webkit-backdrop-filter: var(--glass-backdrop);
         border: var(--glass-border);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
@@ -441,7 +433,7 @@
         border-radius: var(--radius-sm);
         font-size: 13px;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         text-decoration: none;
         display: inline-block;
       }
@@ -460,12 +452,12 @@
         top: 0;
         width: 100%;
         height: 100%;
-        background-color: rgba(0, 0, 0, 0.8);
+        /*background-color: rgba(0, 0, 0, 0.8);*/
         align-items: center;
         justify-content: center;
       }
 
-      .modal-content {
+      #employeeNumberModal .modal-content {
         width: 90%;
         max-width: 500px;
         /* animation: modalFadeIn 0.3s ease; */
@@ -507,6 +499,34 @@
         display: flex;
         gap: 12px;
         justify-content: flex-end;
+      }
+
+      /* Role Badge Styles */
+      .role-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 500;
+        margin-left: 8px;
+      }
+
+      .role-root {
+        background: rgba(156, 39, 176, 0.15);
+        color: #9c27b0;
+        border: 1px solid rgba(156, 39, 176, 0.3);
+      }
+
+      .role-admin {
+        background: rgba(3, 169, 244, 0.15);
+        color: #03a9f4;
+        border: 1px solid rgba(3, 169, 244, 0.3);
+      }
+
+      .role-employee {
+        background: rgba(96, 125, 139, 0.15);
+        color: #607d8b;
+        border: 1px solid rgba(96, 125, 139, 0.3);
       }
 
       /* Custom Dropdown Styles - Now using dashboard-theme.css for consistency */
@@ -644,7 +664,7 @@
             localStorage.setItem('userRole', userRole);
           }
 
-          console.log('[Root Dashboard] Token analysis:', {
+          console.info('[Root Dashboard] Token analysis:', {
             tokenRole: payload.role,
             tokenActiveRole: payload.activeRole,
             finalActiveRole: activeRole,
@@ -660,10 +680,10 @@
       // Only root users can access root dashboard when in root mode
       if (userRole === 'root' && activeRole === 'root') {
         // User is correctly on root dashboard
-        console.log('[Root Dashboard] User has root access');
+        console.info('[Root Dashboard] User has root access');
       } else if (userRole === 'root' && activeRole !== 'root') {
         // Root user has switched to another role - redirect
-        console.log('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
+        console.info('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
         if (activeRole === 'admin') {
           window.location.replace('/admin-dashboard');
         } else if (activeRole === 'employee') {
@@ -671,7 +691,7 @@
         }
       } else if (userRole !== 'root') {
         // Non-root user trying to access root dashboard - redirect to login
-        console.log('[Root Dashboard] Non-root user detected - redirecting to login');
+        console.info('[Root Dashboard] Non-root user detected - redirecting to login');
         window.location.replace('/login');
       }
 
@@ -694,9 +714,10 @@
       });
 
       // Custom Dropdown Functions
+
       function toggleDropdown(dropdownId) {
-        const display = document.getElementById(dropdownId + 'Display');
-        const options = document.getElementById(dropdownId + 'Dropdown');
+        const display = document.querySelector(dropdownId + 'Display');
+        const options = document.querySelector(dropdownId + 'Dropdown');
 
         if (display && options) {
           display.classList.toggle('active');
@@ -717,9 +738,9 @@
       }
 
       function selectOption(dropdownId, value, text) {
-        const display = document.getElementById(dropdownId + 'Display');
-        const options = document.getElementById(dropdownId + 'Dropdown');
-        const input = document.getElementById(dropdownId + 'Value');
+        const display = document.querySelector(dropdownId + 'Display');
+        const options = document.querySelector(dropdownId + 'Dropdown');
+        const input = document.querySelector(dropdownId + 'Value');
 
         if (display && input) {
           display.querySelector('span').textContent = text;

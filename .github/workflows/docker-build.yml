@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - develop
+      - "feature/*"
       - "feature/docker-*"
     tags:
       - "v*"
@@ -22,6 +23,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
 
     steps:
       - name: Checkout code
@@ -55,7 +58,7 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -63,8 +66,18 @@ jobs:
 
   integration-test-docker-compose:
     runs-on: ubuntu-latest
-    needs: build-and-push-image
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    needs: [build-and-push-image, security-scan-trivy]
+    # Run ONLY on:
+    # - Pull requests (for review)
+    # - Direct pushes to master/develop (for hotfixes/releases)
+    # - Skip push events on feature branches (PR already tests them)
+    if: |
+      github.event_name == 'pull_request' || 
+      (github.event_name == 'push' && contains('refs/heads/master refs/heads/develop', github.ref))
+    # Prevent multiple integration tests from running simultaneously
+    concurrency:
+      group: docker-integration-test
+      cancel-in-progress: false  # Don't cancel, wait for completion
     permissions:
       contents: read
 
@@ -74,8 +87,51 @@ jobs:
 
       - name: Run Docker Compose tests
         run: |
-          cp docker/.env.docker.example docker/.env.docker
+          cp docker/.env.docker.example docker/.env
           cd docker && docker compose -f docker-compose.test.yml up -d
+
+          # Wait for MySQL to be HEALTHY (not just accepting connections)
+          echo "Waiting for MySQL to be HEALTHY..."
+          MAX_WAIT=120
+          COUNTER=0
+
+          while [ $COUNTER -lt $MAX_WAIT ]; do
+            HEALTH_STATUS=$(docker inspect --format "{{.State.Health.Status}}" assixx-mysql 2>/dev/null || echo "unknown")
+            
+            if [ "$HEALTH_STATUS" = "healthy" ]; then
+              echo "✓ MySQL is healthy after $COUNTER seconds!"
+              break
+            fi
+            
+            # Show status every 10 seconds
+            if [ $((COUNTER % 10)) -eq 0 ]; then
+              echo "MySQL health status: $HEALTH_STATUS (waited ${COUNTER}s)"
+              
+              # Show container status
+              if [ $COUNTER -eq 0 ]; then
+                echo "Container status:"
+                docker ps -a | grep mysql || true
+              fi
+              
+              # Show logs after 30 seconds if still not healthy
+              if [ $COUNTER -ge 30 ] && [ "$HEALTH_STATUS" != "healthy" ]; then
+                echo "Recent MySQL logs:"
+                docker logs assixx-mysql --tail 5 2>&1 || true
+              fi
+            fi
+            
+            COUNTER=$((COUNTER + 1))
+            sleep 1
+          done
+
+          # Final check
+          if [ "$HEALTH_STATUS" != "healthy" ]; then
+            echo "ERROR: MySQL failed to become healthy after ${MAX_WAIT} seconds"
+            echo "Final MySQL status: $HEALTH_STATUS"
+            echo "Full MySQL logs:"
+            docker logs assixx-mysql 2>&1 || true
+            exit 1
+          fi
 
           # Wait for backend to be healthy (max 90 seconds)
           echo "Waiting for backend service to be healthy..."
@@ -108,10 +164,28 @@ jobs:
 
           docker compose -f docker-compose.test.yml down
 
+      - name: Debug MySQL on failure
+        if: failure()
+        run: |
+          echo "=== Debugging MySQL failure ==="
+          echo "MySQL Container Status:"
+          docker ps -a | grep mysql || true
+          echo ""
+          echo "MySQL Health Status:"
+          docker inspect --format "{{.State.Health.Status}}" assixx-mysql 2>/dev/null || echo "Container not found"
+          echo ""
+          echo "MySQL Logs (last 50 lines):"
+          docker logs assixx-mysql --tail 50 2>&1 || true
+          echo ""
+          echo "MySQL Container Inspect:"
+          docker inspect assixx-mysql 2>&1 || true
+          echo ""
+          echo "Docker Compose Status:"
+          cd docker && docker compose -f docker-compose.test.yml ps || true
+
   security-scan-trivy:
     runs-on: ubuntu-latest
     needs: build-and-push-image
-    if: github.event_name != 'pull_request'
     permissions:
       contents: read
       security-events: write
@@ -126,14 +200,24 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:master
+          image-ref: ${{ needs.build-and-push-image.outputs.image-tag }}
           format: "sarif"
           output: "trivy-results.sarif"
         continue-on-error: true
 
+      - name: Check if SARIF file exists
+        id: check_sarif
+        run: |
+          if [ -f "trivy-results.sarif" ]; then
+            echo "sarif_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "sarif_exists=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v3
-        if: success() || failure()
+        if: steps.check_sarif.outputs.sarif_exists == 'true'
         with:
           sarif_file: "trivy-results.sarif"
         continue-on-error: true

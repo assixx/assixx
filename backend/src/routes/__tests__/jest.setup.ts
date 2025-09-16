@@ -2,8 +2,7 @@
  * Jest Global Setup for Database Tests
  * Closes all database connections after all tests are done
  */
-
-import { closeTestDatabase } from "../mocks/database.js";
+import { closeTestDatabase } from '../mocks/database.js';
 
 // Ensure all database connections are closed after tests
 afterAll(async () => {

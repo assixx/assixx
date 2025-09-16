@@ -2,28 +2,32 @@
  * Notifications v2 Service
  * Business logic for notification management
  */
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import { RowDataPacket, ResultSetHeader } from "mysql2";
-
-import { executeQuery } from "../../../database.js";
-import { RootLog } from "../../../models/rootLog.js";
-import { dbToApi } from "../../../utils/fieldMapping.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import {
-  NotificationFilters,
-  NotificationData,
-  NotificationPreferences,
-} from "./types.js";
+import rootLog from '../../../models/rootLog';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { query as executeQuery } from '../../../utils/db.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
+import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
 
 /**
  * Get notifications for a user with filters
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param filters - The filter criteria
  */
 export async function listNotifications(
   userId: number,
   tenantId: number,
   filters: NotificationFilters,
-) {
+): Promise<{
+  notifications: unknown[];
+  total: number;
+  page: number;
+  totalPages: number;
+  unreadCount: number;
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}> {
   const page = filters.page ?? 1;
   const limit = filters.limit ?? 20;
   const offset = (page - 1) * limit;
@@ -33,7 +37,7 @@ export async function listNotifications(
   const params: (string | number | boolean)[] = [tenantId];
 
   // User can see broadcast notifications or their own
-  conditions.push(`(n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?) 
+  conditions.push(`(n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
     OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
     OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`);
   params.push(userId, userId, userId);
@@ -50,7 +54,7 @@ export async function listNotifications(
 
   // Build the main query
   let query = `
-    SELECT 
+    SELECT
       n.*,
       nrs.read_at,
       CASE WHEN nrs.id IS NOT NULL THEN true ELSE false END as is_read,
@@ -58,7 +62,7 @@ export async function listNotifications(
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
     LEFT JOIN users u ON n.created_by = u.id
-    WHERE ${conditions.join(" AND ")}
+    WHERE ${conditions.join(' AND ')}
   `;
 
   // Add unread filter if specified
@@ -78,43 +82,49 @@ export async function listNotifications(
     SELECT COUNT(*) as total
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${conditions.join(" AND ")}
-    ${filters.unread === true ? "AND nrs.id IS NULL" : ""}
+    WHERE ${conditions.join(' AND ')}
+    ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
   `;
   const countParams = [userId, ...params.slice(1, -2)]; // Exclude limit/offset
-  const [[countResult]] = await executeQuery<RowDataPacket[]>(
-    countQuery,
-    countParams,
-  );
-  const total = countResult.total;
+  const [[countResult]] = await executeQuery<RowDataPacket[]>(countQuery, countParams);
+  const total = Number(countResult.total);
 
   // Get unread count
   const unreadQuery = `
     SELECT COUNT(*) as unread
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${conditions.join(" AND ")} AND nrs.id IS NULL
+    WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
   `;
   const [[unreadResult]] = await executeQuery<RowDataPacket[]>(unreadQuery, [
     userId,
     ...params.slice(1, -2),
   ]);
-  const unreadCount = unreadResult.unread;
+  const unreadCount = Number(unreadResult.unread);
 
+  const totalPages = Math.ceil(total / limit);
   return {
     notifications: rows.map((row) => dbToApi(row)),
+    total,
+    page,
+    totalPages,
     unreadCount,
     pagination: {
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages,
     },
   };
 }
 
 /**
  * Create a new notification
+ * @param data - The data object
+ * @param createdBy - The createdBy parameter
+ * @param tenantId - The tenant ID
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function createNotification(
   data: NotificationData,
@@ -122,17 +132,17 @@ export async function createNotification(
   tenantId: number,
   ipAddress?: string,
   userAgent?: string,
-) {
+): Promise<{ notificationId: number }> {
   const [result] = await executeQuery<ResultSetHeader>(
-    `INSERT INTO notifications 
-    (type, title, message, priority, recipient_id, recipient_type, action_url, action_label, 
+    `INSERT INTO notifications
+    (type, title, message, priority, recipient_id, recipient_type, action_url, action_label,
      metadata, scheduled_for, created_by, tenant_id)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       data.type,
       data.title,
       data.message,
-      data.priority ?? "normal",
+      data.priority ?? 'normal',
       data.recipient_id ?? null,
       data.recipient_type,
       data.action_url ?? null,
@@ -145,11 +155,11 @@ export async function createNotification(
   );
 
   // Log the action
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId,
     user_id: createdBy,
-    action: "notification_created",
-    entity_type: "notification",
+    action: 'notification_created',
+    entity_type: 'notification',
     entity_id: result.insertId,
     new_values: data as unknown as Record<string, unknown>,
     ip_address: ipAddress,
@@ -161,52 +171,52 @@ export async function createNotification(
 
 /**
  * Mark notification as read
+ * @param notificationId - The notificationId parameter
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
 export async function markAsRead(
   notificationId: number,
   userId: number,
   tenantId: number,
-) {
+): Promise<void> {
   // Check if notification exists and user has access
-  const [[notification]] = await executeQuery<RowDataPacket[]>(
-    `SELECT * FROM notifications 
-     WHERE id = ? AND tenant_id = ? 
+  const [rows] = await executeQuery<RowDataPacket[]>(
+    `SELECT * FROM notifications
+     WHERE id = ? AND tenant_id = ?
      AND (recipient_type = 'all' OR (recipient_type = 'user' AND recipient_id = ?)
           OR (recipient_type = 'department' AND recipient_id IN (SELECT department_id FROM users WHERE id = ?))
           OR (recipient_type = 'team' AND recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`,
     [notificationId, tenantId, userId, userId, userId],
   );
+  const notification = rows[0] as RowDataPacket | undefined;
 
   if (!notification) {
-    throw new ServiceError("NOT_FOUND", "Notification not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
   }
 
   // Check if already read
-  const [[existing]] = await executeQuery<RowDataPacket[]>(
-    `SELECT id FROM notification_read_status WHERE notification_id = ? AND user_id = ?`,
-    [notificationId, userId],
+  // Mark as read if not already
+  await executeQuery(
+    `INSERT IGNORE INTO notification_read_status (notification_id, user_id, tenant_id) VALUES (?, ?, ?)`,
+    [notificationId, userId, tenantId],
   );
-
-  if (!existing) {
-    // Mark as read
-    await executeQuery(
-      `INSERT INTO notification_read_status (notification_id, user_id, tenant_id) VALUES (?, ?, ?)`,
-      [notificationId, userId, tenantId],
-    );
-  }
-
-  return { success: true };
 }
 
 /**
  * Mark all notifications as read
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
-export async function markAllAsRead(userId: number, tenantId: number) {
+export async function markAllAsRead(
+  userId: number,
+  tenantId: number,
+): Promise<{ updated: number }> {
   // Get all unread notifications for user
   const [unreadNotifications] = await executeQuery<RowDataPacket[]>(
     `SELECT n.id FROM notifications n
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-     WHERE n.tenant_id = ? 
+     WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
           OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))
@@ -223,11 +233,17 @@ export async function markAllAsRead(userId: number, tenantId: number) {
     markedCount++;
   }
 
-  return { markedCount };
+  return { updated: markedCount };
 }
 
 /**
  * Delete notification
+ * @param notificationId - The notificationId parameter
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param userRole - The userRole parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function deleteNotification(
   notificationId: number,
@@ -236,59 +252,58 @@ export async function deleteNotification(
   userRole: string,
   ipAddress?: string,
   userAgent?: string,
-) {
+): Promise<void> {
   // Check if notification exists
-  const [[notification]] = await executeQuery<RowDataPacket[]>(
+  const [rows2] = await executeQuery<RowDataPacket[]>(
     `SELECT * FROM notifications WHERE id = ? AND tenant_id = ?`,
     [notificationId, tenantId],
   );
+  const notification = rows2[0] as RowDataPacket | undefined;
 
   if (!notification) {
-    throw new ServiceError("NOT_FOUND", "Notification not found", 404);
+    throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
   }
 
   // Check permissions - admin can delete any, users only their own
-  if (userRole !== "admin" && userRole !== "root") {
-    if (
-      notification.recipient_type !== "user" ||
-      notification.recipient_id !== userId
-    ) {
-      throw new ServiceError("NOT_FOUND", "Notification not found", 404);
-    }
+  if (
+    userRole !== 'admin' &&
+    userRole !== 'root' &&
+    (notification.recipient_type !== 'user' || notification.recipient_id !== userId)
+  ) {
+    throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
   }
 
   // Delete notification
-  await executeQuery(`DELETE FROM notifications WHERE id = ?`, [
-    notificationId,
-  ]);
+  await executeQuery(`DELETE FROM notifications WHERE id = ?`, [notificationId]);
 
   // Log the action
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId,
     user_id: userId,
-    action: "notification_deleted",
-    entity_type: "notification",
+    action: 'notification_deleted',
+    entity_type: 'notification',
     entity_id: notificationId,
     old_values: notification,
     ip_address: ipAddress,
     user_agent: userAgent,
   });
-
-  return { success: true };
 }
 
 /**
  * Get notification preferences
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
-export async function getPreferences(userId: number, tenantId: number) {
+export async function getPreferences(userId: number, tenantId: number): Promise<unknown> {
   try {
-    const [[prefs]] = await executeQuery<RowDataPacket[]>(
+    const [rows] = await executeQuery<RowDataPacket[]>(
       `SELECT * FROM notification_preferences WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
       [userId, tenantId],
     );
+    const prefs = rows[0] as RowDataPacket | undefined;
 
     if (!prefs) {
-      // Return default preferences
+      // Return default preferences if none exist
       return {
         email_notifications: true,
         push_notifications: true,
@@ -302,18 +317,15 @@ export async function getPreferences(userId: number, tenantId: number) {
       };
     }
 
-    let notificationTypes = {};
+    let notificationTypes: Record<string, unknown> = {};
     if (prefs.preferences) {
       try {
         notificationTypes =
-          typeof prefs.preferences === "string"
-            ? JSON.parse(prefs.preferences)
-            : prefs.preferences;
-      } catch (e) {
-        console.error(
-          "[Notifications Service] Failed to parse preferences:",
-          e,
-        );
+          typeof prefs.preferences === 'string' ?
+            (JSON.parse(prefs.preferences) as Record<string, unknown>)
+          : (prefs.preferences as Record<string, unknown>);
+      } catch (error: unknown) {
+        console.error('[Notifications Service] Failed to parse preferences:', error);
         notificationTypes = {};
       }
     }
@@ -324,14 +336,19 @@ export async function getPreferences(userId: number, tenantId: number) {
       sms_notifications: !!prefs.sms_notifications,
       notification_types: notificationTypes,
     };
-  } catch (error) {
-    console.error("[Notifications Service] getPreferences error:", error);
+  } catch (error: unknown) {
+    console.error('[Notifications Service] getPreferences error:', error);
     throw error;
   }
 }
 
 /**
  * Update notification preferences
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param preferences - The preferences parameter
+ * @param ipAddress - The ipAddress parameter
+ * @param userAgent - The userAgent parameter
  */
 export async function updatePreferences(
   userId: number,
@@ -339,18 +356,19 @@ export async function updatePreferences(
   preferences: NotificationPreferences,
   ipAddress?: string,
   userAgent?: string,
-) {
+): Promise<void> {
   // Check if preferences exist
-  const [[existing]] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<RowDataPacket[]>(
     `SELECT id FROM notification_preferences WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
     [userId, tenantId],
   );
+  const existing = rows[0] as RowDataPacket | undefined;
 
   if (existing) {
     // Update existing
     await executeQuery(
-      `UPDATE notification_preferences 
-       SET email_notifications = ?, push_notifications = ?, sms_notifications = ?, 
+      `UPDATE notification_preferences
+       SET email_notifications = ?, push_notifications = ?, sms_notifications = ?,
            preferences = ?, updated_at = NOW()
        WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
       [
@@ -365,7 +383,7 @@ export async function updatePreferences(
   } else {
     // Insert new
     await executeQuery(
-      `INSERT INTO notification_preferences 
+      `INSERT INTO notification_preferences
        (user_id, tenant_id, email_notifications, push_notifications, sms_notifications, preferences, notification_type)
        VALUES (?, ?, ?, ?, ?, ?, 'general')`,
       [
@@ -380,24 +398,23 @@ export async function updatePreferences(
   }
 
   // Log the action
-  await RootLog.create({
+  await rootLog.create({
     tenant_id: tenantId,
     user_id: userId,
-    action: "notification_preferences_updated",
-    entity_type: "user",
+    action: 'notification_preferences_updated',
+    entity_type: 'user',
     entity_id: userId,
     new_values: preferences as unknown as Record<string, unknown>,
     ip_address: ipAddress,
     user_agent: userAgent,
   });
-
-  return { success: true };
 }
 
 /**
  * Get notification statistics (admin only)
+ * @param tenantId - The tenant ID
  */
-export async function getStatistics(tenantId: number) {
+export async function getStatistics(tenantId: number): Promise<unknown> {
   // Total notifications
   const [[totalResult]] = await executeQuery<RowDataPacket[]>(
     `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = ?`,
@@ -418,7 +435,7 @@ export async function getStatistics(tenantId: number) {
 
   // Read rate
   const [[readRateResult]] = await executeQuery<RowDataPacket[]>(
-    `SELECT 
+    `SELECT
       COUNT(DISTINCT n.id) as total_notifications,
       COUNT(DISTINCT nrs.notification_id) as read_notifications
      FROM notifications n
@@ -428,13 +445,13 @@ export async function getStatistics(tenantId: number) {
   );
 
   const readRate =
-    readRateResult.total_notifications > 0
-      ? readRateResult.read_notifications / readRateResult.total_notifications
-      : 0;
+    readRateResult.total_notifications > 0 ?
+      readRateResult.read_notifications / readRateResult.total_notifications
+    : 0;
 
   // Trends (last 30 days)
   const [trendsRows] = await executeQuery<RowDataPacket[]>(
-    `SELECT 
+    `SELECT
       DATE(created_at) as date,
       COUNT(*) as count
      FROM notifications
@@ -446,34 +463,36 @@ export async function getStatistics(tenantId: number) {
 
   const byType: Record<string, number> = {};
   byTypeRows.forEach((row) => {
-    byType[row.type] = row.count;
+    byType[String(row.type)] = Number(row.count);
   });
 
   const byPriority: Record<string, number> = {};
   byPriorityRows.forEach((row) => {
-    byPriority[row.priority] = row.count;
+    byPriority[String(row.priority)] = Number(row.count);
   });
 
   return {
-    total: totalResult.total,
+    total: Number(totalResult.total),
     byType,
     byPriority,
     readRate,
     trends: trendsRows.map((row) => ({
-      date: row.date,
-      count: row.count,
+      date: String(row.date),
+      count: Number(row.count),
     })),
   };
 }
 
 /**
  * Get personal notification statistics
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
  */
-export async function getPersonalStats(userId: number, tenantId: number) {
+export async function getPersonalStats(userId: number, tenantId: number): Promise<unknown> {
   // Total notifications for user
   const [[totalResult]] = await executeQuery<RowDataPacket[]>(
     `SELECT COUNT(*) as total FROM notifications n
-     WHERE n.tenant_id = ? 
+     WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
           OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`,
@@ -484,7 +503,7 @@ export async function getPersonalStats(userId: number, tenantId: number) {
   const [[unreadResult]] = await executeQuery<RowDataPacket[]>(
     `SELECT COUNT(*) as unread FROM notifications n
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-     WHERE n.tenant_id = ? 
+     WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
           OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))
@@ -495,7 +514,7 @@ export async function getPersonalStats(userId: number, tenantId: number) {
   // By type
   const [byTypeRows] = await executeQuery<RowDataPacket[]>(
     `SELECT n.type, COUNT(*) as count FROM notifications n
-     WHERE n.tenant_id = ? 
+     WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
           OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
           OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))
@@ -505,12 +524,12 @@ export async function getPersonalStats(userId: number, tenantId: number) {
 
   const byType: Record<string, number> = {};
   byTypeRows.forEach((row) => {
-    byType[row.type] = row.count;
+    byType[String(row.type)] = Number(row.count);
   });
 
   return {
-    total: totalResult.total,
-    unread: unreadResult.unread,
+    total: Number(totalResult.total),
+    unread: Number(unreadResult.unread),
     byType,
   };
 }

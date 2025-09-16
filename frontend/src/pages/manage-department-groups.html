@@ -20,7 +20,8 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script src="/feature-flags.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <style>
@@ -49,7 +50,7 @@
       /* Container Styles */
       .container {
         padding: 24px;
-        margin-top: -37px !important; /* Align first container with sidebar user-info-card */
+        margin-top: -25px !important; /* Align first container with sidebar user-info-card */
       }
 
       /* Card Header with Button */
@@ -88,7 +89,7 @@
         margin: 2px 0;
         border-radius: 8px;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         display: flex;
         align-items: center;
         gap: 8px;
@@ -169,8 +170,8 @@
       }
 
       .empty-state-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
+        font-size: 64px;
+        margin-bottom: 20px;
         opacity: 0.5;
       }
 
@@ -337,6 +338,7 @@
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <script type="module" src="/scripts/manage-department-groups.ts"></script>
 
     <!-- Breadcrumb Component -->

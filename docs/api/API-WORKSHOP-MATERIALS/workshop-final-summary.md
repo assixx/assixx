@@ -2,7 +2,7 @@
 
 ## Workshop Ergebnis: 24.07.2025
 
-### 🎯 Hauptziel erreicht:
+### 🎯 Hauptziel erreicht
 
 Klare API-Standards definiert für wartbare, sichere und konsistente APIs.
 
@@ -10,7 +10,7 @@ Klare API-Standards definiert für wartbare, sichere und konsistente APIs.
 
 ## 📝 Key Decisions Summary
 
-### API Standards:
+### API Standards
 
 1. **Versionierung:** URL-basiert `/api/v2/...`
 2. **Naming:** Immer Plural (`/users`, `/events`)
@@ -18,7 +18,7 @@ Klare API-Standards definiert für wartbare, sichere und konsistente APIs.
 4. **Responses:** Mit `success` flag und `meta`
 5. **Errors:** Strukturiert mit `code` und `details`
 
-### Technische Entscheidungen:
+### Technische Entscheidungen
 
 1. **Conversations > Channels** (moderner)
 2. **Flache Strukturen** (keine deep nesting)
@@ -26,7 +26,7 @@ Klare API-Standards definiert für wartbare, sichere und konsistente APIs.
 4. **TypeScript camelCase** (nicht snake_case)
 5. **6 Monate Deprecation** (industry standard)
 
-### Prioritäten:
+### Prioritäten
 
 1. **Security First** (immer!)
 2. **Auth → Users → Calendar → Chat**
@@ -42,10 +42,10 @@ Klare API-Standards definiert für wartbare, sichere und konsistente APIs.
 // backend/src/middleware/deprecation.ts
 export function deprecationMiddleware(version: string, sunset: string) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (req.path.startsWith("/api/v1")) {
-      res.setHeader("Deprecation", "true");
-      res.setHeader("Sunset", sunset);
-      res.setHeader("Link", '</api/v2>; rel="successor-version"');
+    if (req.path.startsWith('/api/v1')) {
+      res.setHeader('Deprecation', 'true');
+      res.setHeader('Sunset', sunset);
+      res.setHeader('Link', '</api/v2>; rel="successor-version"');
     }
     next();
   };
@@ -62,7 +62,7 @@ export function successResponse<T>(data: T, message?: string): ApiSuccessRespons
     data,
     meta: {
       timestamp: new Date().toISOString(),
-      version: "2.0",
+      version: '2.0',
     },
   };
 }
@@ -87,7 +87,7 @@ export function errorResponse(error: ApiError): ApiErrorResponse {
 
 ```typescript
 // backend/src/utils/fieldMapping.ts
-import { camelCase, snakeCase, mapKeys } from "lodash";
+import { camelCase, mapKeys, snakeCase } from 'lodash';
 
 export const dbToApi = <T>(dbObject: any): T => {
   return mapKeys(dbObject, (_, key) => camelCase(key)) as T;
@@ -165,14 +165,14 @@ export const apiToDb = <T>(apiObject: any): T => {
 
 ## 💡 Solo-Dev Tipps
 
-### Automatisierung ist KEY:
+### Automatisierung ist KEY
 
 1. **Response Wrapper** = Konsistenz ohne Nachdenken
 2. **Field Mapper** = Keine manuellen Konvertierungen
 3. **Deprecation Middleware** = Automatische Warnings
 4. **OpenAPI Generator** = Docs bleiben aktuell
 
-### Testing Strategy:
+### Testing Strategy
 
 ```bash
 # Parallel testen
@@ -181,7 +181,7 @@ npm run test:v2  # Neue Tests
 npm run test:all # Beide
 ```
 
-### Git Branch Strategy:
+### Git Branch Strategy
 
 ```bash
 git checkout -b api/v2-auth
@@ -202,7 +202,7 @@ git checkout -b api/v2-chat
 
 ---
 
-## 🎆 Celebrate Small Wins!
+## 🎆 Celebrate Small Wins
 
 Nach jeder abgeschlossenen API:
 

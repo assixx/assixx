@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+bower_components/
+vendor/
+
+# Build outputs
+dist/
+build/
+coverage/
+*.min.js
+*.min.css
+
+# Generated files
+CHANGELOG.md
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Documentation that may have external formatting
+docs/api/generated/
+docs/external/
+
+# Third-party content
+licenses/
+LICENSES/
+third-party/
+
+# Test fixtures
+test/fixtures/
+__tests__/fixtures/
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Docker volumes
+docker/volumes/
+docker/data/

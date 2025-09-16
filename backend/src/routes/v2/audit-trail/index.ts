@@ -1,22 +1,17 @@
 /**
  * Audit Trail API v2 Routes
  * Complete audit logging and compliance reporting system
- * @swagger
+
  * tags:
  *   name: Audit Trail v2
  *   description: Audit logging and compliance API v2
  */
+import express, { RequestHandler, Router } from 'express';
 
-import express, { Router, RequestHandler } from "express";
-
-import {
-  authenticateV2,
-  requireRoleV2,
-} from "../../../middleware/v2/auth.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { auditTrailController } from "./audit-trail.controller.js";
-import { auditTrailValidation } from "./audit-trail.validation.js";
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { auditTrailController } from './audit-trail.controller.js';
+import { auditTrailValidation } from './audit-trail.validation.js';
 
 const router: Router = express.Router();
 
@@ -24,15 +19,12 @@ const router: Router = express.Router();
 const userAuth = [authenticateV2 as RequestHandler];
 const adminAuth = [
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin", "root"]) as RequestHandler,
+  requireRoleV2(['admin', 'root']) as RequestHandler,
 ];
-const rootAuth = [
-  authenticateV2 as RequestHandler,
-  requireRoleV2(["root"]) as RequestHandler,
-];
+const rootAuth = [authenticateV2 as RequestHandler, requireRoleV2(['root']) as RequestHandler];
 
 /**
- * @swagger
+
  * /api/v2/audit-trail:
  *   get:
  *     summary: Get audit entries
@@ -138,14 +130,16 @@ const rootAuth = [
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
-  "/",
+  '/',
   ...userAuth,
   auditTrailValidation.getEntries,
-  typed.auth(auditTrailController.getEntries),
+  typed.auth(async (req, res) => {
+    await auditTrailController.getEntries(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/stats:
  *   get:
  *     summary: Get audit statistics
@@ -184,14 +178,16 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
-  "/stats",
+  '/stats',
   ...adminAuth,
   auditTrailValidation.getStats,
-  typed.auth(auditTrailController.getStats),
+  typed.auth(async (req, res) => {
+    await auditTrailController.getStats(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/reports:
  *   post:
  *     summary: Generate compliance report
@@ -242,18 +238,16 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.post(
-  "/reports",
+  '/reports',
   ...adminAuth,
   auditTrailValidation.generateReport,
-  typed.body<{ reportType: string; dateFrom: string; dateTo: string }>(
-    async (req, res) => {
-      await auditTrailController.generateReport(req, res);
-    },
-  ),
+  typed.body<{ reportType: string; dateFrom: string; dateTo: string }>(async (req, res) => {
+    await auditTrailController.generateReport(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/export:
  *   get:
  *     summary: Export audit entries
@@ -297,14 +291,16 @@ router.post(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.get(
-  "/export",
+  '/export',
   ...adminAuth,
   auditTrailValidation.exportEntries,
-  typed.auth(auditTrailController.exportEntries),
+  typed.auth(async (req, res) => {
+    await auditTrailController.exportEntries(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/audit-trail/retention:
  *   delete:
  *     summary: Delete old audit entries
@@ -355,19 +351,17 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.delete(
-  "/retention",
+  '/retention',
   ...rootAuth,
   auditTrailValidation.deleteOldEntries,
-  typed.body<{ olderThanDays: number; confirmPassword: string }>(
-    async (req, res) => {
-      await auditTrailController.deleteOldEntries(req, res);
-    },
-  ),
+  typed.body<{ olderThanDays: number; confirmPassword: string }>(async (req, res) => {
+    await auditTrailController.deleteOldEntries(req, res);
+  }),
 );
 
 /**
- * @swagger
- * /api/v2/audit-trail/{id}:
+
+ * /api/v2/audit-trail/\{id\}:
  *   get:
  *     summary: Get specific audit entry
  *     description: Get a specific audit entry by ID. Users can only see their own entries unless they are root.
@@ -401,10 +395,12 @@ router.delete(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id",
+  '/:id',
   ...userAuth,
   auditTrailValidation.getEntry,
-  typed.auth(auditTrailController.getEntry),
+  typed.auth(async (req, res) => {
+    await auditTrailController.getEntry(req, res);
+  }),
 );
 
 export default router;

@@ -2,16 +2,21 @@
  * Signup Service v2
  * Business logic for user registration
  */
+// Sequelize Model Import - MUSS PascalCase sein (ist eine Klasse/Konstruktor)
+// Dies ist KEIN normaler Import sondern ein ORM Model das als Klasse definiert ist
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import Tenant from '../../../models/tenant.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { logger } from '../../../utils/logger.js';
+import type { SignupRequest, SubdomainValidation } from './types.js';
 
-import Tenant from "../../../models/tenant.js";
-import { logger } from "../../../utils/logger.js";
-import { ServiceError } from "../../../utils/ServiceError.js";
-
-import { SignupRequest, SubdomainValidation } from "./types.js";
-
+/**
+ *
+ */
 export class SignupService {
   /**
    * Register a new tenant and admin user
+   * @param data - The data object
    */
   async registerTenant(data: SignupRequest): Promise<{
     tenantId: number;
@@ -19,25 +24,43 @@ export class SignupService {
     subdomain: string;
     trialEndsAt: string;
   }> {
+    console.info('[SignupService] METHOD CALLED');
+    console.info('[SignupService] Input data:', data);
+    logger.info('[SignupService] Starting registerTenant with data:', {
+      companyName: data.companyName,
+      subdomain: data.subdomain,
+      email: data.email,
+      adminEmail: data.adminEmail,
+      phone: data.phone,
+      plan: data.plan,
+    });
+    console.info('[SignupService] Logger called');
+
     try {
+      console.info('[SignupService] Entering try block');
       // Validate subdomain format
-      const subdomainValidation: SubdomainValidation = Tenant.validateSubdomain(
-        data.subdomain,
-      );
+      logger.info('[SignupService] Validating subdomain:', data.subdomain);
+      console.info('[SignupService] About to validate subdomain');
+      const subdomainValidation: SubdomainValidation = Tenant.validateSubdomain(data.subdomain);
+      console.info('[SignupService] Validation result:', subdomainValidation);
+      logger.info('[SignupService] Subdomain validation result:', subdomainValidation);
+
       if (!subdomainValidation.valid) {
+        console.info('[SignupService] Invalid subdomain, throwing error');
         throw new ServiceError(
-          "INVALID_SUBDOMAIN",
-          subdomainValidation.error ?? "Invalid subdomain format",
+          'INVALID_SUBDOMAIN',
+          subdomainValidation.error ?? 'Invalid subdomain format',
         );
       }
+      console.info('[SignupService] Subdomain is valid');
 
       // Check if subdomain is available
+      logger.info('[SignupService] Checking subdomain availability');
       const isAvailable = await Tenant.isSubdomainAvailable(data.subdomain);
+      logger.info('[SignupService] Subdomain available:', isAvailable);
+
       if (!isAvailable) {
-        throw new ServiceError(
-          "SUBDOMAIN_TAKEN",
-          "This subdomain is already taken",
-        );
+        throw new ServiceError('SUBDOMAIN_TAKEN', 'This subdomain is already taken');
       }
 
       // Convert camelCase to snake_case for Tenant.create
@@ -54,11 +77,25 @@ export class SignupService {
       };
 
       // Create tenant and admin user
+      // Log without sensitive data
+      const safeLogData = {
+        company_name: data.companyName,
+        subdomain: data.subdomain,
+        email: data.email,
+        // Explicitly exclude: admin_password, phone, address
+      };
+      logger.info('[SignupService] Creating tenant for:', safeLogData);
       const result = await Tenant.create(tenantData);
 
-      logger.info(
-        `New tenant registered: ${data.companyName} (${data.subdomain})`,
-      );
+      // Log only safe result data
+      const safeResult = {
+        tenantId: result.tenantId,
+        subdomain: result.subdomain,
+        // Explicitly exclude any sensitive data from result
+      };
+      logger.info('[SignupService] Tenant created successfully:', safeResult);
+
+      logger.info(`New tenant registered: ${data.companyName} (${data.subdomain})`);
 
       // TODO: Send welcome email
       // await sendWelcomeEmail(data.adminEmail, data.subdomain);
@@ -69,19 +106,33 @@ export class SignupService {
         subdomain: result.subdomain,
         trialEndsAt: result.trialEndsAt.toISOString(),
       };
-    } catch (error) {
-      if (error instanceof ServiceError) throw error;
-
-      logger.error("Error registering tenant:", error);
-      throw new ServiceError(
-        "REGISTRATION_FAILED",
-        "Failed to complete registration",
+    } catch (error: unknown) {
+      console.info('[SignupService] CATCH BLOCK ENTERED');
+      console.info('[SignupService] Error type:', error?.constructor?.name);
+      console.info(
+        '[SignupService] Error message:',
+        error instanceof Error ? error.message : error,
       );
+
+      if (error instanceof ServiceError) {
+        console.info('[SignupService] Re-throwing ServiceError');
+        throw error;
+      }
+
+      console.info('[SignupService] Not a ServiceError, logging and throwing REGISTRATION_FAILED');
+      logger.error('Error registering tenant:', error);
+      logger.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        data: data,
+      });
+      throw new ServiceError('REGISTRATION_FAILED', 'Failed to complete registration');
     }
   }
 
   /**
    * Check if a subdomain is available
+   * @param subdomain - The subdomain parameter
    */
   async checkSubdomainAvailability(subdomain: string): Promise<{
     available: boolean;
@@ -90,8 +141,7 @@ export class SignupService {
   }> {
     try {
       // Validate subdomain format
-      const validation: SubdomainValidation =
-        Tenant.validateSubdomain(subdomain);
+      const validation: SubdomainValidation = Tenant.validateSubdomain(subdomain);
       if (!validation.valid) {
         return {
           available: false,
@@ -107,17 +157,15 @@ export class SignupService {
         available,
         subdomain,
       };
-    } catch (error) {
-      logger.error("Error checking subdomain availability:", error);
-      throw new ServiceError(
-        "CHECK_FAILED",
-        "Failed to check subdomain availability",
-      );
+    } catch (error: unknown) {
+      logger.error('Error checking subdomain availability:', error);
+      throw new ServiceError('CHECK_FAILED', 'Failed to check subdomain availability');
     }
   }
 
   /**
    * Validate subdomain format
+   * @param subdomain - The subdomain parameter
    */
   validateSubdomain(subdomain: string): SubdomainValidation {
     return Tenant.validateSubdomain(subdomain);

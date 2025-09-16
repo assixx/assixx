@@ -30,6 +30,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    - Badges, Avatar, User-Info werden zentral verwaltet
 
 3. **Beispiel-Implementierung** (shifts.html):
+
    ```html
    <script type="module" src="/scripts/auth.ts"></script>
    <script type="module" src="/scripts/shifts.ts"></script>
@@ -65,6 +66,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
    ```
 
 2. **Mehrere Scripts für verschiedene Funktionen**:
+
    ```html
    <script src="/scripts/header-user-info.ts"></script>
    <script src="/scripts/role-switch.ts"></script>
@@ -106,7 +108,7 @@ Das Navigation Container System ist ein modernes, zentralisiertes Navigationssys
 ```typescript
 // Entfernt: Doppelte attachEventListeners() Aufrufe
 // Hinzugefügt: Inline-Styles als Fallback
-sidebar.style.setProperty("width", "70px", "important");
+sidebar.style.setProperty('width', '70px', 'important');
 ```
 
 ### 2. Default Avatar statt User-Bild
@@ -123,10 +125,10 @@ sidebar.style.setProperty("width", "70px", "important");
 
 ```typescript
 // 1. Dynamischer Avatar bei der Erstellung
-const profilePicture = this.userProfileData?.profile_picture || "/assets/images/default-avatar.svg";
+const profilePicture = this.userProfileData?.profile_picture || '/assets/images/default-avatar.svg';
 
 // 2. Update nach Profil-Load
-const headerAvatar = document.getElementById("user-avatar") as HTMLImageElement;
+const headerAvatar = document.querySelector('user-avatar') as HTMLImageElement;
 if (headerAvatar && profilePic) {
   headerAvatar.src = profilePic;
 }
@@ -218,7 +220,7 @@ Das Navigation Container System ist der moderne Weg für konsistente, wartbare N
 
 - [ ] `employee-profile.html` - Mitarbeiter Profil (braucht komplette Überarbeitung - verwendet altes Design-System)
 
-### ✅ Erfolgreich migrierte Seiten:
+### ✅ Erfolgreich migrierte Seiten
 
 **Admin Dashboard & Seiten:**
 

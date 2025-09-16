@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="/styles/lib/fullcalendar.min.css" />
     <!-- Calendar spezifische Styles -->
     <link rel="stylesheet" href="/styles/calendar.css" />
+    <script src="/feature-flags.js"></script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
@@ -42,6 +43,7 @@
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         box-shadow: var(--shadow-sm);
+        margin-top: auto;
         /* animation: fadeInUp 0.6s ease-out; */
       }
 
@@ -53,30 +55,13 @@
         box-shadow: var(--shadow-sm);
         border-radius: var(--radius-md);
         padding: var(--spacing-lg);
+        margin-bottom: auto;
       }
 
       /* Calendar Events - Glassmorphismus */
       .fc-event {
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      /* Modal Overlays - Glassmorphismus */
-      /* Removed duplicate - defined in calendar.css */
-
-      .modal-container {
-        background: rgba(18, 18, 18, 0.95);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        box-shadow: var(--shadow-sm);
-        /* animation: fadeInUp 0.3s ease-out; */
-      }
-
-      /* Modal-lg spezielle Anpassungen */
-      .modal-lg {
-        max-height: 85vh !important;
-        display: flex;
-        flex-direction: column;
       }
 
       .modal-lg .modal-body {
@@ -99,19 +84,6 @@
         border-radius: 3px;
       }
 
-      /* Form Controls mit Glassmorphismus */
-      .form-control,
-      input[type='text'],
-      input[type='date'],
-      input[type='time'],
-      textarea {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        color: #fff;
-        transition: all 0.3s ease;
-      }
-
       .form-control:focus,
       input:focus,
       textarea:focus {
@@ -132,7 +104,7 @@
         backdrop-filter: blur(5px);
         border: 1px solid rgba(255, 255, 255, 0.12);
         color: #fff;
-        transition: all 0.3s ease;
+
         background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
         background-position: right 8px center;
@@ -174,7 +146,6 @@
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
       }
 
       .btn-primary {
@@ -221,7 +192,6 @@
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(10px);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
-        transition: all 0.3s ease;
       }
 
       .filter-tag.active {
@@ -261,7 +231,7 @@
         border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: var(--radius-md);
         overflow: hidden;
-        transition: all 0.3s ease;
+
         box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
         min-width: 250px;
       }
@@ -300,7 +270,7 @@
         padding: 10px 15px;
         color: rgba(255, 255, 255, 0.6);
         cursor: pointer;
-        transition: all 0.3s ease;
+
         display: flex;
         align-items: center;
         justify-content: center;
@@ -327,6 +297,48 @@
       /* Override breadcrumb alignment for calendar page */
       #breadcrumb-container + .card {
         margin-top: -15px !important;
+      }
+
+      /* Shift Indicators */
+      .shift-indicator {
+        position: absolute;
+        background: #ffffff0d;
+        bottom: 5px;
+        right: 20px;
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 700;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+      }
+
+      .shift-indicator.shift-F {
+        color: #ffffff; /* Blue for Frühschicht */
+      }
+
+      .shift-indicator.shift-S {
+        color: #ff9800; /* Orange for Spätschicht */
+      }
+
+      .shift-indicator.shift-N {
+        color: #3498db; /* Black for Nachtschicht */
+      }
+
+      /* Make day cell position relative for absolute positioning */
+      .fc-daygrid-day-top {
+        position: relative !important;
+      }
+
+      /* Checkbox styling */
+      .form-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -365,12 +377,13 @@
             <div class="card-body">
               <div class="flex gap-4 flex-wrap">
                 <div class="form-group">
-                  <label for="levelFilter" class="form-label">Ebene</label>
+                  <label for="levelFilter" class="form-label">Filter</label>
                   <div class="tab-navigation mb-2" id="levelFilter">
-                    <button class="tab-btn active" data-value="all" id="filterAll">Alle</button>
+                    <button class="tab-btn active" data-value="all" id="filterAll">Gesamt</button>
                     <button class="tab-btn" data-value="company" id="filterCompany">Firma</button>
                     <button class="tab-btn" data-value="department" id="filterDepartment">Abteilung</button>
                     <button class="tab-btn" data-value="team" id="filterTeam">Team</button>
+                    <button class="tab-btn" data-value="personal" id="filterPersonal">Meine</button>
                   </div>
                 </div>
 
@@ -412,7 +425,21 @@
           </div>
 
           <!-- Calendar Container -->
-          <div class="card calendar-card mb-4">
+          <div class="card calendar-card mb-4" id="calendarContainer">
+            <div class="card-header">
+              <div class="flex flex-between align-center">
+                <h3 class="card-title">Kalender</h3>
+                <div style="display: flex; gap: 10px; align-items: center">
+                  <button id="fullscreenBtn" class="zoom-btn" title="Vollbild">
+                    <i class="fas fa-expand"></i>
+                  </button>
+                  <button id="newCalendarEventBtn" class="btn btn-primary u-m-0" style="display: inline-flex">
+                    <i class="fas fa-plus me-2"></i>
+                    Neuer Eintrag
+                  </button>
+                </div>
+              </div>
+            </div>
             <div class="card-body p-0">
               <div id="calendar"></div>
             </div>
@@ -451,9 +478,9 @@
       // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
       window.DashboardUI = {
         openModal: function (modalId) {
-          console.log('DashboardUI.openModal called for:', modalId);
-          const modal = document.getElementById(modalId);
-          console.log('Modal element found:', !!modal);
+          console.info('DashboardUI.openModal called for:', modalId);
+          const modal = document.querySelector(modalId);
+          console.info('Modal element found:', !!modal);
           if (modal) {
             // Entferne zuerst die inline styles
             modal.style.display = '';
@@ -461,11 +488,11 @@
             modal.style.visibility = '';
             // Dann füge active Klasse hinzu
             modal.classList.add('active');
-            console.log('Modal classes after open:', modal.className);
+            console.info('Modal classes after open:', modal.className);
           }
         },
         closeModal: function (modalId) {
-          const modal = document.getElementById(modalId);
+          const modal = document.querySelector(modalId);
           if (modal) {
             modal.classList.remove('active');
             // Entferne inline styles nach Animation
@@ -487,10 +514,10 @@
           if (!container) {
             container = document.createElement('div');
             container.className = 'toast-container';
-            document.body.appendChild(container);
+            document.body.append(container);
           }
 
-          container.appendChild(toast);
+          container.append(toast);
 
           // Nach 3 Sekunden ausblenden
           setTimeout(function () {
@@ -536,30 +563,28 @@
       }
     </style>
     <!-- Calendar Scripts -->
-    <!-- Unified Navigation -->
-    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
 
     <!-- MutationObserver zum Schutz der Header-Struktur -->
     <script>
       window.addEventListener('DOMContentLoaded', function () {
-        const userInfoDiv = document.getElementById('user-info');
+        const userInfoDiv = document.querySelector('#user-info');
 
         if (userInfoDiv) {
           // Speichere Referenzen zu den Original-Elementen
-          const originalAvatar = document.getElementById('user-avatar');
-          const originalUserName = document.getElementById('user-name');
-          const originalRoleIndicator = document.getElementById('role-indicator');
+          const originalAvatar = document.querySelector('#user-avatar');
+          const originalUserName = document.querySelector('#user-name');
+          const originalRoleIndicator = document.querySelector('#role-indicator');
 
           const observer = new MutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
               if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
                 // Prüfe ob alle 3 Elemente vorhanden sind
-                const currentAvatar = document.getElementById('user-avatar');
-                const currentUserName = document.getElementById('user-name');
-                const currentRoleIndicator = document.getElementById('role-indicator');
+                const currentAvatar = document.querySelector('#user-avatar');
+                const currentUserName = document.querySelector('#user-name');
+                const currentRoleIndicator = document.querySelector('#role-indicator');
 
                 if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
-                  console.log('[Calendar] Restoring user-info elements');
+                  console.info('[Calendar] Restoring user-info elements');
                   userInfoDiv.innerHTML = '';
 
                   // Avatar wiederherstellen
@@ -567,20 +592,20 @@
                   newAvatar.id = 'user-avatar';
                   newAvatar.src = '/assets/images/default-avatar.svg';
                   newAvatar.alt = 'Avatar';
-                  userInfoDiv.appendChild(newAvatar);
+                  userInfoDiv.append(newAvatar);
 
                   // Username wiederherstellen
                   const newUserName = originalUserName ? originalUserName.cloneNode(true) : document.createElement('span');
                   newUserName.id = 'user-name';
                   newUserName.textContent = newUserName.textContent || 'Lade...';
-                  userInfoDiv.appendChild(newUserName);
+                  userInfoDiv.append(newUserName);
 
                   // Role Badge wiederherstellen
                   const newRoleIndicator = originalRoleIndicator ? originalRoleIndicator.cloneNode(true) : document.createElement('span');
                   newRoleIndicator.id = 'role-indicator';
                   newRoleIndicator.className = 'role-badge admin';
                   newRoleIndicator.textContent = newRoleIndicator.textContent || 'Admin';
-                  userInfoDiv.appendChild(newRoleIndicator);
+                  userInfoDiv.append(newRoleIndicator);
                 }
               }
             });
@@ -595,6 +620,7 @@
     <script type="module" src="/scripts/calendar.ts"></script>
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>

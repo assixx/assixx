@@ -20,7 +20,8 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script src="/feature-flags.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -113,7 +114,7 @@
 
       .form-control {
         width: 100%;
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-sm);
@@ -196,9 +197,9 @@
         overflow: hidden;
       }
 
-      .profile-picture-placeholder.avatar-initials {
+      #profile-picture-display.profile-picture-placeholder.avatar-initials {
         background: linear-gradient(135deg, #2196f3, #42a5f5);
-        color: white;
+        color: #fff;
         font-weight: 600;
         font-size: 2.5rem;
         text-transform: uppercase;
@@ -220,7 +221,7 @@
         height: 120px;
         border-radius: 50%;
         object-fit: cover;
-        padding: 24px;
+        /*padding: 24px;*/
       }
 
       .profile-picture-actions {
@@ -231,7 +232,7 @@
 
       /* Messages */
       .alert {
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         margin-bottom: var(--spacing-lg);
         display: flex;
@@ -362,7 +363,7 @@
         background: rgba(33, 150, 243, 0.05);
         border: 1px solid rgba(33, 150, 243, 0.2);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-lg);
         color: var(--text-secondary);
         font-size: 0.875rem;
@@ -413,7 +414,7 @@
                 </div>
                 <div class="profile-picture-actions">
                   <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
-                  <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
+                  <button class="btn btn-primary" onclick="document.querySelector('profile-picture-input').click()">
                     <i class="fas fa-camera"></i>
                     Bild ändern
                   </button>
@@ -508,6 +509,7 @@
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <script type="module" src="/scripts/admin-profile.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>

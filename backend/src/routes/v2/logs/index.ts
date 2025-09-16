@@ -1,24 +1,23 @@
 /**
  * Logs API v2 Routes
  * Root-only access to system audit logs
- * @swagger
+ * 
+ * API Documentation:
  * tags:
  *   name: Logs v2
  *   description: System audit logs API v2 (Root only)
  */
 
 import express, { Router, RequestHandler } from "express";
-
 import { authenticateV2, requireRoleV2 } from "../../../middleware/v2/auth.middleware.js";
 import { typed } from "../../../utils/routeHandlers.js";
-
 import { logsController } from "./logs.controller.js";
 import { logsValidation } from "./logs.validation.js";
 
 const router: Router = express.Router();
 
 /**
- * @swagger
+ * @param handler - The handler parameter
  * /api/v2/logs:
  *   get:
  *     summary: Get system logs
@@ -90,16 +89,32 @@ const router: Router = express.Router();
  *       403:
  *         $ref: '#/components/responses/ForbiddenError'
  */
+// Temporärer Debug-Wrapper
+const debugWrapper = (handler: RequestHandler): RequestHandler => {
+  return async (req, res, next) => {
+    console.log("[LOGS DEBUG] Request received at /api/v2/logs");
+    console.log("[LOGS DEBUG] Query params:", req.query);
+    console.log("[LOGS DEBUG] User:", req.user);
+    try {
+      await handler(req, res, next);
+    } catch (error: unknown) {
+      console.error("[LOGS DEBUG] Error in handler:", error);
+      throw error;
+    }
+  };
+};
+
 router.get(
   "/",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
   logsValidation.listLogs,
-  typed.auth(logsController.getLogs)
+  debugWrapper(typed.auth((req, res) => {
+    void logsController.getLogs(req, res);
+  }))
 );
 
 /**
- * @swagger
  * /api/v2/logs/stats:
  *   get:
  *     summary: Get log statistics
@@ -161,11 +176,12 @@ router.get(
   "/stats",
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
-  typed.auth(logsController.getStats)
+  typed.auth((req, res) => {
+    void logsController.getStats(req, res);
+  })
 );
 
 /**
- * @swagger
  * /api/v2/logs:
  *   delete:
  *     summary: Delete logs
@@ -224,7 +240,9 @@ router.delete(
   authenticateV2 as RequestHandler,
   requireRoleV2(["root"]) as RequestHandler,
   logsValidation.deleteLogs,
-  typed.auth(logsController.deleteLogs)
+  typed.auth((req, res) => {
+    void logsController.deleteLogs(req, res);
+  })
 );
 
 export default router;

@@ -1,16 +1,15 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import { authenticateV2 as authenticateToken } from "../../../middleware/v2/auth.middleware.js";
-import { validate } from "../../../middleware/validation.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { departmentController } from "./departments.controller.js";
+import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validate } from '../../../middleware/validation.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { departmentController } from './departments.controller.js';
 import {
   createDepartmentValidation,
-  updateDepartmentValidation,
   departmentIdValidation,
   getDepartmentsValidation,
-} from "./departments.validation.js";
+  updateDepartmentValidation,
+} from './departments.validation.js';
 
 const router = Router();
 
@@ -18,7 +17,7 @@ const router = Router();
 router.use(authenticateToken);
 
 /**
- * @swagger
+
  * /api/v2/departments:
  *   get:
  *     summary: Get all departments
@@ -46,7 +45,7 @@ router.use(authenticateToken);
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/",
+  '/',
   validate(getDepartmentsValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartments(req, res, next);
@@ -54,7 +53,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments/stats:
  *   get:
  *     summary: Get department statistics
@@ -75,15 +74,15 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/stats",
+  '/stats',
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentStats(req, res, next);
   }),
 );
 
 /**
- * @swagger
- * /api/v2/departments/{id}:
+
+ * /api/v2/departments/\{id\}:
  *   get:
  *     summary: Get department by ID
  *     description: Retrieve a specific department by its ID
@@ -114,7 +113,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id",
+  '/:id',
   validate(departmentIdValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentById(req, res, next);
@@ -122,7 +121,7 @@ router.get(
 );
 
 /**
- * @swagger
+
  * /api/v2/departments:
  *   post:
  *     summary: Create a new department
@@ -153,7 +152,7 @@ router.get(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.post(
-  "/",
+  '/',
   validate(createDepartmentValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.createDepartment(req, res, next);
@@ -161,8 +160,8 @@ router.post(
 );
 
 /**
- * @swagger
- * /api/v2/departments/{id}:
+
+ * /api/v2/departments/\{id\}:
  *   put:
  *     summary: Update a department
  *     description: Update an existing department (admin/root only)
@@ -201,7 +200,7 @@ router.post(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.put(
-  "/:id",
+  '/:id',
   validate(updateDepartmentValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.updateDepartment(req, res, next);
@@ -209,8 +208,8 @@ router.put(
 );
 
 /**
- * @swagger
- * /api/v2/departments/{id}:
+
+ * /api/v2/departments/\{id\}:
  *   delete:
  *     summary: Delete a department
  *     description: Delete a department (admin/root only). Cannot delete if users are assigned.
@@ -243,7 +242,7 @@ router.put(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.delete(
-  "/:id",
+  '/:id',
   validate(departmentIdValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.deleteDepartment(req, res, next);
@@ -251,8 +250,8 @@ router.delete(
 );
 
 /**
- * @swagger
- * /api/v2/departments/{id}/members:
+
+ * /api/v2/departments/\{id\}/members:
  *   get:
  *     summary: Get department members
  *     description: Retrieve all users assigned to a specific department
@@ -283,7 +282,7 @@ router.delete(
  *         $ref: '#/components/responses/InternalServerErrorV2'
  */
 router.get(
-  "/:id/members",
+  '/:id/members',
   validate(departmentIdValidation),
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentMembers(req, res, next);

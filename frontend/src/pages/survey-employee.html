@@ -20,6 +20,8 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
+    <script src="/feature-flags.js"></script>
+    <script src="/js/purify.min.js"></script>
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <style>
       @import url('/styles/dashboard-theme.css');
@@ -209,7 +211,7 @@
 
       .survey-action {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        color: white;
+        color: #fff;
         border: none;
         padding: var(--spacing-sm) var(--spacing-lg);
         border-radius: 25px;
@@ -283,7 +285,7 @@
 
       .response-info {
         background: rgba(33, 150, 243, 0.1);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         border-radius: var(--radius-md);
         margin-bottom: var(--spacing-lg);
         border: 1px solid rgba(33, 150, 243, 0.3);
@@ -321,7 +323,7 @@
 
       .response-answer {
         background: rgba(255, 255, 255, 0.05);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
@@ -413,6 +415,14 @@
         }
       }
 
+      /* Section Divider */
+      .section-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        margin: var(--spacing-xl) 0;
+        position: relative;
+      }
+
       /* Empty State */
       .empty-state {
         text-align: center;
@@ -421,8 +431,8 @@
       }
 
       .empty-state-icon {
-        font-size: 4rem;
-        margin-bottom: var(--spacing-lg);
+        font-size: 40px;
+        margin-bottom: 20px;
         opacity: 0.5;
       }
 
@@ -510,7 +520,7 @@
 
       .question-number {
         background: var(--primary-color);
-        color: white;
+        color: #fff;
         width: 30px;
         height: 30px;
         border-radius: 50%;
@@ -539,7 +549,7 @@
 
       .form-control {
         width: 100%;
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 255, 255, 0.05);
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: var(--radius-md);
@@ -563,7 +573,7 @@
         align-items: center;
         gap: var(--spacing-sm);
         margin-bottom: var(--spacing-sm);
-        padding: var(--spacing-sm);
+        padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         cursor: pointer;
       }
@@ -613,7 +623,7 @@
 
       .rating-option.selected {
         background: var(--primary-color);
-        color: white;
+        color: #fff;
         border-color: var(--primary-color);
       }
 
@@ -636,19 +646,21 @@
       }
 
       .btn {
-        padding: var(--spacing-md) var(--spacing-xl);
-        border-radius: var(--radius-md);
+        align-items: center;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
         border: none;
-        font-weight: 500;
+        border-radius: 25px;
+        color: #fff;
         cursor: pointer;
         display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
+        font-weight: 500;
+        gap: var(--spacing-xs);
+        padding: var(--spacing-sm) var(--spacing-lg);
       }
 
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
-        color: white;
+        color: #fff;
       }
 
       .btn-primary:hover {
@@ -703,30 +715,37 @@
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <div class="survey-container">
-            <div class="survey-header">
-              <p class="survey-subtitle">Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen haben.</p>
-            </div>
-
-            <!-- Pending Surveys -->
-            <div class="surveys-section">
-              <h2 class="section-title">
-                <i class="fas fa-clock"></i>
-                Offene Umfragen
-              </h2>
-              <div id="pendingSurveys" class="surveys-grid">
-                <!-- Surveys will be loaded here -->
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">Mitarbeiterumfragen</h2>
+                <p class="text-secondary">Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen haben.</p>
               </div>
             </div>
+            <div class="card-body">
+              <!-- Pending Surveys -->
+              <div class="surveys-section">
+                <h2 class="section-title">
+                  <i class="fas fa-clock"></i>
+                  Offene Umfragen
+                </h2>
+                <div id="pendingSurveys" class="surveys-grid">
+                  <!-- Surveys will be loaded here -->
+                </div>
+              </div>
 
-            <!-- Completed Surveys -->
-            <div class="surveys-section">
-              <h2 class="section-title">
-                <i class="fas fa-check-circle"></i>
-                Abgeschlossene Umfragen
-              </h2>
-              <div id="completedSurveys" class="surveys-grid">
-                <!-- Completed surveys will be loaded here -->
+              <!-- Section Divider -->
+              <div class="section-divider"></div>
+
+              <!-- Completed Surveys -->
+              <div class="surveys-section">
+                <h2 class="section-title">
+                  <i class="fas fa-check-circle"></i>
+                  Abgeschlossene Umfragen
+                </h2>
+                <div id="completedSurveys" class="surveys-grid">
+                  <!-- Completed surveys will be loaded here -->
+                </div>
               </div>
             </div>
           </div>
@@ -739,7 +758,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h2 class="modal-title" id="modalTitle">Umfrage beantworten</h2>
-          <button class="close-btn" onclick="closeModal()">&times;</button>
+          <button class="close-btn" id="modalCloseBtn">&times;</button>
         </div>
 
         <div class="survey-progress">
@@ -755,7 +774,7 @@
           </div>
 
           <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+            <button type="button" class="btn btn-secondary" id="modalCancelBtn">Abbrechen</button>
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-paper-plane"></i>
               Antworten absenden
@@ -765,22 +784,167 @@
       </div>
     </div>
 
+    <script type="module" src="/scripts/auth.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
+    <script type="module">
+      // Import and make alerts available globally
+      import { showAlert, showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
+      window.showAlert = showAlert;
+      window.showSuccessAlert = showSuccessAlert;
+      window.showErrorAlert = showErrorAlert;
+      window.showConfirm = showConfirm;
+    </script>
     <script>
+      // DOMPurify is available globally from /js/purify.min.js
+      // Alerts will be available from the module above
+
       let currentSurvey = null;
       let answers = {};
+
+      // Define functions first (before they are used in onclick handlers)
+
+      // Start survey
+      window.startSurvey = async function startSurvey(surveyId) {
+        console.log('Starting survey with ID:', surveyId);
+        try {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+          console.log('Using endpoint:', endpoint, 'V2:', useV2);
+
+          // Load survey details
+          const response = await fetch(endpoint, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`,
+            },
+          });
+          console.log('Response status:', response.status);
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Survey data received:', result);
+
+            // Handle v2 API response structure
+            currentSurvey = useV2 && result.success ? result.data : result.data || result.survey || result;
+
+            if (!currentSurvey || !currentSurvey.questions) {
+              console.error('Invalid survey data:', currentSurvey);
+              showErrorAlert('Fehler: Umfragedaten sind ungültig');
+              return;
+            }
+
+            answers = {};
+            displaySurveyForm();
+          } else {
+            console.error('Survey load failed:', response.status, response.statusText);
+            const errorData = await response.json().catch(() => ({ message: 'Unbekannter Fehler' }));
+            showErrorAlert(`Fehler beim Laden der Umfrage: ${errorData.message || response.statusText}`);
+          }
+        } catch (error) {
+          console.error('Error loading survey:', error);
+          showErrorAlert('Fehler beim Laden der Umfrage');
+        }
+      };
 
       // Initialize
       document.addEventListener('DOMContentLoaded', function () {
         loadSurveys();
+
+        // Event delegation for all interactive elements (fixes DOMPurify onclick/onchange removal)
+        // Handle click events
+        document.body.addEventListener('click', (e) => {
+          // Handle survey action buttons
+          const surveyButton = e.target.closest('.survey-action');
+          if (surveyButton) {
+            const card = surveyButton.closest('.survey-card');
+            if (!card) return;
+
+            const surveyId = card.dataset.surveyId;
+            if (!surveyId) return;
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            if (card.classList.contains('completed')) {
+              window.viewResponse(parseInt(surveyId));
+            } else {
+              window.startSurvey(parseInt(surveyId));
+            }
+            return;
+          }
+
+          // Handle modal close button
+          if (e.target.id === 'modalCloseBtn' || e.target.id === 'modalCancelBtn') {
+            window.closeModal();
+            return;
+          }
+
+          // Handle response modal close
+          if (e.target.dataset.action === 'close-response-modal') {
+            window.closeResponseModal();
+            return;
+          }
+
+          // Handle rating buttons
+          const ratingBtn = e.target.closest('.rating-option');
+          if (ratingBtn && ratingBtn.dataset.questionId && ratingBtn.dataset.ratingValue) {
+            window.selectRating(parseInt(ratingBtn.dataset.questionId), parseInt(ratingBtn.dataset.ratingValue));
+            return;
+          }
+        });
+
+        // Handle change events for form inputs (fixes DOMPurify onchange removal)
+        document.body.addEventListener('change', (e) => {
+          const target = e.target;
+
+          // Handle text inputs and textareas
+          if (
+            target.matches(
+              'textarea[data-question-id], input[type="text"][data-question-id], input[type="number"][data-question-id], input[type="date"][data-question-id]',
+            )
+          ) {
+            const questionId = parseInt(target.dataset.questionId);
+            const type = target.type === 'number' ? 'number' : target.type === 'date' ? 'date' : 'text';
+            window.updateAnswer(questionId, target.value, type);
+            return;
+          }
+
+          // Handle radio buttons (single choice and yes/no)
+          if (target.matches('input[type="radio"]')) {
+            const name = target.name;
+            if (name && name.startsWith('question_')) {
+              const questionId = parseInt(name.replace('question_', ''));
+              if (target.dataset.textValue) {
+                // Yes/No questions
+                window.updateAnswer(questionId, target.dataset.textValue, 'text');
+              } else {
+                // Single choice questions
+                window.updateAnswer(questionId, parseInt(target.value), 'single');
+              }
+            }
+            return;
+          }
+
+          // Handle checkboxes (multiple choice)
+          if (target.matches('input[type="checkbox"]')) {
+            const questionId = parseInt(target.dataset.questionId);
+            const optionId = parseInt(target.value);
+            if (questionId && !isNaN(optionId)) {
+              window.updateMultipleChoice(questionId, optionId, target.checked);
+            }
+            return;
+          }
+        });
       });
 
       // Load available surveys
       async function loadSurveys() {
         try {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? '/api/v2/surveys' : '/api/surveys';
+
           // Get all surveys (not just active ones, so we can show completed ones too)
-          const response = await fetch('/api/surveys', {
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -788,7 +952,8 @@
 
           if (response.ok) {
             const result = await response.json();
-            const surveys = result.data || result.surveys || result;
+            // Handle v2 API response structure
+            const surveys = useV2 && result.success ? result.data : result.data || result.surveys || result;
             // Ensure surveys is an array
             if (Array.isArray(surveys)) {
               // Filter only active and closed surveys (not draft or archived)
@@ -806,23 +971,23 @@
 
       // Display surveys
       async function displaySurveys(surveys) {
-        const pendingContainer = document.getElementById('pendingSurveys');
-        const completedContainer = document.getElementById('completedSurveys');
+        const pendingContainer = document.querySelector('#pendingSurveys');
+        const completedContainer = document.querySelector('#completedSurveys');
 
         pendingContainer.innerHTML = '';
         completedContainer.innerHTML = '';
 
-        console.log('Displaying surveys:', surveys.length);
+        console.info('Displaying surveys:', surveys.length);
 
         for (const survey of surveys) {
           // Check if user has already responded
           const responseCheck = await checkUserResponse(survey.id);
-          console.log(`Survey ${survey.id} - Response check:`, responseCheck);
+          console.info(`Survey ${survey.id} - Response check:`, responseCheck);
 
           if (responseCheck.responded) {
-            completedContainer.appendChild(createSurveyCard(survey, true));
+            completedContainer.append(createSurveyCard(survey, true));
           } else {
-            pendingContainer.appendChild(createSurveyCard(survey, false));
+            pendingContainer.append(createSurveyCard(survey, false));
           }
         }
 
@@ -840,6 +1005,8 @@
         if (completedContainer.innerHTML === '') {
           completedContainer.innerHTML = `
                     <div class="empty-state">
+                        <div class="empty-state-icon">✅</div>
+                        <h3 class="empty-state-title">Keine abgeschlossenen Umfragen</h3>
                         <p>Sie haben noch an keinen Umfragen teilgenommen.</p>
                     </div>
                 `;
@@ -849,7 +1016,10 @@
       // Check if user has responded to survey
       async function checkUserResponse(surveyId) {
         try {
-          const response = await fetch(`/api/surveys/${surveyId}/my-response`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${surveyId}/my-response` : `/api/surveys/${surveyId}/my-response`;
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -857,7 +1027,12 @@
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`Response check for survey ${surveyId}:`, data);
+            console.info(`Response check for survey ${surveyId}:`, data);
+            // API v2 returns { success: true, data: { responded: bool, response: {} } }
+            // API v1 returns { responded: bool, response: {} }
+            if (useV2 && data.success && data.data) {
+              return data.data;
+            }
             return data;
           } else {
             console.error(`Failed to check response for survey ${surveyId}:`, response.status);
@@ -873,17 +1048,20 @@
         const card = document.createElement('div');
         card.className = completed ? 'survey-card completed' : 'survey-card';
 
-        // Add click handler for completed surveys
+        // Store survey ID in data attribute for event delegation
+        card.dataset.surveyId = survey.id;
+
+        // Completed cards are clickable (handled by event delegation)
         if (completed) {
           card.style.cursor = 'pointer';
-          card.onclick = () => viewResponse(survey.id);
         }
 
         const deadline = survey.end_date ? new Date(survey.end_date) : null;
         const daysLeft = deadline ? Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24)) : null;
         const isUrgent = daysLeft && daysLeft <= 7;
 
-        card.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property, no-undef -- DOMPurify loaded globally via script tag
+        card.innerHTML = DOMPurify.sanitize(`
                 <div class="survey-card-header">
                     <h3 class="survey-card-title">${getQuestionText(survey.title)}</h3>
                     <div>
@@ -904,37 +1082,19 @@
                     `
                         : '<div></div>'
                     }
-                    <button class="survey-action ${completed ? 'completed' : ''}" 
-                            onclick="${completed ? 'viewResponse' : 'startSurvey'}(${survey.id})">
+                    <button class="survey-action ${completed ? 'completed' : ''}">
                         ${completed ? '<i class="fas fa-check"></i> Abgeschlossen' : '<i class="fas fa-arrow-right"></i> Teilnehmen'}
                     </button>
                 </div>
-            `;
+            `);
 
         return card;
       }
 
-      // Start survey
-      async function startSurvey(surveyId) {
-        try {
-          // Load survey details
-          const response = await fetch(`/api/surveys/${surveyId}`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const result = await response.json();
-            currentSurvey = result.data || result.survey || result;
-            answers = {};
-            displaySurveyForm();
-          }
-        } catch (error) {
-          console.error('Error loading survey:', error);
-          alert('Fehler beim Laden der Umfrage');
-        }
-      }
+      // Use alerts from window
+      const showErrorAlert = (...args) => window.showErrorAlert && window.showErrorAlert(...args);
+      // Removed unused showSuccessAlert - using window.showSuccessAlert directly
+      const showAlert = (...args) => window.showAlert && window.showAlert(...args);
 
       // Helper function to convert Buffer to text
       function getQuestionText(questionText) {
@@ -958,21 +1118,31 @@
 
       // Display survey form
       function displaySurveyForm() {
-        document.getElementById('modalTitle').textContent = getQuestionText(currentSurvey.title);
-        const container = document.getElementById('questionsContainer');
+        console.log('Displaying survey form for:', currentSurvey);
+
+        const modal = document.querySelector('#surveyModal');
+        if (!modal) {
+          console.error('Survey modal not found!');
+          alert('Fehler: Modal nicht gefunden!');
+          return;
+        }
+
+        document.querySelector('#modalTitle').textContent = getQuestionText(currentSurvey.title);
+        const container = document.querySelector('#questionsContainer');
         container.innerHTML = '';
 
-        console.log('Current Survey:', currentSurvey); // Debug
-        console.log('Questions:', currentSurvey.questions); // Debug
+        console.info('Current Survey:', currentSurvey); // Debug
+        console.info('Questions:', currentSurvey.questions); // Debug
 
         currentSurvey.questions.forEach((question, index) => {
-          console.log('Question:', question); // Debug
+          console.info('Question:', question); // Debug
           const questionEl = createQuestionElement(question, index);
-          container.appendChild(questionEl);
+          container.append(questionEl);
         });
 
         updateProgress();
-        document.getElementById('surveyModal').style.display = 'flex';
+        modal.style.display = 'flex';
+        console.log('Modal display set to flex');
       }
 
       // Create question element
@@ -980,45 +1150,45 @@
         const div = document.createElement('div');
         div.className = 'question-item';
 
-        div.innerHTML = `
+        // eslint-disable-next-line no-unsanitized/property, no-undef -- DOMPurify loaded globally via script tag
+        div.innerHTML = DOMPurify.sanitize(`
                 <div class="question-header">
                     <span class="question-number">${index + 1}</span>
                     <div class="question-text">
-                        ${getQuestionText(question.question_text)}
-                        ${question.is_required ? '<span class="required-indicator">*</span>' : ''}
+                        ${getQuestionText(question.questionText)}
+                        ${question.isRequired ? '<span class="required-indicator">*</span>' : ''}
                     </div>
                 </div>
                 <div class="answer-container">
                     ${createAnswerInput(question)}
                 </div>
-            `;
+            `);
 
         return div;
       }
 
       // Create answer input based on question type
       function createAnswerInput(question) {
-        switch (question.question_type) {
+        switch (question.questionType) {
           case 'text':
-            return `<textarea class="form-control" 
-                                    data-question-id="${question.id}" 
-                                    ${question.is_required ? 'required' : ''}
-                                    onchange="updateAnswer(${question.id}, this.value, 'text')"></textarea>`;
+            return `<textarea class="form-control"
+                                    data-question-id="${question.id}"
+                                    ${question.is_required ? 'required' : ''}></textarea>`;
 
           case 'single_choice':
             return question.options
               .map((option, index) => {
                 // Handle both string array and object array formats
-                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionText = typeof option === 'string' ? option : option.optionText;
                 const optionId = typeof option === 'string' ? index : option.id;
                 return `
                         <div class="choice-option">
-                            <input type="radio" 
-                                   id="q${question.id}_opt${optionId}" 
-                                   name="question_${question.id}" 
+                            <input type="radio"
+                                   id="q${question.id}_opt${optionId}"
+                                   name="question_${question.id}"
                                    value="${optionId}"
                                    ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, ${optionId}, 'single')">
+>
                             <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
                     `;
@@ -1029,14 +1199,14 @@
             return question.options
               .map((option, index) => {
                 // Handle both string array and object array formats
-                const optionText = typeof option === 'string' ? option : option.option_text;
+                const optionText = typeof option === 'string' ? option : option.optionText;
                 const optionId = typeof option === 'string' ? index : option.id;
                 return `
                         <div class="choice-option">
-                            <input type="checkbox" 
-                                   id="q${question.id}_opt${optionId}" 
+                            <input type="checkbox"
+                                   id="q${question.id}_opt${optionId}"
                                    value="${optionId}"
-                                   onchange="updateMultipleChoice(${question.id}, ${optionId}, this.checked)">
+                                   data-question-id="${question.id}">
                             <label for="q${question.id}_opt${optionId}">${optionText}</label>
                         </div>
                     `;
@@ -1049,9 +1219,10 @@
                             ${[1, 2, 3, 4, 5]
                               .map(
                                 (value) => `
-                                <div class="rating-option" 
+                                <div class="rating-option"
                                      id="rating_${question.id}_${value}"
-                                     onclick="selectRating(${question.id}, ${value})">
+                                     data-question-id="${question.id}"
+                                     data-rating-value="${value}">
                                     ${value}
                                 </div>
                             `,
@@ -1063,36 +1234,36 @@
           case 'yes_no':
             return `
                         <div class="choice-option">
-                            <input type="radio" 
-                                   id="q${question.id}_yes" 
-                                   name="question_${question.id}" 
+                            <input type="radio"
+                                   id="q${question.id}_yes"
+                                   name="question_${question.id}"
                                    value="yes"
                                    ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, 'Ja', 'text')">
+                                   data-text-value="Ja">
                             <label for="q${question.id}_yes">Ja</label>
                         </div>
                         <div class="choice-option">
-                            <input type="radio" 
-                                   id="q${question.id}_no" 
-                                   name="question_${question.id}" 
+                            <input type="radio"
+                                   id="q${question.id}_no"
+                                   name="question_${question.id}"
                                    value="no"
                                    ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, 'Nein', 'text')">
+                                   data-text-value="Nein">
                             <label for="q${question.id}_no">Nein</label>
                         </div>
                     `;
 
           case 'number':
-            return `<input type="number" 
-                                   class="form-control" 
-                                   ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, this.value, 'number')">`;
+            return `<input type="number"
+                                   class="form-control"
+                                   data-question-id="${question.id}"
+                                   ${question.is_required ? 'required' : ''}>`;
 
           case 'date':
-            return `<input type="date" 
-                                   class="form-control" 
-                                   ${question.is_required ? 'required' : ''}
-                                   onchange="updateAnswer(${question.id}, this.value, 'date')">`;
+            return `<input type="date"
+                                   class="form-control"
+                                   data-question-id="${question.id}"
+                                   ${question.is_required ? 'required' : ''}>`;
 
           default:
             return '';
@@ -1100,51 +1271,57 @@
       }
 
       // Update answer
-      function updateAnswer(questionId, value, type) {
+      window.updateAnswer = function updateAnswer(questionId, value, type) {
         if (type === 'single') {
           // For single choice, store as array with one element
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId] = {
-            question_id: questionId,
-            answer_options: [value],
+            questionId: questionId,
+            answerOptions: [value],
           };
         } else {
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId] = {
-            question_id: questionId,
-            [`answer_${type === 'text' ? 'text' : type === 'number' ? 'number' : 'date'}`]: value,
+            questionId: questionId,
+            [`answer${type === 'text' ? 'Text' : type === 'number' ? 'Number' : 'Date'}`]: value,
           };
         }
         updateProgress();
-      }
+      };
 
       // Update multiple choice answer
-      function updateMultipleChoice(questionId, optionId, checked) {
+      window.updateMultipleChoice = function updateMultipleChoice(questionId, optionId, checked) {
+        // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
         if (!answers[questionId]) {
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
           answers[questionId] = {
-            question_id: questionId,
-            selected_options: [],
+            questionId: questionId,
+            selectedOptions: [],
           };
         }
 
         if (checked) {
-          answers[questionId].selected_options.push(optionId);
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
+          answers[questionId].selectedOptions.push(optionId);
         } else {
-          answers[questionId].selected_options = answers[questionId].selected_options.filter((id) => id !== optionId);
+          // eslint-disable-next-line security/detect-object-injection -- questionId kommt aus Survey-Template (data-question-id), nicht von User-Input
+          answers[questionId].selectedOptions = answers[questionId].selectedOptions.filter((id) => id !== optionId);
         }
 
         updateProgress();
-      }
+      };
 
       // Select rating
-      function selectRating(questionId, value) {
+      window.selectRating = function selectRating(questionId, value) {
         // Clear previous selection
         for (let i = 1; i <= 5; i++) {
-          document.getElementById(`rating_${questionId}_${i}`).classList.remove('selected');
+          document.querySelector(`rating_${questionId}_${i}`).classList.remove('selected');
         }
 
         // Set new selection
-        document.getElementById(`rating_${questionId}_${value}`).classList.add('selected');
-        updateAnswer(questionId, value, 'number');
-      }
+        document.querySelector(`rating_${questionId}_${value}`).classList.add('selected');
+        window.updateAnswer(questionId, value, 'number');
+      };
 
       // Update progress
       function updateProgress() {
@@ -1152,48 +1329,52 @@
         const answeredQuestions = Object.keys(answers).length;
         const percentage = (answeredQuestions / totalQuestions) * 100;
 
-        document.getElementById('progressBar').style.width = `${percentage}%`;
-        document.getElementById('progressText').textContent = `${answeredQuestions} von ${totalQuestions} Fragen beantwortet`;
+        document.querySelector('#progressBar').style.width = `${percentage}%`;
+        document.querySelector('#progressText').textContent = `${answeredQuestions} von ${totalQuestions} Fragen beantwortet`;
       }
 
       // Submit survey
-      document.getElementById('surveyForm').addEventListener('submit', async (e) => {
+      document.querySelector('#surveyForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         // Convert answers to array format
         const answersArray = [];
         for (const questionId in answers) {
+          // eslint-disable-next-line security/detect-object-injection -- questionId comes from controlled survey data
           const answer = answers[questionId];
 
-          if (answer.selected_options) {
+          if (answer.selectedOptions) {
             // Multiple choice - store as answer_options array
             answersArray.push({
-              question_id: parseInt(questionId),
-              answer_options: answer.selected_options,
+              questionId: parseInt(questionId),
+              answerOptions: answer.selectedOptions,
             });
-          } else if (answer.answer_options) {
+          } else if (answer.answerOptions) {
             // Single choice - already has answer_options array
             answersArray.push({
-              question_id: parseInt(questionId),
-              answer_options: answer.answer_options,
+              questionId: parseInt(questionId),
+              answerOptions: answer.answerOptions,
             });
           } else {
             // Other answer types (text, number, date)
             answersArray.push({
-              question_id: parseInt(questionId),
+              questionId: parseInt(questionId),
               ...answer,
             });
           }
         }
 
-        console.log('Submitting survey answers:', {
+        console.info('Submitting survey answers:', {
           surveyId: currentSurvey.id,
           answersCount: answersArray.length,
           answers: answersArray,
         });
 
         try {
-          const response = await fetch(`/api/surveys/${currentSurvey.id}/responses`, {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const endpoint = useV2 ? `/api/v2/surveys/${currentSurvey.id}/responses` : `/api/surveys/${currentSurvey.id}/responses`;
+
+          const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -1208,42 +1389,47 @@
 
             // Wait a bit longer for database to update
             setTimeout(() => {
-              closeModal();
+              window.closeModal();
               // Force reload with a small delay to ensure database is updated
               setTimeout(() => {
-                console.log('Reloading surveys after submission...');
+                console.info('Reloading surveys after submission...');
                 loadSurveys();
               }, 500);
             }, 2000);
           } else {
             const error = await response.json();
-            alert('Fehler: ' + error.error);
+            showErrorAlert('Fehler: ' + error.error);
           }
         } catch (error) {
           console.error('Error submitting survey:', error);
-          alert('Fehler beim Absenden der Antworten');
+          showErrorAlert('Fehler beim Absenden der Antworten');
         }
       });
 
       // View response (for completed surveys)
-      async function viewResponse(surveyId) {
+      window.viewResponse = async function viewResponse(surveyId) {
         try {
+          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
+          const surveyEndpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+
           // First get the survey details
-          const surveyResponse = await fetch(`/api/surveys/${surveyId}`, {
+          const surveyResponse = await fetch(surveyEndpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
           });
 
           if (!surveyResponse.ok) {
-            alert('Fehler beim Abrufen der Umfrage-Details');
+            showErrorAlert('Fehler beim Abrufen der Umfrage-Details');
             return;
           }
 
-          const survey = await surveyResponse.json();
+          const surveyResult = await surveyResponse.json();
+          const survey = useV2 && surveyResult.success ? surveyResult.data : surveyResult;
 
           // Then get the user's response
-          const response = await fetch(`/api/surveys/${surveyId}/my-response`, {
+          const myResponseEndpoint = useV2 ? `/api/v2/surveys/${surveyId}/my-response` : `/api/surveys/${surveyId}/my-response`;
+          const response = await fetch(myResponseEndpoint, {
             headers: {
               Authorization: `Bearer ${localStorage.getItem('token')}`,
             },
@@ -1251,22 +1437,24 @@
 
           if (response.ok) {
             const data = await response.json();
-            if (data.responded && data.response) {
+            // Handle API v2 response structure
+            const responseData = useV2 && data.success && data.data ? data.data : data;
+            if (responseData.responded && responseData.response) {
               // Show response in a modal
-              showResponseModal(survey, data.response);
+              showResponseModal(survey, responseData.response);
             } else {
-              alert('Keine Antworten für diese Umfrage gefunden.');
+              showAlert('Keine Antworten für diese Umfrage gefunden.');
             }
           }
         } catch (error) {
           console.error('Error viewing response:', error);
-          alert('Fehler beim Abrufen Ihrer Antworten');
+          showErrorAlert('Fehler beim Abrufen Ihrer Antworten');
         }
-      }
+      };
 
       // Show response modal
       function showResponseModal(survey, response) {
-        console.log('Showing response modal with:', { survey, response });
+        console.info('Showing response modal with:', { survey, response });
 
         // Create modal HTML - use same class structure as survey modal
         const modalHtml = `
@@ -1274,7 +1462,7 @@
             <div class="modal-content">
               <div class="modal-header">
                 <h2>Ihre Antworten - ${survey.title}</h2>
-                <span class="close" onclick="closeResponseModal()">&times;</span>
+                <span class="close" data-action="close-response-modal">&times;</span>
               </div>
               <div class="modal-body">
                 <div class="response-info">
@@ -1290,10 +1478,10 @@
                   ${survey.questions
                     .map((question, index) => {
                       const answer = response.answers.find((a) => a.question_id === question.id);
-                      console.log('Question:', question, 'Answer:', answer);
+                      console.info('Question:', question, 'Answer:', answer);
                       return `
                       <div class="response-question">
-                        <h4>${index + 1}. ${question.question_text}</h4>
+                        <h4>${index + 1}. ${question.questionText}</h4>
                         <div class="response-answer">
                           ${formatAnswer(question, answer)}
                         </div>
@@ -1308,14 +1496,15 @@
         `;
 
         // Add modal to body
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        // eslint-disable-next-line no-unsanitized/method, no-undef -- Using DOMPurify for XSS protection
+        document.body.insertAdjacentHTML('beforeend', DOMPurify.sanitize(modalHtml));
       }
 
       // Format answer based on question type
       function formatAnswer(question, answer) {
         if (!answer) return '<em>Keine Antwort</em>';
 
-        switch (question.question_type) {
+        switch (question.questionType) {
           case 'text':
             return `<p>${answer.answer_text || '<em>Keine Antwort</em>'}</p>`;
 
@@ -1342,7 +1531,8 @@
                 .map((optIndex) => {
                   const option =
                     typeof question.options[0] === 'string'
-                      ? question.options[optIndex]
+                      ? // eslint-disable-next-line security/detect-object-injection -- optIndex comes from parsed answer data
+                        question.options[optIndex]
                       : question.options.find((o) => o.id === optIndex)?.option_text;
                   return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;
                 })
@@ -1355,7 +1545,7 @@
             return `<p>${answer.answer_number || '<em>Keine Antwort</em>'}</p>`;
 
           case 'date':
-            return `<p>${answer.answer_date ? new Date(answer.answer_date).toLocaleDateString('de-DE') : '<em>Keine Antwort</em>'}</p>`;
+            return `<p>${answer.answer_date ? new Date(answer.answer_date).toLocaleDateString('de-DE') : '<em>Kein Datum</em>'}</p>`;
 
           default:
             return '<em>Unbekannter Antworttyp</em>';
@@ -1363,19 +1553,19 @@
       }
 
       // Close response modal
-      function closeResponseModal() {
-        const modal = document.getElementById('responseModal');
+      window.closeResponseModal = function () {
+        const modal = document.querySelector('#responseModal');
         if (modal) {
           modal.remove();
         }
-      }
+      };
 
       // Close modal
-      function closeModal() {
-        document.getElementById('surveyModal').style.display = 'none';
+      window.closeModal = function closeModal() {
+        document.querySelector('#surveyModal').style.display = 'none';
         currentSurvey = null;
         answers = {};
-      }
+      };
 
       // Show success message
       function showSuccessMessage() {
@@ -1391,7 +1581,7 @@
             </div>
           </div>
         `;
-        document.body.appendChild(overlay);
+        document.body.append(overlay);
 
         // Remove after animation
         setTimeout(() => {

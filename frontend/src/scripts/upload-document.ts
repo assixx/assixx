@@ -4,8 +4,8 @@
  */
 
 import type { User } from '../types/api.types';
-
 import { getAuthToken } from './auth';
+import notificationService from './services/notification.service';
 
 interface UploadFormElements extends HTMLFormControlsCollection {
   userId: HTMLSelectElement;
@@ -27,21 +27,23 @@ document.addEventListener('DOMContentLoaded', () => {
   void loadEmployees();
 
   // Register form events
-  const uploadForm = document.getElementById('upload-form') as UploadForm;
-  if (uploadForm) {
+  const uploadForm = document.querySelector('#upload-form');
+  if (uploadForm !== null) {
     console.info('Upload form found');
-    uploadForm.addEventListener('submit', (e) => void uploadDocument(e));
+    uploadForm.addEventListener('submit', (e) => {
+      void uploadDocument(e);
+    });
   } else {
     console.error('Upload form not found');
   }
 
   // File selection event
-  const fileInput = document.getElementById('file-input') as HTMLInputElement;
-  const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement;
+  const fileInput = document.querySelector('#file-input');
+  const fileNameSpan = document.querySelector('#file-name');
 
-  if (fileInput && fileNameSpan) {
+  if (fileInput instanceof HTMLInputElement && fileNameSpan !== null) {
     fileInput.addEventListener('change', () => {
-      if (fileInput.files && fileInput.files.length > 0) {
+      if (fileInput.files !== null && fileInput.files.length > 0) {
         fileNameSpan.textContent = fileInput.files[0].name;
       } else {
         fileNameSpan.textContent = 'Keine Datei ausgewählt';
@@ -57,31 +59,42 @@ async function loadEmployees(): Promise<void> {
   console.info('Loading employees');
   const token = getAuthToken();
 
-  if (!token) {
+  if (token === null || token === '') {
     console.error('No authentication token');
     return;
   }
 
   try {
-    const response = await fetch('/api/users', {
+    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
+    const endpoint = useV2Users ? '/api/v2/users' : '/api/users';
+    const response = await fetch(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
 
     if (response.ok) {
-      const employees: User[] = await response.json();
-      const userSelect = document.getElementById('user-select') as HTMLSelectElement;
+      const employees = (await response.json()) as User[];
+      const userSelect = document.querySelector('#user-select');
 
-      if (userSelect) {
-        // Add employees to dropdown
-        userSelect.innerHTML = '<option value="">-- Mitarbeiter auswählen --</option>';
+      if (userSelect !== null) {
+        // Clear existing options
+        while (userSelect.firstChild !== null) {
+          userSelect.firstChild.remove();
+        }
+
+        // Add default option
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Mitarbeiter auswählen --';
+        userSelect.append(defaultOption);
 
         employees.forEach((employee: User) => {
           const option = document.createElement('option');
           option.value = employee.id.toString();
-          option.textContent = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim() || employee.username;
-          userSelect.appendChild(option);
+          const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+          option.textContent = fullName !== '' ? fullName : employee.username;
+          userSelect.append(option);
         });
 
         console.info(`Loaded ${employees.length} employees for select`);
@@ -107,44 +120,46 @@ async function uploadDocument(e: Event): Promise<void> {
   const formData = new FormData(form);
   const token = getAuthToken();
 
-  if (!token) {
-    alert('Bitte melden Sie sich erneut an');
+  if (token === null || token === '') {
+    notificationService.error('Authentifizierung erforderlich', 'Bitte melden Sie sich erneut an');
     return;
   }
 
   // Check critical fields
   const userId = formData.get('userId') as string;
-  const file = formData.get('document') as File;
+  const file = formData.get('document') as File | null;
 
-  if (!userId) {
-    alert('Bitte wählen Sie einen Mitarbeiter aus');
+  if (userId === '') {
+    notificationService.error('Fehler', 'Bitte wählen Sie einen Mitarbeiter aus');
     return;
   }
 
-  if (!file || file.size === 0) {
-    alert('Bitte wählen Sie eine Datei aus');
+  if (file === null || file.size === 0) {
+    notificationService.error('Fehler', 'Bitte wählen Sie eine Datei aus');
     return;
   }
 
   // Success and error elements
-  const successElem = document.getElementById('upload-success') as HTMLElement;
-  const errorElem = document.getElementById('upload-error') as HTMLElement;
+  const successElem = document.querySelector('#upload-success');
+  const errorElem = document.querySelector('#upload-error');
 
   // Hide previous messages
-  if (successElem) successElem.style.display = 'none';
-  if (errorElem) errorElem.style.display = 'none';
+  if (successElem instanceof HTMLElement) successElem.style.display = 'none';
+  if (errorElem instanceof HTMLElement) errorElem.style.display = 'none';
 
   // Show loading state
-  const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+  const submitButton = form.querySelector('button[type="submit"]');
   const originalText = submitButton?.textContent ?? 'Hochladen';
   if (submitButton) {
-    submitButton.disabled = true;
+    (submitButton as HTMLButtonElement).disabled = true;
     submitButton.textContent = 'Wird hochgeladen...';
   }
 
   try {
     console.info('Sending upload request');
-    const response = await fetch('/api/documents', {
+    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS === true;
+    const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents';
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -152,13 +167,13 @@ async function uploadDocument(e: Event): Promise<void> {
       body: formData,
     });
 
-    const result = await response.json();
+    const result = (await response.json()) as { message?: string; error?: string };
 
     if (response.ok) {
       console.info('Upload successful:', result);
 
       // Show success message
-      if (successElem) {
+      if (successElem instanceof HTMLElement) {
         successElem.textContent = result.message ?? 'Dokument erfolgreich hochgeladen!';
         successElem.style.display = 'block';
       }
@@ -167,8 +182,8 @@ async function uploadDocument(e: Event): Promise<void> {
       form.reset();
 
       // Reset file name display
-      const fileNameSpan = document.getElementById('file-name') as HTMLSpanElement;
-      if (fileNameSpan) {
+      const fileNameSpan = document.querySelector('#file-name');
+      if (fileNameSpan !== null) {
         fileNameSpan.textContent = 'Keine Datei ausgewählt';
       }
 
@@ -182,21 +197,21 @@ async function uploadDocument(e: Event): Promise<void> {
       }
     } else {
       console.error('Upload failed:', result);
-      if (errorElem) {
+      if (errorElem instanceof HTMLElement) {
         errorElem.textContent = result.error ?? 'Fehler beim Hochladen des Dokuments';
         errorElem.style.display = 'block';
       }
     }
   } catch (error) {
     console.error('Error uploading document:', error);
-    if (errorElem) {
+    if (errorElem instanceof HTMLElement) {
       errorElem.textContent = 'Netzwerkfehler beim Hochladen des Dokuments';
       errorElem.style.display = 'block';
     }
   } finally {
     // Reset button state
     if (submitButton) {
-      submitButton.disabled = false;
+      (submitButton as HTMLButtonElement).disabled = false;
       submitButton.textContent = originalText;
     }
   }

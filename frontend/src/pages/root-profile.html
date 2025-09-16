@@ -20,7 +20,8 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script src="/feature-flags.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
@@ -129,7 +130,7 @@
       /* More specific selector to override global styles */
       #profile-picture-display.profile-picture-placeholder.avatar-initials {
         background: linear-gradient(135deg, #2196f3, #42a5f5) !important;
-        color: white !important;
+        color: #fff !important;
         font-weight: 600 !important;
         font-size: 3rem !important;
         text-transform: uppercase !important;
@@ -173,7 +174,6 @@
         border-radius: var(--radius-sm);
         color: #fff;
         font-size: 15px;
-        transition: all 0.3s ease;
       }
 
       .form-control:focus {
@@ -204,7 +204,7 @@
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        transition: all 0.3s ease;
+
         padding: 12px 24px;
         border-radius: var(--radius-sm);
         font-size: 14px;
@@ -215,7 +215,7 @@
       .btn-primary {
         background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
         border-color: rgba(0, 142, 255, 0.3);
-        color: white;
+        color: #fff;
       }
 
       .btn-secondary {
@@ -247,7 +247,7 @@
 
       /* Success/Error Messages */
       .alert {
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         border-radius: var(--radius-sm);
         margin-bottom: var(--spacing-md);
         backdrop-filter: blur(10px);
@@ -298,13 +298,14 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
         backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
         display: none;
         align-items: center;
         justify-content: center;
         z-index: 1000;
+        transition:
+          opacity 0.1s ease,
+          visibility 0.1s ease;
         /* animation: fadeIn 0.3s ease-out; */
       }
 
@@ -315,7 +316,6 @@
       .modal-content {
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
@@ -374,7 +374,7 @@
         background: rgba(244, 67, 54, 0.1);
         border: 1px solid rgba(244, 67, 54, 0.3);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-lg);
         backdrop-filter: blur(10px);
       }
@@ -468,7 +468,7 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin: var(--spacing-sm) 0;
         display: flex;
         align-items: center;
@@ -533,8 +533,7 @@
         background: rgba(255, 255, 255, 0.02);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
-        transition: all 0.3s ease;
+        padding: var(--spacing-2sm);
       }
 
       .approval-item:hover {
@@ -576,7 +575,7 @@
         background: rgba(255, 152, 0, 0.1);
         border: 1px solid rgba(255, 152, 0, 0.3);
         border-radius: var(--radius-sm);
-        padding: var(--spacing-sm);
+        padding: var(--spacing-2sm);
         margin-top: var(--spacing-sm);
         display: flex;
         align-items: center;
@@ -657,7 +656,7 @@
         display: flex;
         align-items: center;
         gap: var(--spacing-sm);
-        padding: var(--spacing-sm) var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: rgba(255, 193, 7, 0.1);
         border: 1px solid rgba(255, 193, 7, 0.2);
         border-radius: var(--radius-sm);
@@ -737,7 +736,6 @@
       .btn-secondary:hover {
         background: rgba(255, 255, 255, 0.1);
         border-color: rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
       }
 
       /* Responsive */
@@ -771,6 +769,14 @@
       }
     </style>
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <!-- DOMPurify CDN für inline Scripts -->
+    <script src="/js/purify.min.js"></script>
+    <!-- Dom-utils Module für sichere HTML-Sanitization -->
+    <script type="module">
+      import { setHTML } from '/utils/dom-utils.js';
+      // Make setHTML globally available for inline scripts
+      window.setHTML = setHTML;
+    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -813,7 +819,7 @@
                 </div>
                 <div class="profile-picture-actions">
                   <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
-                  <button class="btn btn-primary" onclick="document.getElementById('profile-picture-input').click()">
+                  <button class="btn btn-primary" data-action="trigger-file-input">
                     <i class="fas fa-camera"></i>
                     Bild ändern
                   </button>
@@ -896,7 +902,9 @@
 
     <!-- JavaScript -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <script>
+      /* global DOMPurify */
       // Authentication Check
       const token = localStorage.getItem('token');
       if (!token) {
@@ -917,7 +925,8 @@
               .join(''),
           );
           return JSON.parse(jsonPayload);
-        } catch (e) {
+        } catch {
+          // Error handling - return null if parsing fails
           return null;
         }
       }
@@ -932,7 +941,10 @@
       // Load current profile data
       async function loadProfile() {
         try {
-          const response = await fetch('/api/user/profile', {
+          const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+          const endpoint = useV2Users ? '/api/v2/users/me' : '/api/user/profile';
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -940,34 +952,37 @@
 
           if (response.ok) {
             const data = await response.json();
-            console.log('[Root Profile] API Response:', data);
+            console.info('[Root Profile] API Response:', data);
 
             // Handle different response formats
             const user = data.data || data.user || data;
 
+            // Handle both camelCase (v2) and snake_case (v1)
+            const firstName = user.firstName || user.first_name || '';
+            const lastName = user.lastName || user.last_name || '';
+            const profilePicture = user.profilePictureUrl || user.profile_picture || '';
+
             // Fill form fields
-            document.getElementById('email').value = user.email || '';
-            document.getElementById('first_name').value = user.first_name || '';
-            document.getElementById('last_name').value = user.last_name || '';
+            document.querySelector('#email').value = user.email || '';
+            document.querySelector('#first_name').value = firstName;
+            document.querySelector('#last_name').value = lastName;
 
             // Load profile picture if exists
-            if (user.profile_picture) {
-              displayProfilePicture(user.profile_picture);
+            if (profilePicture) {
+              displayProfilePicture(profilePicture);
               // Header wird automatisch durch header-user-info.ts aktualisiert
             } else {
               // Show initials if no profile picture
-              const container = document.getElementById('profile-picture-display');
+              const container = document.querySelector('#profile-picture-display');
               if (container) {
-                const firstName = user.first_name || '';
-                const lastName = user.last_name || '';
                 const firstInitial = firstName.charAt(0).toUpperCase() || '';
                 const lastInitial = lastName.charAt(0).toUpperCase() || '';
                 const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
 
-                console.log('[Root Profile] User data:', user);
-                console.log('[Root Profile] Setting initials:', { firstName, lastName, initials });
+                console.info('[Root Profile] User data:', user);
+                console.info('[Root Profile] Setting initials:', { firstName, lastName, initials });
                 container.classList.add('avatar-initials');
-                container.innerHTML = initials;
+                container.textContent = initials;
               }
             }
           } else {
@@ -982,7 +997,7 @@
       // Initialize all event listeners when DOM is ready
       function initializeEventListeners() {
         // Profile form submission
-        const profileForm = document.getElementById('profile-form');
+        const profileForm = document.querySelector('#profile-form');
         if (profileForm) {
           profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -991,7 +1006,10 @@
             const data = Object.fromEntries(formData);
 
             try {
-              const response = await fetch('/api/user/profile', {
+              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const endpoint = useV2Users ? '/api/v2/users/me/profile' : '/api/user/profile';
+
+              const response = await fetch(endpoint, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1018,13 +1036,13 @@
         }
 
         // Password form submission
-        const passwordForm = document.getElementById('password-form');
+        const passwordForm = document.querySelector('#password-form');
         if (passwordForm) {
           passwordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const newPassword = document.getElementById('new_password').value;
-            const confirmPassword = document.getElementById('confirm_password').value;
+            const newPassword = document.querySelector('#new_password').value;
+            const confirmPassword = document.querySelector('#confirm_password').value;
 
             if (newPassword !== confirmPassword) {
               showMessage('Die Passwörter stimmen nicht überein', 'error');
@@ -1035,7 +1053,10 @@
             const data = Object.fromEntries(formData);
 
             try {
-              const response = await fetch('/api/users/profile/password', {
+              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const endpoint = useV2Users ? '/api/v2/users/me/password' : '/api/users/profile/password';
+
+              const response = await fetch(endpoint, {
                 method: 'PUT',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1063,7 +1084,7 @@
         }
 
         // Profile picture upload
-        const pictureInput = document.getElementById('profile-picture-input');
+        const pictureInput = document.querySelector('#profile-picture-input');
         if (pictureInput) {
           pictureInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -1073,7 +1094,10 @@
             formData.append('profilePicture', file);
 
             try {
-              const response = await fetch('/api/user/profile-picture', {
+              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const endpoint = useV2Users ? '/api/v2/users/me/profile-picture' : '/api/user/profile-picture';
+
+              const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -1096,13 +1120,16 @@
         }
 
         // Remove profile picture
-        const removePictureBtn = document.getElementById('remove-picture-btn');
+        const removePictureBtn = document.querySelector('#remove-picture-btn');
         if (removePictureBtn) {
           removePictureBtn.addEventListener('click', async () => {
             if (!confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) return;
 
             try {
-              const response = await fetch('/api/user/profile-picture', {
+              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const endpoint = useV2Users ? '/api/v2/users/me/profile-picture' : '/api/user/profile-picture';
+
+              const response = await fetch(endpoint, {
                 method: 'DELETE',
                 headers: {
                   Authorization: `Bearer ${token}`,
@@ -1110,19 +1137,19 @@
               });
 
               if (response.ok) {
-                const container = document.getElementById('profile-picture-display');
+                const container = document.querySelector('#profile-picture-display');
                 if (container) {
                   // Get current user data to restore initials
-                  const firstName = document.getElementById('first_name').value || '';
-                  const lastName = document.getElementById('last_name').value || '';
+                  const firstName = document.querySelector('#first_name').value || '';
+                  const lastName = document.querySelector('#last_name').value || '';
                   const firstInitial = firstName.charAt(0).toUpperCase() || '';
                   const lastInitial = lastName.charAt(0).toUpperCase() || '';
                   const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
 
                   container.classList.add('avatar-initials');
-                  container.innerHTML = initials;
+                  container.textContent = initials;
                 }
-                document.getElementById('remove-picture-btn').style.display = 'none';
+                document.querySelector('#remove-picture-btn').style.display = 'none';
                 showMessage('Profilbild erfolgreich entfernt', 'success');
               } else {
                 showMessage('Fehler beim Entfernen des Profilbilds', 'error');
@@ -1137,11 +1164,19 @@
 
       // Display profile picture
       function displayProfilePicture(url) {
-        const container = document.getElementById('profile-picture-display');
+        const container = document.querySelector('#profile-picture-display');
         if (container) {
           container.classList.remove('avatar-initials');
-          container.innerHTML = `<img src="${url}" alt="Profilbild" class="profile-picture">`;
-          const removeBtn = document.getElementById('remove-picture-btn');
+          container.innerHTML = ''; // Clear existing content
+
+          // Sicher: DOM-Methoden verwenden
+          const img = document.createElement('img');
+          img.src = url;
+          img.alt = 'Profilbild';
+          img.className = 'profile-picture';
+          container.append(img);
+
+          const removeBtn = document.querySelector('#remove-picture-btn');
           if (removeBtn) {
             removeBtn.style.display = 'block';
           }
@@ -1150,14 +1185,16 @@
 
       // Show success/error messages
       function showMessage(message, type) {
-        const container = document.getElementById('message-container');
+        const container = document.querySelector('#message-container');
         if (container) {
-          container.innerHTML = `
+          // Use dom-utils setHTML for safe sanitization
+          const htmlContent = `
                 <div class="alert alert-${type}">
                     <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
                     ${message}
                 </div>
             `;
+          window.setHTML(container, htmlContent);
 
           setTimeout(() => {
             container.innerHTML = '';
@@ -1169,7 +1206,8 @@
       function showSuccessOverlay(text = 'Erfolgreich!') {
         const overlay = document.createElement('div');
         overlay.className = 'success-overlay';
-        overlay.innerHTML = `
+        // Use dom-utils setHTML for safe sanitization
+        const overlayHtml = `
           <div class="success-message">
             <div class="success-icon">
               <i class="fas fa-check-circle"></i>
@@ -1179,7 +1217,8 @@
             </div>
           </div>
         `;
-        document.body.appendChild(overlay);
+        window.setHTML(overlay, overlayHtml);
+        document.body.append(overlay);
 
         // Remove after animation - immer 2 Sekunden
         setTimeout(() => {
@@ -1190,7 +1229,7 @@
       // Logout
       // Wait for navigation to load before attaching logout handler
       setTimeout(() => {
-        const logoutBtn = document.getElementById('logout-btn');
+        const logoutBtn = document.querySelector('#logout-btn');
         if (logoutBtn) {
           logoutBtn.addEventListener('click', () => {
             localStorage.removeItem('token');
@@ -1203,7 +1242,10 @@
       // Approval Functions
       async function loadPendingApprovals() {
         try {
-          const response = await fetch('/api/root/deletion-approvals/pending', {
+          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const endpoint = useV2Root ? '/api/v2/root/deletion-approvals/pending' : '/api/root/deletion-approvals/pending';
+
+          const response = await fetch(endpoint, {
             headers: {
               Authorization: `Bearer ${token}`,
             },
@@ -1212,7 +1254,7 @@
           if (!response.ok) throw new Error('Failed to load approvals');
 
           const data = await response.json();
-          console.log('Deletion approvals response:', data);
+          console.info('Deletion approvals response:', data);
 
           let approvals = [];
           if (data && data.success && Array.isArray(data.data)) {
@@ -1221,14 +1263,16 @@
             approvals = data;
           }
 
-          console.log('Processed approvals:', approvals);
+          console.info('Processed approvals:', approvals);
 
-          const approvalSection = document.getElementById('approvalSection');
-          const approvalList = document.getElementById('approvalList');
+          const approvalSection = document.querySelector('#approvalSection');
+          const approvalList = document.querySelector('#approvalList');
 
           if (approvals.length > 0) {
             approvalSection.style.display = 'block';
-            approvalList.innerHTML = approvals.map((approval) => createApprovalItem(approval)).join('');
+            // Use dom-utils setHTML for safe sanitization
+            const approvalsHtml = approvals.map((approval) => createApprovalItem(approval)).join('');
+            window.setHTML(approvalList, approvalsHtml);
           } else {
             approvalSection.style.display = 'none';
             approvalList.innerHTML = ''; // Clear any existing content
@@ -1264,13 +1308,13 @@
                 ${
                   canApprove
                     ? `
-                  <button class="btn btn-success" onclick="approveDeletion(${approval.queue_id})">
+                  <button class="btn btn-success" data-action="approve-deletion" data-queue-id="${approval.queue_id}">
                     <i class="fas fa-check"></i> Genehmigen
                   </button>
                 `
                     : ''
                 }
-                <button class="btn btn-danger" onclick="rejectDeletion(${approval.queue_id})">
+                <button class="btn btn-danger" data-action="reject-deletion" data-queue-id="${approval.queue_id}">
                   <i class="fas fa-times"></i> Ablehnen
                 </button>
               </div>
@@ -1299,7 +1343,12 @@
         }
 
         try {
-          const response = await fetch(`/api/root/deletion-approvals/${queueId}/approve`, {
+          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const endpoint = useV2Root
+            ? `/api/v2/root/deletion-approvals/${queueId}/approve`
+            : `/api/root/deletion-approvals/${queueId}/approve`;
+
+          const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1325,7 +1374,12 @@
         if (!reason) return;
 
         try {
-          const response = await fetch(`/api/root/deletion-approvals/${queueId}/reject`, {
+          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const endpoint = useV2Root
+            ? `/api/v2/root/deletion-approvals/${queueId}/reject`
+            : `/api/root/deletion-approvals/${queueId}/reject`;
+
+          const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${token}`,
@@ -1353,7 +1407,7 @@
 
       // Set initial placeholder while loading
       function setInitialPlaceholder() {
-        const container = document.getElementById('profile-picture-display');
+        const container = document.querySelector('#profile-picture-display');
         if (container && !container.innerHTML.trim()) {
           // Get user info from token if available
           const token = localStorage.getItem('token');
@@ -1367,16 +1421,25 @@
                 const firstInitial = firstName.charAt(0).toUpperCase() || '';
                 const lastInitial = lastName.charAt(0).toUpperCase() || '';
                 const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : '...';
-                container.innerHTML = initials;
+                container.textContent = initials;
               } else {
-                container.innerHTML = '...';
+                container.textContent = '...';
               }
-            } catch (e) {
-              container.innerHTML = '...';
+            } catch {
+              // Error handling - show placeholder on error
+              container.textContent = '...';
             }
           } else {
-            container.innerHTML = '...';
+            container.textContent = '...';
           }
+        }
+      }
+
+      // Modal functions
+      function closeDeleteModal() {
+        const modal = document.querySelector('#deleteModal');
+        if (modal) {
+          modal.style.display = 'none';
         }
       }
 
@@ -1389,10 +1452,10 @@
           loadPendingApprovals();
 
           // Enable delete button only when user types "LÖSCHEN"
-          const deleteConfirmInput = document.getElementById('deleteConfirmation');
+          const deleteConfirmInput = document.querySelector('#deleteConfirmation');
           if (deleteConfirmInput) {
             deleteConfirmInput.addEventListener('input', (e) => {
-              const confirmBtn = document.getElementById('confirmDeleteBtn');
+              const confirmBtn = document.querySelector('#confirmDeleteBtn');
               if (confirmBtn) {
                 confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
               }
@@ -1400,7 +1463,7 @@
           }
 
           // Close modal on overlay click
-          const deleteModal = document.getElementById('deleteModal');
+          const deleteModal = document.querySelector('#deleteModal');
           if (deleteModal) {
             deleteModal.addEventListener('click', (e) => {
               if (e.target.id === 'deleteModal') {
@@ -1417,10 +1480,10 @@
         loadPendingApprovals();
 
         // Enable delete button only when user types "LÖSCHEN"
-        const deleteConfirmInput = document.getElementById('deleteConfirmation');
+        const deleteConfirmInput = document.querySelector('#deleteConfirmation');
         if (deleteConfirmInput) {
           deleteConfirmInput.addEventListener('input', (e) => {
-            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            const confirmBtn = document.querySelector('#confirmDeleteBtn');
             if (confirmBtn) {
               confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
             }
@@ -1428,7 +1491,7 @@
         }
 
         // Close modal on overlay click
-        const deleteModal = document.getElementById('deleteModal');
+        const deleteModal = document.querySelector('#deleteModal');
         if (deleteModal) {
           deleteModal.addEventListener('click', (e) => {
             if (e.target.id === 'deleteModal') {
@@ -1436,6 +1499,34 @@
             }
           });
         }
+
+        // Event delegation for all actions
+        document.addEventListener('click', function (e) {
+          const target = e.target.closest('[data-action]');
+          if (target) {
+            const action = target.dataset.action;
+
+            switch (action) {
+              case 'trigger-file-input':
+                document.querySelector('#profile-picture-input').click();
+                break;
+              case 'approve-deletion': {
+                const queueId = parseInt(target.dataset.queueId);
+                if (window.approveDeletion) {
+                  window.approveDeletion(queueId);
+                }
+                break;
+              }
+              case 'reject-deletion': {
+                const queueId = parseInt(target.dataset.queueId);
+                if (window.rejectDeletion) {
+                  window.rejectDeletion(queueId);
+                }
+                break;
+              }
+            }
+          }
+        });
       }
     </script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>

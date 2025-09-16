@@ -3,26 +3,25 @@
  * Script to fix nullish coalescing operator issues
  * Replaces || with ?? where appropriate
  */
-
-import fs from "fs";
-import path from "path";
-import { execSync } from "child_process";
-import { fileURLToPath } from "url";
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Get all TypeScript files with nullish coalescing errors
-const eslintOutput = execSync(
-  "pnpm exec eslint . --format json 2>/dev/null || true",
-  { encoding: "utf8", maxBuffer: 1024 * 1024 * 10 },
-);
+const eslintOutput = execSync('pnpm exec eslint . --format json 2>/dev/null || true', {
+  encoding: 'utf8',
+  maxBuffer: 1024 * 1024 * 10,
+});
 
 let results;
 try {
   results = JSON.parse(eslintOutput);
 } catch (e) {
-  console.error("Failed to parse ESLint output");
+  console.error('Failed to parse ESLint output');
   process.exit(1);
 }
 
@@ -32,7 +31,7 @@ const filesToFix = new Map();
 // Collect all nullish coalescing errors
 results.forEach((file) => {
   const nullishErrors = file.messages.filter(
-    (msg) => msg.ruleId === "@typescript-eslint/prefer-nullish-coalescing",
+    (msg) => msg.ruleId === '@typescript-eslint/prefer-nullish-coalescing',
   );
 
   if (nullishErrors.length > 0) {
@@ -40,13 +39,13 @@ results.forEach((file) => {
   }
 });
 
-console.log(`Found ${filesToFix.size} files with nullish coalescing issues`);
+console.info(`Found ${filesToFix.size} files with nullish coalescing issues`);
 
 // Fix each file
 for (const [filePath, errors] of filesToFix) {
   try {
-    let content = fs.readFileSync(filePath, "utf8");
-    const lines = content.split("\n");
+    let content = fs.readFileSync(filePath, 'utf8');
+    const lines = content.split('\n');
 
     // Sort errors by line number in reverse order to avoid line number shifts
     errors.sort((a, b) => b.line - a.line);
@@ -90,7 +89,7 @@ for (const [filePath, errors] of filesToFix) {
             ) {
               newLine =
                 newLine.substring(0, match.index) +
-                match[0].replace(/\|\|/g, "??") +
+                match[0].replace(/\|\|/g, '??') +
                 newLine.substring(match.index + match[0].length);
               changed = true;
               fixedCount++;
@@ -101,12 +100,11 @@ for (const [filePath, errors] of filesToFix) {
         }
 
         // If no pattern matched, try a more general replacement
-        if (!changed && line.includes("||")) {
+        if (!changed && line.includes('||')) {
           // Find the || operator near the error column
-          const orIndex = line.indexOf("||", Math.max(0, error.column - 5));
+          const orIndex = line.indexOf('||', Math.max(0, error.column - 5));
           if (orIndex !== -1 && Math.abs(orIndex - error.column) < 10) {
-            newLine =
-              line.substring(0, orIndex) + "??" + line.substring(orIndex + 2);
+            newLine = line.substring(0, orIndex) + '??' + line.substring(orIndex + 2);
             fixedCount++;
           }
         }
@@ -116,22 +114,20 @@ for (const [filePath, errors] of filesToFix) {
     });
 
     // Write the fixed content back
-    fs.writeFileSync(filePath, lines.join("\n"));
-    console.log(
-      `Fixed ${errors.length} issues in ${path.relative(process.cwd(), filePath)}`,
-    );
+    fs.writeFileSync(filePath, lines.join('\n'));
+    console.info(`Fixed ${errors.length} issues in ${path.relative(process.cwd(), filePath)}`);
   } catch (e) {
     console.error(`Error processing ${filePath}:`, e.message);
   }
 }
 
-console.log(`\nTotal fixes applied: ${fixedCount}`);
-console.log("Running ESLint to check remaining issues...");
+console.info(`\nTotal fixes applied: ${fixedCount}`);
+console.info('Running ESLint to check remaining issues...');
 
 // Run ESLint again to see how many issues remain
 const remainingErrors = execSync(
   'pnpm exec eslint . 2>&1 | grep "prefer-nullish-coalescing" | wc -l',
-  { encoding: "utf8" },
+  { encoding: 'utf8' },
 ).trim();
 
-console.log(`Remaining nullish coalescing errors: ${remainingErrors}`);
+console.info(`Remaining nullish coalescing errors: ${remainingErrors}`);

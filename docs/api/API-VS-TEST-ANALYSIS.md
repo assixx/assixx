@@ -9,7 +9,7 @@ Die Tests wurden für eine andere API-Version geschrieben als die, die implement
 
 ### 1. Chat API
 
-#### Test erwartet:
+#### Test erwartet
 
 ```javascript
 // Route: /api/chat/channels
@@ -20,7 +20,7 @@ POST {
 }
 ```
 
-#### API implementiert:
+#### API implementiert
 
 ```javascript
 // Route: /api/chat/conversations
@@ -39,7 +39,7 @@ POST {
 
 ### 2. Calendar API
 
-#### Test erwartet:
+#### Test erwartet
 
 ```javascript
 // Route: /api/calendar/events
@@ -51,7 +51,7 @@ POST {
 }
 ```
 
-#### API implementiert:
+#### API implementiert
 
 ```javascript
 // Route: /api/calendar
@@ -73,7 +73,7 @@ POST {
 
 ### 3. Response Format
 
-#### Tests erwarten:
+#### Tests erwarten
 
 ```javascript
 {
@@ -82,7 +82,7 @@ POST {
 }
 ```
 
-#### API liefert (utils/response.types.ts):
+#### API liefert (utils/response.types.ts)
 
 ```javascript
 {
@@ -94,13 +94,13 @@ POST {
 
 ## Root Cause Analysis
 
-### Wahrscheinliches Szenario:
+### Wahrscheinliches Szenario
 
 1. **Phase 1**: Ursprüngliche API mit channels, events-suffix, success-field
 2. **Phase 2**: API-Redesign (conversations statt channels)
 3. **Phase 3**: Tests wurden nie angepasst
 
-### Beweise:
+### Beweise
 
 - Swagger Docs zeigen aktuelle API (conversations)
 - Tests nutzen alte API (channels)
@@ -108,14 +108,14 @@ POST {
 
 ## Impact Assessment
 
-### Kritisch:
+### Kritisch
 
 1. **502+ Tests**, nur ~40 bestehen (< 10%)
 2. **CI/CD blockiert** durch failing tests
 3. **Neue Features** können nicht getestet werden
 4. **Onboarding** neuer Entwickler sehr schwierig
 
-### Technische Schulden:
+### Technische Schulden
 
 - Unmaintainable test suite
 - Unklar welche API-Version "richtig" ist

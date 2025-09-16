@@ -37,29 +37,30 @@ backend/src/routes/v2/{resource}/
 
 ```typescript
 // backend/src/routes/v2/users/index.ts
-import express, { Router } from "express";
-import { authenticateV2, requireRoleV2 } from "../../../middleware/v2/auth.middleware";
-import { rateLimiter } from "../../../middleware/rateLimiter";
-import { typed } from "../../../utils/routeHandlers";
-import { usersController } from "./users.controller";
-import { usersValidation } from "./users.validation";
+import express, { Router } from 'express';
+
+import { rateLimiter } from '../../../middleware/rateLimiter';
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
+import { typed } from '../../../utils/routeHandlers';
+import { usersController } from './users.controller';
+import { usersValidation } from './users.validation';
 
 const router: Router = express.Router();
 
 // List users (protected, admin only)
 router.get(
-  "/",
+  '/',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   usersValidation.list,
   typed.auth(usersController.listUsers),
 );
 
 // Create user (protected, admin only)
 router.post(
-  "/",
+  '/',
   authenticateV2,
-  requireRoleV2(["admin", "root"]),
+  requireRoleV2(['admin', 'root']),
   rateLimiter.auth,
   usersValidation.create,
   typed.body(usersController.createUser),
@@ -72,29 +73,29 @@ export default router;
 
 ```typescript
 // backend/src/routes/v2/users/users.validation.ts
-import { body, query, param, ValidationChain } from "express-validator";
+import { ValidationChain, body, param, query } from 'express-validator';
 
 export const usersValidation = {
   list: [
-    query("page").optional().isInt({ min: 1 }).withMessage("Page must be positive integer"),
-    query("limit").optional().isInt({ min: 1, max: 100 }).withMessage("Limit must be 1-100"),
-    query("search").optional().isString().trim(),
-    query("role").optional().isIn(["employee", "admin", "root"]),
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be positive integer'),
+    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be 1-100'),
+    query('search').optional().isString().trim(),
+    query('role').optional().isIn(['employee', 'admin', 'root']),
   ],
 
   create: [
-    body("email").isEmail().normalizeEmail().withMessage("Valid email required"),
-    body("firstName").isString().trim().notEmpty().withMessage("First name required"),
-    body("lastName").isString().trim().notEmpty().withMessage("Last name required"),
-    body("password").isLength({ min: 8 }).withMessage("Password must be at least 8 characters"),
-    body("role").optional().isIn(["employee", "admin"]).withMessage("Invalid role"),
+    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
+    body('firstName').isString().trim().notEmpty().withMessage('First name required'),
+    body('lastName').isString().trim().notEmpty().withMessage('Last name required'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('role').optional().isIn(['employee', 'admin']).withMessage('Invalid role'),
   ],
 
   update: [
-    param("id").isInt().withMessage("Valid user ID required"),
-    body("firstName").optional().isString().trim().notEmpty(),
-    body("lastName").optional().isString().trim().notEmpty(),
-    body("role").optional().isIn(["employee", "admin"]),
+    param('id').isInt().withMessage('Valid user ID required'),
+    body('firstName').optional().isString().trim().notEmpty(),
+    body('lastName').optional().isString().trim().notEmpty(),
+    body('role').optional().isIn(['employee', 'admin']),
   ],
 };
 ```
@@ -103,19 +104,20 @@ export const usersValidation = {
 
 ```typescript
 // backend/src/routes/v2/users/users.controller.ts
-import { Request, Response } from "express";
-import { validationResult } from "express-validator";
-import { successResponse, errorResponse, paginatedResponse } from "../../../utils/apiResponse";
-import { dbToApi, apiToDb } from "../../../utils/fieldMapping";
-import { userService } from "../../../services/user.service";
-import { AuthenticatedRequest } from "../../../types/request.types";
+import { Request, Response } from 'express';
+import { validationResult } from 'express-validator';
+
+import { userService } from '../../../services/user.service';
+import { AuthenticatedRequest } from '../../../types/request.types';
+import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse';
+import { apiToDb, dbToApi } from '../../../utils/fieldMapping';
 
 export const usersController = {
   async listUsers(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json(errorResponse("VALIDATION_ERROR", "Invalid input", errors.array()));
+        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', errors.array()));
         return;
       }
 
@@ -145,8 +147,8 @@ export const usersController = {
         }),
       );
     } catch (error) {
-      console.error("[Users v2] List error:", error);
-      res.status(500).json(errorResponse("SERVER_ERROR", "Failed to fetch users"));
+      console.error('[Users v2] List error:', error);
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to fetch users'));
     }
   },
 
@@ -154,7 +156,7 @@ export const usersController = {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        res.status(400).json(errorResponse("VALIDATION_ERROR", "Invalid input", errors.array()));
+        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Invalid input', errors.array()));
         return;
       }
 
@@ -169,15 +171,15 @@ export const usersController = {
       const newUser = await userService.createUser(userData);
 
       // Convert back to camelCase for response
-      res.status(201).json(successResponse(dbToApi(newUser), "User created successfully"));
+      res.status(201).json(successResponse(dbToApi(newUser), 'User created successfully'));
     } catch (error: any) {
-      if (error.code === "ER_DUP_ENTRY") {
-        res.status(409).json(errorResponse("CONFLICT", "Email already exists"));
+      if (error.code === 'ER_DUP_ENTRY') {
+        res.status(409).json(errorResponse('CONFLICT', 'Email already exists'));
         return;
       }
 
-      console.error("[Users v2] Create error:", error);
-      res.status(500).json(errorResponse("SERVER_ERROR", "Failed to create user"));
+      console.error('[Users v2] Create error:', error);
+      res.status(500).json(errorResponse('SERVER_ERROR', 'Failed to create user'));
     }
   },
 };
@@ -187,14 +189,17 @@ export const usersController = {
 
 ```typescript
 // backend/src/routes/v2/index.ts
-import express, { Router } from "express";
-import authRoutes from "./auth";
-import usersRoutes from "./users"; // Add this
+import express, { Router } from 'express';
+
+import authRoutes from './auth';
+import usersRoutes from './users';
+
+// Add this
 
 const router: Router = express.Router();
 
-router.use("/auth", authRoutes);
-router.use("/users", usersRoutes); // Add this
+router.use('/auth', authRoutes);
+router.use('/users', usersRoutes); // Add this
 
 export default router;
 ```
@@ -220,7 +225,7 @@ export default router;
 
 ```typescript
 // In validation
-(query("page").optional().isInt({ min: 1 }), query("limit").optional().isInt({ min: 1, max: 100 }));
+(query('page').optional().isInt({ min: 1 }), query('limit').optional().isInt({ min: 1, max: 100 }));
 
 // In controller
 const page = parseInt(req.query.page as string) || 1;
@@ -281,12 +286,12 @@ Create integration tests for each endpoint:
 
 ```typescript
 // backend/src/routes/__tests__/users-v2.test.ts
-describe("Users API v2", () => {
-  describe("GET /api/v2/users", () => {
-    it("should return paginated users list", async () => {
+describe('Users API v2', () => {
+  describe('GET /api/v2/users', () => {
+    it('should return paginated users list', async () => {
       const response = await request(app)
-        .get("/api/v2/users")
-        .set("Authorization", `Bearer ${validToken}`)
+        .get('/api/v2/users')
+        .set('Authorization', `Bearer ${validToken}`)
         .query({ page: 1, limit: 10 });
 
       expect(response.status).toBe(200);
@@ -304,12 +309,12 @@ describe("Users API v2", () => {
       });
     });
 
-    it("should enforce authentication", async () => {
-      const response = await request(app).get("/api/v2/users");
+    it('should enforce authentication', async () => {
+      const response = await request(app).get('/api/v2/users');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
-      expect(response.body.error.code).toBe("UNAUTHORIZED");
+      expect(response.body.error.code).toBe('UNAUTHORIZED');
     });
   });
 });
@@ -327,7 +332,7 @@ describe("Users API v2", () => {
 
 - [API Standards](./API-WORKSHOP-MATERIALS/workshop-decisions.md)
 - [Migration Guide](./MIGRATION-GUIDE-V1-TO-V2.md)
-- [TypeScript Architecture](../../backend/TYPESCRIPT-ARCHITECTURE-GUIDE.md)
+- [TypeScript Architecture](../../docs/TYPESCRIPT-STANDARDS.md)
 - [Response Types](../../backend/src/utils/apiResponse.ts)
 
 ## 🎯 Next Steps

@@ -11,6 +11,7 @@ interface Window {
   showError?: (message: string) => void;
   showInfo?: (message: string) => void;
   showSection?: (section: string) => void;
+  FEATURE_FLAGS?: Record<string, boolean | undefined>;
 }
 
 // Declare global functions
@@ -26,6 +27,35 @@ declare function showError(message: string): void;
 declare function showInfo(message: string): void;
 declare function showSection(sectionId: string): void;
 declare function parseJwt(token: string): JWTPayload;
+
+// Toastify type declarations
+interface ToastifyOptions {
+  text: string;
+  duration?: number;
+  gravity?: 'top' | 'bottom';
+  position?: 'left' | 'center' | 'right';
+  backgroundColor?: string;
+  stopOnFocus?: boolean;
+  close?: boolean;
+  className?: string;
+  style?: Record<string, string>;
+  onClick?: () => void;
+  callback?: () => void;
+  escapeMarkup?: boolean;
+  oldestFirst?: boolean;
+  newWindow?: boolean;
+  offset?: { x?: number | string; y?: number | string };
+  avatar?: string;
+  selector?: string | HTMLElement;
+  destination?: string;
+}
+
+interface ToastifyInstance {
+  showToast: () => void;
+  hideToast: () => void;
+}
+
+declare function Toastify(options: ToastifyOptions): ToastifyInstance;
 
 // Module declarations for libraries without types
 declare module 'marked' {

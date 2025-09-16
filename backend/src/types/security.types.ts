@@ -2,8 +2,7 @@
  * Security-specific Type Definitions
  * Types for authentication, authorization, and security middleware
  */
-
-import { Request } from "express";
+import { Request } from 'express';
 
 // Rate Limiter Configuration
 export interface RateLimiterConfig {
@@ -20,13 +19,13 @@ export interface RateLimiterConfig {
 
 // Rate Limiter Types
 export enum RateLimiterType {
-  PUBLIC = "public",
-  AUTH = "auth",
-  AUTHENTICATED = "authenticated",
-  ADMIN = "admin",
-  API = "api",
-  UPLOAD = "upload",
-  DOWNLOAD = "download",
+  PUBLIC = 'public',
+  AUTH = 'auth',
+  AUTHENTICATED = 'authenticated',
+  ADMIN = 'admin',
+  API = 'api',
+  UPLOAD = 'upload',
+  DOWNLOAD = 'download',
 }
 
 // Rate Limiter Options per Type
@@ -64,16 +63,12 @@ export interface Permission {
   conditions?: Record<string, unknown>;
 }
 
-export interface RolePermissions {
-  [role: string]: Permission[];
-}
+export type RolePermissions = Record<string, Permission[]>;
 
 // Security Headers Configuration
 export interface SecurityHeadersConfig {
   contentSecurityPolicy?: {
-    directives: {
-      [directive: string]: string[];
-    };
+    directives: Record<string, string[]>;
   };
   hsts?: {
     maxAge: number;
@@ -83,9 +78,7 @@ export interface SecurityHeadersConfig {
   noSniff?: boolean;
   xssFilter?: boolean;
   referrerPolicy?: string;
-  permissionsPolicy?: {
-    [feature: string]: string[];
-  };
+  permissionsPolicy?: Record<string, string[]>;
 }
 
 // Input Validation Types
@@ -95,9 +88,7 @@ export interface ValidationRule {
   message?: string;
 }
 
-export interface ValidationSchema {
-  [endpoint: string]: ValidationRule[];
-}
+export type ValidationSchema = Record<string, ValidationRule[]>;
 
 // API Key Types
 export interface ApiKey {
@@ -122,7 +113,7 @@ export interface AuditLogEntry {
   resourceId?: number | string;
   ipAddress: string;
   userAgent: string;
-  status: "success" | "failure";
+  status: 'success' | 'failure';
   details?: Record<string, unknown>;
   timestamp: Date;
 }
@@ -138,15 +129,15 @@ export interface TwoFactorSecret {
 
 // Security Event Types
 export enum SecurityEventType {
-  LOGIN_SUCCESS = "login_success",
-  LOGIN_FAILURE = "login_failure",
-  LOGOUT = "logout",
-  PASSWORD_CHANGE = "password_change",
-  PERMISSION_DENIED = "permission_denied",
-  RATE_LIMIT_EXCEEDED = "rate_limit_exceeded",
-  SUSPICIOUS_ACTIVITY = "suspicious_activity",
-  TOKEN_EXPIRED = "token_expired",
-  TOKEN_INVALID = "token_invalid",
+  LOGIN_SUCCESS = 'login_success',
+  LOGIN_FAILURE = 'login_failure',
+  LOGOUT = 'logout',
+  PASSWORD_CHANGE = 'password_change',
+  PERMISSION_DENIED = 'permission_denied',
+  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
+  SUSPICIOUS_ACTIVITY = 'suspicious_activity',
+  TOKEN_EXPIRED = 'token_expired',
+  TOKEN_INVALID = 'token_invalid',
 }
 
 export interface SecurityEvent {
@@ -184,9 +175,7 @@ export interface SecurityMiddlewareOptions {
 }
 
 // Rate Limiter Middleware Type
-export type RateLimitMiddleware = ReturnType<
-  typeof import("express-rate-limit").default
->;
+export type RateLimitMiddleware = ReturnType<typeof import('express-rate-limit').default>;
 
 // Extended Rate Limiter with properties
 export interface RateLimiterMiddleware {
@@ -204,28 +193,24 @@ export interface RateLimiterMiddleware {
 export function isSecurityEvent(event: unknown): event is SecurityEvent {
   return (
     event !== null &&
-    typeof event === "object" &&
-    "type" in event &&
-    "ipAddress" in event &&
-    "timestamp" in event &&
-    typeof event.type === "string" &&
-    Object.values(SecurityEventType).includes(
-      event.type as SecurityEventType,
-    ) &&
-    typeof event.ipAddress === "string" &&
+    typeof event === 'object' &&
+    'type' in event &&
+    'ipAddress' in event &&
+    'timestamp' in event &&
+    typeof event.type === 'string' &&
+    Object.values(SecurityEventType).includes(event.type as SecurityEventType) &&
+    typeof event.ipAddress === 'string' &&
     event.timestamp instanceof Date
   );
 }
 
-export function hasPermission(
-  userPermissions: string[],
-  requiredPermission: string,
-): boolean {
+export function hasPermission(userPermissions: string[], requiredPermission: string): boolean {
   return (
     userPermissions.includes(requiredPermission) ||
-    userPermissions.includes("*") ||
+    userPermissions.includes('*') ||
     userPermissions.some((p) => {
-      const regex = new RegExp("^" + p.replace(/\*/g, ".*") + "$");
+      // eslint-disable-next-line security/detect-non-literal-regexp -- Pattern is derived from controlled user permission strings, not user input
+      const regex = new RegExp('^' + p.replace(/\*/g, '.*') + '$');
       return regex.test(requiredPermission);
     })
   );

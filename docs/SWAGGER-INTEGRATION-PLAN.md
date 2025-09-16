@@ -35,33 +35,34 @@ pnpm add -D @types/swagger-jsdoc @types/swagger-ui-express
 **Neue Datei:** `backend/src/config/swagger.ts`
 
 ```typescript
-import swaggerJsdoc from "swagger-jsdoc";
-import { version } from "../../package.json";
+import swaggerJsdoc from 'swagger-jsdoc';
+
+import { version } from '../../package.json';
 
 const options: swaggerJsdoc.Options = {
   definition: {
-    openapi: "3.0.0",
+    openapi: '3.0.0',
     info: {
-      title: "Assixx API Documentation",
+      title: 'Assixx API Documentation',
       version,
-      description: "Multi-Tenant SaaS Platform für Industrieunternehmen",
+      description: 'Multi-Tenant SaaS Platform für Industrieunternehmen',
       contact: {
-        name: "SCS-Technik",
-        email: "support@scs-technik.de",
+        name: 'SCS-Technik',
+        email: 'support@scs-technik.de',
       },
     },
     servers: [
       {
-        url: process.env.NODE_ENV === "production" ? "https://api.assixx.com/api" : "http://localhost:3000/api",
-        description: process.env.NODE_ENV === "production" ? "Production" : "Development",
+        url: process.env.NODE_ENV === 'production' ? 'https://api.assixx.com/api' : 'http://localhost:3000/api',
+        description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
       },
     ],
     components: {
       securitySchemes: {
         bearerAuth: {
-          type: "http",
-          scheme: "bearer",
-          bearerFormat: "JWT",
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
         },
       },
       schemas: {}, // Wird mit Model-Definitionen gefüllt
@@ -73,10 +74,10 @@ const options: swaggerJsdoc.Options = {
     ],
   },
   apis: [
-    "./backend/src/routes/*.ts",
-    "./backend/src/routes/**/*.ts",
-    "./backend/src/models/*.ts",
-    "./backend/src/types/*.ts",
+    './backend/src/routes/*.ts',
+    './backend/src/routes/**/*.ts',
+    './backend/src/models/*.ts',
+    './backend/src/types/*.ts',
   ],
 };
 
@@ -87,25 +88,26 @@ export const swaggerSpec = swaggerJsdoc(options);
 
 ```typescript
 // backend/src/app.ts
-import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./config/swagger";
+import swaggerUi from 'swagger-ui-express';
+
+import { swaggerSpec } from './config/swagger';
 
 // Nach Security-Middleware, vor Routes
 app.use(
-  "/api-docs",
+  '/api-docs',
   (req, res, next) => {
     // Nur in Development oder für Admins
-    if (process.env.NODE_ENV === "development" || req.user?.role === "admin" || req.user?.role === "root") {
+    if (process.env.NODE_ENV === 'development' || req.user?.role === 'admin' || req.user?.role === 'root') {
       next();
     } else {
-      res.status(403).json({ error: "Access denied" });
+      res.status(403).json({ error: 'Access denied' });
     }
   },
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec, {
-    customCss: ".swagger-ui .topbar { display: none }",
-    customSiteTitle: "Assixx API Docs",
-    customfavIcon: "/favicon.ico",
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'Assixx API Docs',
+    customfavIcon: '/favicon.ico',
   }),
 );
 ```
@@ -118,14 +120,14 @@ app.use(
 // backend/src/routes/auth.ts
 
 /**
- * @swagger
+
  * tags:
  *   name: Authentication
  *   description: User authentication and authorization
  */
 
 /**
- * @swagger
+
  * /auth/login:
  *   post:
  *     summary: User login
@@ -166,10 +168,10 @@ app.use(
  *       429:
  *         description: Too many login attempts
  */
-router.post("/login", authLimiter, authController.login);
+router.post('/login', authLimiter, authController.login);
 
 /**
- * @swagger
+
  * /auth/logout:
  *   post:
  *     summary: User logout
@@ -182,7 +184,7 @@ router.post("/login", authLimiter, authController.login);
  *       401:
  *         description: Not authenticated
  */
-router.post("/logout", authenticateToken, authController.logout);
+router.post('/logout', authenticateToken, authController.logout);
 ```
 
 #### 2.2 Model Schemas definieren
@@ -191,7 +193,7 @@ router.post("/logout", authenticateToken, authController.logout);
 // backend/src/models/user.ts
 
 /**
- * @swagger
+
  * components:
  *   schemas:
  *     User:
@@ -235,13 +237,13 @@ router.post("/logout", authenticateToken, authController.logout);
 
 ### Phase 3: Feature-Routes dokumentieren (2-3 Std)
 
-#### Priorität nach Nutzungshäufigkeit:
+#### Priorität nach Nutzungshäufigkeit
 
 1. **Dashboard/Stats Routes**
 
 ```typescript
 /**
- * @swagger
+
  * /admin/dashboard-stats:
  *   get:
  *     summary: Get admin dashboard statistics
@@ -281,7 +283,7 @@ router.post("/logout", authenticateToken, authController.logout);
 
 ```typescript
 /**
- * @swagger
+
  * /documents:
  *   post:
  *     summary: Upload a new document
@@ -318,7 +320,7 @@ router.post("/logout", authenticateToken, authController.logout);
 
 ```typescript
 /**
- * @swagger
+
  * components:
  *   schemas:
  *     Error:
@@ -361,10 +363,10 @@ const swaggerOptions = {
     .swagger-ui .info { margin-bottom: 20px }
     .swagger-ui .scheme-container { display: none }
   `,
-  customSiteTitle: "Assixx API Documentation",
-  customfavIcon: "/favicon.ico",
+  customSiteTitle: 'Assixx API Documentation',
+  customfavIcon: '/favicon.ico',
   swaggerOptions: {
-    docExpansion: "none",
+    docExpansion: 'none',
     filter: true,
     showRequestDuration: true,
     tryItOutEnabled: true,
@@ -418,17 +420,17 @@ jobs:
 
 **Gesamt: 1-2 Tage für vollständige Integration**
 
-### ✅ Bisher abgeschlossen:
+### ✅ Bisher abgeschlossen
 
-#### Phase 1 (Komplett):
+#### Phase 1 (Komplett)
 
 - ✅ Dependencies installiert (swagger-jsdoc, swagger-ui-express)
 - ✅ Swagger-Konfiguration erstellt (`backend/src/config/swagger.ts`)
 - ✅ Swagger UI in app.ts eingebunden
-- ✅ Swagger UI erreichbar unter http://localhost:3000/api-docs
-- ✅ JSON Spec erreichbar unter http://localhost:3000/api-docs/swagger.json
+- ✅ Swagger UI erreichbar unter <http://localhost:3000/api-docs>
+- ✅ JSON Spec erreichbar unter <http://localhost:3000/api-docs/swagger.json>
 
-#### Phase 2 (Teilweise):
+#### Phase 2 (Teilweise)
 
 - ✅ Authentication Routes dokumentiert:
   - `/auth/login` - User login mit Fingerprint-Support
@@ -471,6 +473,6 @@ jobs:
 
 ---
 
-**Erstellt:** 23.06.2025  
-**Status:** Bereit zur Implementierung  
+**Erstellt:** 23.06.2025
+**Status:** Bereit zur Implementierung
 **Verantwortlich:** Development Team

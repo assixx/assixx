@@ -2,43 +2,48 @@
 
 /* Department Badge Styles */
 .user-departments-badge {
-  margin-top: 8px;
   display: flex;
-  align-items: center;
   gap: 6px;
+  align-items: center;
+
+  margin-top: 8px;
+
   font-size: 0.75rem;
 }
 
 .user-departments-badge .badge {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
   padding: 4px 12px;
+  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 12px;
+
   font-size: 0.75rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  background: rgb(255 255 255 / 10%);
+  backdrop-filter: blur(10px);
 }
 
 .user-departments-badge .badge.loading {
-  opacity: 0.6;
+  opacity: 60%;
+
   /* animation: pulse 2s infinite; */
 }
 
 .user-departments-badge .badge.badge-warning {
-  background: rgba(255, 193, 7, 0.2);
+  border-color: rgb(255 193 7 / 30%);
   color: #ffc107;
-  border-color: rgba(255, 193, 7, 0.3);
+  background: rgb(255 193 7 / 20%);
 }
 
 .user-departments-badge .badge.badge-info {
-  background: rgba(0, 123, 255, 0.2);
+  border-color: rgb(0 123 255 / 30%);
   color: #007bff;
-  border-color: rgba(0, 123, 255, 0.3);
+  background: rgb(0 123 255 / 20%);
 }
 
 .user-departments-badge .badge.badge-success {
-  background: rgba(40, 167, 69, 0.2);
+  border-color: rgb(40 167 69 / 30%);
   color: #28a745;
-  border-color: rgba(40, 167, 69, 0.3);
+  background: rgb(40 167 69 / 20%);
 }
 
 /* @keyframes pulse {
@@ -58,13 +63,15 @@
 .user-info,
 .header .header-actions #user-info {
   display: flex !important;
-  align-items: center !important;
   gap: 0.4rem !important;
+  align-items: center !important;
+
   padding: 0.2rem 0.5rem !important;
+  border: none !important;
+  border-radius: 0 !important;
+
   background: transparent !important;
   backdrop-filter: none !important;
-  border-radius: 0 !important;
-  border: none !important;
 }
 
 #user-info:hover,
@@ -80,19 +87,22 @@
 .user-info::after,
 .header .header-actions #user-info::before,
 .header .header-actions #user-info::after {
-  display: none !important;
   content: none !important;
+  display: none !important;
 }
 
 /* Profile picture styling - only target the avatar */
 #user-avatar,
 .header .header-actions #user-info #user-avatar {
   display: block !important;
+
   width: 35px !important;
   height: 35px !important;
+
+  /* border: 1px solid rgb(255 255 255 / 6%) !important; */
   border-radius: 50% !important;
+
   object-fit: cover !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Initials avatar styling for header */
@@ -101,94 +111,36 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background-color: #1b8e01 !important;
-  color: white !important;
+
   font-size: 14px !important;
-  font-weight: bold !important;
+  font-weight: 700 !important;
   line-height: 1 !important;
+  color: #fff !important;
+
+  background-color: #1b8e01 !important;
 }
 
-/* Hide ALL images in user-info except the user-avatar */
-#user-info img,
-.user-info img,
-.header .header-actions #user-info img {
-  display: none !important;
-}
-
-/* Show only the user-avatar */
+/* Show the user-avatar and its image */
 #user-info #user-avatar,
 .user-info #user-avatar,
 .header .header-actions #user-info #user-avatar {
   display: block !important;
 }
 
-/* User name styling */
-#user-name,
-.user-name,
-.header .header-actions #user-info #user-name {
-  font-size: 0.9rem !important;
-  font-weight: 800 !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  margin: 0 !important;
-  letter-spacing: 0.1px !important;
+/* Ensure avatar images are visible */
+#user-info #user-avatar img,
+.user-info #user-avatar img,
+.header .header-actions #user-info #user-avatar img {
+  display: block !important;
 }
 
-/* Logout button with awesome gradient style like Register button */
-#logout-btn,
-.logout-btn,
-.btn-logout,
-.header .header-actions #logout-btn {
-  background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
-  color: white !important;
-  border: none !important;
-  padding: 0.3rem 0.8rem !important;
-  border-radius: 6px !important;
-  font-size: 0.9rem !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0.3rem !important;
-  text-decoration: none !important;
-  position: relative !important;
-  overflow: hidden !important;
-  box-shadow: 0 2px 8px rgba(198, 40, 40, 0.4) !important;
-}
-
-/* Shine effect on hover */
-#logout-btn::before,
-.logout-btn::before,
-.btn-logout::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-}
-
-#logout-btn:hover,
-.logout-btn:hover,
-.btn-logout:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 3px 12px rgba(244, 67, 54, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-#logout-btn:hover::before,
-.logout-btn:hover::before,
-.btn-logout:hover::before {
-  left: 100%;
-}
+/* Logout button styles moved to dashboard-theme.css to prevent conflicts */
 
 /* Header actions container */
 .header-actions {
   display: flex;
-  align-items: center;
   gap: 1rem;
+  align-items: center;
 }
 
 /* Make the entire header more compact if needed */
@@ -196,16 +148,8 @@
   margin-left: auto;
 }
 
-/* Icon inside logout button */
-#logout-btn i,
-.logout-btn i,
-.btn-logout i,
-.header .header-actions #logout-btn i {
-  font-size: 1rem !important;
-}
-
 /* Responsive adjustments */
-@media (max-width: 768px) {
+@media (width <= 768px) {
   #user-info,
   .user-info {
     padding: 0.4rem 0.75rem;
@@ -216,10 +160,5 @@
     display: none; /* Hide name on mobile for space */
   }
 
-  #logout-btn,
-  .logout-btn,
-  .btn-logout {
-    padding: 0.4rem 1rem;
-    font-size: 0.8rem;
-  }
+  /* Logout button responsive styles moved to dashboard-theme.css */
 }

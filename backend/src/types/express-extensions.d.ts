@@ -1,6 +1,5 @@
 // Express Request Extensions Type Definitions
-
-import { TenantInfo } from "./tenant.types";
+import { TenantInfo } from './tenant.types';
 
 declare global {
   namespace Express {
@@ -16,9 +15,7 @@ declare global {
 
       // File Upload
       file?: Express.Multer.File;
-      files?:
-        | Express.Multer.File[]
-        | { [fieldname: string]: Express.Multer.File[] };
+      files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] };
 
       // Feature Flags
       features?: string[];

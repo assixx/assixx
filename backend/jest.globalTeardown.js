@@ -3,18 +3,17 @@
  * Runs after ALL tests are complete
  * Ensures test data is ALWAYS cleaned up
  */
-
-import { createPool } from "mysql2/promise";
+import { createPool } from 'mysql2/promise';
 
 export default async function globalTeardown() {
-  console.log("\n🧹 Running global test cleanup...");
+  console.info('\n🧹 Running global test cleanup...');
 
   const db = createPool({
-    host: process.env.DB_HOST ?? "localhost",
-    port: parseInt(process.env.DB_PORT ?? "3307"),
-    user: process.env.DB_USER ?? "assixx_user",
-    password: process.env.DB_PASSWORD ?? "AssixxP@ss2025!",
-    database: process.env.DB_NAME ?? "main",
+    host: process.env.DB_HOST ?? 'localhost',
+    port: parseInt(process.env.DB_PORT ?? '3307'),
+    user: process.env.DB_USER ?? 'assixx_user',
+    password: process.env.DB_PASSWORD ?? 'AssixxP@ss2025!',
+    database: process.env.DB_NAME ?? 'main',
     waitForConnections: true,
     connectionLimit: 1,
   });
@@ -46,11 +45,9 @@ export default async function globalTeardown() {
       `SELECT COUNT(*) as count FROM tenants WHERE subdomain LIKE '__AUTOTEST__%'`,
     );
 
-    console.log(
-      `✅ Global cleanup complete. Remaining test tenants: ${remaining[0].count}`,
-    );
+    console.info(`✅ Global cleanup complete. Remaining test tenants: ${remaining[0].count}`);
   } catch (error) {
-    console.error("❌ Global cleanup failed:", error);
+    console.error('❌ Global cleanup failed:', error);
   } finally {
     await db.end();
   }

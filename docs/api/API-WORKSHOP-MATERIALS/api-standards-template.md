@@ -211,23 +211,23 @@ X-Request-ID: <uuid>
 ```javascript
 const ERROR_CODES = {
   // Authentication & Authorization
-  AUTH_INVALID_CREDENTIALS: "Ungültige Anmeldedaten",
-  AUTH_TOKEN_EXPIRED: "Token abgelaufen",
-  AUTH_INSUFFICIENT_PERMISSIONS: "Keine Berechtigung",
+  AUTH_INVALID_CREDENTIALS: 'Ungültige Anmeldedaten',
+  AUTH_TOKEN_EXPIRED: 'Token abgelaufen',
+  AUTH_INSUFFICIENT_PERMISSIONS: 'Keine Berechtigung',
 
   // Validation
-  VALIDATION_ERROR: "Validierungsfehler",
-  VALIDATION_REQUIRED_FIELD: "Pflichtfeld fehlt",
-  VALIDATION_INVALID_FORMAT: "Ungültiges Format",
+  VALIDATION_ERROR: 'Validierungsfehler',
+  VALIDATION_REQUIRED_FIELD: 'Pflichtfeld fehlt',
+  VALIDATION_INVALID_FORMAT: 'Ungültiges Format',
 
   // Business Logic
-  RESOURCE_NOT_FOUND: "Ressource nicht gefunden",
-  RESOURCE_ALREADY_EXISTS: "Ressource existiert bereits",
-  OPERATION_NOT_ALLOWED: "Operation nicht erlaubt",
+  RESOURCE_NOT_FOUND: 'Ressource nicht gefunden',
+  RESOURCE_ALREADY_EXISTS: 'Ressource existiert bereits',
+  OPERATION_NOT_ALLOWED: 'Operation nicht erlaubt',
 
   // System
-  INTERNAL_SERVER_ERROR: "Interner Serverfehler",
-  SERVICE_UNAVAILABLE: "Service nicht verfügbar",
+  INTERNAL_SERVER_ERROR: 'Interner Serverfehler',
+  SERVICE_UNAVAILABLE: 'Service nicht verfügbar',
 };
 ```
 
@@ -403,6 +403,6 @@ Access-Control-Allow-Headers: Content-Type, Authorization
 
 ---
 
-**Version:** 1.0  
-**Gültig ab:** [Datum nach Workshop]  
+**Version:** 1.0
+**Gültig ab:** [Datum nach Workshop]
 **Nächste Review:** [Datum + 6 Monate]

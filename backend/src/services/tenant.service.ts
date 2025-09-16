@@ -1,15 +1,15 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Tenant Service
  * Handles tenant-related business logic
  */
+import { Pool } from 'mysql2/promise';
 
-import { Pool } from "mysql2/promise";
-
-import Tenant from "../models/tenant";
+import Tenant from '../models/tenant';
 import type {
   TenantCreateData as ModelTenantCreateData,
   TenantCreateResult,
-} from "../models/tenant";
+} from '../models/tenant';
 
 // Interfaces
 interface TenantData {
@@ -19,7 +19,7 @@ interface TenantData {
   company_email: string;
   company_phone?: string | null;
   country: string;
-  status: "active" | "inactive" | "suspended";
+  status: 'active' | 'inactive' | 'suspended';
   trial_ends_at?: Date | null;
   subscription_plan?: string | null;
   subscription_ends_at?: Date | null;
@@ -29,7 +29,7 @@ interface TenantData {
 }
 
 interface TenantFilters {
-  status?: "active" | "inactive" | "suspended";
+  status?: 'active' | 'inactive' | 'suspended';
   search?: string;
   limit?: number;
   offset?: number;
@@ -42,89 +42,92 @@ interface TenantUpdateData {
   company_email?: string;
   company_phone?: string | null;
   country?: string;
-  status?: "active" | "inactive" | "suspended";
+  status?: 'active' | 'inactive' | 'suspended';
   trial_ends_at?: Date | string | null;
   subscription_plan?: string | null;
   subscription_ends_at?: Date | string | null;
   max_users?: number;
 }
 
+/**
+ *
+ */
 class TenantService {
   /**
    * Holt alle Tenant Einträge für einen Tenant
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: TenantFilters = {},
-  ): Promise<TenantData[]> {
+  getAll(_tenantDb: Pool, _filters: TenantFilters = {}): TenantData[] {
     try {
       // TODO: Tenant.getAll doesn't exist in the model
-      console.warn("Tenant.getAll is not implemented");
+      console.warn('Tenant.getAll is not implemented');
       return [];
-    } catch (error) {
-      console.error("Error in TenantService.getAll:", error);
+    } catch (error: unknown) {
+      console.error('Error in TenantService.getAll:', error);
       throw error;
     }
   }
 
   /**
    * Holt einen Tenant Eintrag per ID
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async getById(_tenantDb: Pool, _id: number): Promise<TenantData | null> {
+  getById(_tenantDb: Pool, _id: number): TenantData | null {
     try {
       // TODO: Tenant.getById doesn't exist in the model
-      console.warn("Tenant.getById is not implemented");
+      console.warn('Tenant.getById is not implemented');
       return null;
-    } catch (error) {
-      console.error("Error in TenantService.getById:", error);
+    } catch (error: unknown) {
+      console.error('Error in TenantService.getById:', error);
       throw error;
     }
   }
 
   /**
    * Erstellt einen neuen Tenant Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
-  async create(
-    _tenantDb: Pool,
-    data: ModelTenantCreateData,
-  ): Promise<TenantCreateResult> {
+  async create(_tenantDb: Pool, data: ModelTenantCreateData): Promise<TenantCreateResult> {
     try {
-      const result = await Tenant.create(data);
-      return result;
-    } catch (error) {
-      console.error("Error in TenantService.create:", error);
+      return await Tenant.create(data);
+    } catch (error: unknown) {
+      console.error('Error in TenantService.create:', error);
       throw error;
     }
   }
 
   /**
    * Aktualisiert einen Tenant Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
-  async update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: TenantUpdateData,
-  ): Promise<TenantData | null> {
+  update(_tenantDb: Pool, _id: number, _data: TenantUpdateData): TenantData | null {
     try {
       // TODO: Tenant.update doesn't exist in the model
-      console.warn("Tenant.update is not implemented");
+      console.warn('Tenant.update is not implemented');
       return null;
-    } catch (error) {
-      console.error("Error in TenantService.update:", error);
+    } catch (error: unknown) {
+      console.error('Error in TenantService.update:', error);
       throw error;
     }
   }
 
   /**
    * Löscht einen Tenant Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
+  delete(_tenantDb: Pool, _id: number): boolean {
     try {
       // TODO: Tenant.delete doesn't exist in the model
-      console.warn("Tenant.delete is not implemented");
+      console.warn('Tenant.delete is not implemented');
       return false;
-    } catch (error) {
-      console.error("Error in TenantService.delete:", error);
+    } catch (error: unknown) {
+      console.error('Error in TenantService.delete:', error);
       throw error;
     }
   }

@@ -2,18 +2,16 @@
  * Role Switch API v2 Routes
  * Enhanced security and standardized responses
  */
+import { Router } from 'express';
 
-import { Router } from "express";
-
-import { securityV2 } from "../../../middleware/v2/security.middleware.js";
-import { typed } from "../../../utils/routeHandlers.js";
-
-import { RoleSwitchController } from "./role-switch.controller.js";
+import { securityV2 } from '../../../middleware/v2/security.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { RoleSwitchController } from './role-switch.controller.js';
 
 const router = Router();
 
 /**
- * @swagger
+
  * /api/v2/role-switch/to-employee:
  *   post:
  *     summary: Switch to employee view
@@ -28,13 +26,13 @@ const router = Router();
  *         description: Insufficient permissions
  */
 router.post(
-  "/to-employee",
+  '/to-employee',
   ...securityV2.user(), // Any authenticated user, but service checks for admin/root
   typed.auth(RoleSwitchController.switchToEmployee),
 );
 
 /**
- * @swagger
+
  * /api/v2/role-switch/to-original:
  *   post:
  *     summary: Switch back to original role
@@ -49,13 +47,13 @@ router.post(
  *         description: Insufficient permissions
  */
 router.post(
-  "/to-original",
+  '/to-original',
   ...securityV2.user(),
   typed.auth(RoleSwitchController.switchToOriginal),
 );
 
 /**
- * @swagger
+
  * /api/v2/role-switch/root-to-admin:
  *   post:
  *     summary: Switch root to admin view
@@ -69,14 +67,10 @@ router.post(
  *       403:
  *         description: Only root users can use this endpoint
  */
-router.post(
-  "/root-to-admin",
-  ...securityV2.user(),
-  typed.auth(RoleSwitchController.rootToAdmin),
-);
+router.post('/root-to-admin', ...securityV2.user(), typed.auth(RoleSwitchController.rootToAdmin));
 
 /**
- * @swagger
+
  * /api/v2/role-switch/status:
  *   get:
  *     summary: Get role switch status
@@ -88,10 +82,6 @@ router.post(
  *       200:
  *         description: Current role switch status
  */
-router.get(
-  "/status",
-  ...securityV2.user(),
-  typed.auth(RoleSwitchController.getStatus),
-);
+router.get('/status', ...securityV2.user(), typed.auth(RoleSwitchController.getStatus));
 
 export default router;

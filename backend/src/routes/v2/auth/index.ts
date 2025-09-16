@@ -1,24 +1,22 @@
 /**
  * Auth API v2 Routes
- * @swagger
+
  * tags:
  *   name: Auth v2
  *   description: Authentication API v2 with improved standards
  */
+import express, { Router } from 'express';
 
-import express, { Router } from "express";
-
-import { rateLimiter } from "../../../middleware/rateLimiter";
-import { authenticateV2 } from "../../../middleware/v2/auth.middleware";
-import { typed } from "../../../utils/routeHandlers";
-
-import { authController } from "./auth.controller";
-import { authValidation } from "./auth.validation";
+import { rateLimiter } from '../../../middleware/rateLimiter';
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
+import { typed } from '../../../utils/routeHandlers';
+import { authController } from './auth.controller';
+import { authValidation } from './auth.validation';
 
 const router: Router = express.Router();
 
 /**
- * @swagger
+
  * /api/v2/auth/login:
  *   post:
  *     summary: User login
@@ -37,7 +35,7 @@ const router: Router = express.Router();
  *               email:
  *                 type: string
  *                 format: email
- *                 example: user@example.com
+ *                 example: user\@example.com
  *               password:
  *                 type: string
  *                 format: password
@@ -74,15 +72,10 @@ const router: Router = express.Router();
  *                         role:
  *                           type: string
  */
-router.post(
-  "/login",
-  rateLimiter.auth,
-  authValidation.login,
-  typed.body(authController.login),
-);
+router.post('/login', rateLimiter.auth, authValidation.login, typed.body(authController.login));
 
 /**
- * @swagger
+
  * /api/v2/auth/register:
  *   post:
  *     summary: Register new user
@@ -118,14 +111,14 @@ router.post(
  *                 default: employee
  */
 router.post(
-  "/register",
+  '/register',
   authenticateV2,
   authValidation.register,
   typed.body(authController.register),
 );
 
 /**
- * @swagger
+
  * /api/v2/auth/logout:
  *   post:
  *     summary: User logout
@@ -137,10 +130,10 @@ router.post(
  *       200:
  *         description: Logout successful
  */
-router.post("/logout", authenticateV2, typed.auth(authController.logout));
+router.post('/logout', authenticateV2, typed.auth(authController.logout));
 
 /**
- * @swagger
+
  * /api/v2/auth/refresh:
  *   post:
  *     summary: Refresh access token
@@ -162,14 +155,14 @@ router.post("/logout", authenticateV2, typed.auth(authController.logout));
  *         description: Token refreshed successfully
  */
 router.post(
-  "/refresh",
+  '/refresh',
   rateLimiter.auth,
   authValidation.refresh,
   typed.body(authController.refresh),
 );
 
 /**
- * @swagger
+
  * /api/v2/auth/verify:
  *   get:
  *     summary: Verify current token
@@ -181,10 +174,10 @@ router.post(
  *       200:
  *         description: Token is valid
  */
-router.get("/verify", authenticateV2, typed.auth(authController.verify));
+router.get('/verify', authenticateV2, typed.auth(authController.verify));
 
 /**
- * @swagger
+
  * /api/v2/auth/me:
  *   get:
  *     summary: Get current user
@@ -196,6 +189,6 @@ router.get("/verify", authenticateV2, typed.auth(authController.verify));
  *       200:
  *         description: User information retrieved
  */
-router.get("/me", authenticateV2, typed.auth(authController.getCurrentUser));
+router.get('/me', authenticateV2, typed.auth(authController.getCurrentUser));
 
 export default router;

@@ -2,9 +2,8 @@
  * Feature Service
  * Handles feature-related business logic
  */
-
 // import Feature from '../models/feature';
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 // Interfaces
 interface FeatureData {
@@ -37,80 +36,87 @@ interface FeatureUpdateData {
   enabled_by?: number | null;
 }
 
+/**
+ *
+ */
 class FeatureService {
   /**
    * Holt alle Feature Einträge für einen Tenant
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: FeatureFilters = {},
-  ): Promise<FeatureData[]> {
+  getAll(_tenantDb: Pool, _filters: FeatureFilters = {}): FeatureData[] {
     try {
       // TODO: Feature.getAll doesn't exist in the model
-      console.warn("Feature.getAll is not implemented");
+      console.warn('Feature.getAll is not implemented');
       return [];
-    } catch (error) {
-      console.error("Error in FeatureService.getAll:", error);
+    } catch (error: unknown) {
+      console.error('Error in FeatureService.getAll:', error);
       throw error;
     }
   }
 
   /**
    * Holt einen Feature Eintrag per ID
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async getById(_tenantDb: Pool, _id: number): Promise<FeatureData | null> {
+  getById(_tenantDb: Pool, _id: number): FeatureData | null {
     try {
       // TODO: Feature.getById doesn't exist in the model
-      console.warn("Feature.getById is not implemented");
+      console.warn('Feature.getById is not implemented');
       return null;
-    } catch (error) {
-      console.error("Error in FeatureService.getById:", error);
+    } catch (error: unknown) {
+      console.error('Error in FeatureService.getById:', error);
       throw error;
     }
   }
 
   /**
    * Erstellt einen neuen Feature Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
-  async create(_tenantDb: Pool, data: FeatureCreateData): Promise<FeatureData> {
+  create(_tenantDb: Pool, data: FeatureCreateData): FeatureData {
     try {
       // TODO: Feature.create doesn't exist in the model
-      console.warn("Feature.create is not implemented");
+      console.warn('Feature.create is not implemented');
       return { ...data, id: 0 } as FeatureData;
-    } catch (error) {
-      console.error("Error in FeatureService.create:", error);
+    } catch (error: unknown) {
+      console.error('Error in FeatureService.create:', error);
       throw error;
     }
   }
 
   /**
    * Aktualisiert einen Feature Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
-  async update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: FeatureUpdateData,
-  ): Promise<FeatureData | null> {
+  update(_tenantDb: Pool, _id: number, _data: FeatureUpdateData): FeatureData | null {
     try {
       // TODO: Feature.update doesn't exist in the model
-      console.warn("Feature.update is not implemented");
+      console.warn('Feature.update is not implemented');
       return null;
-    } catch (error) {
-      console.error("Error in FeatureService.update:", error);
+    } catch (error: unknown) {
+      console.error('Error in FeatureService.update:', error);
       throw error;
     }
   }
 
   /**
    * Löscht einen Feature Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
+  delete(_tenantDb: Pool, _id: number): boolean {
     try {
       // TODO: Feature.delete doesn't exist in the model
-      console.warn("Feature.delete is not implemented");
+      console.warn('Feature.delete is not implemented');
       return false;
-    } catch (error) {
-      console.error("Error in FeatureService.delete:", error);
+    } catch (error: unknown) {
+      console.error('Error in FeatureService.delete:', error);
       throw error;
     }
   }

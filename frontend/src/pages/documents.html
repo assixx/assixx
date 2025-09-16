@@ -20,7 +20,7 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
-    <meta http-equiv="refresh" content="0; url=/pages/documents-search.html" />
+    <script src="/feature-flags.js"></script>
     <!-- Dashboard Theme CSS -->
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
@@ -412,8 +412,8 @@
         transform: rotate(180deg);
       }
 
-      .dropdown-display svg {
-      }
+      /*.dropdown-display svg {
+      }*/
 
       .dropdown-options {
         position: absolute;
@@ -422,7 +422,6 @@
         right: 0;
         background: rgba(18, 18, 18, 0.98);
         backdrop-filter: var(--glass-backdrop);
-        -webkit-backdrop-filter: var(--glass-backdrop);
         border: var(--glass-border);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
@@ -452,7 +451,7 @@
         display: flex;
         gap: var(--spacing-xl);
         margin-bottom: var(--spacing-lg);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         background: var(--glass-bg);
         border-radius: var(--radius-sm);
         border: 1px solid rgba(255, 255, 255, 0.05);
@@ -530,7 +529,7 @@
 
       .modal-content {
         position: relative;
-        background: rgba(18, 18, 18, 0.95);
+        background: hsla(0, 0%, 8.2%, 0.84);
         backdrop-filter: var(--glass-backdrop);
         border: 1px solid hsla(0, 0%, 100%, 0.1);
         border-radius: var(--radius-md);
@@ -602,7 +601,7 @@
         background: var(--glass-bg);
         border: var(--glass-border);
         border-radius: var(--radius-md);
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-lg);
       }
 
@@ -893,7 +892,7 @@
         if (token) {
           try {
             const payload = JSON.parse(atob(token.split('.')[1]));
-            const dashboardLink = document.getElementById('dashboard-link');
+            const dashboardLink = document.querySelector('#dashboard-link');
             if (dashboardLink) {
               if (payload.role === 'employee' || payload.activeRole === 'employee') {
                 dashboardLink.href = '/employee-dashboard';
@@ -910,12 +909,12 @@
       });
     </script>
 
-    <!-- Redirect to new documents search page -->
-    <script>
-      // Fallback redirect if meta refresh doesn't work
-      window.location.href = '/documents-search';
-    </script>
+    <!-- Documents Script -->
+    <script type="module" src="/scripts/documents.ts"></script>
 
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
     <!-- Breadcrumb Component -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>

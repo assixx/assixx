@@ -1,4 +1,4 @@
-import { RowDataPacket } from "mysql2/promise";
+import { RowDataPacket } from 'mysql2/promise';
 
 // Features API v2 Types
 
@@ -7,7 +7,7 @@ export interface Feature {
   code: string;
   name: string;
   description?: string;
-  category: "basic" | "core" | "premium" | "enterprise";
+  category: 'basic' | 'core' | 'premium' | 'enterprise';
   price?: number;
   isActive: boolean;
   createdAt: string; // ISO string
@@ -20,7 +20,7 @@ export interface TenantFeature {
   featureId: number;
   featureCode: string;
   featureName: string;
-  status: "active" | "trial" | "disabled";
+  status: 'active' | 'trial' | 'disabled' | 'expired';
   isActive: boolean;
   validFrom?: string;
   validUntil?: string;
@@ -88,7 +88,7 @@ export interface DbFeature extends RowDataPacket {
   code: string;
   name: string;
   description: string | null;
-  category: "basic" | "core" | "premium" | "enterprise";
+  category: 'basic' | 'core' | 'premium' | 'enterprise';
   base_price: string | number | null;
   is_active: number | boolean;
   requires_setup: number | boolean;

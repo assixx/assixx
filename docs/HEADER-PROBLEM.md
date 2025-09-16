@@ -4,7 +4,7 @@
 
 Auf der blackboard.html Seite wurden das Profilbild und die Role-Badge im Header nicht angezeigt, obwohl sie im HTML vorhanden waren.
 
-### Symptome:
+### Symptome
 
 - Avatar und Role-Badge waren für ~1ms sichtbar beim Laden der Seite
 - Danach verschwanden sie komplett
@@ -24,19 +24,19 @@ Mehrere Scripts manipulierten gleichzeitig das `user-info` Element:
 ### 1. MutationObserver zum Schutz (in blackboard.html)
 
 ```javascript
-window.addEventListener("DOMContentLoaded", function () {
-  const userInfoDiv = document.getElementById("user-info");
-  const userAvatar = document.getElementById("user-avatar");
-  const userName = document.getElementById("user-name");
-  const roleIndicator = document.getElementById("role-indicator");
+window.addEventListener('DOMContentLoaded', function () {
+  const userInfoDiv = document.querySelector('user-info');
+  const userAvatar = document.querySelector('user-avatar');
+  const userName = document.querySelector('user-name');
+  const roleIndicator = document.querySelector('role-indicator');
 
   if (userInfoDiv) {
     const observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
-        if (mutation.type === "childList" && mutation.target.id === "user-info") {
+        if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
           if (userInfoDiv.children.length === 0) {
-            console.log("[Blackboard] Restoring user-info elements");
-            userInfoDiv.innerHTML = "";
+            console.info('[Blackboard] Restoring user-info elements');
+            userInfoDiv.innerHTML = '';
             if (userAvatar) userInfoDiv.appendChild(userAvatar);
             if (userName) userInfoDiv.appendChild(userName);
             if (roleIndicator) userInfoDiv.appendChild(roleIndicator);
@@ -66,9 +66,9 @@ window.addEventListener("DOMContentLoaded", function () {
 
 ```typescript
 // Check if user-info has been overwritten
-const userInfoDiv = document.getElementById("user-info");
+const userInfoDiv = document.querySelector('user-info');
 if (userInfoDiv && userInfoDiv.children.length === 0) {
-  console.log("[Blackboard] Restoring user-info structure...");
+  console.info('[Blackboard] Restoring user-info structure...');
   userInfoDiv.innerHTML = `
     <img id="user-avatar" src="/assets/images/default-avatar.svg" alt="Avatar" style="display: block !important; visibility: visible !important;" />
     <span id="user-name" style="display: inline !important; visibility: visible !important;">Lade...</span>
@@ -100,14 +100,14 @@ if (userInfoDiv && userInfoDiv.children.length === 0) {
 
 Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge komplett im Header.
 
-### Symptome:
+### Symptome
 
 - Kein Role Switch Button vorhanden
 - Role Badge (`<span id="role-indicator">`) fehlte im user-info div
 - Nur Avatar und Username wurden angezeigt
 - Header sah anders aus als bei admin-dashboard.html
 
-### Ursache:
+### Ursache
 
 1. **Fehlende HTML-Elemente**: Die Header-Struktur war unvollständig
 2. **Fehlende Scripts**: role-switch.ts wurde nicht geladen
@@ -140,26 +140,26 @@ Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge ko
 ### 2. Erweiterter MutationObserver
 
 ```javascript
-window.addEventListener("DOMContentLoaded", function () {
-  const userInfoDiv = document.getElementById("user-info");
+window.addEventListener('DOMContentLoaded', function () {
+  const userInfoDiv = document.querySelector('user-info');
 
   if (userInfoDiv) {
     // Speichere Referenzen zu den Original-Elementen
-    const originalAvatar = document.getElementById("user-avatar");
-    const originalUserName = document.getElementById("user-name");
-    const originalRoleIndicator = document.getElementById("role-indicator");
+    const originalAvatar = document.querySelector('user-avatar');
+    const originalUserName = document.querySelector('user-name');
+    const originalRoleIndicator = document.querySelector('role-indicator');
 
     const observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
-        if (mutation.type === "childList" && mutation.target.id === "user-info") {
+        if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
           // Prüfe ob alle 3 Elemente vorhanden sind
-          const currentAvatar = document.getElementById("user-avatar");
-          const currentUserName = document.getElementById("user-name");
-          const currentRoleIndicator = document.getElementById("role-indicator");
+          const currentAvatar = document.querySelector('user-avatar');
+          const currentUserName = document.querySelector('user-name');
+          const currentRoleIndicator = document.querySelector('role-indicator');
 
           if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
-            console.log("[Calendar] Restoring user-info elements");
-            userInfoDiv.innerHTML = "";
+            console.info('[Calendar] Restoring user-info elements');
+            userInfoDiv.innerHTML = '';
 
             // Alle 3 Elemente wiederherstellen
             // Avatar, Username und Role Badge
@@ -207,14 +207,14 @@ window.addEventListener("DOMContentLoaded", function () {
 
 Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header komplett falsch dargestellt.
 
-### Symptome:
+### Symptome
 
 - Role-Switch Button war neben dem Logo statt rechts im Header
 - Profilbild war überdimensional groß
 - Header-Layout stimmte nicht mit anderen Seiten überein
 - Console zeigte: `[UnifiedNav] Using cached loadUserInfo` aber Header war trotzdem falsch
 
-### Ursache:
+### Ursache
 
 1. **Falsche CSS-Lade-Methode**:
    - KVP-Seiten nutzten `<link rel="stylesheet">` Tags
@@ -238,8 +238,8 @@ Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header kompl
 
 <!-- RICHTIG - so funktioniert es -->
 <style>
-  @import url("/styles/dashboard-theme.css");
-  @import url("/styles/user-info-update.css");
+  @import url('/styles/dashboard-theme.css');
+  @import url('/styles/user-info-update.css');
   /* Weitere Seiten-spezifische Styles */
 </style>
 ```
@@ -269,8 +269,8 @@ Auf den neuen KVP-Seiten (kvp-new.html und kvp-detail.html) war der Header kompl
 
   <!-- Alle anderen CSS mit @import -->
   <style>
-    @import url("/styles/dashboard-theme.css");
-    @import url("/styles/user-info-update.css");
+    @import url('/styles/dashboard-theme.css');
+    @import url('/styles/user-info-update.css');
     /* Seiten-spezifische Styles hier */
   </style>
 </head>
@@ -324,14 +324,14 @@ Wenn der Header falsch aussieht:
 
 Auf der blackboard.html Seite gab es ein komplexes Problem mit gegenseitig ausschließenden Fehlern.
 
-### Symptome:
+### Symptome
 
 - **Mit statischer Script-Reihenfolge**: Blackboard-Einträge ✓, aber Profilbild ✗
 - **Mit dynamischer Script-Reihenfolge**: Profilbild ✓, aber Blackboard-Einträge ✗
 - Build zeigte manchmal 145, manchmal 146 transformierte Module
 - `user-info` div wurde mit reinem Text "Son Goku" überschrieben
 
-### Ursachen:
+### Ursachen
 
 1. **CSS-Import-Methode** (Hauptproblem für fehlendes Profilbild):
    - `user-info-update.css` wurde mit `<link>` statt `@import` geladen
@@ -353,19 +353,19 @@ Auf der blackboard.html Seite gab es ein komplexes Problem mit gegenseitig aussc
 ```html
 <!-- Vorher (FALSCH): -->
 <style>
-  @import url("/styles/dashboard-theme.css");
-  @import url("/styles/blackboard.css");
-  @import url("/styles/blackboard-update.css");
+  @import url('/styles/dashboard-theme.css');
+  @import url('/styles/blackboard.css');
+  @import url('/styles/blackboard-update.css');
 </style>
 <!-- ... später im Code ... -->
 <link rel="stylesheet" href="/styles/user-info-update.css" />
 
 <!-- Nachher (RICHTIG): -->
 <style>
-  @import url("/styles/dashboard-theme.css");
-  @import url("/styles/blackboard.css");
-  @import url("/styles/blackboard-update.css");
-  @import url("/styles/user-info-update.css");
+  @import url('/styles/dashboard-theme.css');
+  @import url('/styles/blackboard.css');
+  @import url('/styles/blackboard-update.css');
+  @import url('/styles/user-info-update.css');
 </style>
 ```
 
@@ -373,7 +373,7 @@ Auf der blackboard.html Seite gab es ein komplexes Problem mit gegenseitig aussc
 
 ```typescript
 // Vorher (PROBLEM):
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   // Code wird nicht ausgeführt wenn Script verzögert geladen wird
 });
 
@@ -383,8 +383,8 @@ function initializeBlackboard() {
 }
 
 // Prüfe ob DOM bereits ready ist
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initializeBlackboard);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeBlackboard);
 } else {
   // DOM ist bereits ready, führe direkt aus
   initializeBlackboard();
@@ -395,12 +395,12 @@ if (document.readyState === "loading") {
 
 ```html
 <script type="module">
-  document.addEventListener("DOMContentLoaded", async () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     // Lade Scripts in korrekter Reihenfolge mit Verzögerung
-    await import("/scripts/auth.ts");
-    await import("/scripts/components/unified-navigation.ts");
+    await import('/scripts/auth.ts');
+    await import('/scripts/components/unified-navigation.ts');
     setTimeout(() => {
-      import("/scripts/blackboard.ts");
+      import('/scripts/blackboard.ts');
     }, 100);
   });
 </script>

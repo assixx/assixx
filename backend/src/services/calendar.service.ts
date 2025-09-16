@@ -2,26 +2,26 @@
  * Calendar Service
  * Handles calendar business logic
  */
-
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 import {
-  getAllEvents,
-  getEventById,
-  createEvent,
-  updateEvent,
-  deleteEvent,
-  addEventAttendee,
-  removeEventAttendee,
-  respondToEvent,
-  getEventAttendees,
-  getDashboardEvents,
-  canManageEvent,
   type DbCalendarEvent,
   type EventQueryOptions,
+  type EventsListResponse,
   type EventCreateData as ModelEventCreateData,
   type EventUpdateData as ModelEventUpdateData,
-} from "../models/calendar";
+  addEventAttendee,
+  canManageEvent,
+  createEvent,
+  deleteEvent,
+  getAllEvents,
+  getDashboardEvents,
+  getEventAttendees,
+  getEventById,
+  removeEventAttendee,
+  respondToEvent,
+  updateEvent,
+} from '../models/calendar';
 
 // UserInfo is defined below
 
@@ -38,19 +38,12 @@ type EventCreateData = ModelEventCreateData;
 // EventUpdateData is currently the same as ModelEventUpdateData
 type EventUpdateData = ModelEventUpdateData;
 
-interface EventsResponse {
-  events: CalendarEvent[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
+// Use the EventsListResponse from the model
+type EventsResponse = EventsListResponse;
 
 interface EventAttendee {
   user_id: number;
-  response_status: "pending" | "accepted" | "declined" | "tentative";
+  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
   responded_at?: Date;
   username?: string;
   first_name?: string;
@@ -66,30 +59,35 @@ interface UserInfo {
   teamId: number | null;
 }
 
+/**
+ *
+ */
 class CalendarService {
   /**
    * Holt alle Calendar Einträge für einen Tenant
    * Note: This method is kept for compatibility but uses the more specific getAllEvents internally
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: EventFilters = {},
-  ): Promise<CalendarEvent[]> {
+  getAll(_tenantDb: Pool, _filters: EventFilters = {}): CalendarEvent[] {
     try {
       // Extract tenant_id from the connection pool config if possible
       // For now, we'll need to pass it as a parameter in the controller
       console.warn(
-        "CalendarService.getAll: This method requires refactoring to pass tenantId and userId",
+        'CalendarService.getAll: This method requires refactoring to pass tenantId and userId',
       );
-      throw new Error("Method needs refactoring - use getAllEvents directly");
-    } catch (error) {
-      console.error("Error in CalendarService.getAll:", error);
+      throw new Error('Method needs refactoring - use getAllEvents directly');
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.getAll:', error);
       throw error;
     }
   }
 
   /**
    * Get all calendar events visible to the user
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param options - The options object
    */
   async getAllEvents(
     tenantId: number,
@@ -98,8 +96,8 @@ class CalendarService {
   ): Promise<EventsResponse> {
     try {
       return await getAllEvents(tenantId, userId, options);
-    } catch (error) {
-      console.error("Error in CalendarService.getAllEvents:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.getAllEvents:', error);
       throw error;
     }
   }
@@ -107,31 +105,32 @@ class CalendarService {
   /**
    * Holt einen Calendar Eintrag per ID
    * Note: This method is kept for compatibility but uses getEventById internally
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async getById(_tenantDb: Pool, _id: number): Promise<CalendarEvent | null> {
+  getById(_tenantDb: Pool, _id: number): CalendarEvent | null {
     try {
       console.warn(
-        "CalendarService.getById: This method requires refactoring to pass tenantId and userId",
+        'CalendarService.getById: This method requires refactoring to pass tenantId and userId',
       );
-      throw new Error("Method needs refactoring - use getEventById directly");
-    } catch (error) {
-      console.error("Error in CalendarService.getById:", error);
+      throw new Error('Method needs refactoring - use getEventById directly');
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.getById:', error);
       throw error;
     }
   }
 
   /**
    * Get a specific calendar event by ID
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
    */
-  async getEventById(
-    id: number,
-    tenantId: number,
-    userId: number,
-  ): Promise<CalendarEvent | null> {
+  async getEventById(id: number, tenantId: number, userId: number): Promise<CalendarEvent | null> {
     try {
       return await getEventById(id, tenantId, userId);
-    } catch (error) {
-      console.error("Error in CalendarService.getEventById:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.getEventById:', error);
       throw error;
     }
   }
@@ -139,27 +138,27 @@ class CalendarService {
   /**
    * Erstellt einen neuen Calendar Eintrag
    * Note: This method is kept for compatibility but uses createEvent internally
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
-  async create(
-    _tenantDb: Pool,
-    data: EventCreateData,
-  ): Promise<CalendarEvent | null> {
+  async create(_tenantDb: Pool, data: EventCreateData): Promise<CalendarEvent | null> {
     try {
       return await createEvent(data);
-    } catch (error) {
-      console.error("Error in CalendarService.create:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.create:', error);
       throw error;
     }
   }
 
   /**
    * Create a new calendar event
+   * @param eventData - The eventData parameter
    */
   async createEvent(eventData: EventCreateData): Promise<CalendarEvent | null> {
     try {
       return await createEvent(eventData);
-    } catch (error) {
-      console.error("Error in CalendarService.createEvent:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.createEvent:', error);
       throw error;
     }
   }
@@ -167,25 +166,25 @@ class CalendarService {
   /**
    * Aktualisiert einen Calendar Eintrag
    * Note: This method is kept for compatibility but uses updateEvent internally
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
-  async update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: EventUpdateData,
-  ): Promise<CalendarEvent | null> {
+  update(_tenantDb: Pool, _id: number, _data: EventUpdateData): CalendarEvent | null {
     try {
-      console.warn(
-        "CalendarService.update: This method requires refactoring to pass tenantId",
-      );
-      throw new Error("Method needs refactoring - use updateEvent directly");
-    } catch (error) {
-      console.error("Error in CalendarService.update:", error);
+      console.warn('CalendarService.update: This method requires refactoring to pass tenantId');
+      throw new Error('Method needs refactoring - use updateEvent directly');
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.update:', error);
       throw error;
     }
   }
 
   /**
    * Update a calendar event
+   * @param id - The resource ID
+   * @param eventData - The eventData parameter
+   * @param tenantId - The tenant ID
    */
   async updateEvent(
     id: number,
@@ -194,8 +193,8 @@ class CalendarService {
   ): Promise<CalendarEvent | null> {
     try {
       return await updateEvent(id, eventData, tenantId);
-    } catch (error) {
-      console.error("Error in CalendarService.updateEvent:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.updateEvent:', error);
       throw error;
     }
   }
@@ -203,92 +202,101 @@ class CalendarService {
   /**
    * Löscht einen Calendar Eintrag
    * Note: This method is kept for compatibility but uses deleteEvent internally
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
+  delete(_tenantDb: Pool, _id: number): boolean {
     try {
-      console.warn(
-        "CalendarService.delete: This method requires refactoring to pass tenantId",
-      );
-      throw new Error("Method needs refactoring - use deleteEvent directly");
-    } catch (error) {
-      console.error("Error in CalendarService.delete:", error);
+      console.warn('CalendarService.delete: This method requires refactoring to pass tenantId');
+      throw new Error('Method needs refactoring - use deleteEvent directly');
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.delete:', error);
       throw error;
     }
   }
 
   /**
    * Delete a calendar event
+   * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
   async deleteEvent(id: number, tenantId: number): Promise<boolean> {
     try {
       return await deleteEvent(id, tenantId);
-    } catch (error) {
-      console.error("Error in CalendarService.deleteEvent:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.deleteEvent:', error);
       throw error;
     }
   }
 
   /**
    * Add attendee to event
+   * @param eventId - The eventId parameter
+   * @param userId - The user ID
+   * @param responseStatus - The responseStatus parameter
    */
   async addEventAttendee(
     eventId: number,
     userId: number,
-    responseStatus?: "pending" | "accepted" | "declined" | "tentative",
+    responseStatus?: 'pending' | 'accepted' | 'declined' | 'tentative',
   ): Promise<boolean> {
     try {
       return await addEventAttendee(eventId, userId, responseStatus);
-    } catch (error) {
-      console.error("Error in CalendarService.addEventAttendee:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.addEventAttendee:', error);
       throw error;
     }
   }
 
   /**
    * Remove attendee from event
+   * @param eventId - The eventId parameter
+   * @param userId - The user ID
    */
   async removeEventAttendee(eventId: number, userId: number): Promise<boolean> {
     try {
       return await removeEventAttendee(eventId, userId);
-    } catch (error) {
-      console.error("Error in CalendarService.removeEventAttendee:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.removeEventAttendee:', error);
       throw error;
     }
   }
 
   /**
    * Respond to event invitation
+   * @param eventId - The eventId parameter
+   * @param userId - The user ID
+   * @param response - The response parameter
    */
-  async respondToEvent(
-    eventId: number,
-    userId: number,
-    response: string,
-  ): Promise<boolean> {
+  async respondToEvent(eventId: number, userId: number, response: string): Promise<boolean> {
     try {
       return await respondToEvent(eventId, userId, response);
-    } catch (error) {
-      console.error("Error in CalendarService.respondToEvent:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.respondToEvent:', error);
       throw error;
     }
   }
 
   /**
    * Get event attendees
+   * @param eventId - The eventId parameter
+   * @param tenantId - The tenant ID
    */
-  async getEventAttendees(
-    eventId: number,
-    tenantId: number,
-  ): Promise<EventAttendee[]> {
+  async getEventAttendees(eventId: number, tenantId: number): Promise<EventAttendee[]> {
     try {
       return await getEventAttendees(eventId, tenantId);
-    } catch (error) {
-      console.error("Error in CalendarService.getEventAttendees:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.getEventAttendees:', error);
       throw error;
     }
   }
 
   /**
    * Get dashboard events
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param days - The days parameter
+   * @param limit - The result limit
    */
   async getDashboardEvents(
     tenantId: number,
@@ -298,20 +306,19 @@ class CalendarService {
   ): Promise<CalendarEvent[]> {
     try {
       return await getDashboardEvents(tenantId, userId, days, limit);
-    } catch (error) {
-      console.error("Error in CalendarService.getDashboardEvents:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.getDashboardEvents:', error);
       throw error;
     }
   }
 
   /**
    * Check if user can manage event
+   * @param eventId - The eventId parameter
+   * @param userId - The user ID
+   * @param userInfo - The userInfo parameter
    */
-  async canManageEvent(
-    eventId: number,
-    userId: number,
-    userInfo?: UserInfo,
-  ): Promise<boolean> {
+  async canManageEvent(eventId: number, userId: number, userInfo?: UserInfo): Promise<boolean> {
     try {
       return await canManageEvent(
         eventId,
@@ -322,8 +329,8 @@ class CalendarService {
           teamId: null,
         },
       );
-    } catch (error) {
-      console.error("Error in CalendarService.canManageEvent:", error);
+    } catch (error: unknown) {
+      console.error('Error in CalendarService.canManageEvent:', error);
       throw error;
     }
   }

@@ -1,16 +1,16 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Document Controller
  * Handles document-related requests
  */
+import { Request, Response } from 'express';
 
-import { Request, Response } from "express";
-
-import Team from "../models/team";
-import documentService from "../services/document.service";
-import { AuthenticatedRequest } from "../types/request.types";
-import { HTTP_STATUS } from "../utils/constants";
-import { parsePagination } from "../utils/helpers";
-import { logger } from "../utils/logger";
+import Team from '../models/team';
+import documentService from '../services/document.service';
+import type { AuthenticatedRequest } from '../types/request.types';
+import { HTTP_STATUS } from '../utils/constants';
+import { parsePagination } from '../utils/helpers';
+import { logger } from '../utils/logger';
 
 // Extended request interface for file upload
 interface DocumentUploadRequest extends AuthenticatedRequest {
@@ -30,25 +30,31 @@ interface DocumentUpdateRequest extends AuthenticatedRequest {
 }
 
 // Type guard to check if request is authenticated
+/**
+ *
+ * @param req - The request object
+ */
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return (
-    "user" in req &&
-    req.user != null &&
-    typeof req.user === "object" &&
-    "tenant_id" in req.user
+    'user' in req && req.user != null && typeof req.user === 'object' && 'tenant_id' in req.user
   );
 }
 
+/**
+ *
+ */
 class DocumentController {
   /**
    * Get all documents with pagination
+   * @param req - The request object
+   * @param res - The response object
    */
   async getDocuments(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -67,18 +73,19 @@ class DocumentController {
       let userTeamId: number | undefined;
       try {
         const userTeams = await Team.getUserTeams(req.user.id);
-        if (userTeams.length > 0) {
+        if (Array.isArray(userTeams) && userTeams.length > 0) {
           // Use the first team for now
-          userTeamId = userTeams[0].id;
+          const firstTeam = userTeams[0];
+          userTeamId = firstTeam.id;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn(`Failed to fetch teams for user ${req.user.id}:`, error);
       }
 
       const result = await documentService.getDocuments({
         tenant_id: req.user.tenant_id,
         category,
-        userId: userId ? parseInt(userId, 10) : req.user.id,
+        userId: userId != null && userId !== '' ? Number.parseInt(userId, 10) : req.user.id,
         departmentId: req.user.department_id ?? undefined,
         teamId: userTeamId,
         limit,
@@ -90,24 +97,26 @@ class DocumentController {
         documents: result.data,
         pagination: result.pagination,
       });
-    } catch (error) {
-      logger.error("Error getting documents:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting documents:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error retrieving documents",
+        message: 'Error retrieving documents',
       });
     }
   }
 
   /**
    * Get document by ID
+   * @param req - The request object
+   * @param res - The response object
    */
   async getDocumentById(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -115,14 +124,14 @@ class DocumentController {
       const id = req.params.id;
 
       const document = await documentService.getDocumentById(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.tenant_id,
       );
 
-      if (!document) {
+      if (document === null) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
@@ -131,17 +140,19 @@ class DocumentController {
         success: true,
         data: document,
       });
-    } catch (error) {
-      logger.error("Error getting document:", error);
+    } catch (error: unknown) {
+      logger.error('Error getting document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error retrieving document",
+        message: 'Error retrieving document',
       });
     }
   }
 
   /**
    * Upload new document
+   * @param req - The request object
+   * @param res - The response object
    */
   async uploadDocument(
     req: Request & Partial<DocumentUploadRequest>,
@@ -151,15 +162,15 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
 
-      if (!req.file) {
+      if (req.file === undefined) {
         res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
-          message: "No file uploaded",
+          message: 'No file uploaded',
         });
         return;
       }
@@ -170,40 +181,39 @@ class DocumentController {
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
-        category:
-          (req.body as DocumentUploadRequest["body"])?.category ?? "general", // Provide default if undefined
-        description:
-          (req.body as DocumentUploadRequest["body"])?.description ?? null,
+        category: (req.body as DocumentUploadRequest['body']).category ?? 'general', // Provide default if undefined
+        description: (req.body as DocumentUploadRequest['body']).description ?? null,
         userId: (() => {
-          const bodyUserId = (req.body as DocumentUploadRequest["body"])
-            ?.userId;
-          if (bodyUserId) {
-            return parseInt(bodyUserId, 10);
+          const bodyUserId = (req.body as DocumentUploadRequest['body']).userId;
+          if (bodyUserId != null && bodyUserId !== '') {
+            return Number.parseInt(bodyUserId, 10);
           }
           return null; // Company documents don't have a specific user
         })(),
-        uploadedBy: req.user.id,
-        tenant_id: req.user.tenant_id,
+        uploadedBy: (req as AuthenticatedRequest).user.id,
+        tenant_id: (req as AuthenticatedRequest).user.tenant_id,
       };
 
       const result = await documentService.createDocument(documentData);
 
       res.status(HTTP_STATUS.CREATED).json({
         success: true,
-        message: "Document uploaded successfully",
+        message: 'Document uploaded successfully',
         data: result,
       });
-    } catch (error) {
-      logger.error("Error uploading document:", error);
+    } catch (error: unknown) {
+      logger.error('Error uploading document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error uploading document",
+        message: 'Error uploading document',
       });
     }
   }
 
   /**
    * Update document metadata
+   * @param req - The request object
+   * @param res - The response object
    */
   async updateDocument(
     req: Request & Partial<DocumentUpdateRequest>,
@@ -213,53 +223,55 @@ class DocumentController {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
 
       const id = req.params.id;
       const updateData = {
-        category: (req.body as DocumentUpdateRequest["body"])?.category,
-        description: (req.body as DocumentUpdateRequest["body"])?.description,
+        category: (req.body as DocumentUpdateRequest['body']).category,
+        description: (req.body as DocumentUpdateRequest['body']).description,
       };
 
       const result = await documentService.updateDocument(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         updateData,
-        req.user.tenant_id,
+        (req as AuthenticatedRequest).user.tenant_id,
       );
 
       if (!result) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
 
       res.json({
         success: true,
-        message: "Document updated successfully",
+        message: 'Document updated successfully',
       });
-    } catch (error) {
-      logger.error("Error updating document:", error);
+    } catch (error: unknown) {
+      logger.error('Error updating document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error updating document",
+        message: 'Error updating document',
       });
     }
   }
 
   /**
    * Delete document
+   * @param req - The request object
+   * @param res - The response object
    */
   async deleteDocument(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -267,40 +279,42 @@ class DocumentController {
       const id = req.params.id;
 
       const result = await documentService.deleteDocument(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.tenant_id,
       );
 
       if (!result) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
 
       res.json({
         success: true,
-        message: "Document deleted successfully",
+        message: 'Document deleted successfully',
       });
-    } catch (error) {
-      logger.error("Error deleting document:", error);
+    } catch (error: unknown) {
+      logger.error('Error deleting document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error deleting document",
+        message: 'Error deleting document',
       });
     }
   }
 
   /**
    * Download document
+   * @param req - The request object
+   * @param res - The response object
    */
   async downloadDocument(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -308,39 +322,44 @@ class DocumentController {
       const id = req.params.id;
 
       const document = await documentService.getDocumentById(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.tenant_id,
       );
 
-      if (!document) {
+      if (document === null) {
         res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
-          message: "Document not found",
+          message: 'Document not found',
         });
         return;
       }
 
       // Send file
       const filePath = await documentService.getDocumentPath(document.filename);
-      res.download(filePath, document.name || document.filename);
-    } catch (error) {
-      logger.error("Error downloading document:", error);
+      res.download(
+        filePath,
+        document.name && document.name.trim() !== '' ? document.name : document.filename,
+      );
+    } catch (error: unknown) {
+      logger.error('Error downloading document:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error downloading document",
+        message: 'Error downloading document',
       });
     }
   }
 
   /**
    * Mark document as read
+   * @param req - The request object
+   * @param res - The response object
    */
   async markDocumentAsRead(req: Request, res: Response): Promise<void> {
     try {
       if (!isAuthenticated(req)) {
         res.status(HTTP_STATUS.UNAUTHORIZED).json({
           success: false,
-          message: "Unauthorized",
+          message: 'Unauthorized',
         });
         return;
       }
@@ -348,7 +367,7 @@ class DocumentController {
       const id = req.params.id;
 
       const success = await documentService.markDocumentAsRead(
-        parseInt(id, 10),
+        Number.parseInt(id, 10),
         req.user.id,
         req.user.tenant_id,
       );
@@ -356,20 +375,20 @@ class DocumentController {
       if (!success) {
         res.status(HTTP_STATUS.SERVER_ERROR).json({
           success: false,
-          message: "Failed to mark document as read",
+          message: 'Failed to mark document as read',
         });
         return;
       }
 
       res.json({
         success: true,
-        message: "Document marked as read",
+        message: 'Document marked as read',
       });
-    } catch (error) {
-      logger.error("Error marking document as read:", error);
+    } catch (error: unknown) {
+      logger.error('Error marking document as read:', error);
       res.status(HTTP_STATUS.SERVER_ERROR).json({
         success: false,
-        message: "Error marking document as read",
+        message: 'Error marking document as read',
       });
     }
   }

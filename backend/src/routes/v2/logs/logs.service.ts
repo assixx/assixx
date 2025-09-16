@@ -1,9 +1,7 @@
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-
 import { query as executeQuery } from "../../../utils/db.js";
 import { logger } from "../../../utils/logger.js";
-
-import { LogsResponse, LogsListResponse, LogsFilterParams, LogsStatsResponse } from "./types.js";
+import type { LogsResponse, LogsListResponse, LogsFilterParams, LogsStatsResponse } from "./types.js";
 
 interface DbLogRow extends RowDataPacket {
   id: number;
@@ -35,11 +33,17 @@ interface StatsRow extends RowDataPacket {
   user_name?: string;
 }
 
+/**
+ *
+ */
 export class LogsService {
   /**
    * Get paginated logs with filters (Root only)
+   * @param filters - The filter criteria
    */
   async getLogs(filters: LogsFilterParams): Promise<LogsListResponse> {
+    logger.info('[Logs v2 Service] getLogs called with filters:', filters);
+    
     const {
       page = 1,
       limit = 50,
@@ -53,7 +57,9 @@ export class LogsService {
     } = filters;
 
     const offset = (page - 1) * limit;
-    const conditions: string[] = ['1=1'];
+    logger.info(`[Logs v2 Service] Calculated offset: ${offset} from page: ${page}, limit: ${limit}`);
+    
+    const conditions: string[] = [];
     const params: unknown[] = [];
 
     // Build WHERE conditions
@@ -67,47 +73,50 @@ export class LogsService {
       params.push(tenantId);
     }
 
-    if (action) {
+    if (action !== undefined && action !== "") {
       conditions.push('rl.action = ?');
       params.push(action);
     }
 
-    if (entityType) {
+    if (entityType !== undefined && entityType !== "") {
       conditions.push('rl.entity_type = ?');
       params.push(entityType);
     }
 
-    if (startDate) {
+    if (startDate !== undefined && startDate !== "") {
       conditions.push('rl.created_at >= ?');
       params.push(startDate);
     }
 
-    if (endDate) {
+    if (endDate !== undefined && endDate !== "") {
       conditions.push('rl.created_at <= ?');
       params.push(endDate);
     }
 
-    if (search) {
+    if (search !== undefined && search !== "") {
       conditions.push('(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)');
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
-    const whereClause = conditions.join(' AND ');
+    const whereClause = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
+    logger.info(`[Logs v2 Service] Built WHERE clause: ${whereClause}`);
+    logger.info(`[Logs v2 Service] Query params:`, params);
 
     try {
       // Get total count
+      const countQuery = `SELECT COUNT(*) as total FROM root_logs rl WHERE ${whereClause}`;
+      logger.info(`[Logs v2 Service] Count query: ${countQuery}`);
+      
       const [countResult] = await executeQuery<RowDataPacket[]>(
-        `SELECT COUNT(*) as total 
-         FROM root_logs rl
-         WHERE ${whereClause}`,
+        countQuery,
         params
       );
-      const total = countResult[0].total;
+      const total = (countResult[0] as { total: number }).total;
+      logger.info(`[Logs v2 Service] Total count: ${total}`);
 
       // Get paginated logs with user and tenant info
-      const [logs] = await executeQuery<DbLogRow[]>(
-        `SELECT 
+      const logsQuery = `SELECT 
           rl.*,
           u.username as user_name,
           u.email as user_email,
@@ -118,7 +127,13 @@ export class LogsService {
          LEFT JOIN tenants t ON rl.tenant_id = t.id
          WHERE ${whereClause}
          ORDER BY rl.created_at DESC
-         LIMIT ? OFFSET ?`,
+         LIMIT ? OFFSET ?`;
+      
+      logger.info(`[Logs v2 Service] Logs query: ${logsQuery}`);
+      logger.info(`[Logs v2 Service] Logs query params:`, [...params, limit, offset]);
+      
+      const [logs] = await executeQuery<DbLogRow[]>(
+        logsQuery,
         [...params, limit, offset]
       );
 
@@ -128,40 +143,49 @@ export class LogsService {
           total,
           page,
           limit,
-          totalPages: Math.ceil(total / limit)
+          offset,  // Add offset for frontend compatibility
+          totalPages: Math.ceil(total / limit),
+          hasMore: offset + limit < total  // Add hasMore flag
         }
       };
-    } catch (error) {
-      logger.error('[Logs v2] Error fetching logs:', error);
+    } catch (error: unknown) {
+      logger.error('[Logs v2 Service] Error fetching logs - Detailed error:', error);
+      logger.error('[Logs v2 Service] Error stack:', (error as Error).stack);
+      logger.error('[Logs v2 Service] Query params were:', { whereClause, params, limit, offset });
       throw error;
     }
   }
 
   /**
-   * Get log statistics (Root only)
+   * Get log statistics (Root only) - filtered by tenant
+   * @param tenantId - The tenant ID to filter by
    */
-  async getStats(): Promise<LogsStatsResponse> {
+  async getStats(tenantId: number): Promise<LogsStatsResponse> {
     try {
-      // Basic stats
+      // Basic stats - FILTERED BY TENANT
       const [basicStats] = await executeQuery<StatsRow[]>(
         `SELECT 
           COUNT(*) as total_logs,
           COUNT(DISTINCT user_id) as unique_users,
           COUNT(DISTINCT tenant_id) as unique_tenants,
           SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) as today_logs
-         FROM root_logs`
+         FROM root_logs
+         WHERE tenant_id = ?`,
+        [tenantId]
       );
 
-      // Top actions
+      // Top actions - FILTERED BY TENANT
       const [topActions] = await executeQuery<StatsRow[]>(
         `SELECT action, COUNT(*) as count 
          FROM root_logs 
+         WHERE tenant_id = ?
          GROUP BY action 
          ORDER BY count DESC 
-         LIMIT 10`
+         LIMIT 10`,
+        [tenantId]
       );
 
-      // Top users
+      // Top users - FILTERED BY TENANT
       const [topUsers] = await executeQuery<StatsRow[]>(
         `SELECT 
           rl.user_id,
@@ -169,9 +193,11 @@ export class LogsService {
           COUNT(*) as count
          FROM root_logs rl
          LEFT JOIN users u ON rl.user_id = u.id
-         GROUP BY rl.user_id
+         WHERE rl.tenant_id = ?
+         GROUP BY rl.user_id, u.username
          ORDER BY count DESC
-         LIMIT 10`
+         LIMIT 10`,
+        [tenantId]
       );
 
       const stats = basicStats[0];
@@ -190,7 +216,7 @@ export class LogsService {
           count: row.count ?? 0
         }))
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Logs v2] Error fetching stats:', error);
       throw error;
     }
@@ -198,12 +224,16 @@ export class LogsService {
 
   /**
    * Delete logs with filters (Root only)
+   * @param filters - The filter criteria
    */
   async deleteLogs(filters: {
     userId?: number;
     tenantId?: number;
     olderThanDays?: number;
+    action?: string;
+    entityType?: string;
   }): Promise<number> {
+    logger.info('[Logs v2 Service] deleteLogs called with filters:', filters);
     const conditions: string[] = [];
     const params: unknown[] = [];
 
@@ -217,9 +247,25 @@ export class LogsService {
       params.push(filters.tenantId);
     }
 
-    if (filters.olderThanDays) {
-      conditions.push('created_at < DATE_SUB(NOW(), INTERVAL ? DAY)');
-      params.push(filters.olderThanDays);
+    if (filters.action) {
+      conditions.push('action = ?');
+      params.push(filters.action);
+    }
+
+    if (filters.entityType) {
+      conditions.push('entity_type = ?');
+      params.push(filters.entityType);
+    }
+
+    if (filters.olderThanDays !== undefined) {
+      if (filters.olderThanDays === 0) {
+        // olderThanDays: 0 means delete ALL logs (no age restriction)
+        // Add a condition that's always true to indicate we have a valid filter
+        conditions.push('1=1');
+      } else {
+        conditions.push('created_at < DATE_SUB(NOW(), INTERVAL ? DAY)');
+        params.push(filters.olderThanDays);
+      }
     }
 
     if (conditions.length === 0) {
@@ -234,7 +280,7 @@ export class LogsService {
         params
       );
       return result.affectedRows;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('[Logs v2] Error deleting logs:', error);
       throw error;
     }
@@ -242,6 +288,7 @@ export class LogsService {
 
   /**
    * Format database log to API response
+   * @param log - The log parameter
    */
   private formatLogResponse(log: DbLogRow): LogsResponse {
     return {
@@ -255,8 +302,8 @@ export class LogsService {
       action: log.action,
       entityType: log.entity_type,
       entityId: log.entity_id,
-      oldValues: log.old_values ? JSON.parse(log.old_values) : undefined,
-      newValues: log.new_values ? JSON.parse(log.new_values) : undefined,
+      oldValues: log.old_values ? (typeof log.old_values === 'string' ? JSON.parse(log.old_values) as Record<string, unknown> : log.old_values) : undefined,
+      newValues: log.new_values ? (typeof log.new_values === 'string' ? JSON.parse(log.new_values) as Record<string, unknown> : log.new_values) : undefined,
       ipAddress: log.ip_address,
       userAgent: log.user_agent,
       wasRoleSwitched: Boolean(log.was_role_switched),

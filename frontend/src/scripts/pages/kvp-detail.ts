@@ -3,13 +3,15 @@
  * Handles detailed view of KVP suggestions
  */
 
-// API configuration
-const KVP_DETAIL_API_BASE_URL = '/api';
+import { ApiClient } from '../../utils/api-client';
+import { $$, setHTML, getData } from '../../utils/dom-utils';
+import { getAuthToken } from '../auth';
+import { showSuccessAlert, showErrorAlert, showConfirm } from '../utils/alerts';
 
 interface User {
   id: number;
   role: 'root' | 'admin' | 'employee';
-  tenant_id: number;
+  tenantId: number;
 }
 
 interface KvpSuggestion {
@@ -18,71 +20,80 @@ interface KvpSuggestion {
   description: string;
   status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   priority: 'low' | 'normal' | 'high' | 'urgent';
-  org_level: 'company' | 'department' | 'team';
-  org_id: number;
-  department_id: number;
-  department_name: string;
-  submitted_by: number;
-  submitted_by_name: string;
-  submitted_by_lastname: string;
-  category_id: number;
-  category_name: string;
-  category_icon: string;
-  category_color: string;
-  shared_by?: number;
-  shared_by_name?: string;
-  shared_at?: string;
-  created_at: string;
-  expected_benefit?: string;
-  estimated_cost?: number;
-  actual_savings?: number;
-  implementation_date?: string;
-  assigned_to?: number;
-  rejection_reason?: string;
+  orgLevel: 'company' | 'department' | 'team';
+  orgId: number;
+  departmentId: number;
+  departmentName: string;
+  teamId?: number;
+  teamName?: string;
+  submittedBy: number;
+  submittedByName: string;
+  submittedByLastname: string;
+  categoryId: number;
+  categoryName: string;
+  categoryIcon: string;
+  categoryColor: string;
+  sharedBy?: number;
+  sharedByName?: string;
+  sharedAt?: string;
+  createdAt: string;
+  expectedBenefit?: string;
+  estimatedCost?: number;
+  actualSavings?: number;
+  implementationDate?: string;
+  assignedTo?: number;
+  rejectionReason?: string;
+  roi?: number; // NEW in v2!
 }
 
 interface Comment {
   id: number;
-  suggestion_id: number;
-  user_id: number;
-  first_name: string;
-  last_name: string;
-  profile_picture_url?: string;
+  suggestionId: number;
+  userId: number;
+  firstName: string;
+  lastName: string;
+  profilePictureUrl?: string;
   comment: string;
-  is_internal: boolean;
-  created_at: string;
+  isInternal: boolean;
+  createdAt: string;
 }
 
 interface Attachment {
   id: number;
-  suggestion_id: number;
-  file_name: string;
-  file_path: string;
-  file_type: string;
-  file_size: number;
-  uploaded_by: number;
-  uploaded_by_name: string;
-  uploaded_by_lastname: string;
-  uploaded_at: string;
+  suggestionId: number;
+  fileName: string;
+  filePath: string;
+  fileType: string;
+  fileSize: number;
+  uploadedBy: number;
+  uploadedByName: string;
+  uploadedByLastname: string;
+  uploadedAt: string;
 }
 
 class KvpDetailPage {
+  private apiClient: ApiClient;
   private currentUser: User | null = null;
-  private suggestionId: number = 0;
+  private suggestionId = 0;
   private suggestion: KvpSuggestion | null = null;
+  private useV2API = true;
 
   constructor() {
+    this.apiClient = ApiClient.getInstance();
+    // Check feature flag for v2 API
+    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_KVP?: boolean } };
+    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_KVP !== false;
     // Get suggestion ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
 
-    if (!id || isNaN(parseInt(id))) {
+    if (id === null || id === '' || Number.isNaN(Number.parseInt(id, 10))) {
       this.showError('Ungültige Vorschlags-ID');
       setTimeout(() => (window.location.href = '/kvp'), 2000);
       return;
     }
 
-    this.suggestionId = parseInt(id);
+    this.suggestionId = Number.parseInt(id, 10);
     void this.init();
   }
 
@@ -110,16 +121,29 @@ class KvpDetailPage {
 
   private async getCurrentUser(): Promise<User | null> {
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/users/me`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      if (this.useV2API) {
+        return await this.apiClient.get<User>('/users/me');
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch('/api/users/me', {
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
 
-      if (!response.ok) throw new Error('Failed to get user info');
+        if (!response.ok) throw new Error('Failed to get user info');
 
-      const data = await response.json();
-      return data.user;
+        interface V1UserResponse {
+          user: User & { tenant_id?: number };
+        }
+        const data = (await response.json()) as V1UserResponse;
+        // Convert snake_case to camelCase for v1
+        return {
+          ...data.user,
+          tenantId: data.user.tenant_id ?? data.user.tenantId,
+        };
+      }
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
@@ -128,20 +152,28 @@ class KvpDetailPage {
 
   private async loadSuggestion(): Promise<void> {
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      if (this.useV2API) {
+        this.suggestion = await this.apiClient.get<KvpSuggestion>(`/kvp/${this.suggestionId}`);
+      } else {
+        // v1 fallback
+        const token = getAuthToken();
+        const response = await fetch(`/api/kvp/${this.suggestionId}`, {
+          headers: {
+            Authorization: `Bearer ${token ?? ''}`,
+          },
+        });
 
-      if (!response.ok) {
-        if (response.status === 403) {
-          throw new Error('Keine Berechtigung');
+        if (!response.ok) {
+          if (response.status === 403) {
+            throw new Error('Keine Berechtigung');
+          }
+          throw new Error('Failed to load suggestion');
         }
-        throw new Error('Failed to load suggestion');
-      }
 
-      this.suggestion = await response.json();
+        const v1Suggestion = (await response.json()) as Record<string, unknown>;
+        // Convert snake_case to camelCase
+        this.suggestion = this.convertSuggestionToCamelCase(v1Suggestion);
+      }
       this.renderSuggestion();
     } catch (error) {
       console.error('Error loading suggestion:', error);
@@ -150,224 +182,399 @@ class KvpDetailPage {
     }
   }
 
+  private convertSuggestionToCamelCase(suggestion: Record<string, unknown>): KvpSuggestion {
+    // Following the pattern from api-mappers.ts for safe type conversion
+    interface KvpAPIResponse {
+      id?: number;
+      title?: string;
+      description?: string;
+      status?: string;
+      priority?: string;
+      org_level?: string;
+      orgLevel?: string;
+      org_id?: number;
+      orgId?: number;
+      department_id?: number;
+      departmentId?: number;
+      department_name?: string;
+      departmentName?: string;
+      team_id?: number;
+      teamId?: number;
+      team_name?: string;
+      teamName?: string;
+      submitted_by?: number;
+      submittedBy?: number;
+      submitted_by_name?: string;
+      submittedByName?: string;
+      submitted_by_lastname?: string;
+      submittedByLastname?: string;
+      category_id?: number;
+      categoryId?: number;
+      category_name?: string;
+      categoryName?: string;
+      category_icon?: string;
+      categoryIcon?: string;
+      category_color?: string;
+      categoryColor?: string;
+      shared_by?: number;
+      sharedBy?: number;
+      shared_by_name?: string;
+      sharedByName?: string;
+      shared_at?: string;
+      sharedAt?: string;
+      created_at?: string;
+      createdAt?: string;
+      expected_benefit?: string;
+      expectedBenefit?: string;
+      estimated_cost?: number;
+      estimatedCost?: number;
+      actual_savings?: number;
+      actualSavings?: number;
+      implementation_date?: string;
+      implementationDate?: string;
+      assigned_to?: number;
+      assignedTo?: number;
+      rejection_reason?: string;
+      rejectionReason?: string;
+      roi?: number;
+    }
+
+    const s = suggestion as KvpAPIResponse;
+
+    return {
+      id: s.id ?? 0,
+      title: s.title ?? '',
+      description: s.description ?? '',
+      status: (s.status ?? 'new') as KvpSuggestion['status'],
+      priority: (s.priority ?? 'normal') as KvpSuggestion['priority'],
+      orgLevel: (s.org_level ?? s.orgLevel ?? 'company') as KvpSuggestion['orgLevel'],
+      orgId: s.org_id ?? s.orgId ?? 0,
+      departmentId: s.department_id ?? s.departmentId ?? 0,
+      departmentName: s.department_name ?? s.departmentName ?? '',
+      teamId: s.team_id ?? s.teamId,
+      teamName: s.team_name ?? s.teamName,
+      submittedBy: s.submitted_by ?? s.submittedBy ?? 0,
+      submittedByName: s.submitted_by_name ?? s.submittedByName ?? '',
+      submittedByLastname: s.submitted_by_lastname ?? s.submittedByLastname ?? '',
+      categoryId: s.category_id ?? s.categoryId ?? 0,
+      categoryName: s.category_name ?? s.categoryName ?? '',
+      categoryIcon: s.category_icon ?? s.categoryIcon ?? '',
+      categoryColor: s.category_color ?? s.categoryColor ?? '',
+      sharedBy: s.shared_by ?? s.sharedBy,
+      sharedByName: s.shared_by_name ?? s.sharedByName,
+      sharedAt: s.shared_at ?? s.sharedAt,
+      createdAt: s.created_at ?? s.createdAt ?? '',
+      expectedBenefit: s.expected_benefit ?? s.expectedBenefit,
+      estimatedCost: s.estimated_cost ?? s.estimatedCost,
+      actualSavings: s.actual_savings ?? s.actualSavings,
+      implementationDate: s.implementation_date ?? s.implementationDate,
+      assignedTo: s.assigned_to ?? s.assignedTo,
+      rejectionReason: s.rejection_reason ?? s.rejectionReason,
+      roi: s.roi,
+    };
+  }
+
   private renderSuggestion(): void {
     if (!this.suggestion) return;
 
     // Basic info
-    const titleEl = document.getElementById('suggestionTitle');
-    const submittedByEl = document.getElementById('submittedBy');
-    const createdAtEl = document.getElementById('createdAt');
-    const departmentEl = document.getElementById('department');
+    const titleEl = $$('#suggestionTitle');
+    const submittedByEl = $$('#submittedBy');
+    const createdAtEl = $$('#createdAt');
+    const departmentEl = $$('#department');
 
     if (titleEl) titleEl.textContent = this.suggestion.title;
     if (submittedByEl)
-      submittedByEl.textContent = `${this.suggestion.submitted_by_name} ${this.suggestion.submitted_by_lastname}`;
-    if (createdAtEl) createdAtEl.textContent = new Date(this.suggestion.created_at).toLocaleDateString('de-DE');
-    if (departmentEl) departmentEl.textContent = this.suggestion.department_name;
+      submittedByEl.textContent = `${this.suggestion.submittedByName} ${this.suggestion.submittedByLastname}`;
+    if (createdAtEl) createdAtEl.textContent = new Date(this.suggestion.createdAt).toLocaleDateString('de-DE');
+    if (departmentEl) departmentEl.textContent = this.suggestion.departmentName;
 
     // Status and Priority
-    const statusBadge = document.getElementById('statusBadge');
+    const statusBadge = $$('#statusBadge');
     if (statusBadge) {
       statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
       statusBadge.textContent = this.getStatusText(this.suggestion.status);
     }
 
-    const priorityBadge = document.getElementById('priorityBadge');
+    const priorityBadge = $$('#priorityBadge');
     if (priorityBadge) {
       priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
       priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
     }
 
-    // Visibility info
-    const visibilityInfo = document.getElementById('visibilityInfo');
-    if (!visibilityInfo) return;
-    if (this.suggestion.org_level === 'company') {
-      visibilityInfo.innerHTML = `
-        <div class="visibility-badge company">
-          <i class="fas fa-globe"></i> Firmenweit geteilt
-          ${
-            this.suggestion.shared_by_name
-              ? `<span> von ${this.suggestion.shared_by_name} am ${this.suggestion.shared_at ? new Date(this.suggestion.shared_at).toLocaleDateString('de-DE') : ''}</span>`
-              : ''
-          }
-        </div>
-      `;
-    } else {
-      visibilityInfo.innerHTML = `
-        <div class="visibility-badge department">
-          <i class="fas fa-building"></i> Abteilung: ${this.suggestion.department_name}
-        </div>
-      `;
+    // Visibility Badge
+    const visibilityBadge = $$('#visibilityBadge');
+    const visibilityText = $$('#visibilityText');
+    if (visibilityBadge && visibilityText) {
+      const orgLevel = this.suggestion.orgLevel;
+      visibilityBadge.className = `visibility-badge ${orgLevel}`;
+
+      // Set icon and text based on org level
+      const icon = visibilityBadge.querySelector('i');
+      if (icon) {
+        if (orgLevel === 'team') {
+          icon.className = 'fas fa-users';
+          visibilityText.textContent = this.suggestion.teamName ?? 'Team';
+        } else if (orgLevel === 'department') {
+          icon.className = 'fas fa-building';
+          visibilityText.textContent = this.suggestion.departmentName;
+        } else {
+          icon.className = 'fas fa-globe';
+          visibilityText.textContent = 'Firmenweit';
+        }
+      }
     }
 
+    // Visibility info
+    const visibilityInfo = $$('#visibilityInfo');
+    if (!visibilityInfo) return;
+    if (this.suggestion.orgLevel === 'company') {
+      setHTML(
+        visibilityInfo,
+        `<div class="visibility-badge company">
+          <i class="fas fa-globe"></i> Firmenweit geteilt
+          ${
+            this.suggestion.sharedByName !== undefined && this.suggestion.sharedByName !== ''
+              ? `<span> von ${this.suggestion.sharedByName} am ${this.suggestion.sharedAt !== undefined && this.suggestion.sharedAt !== '' ? new Date(this.suggestion.sharedAt).toLocaleDateString('de-DE') : ''}</span>`
+              : ''
+          }
+        </div>`,
+      );
+    } // else {
+    // setHTML(
+    // visibilityInfo,
+    //`<div class="visibility-badge department">
+    //<i class="fas fa-building"></i> Abteilung: ${this.suggestion.departmentName}
+    //</div>`,
+    //);
+    //}
+
     // Description
-    const descriptionEl = document.getElementById('description');
+    const descriptionEl = document.querySelector('#description');
     if (descriptionEl) descriptionEl.textContent = this.suggestion.description;
 
     // Expected benefit
-    if (this.suggestion.expected_benefit) {
-      const benefitSection = document.getElementById('benefitSection');
-      const expectedBenefit = document.getElementById('expectedBenefit');
-      if (benefitSection) benefitSection.style.display = '';
-      if (expectedBenefit) expectedBenefit.textContent = this.suggestion.expected_benefit;
+    if (this.suggestion.expectedBenefit !== undefined && this.suggestion.expectedBenefit !== '') {
+      const benefitSection = document.querySelector('#benefitSection');
+      const expectedBenefit = document.querySelector('#expectedBenefit');
+      if (benefitSection instanceof HTMLElement) benefitSection.style.display = '';
+      if (expectedBenefit) expectedBenefit.textContent = this.suggestion.expectedBenefit;
     }
 
     // Financial info
-    if (this.suggestion.estimated_cost || this.suggestion.actual_savings) {
-      const financialSection = document.getElementById('financialSection');
-      if (financialSection) financialSection.style.display = '';
+    if (
+      (this.suggestion.estimatedCost !== undefined && this.suggestion.estimatedCost !== 0) ||
+      (this.suggestion.actualSavings !== undefined && this.suggestion.actualSavings !== 0)
+    ) {
+      const financialSection = document.querySelector('#financialSection');
+      if (financialSection instanceof HTMLElement) financialSection.style.display = '';
 
-      if (this.suggestion.estimated_cost) {
-        const estimatedCostEl = document.getElementById('estimatedCost');
+      if (this.suggestion.estimatedCost !== undefined && this.suggestion.estimatedCost !== 0) {
+        const estimatedCostEl = document.querySelector('#estimatedCost');
         if (estimatedCostEl) {
           estimatedCostEl.textContent = new Intl.NumberFormat('de-DE', {
             style: 'currency',
             currency: 'EUR',
-          }).format(this.suggestion.estimated_cost);
+          }).format(this.suggestion.estimatedCost);
         }
       }
 
-      if (this.suggestion.actual_savings) {
-        const actualSavingsEl = document.getElementById('actualSavings');
+      if (this.suggestion.actualSavings !== undefined && this.suggestion.actualSavings !== 0) {
+        const actualSavingsEl = document.querySelector('#actualSavings');
         if (actualSavingsEl) {
           actualSavingsEl.textContent = new Intl.NumberFormat('de-DE', {
             style: 'currency',
             currency: 'EUR',
-          }).format(this.suggestion.actual_savings);
+          }).format(this.suggestion.actualSavings);
         }
       }
     }
 
     // Details sidebar
-    const categoryEl = document.getElementById('category');
-    if (categoryEl) {
-      categoryEl.innerHTML = `
-      <span style="color: ${this.suggestion.category_color ?? '#666'}">
-        <i class="${this.suggestion.category_icon ?? 'fas fa-tag'}"></i>
-        ${this.suggestion.category_name}
-      </span>
-    `;
+    const categoryEl = document.querySelector('#category');
+    if (categoryEl instanceof HTMLElement) {
+      setHTML(
+        categoryEl,
+        `<span style="color: ${this.suggestion.categoryColor}">
+          <i class="${this.suggestion.categoryIcon}"></i>
+          ${this.suggestion.categoryName}
+        </span>`,
+      );
     }
 
     // For non-admins, just show the status text
-    const statusElement = document.getElementById('status');
-    const statusDropdownContainer = document.getElementById('statusDropdownContainer');
-    const statusDisplay = document.getElementById('statusDisplay');
+    const statusElement = document.querySelector('#status');
+    const statusDropdownContainer = document.querySelector('#statusDropdownContainer');
+    const statusDisplay = document.querySelector('#statusDisplay');
 
     if (!statusElement || !statusDropdownContainer || !statusDisplay) return;
 
     if (this.currentUser && (this.currentUser.role === 'admin' || this.currentUser.role === 'root')) {
       // Hide the status text and show the dropdown for admins
-      statusElement.style.display = 'none';
-      statusDropdownContainer.style.display = '';
+      if (statusElement instanceof HTMLElement) statusElement.style.display = 'none';
+      if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = '';
 
       // Update the dropdown display text
       const statusSpan = statusDisplay.querySelector('span');
       if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-      const statusValue = document.getElementById('statusValue');
+      const statusValue = document.querySelector('#statusValue');
       if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
     } else {
       // Show only the status text for regular users
       statusElement.textContent = this.getStatusText(this.suggestion.status);
-      statusDropdownContainer.style.display = 'none';
+      if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = 'none';
     }
 
-    if (this.suggestion.assigned_to) {
-      const assignedToItem = document.getElementById('assignedToItem');
-      if (assignedToItem) assignedToItem.style.display = '';
+    if (this.suggestion.assignedTo !== undefined && this.suggestion.assignedTo !== 0) {
+      const assignedToItem = document.querySelector('#assignedToItem');
+      if (assignedToItem instanceof HTMLElement) assignedToItem.style.display = '';
       // TODO: Load assigned user name
     }
 
-    if (this.suggestion.implementation_date) {
-      const implementationItem = document.getElementById('implementationItem');
-      const implementationDate = document.getElementById('implementationDate');
-      if (implementationItem) implementationItem.style.display = '';
+    // Check for valid implementation date (not undefined, null, or empty string)
+    if (
+      this.suggestion.implementationDate !== undefined &&
+      this.suggestion.implementationDate !== '' &&
+      // Type assertion needed because API can return null even though type says string | undefined
+      (this.suggestion.implementationDate as string | null) !== null
+    ) {
+      const implementationItem = document.querySelector('#implementationItem');
+      const implementationDate = document.querySelector('#implementationDate');
+      if (implementationItem instanceof HTMLElement) implementationItem.style.display = '';
       if (implementationDate) {
-        implementationDate.textContent = new Date(this.suggestion.implementation_date).toLocaleDateString('de-DE');
+        // Store in a const to avoid type issues
+        const dateValue = this.suggestion.implementationDate;
+        implementationDate.textContent = new Date(dateValue).toLocaleDateString('de-DE');
       }
     }
 
-    if (this.suggestion.rejection_reason) {
-      const rejectionItem = document.getElementById('rejectionItem');
-      const rejectionReason = document.getElementById('rejectionReason');
-      if (rejectionItem) rejectionItem.style.display = '';
-      if (rejectionReason) rejectionReason.textContent = this.suggestion.rejection_reason;
+    if (this.suggestion.rejectionReason !== undefined && this.suggestion.rejectionReason !== '') {
+      const rejectionItem = document.querySelector('#rejectionItem');
+      const rejectionReason = document.querySelector('#rejectionReason');
+      if (rejectionItem instanceof HTMLElement) rejectionItem.style.display = '';
+      if (rejectionReason) rejectionReason.textContent = this.suggestion.rejectionReason;
     }
   }
 
   private setupRoleBasedUI(): void {
     if (!this.currentUser || !this.suggestion) return;
 
-    // Show/hide admin elements
+    // Check if user is admin/root OR the author of the suggestion
+    const isAdminOrRoot = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
+    const isAuthor = this.currentUser.id === this.suggestion.submittedBy;
+    const canComment = isAdminOrRoot || isAuthor;
+
+    // Show/hide comment form based on permissions
+    const commentForm = document.querySelector('#commentForm');
+    if (commentForm instanceof HTMLElement) {
+      commentForm.style.display = canComment ? '' : 'none';
+    }
+
+    // Show/hide admin elements (only for admin/root, NOT for employee authors)
     const adminElements = document.querySelectorAll('.admin-only');
-    if (this.currentUser.role === 'admin' || this.currentUser.role === 'root') {
+    if (isAdminOrRoot) {
       adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
 
       // Show actions card
-      const actionsCard = document.getElementById('actionsCard');
-      if (actionsCard) actionsCard.style.display = '';
+      const actionsCard = document.querySelector('#actionsCard');
+      if (actionsCard instanceof HTMLElement) actionsCard.style.display = '';
 
       // Configure share/unshare buttons
-      const shareBtn = document.getElementById('shareBtn');
-      const unshareBtn = document.getElementById('unshareBtn');
+      const shareBtn = document.querySelector('#shareBtn');
+      const unshareBtn = document.querySelector('#unshareBtn');
 
-      if (this.suggestion.org_level === 'department') {
-        if (shareBtn) shareBtn.style.display = '';
-        if (unshareBtn) unshareBtn.style.display = 'none';
-      } else if (this.suggestion.org_level === 'company') {
-        if (shareBtn) shareBtn.style.display = 'none';
-        if (this.currentUser.role === 'root' || this.suggestion.shared_by === this.currentUser.id) {
-          if (unshareBtn) unshareBtn.style.display = '';
+      // Add info message for limited permissions
+      if (
+        this.suggestion.orgLevel === 'company' &&
+        this.currentUser.role === 'admin' &&
+        this.suggestion.submittedBy !== this.currentUser.id
+      ) {
+        // Admin but not the author - show info message
+        const statusDropdown = document.querySelector('#statusDropdown');
+        if (statusDropdown) {
+          const infoDiv = document.createElement('div');
+          infoDiv.className = 'alert alert-info mt-2';
+          infoDiv.innerHTML =
+            '<i class="fas fa-info-circle"></i> Nur der Verfasser dieses Vorschlags kann Änderungen vornehmen.';
+          statusDropdown.parentElement?.append(infoDiv);
+        }
+      }
+
+      // Handle share/unshare button visibility based on org level
+      if (this.suggestion.orgLevel === 'team') {
+        // Team level: can share but not unshare (it's already at lowest level)
+        if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
+        if (unshareBtn instanceof HTMLElement) unshareBtn.style.display = 'none';
+      } else if (this.suggestion.orgLevel === 'department') {
+        // Department level: can share to company or unshare to team
+        if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
+        if (
+          (this.currentUser.role === 'root' || this.suggestion.sharedBy === this.currentUser.id) &&
+          unshareBtn instanceof HTMLElement
+        ) {
+          unshareBtn.style.display = '';
+        } else if (unshareBtn instanceof HTMLElement) {
+          unshareBtn.style.display = 'none';
+        }
+      } else {
+        // Company level: can only unshare (already at highest level)
+        if (shareBtn instanceof HTMLElement) shareBtn.style.display = 'none';
+        if (
+          (this.currentUser.role === 'root' || this.suggestion.sharedBy === this.currentUser.id) &&
+          unshareBtn instanceof HTMLElement
+        ) {
+          unshareBtn.style.display = '';
+        } else if (unshareBtn instanceof HTMLElement) {
+          unshareBtn.style.display = 'none';
         }
       }
     } else {
+      // For employees (including authors), hide admin-only elements
       adminElements.forEach((el) => ((el as HTMLElement).style.display = 'none'));
+
+      // Hide actions card for employees
+      const actionsCard = document.querySelector('#actionsCard');
+      if (actionsCard instanceof HTMLElement) actionsCard.style.display = 'none';
     }
   }
 
   private async loadComments(): Promise<void> {
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/comments`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to load comments');
-
-      const data = await response.json();
-      this.renderComments(data.comments ?? []);
+      const comments = await this.apiClient.get<Comment[]>(`/kvp/${this.suggestionId}/comments`);
+      this.renderComments(comments);
     } catch (error) {
       console.error('Error loading comments:', error);
     }
   }
 
   private renderComments(comments: Comment[]): void {
-    const container = document.getElementById('commentList');
+    const container = document.querySelector('#commentList');
     if (!container) return;
 
     if (comments.length === 0) {
-      container.innerHTML = '<p class="empty-state">Noch keine Kommentare</p>';
+      setHTML(container as HTMLElement, '<p class="empty-state">Noch keine Kommentare</p>');
       return;
     }
 
-    container.innerHTML = comments
-      .map((comment) => {
-        const initials = `${comment.first_name[0]}${comment.last_name[0]}`.toUpperCase();
-        const commentClass = comment.is_internal ? 'comment-item comment-internal' : 'comment-item';
+    setHTML(
+      container as HTMLElement,
+      comments
+        .map((comment) => {
+          const initials = `${comment.firstName[0]}${comment.lastName[0]}`.toUpperCase();
+          const commentClass = comment.isInternal ? 'comment-item comment-internal' : 'comment-item';
 
-        return `
+          return `
         <div class="${commentClass}">
           <div class="comment-header">
             <div class="comment-author">
-              <div class="comment-avatar">${initials}</div>
+              <div class="user-avatar avatar-initials">${initials}</div>
               <div>
-                <strong>${comment.first_name} ${comment.last_name}</strong>
-                ${comment.is_internal ? '<span class="internal-badge">Intern</span>' : ''}
+                <strong>${comment.firstName} ${comment.lastName}</strong>
+                ${comment.isInternal ? '<span class="internal-badge">Intern</span>' : ''}
               </div>
             </div>
             <span class="comment-date">
-              ${new Date(comment.created_at).toLocaleDateString('de-DE', {
+              ${new Date(comment.createdAt).toLocaleDateString('de-DE', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
@@ -381,22 +588,15 @@ class KvpDetailPage {
           </div>
         </div>
       `;
-      })
-      .join('');
+        })
+        .join(''),
+    );
   }
 
   private async loadAttachments(): Promise<void> {
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/attachments`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to load attachments');
-
-      const data = await response.json();
-      this.renderAttachments(data.attachments ?? []);
+      const attachments = await this.apiClient.get<Attachment[]>(`/kvp/${this.suggestionId}/attachments`);
+      this.renderAttachments(attachments);
     } catch (error) {
       console.error('Error loading attachments:', error);
     }
@@ -407,74 +607,88 @@ class KvpDetailPage {
 
     // Filter photo attachments
     const photoTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    const photos = attachments.filter((att) => photoTypes.includes(att.file_type));
-    const otherFiles = attachments.filter((att) => !photoTypes.includes(att.file_type));
+    const photos = attachments.filter((att) => photoTypes.includes(att.fileType));
+    const otherFiles = attachments.filter((att) => !photoTypes.includes(att.fileType));
 
     // Render photo gallery
     if (photos.length > 0) {
-      const photoSection = document.getElementById('photoSection');
-      const photoGallery = document.getElementById('photoGallery');
+      const photoSection = document.querySelector('#photoSection');
+      const photoGallery = document.querySelector('#photoGallery');
 
-      if (photoSection) photoSection.style.display = '';
+      if (photoSection instanceof HTMLElement) photoSection.style.display = '';
       if (!photoGallery) return;
 
-      photoGallery.innerHTML = photos
-        .map(
-          (photo, index) => `
-        <div class="photo-thumbnail" onclick="window.openLightbox('${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${photo.id}/download')">
-          <img src="${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${photo.id}/download" 
-               alt="${this.escapeHtml(photo.file_name)}"
+      const token = getAuthToken();
+      const tokenParam = token !== null && token !== '' ? token : '';
+      setHTML(
+        photoGallery as HTMLElement,
+        photos
+          .map(
+            (photo, index) => `
+        <div class="photo-thumbnail" onclick="window.openLightbox('/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}')">
+          <img src="/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}"
+               alt="${this.escapeHtml(photo.fileName)}"
                loading="lazy">
           ${index === 0 && photos.length > 1 ? `<span class="photo-count">${photos.length} Fotos</span>` : ''}
         </div>
       `,
-        )
-        .join('');
+          )
+          .join(''),
+      );
     }
 
     // Render other attachments
     if (otherFiles.length > 0) {
-      const attachmentsCard = document.getElementById('attachmentsCard');
-      const container = document.getElementById('attachmentList');
+      const attachmentsCard = document.querySelector('#attachmentsCard');
+      const container = document.querySelector('#attachmentList');
 
-      if (attachmentsCard) attachmentsCard.style.display = '';
+      if (attachmentsCard instanceof HTMLElement) attachmentsCard.style.display = '';
       if (!container) return;
 
-      container.innerHTML = otherFiles
-        .map((attachment) => {
-          const fileIcon = this.getFileIcon(attachment.file_type);
-          const fileSize = this.formatFileSize(attachment.file_size);
+      setHTML(
+        container as HTMLElement,
+        otherFiles
+          .map((attachment) => {
+            const fileIcon = this.getFileIcon(attachment.fileType);
+            const fileSize = this.formatFileSize(attachment.fileSize);
 
-          return `
+            return `
           <div class="attachment-item" data-id="${attachment.id}">
             <i class="${fileIcon}"></i>
             <div class="attachment-info">
-              <div class="attachment-name">${this.escapeHtml(attachment.file_name)}</div>
+              <div class="attachment-name">${this.escapeHtml(attachment.fileName)}</div>
               <div class="attachment-meta">
-                ${fileSize} • ${attachment.uploaded_by_name} ${attachment.uploaded_by_lastname}
+                ${fileSize} • ${attachment.uploadedByName} ${attachment.uploadedByLastname}
               </div>
             </div>
             <i class="fas fa-download"></i>
           </div>
         `;
-        })
-        .join('');
+          })
+          .join(''),
+      );
 
       // Add click handlers
       container.querySelectorAll('.attachment-item').forEach((item) => {
         item.addEventListener('click', () => {
-          const id = item.getAttribute('data-id');
-          if (id) {
-            void this.downloadAttachment(parseInt(id));
+          const id = getData(item as HTMLElement, 'id');
+          if (id !== undefined && id !== '') {
+            this.downloadAttachment(Number.parseInt(id, 10));
           }
         });
       });
     }
   }
 
-  private async downloadAttachment(attachmentId: number): Promise<void> {
+  private downloadAttachment(attachmentId: number): void {
     try {
-      window.open(`${KVP_DETAIL_API_BASE_URL}/kvp/attachments/${attachmentId}/download`, '_blank');
+      const token = getAuthToken();
+      if (token === null || token === '') {
+        this.showError('Nicht authentifiziert');
+        return;
+      }
+      // Add token as query parameter for authentication
+      window.open(`/api/v2/kvp/attachments/${attachmentId}/download?token=${encodeURIComponent(token)}`, '_blank');
     } catch (error) {
       console.error('Error downloading attachment:', error);
       this.showError('Fehler beim Download');
@@ -483,33 +697,50 @@ class KvpDetailPage {
 
   private setupEventListeners(): void {
     // Comment form
-    const commentForm = document.getElementById('commentForm') as HTMLFormElement;
-    commentForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      void (async () => {
-        await this.addComment();
-      })();
-    });
+    const commentForm = document.querySelector('#commentForm');
+    if (commentForm) {
+      commentForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        void (async () => {
+          await this.addComment();
+        })();
+      });
+    }
 
     // Action buttons
-    document.getElementById('editBtn')?.addEventListener('click', () => {
+    document.querySelector('#editBtn')?.addEventListener('click', () => {
       // TODO: Navigate to edit page
-      alert('Bearbeiten-Funktion noch nicht implementiert');
+      console.warn('Bearbeiten-Funktion noch nicht implementiert');
+      this.showError('Bearbeiten-Funktion noch nicht implementiert');
     });
 
-    document.getElementById('shareBtn')?.addEventListener('click', () => {
-      void (async () => {
-        await this.shareSuggestion();
-      })();
+    document.querySelector('#shareBtn')?.addEventListener('click', () => {
+      this.openShareModal();
     });
 
-    document.getElementById('unshareBtn')?.addEventListener('click', () => {
+    // Listen for share event from modal
+    window.addEventListener('shareKvp', (event: Event) => {
+      const customEvent = event as CustomEvent;
+      interface ShareDetail {
+        orgLevel: 'company' | 'department' | 'team';
+        orgId: number | null;
+      }
+      const detail = customEvent.detail as ShareDetail;
+      void this.shareSuggestion(detail.orgLevel, detail.orgId);
+    });
+
+    // Listen for load organization data event
+    window.addEventListener('loadOrgData', () => {
+      void this.loadOrganizations();
+    });
+
+    document.querySelector('#unshareBtn')?.addEventListener('click', () => {
       void (async () => {
         await this.unshareSuggestion();
       })();
     });
 
-    document.getElementById('archiveBtn')?.addEventListener('click', () => {
+    document.querySelector('#archiveBtn')?.addEventListener('click', () => {
       void (async () => {
         await this.archiveSuggestion();
       })();
@@ -519,38 +750,32 @@ class KvpDetailPage {
     document.addEventListener('statusChange', (e: Event) => {
       void (async () => {
         const customEvent = e as CustomEvent;
-        if (customEvent.detail?.status) {
-          await this.updateStatus(customEvent.detail.status);
+        interface StatusChangeDetail {
+          status: string;
+        }
+
+        const detail = customEvent.detail as StatusChangeDetail | null;
+        if (detail?.status !== undefined && detail.status !== '') {
+          await this.updateStatus(detail.status);
         }
       })();
     });
   }
 
   private async addComment(): Promise<void> {
-    const input = document.getElementById('commentInput') as HTMLTextAreaElement;
-    const internalCheckbox = document.getElementById('internalComment') as HTMLInputElement;
+    const input = document.querySelector('#commentInput');
 
+    if (!(input instanceof HTMLTextAreaElement)) return;
     const comment = input.value.trim();
-    if (!comment) return;
+    if (comment === '') return;
 
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({
-          comment,
-          is_internal: internalCheckbox?.checked ?? false,
-        }),
+      await this.apiClient.post(`/kvp/${this.suggestionId}/comments`, {
+        comment,
       });
-
-      if (!response.ok) throw new Error('Failed to add comment');
 
       // Clear form
       input.value = '';
-      if (internalCheckbox) internalCheckbox.checked = false;
 
       // Reload comments
       await this.loadComments();
@@ -562,25 +787,120 @@ class KvpDetailPage {
     }
   }
 
-  private async shareSuggestion(): Promise<void> {
-    if (!confirm('Möchten Sie diesen Vorschlag wirklich firmenweit teilen?')) return;
+  private openShareModal(): void {
+    // Load organizations first
+    void this.loadOrganizations();
 
+    // Pre-select current organization level
+    if (this.suggestion !== null) {
+      const { orgLevel, departmentId, teamId } = this.suggestion;
+
+      // Select the radio button
+      const radioBtn = document.querySelector<HTMLInputElement>(
+        `#share${orgLevel.charAt(0).toUpperCase() + orgLevel.slice(1)}`,
+      );
+      if (radioBtn !== null) {
+        radioBtn.checked = true;
+
+        // Show the appropriate select and pre-select value
+        if (orgLevel === 'team' && teamId !== undefined) {
+          const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
+          if (teamSelect !== null) {
+            teamSelect.style.display = 'block';
+            // Value will be selected after teams are loaded
+            teamSelect.dataset.preselect = String(teamId);
+          }
+        } else if (orgLevel === 'department') {
+          const deptSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
+          if (deptSelect !== null) {
+            deptSelect.style.display = 'block';
+            // Value will be selected after departments are loaded
+            deptSelect.dataset.preselect = String(departmentId);
+          }
+        }
+      }
+    }
+
+    // Open modal using global function
+    const w = window as Window & { openShareModal?: () => void };
+    if (w.openShareModal !== undefined) {
+      w.openShareModal();
+    }
+  }
+
+  private async loadOrganizations(): Promise<void> {
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/share`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json',
-        },
+      // Load teams
+      const teams = await this.apiClient.get<{ id: number; name: string }[]>('/teams');
+      const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
+      if (teamSelect !== null && Array.isArray(teams)) {
+        teamSelect.innerHTML = '<option value="">Team auswählen...</option>';
+        teams.forEach((team) => {
+          const option = document.createElement('option');
+          option.value = String(team.id);
+          option.textContent = team.name;
+          teamSelect.append(option);
+        });
+
+        // Pre-select if needed
+        const preselect = teamSelect.dataset.preselect;
+        if (preselect !== undefined) {
+          teamSelect.value = preselect;
+          delete teamSelect.dataset.preselect;
+        }
+      }
+
+      // Load departments
+      const departments = await this.apiClient.get<{ id: number; name: string }[]>('/departments');
+      const deptSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
+      if (deptSelect !== null && Array.isArray(departments)) {
+        deptSelect.innerHTML = '<option value="">Abteilung auswählen...</option>';
+        departments.forEach((dept) => {
+          const option = document.createElement('option');
+          option.value = String(dept.id);
+          option.textContent = dept.name;
+          deptSelect.append(option);
+        });
+
+        // Pre-select if needed
+        const preselect = deptSelect.dataset.preselect;
+        if (preselect !== undefined) {
+          deptSelect.value = preselect;
+          delete deptSelect.dataset.preselect;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading organizations:', error);
+    }
+  }
+
+  private async shareSuggestion(orgLevel: 'company' | 'department' | 'team', orgId: number | null): Promise<void> {
+    try {
+      // Determine the correct orgId based on level
+      let finalOrgId = orgId;
+      if (orgLevel === 'company' && this.currentUser !== null) {
+        finalOrgId = this.currentUser.tenantId;
+      }
+
+      if (finalOrgId === null) {
+        this.showError('Ungültige Organisation ausgewählt');
+        return;
+      }
+
+      // Use v2 API with PUT method
+      const result = await this.apiClient.put(`/kvp/${this.suggestionId}/share`, {
+        orgLevel,
+        orgId: finalOrgId,
       });
 
-      if (!response.ok) throw new Error('Failed to share suggestion');
-
-      this.showSuccess('Vorschlag wurde firmenweit geteilt');
-
-      // Reload page to update UI
-      await this.loadSuggestion();
-      this.setupRoleBasedUI();
+      if (result !== null && result !== undefined) {
+        this.showSuccess(
+          `Vorschlag wurde auf ${orgLevel === 'company' ? 'Firmenebene' : orgLevel === 'department' ? 'Abteilungsebene' : 'Teamebene'} geteilt`,
+        );
+        // Reload page to update UI
+        await this.loadSuggestion();
+        this.setupRoleBasedUI();
+      }
     } catch (error) {
       console.error('Error sharing suggestion:', error);
       this.showError('Fehler beim Teilen des Vorschlags');
@@ -588,13 +908,14 @@ class KvpDetailPage {
   }
 
   private async unshareSuggestion(): Promise<void> {
-    if (!confirm('Möchten Sie das Teilen wirklich rückgängig machen?')) return;
+    const confirmed = await this.showConfirmDialog('Möchten Sie das Teilen wirklich rückgängig machen?');
+    if (!confirmed) return;
 
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}/unshare`, {
+      const response = await fetch(`/api/kvp/${this.suggestionId}/unshare`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
           'Content-Type': 'application/json',
         },
       });
@@ -613,13 +934,14 @@ class KvpDetailPage {
   }
 
   private async archiveSuggestion(): Promise<void> {
-    if (!confirm('Möchten Sie diesen Vorschlag wirklich archivieren?')) return;
+    const confirmed = await this.showConfirmDialog('Möchten Sie diesen Vorschlag wirklich archivieren?');
+    if (!confirmed) return;
 
     try {
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
+      const response = await fetch(`/api/kvp/${this.suggestionId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
         },
       });
 
@@ -645,101 +967,122 @@ class KvpDetailPage {
 
       interface UpdateData {
         status: string;
-        rejection_reason?: string;
+        rejectionReason?: string;
       }
 
-      let updateData: UpdateData = {
+      const updateData: UpdateData = {
         status: newStatus,
       };
 
       // If status is rejected, ask for rejection reason
       if (newStatus === 'rejected') {
-        const reason = prompt('Bitte geben Sie einen Ablehnungsgrund an:');
-        if (!reason || reason.trim() === '') {
+        const reason = await this.showPromptDialog('Bitte geben Sie einen Ablehnungsgrund an:');
+        if (reason === null || reason.trim() === '') {
           this.showError('Ein Ablehnungsgrund ist erforderlich');
           // Reset dropdown
-          const statusDisplay = document.getElementById('statusDisplay');
+          const statusDisplay = document.querySelector('#statusDisplay');
           if (statusDisplay && this.suggestion) {
             const statusSpan = statusDisplay.querySelector('span');
             if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-            const statusValue = document.getElementById('statusValue');
+            const statusValue = document.querySelector('#statusValue');
             if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
           }
           return;
         }
-        updateData.rejection_reason = reason.trim();
+        updateData.rejectionReason = reason.trim();
       }
 
-      const response = await fetch(`${KVP_DETAIL_API_BASE_URL}/kvp/${this.suggestionId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(updateData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error ?? 'Failed to update status');
+      try {
+        const data = await this.apiClient.put<{ suggestion: KvpSuggestion }>(`/kvp/${this.suggestionId}`, updateData);
+        this.suggestion = data.suggestion;
+      } catch (error: unknown) {
+        // Handle specific error cases
+        if (error instanceof Error && error.message.includes('403')) {
+          if (
+            this.suggestion !== null &&
+            this.suggestion.orgLevel === 'company' &&
+            this.suggestion.submittedBy !== this.currentUser.id
+          ) {
+            throw new Error('Nur der Verfasser dieses Vorschlags kann den Status ändern');
+          } else {
+            throw new Error('Sie haben keine Berechtigung, diesen Vorschlag zu bearbeiten');
+          }
+        }
+        throw error;
       }
-
-      const data = await response.json();
-      this.suggestion = data.suggestion;
 
       // Update the status badge
-      const statusBadge = document.getElementById('statusBadge');
+      const statusBadge = document.querySelector('#statusBadge');
       if (!statusBadge) return;
       statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
       statusBadge.textContent = this.getStatusText(newStatus);
 
       // Update rejection reason display
-      const rejectionItem = document.getElementById('rejectionItem');
-      const rejectionReason = document.getElementById('rejectionReason');
+      const rejectionItem = document.querySelector('#rejectionItem');
+      const rejectionReason = document.querySelector('#rejectionReason');
 
-      if (newStatus === 'rejected' && updateData.rejection_reason) {
-        if (rejectionItem) rejectionItem.style.display = '';
-        if (rejectionReason) rejectionReason.textContent = updateData.rejection_reason;
-      } else if (newStatus !== 'rejected') {
-        if (rejectionItem) rejectionItem.style.display = 'none';
+      if (newStatus === 'rejected' && updateData.rejectionReason !== undefined && updateData.rejectionReason !== '') {
+        if (rejectionItem instanceof HTMLElement) rejectionItem.style.display = '';
+        if (rejectionReason) rejectionReason.textContent = updateData.rejectionReason;
+      } else if (newStatus !== 'rejected' && rejectionItem instanceof HTMLElement) {
+        rejectionItem.style.display = 'none';
       }
 
       this.showSuccess(`Status geändert zu: ${this.getStatusText(newStatus)}`);
     } catch (error) {
       console.error('Error updating status:', error);
-      this.showError('Fehler beim Aktualisieren des Status');
+      // Show specific error message
+      if (error instanceof Error) {
+        this.showError(error.message);
+      } else {
+        this.showError('Fehler beim Aktualisieren des Status');
+      }
 
       // Reset dropdown to original value on error
-      const statusDisplay = document.getElementById('statusDisplay');
+      const statusDisplay = document.querySelector('#statusDisplay');
       if (statusDisplay && this.suggestion) {
         const statusSpan = statusDisplay.querySelector('span');
         if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-        const statusValue = document.getElementById('statusValue');
+        const statusValue = document.querySelector('#statusValue');
         if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
       }
     }
   }
 
   private getStatusText(status: string): string {
-    const statusMap: Record<string, string> = {
-      new: 'Neu',
-      in_review: 'In Prüfung',
-      approved: 'Genehmigt',
-      implemented: 'Umgesetzt',
-      rejected: 'Abgelehnt',
-      archived: 'Archiviert',
-    };
-    return statusMap[status] ?? status;
+    // Safely access with switch statement to avoid object injection
+    switch (status) {
+      case 'new':
+        return 'Neu';
+      case 'in_review':
+        return 'In Prüfung';
+      case 'approved':
+        return 'Genehmigt';
+      case 'implemented':
+        return 'Umgesetzt';
+      case 'rejected':
+        return 'Abgelehnt';
+      case 'archived':
+        return 'Archiviert';
+      default:
+        return status;
+    }
   }
 
   private getPriorityText(priority: string): string {
-    const priorityMap: Record<string, string> = {
-      low: 'Niedrig',
-      normal: 'Normal',
-      high: 'Hoch',
-      urgent: 'Dringend',
-    };
-    return priorityMap[priority] ?? priority;
+    // Safely access with switch statement to avoid object injection
+    switch (priority) {
+      case 'low':
+        return 'Niedrig';
+      case 'normal':
+        return 'Normal';
+      case 'high':
+        return 'Hoch';
+      case 'urgent':
+        return 'Dringend';
+      default:
+        return priority;
+    }
   }
 
   private getFileIcon(mimeType: string): string {
@@ -763,13 +1106,23 @@ class KvpDetailPage {
   }
 
   private showSuccess(message: string): void {
-    // TODO: Implement toast notification
-    alert(message);
+    showSuccessAlert(message);
   }
 
   private showError(message: string): void {
-    // TODO: Implement toast notification
-    alert(`Fehler: ${message}`);
+    showErrorAlert(message);
+  }
+
+  private async showConfirmDialog(message: string): Promise<boolean> {
+    // Use the consistent confirm dialog from alerts.ts
+    return await showConfirm(message);
+  }
+
+  private async showPromptDialog(message: string): Promise<string | null> {
+    // TODO: Implement custom prompt dialog
+    // For now, return empty string to avoid using native prompt
+    console.warn('Prompt dialog not implemented:', message);
+    return await Promise.resolve(''); // Return empty string as default
   }
 }
 

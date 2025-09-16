@@ -1,0 +1,1240 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mitarbeiterverwaltung - Assixx</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
+    <script src="/feature-flags.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <style>
+      @import url('/styles/dashboard-theme.css');
+
+      /* Glassmorphismus Background */
+      body {
+        position: relative;
+        min-height: 100vh;
+        overflow-x: hidden;
+        background: #000;
+      }
+
+      body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      /* Container */
+      .container {
+        padding: 24px;
+        margin-top: -25px !important; /* Align first container with sidebar user-info-card */
+      }
+
+      /* Card Styles - Genau wie in admin-dashboard */
+      .card {
+        background: hsla(0, 0%, 100%, 0.02);
+        backdrop-filter: blur(20px) saturate(180%);
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+        overflow: hidden;
+      }
+
+      /* Action Buttons - From manage-admins */
+      .action-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        padding: 6px 12px;
+        border-radius: var(--radius-md);
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 14px;
+
+        margin: 0 4px;
+      }
+
+      .action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+      }
+
+      .action-btn.edit {
+        border-color: rgba(33, 150, 243, 0.3);
+      }
+
+      .action-btn.edit:hover {
+        background: rgba(33, 150, 243, 0.2);
+        border-color: rgba(33, 150, 243, 0.5);
+      }
+
+      .action-btn.delete {
+        border-color: rgba(244, 67, 54, 0.3);
+      }
+
+      .action-btn.delete:hover {
+        background: rgba(244, 67, 54, 0.2);
+        border-color: rgba(244, 67, 54, 0.5);
+      }
+
+      .action-btn.status {
+        border-color: rgba(255, 193, 7, 0.3);
+      }
+
+      .action-btn.status:hover {
+        background: rgba(255, 193, 7, 0.2);
+        border-color: rgba(255, 193, 7, 0.5);
+      }
+
+      /* Badge Styles - Exakt aus admin-dashboard.html kopiert */
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 20px;
+      }
+
+      .badge-success {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(76, 175, 80, 0.9);
+        background: rgba(76, 175, 80, 0.1);
+        padding: 3px 8px;
+        border-radius: var(--radius-md);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(76, 175, 80, 0.2);
+        width: fit-content;
+      }
+
+      tr:hover .badge-success {
+        background: rgba(76, 175, 80, 0.15);
+        border-color: rgba(76, 175, 80, 0.3);
+      }
+
+      .badge-warning {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(255, 152, 0, 0.9);
+        background: rgba(255, 152, 0, 0.1);
+        padding: 3px 8px;
+        border-radius: var(--radius-md);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(255, 152, 0, 0.2);
+        width: fit-content;
+      }
+
+      tr:hover .badge-warning {
+        background: rgba(255, 152, 0, 0.15);
+        border-color: rgba(255, 152, 0, 0.3);
+      }
+
+      .badge-primary {
+        background-color: var(--primary-color);
+        color: #fff;
+      }
+
+      .badge-secondary {
+        background: rgba(108, 117, 125, 0.2);
+        color: #6c757d;
+      }
+
+      .badge-danger {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(244, 67, 54, 0.9);
+        background: rgba(244, 67, 54, 0.1);
+        padding: 3px 8px;
+        border-radius: var(--radius-md);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(244, 67, 54, 0.2);
+        width: fit-content;
+      }
+
+      .badge-info {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(0, 188, 212, 0.9);
+        background: rgba(0, 188, 212, 0.1);
+        padding: 3px 8px;
+        border-radius: var(--radius-md);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(0, 188, 212, 0.2);
+        width: fit-content;
+      }
+
+      .badge-dark {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11px;
+        color: rgba(69, 90, 100, 0.9);
+        background: rgba(69, 90, 100, 0.1);
+        padding: 3px 8px;
+        border-radius: var(--radius-md);
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
+        font-weight: 700;
+        border: 1px solid rgba(69, 90, 100, 0.2);
+        width: fit-content;
+      }
+
+      tr:hover .badge-info {
+        background: rgba(0, 188, 212, 0.15);
+        border-color: rgba(0, 188, 212, 0.3);
+      }
+
+      tr:hover .badge-secondary {
+        background: rgba(108, 117, 125, 0.15);
+        border-color: rgba(108, 117, 125, 0.3);
+      }
+
+      tr:hover .badge-dark {
+        background: rgba(69, 90, 100, 0.15);
+        border-color: rgba(69, 90, 100, 0.3);
+      }
+
+      /* Button Styles - Exakt aus admin-dashboard.html kopiert */
+      .btn {
+        backdrop-filter: blur(10px);
+        background: hsla(0, 0%, 100%, 0.05);
+        background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid hsla(0, 0%, 100%, 0.2);
+        cursor: pointer;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .btn-sm {
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+
+      .btn-sm.btn-primary {
+        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
+        border-color: rgba(0, 142, 255, 0.3);
+        color: #2196f3;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .btn-sm.btn-danger {
+        background: rgba(244, 67, 54, 0.2);
+        border: 1px solid rgba(244, 67, 54, 0.3);
+        color: #f44336;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+      }
+
+      .btn-sm.btn-danger:hover {
+        background: rgba(244, 67, 54, 0.3);
+        border-color: rgba(244, 67, 54, 0.5);
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(5px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .modal.active {
+        display: flex;
+      }
+
+      .modal-content {
+        overflow-y: auto;
+        backdrop-filter: blur(20px) saturate(180%);
+        background: #121212c4;
+        border: 1px solid hsla(0, 0%, 100%, 0.1);
+        border-radius: var(--radius-md);
+        box-shadow:
+          0 8px 32px #0006,
+          inset 0 1px #ffffff1a;
+        display: flex;
+        flex-direction: column;
+        max-height: 85vh !important;
+        max-width: 600px;
+        transform: translateY(0);
+        width: 90%;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .modal-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin: 0;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+      }
+
+      .modal-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--error-color);
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+      }
+
+      .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      .empty-state-text {
+        font-size: 18px;
+        margin-bottom: 10px;
+      }
+
+      .empty-state-subtext {
+        font-size: 14px;
+        opacity: 0.7;
+      }
+
+      /* Floating Add Button - wie bei manage-admins */
+      .add-employee-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: rgba(33, 150, 243, 0.2);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(33, 150, 243, 0.3);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        color: var(--primary-color);
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(33, 150, 243, 0.3);
+      }
+
+      .add-employee-btn:hover {
+        background: rgba(33, 150, 243, 0.3);
+        transform: scale(1.1);
+        box-shadow: 0 6px 24px rgba(33, 150, 243, 0.4);
+      }
+
+      /* Utility Classes */
+      .mb-3 {
+        margin-bottom: 1rem;
+      }
+
+      .text-secondary {
+        color: var(--text-secondary);
+      }
+    </style>
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+
+    <!-- Common Scripts with ApiClient -->
+    <script type="module" src="/scripts/common.js"></script>
+    <!-- DOMPurify CDN für inline Scripts -->
+    <script src="/js/purify.min.js"></script>
+  </head>
+  <body>
+    <!-- Notification Container for alerts -->
+    <div
+      id="notification-container"
+      class="notification-container"
+      style="position: fixed; top: 80px; right: 20px; z-index: 10000; pointer-events: none"
+    ></div>
+
+    <!-- Unified Navigation -->
+    <div id="navigation-container"></div>
+
+    <!-- Main Layout with Sidebar -->
+    <div class="layout-container">
+      <!-- Main Content Area -->
+      <main class="main-content">
+        <!-- Breadcrumb -->
+        <div id="breadcrumb-container"></div>
+
+        <div class="container">
+          <div class="card">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+              <div>
+                <h2 class="card-title">Mitarbeiterübersicht</h2>
+                <p class="text-secondary" class="u-mt-text">Mitarbeiter erstellen und verwalten</p>
+              </div>
+            </div>
+            <div class="table-responsive">
+              <div id="employeeTableContent">
+                <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Employee Modal -->
+    <div id="employee-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="modalTitle">Neuer Mitarbeiter</h3>
+          <button class="modal-close" onclick="closeEmployeeModal()">&times;</button>
+        </div>
+        <form id="employee-form" style="padding: 20px">
+          <div class="form-group">
+            <label class="form-label">Vorname *</label>
+            <input type="text" name="firstName" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nachname *</label>
+            <input type="text" name="lastName" class="form-control" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">E-Mail *</label>
+            <input type="email" name="email" class="form-control" required />
+            <small class="text-secondary">Wird auch als Benutzername verwendet</small>
+          </div>
+          <div class="form-group" id="email-confirm-group">
+            <label class="form-label">E-Mail bestätigen *</label>
+            <input type="email" name="emailConfirm" class="form-control" />
+            <small class="text-danger" id="email-error" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
+          </div>
+          <div class="form-group" id="password-group">
+            <label class="form-label">Passwort *</label>
+            <input type="password" name="password" class="form-control" />
+          </div>
+          <div class="form-group" id="password-confirm-group">
+            <label class="form-label">Passwort bestätigen *</label>
+            <input type="password" name="passwordConfirm" class="form-control" />
+            <small class="text-danger" id="password-error" style="display: none">Passwörter stimmen nicht überein</small>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Telefon</label>
+            <input type="tel" name="phone" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Position</label>
+            <input type="text" name="position" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Personalnummer</label>
+            <input
+              type="text"
+              name="employeeNumber"
+              class="form-control"
+              placeholder="z.B. EMP001 (optional, max 10 Zeichen)"
+              maxlength="10"
+              pattern="[A-Za-z0-9\-]{1,10}"
+              title="Max 10 Zeichen: Buchstaben, Zahlen, Bindestrich"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Geburtsdatum</label>
+            <input type="date" name="birthday" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Abteilung</label>
+            <select name="departmentId" id="employee-department-select" class="form-control">
+              <option value="">Keine Abteilung</option>
+              <!-- Will be populated dynamically -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Team</label>
+            <select name="teamId" id="employee-team-select" class="form-control">
+              <option value="">Kein Team</option>
+              <!-- Will be populated dynamically -->
+            </select>
+          </div>
+
+          <!-- Availability Section -->
+          <div class="form-section" style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 20px; padding-top: 20px">
+            <h4 style="color: #fff; margin-bottom: 15px">Verfügbarkeit</h4>
+            <div class="form-group">
+              <label class="form-label">Verfügbarkeitsstatus</label>
+              <select name="availabilityStatus" id="availability-status-select" class="form-control">
+                <option value="available">Verfügbar</option>
+                <option value="vacation">Urlaub</option>
+                <option value="sick">Krank</option>
+                <option value="unavailable">Nicht verfügbar</option>
+                <option value="training">Schulung</option>
+                <option value="other">Sonstiges</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Von Datum</label>
+              <input type="date" name="availabilityStart" id="availability-start-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Bis Datum</label>
+              <input type="date" name="availabilityEnd" id="availability-end-date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Notiz (optional)</label>
+              <textarea
+                name="availabilityNotes"
+                id="availability-notes"
+                class="form-control"
+                rows="3"
+                placeholder="z.B. Familienurlaub, Krankmeldung bis..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Account Status</label>
+            <select name="isActive" class="form-control">
+              <option value="1">Aktiv</option>
+              <option value="0">Inaktiv</option>
+            </select>
+          </div>
+          <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
+            <button type="submit" class="btn btn-primary">Speichern</button>
+            <button type="button" class="btn btn-secondary" onclick="closeEmployeeModal()">Abbrechen</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Floating Add Button -->
+    <button class="add-employee-btn" onclick="showEmployeeModal()">+</button>
+
+    <!-- Scripts -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/role-switch.ts"></script>
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+    <!-- Employee Management -->
+    <script type="module" src="/scripts/manage-employees.ts"></script>
+    <script type="module">
+      /* global DOMPurify */
+      // Auth check
+      const token = localStorage.getItem('token');
+      const userRole = localStorage.getItem('userRole');
+
+      if (!token || (userRole !== 'root' && userRole !== 'admin')) {
+        window.location.href = '/login';
+      }
+
+      // Initialize when DOM is ready
+      document.addEventListener('DOMContentLoaded', () => {
+        // Employee management is handled by manage-employees.ts
+      });
+
+      // Helper function to check if availability dates apply to today
+      function checkAvailabilityAppliesToday(startDate, endDate) {
+        if (!startDate && !endDate) {
+          // If no dates specified, assume it always applies
+          return true;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset to start of day for comparison
+
+        const start = startDate ? new Date(startDate) : null;
+        const end = endDate ? new Date(endDate) : null;
+
+        if (start) {
+          start.setHours(0, 0, 0, 0);
+        }
+        if (end) {
+          end.setHours(23, 59, 59, 999); // End of day
+        }
+
+        // Check if today falls within the range
+        const afterStart = !start || today >= start;
+        const beforeEnd = !end || today <= end;
+
+        return afterStart && beforeEnd;
+      }
+
+      // Helper function to get current availability status (considering dates)
+      function getCurrentAvailabilityStatus(employee) {
+        // Handle both snake_case and camelCase from API
+        const rawStatus = employee.availability_status || employee.availabilityStatus || 'available';
+
+        // Parse the status (might be "available vacation" format)
+        let status = 'available';
+        if (rawStatus) {
+          const parts = rawStatus.trim().split(/\s+/);
+          if (parts.length > 1) {
+            status = parts[1]; // e.g., "available vacation" -> "vacation"
+          } else {
+            status = parts[0] || 'available';
+          }
+        }
+
+        // If status is already "available", no need to check dates
+        if (status === 'available') {
+          return 'available';
+        }
+
+        // Check if the special status applies to today
+        const startDate = employee.availability_start || employee.availabilityStart;
+        const endDate = employee.availability_end || employee.availabilityEnd;
+
+        if (checkAvailabilityAppliesToday(startDate, endDate)) {
+          return status;
+        }
+
+        // Status doesn't apply to today, return available
+        return 'available';
+      }
+
+      // Helper function to get availability badge
+      function getAvailabilityBadge(employee) {
+        // Get the current (today-aware) status
+        const status = getCurrentAvailabilityStatus(employee);
+
+        const statusConfig = {
+          available: { class: 'badge-success', text: 'Verfügbar' },
+          vacation: { class: 'badge-warning', text: 'Urlaub' },
+          sick: { class: 'badge-danger', text: 'Krank' },
+          unavailable: { class: 'badge-secondary', text: 'Nicht verfügbar' },
+          training: { class: 'badge-info', text: 'Schulung' },
+          other: { class: 'badge-secondary', text: 'Sonstiges' },
+        };
+
+        // eslint-disable-next-line security/detect-object-injection
+        const config = statusConfig[status] || statusConfig.available;
+        return `<span class="badge ${config.class}">${config.text}</span>`;
+      }
+
+      // Helper function to format planned availability period
+      function getPlannedAvailability(employee) {
+        const rawStatus = employee.availability_status || employee.availabilityStatus || 'available';
+
+        // Parse the status
+        let status = 'available';
+        if (rawStatus) {
+          const parts = rawStatus.trim().split(/\s+/);
+          if (parts.length > 1) {
+            status = parts[1];
+          } else {
+            status = parts[0] || 'available';
+          }
+        }
+
+        // If available, return dash
+        if (status === 'available') {
+          return '-';
+        }
+
+        // Get dates
+        const startDate = employee.availability_start || employee.availabilityStart;
+        const endDate = employee.availability_end || employee.availabilityEnd;
+
+        // Format the status text
+        let statusText = '';
+        switch (status) {
+          case 'vacation':
+            statusText = 'Urlaub';
+            break;
+          case 'sick':
+            statusText = 'Krank';
+            break;
+          case 'training':
+            statusText = 'Schulung';
+            break;
+          case 'unavailable':
+            statusText = 'Nicht verfügbar';
+            break;
+          case 'other':
+            statusText = 'Sonstiges';
+            break;
+          default:
+            statusText = status;
+        }
+
+        // Format dates if available
+        if (startDate || endDate) {
+          const formatDate = (dateStr) => {
+            if (!dateStr) return '?';
+            const date = new Date(dateStr);
+            return `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
+          };
+
+          const startFormatted = formatDate(startDate);
+          const endFormatted = formatDate(endDate);
+
+          return `${statusText}: ${startFormatted} - ${endFormatted}`;
+        }
+
+        return statusText;
+      }
+
+      // Legacy functions for backwards compatibility
+      async function loadEmployees() {
+        try {
+          const employees = await apiClient.get('/api/v2/users');
+          const employeeUsers = employees.filter((u) => u.role === 'employee');
+
+          // V2 API already provides availability data in the user objects
+          // No need for additional availability API call
+          console.info('[Inline Script] Using availability data from v2 API');
+          renderEmployees(employeeUsers);
+        } catch (error) {
+          console.error('Error loading employees:', error);
+        }
+      }
+
+      function renderEmployees(employees) {
+        const container = document.querySelector('#employeeTableContent');
+
+        if (employees.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">👥</div>
+              <div class="empty-state-text">Keine Mitarbeiter gefunden</div>
+              <div class="empty-state-subtext">Fügen Sie Ihren ersten Mitarbeiter hinzu</div>
+            </div>
+          `;
+          return;
+        }
+
+        const tableHTML = `
+          <table class="employee-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>E-Mail</th>
+                <th>Position</th>
+                <th>Personalnummer</th>
+                <th>Abteilung</th>
+                <th>Team</th>
+                <th>Status</th>
+                <th>Verfügbarkeit</th>
+                <th>Geplant</th>
+                <th>Notizen</th>
+                <th>Aktionen</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${employees
+                .map((emp) => {
+                  const firstName = emp.first_name || emp.firstName || '';
+                  const lastName = emp.last_name || emp.lastName || '';
+                  const fullName = `${firstName} ${lastName}`.trim() || emp.username;
+                  // Check both snake_case and camelCase fields (API v1 vs v2)
+                  // Priority: Check isActive first (API v2), then is_active (API v1/DB)
+                  let isActive = true; // Default to active
+                  if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
+                    isActive = emp.isActive === true || emp.isActive === 1;
+                  } else if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
+                    isActive = emp.is_active === true || emp.is_active === 1;
+                  }
+
+                  // Get availability notes
+                  const notes = emp.availability_notes || emp.availabilityNotes || '-';
+
+                  return `
+                  <tr>
+                    <td>${fullName}</td>
+                    <td>${emp.email || emp.username || '-'}</td>
+                    <td>${emp.position || '-'}</td>
+                    <td>${emp.employee_number || emp.employeeNumber || '-'}</td>
+                    <td>${emp.department_name || emp.departmentName || '-'}</td>
+                    <td>${emp.team_name || emp.teamName || '-'}</td>
+                    <td>
+                      <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
+                        ${isActive ? 'Aktiv' : 'Inaktiv'}
+                      </span>
+                    </td>
+                    <td>
+                      ${getAvailabilityBadge(emp)}
+                    </td>
+                    <td>
+                      ${getPlannedAvailability(emp)}
+                    </td>
+                    <td title="${notes}">
+                      ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
+                    </td>
+                    <td>
+                      <button class="action-btn edit" onclick="editEmployee(${emp.id})">Bearbeiten</button>
+                      <button class="action-btn delete" onclick="deleteEmployee(${emp.id})">Löschen</button>
+                    </td>
+                  </tr>
+                  `;
+                })
+                .join('')}
+            </tbody>
+          </table>
+        `;
+
+        // Safe: HTML is generated from server data and sanitized with DOMPurify
+        // eslint-disable-next-line no-unsanitized/property
+        container.innerHTML = DOMPurify.sanitize(tableHTML);
+      }
+
+      // Modal functions
+      async function showEmployeeModal() {
+        document.querySelector('#modalTitle').textContent = 'Neuer Mitarbeiter';
+        const form = document.querySelector('#employee-form');
+        form.reset();
+
+        // Clear any stored employee ID
+        delete form.dataset.employeeId;
+
+        // Clear employee number field explicitly
+        if (form.employeeNumber) {
+          form.employeeNumber.value = '';
+        }
+
+        // Show confirmation fields for new employees
+        document.querySelector('#email-confirm-group').style.display = 'block';
+        document.querySelector('#password-confirm-group').style.display = 'block';
+
+        // Make password and confirmations required for new employees
+        form.password.setAttribute('required', 'required');
+        form.emailConfirm.setAttribute('required', 'required');
+        form.passwordConfirm.setAttribute('required', 'required');
+
+        // Clear any error messages
+        document.querySelector('#email-error').style.display = 'none';
+        document.querySelector('#password-error').style.display = 'none';
+
+        // Load departments and teams
+        await loadDepartments();
+        await loadTeams();
+
+        document.querySelector('#employee-modal').classList.add('active');
+      }
+
+      function closeEmployeeModal() {
+        const modal = document.querySelector('#employee-modal');
+        const form = document.querySelector('#employee-form');
+
+        // Clear form and any stored data
+        form.reset();
+        delete form.dataset.employeeId;
+
+        modal.classList.remove('active');
+      }
+
+      // Helper function to load availability data
+      async function loadAvailabilityData(form, employeeId) {
+        try {
+          const response = await apiClient.get(`/availability?employee_id=${employeeId}`);
+          if (response.availability && response.availability.length > 0) {
+            const current = response.availability[0];
+            setFormValue(form, 'availabilityStatus', current.status || 'available');
+            setFormValue(form, 'availabilityStart', current.start_date || '');
+            setFormValue(form, 'availabilityEnd', current.end_date || '');
+            setFormValue(form, 'availabilityNotes', current.notes || '');
+          } else {
+            setAvailabilityDefaults(form);
+          }
+        } catch (error) {
+          console.warn('Could not load availability data:', error);
+          setAvailabilityDefaults(form);
+        }
+      }
+
+      // Helper to set availability defaults
+      function setAvailabilityDefaults(form) {
+        setFormValue(form, 'availabilityStatus', 'available');
+        setFormValue(form, 'availabilityStart', '');
+        setFormValue(form, 'availabilityEnd', '');
+        setFormValue(form, 'availabilityNotes', '');
+      }
+
+      // Helper to safely set form values
+      function setFormValue(form, fieldName, value) {
+        // eslint-disable-next-line security/detect-object-injection
+        if (form[fieldName]) {
+          // eslint-disable-next-line security/detect-object-injection
+          form[fieldName].value = value;
+        }
+      }
+
+      // Helper to populate employee form
+      function populateEmployeeForm(form, emp) {
+        form.firstName.value = emp.first_name || emp.firstName || '';
+        form.lastName.value = emp.last_name || emp.lastName || '';
+        form.email.value = emp.email || emp.username || '';
+        form.phone.value = emp.phone || '';
+        form.position.value = emp.position || '';
+        form.employeeNumber.value = emp.employee_number || emp.employeeNumber || '';
+
+        if (emp.birthday) {
+          form.birthday.value = emp.birthday.split('T')[0];
+        }
+
+        // Set active status
+        const isActive = getActiveStatus(emp);
+        form.isActive.value = isActive ? '1' : '0';
+      }
+
+      // Helper to determine active status
+      function getActiveStatus(emp) {
+        if (Object.prototype.hasOwnProperty.call(emp, 'isActive')) {
+          return emp.isActive === true || emp.isActive === 1;
+        }
+        if (Object.prototype.hasOwnProperty.call(emp, 'is_active')) {
+          return emp.is_active === true || emp.is_active === 1;
+        }
+        return true; // Default to active
+      }
+
+      async function editEmployee(id) {
+        try {
+          const emp = await apiClient.get(`/api/v2/users/${id}`);
+          document.querySelector('#modalTitle').textContent = 'Mitarbeiter bearbeiten';
+
+          const form = document.querySelector('#employee-form');
+
+          // Hide confirmation fields for editing
+          document.querySelector('#email-confirm-group').style.display = 'none';
+          document.querySelector('#password-confirm-group').style.display = 'none';
+
+          // Remove required from password and confirmations for editing
+          form.password.removeAttribute('required');
+          form.emailConfirm.removeAttribute('required');
+          form.passwordConfirm.removeAttribute('required');
+
+          // Load availability data
+          await loadAvailabilityData(form, id);
+
+          // Populate form fields
+          populateEmployeeForm(form, emp);
+
+          // Load and select department
+          await loadDepartments();
+          if (emp.department_id || emp.departmentId) {
+            form.departmentId.value = emp.department_id || emp.departmentId;
+          }
+
+          // Load and select team
+          await loadTeams();
+          if (emp.team_id || emp.teamId) {
+            form.teamId.value = emp.team_id || emp.teamId;
+          }
+
+          // Make password optional for editing
+          const passwordInput = document.querySelector('input[name="password"]');
+          if (passwordInput) {
+            passwordInput.removeAttribute('required');
+            passwordInput.value = '';
+          }
+
+          form.dataset.employeeId = id;
+          document.querySelector('#employee-modal').classList.add('active');
+        } catch (error) {
+          console.error('Error loading employee:', error);
+        }
+      }
+
+      async function deleteEmployee(id) {
+        if (!confirm('Möchten Sie diesen Mitarbeiter wirklich löschen?')) {
+          return;
+        }
+
+        try {
+          await apiClient.delete(`/api/v2/users/${id}`);
+          alert('Mitarbeiter erfolgreich gelöscht');
+          loadEmployees();
+        } catch (error) {
+          console.error('Error deleting employee:', error);
+          alert(error.message || 'Netzwerkfehler beim Löschen');
+        }
+      }
+
+      function viewEmployeeDetails(id) {
+        // Temporär: Zeige Details in Alert
+        // TODO: Implementiere vollständige Detail-Ansicht
+        editEmployee(id); // Vorerst zum Bearbeiten-Modal weiterleiten
+      }
+
+      async function loadDepartments() {
+        try {
+          const departments = await apiClient.get('/api/v2/departments');
+          const select = document.querySelector('#employee-department-select');
+          if (select && departments) {
+            select.innerHTML = '<option value="">Keine Abteilung</option>';
+            departments.forEach((dept) => {
+              const option = document.createElement('option');
+              option.value = dept.id;
+              option.textContent = dept.name;
+              select.append(option);
+            });
+          }
+        } catch (error) {
+          console.error('Error loading departments:', error);
+        }
+      }
+
+      async function loadTeams() {
+        try {
+          const teams = await apiClient.get('/api/v2/teams');
+          const select = document.querySelector('#employee-team-select');
+          if (select && teams) {
+            select.innerHTML = '<option value="">Kein Team</option>';
+            teams.forEach((team) => {
+              const option = document.createElement('option');
+              option.value = team.id;
+              option.textContent = team.name;
+              select.append(option);
+            });
+          }
+        } catch (error) {
+          console.error('Error loading teams:', error);
+        }
+      }
+
+      // DISABLED - Form submit handler is now in manage-employees.ts to avoid duplicate requests
+      // The TypeScript file handles all form submission through the saveEmployee function
+      /*
+      document.querySelector('employee-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData);
+        const employeeId = e.target.dataset.employeeId;
+
+        // Validation for new employees
+        if (!employeeId) {
+          // Check email confirmation
+          if (data.email !== data.emailConfirm) {
+            document.querySelector('email-error').style.display = 'block';
+            return;
+          } else {
+            document.querySelector('email-error').style.display = 'none';
+          }
+
+          // Check password confirmation
+          if (data.password !== data.passwordConfirm) {
+            document.querySelector('password-error').style.display = 'block';
+            return;
+          } else {
+            document.querySelector('password-error').style.display = 'none';
+          }
+        }
+
+        // Remove confirmation fields from data
+        delete data.emailConfirm;
+        delete data.passwordConfirm;
+
+        // username = email
+        data.username = data.email;
+
+        // Convert isActive to boolean
+        data.isActive = data.isActive === '1';
+
+        // Convert IDs to integers if present
+        if (data.departmentId && data.departmentId !== '') {
+          data.departmentId = parseInt(data.departmentId);
+          data.department_id = data.departmentId; // Also set snake_case
+        } else {
+          delete data.departmentId;
+        }
+
+        if (data.teamId && data.teamId !== '') {
+          data.teamId = parseInt(data.teamId);
+          data.team_id = data.teamId; // Also set snake_case
+        } else {
+          delete data.teamId;
+        }
+
+        // API v2 uses camelCase - ensure correct field names
+        // Keep firstName and lastName as is (already camelCase from form)
+
+        // Convert snake_case to camelCase if needed
+        if (data.first_name && !data.firstName) {
+          data.firstName = data.first_name;
+          delete data.first_name;
+        }
+        if (data.last_name && !data.lastName) {
+          data.lastName = data.last_name;
+          delete data.last_name;
+        }
+        if (data.employee_number && !data.employeeNumber) {
+          data.employeeNumber = data.employee_number;
+          delete data.employee_number;
+        }
+        if (data.department_id && !data.departmentId) {
+          data.departmentId = data.department_id;
+          delete data.department_id;
+        }
+
+        // API v2 uses isActive (boolean)
+        if (data.isActive !== undefined) {
+          data.isActive = data.isActive === '1' || data.isActive === true;
+        }
+
+        console.info('Employee form data:', data);
+
+        try {
+          if (employeeId) {
+            // Update existing employee
+            if (!data.password) {
+              delete data.password;
+            }
+
+            // Update employee data first
+            await apiClient.put(`/api/v2/users/${employeeId}`, data);
+
+            // Then update availability if any fields are set
+            if (data.availabilityStatus || data.availabilityStart || data.availabilityEnd) {
+              try {
+                const availabilityData = {
+                  availabilityStatus: data.availabilityStatus || 'available',
+                  availabilityStart: data.availabilityStart || null,
+                  availabilityEnd: data.availabilityEnd || null,
+                  availabilityNotes: data.availabilityNotes || '',
+                };
+
+                // Use v2 API endpoint for availability
+                await apiClient.put(`/api/v2/users/${employeeId}/availability`, availabilityData);
+                console.log('Availability updated successfully');
+              } catch (availErr) {
+                console.error('Error updating availability:', availErr);
+                // Don't fail the whole operation if availability update fails
+              }
+            }
+
+            alert('Mitarbeiter aktualisiert');
+            closeEmployeeModal();
+            loadEmployees(); // Dynamisches Reload wie bei manage-admins!
+          } else {
+            // Create new employee
+            data.role = 'employee';
+
+            // If no employee number provided, generate one
+            if (!data.employeeNumber || data.employeeNumber.trim() === '') {
+              // Generate a unique employee number (max 10 chars)
+              const timestamp = Date.now().toString().slice(-6);
+              data.employeeNumber = `EMP${timestamp}`;
+            }
+
+            await apiClient.post('/api/v2/users', data);
+            alert('Mitarbeiter erstellt');
+            closeEmployeeModal();
+            loadEmployees(); // Dynamisches Reload wie bei manage-admins!
+          }
+        } catch (error) {
+          console.error('Error saving employee (HTML handler):', error);
+          // Check if error has a message
+          if (error && error.message) {
+            const errorMessage = error.message.toLowerCase();
+            if (errorMessage.includes('email already exists') || errorMessage.includes('email existiert bereits')) {
+              alert('Diese E-Mail-Adresse ist bereits vergeben. Bitte verwenden Sie eine andere E-Mail-Adresse.');
+            } else if (errorMessage.includes('username already exists')) {
+              alert('Dieser Benutzername ist bereits vergeben. Bitte wählen Sie einen anderen Benutzernamen.');
+            } else {
+              alert(error.message || 'Fehler beim Speichern');
+            }
+          } else {
+            alert('Fehler beim Speichern');
+          }
+        }
+      });
+      */
+
+      // Close modal on outside click
+      window.addEventListener('click', (e) => {
+        const modal = document.querySelector('#employee-modal');
+        if (e.target === modal) {
+          closeEmployeeModal();
+        }
+      });
+
+      // Real-time validation for email confirmation
+      document.querySelector('input[name="emailConfirm"]')?.addEventListener('input', (e) => {
+        const email = document.querySelector('input[name="email"]').value;
+        const emailConfirm = e.target.value;
+
+        if (emailConfirm && email !== emailConfirm) {
+          document.querySelector('#email-error').style.display = 'block';
+        } else {
+          document.querySelector('#email-error').style.display = 'none';
+        }
+      });
+
+      // Real-time validation for password confirmation
+      document.querySelector('input[name="passwordConfirm"]')?.addEventListener('input', (e) => {
+        const password = document.querySelector('input[name="password"]').value;
+        const passwordConfirm = e.target.value;
+
+        if (passwordConfirm && password !== passwordConfirm) {
+          document.querySelector('#password-error').style.display = 'block';
+        } else {
+          document.querySelector('#password-error').style.display = 'none';
+        }
+      });
+
+      // Initialize
+      document.addEventListener('DOMContentLoaded', () => {
+        loadEmployees();
+      });
+    </script>
+  </body>
+</html>

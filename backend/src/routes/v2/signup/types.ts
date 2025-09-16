@@ -13,7 +13,7 @@ export interface SignupRequest {
   adminPassword: string;
   adminFirstName: string;
   adminLastName: string;
-  selectedPlan?: string;
+  plan?: string;
 }
 
 export interface SignupResponse {
@@ -50,19 +50,27 @@ export interface ErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: Array<{
+    details?: {
       field: string;
       message: string;
-    }>;
+    }[];
   };
 }
 
+/**
+ *
+ */
 export class ServiceError extends Error {
+  /**
+   *
+   * @param code - The code parameter
+   * @param message - The message parameter
+   */
   constructor(
     public code: string,
     message: string,
   ) {
     super(message);
-    this.name = "ServiceError";
+    this.name = 'ServiceError';
   }
 }

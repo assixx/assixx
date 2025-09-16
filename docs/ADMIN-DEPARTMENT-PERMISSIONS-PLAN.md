@@ -1,8 +1,8 @@
 # 🎯 Implementierungsplan: Admin-Abteilungszuweisungen
 
-**Erstellt:** 16.06.2025  
-**Status:** Genehmigt - Bereit zur Implementierung  
-**Priorität:** HOCH  
+**Erstellt:** 16.06.2025
+**Status:** Genehmigt - Bereit zur Implementierung
+**Priorität:** HOCH
 **Geschätzte Dauer:** 2-3 Tage
 
 ## 📋 Übersicht
@@ -151,17 +151,17 @@ export const checkDepartmentAccess = async (req, res, next) => {
   const { department_id } = req.body || req.query || req.params;
 
   // Root und Employees überspringen
-  if (user.role === "root" || user.role === "employee") {
+  if (user.role === 'root' || user.role === 'employee') {
     return next();
   }
 
   // Admin: Prüfe Berechtigungen
-  if (user.role === "admin" && department_id) {
+  if (user.role === 'admin' && department_id) {
     const hasAccess = await AdminPermissionService.hasAccess(user.id, department_id, user.tenant_id);
 
     if (!hasAccess) {
       return res.status(403).json({
-        error: "Keine Berechtigung für diese Abteilung",
+        error: 'Keine Berechtigung für diese Abteilung',
       });
     }
   }
@@ -274,37 +274,37 @@ class DepartmentGroupService {
 ```javascript
 // In signup.js
 function handleRoleChange() {
-  const role = document.getElementById("role").value;
-  const permissionsSection = document.getElementById("departmentPermissionsSection");
+  const role = document.querySelector('role').value;
+  const permissionsSection = document.querySelector('departmentPermissionsSection');
 
-  if (role === "admin" && currentUser.role === "root") {
-    permissionsSection.style.display = "block";
+  if (role === 'admin' && currentUser.role === 'root') {
+    permissionsSection.style.display = 'block';
     loadAvailableDepartments();
   } else {
-    permissionsSection.style.display = "none";
+    permissionsSection.style.display = 'none';
   }
 }
 
 function handlePermissionTypeChange() {
   const type = document.querySelector('input[name="permissionType"]:checked').value;
-  const departmentContainer = document.getElementById("departmentSelectContainer");
-  const groupContainer = document.getElementById("groupSelectContainer");
+  const departmentContainer = document.querySelector('departmentSelectContainer');
+  const groupContainer = document.querySelector('groupSelectContainer');
 
-  departmentContainer.style.display = type === "specific" ? "block" : "none";
-  groupContainer.style.display = type === "groups" ? "block" : "none";
+  departmentContainer.style.display = type === 'specific' ? 'block' : 'none';
+  groupContainer.style.display = type === 'groups' ? 'block' : 'none';
 
-  if (type === "groups") {
+  if (type === 'groups') {
     loadDepartmentGroups();
   }
 }
 
 async function loadDepartmentGroups() {
   try {
-    const response = await fetch("/api/department-groups/hierarchy");
+    const response = await fetch('/api/department-groups/hierarchy');
     const groups = await response.json();
     renderGroupTree(groups);
   } catch (error) {
-    console.error("Fehler beim Laden der Gruppen:", error);
+    console.error('Fehler beim Laden der Gruppen:', error);
   }
 }
 
@@ -431,28 +431,28 @@ function renderGroupTree(groups, level = 0) {
 // In common.js oder sidebar.js
 async function loadDepartmentBadge() {
   const user = getCurrentUser();
-  if (user.role !== "admin") return;
+  if (user.role !== 'admin') return;
 
   try {
-    const response = await fetch("/api/admin-permissions/my-departments");
+    const response = await fetch('/api/admin-permissions/my-departments');
     const data = await response.json();
 
-    const badge = document.getElementById("departmentBadge");
-    const badgeSpan = badge.querySelector(".badge");
+    const badge = document.querySelector('departmentBadge');
+    const badgeSpan = badge.querySelector('.badge');
 
     if (data.hasAllAccess) {
-      badgeSpan.className = "badge badge-success";
-      badgeSpan.textContent = "Alle Abteilungen";
+      badgeSpan.className = 'badge badge-success';
+      badgeSpan.textContent = 'Alle Abteilungen';
     } else if (data.departments.length === 0) {
-      badgeSpan.className = "badge badge-warning";
-      badgeSpan.textContent = "Keine Abteilungen";
+      badgeSpan.className = 'badge badge-warning';
+      badgeSpan.textContent = 'Keine Abteilungen';
     } else {
-      badgeSpan.className = "badge badge-info";
+      badgeSpan.className = 'badge badge-info';
       badgeSpan.textContent = `${data.departments.length} Abteilungen`;
-      badgeSpan.title = data.departments.map((d) => d.name).join(", ");
+      badgeSpan.title = data.departments.map((d) => d.name).join(', ');
     }
   } catch (error) {
-    console.error("Fehler beim Laden der Abteilungen:", error);
+    console.error('Fehler beim Laden der Abteilungen:', error);
   }
 }
 ```
@@ -537,25 +537,25 @@ async function loadDepartmentBadge() {
 ```javascript
 const permissionTemplates = {
   production: {
-    name: "Nur Produktion",
-    departments: ["Produktion", "Fertigung", "Qualitätskontrolle"],
+    name: 'Nur Produktion',
+    departments: ['Produktion', 'Fertigung', 'Qualitätskontrolle'],
     suggestedGroups: [
       {
-        name: "Produktion",
+        name: 'Produktion',
         subgroups: [
-          { name: "Gelbe Dosen", departments: ["Gelbe Dosen - Früh", "Gelbe Dosen - Spät"] },
-          { name: "Rote Dosen", departments: ["Rote Dosen - Früh", "Rote Dosen - Spät"] },
+          { name: 'Gelbe Dosen', departments: ['Gelbe Dosen - Früh', 'Gelbe Dosen - Spät'] },
+          { name: 'Rote Dosen', departments: ['Rote Dosen - Früh', 'Rote Dosen - Spät'] },
         ],
       },
     ],
   },
   administration: {
-    name: "Nur Verwaltung",
-    departments: ["HR", "Buchhaltung", "IT"],
+    name: 'Nur Verwaltung',
+    departments: ['HR', 'Buchhaltung', 'IT'],
   },
   management: {
-    name: "Management",
-    departments: ["Geschäftsführung", "Vertrieb", "Marketing"],
+    name: 'Management',
+    departments: ['Geschäftsführung', 'Vertrieb', 'Marketing'],
   },
 };
 ```
@@ -565,13 +565,13 @@ const permissionTemplates = {
 ```javascript
 // Mehrere Admins gleichzeitig bearbeiten
 async function bulkAssignDepartments(adminIds, departmentIds) {
-  const response = await fetch("/api/admin-permissions/bulk", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+  const response = await fetch('/api/admin-permissions/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       adminIds,
       departmentIds,
-      operation: "assign", // oder 'remove'
+      operation: 'assign', // oder 'remove'
     }),
   });
   return response.json();

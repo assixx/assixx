@@ -1,27 +1,22 @@
 /**
  * Machines API v2 Routes
  * Industrial machine management system
- * @swagger
+
  * tags:
  *   name: Machines v2
  *   description: Industrial machine management API v2
  */
+import express, { RequestHandler, Router } from 'express';
 
-import express, { Router, RequestHandler } from "express";
-
-import {
-  authenticateV2,
-  requireRoleV2,
-} from "../../../middleware/v2/auth.middleware";
-import { typed } from "../../../utils/routeHandlers";
-
-import { machinesController } from "./machines.controller";
-import { machineValidation } from "./validation";
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
+import { typed } from '../../../utils/routeHandlers';
+import { machinesController } from './machines.controller';
+import { machineValidation } from './validation';
 
 const router: Router = express.Router();
 
 /**
- * @swagger
+
  * /api/v2/machines:
  *   get:
  *     summary: List all machines
@@ -87,14 +82,16 @@ const router: Router = express.Router();
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/",
+  '/',
   authenticateV2 as RequestHandler,
   machineValidation.listMachines,
-  typed.auth(machinesController.listMachines),
+  typed.auth((req, res) => {
+    void machinesController.listMachines(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/statistics:
  *   get:
  *     summary: Get machine statistics
@@ -140,13 +137,15 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/statistics",
+  '/statistics',
   authenticateV2 as RequestHandler,
-  typed.auth(machinesController.getStatistics),
+  typed.auth((req, res) => {
+    void machinesController.getStatistics(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/categories:
  *   get:
  *     summary: Get machine categories
@@ -185,13 +184,15 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/categories",
+  '/categories',
   authenticateV2 as RequestHandler,
-  typed.auth(machinesController.getCategories),
+  typed.auth((req, res) => {
+    void machinesController.getCategories(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/upcoming-maintenance:
  *   get:
  *     summary: Get upcoming maintenance
@@ -229,14 +230,16 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 router.get(
-  "/upcoming-maintenance",
+  '/upcoming-maintenance',
   authenticateV2 as RequestHandler,
   machineValidation.upcomingMaintenance,
-  typed.auth(machinesController.getUpcomingMaintenance),
+  typed.auth((req, res) => {
+    void machinesController.getUpcomingMaintenance(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/machines/maintenance:
  *   post:
  *     summary: Add maintenance record
@@ -324,16 +327,18 @@ router.get(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.post(
-  "/maintenance",
+  '/maintenance',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.addMaintenanceRecord,
-  typed.auth(machinesController.addMaintenanceRecord),
+  typed.auth((req, res) => {
+    void machinesController.addMaintenanceRecord(req, res);
+  }),
 );
 
 /**
- * @swagger
- * /api/v2/machines/{id}:
+
+ * /api/v2/machines/\{id\}:
  *   get:
  *     summary: Get machine by ID
  *     description: Get detailed information about a specific machine
@@ -365,15 +370,17 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.getMachine),
+  typed.auth((req, res) => {
+    void machinesController.getMachine(req, res);
+  }),
 );
 
 /**
- * @swagger
- * /api/v2/machines/{id}/maintenance:
+
+ * /api/v2/machines/\{id\}/maintenance:
  *   get:
  *     summary: Get maintenance history
  *     description: Get all maintenance records for a specific machine
@@ -409,14 +416,16 @@ router.get(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  "/:id/maintenance",
+  '/:id/maintenance',
   authenticateV2 as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.getMaintenanceHistory),
+  typed.auth((req, res) => {
+    void machinesController.getMaintenanceHistory(req, res);
+  }),
 );
 
 /**
- * @swagger
+
  * /api/v2/machines:
  *   post:
  *     summary: Create new machine
@@ -548,16 +557,18 @@ router.get(
  *         $ref: '#/components/responses/ForbiddenError'
  */
 router.post(
-  "/",
+  '/',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.createMachine,
-  typed.auth(machinesController.createMachine),
+  typed.auth((req, res) => {
+    void machinesController.createMachine(req, res);
+  }),
 );
 
 /**
- * @swagger
- * /api/v2/machines/{id}:
+
+ * /api/v2/machines/\{id\}:
  *   put:
  *     summary: Update machine
  *     description: Update an existing machine's information (admin only)
@@ -685,19 +696,21 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.put(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.updateMachine,
-  typed.auth(machinesController.updateMachine),
+  typed.auth((req, res) => {
+    void machinesController.updateMachine(req, res);
+  }),
 );
 
 /**
- * @swagger
- * /api/v2/machines/{id}:
+
+ * /api/v2/machines/\{id\}:
  *   delete:
  *     summary: Delete machine
- *     description: Soft delete a machine (marks as inactive, admin only)
+ *     description: Hard delete a machine (permanently removes from database, admin only)
  *     tags: [Machines v2]
  *     security:
  *       - bearerAuth: []
@@ -732,11 +745,111 @@ router.put(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.delete(
-  "/:id",
+  '/:id',
   authenticateV2 as RequestHandler,
-  requireRoleV2(["admin"]) as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
   machineValidation.machineId,
-  typed.auth(machinesController.deleteMachine),
+  typed.auth((req, res) => {
+    void machinesController.deleteMachine(req, res);
+  }),
+);
+
+/**
+
+ * /api/v2/machines/\{id\}/deactivate:
+ *   put:
+ *     summary: Deactivate machine
+ *     description: Deactivate a machine (marks as inactive, admin only)
+ *     tags: [Machines v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Machine ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Machine deactivated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: Machine deactivated successfully
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.put(
+  '/:id/deactivate',
+  authenticateV2 as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
+  machineValidation.machineId,
+  typed.auth((req, res) => {
+    void machinesController.deactivateMachine(req, res);
+  }),
+);
+
+/**
+
+ * /api/v2/machines/\{id\}/activate:
+ *   put:
+ *     summary: Activate machine
+ *     description: Activate a previously deactivated machine (admin only)
+ *     tags: [Machines v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: Machine ID
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Machine activated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/ApiSuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         message:
+ *                           type: string
+ *                           example: Machine activated successfully
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         $ref: '#/components/responses/ForbiddenError'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.put(
+  '/:id/activate',
+  authenticateV2 as RequestHandler,
+  requireRoleV2(['admin']) as RequestHandler,
+  machineValidation.machineId,
+  typed.auth((req, res) => {
+    void machinesController.activateMachine(req, res);
+  }),
 );
 
 export default router;

@@ -2,28 +2,20 @@
  * Tests for Plans API v2
  * Tests subscription plans, addons, and billing functionality
  */
+import { afterAll, beforeAll, beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { Pool } from 'mysql2/promise';
+import request from 'supertest';
 
+import app from '../../../../app.js';
 import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-  jest,
-} from "@jest/globals";
-import request from "supertest";
-import app from "../../../../app.js";
-import { Pool } from "mysql2/promise";
-import {
-  createTestDatabase,
   cleanupTestData,
   closeTestDatabase,
+  createTestDatabase,
   createTestTenant,
   createTestUser,
-} from "../../../mocks/database.js";
+} from '../../../mocks/database.js';
 
-describe("Plans API v2", () => {
+describe('Plans API v2', () => {
   // Increase timeout for database operations
   jest.setTimeout(60000); // 60 seconds
 
@@ -41,44 +33,40 @@ describe("Plans API v2", () => {
     await cleanupTestData();
 
     // Create test tenant
-    tenantId = await createTestTenant(
-      testDb,
-      "plans-test",
-      "Test Plans Tenant",
-    );
+    tenantId = await createTestTenant(testDb, 'plans-test', 'Test Plans Tenant');
 
     // Create admin user
     const adminUser = await createTestUser(testDb, {
-      username: "plans_admin_v2",
-      email: "admin@plansv2.test",
-      password: "Admin123!",
-      first_name: "Admin",
-      last_name: "User",
-      role: "admin",
+      username: 'plans_admin_v2',
+      email: 'admin@plansv2.test',
+      password: 'Admin123!',
+      first_name: 'Admin',
+      last_name: 'User',
+      role: 'admin',
       tenant_id: tenantId,
     });
     adminUserId = adminUser.id;
 
     // Create regular user
     const regularUser = await createTestUser(testDb, {
-      username: "plans_user_v2",
-      email: "user@plansv2.test",
-      password: "User123!",
-      first_name: "Regular",
-      last_name: "User",
-      role: "employee",
+      username: 'plans_user_v2',
+      email: 'user@plansv2.test',
+      password: 'User123!',
+      first_name: 'Regular',
+      last_name: 'User',
+      role: 'employee',
       tenant_id: tenantId,
     });
 
     // Login to get tokens
     const adminLogin = await request(app)
-      .post("/api/v2/auth/login")
-      .send({ email: adminUser.email, password: "Admin123!" });
+      .post('/api/v2/auth/login')
+      .send({ email: adminUser.email, password: 'Admin123!' });
     adminToken = adminLogin.body.data.accessToken;
 
     const userLogin = await request(app)
-      .post("/api/v2/auth/login")
-      .send({ email: regularUser.email, password: "User123!" });
+      .post('/api/v2/auth/login')
+      .send({ email: regularUser.email, password: 'User123!' });
     userToken = userLogin.body.data.accessToken;
 
     // Create test plans if they don't exist
@@ -101,9 +89,9 @@ describe("Plans API v2", () => {
       "SELECT id, code FROM plans WHERE code IN ('basic', 'professional', 'enterprise')",
     );
     const planRows = plans as any[];
-    basicPlanId = planRows.find((p) => p.code === "basic").id;
-    professionalPlanId = planRows.find((p) => p.code === "professional").id;
-    enterprisePlanId = planRows.find((p) => p.code === "enterprise").id;
+    basicPlanId = planRows.find((p) => p.code === 'basic').id;
+    professionalPlanId = planRows.find((p) => p.code === 'professional').id;
+    enterprisePlanId = planRows.find((p) => p.code === 'enterprise').id;
 
     // Assign basic plan to test tenant
     await testDb.execute(
@@ -116,12 +104,8 @@ describe("Plans API v2", () => {
   afterAll(async () => {
     // Clean up test data
     if (testDb && tenantId) {
-      await testDb.execute("DELETE FROM tenant_addons WHERE tenant_id = ?", [
-        tenantId,
-      ]);
-      await testDb.execute("DELETE FROM tenant_plans WHERE tenant_id = ?", [
-        tenantId,
-      ]);
+      await testDb.execute('DELETE FROM tenant_addons WHERE tenant_id = ?', [tenantId]);
+      await testDb.execute('DELETE FROM tenant_plans WHERE tenant_id = ?', [tenantId]);
     }
     await cleanupTestData();
     await closeTestDatabase();
@@ -129,53 +113,51 @@ describe("Plans API v2", () => {
 
   beforeEach(async () => {
     // Reset tenant addons before each test
-    await testDb.execute("DELETE FROM tenant_addons WHERE tenant_id = ?", [
-      tenantId,
-    ]);
+    await testDb.execute('DELETE FROM tenant_addons WHERE tenant_id = ?', [tenantId]);
   });
 
-  describe("GET /api/v2/plans", () => {
-    it("should return all active plans without authentication", async () => {
-      const response = await request(app).get("/api/v2/plans").expect(200);
+  describe('GET /api/v2/plans', () => {
+    it('should return all active plans without authentication', async () => {
+      const response = await request(app).get('/api/v2/plans').expect(200);
 
       expect(response.body).toMatchObject({
         success: true,
         data: expect.arrayContaining([
           expect.objectContaining({
-            code: "basic",
+            code: 'basic',
             isActive: true,
           }),
           expect.objectContaining({
-            code: "professional",
+            code: 'professional',
             isActive: true,
           }),
           expect.objectContaining({
-            code: "enterprise",
+            code: 'enterprise',
             isActive: true,
           }),
         ]),
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
     });
 
-    it("should include features for each plan", async () => {
-      const response = await request(app).get("/api/v2/plans").expect(200);
+    it('should include features for each plan', async () => {
+      const response = await request(app).get('/api/v2/plans').expect(200);
 
       response.body.data.forEach((plan: any) => {
-        expect(plan).toHaveProperty("features");
+        expect(plan).toHaveProperty('features');
         expect(Array.isArray(plan.features)).toBe(true);
       });
     });
   });
 
-  describe("GET /api/v2/plans/current", () => {
-    it("should return current tenant plan for authenticated user", async () => {
+  describe('GET /api/v2/plans/current', () => {
+    it('should return current tenant plan for authenticated user', async () => {
       const response = await request(app)
-        .get("/api/v2/plans/current")
-        .set("Authorization", `Bearer ${userToken}`)
+        .get('/api/v2/plans/current')
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -183,34 +165,34 @@ describe("Plans API v2", () => {
         data: {
           plan: expect.objectContaining({
             tenantId: tenantId,
-            planCode: "basic",
-            status: "active",
+            planCode: 'basic',
+            status: 'active',
           }),
           addons: expect.any(Array),
           costs: expect.objectContaining({
             basePlanCost: expect.any(Number),
             addonsCost: expect.any(Number),
             totalMonthlyCost: expect.any(Number),
-            billingCycle: "monthly",
+            billingCycle: 'monthly',
           }),
         },
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
     });
 
-    it("should require authentication", async () => {
-      await request(app).get("/api/v2/plans/current").expect(401);
+    it('should require authentication', async () => {
+      await request(app).get('/api/v2/plans/current').expect(401);
     });
   });
 
-  describe("GET /api/v2/plans/addons", () => {
-    it("should return zero addons initially", async () => {
+  describe('GET /api/v2/plans/addons', () => {
+    it('should return zero addons initially', async () => {
       const response = await request(app)
-        .get("/api/v2/plans/addons")
-        .set("Authorization", `Bearer ${userToken}`)
+        .get('/api/v2/plans/addons')
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -222,17 +204,17 @@ describe("Plans API v2", () => {
         },
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
     });
   });
 
-  describe("PUT /api/v2/plans/addons", () => {
-    it("should allow admin to update addons", async () => {
+  describe('PUT /api/v2/plans/addons', () => {
+    it('should allow admin to update addons', async () => {
       const response = await request(app)
-        .put("/api/v2/plans/addons")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .put('/api/v2/plans/addons')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({
           employees: 5,
           admins: 1,
@@ -249,7 +231,7 @@ describe("Plans API v2", () => {
         },
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
 
@@ -269,18 +251,18 @@ describe("Plans API v2", () => {
       expect(addonRow.extra_storage_gb).toBe(25);
     });
 
-    it("should prevent regular users from updating addons", async () => {
+    it('should prevent regular users from updating addons', async () => {
       await request(app)
-        .put("/api/v2/plans/addons")
-        .set("Authorization", `Bearer ${userToken}`)
+        .put('/api/v2/plans/addons')
+        .set('Authorization', `Bearer ${userToken}`)
         .send({ employees: 10 })
         .expect(403);
     });
 
-    it("should validate addon values", async () => {
+    it('should validate addon values', async () => {
       const response = await request(app)
-        .put("/api/v2/plans/addons")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .put('/api/v2/plans/addons')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ employees: -5 })
         .expect(400);
 
@@ -289,18 +271,18 @@ describe("Plans API v2", () => {
     });
   });
 
-  describe("GET /api/v2/plans/costs", () => {
-    it("should calculate current costs with addons", async () => {
+  describe('GET /api/v2/plans/costs', () => {
+    it('should calculate current costs with addons', async () => {
       // First set some addons
       await request(app)
-        .put("/api/v2/plans/addons")
-        .set("Authorization", `Bearer ${adminToken}`)
+        .put('/api/v2/plans/addons')
+        .set('Authorization', `Bearer ${adminToken}`)
         .send({ employees: 5, storageGb: 50 })
         .expect(200);
 
       const response = await request(app)
-        .get("/api/v2/plans/costs")
-        .set("Authorization", `Bearer ${userToken}`)
+        .get('/api/v2/plans/costs')
+        .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
       expect(response.body).toMatchObject({
@@ -313,70 +295,66 @@ describe("Plans API v2", () => {
             storage: 5.0, // 50 * 0.10€
           },
           totalMonthlyCost: 79,
-          currency: "EUR",
+          currency: 'EUR',
         },
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
     });
   });
 
-  describe("GET /api/v2/plans/:id", () => {
-    it("should return plan by ID", async () => {
-      const response = await request(app)
-        .get(`/api/v2/plans/${professionalPlanId}`)
-        .expect(200);
+  describe('GET /api/v2/plans/:id', () => {
+    it('should return plan by ID', async () => {
+      const response = await request(app).get(`/api/v2/plans/${professionalPlanId}`).expect(200);
 
       expect(response.body).toMatchObject({
         success: true,
         data: expect.objectContaining({
           id: professionalPlanId,
-          code: "professional",
-          name: "Professional",
+          code: 'professional',
+          name: 'Professional',
           basePrice: 149,
         }),
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
     });
 
-    it("should return 404 for non-existent plan", async () => {
-      const response = await request(app)
-        .get("/api/v2/plans/999999")
-        .expect(404);
+    it('should return 404 for non-existent plan', async () => {
+      const response = await request(app).get('/api/v2/plans/999999').expect(404);
 
       expect(response.body).toMatchObject({
         success: false,
         error: {
-          code: "PLAN_NOT_FOUND",
-          message: "Plan not found",
+          code: 'PLAN_NOT_FOUND',
+          message: 'Plan not found',
         },
       });
     });
   });
 
-  describe("PUT /api/v2/plans/:id/upgrade", () => {
-    it("should allow admin to upgrade plan", async () => {
+  describe('PUT /api/v2/plans/:id/upgrade', () => {
+    it('should allow admin to upgrade plan', async () => {
       const response = await request(app)
         .put(`/api/v2/plans/${professionalPlanId}/upgrade`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({ newPlanCode: "professional" })
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ newPlanCode: 'professional' })
         .expect(200);
 
       expect(response.body).toMatchObject({
         success: true,
         data: {
           plan: expect.objectContaining({
-            planCode: "professional",
+            planCode: 'professional',
           }),
         },
         meta: {
           timestamp: expect.any(String),
-          version: "2.0",
+          version: '2.0',
         },
       });
 
@@ -389,30 +367,30 @@ describe("Plans API v2", () => {
       expect((activePlans as any[])[0].plan_id).toBe(professionalPlanId);
     });
 
-    it("should prevent non-admin from upgrading plan", async () => {
+    it('should prevent non-admin from upgrading plan', async () => {
       await request(app)
         .put(`/api/v2/plans/${enterprisePlanId}/upgrade`)
-        .set("Authorization", `Bearer ${userToken}`)
-        .send({ newPlanCode: "enterprise" })
+        .set('Authorization', `Bearer ${userToken}`)
+        .send({ newPlanCode: 'enterprise' })
         .expect(403);
     });
 
-    it("should validate plan code", async () => {
+    it('should validate plan code', async () => {
       const response = await request(app)
         .put(`/api/v2/plans/${basicPlanId}/upgrade`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({ newPlanCode: "invalid-plan" })
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ newPlanCode: 'invalid-plan' })
         .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.error).toBeDefined();
     });
 
-    it("should log plan changes in audit trail", async () => {
+    it('should log plan changes in audit trail', async () => {
       await request(app)
         .put(`/api/v2/plans/${basicPlanId}/upgrade`)
-        .set("Authorization", `Bearer ${adminToken}`)
-        .send({ newPlanCode: "basic" })
+        .set('Authorization', `Bearer ${adminToken}`)
+        .send({ newPlanCode: 'basic' })
         .expect(200);
 
       // Check root_logs for audit entry

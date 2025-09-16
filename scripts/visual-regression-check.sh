@@ -42,7 +42,7 @@ check_playwright() {
         echo -e "${RED}✗ npx nicht gefunden. Bitte Node.js installieren.${NC}"
         exit 1
     fi
-    
+
     if ! npx playwright --version &> /dev/null 2>&1; then
         echo -e "${YELLOW}⚠ Playwright nicht gefunden. Installiere...${NC}"
         npm install -D @playwright/test
@@ -55,9 +55,9 @@ take_screenshot() {
     local url=$1
     local name=$2
     local output_dir=$3
-    
+
     echo -e "📸 Screenshot: $name..."
-    
+
     # Playwright Script inline ausführen
     npx playwright test --reporter=dot <<EOF
 const { chromium } = require('playwright');
@@ -68,7 +68,7 @@ const { chromium } = require('playwright');
         viewport: { width: 1920, height: 1080 },
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
     });
-    
+
     // Login Cookie setzen (anpassen je nach Auth-System)
     await context.addCookies([{
         name: 'token',
@@ -76,25 +76,25 @@ const { chromium } = require('playwright');
         domain: 'localhost',
         path: '/'
     }]);
-    
+
     const page = await context.newPage();
-    
+
     // Navigate and wait for content
     await page.goto('$url', { waitUntil: 'networkidle' });
-    
+
     // Warte auf spezifische Elemente
     try {
         await page.waitForSelector('.main-content', { timeout: 5000 });
     } catch (e) {
-        console.log('Main content not found, continuing...');
+        console.info('Main content not found, continuing...');
     }
-    
+
     // Screenshot
-    await page.screenshot({ 
+    await page.screenshot({
         path: '$output_dir/${name}.png',
         fullPage: true
     });
-    
+
     await browser.close();
 })();
 EOF
@@ -106,10 +106,10 @@ main() {
     echo "Visual Regression Check"
     echo "=================================="
     echo ""
-    
+
     # Prüfe Playwright
     check_playwright
-    
+
     # Parse Command Line Arguments
     case "$1" in
         "baseline")
@@ -119,43 +119,43 @@ main() {
             done
             echo -e "${GREEN}✓ Baseline Screenshots erstellt!${NC}"
             ;;
-            
+
         "test")
             echo -e "${YELLOW}🔍 Erstelle Test Screenshots...${NC}"
-            
+
             # Prüfe ob Baseline existiert
             if [ -z "$(ls -A $BASELINE_DIR 2>/dev/null)" ]; then
                 echo -e "${RED}✗ Keine Baseline Screenshots gefunden!${NC}"
                 echo "Führe zuerst aus: $0 baseline"
                 exit 1
             fi
-            
+
             # Erstelle aktuelle Screenshots
             for page in "${!pages[@]}"; do
                 take_screenshot "${pages[$page]}" "$page" "$CURRENT_DIR"
             done
-            
+
             # Vergleiche Screenshots
             echo ""
             echo -e "${YELLOW}🔍 Vergleiche Screenshots...${NC}"
-            
+
             # Installiere ImageMagick wenn nicht vorhanden
             if ! command -v compare &> /dev/null; then
                 echo "Installiere ImageMagick für Bildvergleich..."
                 sudo apt-get update && sudo apt-get install -y imagemagick
             fi
-            
+
             # Vergleiche jeden Screenshot
             differences_found=0
             for page in "${!pages[@]}"; do
                 baseline="$BASELINE_DIR/${page}.png"
                 current="$CURRENT_DIR/${page}.png"
                 diff="$DIFF_DIR/${page}-diff.png"
-                
+
                 if [ -f "$baseline" ] && [ -f "$current" ]; then
                     # Vergleiche mit ImageMagick
                     result=$(compare -metric AE "$baseline" "$current" "$diff" 2>&1)
-                    
+
                     if [ "$result" -eq "0" ]; then
                         echo -e "${GREEN}✓${NC} $page: Keine Änderungen"
                     else
@@ -164,10 +164,10 @@ main() {
                     fi
                 fi
             done
-            
+
             # Generiere HTML Report
             generate_report
-            
+
             if [ $differences_found -eq 0 ]; then
                 echo ""
                 echo -e "${GREEN}✓ Alle Tests bestanden! Keine visuellen Änderungen gefunden.${NC}"
@@ -179,20 +179,20 @@ main() {
                 exit 1
             fi
             ;;
-            
+
         "clean")
             echo "🧹 Räume auf..."
             rm -rf "$CURRENT_DIR" "$DIFF_DIR"
             echo -e "${GREEN}✓ Aufgeräumt!${NC}"
             ;;
-            
+
         "reset")
             echo "🔄 Reset alle Screenshots..."
             rm -rf "$SCREENSHOT_DIR"
             mkdir -p "$BASELINE_DIR" "$CURRENT_DIR" "$DIFF_DIR"
             echo -e "${GREEN}✓ Reset abgeschlossen!${NC}"
             ;;
-            
+
         *)
             echo "Usage: $0 {baseline|test|clean|reset}"
             echo ""
@@ -275,7 +275,7 @@ EOF
         baseline="$BASELINE_DIR/${page}.png"
         current="$CURRENT_DIR/${page}.png"
         diff="$DIFF_DIR/${page}-diff.png"
-        
+
         if [ -f "$diff" ]; then
             status="status-fail"
             status_text="❌ Änderungen gefunden"
@@ -283,7 +283,7 @@ EOF
             status="status-pass"
             status_text="✅ Keine Änderungen"
         fi
-        
+
         cat >> "$REPORT_FILE" <<EOF
     <div class="page-comparison">
         <div class="page-name">
@@ -306,7 +306,7 @@ EOF
     </div>
 EOF
     done
-    
+
     echo "</body></html>" >> "$REPORT_FILE"
 }
 

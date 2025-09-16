@@ -1,6 +1,6 @@
 # 📋 Tenant Deletion - Support Team Guide
 
-Version: 1.0  
+Version: 1.0
 Last Updated: 13.06.2025
 
 ## 📑 Inhaltsverzeichnis
@@ -26,7 +26,7 @@ Das Tenant Deletion System ermöglicht die sichere und vollständige Löschung v
 - 📞 Kunden bei Fragen unterstützen
 - ⚠️ Notfälle eskalieren
 
-### Wichtige Fakten:
+### Wichtige Fakten
 
 - **Grace Period**: 30 Tage (Kunde kann Löschung widerrufen)
 - **Automatische Löschung**: Nach 30 Tagen läuft der Background Worker
@@ -55,7 +55,7 @@ Kunde/Root-User → Klickt "Tenant löschen" → Status: marked_for_deletion
 Background Worker → Löscht Schritt für Schritt → Status: completed
 ```
 
-### Lösch-Phasen im Detail:
+### Lösch-Phasen im Detail
 
 | Phase            | Status                | Beschreibung                           | Dauer    |
 | ---------------- | --------------------- | -------------------------------------- | -------- |
@@ -238,7 +238,7 @@ SELECT * FROM shared_resources WHERE tenant_id = {TENANT_ID};
 docker-compose logs deletion-worker | grep ERROR
 
 # Datenbankverbindung testen
-docker-compose exec deletion-worker node -e "console.log('DB Test')"
+docker-compose exec deletion-worker node -e "console.info('DB Test')"
 ```
 
 **Lösung:**
@@ -427,7 +427,7 @@ WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY);
 
 ### Level 2: DevOps Team
 
-- **Kontakt**: devops@assixx.de / Slack: #devops-emergency
+- **Kontakt**: <devops@assixx.de> / Slack: #devops-emergency
 - **Zuständig für**: Worker-Probleme, Performance, Infrastructure
 - **Eskalation wenn**: System down, Worker crashed, DB Issues
 
@@ -439,7 +439,7 @@ WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY);
 
 ### Legal & Compliance
 
-- **Kontakt**: legal@assixx.de
+- **Kontakt**: <legal@assixx.de>
 - **Zuständig für**: DSGVO-Anfragen, Legal Holds, Compliance
 - **Eskalation wenn**: Behörden-Anfragen, Rechtsstreitigkeiten
 
@@ -447,7 +447,7 @@ WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY);
 
 ## 📋 Checkliste für Support
 
-### Bei jeder Lösch-Anfrage:
+### Bei jeder Lösch-Anfrage
 
 - [ ] Kunde-Identität verifizieren
 - [ ] Root-User Status bestätigen
@@ -456,7 +456,7 @@ WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY);
 - [ ] Export-Option erwähnen
 - [ ] Ticket-Nummer vergeben
 
-### Bei Problemen:
+### Bei Problemen
 
 - [ ] Error Logs sammeln
 - [ ] Screenshots/Fehlermeldungen
@@ -465,7 +465,7 @@ WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY);
 - [ ] Bereits versuchte Lösungen
 - [ ] Bei Bedarf eskalieren
 
-### Nach Abschluss:
+### Nach Abschluss
 
 - [ ] Kunde informieren
 - [ ] Ticket schließen

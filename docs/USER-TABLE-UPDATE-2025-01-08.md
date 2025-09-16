@@ -54,14 +54,14 @@ ALTER TABLE users MODIFY COLUMN employee_number VARCHAR(50) NOT NULL;
 
 ## 🛠️ Backend Anpassungen
 
-### TypeScript Types aktualisiert:
+### TypeScript Types aktualisiert
 
 - `User` Interface in `models.d.ts`
 - `DatabaseUser` Interface in `models.d.ts`
 - `DbUser` Interface in `user.ts`
 - `UserCreateData` Interface in `user.ts`
 
-### SELECT Statements erweitert:
+### SELECT Statements erweitert
 
 Alle SELECT Queries wurden um die neuen Felder erweitert:
 

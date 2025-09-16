@@ -2,16 +2,15 @@
  * Session Manager - Handles user session timeout and activity tracking
  */
 
-import { removeAuthToken } from '../auth';
-
 export class SessionManager {
-  private static instance: SessionManager;
+  private static instance: SessionManager | undefined;
   private lastActivityTime: number;
   private checkInterval: number | null = null;
   private readonly INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
   private readonly CHECK_INTERVAL = 60 * 1000; // Check every minute
   private readonly WARNING_TIME = 5 * 60 * 1000; // Show warning 5 minutes before timeout
   private warningShown = false;
+  private removeAuthTokenCallback?: () => void;
 
   private constructor() {
     this.lastActivityTime = Date.now();
@@ -20,10 +19,12 @@ export class SessionManager {
   }
 
   static getInstance(): SessionManager {
-    if (!SessionManager.instance) {
-      SessionManager.instance = new SessionManager();
-    }
+    SessionManager.instance ??= new SessionManager();
     return SessionManager.instance;
+  }
+
+  public setRemoveAuthTokenCallback(removeTokenFn: () => void): void {
+    this.removeAuthTokenCallback = removeTokenFn;
   }
 
   private setupActivityListeners(): void {
@@ -42,9 +43,9 @@ export class SessionManager {
 
     // Also track API calls as activity
     const originalFetch = window.fetch;
-    window.fetch = (...args) => {
+    window.fetch = async (...args) => {
       this.updateActivity();
-      return originalFetch.apply(window, args);
+      return await originalFetch.apply(window, args);
     };
   }
 
@@ -58,7 +59,7 @@ export class SessionManager {
 
   private startInactivityCheck(): void {
     // Clear any existing interval
-    if (this.checkInterval) {
+    if (this.checkInterval !== null) {
       clearInterval(this.checkInterval);
     }
 
@@ -70,8 +71,8 @@ export class SessionManager {
   private checkInactivity(): void {
     // Check localStorage for activity from other tabs
     const storedLastActivity = localStorage.getItem('lastActivity');
-    if (storedLastActivity) {
-      const storedTime = parseInt(storedLastActivity, 10);
+    if (storedLastActivity !== null && storedLastActivity !== '') {
+      const storedTime = Number.parseInt(storedLastActivity, 10);
       if (storedTime > this.lastActivityTime) {
         this.lastActivityTime = storedTime;
       }
@@ -119,13 +120,13 @@ export class SessionManager {
         ">
           <h3 style="color: #ff9800; margin-top: 0;">⚠️ Sitzung läuft bald ab</h3>
           <p style="color: #ccc;">
-            Ihre Sitzung läuft in 5 Minuten aufgrund von Inaktivität ab. 
+            Ihre Sitzung läuft in 5 Minuten aufgrund von Inaktivität ab.
             Klicken Sie auf "Aktiv bleiben" um angemeldet zu bleiben.
           </p>
           <div style="display: flex; gap: 12px; margin-top: 20px;">
             <button onclick="window.sessionManager.extendSession()" style="
               background: #2196f3;
-              color: white;
+              color: #fff;
               border: none;
               padding: 10px 20px;
               border-radius: 4px;
@@ -134,7 +135,7 @@ export class SessionManager {
             ">Aktiv bleiben</button>
             <button onclick="window.sessionManager.logout()" style="
               background: #666;
-              color: white;
+              color: #fff;
               border: none;
               padding: 10px 20px;
               border-radius: 4px;
@@ -145,14 +146,14 @@ export class SessionManager {
         </div>
       </div>
     `;
-    document.body.appendChild(warningModal);
+    document.body.append(warningModal);
   }
 
   private handleSessionTimeout(): void {
-    console.log('Session timeout due to inactivity');
+    console.info('Session timeout due to inactivity');
 
     // Clear the interval
-    if (this.checkInterval) {
+    if (this.checkInterval !== null) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
@@ -163,19 +164,25 @@ export class SessionManager {
 
   public extendSession(): void {
     // Remove warning modal
-    const modal = document.getElementById('session-warning-modal');
+    const modal = document.querySelector('#session-warning-modal');
     if (modal) {
       modal.remove();
     }
 
     // Reset activity
     this.updateActivity();
-    console.log('Session extended');
+    console.info('Session extended');
   }
 
-  public logout(isTimeout: boolean = false): void {
+  public logout(isTimeout = false): void {
     // Clear session data
-    removeAuthToken();
+    if (this.removeAuthTokenCallback) {
+      this.removeAuthTokenCallback();
+    } else {
+      // Fallback: directly clear the token if callback not set
+      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
+    }
     localStorage.removeItem('userRole');
     localStorage.removeItem('activeRole');
     localStorage.removeItem('lastActivity');
@@ -184,7 +191,7 @@ export class SessionManager {
     localStorage.removeItem('sidebarCollapsed'); // Reset sidebar state on logout
 
     // Stop checking
-    if (this.checkInterval) {
+    if (this.checkInterval !== null) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }
@@ -198,7 +205,7 @@ export class SessionManager {
   }
 
   public destroy(): void {
-    if (this.checkInterval) {
+    if (this.checkInterval !== null) {
       clearInterval(this.checkInterval);
       this.checkInterval = null;
     }

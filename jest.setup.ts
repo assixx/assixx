@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /**
  * Jest Setup File
  * Runs for each test file
@@ -7,10 +8,10 @@
 // afterAll is globally available in Jest
 afterAll(async () => {
   try {
-    const { closePool } = require("./backend/src/config/database");
+    const { closePool } = require('./backend/src/config/database');
     await closePool();
   } catch (error) {
     // Ignore errors during cleanup
-    console.error("Error closing pool in test:", error);
+    console.error('Error closing pool in test:', error);
   }
 });

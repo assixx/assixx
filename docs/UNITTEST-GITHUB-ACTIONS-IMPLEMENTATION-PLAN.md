@@ -7,7 +7,7 @@
 
 ## 📊 Aktuelle Situation (Brutale Ehrlichkeit)
 
-### Was wir HABEN:
+### Was wir HABEN
 
 - ✅ TypeScript Backend (100% typsicher nach Migration)
 - ✅ Docker Development Environment
@@ -15,7 +15,7 @@
 - ✅ Funktionierende Features (aber ohne Tests)
 - ✅ GitHub Repository
 
-### Was wir NICHT haben:
+### Was wir NICHT haben
 
 - ❌ KEINE einzigen Unit Tests
 - ❌ KEINE Integration Tests
@@ -25,7 +25,7 @@
 - ❌ KEINE automatisierten Checks bei Push/PR
 - ❌ KEINE Test-Dokumentation
 
-### Realistische Einschätzung:
+### Realistische Einschätzung
 
 - **Zeitaufwand:** 4-6 Wochen für vollständige Implementation
 - **Komplexität:** Hoch (wegen fehlender Test-Infrastruktur)
@@ -60,10 +60,10 @@ pnpm add -D supertest @types/supertest
 
 ```typescript
 // errorHandler.test.ts
-describe("errorHandler", () => {
-  it("should extract message from Error object", () => {
-    const error = new Error("Test error");
-    expect(getErrorMessage(error)).toBe("Test error");
+describe('errorHandler', () => {
+  it('should extract message from Error object', () => {
+    const error = new Error('Test error');
+    expect(getErrorMessage(error)).toBe('Test error');
   });
 });
 ```
@@ -254,13 +254,13 @@ jobs:
 
 ## 💰 ROI Berechnung
 
-### Kosten:
+### Kosten
 
 - 4-6 Wochen Entwicklungszeit
 - Langsamere Feature-Entwicklung initial
 - Lernkurve für Team
 
-### Nutzen:
+### Nutzen
 
 - 70% weniger Production Bugs
 - 50% schnellere Bug-Fixes
@@ -270,14 +270,14 @@ jobs:
 
 ## 🎯 Definition of Done
 
-### Phase 1 Complete wenn:
+### Phase 1 Complete wenn
 
 - [ ] Jest läuft lokal
 - [ ] 5+ Tests geschrieben
 - [ ] GitHub Actions grün
 - [ ] Badge im README
 
-### Projekt Complete wenn:
+### Projekt Complete wenn
 
 - [ ] 60%+ Coverage
 - [ ] Alle kritischen Flows getestet
@@ -287,20 +287,20 @@ jobs:
 
 ## 📚 Ressourcen & Lernen
 
-### Tutorials:
+### Tutorials
 
 - [Jest Getting Started](https://jestjs.io/docs/getting-started)
 - [Testing TypeScript with Jest](https://www.testim.io/blog/testing-typescript-with-jest/)
 - [GitHub Actions for Node.js](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs)
 
-### Best Practices:
+### Best Practices
 
 - Test Pyramid (Unit > Integration > E2E)
 - AAA Pattern (Arrange, Act, Assert)
 - Test Isolation
 - Mocking Strategies
 
-### Tools:
+### Tools
 
 - Jest (Unit Tests)
 - Supertest (API Tests)

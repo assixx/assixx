@@ -1,28 +1,25 @@
 #!/usr/bin/env node
 
-const fs = require("fs").promises;
-const path = require("path");
+const fs = require('fs').promises;
+const path = require('path');
 
 // Liste der zu generierenden Controller/Services
 const features = [
-  { name: "blackboard", model: "Blackboard" },
-  { name: "calendar", model: "Calendar" },
-  { name: "kvp", model: "Kvp" },
-  { name: "survey", model: "Survey" },
-  { name: "team", model: "Team" },
-  { name: "department", model: "Department" },
-  { name: "shift", model: "Shift" },
-  { name: "tenant", model: "Tenant" },
-  { name: "feature", model: "Feature" },
-  { name: "admin", model: "AdminLog" },
-  { name: "employee", model: "User" },
+  { name: 'blackboard', model: 'Blackboard' },
+  { name: 'calendar', model: 'Calendar' },
+  { name: 'kvp', model: 'Kvp' },
+  { name: 'survey', model: 'Survey' },
+  { name: 'team', model: 'Team' },
+  { name: 'department', model: 'Department' },
+  { name: 'shift', model: 'Shift' },
+  { name: 'tenant', model: 'Tenant' },
+  { name: 'feature', model: 'Feature' },
+  { name: 'admin', model: 'AdminLog' },
+  { name: 'employee', model: 'User' },
 ];
 
 // Service Template
-const serviceTemplate = (
-  name,
-  model,
-) => `const ${model} = require('../models/${name}');
+const serviceTemplate = (name, model) => `const ${model} = require('../models/${name}');
 const db = require('../database');
 
 class ${model}Service {
@@ -122,9 +119,9 @@ class ${model}Controller {
       res.json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.getAll:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -142,9 +139,9 @@ class ${model}Controller {
       res.json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.getById:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Abrufen der Daten',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -159,9 +156,9 @@ class ${model}Controller {
       res.status(201).json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.create:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Erstellen',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -173,16 +170,16 @@ class ${model}Controller {
   async update(req, res) {
     try {
       const result = await ${name}Service.update(
-        req.tenantDb, 
-        req.params.id, 
+        req.tenantDb,
+        req.params.id,
         req.body
       );
       res.json(result);
     } catch (error) {
       console.error('Error in ${model}Controller.update:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Aktualisieren',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -197,9 +194,9 @@ class ${model}Controller {
       res.status(204).send();
     } catch (error) {
       console.error('Error in ${model}Controller.delete:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         error: 'Fehler beim Löschen',
-        message: error.message 
+        message: error.message
       });
     }
   }
@@ -209,43 +206,34 @@ module.exports = new ${model}Controller();`;
 
 // Generiere alle Controller und Services
 async function generateAll() {
-  const controllersPath = path.join(__dirname, "../src/controllers");
-  const servicesPath = path.join(__dirname, "../src/services");
+  const controllersPath = path.join(__dirname, '../src/controllers');
+  const servicesPath = path.join(__dirname, '../src/services');
 
   for (const feature of features) {
-    const controllerFile = path.join(
-      controllersPath,
-      `${feature.name}.controller.js`,
-    );
+    const controllerFile = path.join(controllersPath, `${feature.name}.controller.js`);
     const serviceFile = path.join(servicesPath, `${feature.name}.service.js`);
 
     // Prüfe ob bereits existiert
     try {
       await fs.access(controllerFile);
-      console.log(`✓ ${feature.name}.controller.js bereits vorhanden`);
+      console.info(`✓ ${feature.name}.controller.js bereits vorhanden`);
     } catch {
       // Erstelle Controller
-      await fs.writeFile(
-        controllerFile,
-        controllerTemplate(feature.name, feature.model),
-      );
-      console.log(`✓ ${feature.name}.controller.js erstellt`);
+      await fs.writeFile(controllerFile, controllerTemplate(feature.name, feature.model));
+      console.info(`✓ ${feature.name}.controller.js erstellt`);
     }
 
     try {
       await fs.access(serviceFile);
-      console.log(`✓ ${feature.name}.service.js bereits vorhanden`);
+      console.info(`✓ ${feature.name}.service.js bereits vorhanden`);
     } catch {
       // Erstelle Service
-      await fs.writeFile(
-        serviceFile,
-        serviceTemplate(feature.name, feature.model),
-      );
-      console.log(`✓ ${feature.name}.service.js erstellt`);
+      await fs.writeFile(serviceFile, serviceTemplate(feature.name, feature.model));
+      console.info(`✓ ${feature.name}.service.js erstellt`);
     }
   }
 
-  console.log("\n✅ Alle Controller und Services generiert!");
+  console.info('\n✅ Alle Controller und Services generiert!');
 }
 
 // Führe Generation aus

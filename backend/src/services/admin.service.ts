@@ -2,14 +2,13 @@
  * Admin Log Service
  * Handles admin log business logic
  */
+import { Pool } from 'mysql2/promise';
 
-import { Pool } from "mysql2/promise";
+import rootLog, {
+  type DbRootLog,
+  type RootLogCreateData as ModelRootLogCreateData,
+} from '../models/rootLog';
 
-import {
-  RootLog,
-  DbRootLog,
-  RootLogCreateData as ModelRootLogCreateData,
-} from "../models/rootLog";
 /**
  * Admin Log Service
  * Handles admin log business logic
@@ -17,7 +16,7 @@ import {
 
 // Import types from AdminLog model
 // Service-specific interfaces
-interface AdminLogData extends Omit<DbRootLog, "tenant_id"> {
+interface AdminLogData extends Omit<DbRootLog, 'tenant_id'> {
   tenant_id: number;
   user_name?: string;
   user_role?: string;
@@ -34,7 +33,7 @@ interface AdminLogFilters {
   offset?: number;
 }
 
-interface AdminLogCreateData extends Omit<ModelRootLogCreateData, "tenant_id"> {
+interface AdminLogCreateData extends Omit<ModelRootLogCreateData, 'tenant_id'> {
   tenant_id: number;
   was_role_switched?: boolean;
 }
@@ -46,45 +45,48 @@ interface AdminLogUpdateData {
   details?: string | null;
 }
 
+/**
+ *
+ */
 class AdminLogService {
   /**
    * Holt alle AdminLog Einträge für einen Tenant
+   * @param _tenantDb - The _tenantDb parameter
+   * @param filters - The filter criteria
    */
-  async getAll(
-    _tenantDb: Pool,
-    filters: AdminLogFilters = {},
-  ): Promise<AdminLogData[]> {
+  async getAll(_tenantDb: Pool, filters: AdminLogFilters = {}): Promise<AdminLogData[]> {
     try {
       // Use getByUserId if user_id is provided, otherwise return empty array
-      if (filters.user_id) {
-        const logs = await RootLog.getByUserId(filters.user_id);
-        return logs.map((log) => ({
+      if (filters.user_id != null && filters.user_id !== 0) {
+        const logs = await rootLog.getByUserId(filters.user_id);
+        return logs.map((log: DbRootLog) => ({
           ...log,
-          created_at: log.timestamp,
+          created_at: log.timestamp as Date,
         }));
       }
       return [];
-    } catch (error) {
-      console.error("Error in AdminLogService.getAll:", error);
+    } catch (error: unknown) {
+      console.error('Error in AdminLogService.getAll:', error);
       throw error;
     }
   }
 
   /**
    * Holt einen AdminLog Eintrag per ID
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   async getById(_tenantDb: Pool, _id: number): Promise<AdminLogData | null> {
     // Model doesn't have getById, return null for now
-    return null;
+    return await Promise.resolve(null);
   }
 
   /**
    * Erstellt einen neuen AdminLog Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param data - The data object
    */
-  async create(
-    _tenantDb: Pool,
-    data: AdminLogCreateData,
-  ): Promise<AdminLogData> {
+  async create(_tenantDb: Pool, data: AdminLogCreateData): Promise<AdminLogData> {
     try {
       const modelData: ModelRootLogCreateData = {
         user_id: data.user_id,
@@ -98,10 +100,10 @@ class AdminLogService {
         user_agent: data.user_agent,
         was_role_switched: data.was_role_switched,
       };
-      const id = await RootLog.create(modelData);
+      const id = await rootLog.create(modelData);
       // Return the data without trying to match RowDataPacket structure
       return {
-        id,
+        id: id,
         admin_id: modelData.user_id,
         tenant_id: data.tenant_id,
         action: modelData.action,
@@ -114,14 +116,17 @@ class AdminLogService {
         was_role_switched: modelData.was_role_switched,
         created_at: new Date(),
       } as AdminLogData;
-    } catch (error) {
-      console.error("Error in AdminLogService.create:", error);
+    } catch (error: unknown) {
+      console.error('Error in AdminLogService.create:', error);
       throw error;
     }
   }
 
   /**
    * Aktualisiert einen AdminLog Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
   async update(
     _tenantDb: Pool,
@@ -129,15 +134,17 @@ class AdminLogService {
     _data: AdminLogUpdateData,
   ): Promise<AdminLogData | null> {
     // TODO: Implement update method in AdminLog model
-    return null;
+    return await Promise.resolve(null);
   }
 
   /**
    * Löscht einen AdminLog Eintrag
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
   async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
     // TODO: Implement delete method in AdminLog model
-    return false;
+    return await Promise.resolve(false);
   }
 }
 

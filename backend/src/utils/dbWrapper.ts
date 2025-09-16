@@ -1,18 +1,11 @@
 /**
  * Database wrapper utilities for proper TypeScript types
  */
-
-import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 export interface DbConnection {
-  query(
-    sql: string,
-    params?: unknown[],
-  ): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
-  execute(
-    sql: string,
-    params?: unknown[],
-  ): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
+  query(sql: string, params?: unknown[]): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
+  execute(sql: string, params?: unknown[]): Promise<[RowDataPacket[] | ResultSetHeader, unknown]>;
   beginTransaction(): Promise<void>;
   commit(): Promise<void>;
   rollback(): Promise<void>;
@@ -36,19 +29,19 @@ export class ConnectionWrapper {
   }
 
   async beginTransaction(): Promise<void> {
-    return this.conn.beginTransaction();
+    await this.conn.beginTransaction();
   }
 
   async commit(): Promise<void> {
-    return this.conn.commit();
+    await this.conn.commit();
   }
 
   async rollback(): Promise<void> {
-    return this.conn.rollback();
+    await this.conn.rollback();
   }
 
   release(): void {
-    return this.conn.release();
+    this.conn.release();
   }
 }
 

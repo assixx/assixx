@@ -59,14 +59,14 @@ Es gibt eine Inkonsistenz bei der Gestaltung von Card/Container-Headern im Assix
 
 Nach einer Analyse wurden folgende Dateien identifiziert:
 
-### Dateien mit FALSCHEM Pattern (müssen korrigiert werden):
+### Dateien mit FALSCHEM Pattern (müssen korrigiert werden)
 
 1. `/frontend/src/pages/manage-root-users.html` - Root User Verwaltung
 2. `/frontend/src/pages/manage-admins.html` - Admin Verwaltung
 3. `/frontend/src/pages/manage-department-groups.html` - Abteilungsgruppen Verwaltung
 4. `/frontend/src/pages/tenant-deletion-status.html` - Tenant Löschstatus
 
-### Dateien mit RICHTIGEM Pattern (als Referenz):
+### Dateien mit RICHTIGEM Pattern (als Referenz)
 
 - `/frontend/src/pages/logs.html` - System-Logs (Referenz-Beispiel)
 - `/frontend/src/pages/blackboard.html`
@@ -121,7 +121,7 @@ Wenn zusätzliche Elemente im Header benötigt werden (z.B. Buttons, Badges):
 
 Alle 11 fehlerhaften Dateien wurden erfolgreich korrigiert:
 
-### Phase 1 - Dateien mit fehlendem text-secondary (7 Dateien):
+### Phase 1 - Dateien mit fehlendem text-secondary (7 Dateien)
 
 - [x] admin-config.html
 - [x] admin-dashboard.html
@@ -131,7 +131,7 @@ Alle 11 fehlerhaften Dateien wurden erfolgreich korrigiert:
 - [x] feature-management.html
 - [x] salary-documents.html
 
-### Phase 2 - Dateien mit komplett falschem Pattern (4 Dateien):
+### Phase 2 - Dateien mit komplett falschem Pattern (4 Dateien)
 
 - [x] manage-root-users.html
 - [x] manage-admins.html

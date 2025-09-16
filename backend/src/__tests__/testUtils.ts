@@ -2,10 +2,10 @@
  * Test Utilities
  * Common helper functions for tests
  */
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
-import { query } from "../config/database";
+import { query } from '../config/database';
 
 export interface TestUser {
   id: number;
@@ -41,17 +41,12 @@ export async function createTestUser(userData: {
   is_admin?: boolean;
   password?: string;
 }): Promise<TestUser> {
-  const {
-    email,
-    tenant_id,
-    is_admin = false,
-    password = "Test123!@#",
-  } = userData;
+  const { email, tenant_id, is_admin = false, password = 'Test123!@#' } = userData;
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const result = await query(
-    `INSERT INTO users (email, password, tenant_id, is_admin, is_active, created_at, updated_at) 
+    `INSERT INTO users (email, password, tenant_id, is_admin, is_active, created_at, updated_at)
      VALUES (?, ?, ?, ?, true, NOW(), NOW())`,
     [email, hashedPassword, tenant_id, is_admin],
   );
@@ -76,13 +71,9 @@ export function generateAuthToken(user: TestUser): string {
     is_admin: user.is_admin,
   };
 
-  return jwt.sign(
-    payload,
-    process.env.JWT_SECRET || "test-secret-key-for-testing",
-    {
-      expiresIn: "24h",
-    },
-  );
+  return jwt.sign(payload, process.env.JWT_SECRET ?? 'test-secret-key-for-testing', {
+    expiresIn: '24h',
+  });
 }
 
 /**
@@ -90,10 +81,9 @@ export function generateAuthToken(user: TestUser): string {
  */
 export async function cleanupTestData(tenantId: number): Promise<void> {
   // Delete in reverse order of foreign key dependencies
-  await query(
-    `DELETE FROM root_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)`,
-    [tenantId],
-  );
+  await query(`DELETE FROM root_logs WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)`, [
+    tenantId,
+  ]);
   await query(`DELETE FROM tenant_addons WHERE tenant_id = ?`, [tenantId]);
   await query(`DELETE FROM tenant_plans WHERE tenant_id = ?`, [tenantId]);
   await query(`DELETE FROM users WHERE tenant_id = ?`, [tenantId]);
@@ -103,11 +93,9 @@ export async function cleanupTestData(tenantId: number): Promise<void> {
 /**
  * Create a test tenant
  */
-export async function createTestTenant(
-  name: string = "Test Tenant",
-): Promise<number> {
+export async function createTestTenant(name = 'Test Tenant'): Promise<number> {
   const result = await query(
-    `INSERT INTO tenants (name, status, created_at, updated_at) 
+    `INSERT INTO tenants (name, status, created_at, updated_at)
      VALUES (?, 'active', NOW(), NOW())`,
     [name],
   );
@@ -119,8 +107,8 @@ export async function createTestTenant(
  */
 export async function waitFor(
   condition: () => Promise<boolean>,
-  timeout: number = 5000,
-  interval: number = 100,
+  timeout = 5000,
+  interval = 100,
 ): Promise<void> {
   const startTime = Date.now();
 
@@ -131,15 +119,13 @@ export async function waitFor(
     await new Promise((resolve) => setTimeout(resolve, interval));
   }
 
-  throw new Error("Timeout waiting for condition");
+  throw new Error('Timeout waiting for condition');
 }
 
 /**
  * Mock request object for testing middleware
  */
-export function createMockRequest(
-  overrides: Partial<MockRequest> = {},
-): MockRequest {
+export function createMockRequest(overrides: Partial<MockRequest> = {}): MockRequest {
   return {
     headers: {},
     params: {},
@@ -165,16 +151,16 @@ export function createMockResponse(): MockResponse {
 /**
  * Setup test database with minimal schema
  */
-export async function setupTestDatabase(): Promise<void> {
+export function setupTestDatabase(): void {
   // This would contain minimal schema setup for tests
   // In practice, you'd use migrations or a schema file
-  console.log("Test database setup complete");
+  console.info('Test database setup complete');
 }
 
 /**
  * Tear down test database
  */
-export async function teardownTestDatabase(): Promise<void> {
+export function teardownTestDatabase(): void {
   // Clean up all test data
-  console.log("Test database teardown complete");
+  console.info('Test database teardown complete');
 }

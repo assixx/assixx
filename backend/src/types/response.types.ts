@@ -36,11 +36,11 @@ export interface ErrorResponse {
 
 // Validation Error Response
 export interface ValidationErrorResponse extends ErrorResponse {
-  errors: Array<{
+  errors: {
     field: string;
     message: string;
     value?: unknown;
-  }>;
+  }[];
 }
 
 // Auth Response Types
@@ -85,16 +85,16 @@ export interface BatchOperationResponse {
   total: number;
   succeeded: number;
   failed: number;
-  results: Array<{
+  results: {
     id: number | string;
     success: boolean;
     error?: string;
-  }>;
+  }[];
 }
 
 // Health Check Response
 export interface HealthCheckResponse {
-  status: "healthy" | "unhealthy" | "degraded";
+  status: 'healthy' | 'unhealthy' | 'degraded';
   timestamp: string;
   uptime: number;
   version: string;
@@ -108,9 +108,7 @@ export interface HealthCheckResponse {
 // Statistics Response
 export interface StatsResponse {
   success: boolean;
-  stats: {
-    [key: string]: number | string;
-  };
+  stats: Record<string, number | string>;
   period?: {
     start: string;
     end: string;
@@ -135,9 +133,7 @@ export interface DeleteResponse {
 // List Response with optional filters
 export interface ListResponse<T> extends ApiResponse<T[]> {
   count: number;
-  filters?: {
-    [key: string]: unknown;
-  };
+  filters?: Record<string, unknown>;
 }
 
 // Response Helper Functions
@@ -150,11 +146,7 @@ export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
   };
 }
 
-export function errorResponse(
-  error: string,
-  statusCode: number = 500,
-  code?: string,
-): ErrorResponse {
+export function errorResponse(error: string, statusCode = 500, code?: string): ErrorResponse {
   return {
     success: false,
     error,

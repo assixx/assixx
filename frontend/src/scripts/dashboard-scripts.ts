@@ -3,7 +3,7 @@
  */
 
 import type { User } from '../types/api.types';
-
+import { apiClient } from '../utils/api-client';
 import { getAuthToken, removeAuthToken } from './auth';
 // import { formatDate as formatDateUtil } from './common';
 
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
 
   // Logging-Handler für User Info und Logout
-  setupUserAndLogout();
+  void setupUserAndLogout();
 });
 
 /**
@@ -39,7 +39,7 @@ function initModals(): void {
     button.addEventListener('click', (e) => {
       // Find closest modal-overlay
       const target = e.currentTarget as HTMLElement;
-      const modalOverlay = target.closest('.modal-overlay') as HTMLElement;
+      const modalOverlay = target.closest('.modal-overlay');
       if (modalOverlay) {
         closeModal(modalOverlay.id);
       }
@@ -60,7 +60,7 @@ function initModals(): void {
  * Öffnet ein Modal
  */
 function openModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
+  const modal = document.querySelector<HTMLElement>(`#${modalId}`);
   if (modal) {
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
@@ -73,7 +73,7 @@ function openModal(modalId: string): void {
  * Schließt ein Modal
  */
 function closeModal(modalId: string): void {
-  const modal = document.getElementById(modalId) as HTMLElement;
+  const modal = document.querySelector<HTMLElement>(`#${modalId}`);
   if (modal) {
     modal.style.opacity = '0';
     modal.style.visibility = 'hidden';
@@ -115,41 +115,54 @@ function initTabs(): void {
 /**
  * Benutzerdaten und Logout-Funktionalität
  */
-function setupUserAndLogout(): void {
-  const userInfo = document.getElementById('user-info') as HTMLElement;
-  const logoutBtn = document.getElementById('logout-btn') as HTMLButtonElement;
+async function setupUserAndLogout(): Promise<void> {
+  const userInfo = document.querySelector('#user-info');
+  const logoutBtn = document.querySelector('#logout-btn');
 
   if (userInfo) {
     // Lade Benutzerdaten
     const token = getAuthToken();
-    if (token) {
-      fetch('/api/user/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
+    if (token !== null && token !== '') {
+      try {
+        const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+        let userData: User | null = null;
+
+        if (useV2Users === true) {
+          // Use API v2 with apiClient
+          userData = await apiClient.get<User>('/users/profile');
+        } else {
+          // Use API v1 with fetch
+          const response = await fetch('/api/user/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error('Fehler beim Laden der Benutzerdaten');
           }
-          throw new Error('Fehler beim Laden der Benutzerdaten');
-        })
-        .then((data: User) => {
-          // Anzeigename setzen (Name oder Username)
-          const displayName = data.first_name ? `${data.first_name} ${data.last_name ?? ''}` : data.username;
-          userInfo.textContent = displayName;
-        })
-        .catch((error) => {
-          console.error('Fehler beim Laden der Benutzerdaten:', error);
-          // Bei Fehler zur Login-Seite weiterleiten
-          window.location.href = '/login';
-        });
+
+          userData = (await response.json()) as User;
+        }
+
+        // Anzeigename setzen (Name oder Username)
+        const displayName =
+          userData.first_name !== undefined && userData.first_name !== ''
+            ? `${userData.first_name} ${userData.last_name ?? ''}`
+            : userData.username;
+        userInfo.textContent = displayName;
+      } catch (error) {
+        console.error('Fehler beim Laden der Benutzerdaten:', error);
+        // Bei Fehler zur Login-Seite weiterleiten
+        // eslint-disable-next-line require-atomic-updates -- Safe: window is a global object
+        window.location.href = '/login';
+      }
     } else {
       window.location.href = '/login';
     }
   }
 
-  if (logoutBtn) {
+  if (logoutBtn !== null) {
     logoutBtn.addEventListener('click', () => {
       removeAuthToken();
       window.location.href = '/login';
@@ -161,7 +174,7 @@ function setupUserAndLogout(): void {
  * Hilfsfunktion zum Formatieren eines Datums
  */
 function formatDate(dateString: string): string {
-  if (!dateString) return '-';
+  if (dateString === '') return '-';
 
   const date = new Date(dateString);
   return date.toLocaleDateString('de-DE', {
@@ -182,16 +195,16 @@ function showToast(message: string, type: 'info' | 'success' | 'error' | 'warnin
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.className = 'toast-container';
-    document.body.appendChild(toastContainer);
+    document.body.append(toastContainer);
   }
 
   // Create toast element
   const toast = document.createElement('div');
   toast.className = `toast toast-${type} fade-in`;
-  toast.innerHTML = message;
+  toast.textContent = message;
 
   // Add to container
-  toastContainer.appendChild(toast);
+  toastContainer.append(toast);
 
   // Auto remove after 3 seconds
   setTimeout(() => {

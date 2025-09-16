@@ -48,14 +48,24 @@ Thumbs.db
 temp/
 *.tmp
 *.cache
+*.bak
 docker/cookies.txt
 
 # Test coverage
 coverage/
 .nyc_output/
 
+# Test directories
+**/__tests__/
+
 # ESLint
 eslint-report.json
+
+# Stylelint
+.stylelintcache
+
+# Feature flags (local development only)
+frontend/public/feature-flags.js
 
 # Database Backups
 backups/daily/

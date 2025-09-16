@@ -1,31 +1,32 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Authentication Service
  * Handles authentication business logic
  */
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { RowDataPacket } from 'mysql2/promise';
 
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { RowDataPacket } from "mysql2/promise";
+import { authenticateUser as authUser, generateToken } from '../auth';
+import UserModel from '../models/user';
+import { AuthResult, TokenValidationResult, UserRegistrationData } from '../types/auth.types';
+import { DatabaseUser } from '../types/models';
+import { ResultSetHeader, execute } from '../utils/db';
+import { logger } from '../utils/logger';
 
-import { authenticateUser as authUser, generateToken } from "../auth";
-import UserModel from "../models/user";
-import {
-  AuthResult,
-  UserRegistrationData,
-  TokenValidationResult,
-} from "../types/auth.types";
-import { DatabaseUser } from "../types/models";
-import { execute, ResultSetHeader } from "../utils/db";
-import { logger } from "../utils/logger";
+const INVALID_CREDENTIALS_MSG = 'Ungültige Anmeldedaten';
 
+/**
+ *
+ */
 class AuthService {
   /**
    * Authenticate user with username and password
-   * @param {string} username - Username
-   * @param {string} password - Plain text password
-   * @param {string} fingerprint - Browser fingerprint
-   * @param {string} tenantSubdomain - Tenant subdomain to validate against
-   * @returns {Promise<AuthResult>} Result with success status, token, and user data
+   * @param username - Username
+   * @param password - Plain text password
+   * @param fingerprint - Browser fingerprint
+   * @param tenantSubdomain - Tenant subdomain to validate against
+   * @returns Result with success status, token, and user data
    */
   async authenticateUser(
     username: string,
@@ -39,15 +40,12 @@ class AuthService {
 
       if (!result.user) {
         // Provide specific error messages based on error type
-        let message = "Ungültige Anmeldedaten";
-        if (result.error === "USER_INACTIVE") {
+        let message = INVALID_CREDENTIALS_MSG;
+        if (result.error === 'USER_INACTIVE') {
           message =
-            "Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.";
-        } else if (
-          result.error === "USER_NOT_FOUND" ||
-          result.error === "INVALID_PASSWORD"
-        ) {
-          message = "Ungültige Anmeldedaten";
+            'Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.';
+        } else if (result.error === 'USER_NOT_FOUND' || result.error === 'INVALID_PASSWORD') {
+          message = INVALID_CREDENTIALS_MSG;
         }
 
         return {
@@ -58,43 +56,41 @@ class AuthService {
       }
 
       // Validate tenant if subdomain is provided
-      if (tenantSubdomain) {
+      if (tenantSubdomain !== undefined && tenantSubdomain !== '') {
         // Get tenant by subdomain
         const [tenantRows] = await execute<RowDataPacket[]>(
-          "SELECT id FROM tenants WHERE subdomain = ?",
+          'SELECT id FROM tenants WHERE subdomain = ?',
           [tenantSubdomain],
         );
 
         if (tenantRows.length === 0) {
-          logger.warn(
-            `Login attempt with invalid subdomain: ${tenantSubdomain}`,
-          );
+          logger.warn(`Login attempt with invalid subdomain: ${tenantSubdomain}`);
           return {
             success: false,
             user: null,
-            message: "Ungültige Anmeldedaten",
+            message: INVALID_CREDENTIALS_MSG,
           };
         }
 
-        const tenantId = tenantRows[0].id;
+        const tenantId = tenantRows[0].id as number;
 
         // Check if user belongs to the specified tenant
         if (result.user.tenant_id !== tenantId) {
           logger.warn(
-            `User ${username} attempted to login to tenant ${tenantId} but belongs to tenant ${result.user.tenant_id}`,
+            `User ${username} attempted to login to tenant ${String(tenantId)} but belongs to tenant ${String(result.user.tenant_id ?? 'none')}`,
           );
           return {
             success: false,
             user: null,
-            message: "Ungültige Anmeldedaten",
+            message: INVALID_CREDENTIALS_MSG,
           };
         }
       }
 
       // Generate cryptographically secure session ID
-      const crypto = await import("crypto");
-      const randomBytes = crypto.randomBytes(16).toString("hex");
-      const sessionId = `sess_${Date.now()}_${randomBytes}`;
+      const crypto = await import('crypto');
+      const randomBytes = crypto.randomBytes(16).toString('hex');
+      const sessionId = `sess_${String(Date.now())}_${randomBytes}`;
 
       // Generate JWT token with fingerprint and session ID
       const token = generateToken(result.user, fingerprint, sessionId);
@@ -102,25 +98,25 @@ class AuthService {
       // Generate refresh token - tenant_id is guaranteed to exist after successful auth
       const refreshToken = await this.generateRefreshToken(
         result.user.id,
-        result.user.tenant_id as number,
+        result.user.tenant_id ?? 0,
       );
 
       // Store session info if fingerprint provided
-      if (fingerprint) {
+      if (fingerprint !== undefined && fingerprint !== '') {
         try {
           await execute<ResultSetHeader>(
-            "INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))",
+            'INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))',
             [result.user.id, sessionId, fingerprint],
           );
-        } catch (error) {
-          logger.warn("Failed to store session info:", error);
+        } catch (error: unknown) {
+          logger.warn('Failed to store session info:', error);
           // Continue anyway - session will work without stored fingerprint
         }
       }
 
       // Convert database user to app user format and remove sensitive data
       const userWithoutPassword = { ...result.user };
-      if ("password" in userWithoutPassword) {
+      if ('password' in userWithoutPassword) {
         delete userWithoutPassword.password;
       }
 
@@ -130,33 +126,26 @@ class AuthService {
         refreshToken,
         user: this.mapDatabaseUserToAppUser(
           this.dbUserToDatabaseUser(userWithoutPassword),
-        ) as unknown as AuthResult["user"],
+        ) as unknown as AuthResult['user'],
       };
-    } catch (error) {
-      logger.error("Authentication error:", error);
+    } catch (error: unknown) {
+      logger.error('Authentication error:', error);
       return {
         success: false,
         user: null,
-        message: "Ungültige Anmeldedaten",
+        message: INVALID_CREDENTIALS_MSG,
       };
     }
   }
 
   /**
    * Register a new user
-   * @param {UserRegistrationData} userData - User registration data
-   * @returns {Promise<AuthResult>} Result with success status and user data
+   * @param userData - User registration data
+   * @returns Result with success status and user data
    */
   async registerUser(userData: UserRegistrationData): Promise<AuthResult> {
     try {
-      const {
-        username,
-        password,
-        email,
-        vorname,
-        nachname,
-        role = "employee",
-      } = userData;
+      const { username, password, email, vorname, nachname, role = 'employee' } = userData;
 
       // Check if user already exists
       const existingUser = await UserModel.findByUsername(username);
@@ -164,7 +153,7 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: "Username already exists",
+          message: 'Username already exists',
         };
       }
 
@@ -174,16 +163,16 @@ class AuthService {
         return {
           success: false,
           user: null,
-          message: "Email already exists",
+          message: 'Email already exists',
         };
       }
 
       // Check if tenant ID is provided
-      if (!userData.tenant_id) {
+      if (userData.tenant_id == null || userData.tenant_id === 0) {
         return {
           success: false,
           user: null,
-          message: "Tenant ID is required",
+          message: 'Tenant ID is required',
         };
       }
 
@@ -204,16 +193,16 @@ class AuthService {
       // Get created user (without password)
       const user = await UserModel.findById(userId, userData.tenant_id);
       if (!user) {
-        throw new Error("Failed to retrieve created user");
+        throw new Error('Failed to retrieve created user');
       }
 
       const userWithoutPassword =
-        user && "password" in user
-          ? (() => {
-              const { password: _password, ...rest } = user;
-              return rest;
-            })()
-          : user;
+        'password' in user ?
+          (() => {
+            const { password: _password, ...rest } = user;
+            return rest;
+          })()
+        : user;
 
       // Ensure tenant_id is present
       const userWithTenantId = {
@@ -225,47 +214,45 @@ class AuthService {
         success: true,
         user: this.mapDatabaseUserToAppUser(
           this.dbUserToDatabaseUser(userWithTenantId),
-        ) as unknown as AuthResult["user"],
+        ) as unknown as AuthResult['user'],
       };
-    } catch (error) {
-      logger.error("Registration error:", error);
+    } catch (error: unknown) {
+      logger.error('Registration error:', error);
       throw error;
     }
   }
 
   /**
    * Verify JWT token
-   * @param {string} token - JWT token
-   * @returns {Promise<TokenValidationResult>} Decoded token data
+   * @param token - JWT token
+   * @returns Decoded token data
    */
-  async verifyToken(token: string): Promise<TokenValidationResult> {
+  verifyToken(token: string): TokenValidationResult {
     try {
       const secret = process.env.JWT_SECRET;
-      if (!secret) {
-        throw new Error("JWT_SECRET not configured");
+      if (secret == null || secret === '') {
+        throw new Error('JWT_SECRET not configured');
       }
       const decoded = jwt.verify(token, secret);
       return {
         valid: true,
         user: decoded as unknown as DatabaseUser,
       };
-    } catch (error) {
-      logger.error("Token verification error:", error);
+    } catch (error: unknown) {
+      logger.error('Token verification error:', error);
       return {
         valid: false,
-        error: error instanceof Error ? error.message : "Invalid token",
+        error: error instanceof Error ? error.message : 'Invalid token',
       };
     }
   }
 
   /**
    * Map database user format to application user format
-   * @private
+   * @param dbUser - The dbUser parameter
+   * @internal
    */
-  private mapDatabaseUserToAppUser(dbUser: DatabaseUser): Omit<
-    DatabaseUser,
-    "password_hash"
-  > & {
+  private mapDatabaseUserToAppUser(dbUser: DatabaseUser): Omit<DatabaseUser, 'password_hash'> & {
     firstName: string;
     lastName: string;
     departmentId: number | null;
@@ -285,7 +272,7 @@ class AuthService {
       email: dbUser.email,
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
-      role: dbUser.role as "admin" | "root" | "employee",
+      role: dbUser.role,
       tenant_id: dbUser.tenant_id,
       department_id: dbUser.department_id,
       is_active: dbUser.is_active,
@@ -293,7 +280,7 @@ class AuthService {
       profile_picture: dbUser.profile_picture,
       phone_number: dbUser.phone_number,
       landline: dbUser.landline ?? null,
-      employee_number: dbUser.employee_number ?? "",
+      employee_number: dbUser.employee_number || '',
       position: dbUser.position,
       hire_date: dbUser.hire_date,
       birth_date: dbUser.birth_date,
@@ -316,7 +303,8 @@ class AuthService {
 
   /**
    * Convert DbUser to DatabaseUser format
-   * @private
+   * @param dbUser - The dbUser parameter
+   * @internal
    */
   private dbUserToDatabaseUser(dbUser: {
     id: number;
@@ -344,21 +332,18 @@ class AuthService {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
-      password_hash: dbUser.password ?? "",
+      password_hash: dbUser.password ?? '',
       first_name: dbUser.first_name,
       last_name: dbUser.last_name,
-      role: dbUser.role as "admin" | "employee" | "root",
+      role: dbUser.role as 'admin' | 'employee' | 'root',
       tenant_id: dbUser.tenant_id,
       department_id: dbUser.department_id ?? null,
-      is_active:
-        dbUser.is_active === true ||
-        dbUser.is_active === 1 ||
-        dbUser.is_active === "1",
+      is_active: dbUser.is_active === true || dbUser.is_active === 1 || dbUser.is_active === '1',
       is_archived: dbUser.is_archived ?? false,
       profile_picture: dbUser.profile_picture ?? null,
       phone_number: dbUser.phone ?? null,
       landline: dbUser.landline ?? null,
-      employee_number: dbUser.employee_number ?? "",
+      employee_number: dbUser.employee_number ?? '',
       position: dbUser.position ?? null,
       hire_date: dbUser.hire_date ?? null,
       birth_date: dbUser.birthday ?? null,
@@ -369,19 +354,16 @@ class AuthService {
 
   /**
    * Generate a refresh token for a user
-   * @param {number} userId - User ID
-   * @param {number} tenantId - Tenant ID
-   * @returns {Promise<string>} Refresh token
+   * @param userId - User ID
+   * @param tenantId - Tenant ID
+   * @returns Refresh token
    */
-  async generateRefreshToken(
-    userId: number,
-    tenantId: number,
-  ): Promise<string> {
+  async generateRefreshToken(userId: number, tenantId: number): Promise<string> {
     try {
-      const crypto = await import("crypto");
+      const crypto = await import('crypto');
 
       // Generate a secure random token
-      const refreshToken = crypto.randomBytes(32).toString("hex");
+      const refreshToken = crypto.randomBytes(32).toString('hex');
 
       // Hash the token before storing (for security)
       const hashedToken = await bcrypt.hash(refreshToken, 10);
@@ -389,49 +371,47 @@ class AuthService {
       // Store in oauth_tokens table with 7 day expiry (if table exists)
       try {
         await execute<ResultSetHeader>(
-          `INSERT INTO oauth_tokens 
-          (tenant_id, user_id, token, token_type, expires_at, created_at) 
+          `INSERT INTO oauth_tokens
+          (tenant_id, user_id, token, token_type, expires_at, created_at)
           VALUES (?, ?, ?, 'refresh', DATE_ADD(NOW(), INTERVAL 7 DAY), NOW())`,
           [tenantId, userId, hashedToken],
         );
-      } catch (error) {
+      } catch (error: unknown) {
         const dbError = error as { code?: string };
-        if (dbError.code === "ER_NO_SUCH_TABLE") {
-          logger.warn(
-            "oauth_tokens table does not exist, skipping refresh token storage",
-          );
+        if (dbError.code === 'ER_NO_SUCH_TABLE') {
+          logger.warn('oauth_tokens table does not exist, skipping refresh token storage');
           // Return a dummy refresh token for tests
-          return `test_refresh_${userId}_${Date.now()}`;
+          return `test_refresh_${userId}_${String(Date.now())}`;
         }
         throw error;
       }
 
       return refreshToken;
-    } catch (error) {
-      logger.error("Failed to generate refresh token:", error);
-      throw new Error("Failed to generate refresh token");
+    } catch (error: unknown) {
+      logger.error('Failed to generate refresh token:', error);
+      throw new Error('Failed to generate refresh token');
     }
   }
 
   /**
    * Refresh access token using refresh token
-   * @param {string} refreshToken - Refresh token
-   * @returns {Promise<{token: string, refreshToken: string} | null>} New tokens or null if invalid
+   * @param refreshToken - Refresh token
+   * @returns New tokens or null if invalid
    */
   async refreshAccessToken(refreshToken: string): Promise<{
     token: string;
     refreshToken: string;
-    user: ReturnType<AuthService["mapDatabaseUserToAppUser"]>;
+    user: ReturnType<AuthService['mapDatabaseUserToAppUser']>;
   } | null> {
     try {
       // Get all non-revoked, non-expired refresh tokens from database
       const [tokens] = await execute<RowDataPacket[]>(
-        `SELECT ot.*, u.username, u.email, u.role, u.first_name, u.last_name, 
+        `SELECT ot.*, u.username, u.email, u.role, u.first_name, u.last_name,
                 u.department_id, u.is_active, u.position
          FROM oauth_tokens ot
          INNER JOIN users u ON ot.user_id = u.id
-         WHERE ot.token_type = 'refresh' 
-         AND ot.revoked = 0 
+         WHERE ot.token_type = 'refresh'
+         AND ot.revoked = 0
          AND ot.expires_at > NOW()
          ORDER BY ot.created_at DESC`,
       );
@@ -439,7 +419,7 @@ class AuthService {
       // Find matching token by comparing hashes
       let validToken = null;
       for (const token of tokens) {
-        const isMatch = await bcrypt.compare(refreshToken, token.token);
+        const isMatch = await bcrypt.compare(refreshToken, token.token as string);
         if (isMatch) {
           validToken = token;
           break;
@@ -451,50 +431,50 @@ class AuthService {
       }
 
       // Check if user is active
-      if (!validToken.is_active) {
+      if (validToken.is_active == null || validToken.is_active === false) {
         return null;
       }
 
       // Revoke old refresh token
       await execute<ResultSetHeader>(
-        "UPDATE oauth_tokens SET revoked = 1, revoked_at = NOW() WHERE id = ?",
+        'UPDATE oauth_tokens SET revoked = 1, revoked_at = NOW() WHERE id = ?',
         [validToken.id],
       );
 
       // Create user object for token generation
       const user = {
-        id: validToken.user_id,
-        username: validToken.username,
-        email: validToken.email,
-        role: validToken.role,
-        tenant_id: validToken.tenant_id,
-        first_name: validToken.first_name,
-        last_name: validToken.last_name,
-        department_id: validToken.department_id,
-        position: validToken.position,
+        id: validToken.user_id as number,
+        username: validToken.username as string,
+        email: validToken.email as string,
+        role: validToken.role as string,
+        tenant_id: validToken.tenant_id as number,
+        first_name: validToken.first_name as string | null,
+        last_name: validToken.last_name as string | null,
+        department_id: validToken.department_id as number | null,
+        position: validToken.position as string | null,
       };
 
       // Generate new access token
-      const newAccessToken = generateToken(
-        user as Parameters<typeof generateToken>[0],
-      );
+      const newAccessToken = generateToken(user as Parameters<typeof generateToken>[0]);
 
       // Generate new refresh token
       const newRefreshToken = await this.generateRefreshToken(
-        validToken.user_id,
-        validToken.tenant_id,
+        validToken.user_id as number,
+        validToken.tenant_id as number,
       );
 
       // Create a complete user object with all required fields
       const completeUser = {
         ...user,
-        password: "", // Not needed for mapping
-        is_active: validToken.is_active ?? true,
+        first_name: user.first_name ?? '',
+        last_name: user.last_name ?? '',
+        password: '', // Not needed for mapping
+        is_active: validToken.is_active as boolean,
         is_archived: false,
         profile_picture: null,
         phone: null,
         landline: null,
-        employee_number: "",
+        employee_number: '',
         hire_date: null,
         birthday: null,
         created_at: new Date(),
@@ -504,12 +484,10 @@ class AuthService {
       return {
         token: newAccessToken,
         refreshToken: newRefreshToken,
-        user: this.mapDatabaseUserToAppUser(
-          this.dbUserToDatabaseUser(completeUser),
-        ),
+        user: this.mapDatabaseUserToAppUser(this.dbUserToDatabaseUser(completeUser)),
       };
-    } catch (error) {
-      logger.error("Failed to refresh access token:", error);
+    } catch (error: unknown) {
+      logger.error('Failed to refresh access token:', error);
       return null;
     }
   }

@@ -1,15 +1,20 @@
-import lodash from "lodash";
-const { camelCase, mapKeys, snakeCase } = lodash;
+import lodash from 'lodash';
+
+// Use arrow functions to avoid unbound method issues
+const camelCase = (str: string): string => lodash.camelCase(str);
+const mapKeys = (
+  obj: Record<string, unknown>,
+  fn: (value: unknown, key: string) => string,
+): Record<string, unknown> => lodash.mapKeys(obj, fn);
+const snakeCase = (str: string): string => lodash.snakeCase(str);
 
 /**
  * Convert database object to API format (snake_case to camelCase)
  * @param dbObject - Object from database with snake_case keys
  * @returns Object with camelCase keys for API
  */
-export const dbToApi = <T>(dbObject: Record<string, unknown>): T => {
-  return mapKeys(dbObject, (_value: unknown, key: string) =>
-    camelCase(key),
-  ) as T;
+export const dbToApi = (dbObject: Record<string, unknown>): Record<string, unknown> => {
+  return mapKeys(dbObject, (_value: unknown, key: string) => camelCase(key));
 };
 
 /**
@@ -17,25 +22,21 @@ export const dbToApi = <T>(dbObject: Record<string, unknown>): T => {
  * @param apiObject - Object from API with camelCase keys
  * @returns Object with snake_case keys for database
  */
-export const apiToDb = <T>(apiObject: Record<string, unknown>): T => {
-  return mapKeys(apiObject, (_value: unknown, key: string) =>
-    snakeCase(key),
-  ) as T;
+export const apiToDb = (apiObject: Record<string, unknown>): Record<string, unknown> => {
+  return mapKeys(apiObject, (_value: unknown, key: string) => snakeCase(key));
 };
 
 /**
  * Convert database calendar event to API format
  */
-export function dbToApiEvent(
-  dbEvent: Record<string, unknown>,
-): Record<string, unknown> {
-  const apiEvent = dbToApi<Record<string, unknown>>(dbEvent);
+export function dbToApiEvent(dbEvent: Record<string, unknown>): Record<string, unknown> {
+  const apiEvent = dbToApi(dbEvent);
 
   // Map specific calendar fields
-  if (dbEvent.start_date) {
+  if (dbEvent.start_date != null) {
     apiEvent.startTime = dbEvent.start_date;
   }
-  if (dbEvent.end_date) {
+  if (dbEvent.end_date != null) {
     apiEvent.endTime = dbEvent.end_date;
   }
   if (dbEvent.reminder_minutes !== undefined) {

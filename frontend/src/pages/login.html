@@ -6,29 +6,55 @@
     <title>Assixx - Login</title>
     <link rel="icon" type="image/x-icon" href="../favicon.ico" />
     <link rel="preload" as="image" href="../favicon.ico" />
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <!-- Feature Flags for API v2 Migration -->
+    <script src="/feature-flags.js"></script>
+    <!-- DOMPurify CDN für inline Scripts -->
+    <script src="/js/purify.min.js"></script>
   </head>
   <body>
     <!-- Quick redirect check before page renders -->
     <script>
-      // Immediate redirect check - no async, no fingerprint, just redirect
-      const token = localStorage.getItem('token');
-      const userRole = localStorage.getItem('userRole');
-      if (token && userRole) {
-        // Hide login form immediately while we redirect
-        document.documentElement.style.visibility = 'hidden';
+      // FIRST: Check if session expired, timeout, or rate limit - clear storage before any redirect
+      const urlParamsInitial = new URLSearchParams(window.location.search);
+      if (
+        urlParamsInitial.get('session') === 'expired' ||
+        urlParamsInitial.get('timeout') === 'true' ||
+        urlParamsInitial.get('ratelimit') === 'expired'
+      ) {
+        // Clear all auth data immediately to prevent redirect loop
+        localStorage.removeItem('token');
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('user');
+        sessionStorage.clear();
+        // Clear auth cookies
+        document.cookie.split(';').forEach(function (c) {
+          if (c.includes('token') || c.includes('Token')) {
+            document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date(0).toUTCString() + ';path=/');
+          }
+        });
+      } else {
+        // ONLY check for existing token if NOT coming from session expired
+        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+        const userRole = localStorage.getItem('userRole');
+        if (token && userRole) {
+          // Hide login form immediately while we redirect
+          document.documentElement.style.visibility = 'hidden';
 
-        // Redirect based on role (validation happens in background after redirect)
-        switch (userRole) {
-          case 'root':
-            window.location.replace('/root-dashboard');
-            break;
-          case 'admin':
-            window.location.replace('/admin-dashboard');
-            break;
-          case 'employee':
-            window.location.replace('/employee-dashboard');
-            break;
+          // Redirect based on role (validation happens in background after redirect)
+          switch (userRole) {
+            case 'root':
+              window.location.replace('/root-dashboard');
+              break;
+            case 'admin':
+              window.location.replace('/admin-dashboard');
+              break;
+            case 'employee':
+              window.location.replace('/employee-dashboard');
+              break;
+          }
         }
       }
     </script>
@@ -55,18 +81,54 @@
 
       <!-- Login Form -->
       <div class="login-card card">
+        <!-- Session Expired Alert -->
+        <div
+          id="session-expired-alert"
+          class="alert-warning"
+          style="
+            display: none;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            color: #ffc107;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="font-size: 20px">⚠️</span>
+            <div>
+              <strong>Sitzung abgelaufen</strong>
+              <br />
+              <span style="font-size: 14px">Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error Alert -->
+        <div
+          id="error-alert"
+          class="alert-danger"
+          style="
+            display: none;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(220, 53, 69, 0.1);
+            border: 1px solid rgba(220, 53, 69, 0.3);
+            border-radius: 8px;
+            color: #dc3545;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 10px">
+            <span style="font-size: 20px">❌</span>
+            <div id="error-message"></div>
+          </div>
+        </div>
+
         <form id="loginForm">
           <div class="form-group">
             <label class="form-label">E-Mail</label>
-            <input
-              type="email"
-              id="username"
-              class="form-control"
-              required
-              autofocus
-              placeholder="ihre.email@firma.de"
-              autocomplete="email"
-            />
+            <input type="email" id="username" class="form-control" required autofocus placeholder="" autocomplete="email" />
           </div>
           <div class="form-group">
             <label class="form-label">Passwort</label>
@@ -88,11 +150,12 @@
     </div>
 
     <script type="module">
+      /* global DOMPurify */
       import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
 
       // Fallback validation in case redirect failed
       (async function validateIfNeeded() {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
         const userRole = localStorage.getItem('userRole');
 
         // If we still have token/role but are on login page, validate
@@ -113,7 +176,7 @@
               localStorage.removeItem('user');
               document.documentElement.style.visibility = 'visible';
             }
-          } catch (error) {
+          } catch {
             // On error, show login page
             document.documentElement.style.visibility = 'visible';
           }
@@ -125,10 +188,14 @@
 
       // Setup the page
       document.addEventListener('DOMContentLoaded', async function () {
-        // Check for timeout parameter
+        // Check for timeout, session expired, or rate limit parameter
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('timeout') === 'true') {
-          showError('Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.');
+        if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
+          showError('Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.');
+          // Clean up URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else if (urlParams.get('ratelimit') === 'expired') {
+          showInfo('Die Wartezeit ist abgelaufen. Sie können sich jetzt wieder anmelden.', true); // persistent = true
           // Clean up URL
           window.history.replaceState({}, document.title, window.location.pathname);
         }
@@ -143,49 +210,84 @@
         const errorDiv = document.createElement('div');
         const isTimeout = message.includes('Sitzung');
         errorDiv.className = `alert ${isTimeout ? 'alert-timeout' : 'alert-error'}`;
-        errorDiv.innerHTML = `
+        // Safe: HTML is generated from error message and sanitized with DOMPurify
+        // eslint-disable-next-line no-unsanitized/property
+        errorDiv.innerHTML = DOMPurify.sanitize(`
           <div class="alert-content">
             ${isTimeout ? '<strong>⏱️ Sitzung abgelaufen</strong><br>' : '<strong>Fehler!</strong><br>'}
             ${message.replace(/\n/g, '<br>')}
           </div>
-        `;
+        `);
         document.querySelector('.login-card').insertBefore(errorDiv, document.querySelector('#loginForm'));
 
         // Remove after 10 seconds
         setTimeout(() => errorDiv.remove(), 10000);
       }
 
-      function showHelp() {
-        alert(
-          'Hilfe:\n\nFür neue Kunden: Klicken Sie auf "Zugangsdaten beantragen"\n\nFür bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort',
+      function showInfo(message, persistent = false) {
+        // Remove existing messages
+        const existingInfo = document.querySelectorAll('.alert-info');
+        existingInfo.forEach((info) => info.remove());
+
+        const infoDiv = document.createElement('div');
+        infoDiv.className = 'alert alert-info';
+        infoDiv.textContent = message;
+        document.querySelector('.login-card').insertBefore(infoDiv, document.querySelector('#loginForm'));
+
+        // Only auto-remove if not persistent
+        if (!persistent) {
+          setTimeout(() => infoDiv.remove(), 5000);
+        }
+      }
+
+      window.showHelp = function () {
+        showInfo(
+          'Hilfe: Für neue Kunden: Klicken Sie auf "Zugangsdaten beantragen". Für bestehende Kunden: Verwenden Sie Ihre E-Mail und Passwort',
         );
-      }
+      };
 
-      function showPasswordReset() {
-        alert('Passwort zurücksetzen - Feature kommt bald');
-      }
+      window.showPasswordReset = function () {
+        showInfo('Passwort zurücksetzen - Feature kommt bald');
+      };
 
-      function requestAccess() {
+      window.requestAccess = function () {
         window.location.href = '/';
-      }
+      };
 
-      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      document.querySelector('#loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+        const username = document.querySelector('#username').value;
+        const password = document.querySelector('#password').value;
 
         try {
+          // Check if v2 API should be used
+          const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_AUTH;
+
           // Generate browser fingerprint
           const fingerprint = await BrowserFingerprint.generate();
           BrowserFingerprint.store(fingerprint);
 
-          const response = await fetch('/api/auth/login', {
+          // Prepare request based on API version
+          let apiUrl, requestBody;
+          if (useV2) {
+            apiUrl = '/api/v2/auth/login';
+            // v2 uses 'email' instead of 'username'
+            requestBody = { email: username, password };
+          } else {
+            apiUrl = '/api/auth/login';
+            requestBody = { username, password, fingerprint };
+          }
+
+          console.info(`[Login] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
+
+          const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'X-Browser-Fingerprint': fingerprint,
             },
-            body: JSON.stringify({ username, password, fingerprint }),
+            body: JSON.stringify(requestBody),
           });
 
           // Handle rate limiting error
@@ -196,43 +298,81 @@
 
           const data = await response.json();
 
-          if (response.ok) {
-            // Store token for JavaScript API calls
-            localStorage.setItem('token', data.data.token);
+          if (response.ok || (useV2 && data.success)) {
+            let token, role, user;
+
+            if (useV2) {
+              // v2 response format
+              if (data.success && data.data) {
+                token = data.data.accessToken;
+                const refreshToken = data.data.refreshToken;
+                user = data.data.user;
+                role = user?.role || data.data.role;
+
+                // Store v2 tokens
+                localStorage.setItem('accessToken', token);
+                localStorage.setItem('refreshToken', refreshToken);
+
+                // Also store in old format for compatibility
+                localStorage.setItem('token', token);
+
+                // Set cookie for server-side page protection (temporary compatibility)
+                // Using setTimeout to avoid race condition warning
+                setTimeout(() => {
+                  document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+                }, 0);
+              } else {
+                showError(data.error?.message || 'Login fehlgeschlagen');
+                return;
+              }
+            } else {
+              // v1 response format
+              token = data.data.token;
+              role = data.data.role;
+              user = data.data.user;
+
+              // Store v1 token
+              localStorage.setItem('token', token);
+            }
 
             // Store role separately for easy access
-            localStorage.setItem('userRole', data.data.role);
+            localStorage.setItem('userRole', role);
 
             // Also store user info
-            if (data.data.user) {
-              localStorage.setItem('user', JSON.stringify(data.data.user));
+            if (user) {
+              localStorage.setItem('user', JSON.stringify(user));
             }
 
             // Clear any stored navigation state to ensure dashboard is active
             localStorage.removeItem('activeNavigation');
             localStorage.removeItem('activeRole'); // Clear role switching state
 
-            // Redirect based on role
-            switch (data.data.role) {
-              case 'root':
-                window.location.href = '/root-dashboard';
-                break;
-              case 'admin':
-                window.location.href = '/admin-dashboard';
-                break;
-              case 'employee':
-                window.location.href = '/employee-dashboard';
-                break;
-              default:
-                alert('Unknown role');
-            }
+            // Redirect based on role (using setTimeout to avoid race condition warning)
+            setTimeout(() => {
+              switch (role) {
+                case 'root':
+                  window.location.href = '/root-dashboard';
+                  break;
+                case 'admin':
+                  window.location.href = '/admin-dashboard';
+                  break;
+                case 'employee':
+                  window.location.href = '/employee-dashboard';
+                  break;
+                default:
+                  showError('Unknown role');
+              }
+            }, 0);
           } else {
             // Show specific error message from backend
-            showError(data.message || 'Login fehlgeschlagen');
+            const errorMessage = useV2
+              ? data.error?.message || data.message || 'Login fehlgeschlagen'
+              : data.message || 'Login fehlgeschlagen';
+            showError(errorMessage);
           }
         } catch (error) {
           console.error('Login error:', error);
-          alert('An error occurred during login');
+          showError('An error occurred during login');
         }
       });
     </script>
@@ -252,7 +392,6 @@
         padding: 12px 20px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
         color: var(--text-secondary);
@@ -302,7 +441,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);
+        /*background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%);*/
         opacity: 0.9;
         z-index: -1;
       }
@@ -323,7 +462,7 @@
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        min-height: 100vh;
+        min-height: 85vh;
         padding: var(--spacing-lg);
       }
 
@@ -355,10 +494,9 @@
 
       .login-card {
         width: 100%;
-        max-width: 400px;
+        max-width: 450px;
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
         padding: var(--spacing-xl);
         border-radius: var(--radius-md);
         box-shadow: var(--shadow-sm);
@@ -384,13 +522,21 @@
       }
 
       .btn-block {
-        width: 50%;
-        padding: var(--spacing-md);
+        width: 60%;
+        padding: var(--spacing-2sm);
         font-size: 16px;
-        font-family: 'Ubuntu', sans-serif;
+        font-family:
+          'Outfit',
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          Roboto,
+          Arial,
+          sans-serif;
         font-weight: 500;
         margin: 0 auto;
         display: block;
+        margin-top: 25px;
       }
 
       .login-footer {
@@ -444,7 +590,7 @@
         color: var(--text-secondary);
         font-size: 19px;
         cursor: pointer;
-        transition: all 0.3s ease;
+
         z-index: 100;
         box-shadow:
           0 4px 12px rgba(0, 0, 0, 0.2),
@@ -463,17 +609,24 @@
 
       /* Alert Styles */
       .alert {
-        padding: var(--spacing-md);
+        padding: var(--spacing-2sm);
         margin-bottom: var(--spacing-md);
         border-radius: var(--radius-md);
         backdrop-filter: blur(20px);
-        /* animation: slideDown 0.3s ease-out; */
+        color: #ffa700;
+        box-shadow:
+          0 0px 0px rgba(255, 72, 0, 0),
+          inset 0 0 0px 2px rgba(255, 131, 0, 0.82);
+        border-radius: var(--radius-sm);
       }
 
       .alert-error {
         background: rgba(255, 59, 48, 0.1);
         border: 1px solid rgba(255, 59, 48, 0.3);
         color: #ff3b30;
+        box-shadow:
+          0 0px 0px rgba(255, 72, 0, 0),
+          inset 0 0 0px 2px rgba(255, 0, 0, 0.82);
       }
 
       /* Special style for session timeout */
@@ -505,7 +658,6 @@
         border: 1px solid rgba(255, 255, 255, 0.12);
         backdrop-filter: blur(5px);
         color: var(--text-primary);
-        transition: all 0.3s ease;
       }
 
       .form-control:focus {
@@ -561,9 +713,9 @@
       }
 
       /* Logo Animation */
-      .login-logo {
-        /* animation: subtle-pulse 3s ease-in-out infinite; */
-      }
+      /* .login-logo {
+        animation: subtle-pulse 3s ease-in-out infinite;
+      } */
 
       @keyframes subtle-pulse {
         0%,
@@ -580,7 +732,7 @@
       /* Button Glassmorphismus */
       .btn-primary {
         background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: white;
+        color: #fff;
         box-shadow:
           0 1px 4px rgba(33, 150, 243, 0.3),
           inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -589,14 +741,14 @@
       }
 
       .btn-primary::before {
+        background: linear-gradient(90deg, transparent, hsla(0, 0%, 100%, 0.2), transparent);
         content: '';
+        height: 100%;
+        left: -100%;
         position: absolute;
         top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
         transition: left 0.5s ease;
+        width: 100%;
       }
 
       .btn-primary:hover {

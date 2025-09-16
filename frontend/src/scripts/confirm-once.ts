@@ -24,8 +24,8 @@ interface ConfirmTracking {
   };
 
   // Override confirm function
-  window.confirm = function (message?: string): boolean {
-    const confirmMessage = message ?? '';
+  window.confirm = function (message = ''): boolean {
+    const confirmMessage = message;
     console.info(`[Confirm] Confirm dialog requested: ${confirmMessage}`);
 
     const now = Date.now();
@@ -33,7 +33,7 @@ interface ConfirmTracking {
     // If the same confirmation dialog should be shown again within 3 seconds,
     // just return the previous result
     if (confirmMessage === tracking.lastConfirmMessage && now - tracking.lastConfirmTime < 3000) {
-      console.info(`[Confirm] Reusing previous result: ${tracking.lastConfirmResult}`);
+      console.info(`[Confirm] Reusing previous result: ${String(tracking.lastConfirmResult)}`);
       return tracking.lastConfirmResult;
     }
 
@@ -42,7 +42,7 @@ interface ConfirmTracking {
     tracking.lastConfirmMessage = confirmMessage;
     tracking.lastConfirmResult = originalConfirm.call(window, confirmMessage);
 
-    console.info(`[Confirm] User selected: ${tracking.lastConfirmResult}`);
+    console.info(`[Confirm] User selected: ${String(tracking.lastConfirmResult)}`);
     return tracking.lastConfirmResult;
   };
 

@@ -1,6 +1,6 @@
 # API v2 Known Issues and Solutions
 
-## ✅ UPDATE 31.07.2025: All Major Issues Resolved!
+## ✅ UPDATE 31.07.2025: All Major Issues Resolved
 
 - Settings v2 validation middleware bug: **FIXED**
 - Users v2 duplicate entry test error: **FIXED**
@@ -131,14 +131,19 @@ Cannot add or update a child row: a foreign key constraint fails (`main`.`users`
 
 1. **Always use `--runInBand` for v2 tests** to prevent race conditions
 2. **Run test suites individually** when debugging:
+
    ```bash
    docker exec assixx-backend pnpm test -- backend/src/routes/__tests__/calendar-v2.test.ts --runInBand
    ```
+
 3. **Check for leftover test data** before running tests:
+
    ```bash
    docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT COUNT(*) FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
    ```
+
 4. **Clean test data manually if needed**:
+
    ```bash
    docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DELETE FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
    ```
@@ -237,9 +242,9 @@ Response data length: 0
 
 **Debug Process:**
 
-1. **Jest console.log not showing:** Standard console.log statements don't appear in Jest output
+1. **Jest console.info not showing:** Standard console.info statements don't appear in Jest output
    - **Solution:** Import console functions directly: `import { log } from "console";`
-   - Use `log()` instead of `console.log()` in tests
+   - Use `log()` instead of `console.info()` in tests
 2. **Test timeout issues:** Tests timing out after 2 minutes when using standard debugging
    - **Solution:** Use `--runInBand --forceExit` flags
    - Example: `npx jest --testNamePattern="test name" --runInBand --forceExit`
@@ -295,13 +300,13 @@ Can't update table 'blackboard_entries' in stored function/trigger because it is
 
 ```typescript
 // Get entry IDs first
-const [entries] = await testDb.execute<any[]>("SELECT id FROM blackboard_entries WHERE tenant_id = ?", [tenantId]);
+const [entries] = await testDb.execute<any[]>('SELECT id FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
 const entryIds = entries.map((e) => e.id);
 
 // Delete using IDs directly, not subqueries
 if (entryIds.length > 0) {
   await testDb.execute(
-    `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => "?").join(",")})`,
+    `DELETE FROM blackboard_attachments WHERE entry_id IN (${entryIds.map(() => '?').join(',')})`,
     entryIds,
   );
 }
@@ -321,14 +326,14 @@ Die Chat v2 Tests schlugen mit 500-Fehlern fehl, ohne dass die eigentlichen Fehl
 
 ### Ursache
 
-- `console.log()` und `console.error()` Ausgaben wurden in Jest Tests nicht angezeigt
+- `console.info()` und `console.error()` Ausgaben wurden in Jest Tests nicht angezeigt
 - Jest modifiziert das globale `console` Objekt und unterdrückt dadurch die Ausgaben
 
 ### Lösung: Import von Console-Funktionen
 
 ```typescript
-// Statt console.log/console.error verwenden:
-import { log, error as logError } from "console";
+// Statt console.info/console.error verwenden:
+import { log, error as logError } from 'console';
 ```
 
 **Angewendet in:**
@@ -373,6 +378,7 @@ Create conversation error: {
 1. **Console-Import Fix** - Ermöglicht Debug-Ausgaben in Jest
 2. **Erweiterte Logging** in `createConversation()`
 3. **Error-Logging** in `getConversations()` hinzugefügt:
+
    ```typescript
    } catch (error) {
      logError("[Chat Service] getConversations error:", error);
@@ -386,7 +392,7 @@ Create conversation error: {
 
 ### Erfolgreich abgeschlossene Todos
 
-- ☒ Console.log Fix mit `import { log } from 'console'` implementiert
+- ☒ console.info Fix mit `import { log } from 'console'` implementiert
 - ☒ 500 Error bei createConversation lokalisiert (ist eigentlich in getConversations)
 
 ### Verbleibende Aufgaben

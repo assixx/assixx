@@ -1,4 +1,4 @@
-import { RowDataPacket } from "mysql2/promise";
+import { RowDataPacket } from 'mysql2/promise';
 
 // Plans API v2 Types
 
@@ -35,28 +35,28 @@ export interface TenantPlan {
   planId: number;
   planCode: string;
   planName: string;
-  status: "active" | "trial" | "cancelled" | "expired";
+  status: 'active' | 'trial' | 'cancelled' | 'expired';
   startedAt: string;
   expiresAt?: string;
   customPrice?: number;
-  billingCycle: "monthly" | "yearly";
+  billingCycle: 'monthly' | 'yearly';
 }
 
 export interface TenantAddon {
   id: number;
   tenantId: number;
-  addonType: "employees" | "admins" | "storage_gb";
+  addonType: 'employees' | 'admins' | 'storage_gb';
   quantity: number;
   unitPrice: number;
   totalPrice: number;
-  status: "active" | "cancelled";
+  status: 'active' | 'cancelled';
 }
 
 export interface TenantCosts {
   basePlanCost: number;
   addonsCost: number;
   totalMonthlyCost: number;
-  billingCycle: "monthly" | "yearly";
+  billingCycle: 'monthly' | 'yearly';
   effectivePrice: number;
 }
 

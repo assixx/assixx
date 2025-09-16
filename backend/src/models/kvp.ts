@@ -2,26 +2,24 @@
  * KVP (Kontinuierlicher Verbesserungsprozess) Model
  * Handles all database operations for the KVP system
  */
-
-import * as fs from "fs/promises";
-import * as path from "path";
-
-import * as dotenv from "dotenv";
-import * as mysql from "mysql2/promise";
-import { RowDataPacket, ResultSetHeader, Connection } from "mysql2/promise";
+import * as dotenv from 'dotenv';
+import * as fs from 'fs/promises';
+import * as mysql from 'mysql2/promise';
+import { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import * as path from 'path';
 
 // Get project root directory
 const projectRoot = process.cwd();
 
-dotenv.config({ path: path.join(projectRoot, "backend", ".env") });
+dotenv.config({ path: path.join(projectRoot, 'backend', '.env') });
 
 // Database configuration
 const dbConfig: mysql.ConnectionOptions = {
-  host: process.env.DB_HOST ?? "localhost",
-  user: process.env.DB_USER ?? "root",
-  password: process.env.DB_PASSWORD ?? "",
-  database: process.env.DB_NAME ?? "lohnabrechnung",
-  charset: "utf8mb4",
+  host: process.env.DB_HOST ?? 'localhost',
+  user: process.env.DB_USER ?? 'root',
+  password: process.env.DB_PASSWORD ?? '',
+  database: process.env.DB_NAME ?? 'lohnabrechnung',
+  charset: 'utf8mb4',
 };
 
 // Database interfaces
@@ -39,19 +37,13 @@ interface DbSuggestion extends RowDataPacket {
   title: string;
   description: string;
   category_id: number;
-  org_level: "company" | "department" | "team";
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   submitted_by: number;
-  priority: "low" | "normal" | "high" | "urgent";
+  priority: 'low' | 'normal' | 'high' | 'urgent';
   expected_benefit?: string;
-  estimated_cost?: number;
-  status:
-    | "new"
-    | "in_review"
-    | "approved"
-    | "implemented"
-    | "rejected"
-    | "archived";
+  estimated_cost?: string;
+  status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assigned_to?: number;
   actual_savings?: number;
   created_at: Date;
@@ -119,12 +111,14 @@ interface SuggestionCreateData {
   title: string;
   description: string;
   category_id: number;
-  org_level: "company" | "department" | "team";
+  department_id?: number | null;
+  org_level: 'company' | 'department' | 'team';
   org_id: number;
   submitted_by: number;
-  priority?: "low" | "normal" | "high" | "urgent";
+  team_id?: number | null;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
   expected_benefit?: string;
-  estimated_cost?: number;
+  estimated_cost?: string;
 }
 
 interface SuggestionFilters {
@@ -142,78 +136,105 @@ interface FileData {
   uploaded_by: number;
 }
 
-export class KVPModel {
-  // Helper method to get database connection
-  static async getConnection(): Promise<Connection> {
-    try {
-      const connection = await mysql.createConnection(dbConfig);
-      return connection;
-    } catch (error) {
-      console.error("Database connection error in KVP model:", error);
-      throw error;
-    }
+// Helper method to get database connection
+async function getConnection(): Promise<Connection> {
+  try {
+    return await mysql.createConnection(dbConfig);
+  } catch (error: unknown) {
+    console.error('Database connection error in KVP model:', error);
+    throw error;
   }
+}
 
-  // Get all categories (global - no tenant filtering)
-  static async getCategories(): Promise<DbCategory[]> {
-    const connection = await this.getConnection();
-    try {
-      const [rows] = await connection.execute<DbCategory[]>(
-        "SELECT * FROM kvp_categories ORDER BY name ASC",
-      );
-      return rows;
-    } finally {
-      await connection.end();
-    }
+// Get all categories (global - no tenant filtering)
+export async function getKvpCategories(): Promise<DbCategory[]> {
+  const connection = await getConnection();
+  try {
+    const [rows] = await connection.execute<DbCategory[]>(
+      'SELECT * FROM kvp_categories ORDER BY name ASC',
+    );
+    return rows;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Create new suggestion
-  static async createSuggestion(
-    data: SuggestionCreateData,
-  ): Promise<SuggestionCreateData & { id: number }> {
-    const connection = await this.getConnection();
-    try {
-      const [result] = await connection.execute<ResultSetHeader>(
-        `
-        INSERT INTO kvp_suggestions 
-        (tenant_id, title, description, category_id, org_level, org_id, submitted_by, priority, expected_benefit, estimated_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// Create new suggestion
+export async function createKvpSuggestion(
+  data: SuggestionCreateData,
+): Promise<SuggestionCreateData & { id: number }> {
+  const connection = await getConnection();
+  try {
+    console.info('[KVP Model] Received data:', JSON.stringify(data));
+    console.info('[KVP Model] department_id value:', data.department_id);
+
+    const values = [
+      data.tenant_id,
+      data.title,
+      data.description,
+      data.category_id,
+      data.department_id ?? null,
+      data.org_level,
+      data.org_id,
+      data.submitted_by,
+      data.team_id ?? null,
+      data.priority ?? 'normal',
+      data.expected_benefit ?? null,
+      data.estimated_cost ?? null,
+    ];
+
+    console.info('[KVP Model] SQL VALUES:', values);
+    const [result] = await connection.execute<ResultSetHeader>(
+      `
+        INSERT INTO kvp_suggestions
+        (tenant_id, title, description, category_id, department_id, org_level, org_id, submitted_by, team_id, priority, expected_benefit, estimated_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-        [
-          data.tenant_id,
-          data.title,
-          data.description,
-          data.category_id,
-          data.org_level,
-          data.org_id,
-          data.submitted_by,
-          data.priority ?? "normal",
-          data.expected_benefit ?? null,
-          data.estimated_cost ?? null,
-        ],
+      values,
+    );
+
+    return { id: result.insertId, ...data };
+  } finally {
+    await connection.end();
+  }
+}
+
+// Get suggestions with filters
+export async function getKvpSuggestions(
+  tenantId: number,
+  userId: number,
+  userRole: string,
+  filters: SuggestionFilters = {},
+): Promise<DbSuggestion[]> {
+  const connection = await getConnection();
+  try {
+    // Get user's team membership first if employee
+    let userTeamId: number | null = null;
+    let userDepartmentId: number | null = null;
+
+    if (userRole === 'employee') {
+      const [userInfo] = await connection.execute<RowDataPacket[]>(
+        `SELECT ut.team_id, u.department_id
+         FROM users u
+         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+         WHERE u.id = ? AND u.tenant_id = ?`,
+        [userId, tenantId],
       );
 
-      return { id: result.insertId, ...data };
-    } finally {
-      await connection.end();
+      if (userInfo.length > 0) {
+        userTeamId = userInfo[0].team_id as number | null;
+        userDepartmentId = userInfo[0].department_id as number | null;
+      }
     }
-  }
 
-  // Get suggestions with filters
-  static async getSuggestions(
-    tenant_id: number,
-    userId: number,
-    userRole: string,
-    filters: SuggestionFilters = {},
-  ): Promise<DbSuggestion[]> {
-    const connection = await this.getConnection();
-    try {
-      let query = `
-        SELECT 
+    let query = `
+        SELECT
           s.*,
           c.name as category_name,
           c.color as category_color,
           c.icon as category_icon,
+          d.name as department_name,
+          t.name as team_name,
           u.first_name as submitted_by_name,
           u.last_name as submitted_by_lastname,
           admin.first_name as assigned_to_name,
@@ -223,64 +244,105 @@ export class KVPModel {
           (SELECT AVG(rating) FROM kvp_ratings WHERE suggestion_id = s.id) as avg_rating
         FROM kvp_suggestions s
         LEFT JOIN kvp_categories c ON s.category_id = c.id
+        LEFT JOIN departments d ON s.department_id = d.id
+        LEFT JOIN teams t ON s.team_id = t.id
         LEFT JOIN users u ON s.submitted_by = u.id
         LEFT JOIN users admin ON s.assigned_to = admin.id
         WHERE s.tenant_id = ?
       `;
 
-      const params: unknown[] = [tenant_id];
+    const params: unknown[] = [tenantId];
 
-      // If employee, only show their own suggestions and implemented ones
-      if (userRole === "employee") {
-        query += ' AND (s.submitted_by = ? OR s.status = "implemented")';
-        params.push(userId);
+    // If employee, show their own suggestions, implemented ones, and team/department shared ones
+    if (userRole === 'employee') {
+      let visibilityConditions = '(s.submitted_by = ? OR s.status = "implemented"';
+      params.push(userId);
+
+      // Add team visibility
+      if (userTeamId !== null) {
+        visibilityConditions += ' OR (s.org_level = "team" AND s.org_id = ?)';
+        params.push(userTeamId);
       }
 
-      // Apply filters
-      if (filters.status) {
-        query += " AND s.status = ?";
-        params.push(filters.status);
+      // Add department visibility
+      if (userDepartmentId !== null) {
+        visibilityConditions += ' OR (s.org_level = "department" AND s.org_id = ?)';
+        params.push(userDepartmentId);
       }
 
-      if (filters.category_id) {
-        query += " AND s.category_id = ?";
-        params.push(filters.category_id);
-      }
+      // Add company-wide visibility
+      visibilityConditions += ' OR s.org_level = "company"';
 
-      if (filters.priority) {
-        query += " AND s.priority = ?";
-        params.push(filters.priority);
-      }
-
-      if (filters.org_level) {
-        query += " AND s.org_level = ?";
-        params.push(filters.org_level);
-      }
-
-      query += " ORDER BY s.created_at DESC";
-
-      const [rows] = await connection.execute<DbSuggestion[]>(query, params);
-      return rows;
-    } finally {
-      await connection.end();
+      visibilityConditions += ')';
+      query += ' AND ' + visibilityConditions;
     }
-  }
 
-  // Get single suggestion by ID
-  static async getSuggestionById(
-    id: number,
-    tenant_id: number,
-    userId: number,
-    userRole: string,
-  ): Promise<DbSuggestion | null> {
-    const connection = await this.getConnection();
-    try {
-      let query = `
-        SELECT 
+    // Apply filters
+    if (filters.status != null && filters.status !== '') {
+      query += ' AND s.status = ?';
+      params.push(filters.status);
+    }
+
+    if (filters.category_id != null && filters.category_id !== 0) {
+      query += ' AND s.category_id = ?';
+      params.push(filters.category_id);
+    }
+
+    if (filters.priority != null && filters.priority !== '') {
+      query += ' AND s.priority = ?';
+      params.push(filters.priority);
+    }
+
+    if (filters.org_level != null && filters.org_level !== '') {
+      query += ' AND s.org_level = ?';
+      params.push(filters.org_level);
+    }
+
+    query += ' ORDER BY s.created_at DESC';
+
+    const [rows] = await connection.execute<DbSuggestion[]>(query, params);
+    return rows;
+  } finally {
+    await connection.end();
+  }
+}
+
+// Get single suggestion by ID
+export async function getKvpSuggestionById(
+  id: number,
+  tenantId: number,
+  userId: number,
+  userRole: string,
+): Promise<DbSuggestion | null> {
+  const connection = await getConnection();
+  try {
+    // Get user's team membership first if employee
+    let userTeamId: number | null = null;
+    let userDepartmentId: number | null = null;
+
+    if (userRole === 'employee') {
+      const [userInfo] = await connection.execute<RowDataPacket[]>(
+        `SELECT ut.team_id, u.department_id
+         FROM users u
+         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+         WHERE u.id = ? AND u.tenant_id = ?`,
+        [userId, tenantId],
+      );
+
+      if (userInfo.length > 0) {
+        userTeamId = userInfo[0].team_id as number | null;
+        userDepartmentId = userInfo[0].department_id as number | null;
+      }
+    }
+
+    let query = `
+        SELECT
           s.*,
           c.name as category_name,
           c.color as category_color,
           c.icon as category_icon,
+          d.name as department_name,
+          t.name as team_name,
           u.first_name as submitted_by_name,
           u.last_name as submitted_by_lastname,
           u.email as submitted_by_email,
@@ -288,419 +350,540 @@ export class KVPModel {
           admin.last_name as assigned_to_lastname
         FROM kvp_suggestions s
         LEFT JOIN kvp_categories c ON s.category_id = c.id
+        LEFT JOIN departments d ON s.department_id = d.id
+        LEFT JOIN teams t ON s.team_id = t.id
         LEFT JOIN users u ON s.submitted_by = u.id
         LEFT JOIN users admin ON s.assigned_to = admin.id
         WHERE s.id = ? AND s.tenant_id = ?
       `;
 
-      const params: unknown[] = [id, tenant_id];
+    const params: unknown[] = [id, tenantId];
 
-      // If employee, only allow access to their own suggestions or implemented ones
-      if (userRole === "employee") {
-        query += ' AND (s.submitted_by = ? OR s.status = "implemented")';
-        params.push(userId);
+    // If employee, allow access based on visibility rules
+    if (userRole === 'employee') {
+      let visibilityConditions = '(s.submitted_by = ? OR s.status = "implemented"';
+      params.push(userId);
+
+      // Add team visibility
+      if (userTeamId !== null) {
+        visibilityConditions += ' OR (s.org_level = "team" AND s.org_id = ?)';
+        params.push(userTeamId);
       }
 
-      const [rows] = await connection.execute<DbSuggestion[]>(query, params);
-      return rows[0] ?? null;
-    } finally {
-      await connection.end();
+      // Add department visibility
+      if (userDepartmentId !== null) {
+        visibilityConditions += ' OR (s.org_level = "department" AND s.org_id = ?)';
+        params.push(userDepartmentId);
+      }
+
+      // Add company-wide visibility
+      visibilityConditions += ' OR s.org_level = "company"';
+
+      visibilityConditions += ')';
+      query += ' AND ' + visibilityConditions;
     }
+
+    const [rows] = await connection.execute<DbSuggestion[]>(query, params);
+    return rows[0] ?? null;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Update suggestion status (Admin only)
-  static async updateSuggestionStatus(
-    id: number,
-    tenant_id: number,
-    status: string,
-    userId: number,
-    changeReason: string | null = null,
-  ): Promise<boolean> {
-    const connection = await this.getConnection();
-    try {
-      await connection.beginTransaction();
+// Update suggestion status (Admin only)
+export async function updateKvpSuggestionStatus(
+  id: number,
+  tenantId: number,
+  status: string,
+  userId: number,
+  changeReason: string | null = null,
+): Promise<boolean> {
+  const connection = await getConnection();
+  try {
+    await connection.beginTransaction();
 
-      // Get current status for history
-      const [currentRows] = await connection.execute<DbSuggestion[]>(
-        "SELECT status FROM kvp_suggestions WHERE id = ? AND tenant_id = ?",
-        [id, tenant_id],
-      );
+    // Get current status for history
+    const [currentRows] = await connection.execute<DbSuggestion[]>(
+      'SELECT status FROM kvp_suggestions WHERE id = ? AND tenant_id = ?',
+      [id, tenantId],
+    );
 
-      if (currentRows.length === 0) {
-        throw new Error("Suggestion not found");
-      }
+    if (currentRows.length === 0) {
+      throw new Error('Suggestion not found');
+    }
 
-      const oldStatus = currentRows[0].status;
+    const oldStatus = currentRows[0].status;
 
-      // Update suggestion
-      const [result] = await connection.execute<ResultSetHeader>(
-        `
-        UPDATE kvp_suggestions 
+    // Update suggestion
+    const [result] = await connection.execute<ResultSetHeader>(
+      `
+        UPDATE kvp_suggestions
         SET status = ?, assigned_to = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ? AND tenant_id = ?
       `,
-        [status, userId, id, tenant_id],
-      );
+      [status, userId, id, tenantId],
+    );
 
-      // Add to history
-      await connection.execute(
-        `
-        INSERT INTO kvp_status_history 
+    // Add to history
+    await connection.execute(
+      `
+        INSERT INTO kvp_status_history
         (suggestion_id, old_status, new_status, changed_by, change_reason)
         VALUES (?, ?, ?, ?, ?)
       `,
-        [id, oldStatus, status, userId, changeReason],
-      );
+      [id, oldStatus, status, userId, changeReason],
+    );
 
-      await connection.commit();
-      return result.affectedRows > 0;
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      await connection.end();
-    }
+    await connection.commit();
+    return result.affectedRows > 0;
+  } catch (error: unknown) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Add attachment to suggestion
-  static async addAttachment(
-    suggestionId: number,
-    fileData: FileData,
-  ): Promise<FileData & { id: number }> {
-    const connection = await this.getConnection();
-    try {
-      const [result] = await connection.execute<ResultSetHeader>(
-        `
-        INSERT INTO kvp_attachments 
+// Add attachment to suggestion
+export async function addKvpAttachment(
+  suggestionId: number,
+  fileData: FileData,
+): Promise<FileData & { id: number }> {
+  const connection = await getConnection();
+  try {
+    const [result] = await connection.execute<ResultSetHeader>(
+      `
+        INSERT INTO kvp_attachments
         (suggestion_id, file_name, file_path, file_type, file_size, uploaded_by)
         VALUES (?, ?, ?, ?, ?, ?)
       `,
-        [
-          suggestionId,
-          fileData.file_name,
-          fileData.file_path,
-          fileData.file_type,
-          fileData.file_size,
-          fileData.uploaded_by,
-        ],
-      );
+      [
+        suggestionId,
+        fileData.file_name,
+        fileData.file_path,
+        fileData.file_type,
+        fileData.file_size,
+        fileData.uploaded_by,
+      ],
+    );
 
-      return { id: result.insertId, ...fileData };
-    } finally {
-      await connection.end();
-    }
+    return { id: result.insertId, ...fileData };
+  } finally {
+    await connection.end();
   }
+}
 
-  // Get attachments for suggestion
-  static async getAttachments(suggestionId: number): Promise<DbAttachment[]> {
-    const connection = await this.getConnection();
-    try {
-      const [rows] = await connection.execute<DbAttachment[]>(
-        `
+// Get attachments for suggestion
+export async function getKvpAttachments(suggestionId: number): Promise<DbAttachment[]> {
+  const connection = await getConnection();
+  try {
+    const [rows] = await connection.execute<DbAttachment[]>(
+      `
         SELECT a.*, u.first_name, u.last_name
         FROM kvp_attachments a
         LEFT JOIN users u ON a.uploaded_by = u.id
         WHERE a.suggestion_id = ?
         ORDER BY a.uploaded_at DESC
       `,
-        [suggestionId],
-      );
+      [suggestionId],
+    );
 
-      return rows;
-    } finally {
-      await connection.end();
-    }
+    return rows;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Add comment to suggestion
-  static async addComment(
-    suggestionId: number,
-    tenantId: number,
-    userId: number,
-    comment: string,
-    isInternal = false,
-  ): Promise<number> {
-    const connection = await this.getConnection();
-    try {
-      const [result] = await connection.execute<ResultSetHeader>(
-        `
-        INSERT INTO kvp_comments 
+// Add comment to suggestion
+export async function addKvpComment(
+  suggestionId: number,
+  tenantId: number,
+  userId: number,
+  comment: string,
+  isInternal = false,
+): Promise<number> {
+  const connection = await getConnection();
+  try {
+    const [result] = await connection.execute<ResultSetHeader>(
+      `
+        INSERT INTO kvp_comments
         (tenant_id, suggestion_id, user_id, comment, is_internal)
         VALUES (?, ?, ?, ?, ?)
       `,
-        [tenantId, suggestionId, userId, comment, isInternal],
-      );
+      [tenantId, suggestionId, userId, comment, isInternal],
+    );
 
-      return result.insertId;
-    } finally {
-      await connection.end();
-    }
+    return result.insertId;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Get comments for suggestion
-  static async getComments(
-    suggestionId: number,
-    userRole: string,
-  ): Promise<DbComment[]> {
-    const connection = await this.getConnection();
-    try {
-      let query = `
+// Get comments for suggestion
+export async function getKvpComments(suggestionId: number, userRole: string): Promise<DbComment[]> {
+  const connection = await getConnection();
+  try {
+    let query = `
         SELECT c.*, u.first_name, u.last_name, u.role
         FROM kvp_comments c
         LEFT JOIN users u ON c.user_id = u.id
         WHERE c.suggestion_id = ?
       `;
 
-      // Hide internal comments from employees
-      if (userRole === "employee") {
-        query += " AND c.is_internal = FALSE";
-      }
-
-      query += " ORDER BY c.created_at ASC";
-
-      const [rows] = await connection.execute<DbComment[]>(query, [
-        suggestionId,
-      ]);
-      return rows;
-    } finally {
-      await connection.end();
+    // Hide internal comments from employees
+    if (userRole === 'employee') {
+      query += ' AND c.is_internal = FALSE';
     }
-  }
 
-  // Get user points summary
-  static async getUserPoints(
-    tenant_id: number,
-    userId: number,
-  ): Promise<DbPointsSummary> {
-    const connection = await this.getConnection();
-    try {
-      const [rows] = await connection.execute<DbPointsSummary[]>(
-        `
-        SELECT 
+    query += ' ORDER BY c.created_at ASC';
+
+    const [rows] = await connection.execute<DbComment[]>(query, [suggestionId]);
+    return rows;
+  } finally {
+    await connection.end();
+  }
+}
+
+// Get user points summary
+export async function getKvpUserPoints(tenantId: number, userId: number): Promise<DbPointsSummary> {
+  const connection = await getConnection();
+  try {
+    const [rows] = await connection.execute<DbPointsSummary[]>(
+      `
+        SELECT
           COALESCE(SUM(points), 0) as total_points,
           COUNT(*) as total_awards,
           COUNT(DISTINCT suggestion_id) as suggestions_awarded
-        FROM kvp_points 
+        FROM kvp_points
         WHERE tenant_id = ? AND user_id = ?
       `,
-        [tenant_id, userId],
-      );
+      [tenantId, userId],
+    );
 
-      if (!rows[0]) {
-        return {
-          total_points: 0,
-          total_awards: 0,
-          suggestions_awarded: 0,
-        } as DbPointsSummary;
-      }
-
-      const result = rows[0];
+    if (rows.length === 0) {
       return {
-        ...result,
-        total_points: Number(result.total_points ?? 0),
-        total_awards: Number(result.total_awards ?? 0),
-        suggestions_awarded: Number(result.suggestions_awarded ?? 0),
+        total_points: 0,
+        total_awards: 0,
+        suggestions_awarded: 0,
       } as DbPointsSummary;
-    } finally {
-      await connection.end();
     }
-  }
 
-  // Award points to user
-  static async awardPoints(
-    tenant_id: number,
-    userId: number,
-    suggestionId: number,
-    points: number,
-    reason: string,
-    awardedBy: number,
-  ): Promise<number> {
-    const connection = await this.getConnection();
-    try {
-      const [result] = await connection.execute<ResultSetHeader>(
-        `
-        INSERT INTO kvp_points 
+    return rows[0];
+  } finally {
+    await connection.end();
+  }
+}
+
+// Award points to user
+export async function awardKvpPoints(
+  tenantId: number,
+  userId: number,
+  suggestionId: number,
+  points: number,
+  reason: string,
+  awardedBy: number,
+): Promise<number> {
+  const connection = await getConnection();
+  try {
+    const [result] = await connection.execute<ResultSetHeader>(
+      `
+        INSERT INTO kvp_points
         (tenant_id, user_id, suggestion_id, points, reason, awarded_by)
         VALUES (?, ?, ?, ?, ?, ?)
       `,
-        [tenant_id, userId, suggestionId, points, reason, awardedBy],
-      );
+      [tenantId, userId, suggestionId, points, reason, awardedBy],
+    );
 
-      return result.insertId;
-    } finally {
-      await connection.end();
-    }
+    return result.insertId;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Get dashboard statistics
-  static async getDashboardStats(tenant_id: number): Promise<DbDashboardStats> {
-    const connection = await this.getConnection();
-    try {
-      const [stats] = await connection.execute<DbDashboardStats[]>(
-        `
-        SELECT 
+// Get dashboard statistics
+export async function getKvpDashboardStats(tenantId: number): Promise<DbDashboardStats> {
+  const connection = await getConnection();
+  try {
+    const [stats] = await connection.execute<DbDashboardStats[]>(
+      `
+        SELECT
           COUNT(*) as total_suggestions,
           COUNT(CASE WHEN status = 'new' THEN 1 END) as new_suggestions,
           COUNT(CASE WHEN status = 'in_review' THEN 1 END) as in_progress_count,
           COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
           COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected,
           CAST(AVG(CASE WHEN actual_savings IS NOT NULL THEN actual_savings END) AS DECIMAL(10,2)) as avg_savings
-        FROM kvp_suggestions 
+        FROM kvp_suggestions
         WHERE tenant_id = ?
       `,
-        [tenant_id],
-      );
+      [tenantId],
+    );
 
-      // Convert numeric strings to numbers
-      const result = stats[0];
-      return {
-        ...result,
-        total_suggestions: Number(result.total_suggestions),
-        new_suggestions: Number(result.new_suggestions),
-        in_progress: Number(result.in_progress_count),
-        implemented: Number(result.implemented),
-        rejected: Number(result.rejected),
-        avg_savings: result.avg_savings ? Number(result.avg_savings) : null,
-      };
-    } finally {
-      await connection.end();
-    }
+    // Convert numeric strings to numbers
+    const result = stats[0];
+    return {
+      total_suggestions: result.total_suggestions,
+      new_suggestions: result.new_suggestions,
+      in_progress: result.in_progress_count as number,
+      in_progress_count: result.in_progress_count as number,
+      implemented: result.implemented,
+      rejected: result.rejected,
+      avg_savings:
+        result.avg_savings != null && result.avg_savings !== 0 ? result.avg_savings : null,
+    } as DbDashboardStats;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Update suggestion fields
-  static async updateSuggestion(
-    id: number,
-    tenant_id: number,
-    updates: Partial<{
-      title: string;
-      description: string;
-      category_id: number;
-      priority: string;
-      expected_benefit: string;
-      estimated_cost: number;
-      actual_savings: number;
-    }>,
-  ): Promise<boolean> {
-    const connection = await this.getConnection();
-    try {
-      // Build dynamic UPDATE query
-      const fields = Object.keys(updates);
-      if (fields.length === 0) {
-        return false;
-      }
-
-      const setClause = fields.map((field) => `${field} = ?`).join(", ");
-      const values = [...Object.values(updates), id, tenant_id];
-
-      const [result] = await connection.execute<ResultSetHeader>(
-        `UPDATE kvp_suggestions SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?`,
-        values,
-      );
-
-      return result.affectedRows > 0;
-    } finally {
-      await connection.end();
+// Update suggestion fields
+export async function updateKvpSuggestion(
+  id: number,
+  tenantId: number,
+  updates: Partial<{
+    title: string;
+    description: string;
+    category_id: number;
+    priority: string;
+    expected_benefit: string;
+    estimated_cost: string;
+    actual_savings: number;
+  }>,
+): Promise<boolean> {
+  const connection = await getConnection();
+  try {
+    // Build dynamic UPDATE query
+    const fields = Object.keys(updates);
+    if (fields.length === 0) {
+      return false;
     }
+
+    const setClause = fields.map((field) => `${field} = ?`).join(', ');
+    const values = [...Object.values(updates), id, tenantId];
+
+    const [result] = await connection.execute<ResultSetHeader>(
+      `UPDATE kvp_suggestions SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?`,
+      values,
+    );
+
+    return result.affectedRows > 0;
+  } finally {
+    await connection.end();
   }
+}
 
-  // Delete suggestion and all related data (only by owner)
-  static async deleteSuggestion(
-    suggestionId: number,
-    tenant_id: number,
-    userId: number,
-  ): Promise<boolean> {
-    const connection = await this.getConnection();
-    try {
-      await connection.beginTransaction();
+// Delete suggestion and all related data (only by owner)
+export async function deleteKvpSuggestion(
+  suggestionId: number,
+  tenantId: number,
+  userId: number,
+): Promise<boolean> {
+  const connection = await getConnection();
+  try {
+    await connection.beginTransaction();
 
-      // Verify ownership
-      const [ownerCheck] = await connection.execute<DbSuggestion[]>(
-        `
-        SELECT submitted_by FROM kvp_suggestions 
+    // Verify ownership
+    const [ownerCheck] = await connection.execute<DbSuggestion[]>(
+      `
+        SELECT submitted_by FROM kvp_suggestions
         WHERE id = ? AND tenant_id = ? AND submitted_by = ?
       `,
-        [suggestionId, tenant_id, userId],
-      );
+      [suggestionId, tenantId, userId],
+    );
 
-      if (ownerCheck.length === 0) {
-        throw new Error("Suggestion not found or not owned by user");
-      }
+    if (ownerCheck.length === 0) {
+      throw new Error('Suggestion not found or not owned by user');
+    }
 
-      // Get all attachment file paths for deletion
-      const [attachments] = await connection.execute<DbAttachment[]>(
-        `
+    // Get all attachment file paths for deletion
+    const [attachments] = await connection.execute<DbAttachment[]>(
+      `
         SELECT file_path FROM kvp_attachments WHERE suggestion_id = ?
       `,
-        [suggestionId],
-      );
+      [suggestionId],
+    );
 
-      // Delete database records (cascading will handle related records)
-      await connection.execute(
-        "DELETE FROM kvp_suggestions WHERE id = ? AND tenant_id = ?",
-        [suggestionId, tenant_id],
-      );
+    // Delete database records (cascading will handle related records)
+    await connection.execute('DELETE FROM kvp_suggestions WHERE id = ? AND tenant_id = ?', [
+      suggestionId,
+      tenantId,
+    ]);
 
-      await connection.commit();
+    await connection.commit();
 
-      // Delete attachment files from filesystem
-      for (const attachment of attachments) {
-        try {
-          // file_path is already absolute, use it directly
-          await fs.unlink(attachment.file_path);
-        } catch {
-          // Silently ignore file deletion errors
-        }
+    // Delete attachment files from filesystem
+    for (const attachment of attachments) {
+      try {
+        // file_path is already absolute, use it directly
+        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path comes from database
+        await fs.unlink(attachment.file_path);
+      } catch {
+        // Silently ignore file deletion errors
       }
-
-      return true;
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      await connection.end();
     }
-  }
 
-  // Get single attachment with access verification
-  static async getAttachment(
-    attachmentId: number,
-    tenant_id: number,
-    userId: number,
-    userRole: string,
-  ): Promise<DbAttachment | null> {
-    const connection = await this.getConnection();
-    try {
-      const [attachments] = await connection.execute<DbAttachment[]>(
-        `
-        SELECT a.*, s.submitted_by, s.tenant_id
+    return true;
+  } catch (error: unknown) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    await connection.end();
+  }
+}
+
+// Get single attachment with access verification
+export async function getKvpAttachment(
+  attachmentId: number,
+  tenantId: number,
+  userId: number,
+  userRole: string,
+): Promise<DbAttachment | null> {
+  const connection = await getConnection();
+  try {
+    // Get attachment with full suggestion details including org_level and org_id
+    const [attachments] = await connection.execute<DbAttachment[]>(
+      `
+        SELECT a.*, s.submitted_by, s.tenant_id, s.org_level, s.org_id, s.status
         FROM kvp_attachments a
         JOIN kvp_suggestions s ON a.suggestion_id = s.id
         WHERE a.id = ? AND s.tenant_id = ?
       `,
-        [attachmentId, tenant_id],
+      [attachmentId, tenantId],
+    );
+
+    if (attachments.length === 0) {
+      return null;
+    }
+
+    const attachment = attachments[0];
+    // Cast to extended type with suggestion fields
+    const attachmentWithSuggestion = attachment as DbAttachment & {
+      status?: string;
+      org_level?: string;
+      org_id?: number;
+    };
+
+    // Admins and root users can access all attachments
+    if (userRole === 'admin' || userRole === 'root') {
+      return attachment;
+    }
+
+    // For employees, check various access conditions
+    if (userRole === 'employee') {
+      // Can access their own suggestions
+      if (attachment.submitted_by === userId) {
+        return attachment;
+      }
+
+      // Can access implemented suggestions
+      if (attachmentWithSuggestion.status === 'implemented') {
+        return attachment;
+      }
+
+      // Check team/department visibility
+      const orgLevel = attachmentWithSuggestion.org_level;
+      const orgId = attachmentWithSuggestion.org_id;
+
+      // Company-wide suggestions are visible to all
+      if (orgLevel === 'company') {
+        return attachment;
+      }
+
+      // Get user's team and department membership
+      const [userInfo] = await connection.execute<RowDataPacket[]>(
+        `SELECT ut.team_id, u.department_id
+         FROM users u
+         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+         WHERE u.id = ? AND u.tenant_id = ?`,
+        [userId, tenantId],
       );
 
-      if (attachments.length === 0) {
-        return null;
+      if (userInfo.length > 0) {
+        const userTeamId = userInfo[0].team_id as number | null;
+        const userDepartmentId = userInfo[0].department_id as number | null;
+
+        // Check team visibility
+        if (
+          orgLevel === 'team' &&
+          userTeamId !== null &&
+          orgId !== undefined &&
+          orgId === userTeamId
+        ) {
+          return attachment;
+        }
+
+        // Check department visibility
+        if (
+          orgLevel === 'department' &&
+          userDepartmentId !== null &&
+          orgId !== undefined &&
+          orgId === userDepartmentId
+        ) {
+          return attachment;
+        }
       }
-
-      const attachment = attachments[0];
-
-      // Verify access: admins can access all, employees only their own
-      if (
-        userRole !== "admin" &&
-        userRole !== "root" &&
-        attachment.submitted_by !== userId
-      ) {
-        return null;
-      }
-
-      return attachment;
-    } finally {
-      await connection.end();
     }
+
+    // No access granted
+    return null;
+  } finally {
+    await connection.end();
   }
 }
+
+/**
+ * Update the organization level of a suggestion
+ * @param suggestionId - The suggestion ID
+ * @param tenantId - The tenant ID
+ * @param orgLevel - The organization level
+ * @param orgId - The organization ID
+ * @param sharedBy - The user ID who is sharing
+ */
+export async function updateSuggestionOrgLevel(
+  suggestionId: number,
+  tenantId: number,
+  orgLevel: 'company' | 'department' | 'team',
+  orgId: number,
+  sharedBy: number,
+): Promise<void> {
+  const conn = await getConnection();
+
+  try {
+    await conn.execute(
+      `UPDATE kvp_suggestions
+       SET org_level = ?,
+           org_id = ?,
+           shared_by = ?,
+           shared_at = NOW(),
+           updated_at = NOW()
+       WHERE id = ? AND tenant_id = ?`,
+      [orgLevel, orgId, sharedBy, suggestionId, tenantId],
+    );
+  } finally {
+    await conn.end();
+  }
+}
+
+// Backward compatibility object
+const KVPModel = {
+  getConnection,
+  getCategories: getKvpCategories,
+  createSuggestion: createKvpSuggestion,
+  getSuggestions: getKvpSuggestions,
+  getSuggestionById: getKvpSuggestionById,
+  updateSuggestionStatus: updateKvpSuggestionStatus,
+  updateSuggestionOrgLevel,
+  addAttachment: addKvpAttachment,
+  getAttachments: getKvpAttachments,
+  addComment: addKvpComment,
+  getComments: getKvpComments,
+  getUserPoints: getKvpUserPoints,
+  awardPoints: awardKvpPoints,
+  getDashboardStats: getKvpDashboardStats,
+  updateSuggestion: updateKvpSuggestion,
+  deleteSuggestion: deleteKvpSuggestion,
+  getAttachment: getKvpAttachment,
+};
 
 // Default export
 export default KVPModel;

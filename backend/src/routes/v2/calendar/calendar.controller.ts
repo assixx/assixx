@@ -1,26 +1,31 @@
 /**
  * Calendar v2 Controller
  * Handles HTTP requests for calendar endpoints
- * @swagger
+
  * tags:
  *   name: Calendar v2
  *   description: Calendar event management (API v2)
  */
+import { NextFunction, Response } from 'express';
 
-import { Response, NextFunction } from "express";
+import type { CalendarEvent } from '../../../models/calendar.js';
+import calendarModel from '../../../models/calendar.js';
+import rootLog from '../../../models/rootLog';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { ServiceError } from '../users/users.service.js';
+import { calendarService } from './calendar.service.js';
+import type { CalendarEventData, CalendarEventUpdateData } from './calendar.service.js';
 
-import { AuthenticatedRequest } from "../../../types/request.types.js";
-import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
-import { ServiceError } from "../users/users.service.js";
-
-import { calendarService } from "./calendar.service.js";
-import type {
-  CalendarEventData,
-  CalendarEventUpdateData,
-} from "./calendar.service.js";
+// Constants
+const INTERNAL_SERVER_ERROR = 'Internal server error';
+const USER_AGENT_HEADER = 'user-agent';
 
 /**
- * @swagger
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
+
  * /api/v2/calendar/events:
  *   get:
  *     summary: Get calendar events
@@ -97,42 +102,36 @@ export async function listEvents(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
+    const userTeamId = user.team_id ?? null;
 
     const result = await calendarService.listEvents(
       tenantId,
       userId,
       userDepartmentId,
+      userTeamId,
       req.query as Record<string, unknown>,
     );
 
     res.json(successResponse(result));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/calendar/events/{id}:
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
+
+ * /api/v2/calendar/events/\{id\}:
  *   get:
  *     summary: Get event by ID
  *     tags: [Calendar v2]
@@ -161,43 +160,30 @@ export async function getEvent(
   _next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
 
-    const event = await calendarService.getEventById(
-      eventId,
-      tenantId,
-      userId,
-      userDepartmentId,
-    );
+    const event = await calendarService.getEventById(eventId, tenantId, userId, userDepartmentId);
 
     res.json(successResponse({ event }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
 
 /**
- * @swagger
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
+
  * /api/v2/calendar/events:
  *   post:
  *     summary: Create a new event
@@ -258,40 +244,63 @@ export async function createEvent(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
+    const userRole = user.role;
+    const userDepartmentId = user.department_id ?? null;
+    const userTeamId = user.team_id ?? null;
 
+    const eventData = req.body as CalendarEventData;
     const event = await calendarService.createEvent(
-      req.body as CalendarEventData,
+      eventData,
       tenantId,
       userId,
+      userRole,
+      userDepartmentId,
+      userTeamId,
     );
 
+    // Log calendar event creation
+    await rootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: 'create',
+      entity_type: 'calendar_event',
+      entity_id: (event as unknown as CalendarEvent).id,
+      details: `Erstellt: ${eventData.title}`,
+      new_values: {
+        title: eventData.title,
+        start_time: eventData.startTime,
+        end_time: eventData.endTime,
+        location: eventData.location,
+        org_level: eventData.orgLevel,
+        department_id: eventData.departmentId,
+        team_id: eventData.teamId,
+        all_day: eventData.allDay,
+        created_by: user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get(USER_AGENT_HEADER),
+      was_role_switched: false,
+    });
+
     res.status(201).json(successResponse({ event }));
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
 
 /**
- * @swagger
- * /api/v2/calendar/events/{id}:
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
+
+ * /api/v2/calendar/events/\{id\}:
  *   put:
  *     summary: Update an event
  *     tags: [Calendar v2]
@@ -353,35 +362,99 @@ export async function updateEvent(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userRole = user.role;
+    const userDepartmentId = user.department_id ?? null;
 
+    // Try to get old event data for logging, but don't fail if user doesn't have permission
+    let oldEvent: CalendarEvent | null = null;
+    try {
+      oldEvent = (await calendarService.getEventById(
+        eventId,
+        tenantId,
+        userId,
+        userDepartmentId,
+      )) as unknown as CalendarEvent;
+    } catch {
+      // If we can't get the old event (e.g., no permission), that's okay
+      // The updateEvent method will handle permission checks properly
+    }
+
+    const updateData = req.body as CalendarEventUpdateData;
     const event = await calendarService.updateEvent(
       eventId,
-      req.body as CalendarEventUpdateData,
+      updateData,
       tenantId,
       userId,
       userRole,
     );
 
+    // Log calendar event update (only if we have old values)
+    if (oldEvent) {
+      await rootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: 'update',
+        entity_type: 'calendar_event',
+        entity_id: eventId,
+        details: `Aktualisiert: ${updateData.title ?? oldEvent.title}`,
+        old_values: {
+          title: oldEvent.title,
+          start_time: oldEvent.startTime,
+          end_time: oldEvent.endTime,
+          location: oldEvent.location,
+          status: oldEvent.status,
+        },
+        new_values: {
+          title: updateData.title,
+          start_time: updateData.startTime,
+          end_time: updateData.endTime,
+          location: updateData.location,
+          status: updateData.status,
+          updated_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get(USER_AGENT_HEADER),
+        was_role_switched: false,
+      });
+    } else {
+      // Log without old values if we couldn't access them
+      await rootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: 'update',
+        entity_type: 'calendar_event',
+        entity_id: eventId,
+        details: `Aktualisiert: Event ID ${eventId}`,
+        new_values: {
+          title: updateData.title,
+          start_time: updateData.startTime,
+          end_time: updateData.endTime,
+          location: updateData.location,
+          status: updateData.status,
+          updated_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get(USER_AGENT_HEADER),
+        was_role_switched: false,
+      });
+    }
+
     res.json(successResponse({ event }));
-  } catch (err) {
-    next(err);
+  } catch (error: unknown) {
+    next(error);
   }
 }
 
 /**
- * @swagger
- * /api/v2/calendar/events/{id}:
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
+
+ * /api/v2/calendar/events/\{id\}:
  *   delete:
  *     summary: Delete an event
  *     tags: [Calendar v2]
@@ -408,29 +481,81 @@ export async function deleteEvent(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userRole = user.role;
+    const userDepartmentId = user.department_id ?? null;
+
+    // Try to get event data before deletion for logging, but don't fail if user doesn't have permission
+    let deletedEvent: CalendarEvent | null = null;
+    try {
+      deletedEvent = (await calendarService.getEventById(
+        eventId,
+        tenantId,
+        userId,
+        userDepartmentId,
+      )) as unknown as CalendarEvent;
+    } catch {
+      // If we can't get the event (e.g., no permission), that's okay
+      // The deleteEvent method will handle permission checks properly
+    }
 
     await calendarService.deleteEvent(eventId, tenantId, userId, userRole);
 
-    res.json(successResponse({ message: "Event deleted successfully" }));
-  } catch (err) {
-    next(err);
+    // Log calendar event deletion
+    if (deletedEvent) {
+      await rootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: 'delete',
+        entity_type: 'calendar_event',
+        entity_id: eventId,
+        details: `Gelöscht: ${deletedEvent.title}`,
+        old_values: {
+          title: deletedEvent.title,
+          start_time: deletedEvent.startTime,
+          end_time: deletedEvent.endTime,
+          location: deletedEvent.location,
+          org_level: deletedEvent.orgLevel,
+          status: deletedEvent.status,
+          deleted_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get(USER_AGENT_HEADER),
+        was_role_switched: false,
+      });
+    } else {
+      // Log without details if we couldn't access the event
+      await rootLog.create({
+        tenant_id: tenantId,
+        user_id: userId,
+        action: 'delete',
+        entity_type: 'calendar_event',
+        entity_id: eventId,
+        details: `Gelöscht: Event ID ${eventId}`,
+        old_values: {
+          deleted_by: user.email,
+        },
+        ip_address: req.ip ?? req.socket.remoteAddress,
+        user_agent: req.get(USER_AGENT_HEADER),
+        was_role_switched: false,
+      });
+    }
+
+    res.json(successResponse({ message: 'Event deleted successfully' }));
+  } catch (error: unknown) {
+    next(error);
   }
 }
 
 /**
- * @swagger
- * /api/v2/calendar/events/{id}/attendees/response:
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
+
+ * /api/v2/calendar/events/\{id\}/attendees/response:
  *   put:
  *     summary: Update attendee response
  *     tags: [Calendar v2]
@@ -467,45 +592,49 @@ export async function updateAttendeeResponse(
   _next: NextFunction,
 ): Promise<void> {
   try {
-    const eventId = parseInt(req.params.id, 10);
+    const eventId = Number.parseInt(req.params.id, 10);
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const { response } = req.body as {
-      response: "accepted" | "declined" | "tentative";
+      response: 'accepted' | 'declined' | 'tentative';
     };
 
-    await calendarService.updateAttendeeResponse(
-      eventId,
-      userId,
-      response,
-      tenantId,
-    );
+    await calendarService.updateAttendeeResponse(eventId, userId, response, tenantId);
 
-    res.json(successResponse({ message: "Response updated successfully" }));
-  } catch (error) {
+    // Log attendee response update
+    await rootLog.create({
+      tenant_id: tenantId,
+      user_id: userId,
+      action: 'update_attendee_response',
+      entity_type: 'calendar_event',
+      entity_id: eventId,
+      details: `Teilnehmer Antwort: ${response}`,
+      new_values: {
+        attendee_response: response,
+        responded_by: user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get(USER_AGENT_HEADER),
+      was_role_switched: false,
+    });
+
+    res.json(successResponse({ message: 'Response updated successfully' }));
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
   }
 }
 
 /**
- * @swagger
+ * @param req - The request object
+ * @param res - The response object
+ * @param _next - The _next parameter
+
  * /api/v2/calendar/export:
  *   get:
  *     summary: Export calendar events
@@ -538,41 +667,144 @@ export async function exportEvents(
 ): Promise<void> {
   try {
     const { user } = req;
-    if (!user) {
-      res
-        .status(401)
-        .json(errorResponse("UNAUTHORIZED", "Authentication required"));
-      return;
-    }
     const tenantId = user.tenant_id;
     const userId = user.id;
     const userDepartmentId = user.department_id ?? null;
-    const format = req.query.format as "ics" | "csv";
+    const format = req.query.format as 'ics' | 'csv';
 
-    const data = await calendarService.exportEvents(
-      tenantId,
-      userId,
-      userDepartmentId,
-      format,
-    );
+    const data = await calendarService.exportEvents(tenantId, userId, userDepartmentId, format);
 
-    const contentType = format === "ics" ? "text/calendar" : "text/csv";
-    const filename = format === "ics" ? "calendar.ics" : "calendar.csv";
+    const contentType = format === 'ics' ? 'text/calendar' : 'text/csv';
+    const filename = format === 'ics' ? 'calendar.ics' : 'calendar.csv';
 
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(data);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      const errorCode =
-        error.code === "BAD_REQUEST" ? "VALIDATION_ERROR" : error.code;
-      res
-        .status(error.statusCode)
-        .json(errorResponse(errorCode, error.message, error.details));
+      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
+      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
     } else {
-      res
-        .status(500)
-        .json(errorResponse("SERVER_ERROR", "Internal server error"));
+      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
     }
+  }
+}
+
+/**
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
+
+ * /api/v2/calendar/dashboard:
+ *   get:
+ *     summary: Get upcoming events for dashboard
+ *     tags: [Calendar v2]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: days
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 365
+ *           default: 7
+ *         description: Number of days to look ahead
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 50
+ *           default: 5
+ *         description: Maximum number of events to return
+ *     responses:
+ *       200:
+ *         description: Upcoming events
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/CalendarEvent'
+ */
+export async function getDashboardEvents(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { user } = req;
+    const tenantId = user.tenant_id;
+    const userId = user.id;
+
+    const days = Number.parseInt((req.query.days ?? '7') as string, 10);
+    const limit = Number.parseInt((req.query.limit ?? '5') as string, 10);
+
+    const events = await calendarModel.getDashboardEvents(tenantId, userId, days, limit);
+
+    res.json(successResponse(events));
+  } catch (error: unknown) {
+    next(error);
+  }
+}
+
+/**
+ * @param req - The request object
+ * @param res - The response object
+ * @param next - The next middleware function
+
+ * /api/v2/calendar/unread-events:
+ *   get:
+ *     summary: Get unread calendar events (events requiring response)
+ *     tags: [Calendar v2]
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of unread events
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalUnread:
+ *                   type: number
+ *                   description: Total count of events requiring response
+ *                 eventsRequiringResponse:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: number
+ *                       title:
+ *                         type: string
+ *                       startTime:
+ *                         type: string
+ *                       requiresResponse:
+ *                         type: boolean
+ */
+export async function getUnreadEvents(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { user } = req;
+    const tenantId = user.tenant_id;
+    const userId = user.id;
+
+    // Get events where user is invited and hasn't responded yet
+    const result = await calendarService.getUnreadEvents(tenantId, userId);
+
+    res.json(successResponse(result));
+  } catch (error: unknown) {
+    next(error);
   }
 }

@@ -1,3 +1,11 @@
+import * as fs from 'fs/promises';
+
+import { getRedisClient } from '../../config/redis';
+import { pool } from '../../database';
+import { emailService } from '../../utils/emailService';
+import { logger } from '../../utils/logger';
+import { tenantDeletionService } from '../tenantDeletion.service';
+
 /**
  * Integration Tests for TenantDeletionService
  * Tests the complete tenant deletion workflow
@@ -5,26 +13,19 @@
  */
 
 // Set NODE_ENV to production to avoid test-specific SQL
-process.env.NODE_ENV = "production";
-
-import { tenantDeletionService } from "../tenantDeletion.service";
-import { pool } from "../../database";
-import { logger } from "../../utils/logger";
-import { emailService } from "../../utils/emailService";
-import { getRedisClient } from "../../config/redis";
-import * as fs from "fs/promises";
+process.env.NODE_ENV = 'production';
 
 // Mock only external services, not database
-jest.mock("../../utils/logger", () => ({
+jest.mock('../../utils/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
   },
 }));
-jest.mock("../../utils/emailService");
-jest.mock("../../config/redis");
-jest.mock("fs/promises");
+jest.mock('../../utils/emailService');
+jest.mock('../../config/redis');
+jest.mock('fs/promises');
 
 // Mock Redis client
 const mockRedisClient = {
@@ -33,7 +34,7 @@ const mockRedisClient = {
   quit: jest.fn(),
 };
 
-describe("TenantDeletionService - Integration Test", () => {
+describe('TenantDeletionService - Integration Test', () => {
   let testTenantId: number;
   let testUserId: number;
   let testDeleteTenantId: number;
@@ -41,8 +42,8 @@ describe("TenantDeletionService - Integration Test", () => {
   beforeAll(async () => {
     // Create test tenant that won't be deleted
     const [tenantResult] = await pool.execute(
-      "INSERT INTO tenants (company_name, subdomain, email, status) VALUES (?, ?, ?, ?)",
-      ["Deletion Test Tenant", "deletion-test", "deletion@test.com", "active"],
+      'INSERT INTO tenants (company_name, subdomain, email, status) VALUES (?, ?, ?, ?)',
+      ['Deletion Test Tenant', 'deletion-test', 'deletion@test.com', 'active'],
     );
     testTenantId = (tenantResult as any).insertId;
 
@@ -51,15 +52,15 @@ describe("TenantDeletionService - Integration Test", () => {
       `INSERT INTO users (username, email, password, role, tenant_id, first_name, last_name, status, employee_number) 
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        "deltest@test.com",
-        "deltest@test.com",
-        "$2b$10$dummy",
-        "root",
+        'deltest@test.com',
+        'deltest@test.com',
+        '$2b$10$dummy',
+        'root',
         testTenantId,
-        "Deletion",
-        "Test",
-        "active",
-        "DEL001",
+        'Deletion',
+        'Test',
+        'active',
+        'DEL001',
       ],
     );
     testUserId = (userResult as any).insertId;
@@ -67,8 +68,8 @@ describe("TenantDeletionService - Integration Test", () => {
 
   afterAll(async () => {
     // Cleanup permanent test data
-    await pool.execute("DELETE FROM users WHERE tenant_id = ?", [testTenantId]);
-    await pool.execute("DELETE FROM tenants WHERE id = ?", [testTenantId]);
+    await pool.execute('DELETE FROM users WHERE tenant_id = ?', [testTenantId]);
+    await pool.execute('DELETE FROM tenants WHERE id = ?', [testTenantId]);
   });
 
   beforeEach(async () => {
@@ -77,29 +78,26 @@ describe("TenantDeletionService - Integration Test", () => {
 
     // Create a tenant to be deleted in each test
     const [deleteTenantResult] = await pool.execute(
-      "INSERT INTO tenants (company_name, subdomain, email, status, deletion_status) VALUES (?, ?, ?, ?, ?)",
-      ["To Delete Company", "to-delete", "delete@test.com", "active", "active"],
+      'INSERT INTO tenants (company_name, subdomain, email, status, deletion_status) VALUES (?, ?, ?, ?, ?)',
+      ['To Delete Company', 'to-delete', 'delete@test.com', 'active', 'active'],
     );
     testDeleteTenantId = (deleteTenantResult as any).insertId;
   });
 
   afterEach(async () => {
     // Cleanup test data
-    await pool.execute("DELETE FROM tenant_deletion_logs WHERE tenant_id = ?", [
+    await pool.execute('DELETE FROM tenant_deletion_logs WHERE tenant_id = ?', [
       testDeleteTenantId,
     ]);
-    await pool.execute(
-      "DELETE FROM tenant_deletion_queue WHERE tenant_id = ?",
-      [testDeleteTenantId],
-    );
-    await pool.execute("DELETE FROM tenants WHERE id = ?", [
+    await pool.execute('DELETE FROM tenant_deletion_queue WHERE tenant_id = ?', [
       testDeleteTenantId,
     ]);
+    await pool.execute('DELETE FROM tenants WHERE id = ?', [testDeleteTenantId]);
   });
 
-  describe("markTenantForDeletion", () => {
-    it("should successfully mark tenant for deletion", async () => {
-      const reason = "Test deletion";
+  describe('markTenantForDeletion', () => {
+    it('should successfully mark tenant for deletion', async () => {
+      const reason = 'Test deletion';
 
       const result = await tenantDeletionService.markTenantForDeletion(
         testDeleteTenantId,
@@ -109,24 +107,23 @@ describe("TenantDeletionService - Integration Test", () => {
 
       expect(result.success).toBe(true);
       expect(result.queueId).toBeDefined();
-      expect(result.message).toContain("scheduled for deletion");
+      expect(result.message).toContain('scheduled for deletion');
 
       // Verify tenant was marked in database
-      const [tenants] = await pool.execute(
-        "SELECT deletion_status FROM tenants WHERE id = ?",
-        [testDeleteTenantId],
-      );
-      expect((tenants as any[])[0].deletion_status).toBe("marked_for_deletion");
+      const [tenants] = await pool.execute('SELECT deletion_status FROM tenants WHERE id = ?', [
+        testDeleteTenantId,
+      ]);
+      expect((tenants as any[])[0].deletion_status).toBe('marked_for_deletion');
 
       // Verify queue entry was created
       const [queueEntries] = await pool.execute(
-        "SELECT * FROM tenant_deletion_queue WHERE tenant_id = ?",
+        'SELECT * FROM tenant_deletion_queue WHERE tenant_id = ?',
         [testDeleteTenantId],
       );
       expect((queueEntries as any[]).length).toBe(1);
     });
 
-    it("should fail if tenant is already marked for deletion", async () => {
+    it('should fail if tenant is already marked for deletion', async () => {
       // First mark for deletion
       await pool.execute(
         "UPDATE tenants SET deletion_status = 'marked_for_deletion' WHERE id = ?",
@@ -138,23 +135,23 @@ describe("TenantDeletionService - Integration Test", () => {
         tenantDeletionService.markTenantForDeletion(
           testDeleteTenantId,
           testUserId,
-          "Duplicate attempt",
+          'Duplicate attempt',
         ),
-      ).rejects.toThrow("already scheduled for deletion");
+      ).rejects.toThrow('already scheduled for deletion');
     });
 
-    it("should fail if tenant does not exist", async () => {
+    it('should fail if tenant does not exist', async () => {
       await expect(
         tenantDeletionService.markTenantForDeletion(
           99999, // Non-existent tenant
           testUserId,
-          "Test deletion",
+          'Test deletion',
         ),
-      ).rejects.toThrow("Tenant not found");
+      ).rejects.toThrow('Tenant not found');
     });
   });
 
-  describe("processDeletionQueue", () => {
+  describe('processDeletionQueue', () => {
     beforeEach(async () => {
       // Mock fs operations
       (fs.readdir as jest.Mock).mockResolvedValue([]);
@@ -166,7 +163,7 @@ describe("TenantDeletionService - Integration Test", () => {
       mockRedisClient.del.mockResolvedValue(1);
     });
 
-    it("should process tenant deletion successfully", async () => {
+    it('should process tenant deletion successfully', async () => {
       // Mark tenant for deletion
       await pool.execute(
         "UPDATE tenants SET deletion_status = 'marked_for_deletion' WHERE id = ?",
@@ -175,8 +172,8 @@ describe("TenantDeletionService - Integration Test", () => {
 
       // Add to queue
       const [queueResult] = await pool.execute(
-        "INSERT INTO tenant_deletion_queue (tenant_id, requested_by, reason, status) VALUES (?, ?, ?, ?)",
-        [testDeleteTenantId, testUserId, "Test deletion", "pending"],
+        'INSERT INTO tenant_deletion_queue (tenant_id, requested_by, reason, status) VALUES (?, ?, ?, ?)',
+        [testDeleteTenantId, testUserId, 'Test deletion', 'pending'],
       );
       const queueId = (queueResult as any).insertId;
 
@@ -188,21 +185,20 @@ describe("TenantDeletionService - Integration Test", () => {
       expect(result.failed).toBe(0);
 
       // Verify tenant is marked as suspended
-      const [tenants] = await pool.execute(
-        "SELECT deletion_status FROM tenants WHERE id = ?",
-        [testDeleteTenantId],
-      );
-      expect((tenants as any[])[0].deletion_status).toBe("suspended");
+      const [tenants] = await pool.execute('SELECT deletion_status FROM tenants WHERE id = ?', [
+        testDeleteTenantId,
+      ]);
+      expect((tenants as any[])[0].deletion_status).toBe('suspended');
 
       // Verify queue status is updated
       const [queueEntries] = await pool.execute(
-        "SELECT status FROM tenant_deletion_queue WHERE id = ?",
+        'SELECT status FROM tenant_deletion_queue WHERE id = ?',
         [queueId],
       );
-      expect((queueEntries as any[])[0].status).toBe("completed");
+      expect((queueEntries as any[])[0].status).toBe('completed');
     });
 
-    it("should handle deletion errors gracefully", async () => {
+    it('should handle deletion errors gracefully', async () => {
       // Mark tenant for deletion but create a condition that will cause failure
       await pool.execute(
         "UPDATE tenants SET deletion_status = 'marked_for_deletion' WHERE id = ?",
@@ -211,14 +207,12 @@ describe("TenantDeletionService - Integration Test", () => {
 
       // Add to queue
       await pool.execute(
-        "INSERT INTO tenant_deletion_queue (tenant_id, requested_by, reason, status) VALUES (?, ?, ?, ?)",
-        [testDeleteTenantId, testUserId, "Test deletion", "pending"],
+        'INSERT INTO tenant_deletion_queue (tenant_id, requested_by, reason, status) VALUES (?, ?, ?, ?)',
+        [testDeleteTenantId, testUserId, 'Test deletion', 'pending'],
       );
 
       // Mock a failure in Redis operations
-      mockRedisClient.keys.mockRejectedValue(
-        new Error("Redis connection failed"),
-      );
+      mockRedisClient.keys.mockRejectedValue(new Error('Redis connection failed'));
 
       // Process the queue
       const result = await tenantDeletionService.processDeletionQueue();
@@ -229,8 +223,8 @@ describe("TenantDeletionService - Integration Test", () => {
     });
   });
 
-  describe("cancelDeletion", () => {
-    it("should cancel scheduled deletion", async () => {
+  describe('cancelDeletion', () => {
+    it('should cancel scheduled deletion', async () => {
       // Mark tenant for deletion
       await pool.execute(
         "UPDATE tenants SET deletion_status = 'marked_for_deletion' WHERE id = ?",
@@ -239,8 +233,8 @@ describe("TenantDeletionService - Integration Test", () => {
 
       // Add to queue
       const [queueResult] = await pool.execute(
-        "INSERT INTO tenant_deletion_queue (tenant_id, requested_by, reason, status) VALUES (?, ?, ?, ?)",
-        [testDeleteTenantId, testUserId, "Test deletion", "pending"],
+        'INSERT INTO tenant_deletion_queue (tenant_id, requested_by, reason, status) VALUES (?, ?, ?, ?)',
+        [testDeleteTenantId, testUserId, 'Test deletion', 'pending'],
       );
       const queueId = (queueResult as any).insertId;
 
@@ -248,34 +242,29 @@ describe("TenantDeletionService - Integration Test", () => {
       const result = await tenantDeletionService.cancelDeletion(
         testDeleteTenantId,
         testUserId,
-        "Changed our mind",
+        'Changed our mind',
       );
 
       expect(result.success).toBe(true);
 
       // Verify tenant status is restored
-      const [tenants] = await pool.execute(
-        "SELECT deletion_status FROM tenants WHERE id = ?",
-        [testDeleteTenantId],
-      );
-      expect((tenants as any[])[0].deletion_status).toBe("active");
+      const [tenants] = await pool.execute('SELECT deletion_status FROM tenants WHERE id = ?', [
+        testDeleteTenantId,
+      ]);
+      expect((tenants as any[])[0].deletion_status).toBe('active');
 
       // Verify queue entry is cancelled
       const [queueEntries] = await pool.execute(
-        "SELECT status FROM tenant_deletion_queue WHERE id = ?",
+        'SELECT status FROM tenant_deletion_queue WHERE id = ?',
         [queueId],
       );
-      expect((queueEntries as any[])[0].status).toBe("cancelled");
+      expect((queueEntries as any[])[0].status).toBe('cancelled');
     });
 
-    it("should fail if deletion not found", async () => {
+    it('should fail if deletion not found', async () => {
       await expect(
-        tenantDeletionService.cancelDeletion(
-          testDeleteTenantId,
-          testUserId,
-          "Cancel non-existent",
-        ),
-      ).rejects.toThrow("No pending deletion found");
+        tenantDeletionService.cancelDeletion(testDeleteTenantId, testUserId, 'Cancel non-existent'),
+      ).rejects.toThrow('No pending deletion found');
     });
   });
 });

@@ -1,15 +1,12 @@
-import { Server } from "http";
-import { URL } from "url";
+import { Server } from 'http';
+import jwt from 'jsonwebtoken';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { URL } from 'url';
+import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
 
-import jwt from "jsonwebtoken";
-import { RowDataPacket, ResultSetHeader, Pool } from "mysql2/promise";
-import { WebSocket, WebSocketServer, Data as WebSocketData } from "ws";
+import { execute, query } from './utils/db.js';
+import { logger } from './utils/logger.js';
 
-import db from "./database.js";
-import { logger } from "./utils/logger.js";
-
-// Cast db to Pool type for proper typing
-const pool = db as unknown as Pool;
 interface ExtendedWebSocket extends WebSocket {
   userId?: number;
   tenantId?: number;
@@ -26,12 +23,12 @@ interface WebSocketMessage {
 interface SendMessageData {
   conversationId: number;
   content: string;
-  attachments?: Array<{
+  attachments?: {
     filename: string;
     content?: string | Buffer;
     path?: string;
     contentType?: string;
-  }>;
+  }[];
 }
 
 interface TypingData {
@@ -53,7 +50,7 @@ export class ChatWebSocketServer {
   constructor(server: Server) {
     this.wss = new WebSocketServer({
       server,
-      path: "/chat-ws",
+      path: '/chat-ws',
     });
 
     this.clients = new Map();
@@ -61,7 +58,7 @@ export class ChatWebSocketServer {
   }
 
   private init(): void {
-    this.wss.on("connection", (ws: ExtendedWebSocket, request) => {
+    this.wss.on('connection', (ws: ExtendedWebSocket, request) => {
       void this.handleConnection(ws, request);
     });
   }
@@ -78,33 +75,29 @@ export class ChatWebSocketServer {
   ): Promise<void> {
     try {
       // Token aus Query-Parameter oder Header extrahieren
-      const url = new URL(
-        request.url ?? "/",
-        `http://${request.headers.host ?? "localhost"}`,
-      );
+      const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
       const token =
-        url.searchParams.get("token") ??
-        request.headers.authorization?.replace("Bearer ", "");
+        url.searchParams.get('token') ?? request.headers.authorization?.replace('Bearer ', '');
 
       if (!token) {
-        ws.close(1008, "Token erforderlich");
+        ws.close(1008, 'Token erforderlich');
         return;
       }
 
       // Token verifizieren
       const jwtSecret = process.env.JWT_SECRET;
       if (!jwtSecret) {
-        ws.close(1008, "JWT Secret nicht konfiguriert");
+        ws.close(1008, 'JWT Secret nicht konfiguriert');
         return;
       }
 
       const decoded = jwt.verify(token, jwtSecret) as {
         id: number;
-        tenant_id: number;
+        tenantId: number; // v2 uses camelCase!
         role: string;
       };
       const userId = decoded.id;
-      const tenantId = decoded.tenant_id;
+      const tenantId = decoded.tenantId; // Use camelCase to match v2 tokens
 
       // Benutzer-Informationen zur Verbindung hinzufügen
       ws.userId = userId;
@@ -116,82 +109,79 @@ export class ChatWebSocketServer {
       this.clients.set(userId, ws);
 
       // Event-Handler registrieren
-      ws.on("message", (data) => void this.handleMessage(ws, data));
-      ws.on("close", () => void this.handleDisconnection(ws));
-      ws.on("error", (error) => this.handleError(ws, error));
-      ws.on("pong", () => {
+      ws.on('message', (data) => void this.handleMessage(ws, data));
+      ws.on('close', () => void this.handleDisconnection(ws));
+      ws.on('error', (error) => {
+        this.handleError(ws, error);
+      });
+      ws.on('pong', () => {
         ws.isAlive = true;
       });
 
       // Willkommensnachricht senden
       this.sendMessage(ws, {
-        type: "connection_established",
+        type: 'connection_established',
         data: { userId, timestamp: new Date().toISOString() },
       });
 
       // Online-Status an andere Benutzer senden
-      await this.broadcastUserStatus(userId, tenantId, "online");
-    } catch (error) {
-      logger.error("WebSocket Authentifizierung fehlgeschlagen:", error);
-      ws.close(1008, "Authentifizierung fehlgeschlagen");
+      await this.broadcastUserStatus(userId, tenantId, 'online');
+    } catch (error: unknown) {
+      logger.error('WebSocket Authentifizierung fehlgeschlagen:', error);
+      ws.close(1008, 'Authentifizierung fehlgeschlagen');
     }
   }
 
-  private async handleMessage(
-    ws: ExtendedWebSocket,
-    data: WebSocketData,
-  ): Promise<void> {
+  private async handleMessage(ws: ExtendedWebSocket, data: WebSocketData): Promise<void> {
     try {
-      const message: WebSocketMessage = JSON.parse(data.toString());
+      const dataString =
+        typeof data === 'string' ? data
+        : Buffer.isBuffer(data) ? data.toString()
+        : JSON.stringify(data);
+      const message = JSON.parse(dataString) as WebSocketMessage;
 
       switch (message.type) {
-        case "send_message":
+        case 'send_message':
           await this.handleSendMessage(ws, message.data as SendMessageData);
           break;
-        case "typing_start":
+        case 'typing_start':
           await this.handleTyping(ws, message.data as TypingData, true);
           break;
-        case "typing_stop":
+        case 'typing_stop':
           await this.handleTyping(ws, message.data as TypingData, false);
           break;
-        case "mark_read":
+        case 'mark_read':
           await this.handleMarkRead(ws, message.data as MarkReadData);
           break;
-        case "join_conversation":
-          await this.handleJoinConversation(
-            ws,
-            message.data as JoinConversationData,
-          );
+        case 'join_conversation':
+          await this.handleJoinConversation(ws, message.data as JoinConversationData);
           break;
-        case "ping":
+        case 'ping':
           this.sendMessage(ws, {
-            type: "pong",
+            type: 'pong',
             data: { timestamp: new Date().toISOString() },
           });
           break;
         default:
           logger.warn(`Unbekannter WebSocket Message Typ: ${message.type}`);
       }
-    } catch (error) {
-      logger.error("Fehler beim Verarbeiten der WebSocket Nachricht:", error);
+    } catch (error: unknown) {
+      logger.error('Fehler beim Verarbeiten der WebSocket Nachricht:', error);
       this.sendMessage(ws, {
-        type: "error",
-        data: { message: "Fehler beim Verarbeiten der Nachricht" },
+        type: 'error',
+        data: { message: 'Fehler beim Verarbeiten der Nachricht' },
       });
     }
   }
 
-  private async handleSendMessage(
-    ws: ExtendedWebSocket,
-    data: SendMessageData,
-  ): Promise<void> {
+  private async handleSendMessage(ws: ExtendedWebSocket, data: SendMessageData): Promise<void> {
     const { conversationId, content, attachments = [] } = data;
 
     logger.debug(`Handling send message:`, {
       conversationId,
       userId: ws.userId,
       tenantId: ws.tenantId,
-      contentLength: content?.length,
+      contentLength: content.length,
       hasAttachments: attachments.length > 0,
     });
 
@@ -201,23 +191,36 @@ export class ChatWebSocketServer {
         SELECT cp.user_id 
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? AND c.tenant_id = ?
+        WHERE cp.conversation_id = ? 
+        AND c.tenant_id = ?
+        AND cp.tenant_id = ?
       `;
-      const [participants] = await pool.query<RowDataPacket[]>(
-        participantQuery,
-        [conversationId, ws.tenantId],
-      );
+      const [participants] = await query<RowDataPacket[]>(participantQuery, [
+        conversationId,
+        ws.tenantId,
+        ws.tenantId,
+      ]);
 
-      const participantIds = participants.map(
-        (p) => (p as { user_id: number }).user_id,
-      );
+      const participantIds = participants.map((p) => (p as { user_id: number }).user_id);
 
       // Convert IDs to strings for comparison since ws.userId might be a string
       const participantIdsStr = participantIds.map((id: number) => String(id));
+
+      // Debug logging
+      logger.error(`[WebSocket Debug] Permission check:`, {
+        conversationId,
+        wsUserId: ws.userId,
+        wsTenantId: ws.tenantId,
+        participantIds,
+        participantIdsStr,
+        userIdString: String(ws.userId),
+        isIncluded: participantIdsStr.includes(String(ws.userId)),
+      });
+
       if (!participantIdsStr.includes(String(ws.userId))) {
         this.sendMessage(ws, {
-          type: "error",
-          data: { message: "Keine Berechtigung für diese Unterhaltung" },
+          type: 'error',
+          data: { message: 'Keine Berechtigung für diese Unterhaltung' },
         });
         return;
       }
@@ -227,7 +230,7 @@ export class ChatWebSocketServer {
         INSERT INTO messages (conversation_id, sender_id, content, tenant_id)
         VALUES (?, ?, ?, ?)
       `;
-      const [result] = await pool.query<ResultSetHeader>(messageQuery, [
+      const [result] = await execute<ResultSetHeader>(messageQuery, [
         conversationId,
         ws.userId,
         content,
@@ -241,32 +244,38 @@ export class ChatWebSocketServer {
         SELECT id, username, first_name, last_name, profile_picture_url 
         FROM users WHERE id = ?
       `;
-      const [senderInfo] = await pool.query<RowDataPacket[]>(senderQuery, [
-        ws.userId,
-      ]);
-      const sender = senderInfo[0];
+      const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [ws.userId]);
+      const sender = senderInfo[0] as
+        | {
+            id: number;
+            username: string;
+            first_name: string | null;
+            last_name: string | null;
+            profile_picture_url: string | null;
+          }
+        | undefined;
 
       // Nachricht-Objekt für Broadcast erstellen
+      const UNKNOWN_USER = 'Unbekannter Benutzer';
       const messageData = {
         id: messageId,
         conversation_id: conversationId,
         content,
         sender_id: ws.userId,
-        sender_name: sender
-          ? (([sender.first_name, sender.last_name]
-              .filter((n: string) => n)
-              .join(" ") ||
-              sender.username) ??
-            "Unbekannter Benutzer")
-          : "Unbekannter Benutzer",
-        first_name: sender?.first_name ?? "",
-        last_name: sender?.last_name ?? "",
-        username: sender?.username ?? "",
+        sender_name:
+          sender ?
+            [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
+            sender.username ||
+            UNKNOWN_USER
+          : UNKNOWN_USER,
+        first_name: sender?.first_name ?? '',
+        last_name: sender?.last_name ?? '',
+        username: sender?.username ?? '',
         profile_picture_url: sender?.profile_picture_url ?? null,
         created_at: new Date().toISOString(),
-        delivery_status: "sent",
+        delivery_status: 'sent',
         is_read: false,
-        attachments: attachments ?? [],
+        attachments,
       };
 
       // Nachricht an alle Teilnehmer senden
@@ -274,7 +283,7 @@ export class ChatWebSocketServer {
         const clientWs = this.clients.get(participantId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: "new_message",
+            type: 'new_message',
             data: messageData,
           });
         }
@@ -282,14 +291,14 @@ export class ChatWebSocketServer {
 
       // Bestätigung an Sender
       this.sendMessage(ws, {
-        type: "message_sent",
+        type: 'message_sent',
         data: { messageId, timestamp: new Date().toISOString() },
       });
-    } catch (error) {
-      logger.error("Fehler beim Senden der Nachricht:", error);
+    } catch (error: unknown) {
+      logger.error('Fehler beim Senden der Nachricht:', error);
       this.sendMessage(ws, {
-        type: "error",
-        data: { message: "Fehler beim Senden der Nachricht" },
+        type: 'error',
+        data: { message: 'Fehler beim Senden der Nachricht' },
       });
     }
   }
@@ -307,19 +316,25 @@ export class ChatWebSocketServer {
         SELECT cp.user_id 
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
+        WHERE cp.conversation_id = ? 
+        AND c.tenant_id = ? 
+        AND cp.tenant_id = ?
+        AND cp.user_id != ?
       `;
-      const [participants] = await pool.query<RowDataPacket[]>(
-        participantQuery,
-        [conversationId, ws.tenantId, ws.userId],
-      );
+      const [participants] = await query<RowDataPacket[]>(participantQuery, [
+        conversationId,
+        ws.tenantId,
+        ws.tenantId,
+        ws.userId,
+      ]);
 
       // Typing-Event an andere Teilnehmer senden
       for (const participant of participants) {
-        const clientWs = this.clients.get(participant.user_id);
+        const userId = participant.user_id as number;
+        const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: isTyping ? "user_typing" : "user_stopped_typing",
+            type: isTyping ? 'user_typing' : 'user_stopped_typing',
             data: {
               conversationId,
               userId: ws.userId,
@@ -328,20 +343,17 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
-      logger.error("Fehler beim Typing-Event:", error);
+    } catch (error: unknown) {
+      logger.error('Fehler beim Typing-Event:', error);
     }
   }
 
-  private async handleMarkRead(
-    ws: ExtendedWebSocket,
-    data: MarkReadData,
-  ): Promise<void> {
+  private async handleMarkRead(ws: ExtendedWebSocket, data: MarkReadData): Promise<void> {
     const { messageId } = data;
 
     try {
       // Nachricht als gelesen markieren
-      await pool.query<ResultSetHeader>(
+      await execute<ResultSetHeader>(
         `
         UPDATE messages 
         SET is_read = 1 
@@ -360,17 +372,15 @@ export class ChatWebSocketServer {
       const messageQuery = `
         SELECT sender_id, conversation_id FROM messages WHERE id = ?
       `;
-      const [messageInfo] = await pool.query<RowDataPacket[]>(messageQuery, [
-        messageId,
-      ]);
+      const [messageInfo] = await query<RowDataPacket[]>(messageQuery, [messageId]);
 
       if (messageInfo.length > 0) {
-        const senderId = messageInfo[0].sender_id;
+        const senderId = messageInfo[0].sender_id as number;
         const senderWs = this.clients.get(senderId);
 
         if (senderWs && senderWs.readyState === WebSocket.OPEN) {
           this.sendMessage(senderWs, {
-            type: "message_read",
+            type: 'message_read',
             data: {
               messageId,
               readBy: ws.userId,
@@ -379,8 +389,8 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
-      logger.error("Fehler beim Markieren als gelesen:", error);
+    } catch (error: unknown) {
+      logger.error('Fehler beim Markieren als gelesen:', error);
     }
   }
 
@@ -400,18 +410,24 @@ export class ChatWebSocketServer {
         SELECT cp.user_id 
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? AND c.tenant_id = ? AND cp.user_id != ?
+        WHERE cp.conversation_id = ? 
+        AND c.tenant_id = ? 
+        AND cp.tenant_id = ?
+        AND cp.user_id != ?
       `;
-      const [participants] = await pool.query<RowDataPacket[]>(
-        participantQuery,
-        [conversationId, ws.tenantId, ws.userId],
-      );
+      const [participants] = await query<RowDataPacket[]>(participantQuery, [
+        conversationId,
+        ws.tenantId,
+        ws.tenantId,
+        ws.userId,
+      ]);
 
       for (const participant of participants) {
-        const clientWs = this.clients.get(participant.user_id);
+        const userId = participant.user_id as number;
+        const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: "user_joined_conversation",
+            type: 'user_joined_conversation',
             data: {
               conversationId,
               userId: ws.userId,
@@ -420,8 +436,8 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
-      logger.error("Fehler beim Beitreten zur Unterhaltung:", error);
+    } catch (error: unknown) {
+      logger.error('Fehler beim Beitreten zur Unterhaltung:', error);
     }
   }
 
@@ -431,13 +447,13 @@ export class ChatWebSocketServer {
 
       // Offline-Status senden
       if (ws.tenantId !== undefined) {
-        await this.broadcastUserStatus(ws.userId, ws.tenantId, "offline");
+        await this.broadcastUserStatus(ws.userId, ws.tenantId, 'offline');
       }
     }
   }
 
   private handleError(_ws: ExtendedWebSocket, error: unknown): void {
-    logger.error("WebSocket Fehler:", error);
+    logger.error('WebSocket Fehler:', error);
   }
 
   private async broadcastUserStatus(
@@ -454,17 +470,19 @@ export class ChatWebSocketServer {
         JOIN conversations c ON cp1.conversation_id = c.id
         WHERE cp1.user_id = ? AND c.tenant_id = ? AND cp2.user_id != ?
       `;
-      const [relatedUsers] = await pool.query<RowDataPacket[]>(
-        conversationsQuery,
-        [userId, tenantId, userId],
-      );
+      const [relatedUsers] = await query<RowDataPacket[]>(conversationsQuery, [
+        userId,
+        tenantId,
+        userId,
+      ]);
 
       // Status an alle verbundenen Benutzer senden
       for (const user of relatedUsers) {
-        const clientWs = this.clients.get(user.user_id);
+        const userId = user.user_id as number;
+        const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
-            type: "user_status_changed",
+            type: 'user_status_changed',
             data: {
               userId,
               status,
@@ -473,8 +491,8 @@ export class ChatWebSocketServer {
           });
         }
       }
-    } catch (error) {
-      logger.error("Fehler beim Senden des User-Status:", error);
+    } catch (error: unknown) {
+      logger.error('Fehler beim Senden des User-Status:', error);
     }
   }
 
@@ -502,7 +520,7 @@ export class ChatWebSocketServer {
   // Geplante Nachrichten verarbeiten
   private async processScheduledMessages(): Promise<void> {
     try {
-      const query = `
+      const scheduledQuery = `
         SELECT m.*, c.id as conversation_id
         FROM messages m
         JOIN conversations c ON m.conversation_id = c.id
@@ -511,11 +529,11 @@ export class ChatWebSocketServer {
         AND m.delivery_status = 'scheduled'
       `;
 
-      const [scheduledMessages] = await pool.query<RowDataPacket[]>(query);
+      const [scheduledMessages] = await query<RowDataPacket[]>(scheduledQuery);
 
       for (const message of scheduledMessages) {
         // Nachricht als zugestellt markieren
-        await pool.query<ResultSetHeader>(
+        await execute<ResultSetHeader>(
           'UPDATE messages SET delivery_status = "delivered", scheduled_delivery = NULL WHERE id = ?',
           [message.id],
         );
@@ -525,58 +543,66 @@ export class ChatWebSocketServer {
           SELECT user_id FROM conversation_participants 
           WHERE conversation_id = ?
         `;
-        const [participants] = await pool.query<RowDataPacket[]>(
-          participantQuery,
-          [message.conversation_id],
-        );
+        const [participants] = await query<RowDataPacket[]>(participantQuery, [
+          message.conversation_id,
+        ]);
 
         // Sender-Informationen abrufen
         const senderQuery = `
           SELECT first_name, last_name, profile_picture_url 
           FROM users WHERE id = ?
         `;
-        const [senderInfo] = await pool.query<RowDataPacket[]>(senderQuery, [
-          message.sender_id,
-        ]);
-        const sender = senderInfo[0];
+        const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [message.sender_id]);
+        const sender = senderInfo[0] as
+          | {
+              id: number;
+              username: string;
+              first_name: string | null;
+              last_name: string | null;
+              profile_picture_url: string | null;
+            }
+          | undefined;
 
+        const UNKNOWN_USER_NAME = 'Unbekannter Benutzer';
         const messageData = {
-          id: message.id,
-          conversation_id: message.conversation_id,
-          content: message.content,
-          sender_id: message.sender_id,
-          sender_name: sender
-            ? [sender.first_name ?? "", sender.last_name ?? ""]
-                .filter((n: string) => n)
-                .join(" ") || "Unbekannter Benutzer"
-            : "Unbekannter Benutzer",
-          first_name: sender?.first_name ?? "",
-          last_name: sender?.last_name ?? "",
+          id: message.id as number,
+          conversation_id: message.conversation_id as number,
+          content: message.content as string,
+          sender_id: message.sender_id as number,
+          sender_name:
+            sender ?
+              [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
+              sender.username ||
+              UNKNOWN_USER_NAME
+            : UNKNOWN_USER_NAME,
+          first_name: sender?.first_name ?? '',
+          last_name: sender?.last_name ?? '',
           profile_picture_url: sender?.profile_picture_url ?? null,
-          created_at: message.created_at,
-          delivery_status: "delivered",
+          created_at: message.created_at as string,
+          delivery_status: 'delivered',
           is_read: false,
           is_scheduled: true,
-          attachments: [] as Array<{
+          attachments: [] as {
             filename: string;
             content?: string | Buffer;
             path?: string;
             contentType?: string;
-          }>,
+          }[],
         };
 
         for (const participant of participants) {
-          const clientWs = this.clients.get(participant.user_id);
+          const userId = participant.user_id as number;
+          const clientWs = this.clients.get(userId);
           if (clientWs && clientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(clientWs, {
-              type: "scheduled_message_delivered",
+              type: 'scheduled_message_delivered',
               data: messageData,
             });
           }
         }
       }
-    } catch (error) {
-      logger.error("Fehler beim Verarbeiten geplanter Nachrichten:", error);
+    } catch (error: unknown) {
+      logger.error('Fehler beim Verarbeiten geplanter Nachrichten:', error);
     }
   }
 
@@ -591,7 +617,7 @@ export class ChatWebSocketServer {
   private async processMessageDeliveryQueue(): Promise<void> {
     try {
       // Hole ausstehende Nachrichten aus der Queue
-      const query = `
+      const queueQuery = `
         SELECT 
           mdq.id as queue_id,
           mdq.message_id,
@@ -611,94 +637,89 @@ export class ChatWebSocketServer {
         LIMIT 50
       `;
 
-      const [queuedMessages] = await pool.query<RowDataPacket[]>(query);
+      const [queuedMessages] = await query<RowDataPacket[]>(queueQuery);
 
       for (const message of queuedMessages) {
         try {
           // Update status to processing
-          await pool.query<ResultSetHeader>(
+          await execute<ResultSetHeader>(
             'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
             [message.queue_id],
           );
 
           // Nachricht-Objekt erstellen
           const messageData = {
-            id: message.message_id,
-            conversation_id: message.conversation_id,
-            content: message.content,
-            sender_id: message.sender_id,
+            id: message.message_id as number,
+            conversation_id: message.conversation_id as number,
+            content: message.content as string,
+            sender_id: message.sender_id as number,
             sender_name:
-              `${message.first_name ?? ""} ${message.last_name ?? ""}`.trim() ||
-              "Unbekannter Benutzer",
-            first_name: message.first_name ?? "",
-            last_name: message.last_name ?? "",
-            profile_picture_url: message.profile_picture_url ?? null,
-            created_at: message.created_at,
-            delivery_status: "delivered",
+              `${String(message.first_name ?? '')} ${String(message.last_name ?? '')}`.trim() ||
+              'Unbekannter Benutzer',
+            first_name: (message.first_name ?? '') as string,
+            last_name: (message.last_name ?? '') as string,
+            profile_picture_url: (message.profile_picture_url ?? null) as string | null,
+            created_at: message.created_at as string,
+            delivery_status: 'delivered',
             is_read: false,
-            attachments: [] as Array<{
+            attachments: [] as {
               filename: string;
               content?: string | Buffer;
               path?: string;
               contentType?: string;
-            }>,
+            }[],
           };
 
           // An Empfänger senden wenn online
-          const recipientWs = this.clients.get(message.recipient_id);
+          const recipientId = message.recipient_id as number;
+          const recipientWs = this.clients.get(recipientId);
           if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(recipientWs, {
-              type: "new_message",
+              type: 'new_message',
               data: messageData,
             });
           }
 
           // Als zugestellt markieren
-          await pool.query<ResultSetHeader>(
+          await execute<ResultSetHeader>(
             'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
             [message.queue_id],
           );
 
           // Delivery status in messages table aktualisieren
-          await pool.query<ResultSetHeader>(
+          await execute<ResultSetHeader>(
             'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
             [message.message_id],
           );
-        } catch (error) {
-          logger.error(
-            `Fehler beim Zustellen der Nachricht ${message.message_id}:`,
-            error,
-          );
+        } catch (error: unknown) {
+          logger.error(`Fehler beim Zustellen der Nachricht ${String(message.message_id)}:`, error);
 
           // Bei Fehler als failed markieren wenn max attempts erreicht
-          const [result] = await pool.query<RowDataPacket[]>(
-            "SELECT attempts FROM message_delivery_queue WHERE id = ?",
+          const [result] = await query<RowDataPacket[]>(
+            'SELECT attempts FROM message_delivery_queue WHERE id = ?',
             [message.queue_id],
           );
 
           if (result[0] && result[0].attempts >= 3) {
-            await pool.query<ResultSetHeader>(
+            await execute<ResultSetHeader>(
               'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
               [message.queue_id],
             );
-            await pool.query<ResultSetHeader>(
+            await execute<ResultSetHeader>(
               'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
               [message.message_id],
             );
           } else {
             // Zurück auf pending setzen für erneuten Versuch
-            await pool.query<ResultSetHeader>(
+            await execute<ResultSetHeader>(
               'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
               [message.queue_id],
             );
           }
         }
       }
-    } catch (error) {
-      logger.error(
-        "Fehler beim Verarbeiten der Message Delivery Queue:",
-        error,
-      );
+    } catch (error: unknown) {
+      logger.error('Fehler beim Verarbeiten der Message Delivery Queue:', error);
     }
   }
 

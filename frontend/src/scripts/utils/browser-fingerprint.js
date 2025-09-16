@@ -57,10 +57,23 @@ export class BrowserFingerprint {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (gl) {
-        const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-        if (debugInfo) {
-          components.push(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
-          components.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
+        // Try modern approach first (standard WebGL parameters)
+        const vendor = gl.getParameter(gl.VENDOR);
+        const renderer = gl.getParameter(gl.RENDERER);
+
+        // If standard parameters don't give enough info, try debug extension as fallback
+        if (vendor === 'WebKit' && renderer === 'WebKit WebGL') {
+          const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+          if (debugInfo) {
+            components.push(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
+            components.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
+          } else {
+            components.push(vendor);
+            components.push(renderer);
+          }
+        } else {
+          components.push(vendor);
+          components.push(renderer);
         }
       }
     } catch {
@@ -113,17 +126,14 @@ export class BrowserFingerprint {
     components.push('ontouchstart' in window);
 
     // Plugins (for older browsers)
-    if (navigator.plugins) {
-      const plugins = [];
-      for (let i = 0; i < navigator.plugins.length; i++) {
-        plugins.push(navigator.plugins[i].name);
-      }
+    if (navigator.plugins && navigator.plugins.length > 0) {
+      // Use Array.from to avoid object injection warning
+      const plugins = [...navigator.plugins].map((plugin) => plugin.name);
       components.push(plugins.join(','));
     }
 
     // Generate hash from components
-    const fingerprint = await this.hashComponents(components.join('|||'));
-    return fingerprint;
+    return this.hashComponents(components.join('|||'));
   }
 
   /**
@@ -136,9 +146,8 @@ export class BrowserFingerprint {
     if (crypto.subtle && crypto.subtle.digest) {
       const msgBuffer = new TextEncoder().encode(components);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-      return hashHex;
+      const hashArray = [...new Uint8Array(hashBuffer)];
+      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
     }
 
     // Fallback to simple hash

@@ -20,267 +20,15 @@
         document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
       })();
     </script>
-    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <script src="/feature-flags.js"></script>
+    <script src="/js/purify.min.js"></script>
     <style>
       @import url('/styles/dashboard-theme.css');
       @import url('/styles/breadcrumb-alignment.css');
       @import url('/styles/user-info-update.css');
-
-      /* Glassmorphismus Background */
-      body {
-        position: relative;
-        min-height: 100vh;
-        overflow-x: hidden;
-        background: #000;
-      }
-
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
-        pointer-events: none;
-        z-index: -1;
-      }
-
-      /* Container Styles */
-      .container {
-        margin: 0 auto;
-        padding: 24px;
-        margin-top: -37px !important;
-      }
-
-      /* Status Cards */
-      .status-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-        gap: 24px;
-        margin-bottom: 32px;
-      }
-
-      .status-card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-xl);
-        /* animation: fadeInUp 0.6s ease-out; */
-      }
-
-      .status-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: start;
-        margin-bottom: var(--spacing-lg);
-      }
-
-      .tenant-info h3 {
-        color: var(--text-primary);
-        margin: 0 0 8px 0;
-      }
-
-      .tenant-info p {
-        color: var(--text-secondary);
-        margin: 4px 0;
-        font-size: 14px;
-      }
-
-      /* Status Badge */
-      .status-badge {
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 12px;
-        font-weight: 600;
-        text-transform: uppercase;
-      }
-
-      .status-badge.pending {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffc107;
-        border: 1px solid rgba(255, 193, 7, 0.3);
-      }
-
-      .status-badge.approved {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-        border: 1px solid rgba(76, 175, 80, 0.3);
-      }
-
-      .status-badge.processing {
-        background: rgba(33, 150, 243, 0.2);
-        color: #2196f3;
-        border: 1px solid rgba(33, 150, 243, 0.3);
-      }
-
-      .status-badge.completed {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-        border: 1px solid rgba(76, 175, 80, 0.3);
-      }
-
-      .status-badge.failed {
-        background: rgba(244, 67, 54, 0.2);
-        color: #f44336;
-        border: 1px solid rgba(244, 67, 54, 0.3);
-      }
-
-      /* Progress Bar */
-      .progress-section {
-        margin-top: var(--spacing-lg);
-      }
-
-      .progress-bar-container {
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 8px;
-        height: 20px;
-        overflow: hidden;
-        margin: 12px 0;
-      }
-
-      .progress-bar {
-        height: 100%;
-        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 12px;
-        font-weight: 600;
-        color: white;
-      }
-
-      /* Timeline */
-      .timeline {
-        margin-top: var(--spacing-lg);
-      }
-
-      .timeline-item {
-        display: flex;
-        align-items: start;
-        gap: 16px;
-        margin-bottom: 16px;
-      }
-
-      .timeline-icon {
-        width: 40px;
-        height: 40px;
-        background: rgba(255, 255, 255, 0.05);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-
-      .timeline-icon.completed {
-        background: rgba(76, 175, 80, 0.2);
-        color: #4caf50;
-      }
-
-      .timeline-icon.pending {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffc107;
-      }
-
-      .timeline-content {
-        flex: 1;
-      }
-
-      .timeline-content h4 {
-        margin: 0 0 4px 0;
-        color: var(--text-primary);
-        font-size: 16px;
-      }
-
-      .timeline-content p {
-        margin: 0;
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-
-      /* Action Buttons */
-      .action-buttons {
-        display: flex;
-        gap: 12px;
-        margin-top: var(--spacing-lg);
-      }
-
-      .btn {
-        padding: 10px 24px;
-        border-radius: var(--radius-sm);
-        font-weight: 500;
-        font-size: 14px;
-        cursor: pointer;
-        border: none;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-      }
-
-      .btn-approve {
-        background: linear-gradient(135deg, #4caf50, #45a049);
-        color: white;
-      }
-
-      .btn-approve:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-      }
-
-      .btn-reject {
-        background: linear-gradient(135deg, #f44336, #d32f2f);
-        color: white;
-      }
-
-      .btn-reject:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
-      }
-
-      .btn-emergency {
-        background: rgba(255, 152, 0, 0.2);
-        color: #ff9800;
-        border: 1px solid rgba(255, 152, 0, 0.3);
-      }
-
-      .btn-emergency:hover {
-        background: rgba(255, 152, 0, 0.3);
-      }
-
-      /* Empty State */
-      .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--text-secondary);
-      }
-
-      .empty-state-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
-        opacity: 0.5;
-      }
-
-      /* Cooling Off Warning */
-      .cooling-off-warning {
-        background: rgba(255, 152, 0, 0.1);
-        border: 1px solid rgba(255, 152, 0, 0.3);
-        border-radius: var(--radius-sm);
-        padding: var(--spacing-md);
-        margin-top: var(--spacing-md);
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .cooling-off-warning i {
-        color: #ff9800;
-        font-size: 20px;
-      }
+      @import url('/styles/tenant-deletion-status.css');
     </style>
   </head>
   <body>
@@ -300,6 +48,89 @@
               <h2 class="card-title">Tenant Löschstatus</h2>
               <p class="text-secondary" class="u-mt-text">Übersicht aller Löschanfragen und deren Status</p>
             </div>
+
+            <!-- Prozess-Erklärung -->
+            <div
+              class="process-info"
+              style="
+                background: rgba(33, 150, 243, 0.05);
+                border: 1px solid rgba(33, 150, 243, 0.2);
+                border-radius: 8px;
+                padding: 20px;
+                margin: 16px;
+              "
+            >
+              <h3 style="color: var(--primary-color); margin-bottom: 16px">
+                <i class="fas fa-info-circle"></i>
+                Löschprozess & Rechtliche Konformität
+              </h3>
+
+              <div style="display: grid; gap: 16px">
+                <div>
+                  <h4 style="color: var(--text-primary)">📋 Zwei-Personen-Prinzip (DSGVO-konform)</h4>
+                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                    <li>Root-User 1 beantragt Löschung</li>
+                    <li>Root-User 2 muss genehmigen (nicht der Ersteller)</li>
+                    <li>24h Cooling-Off Periode (kann für Entwicklung auf 0 gesetzt werden)</li>
+                    <li>30 Tage Nachfrist nach Genehmigung (Grace Period)</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 style="color: var(--text-primary)">🗑️ Was wird gelöscht?</h4>
+                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                    <li>Alle Benutzerdaten und Profile</li>
+                    <li>Dokumente und Dateien</li>
+                    <li>Abteilungen, Teams, Schichten</li>
+                    <li>KVP-Vorschläge und Umfragen</li>
+                    <li>Chat-Nachrichten und Kalendereinträge</li>
+                    <li>Logs und Audit-Trail</li>
+                    <li>Alle tenant-spezifischen Daten</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 style="color: var(--text-primary)">⏱️ Zeitlicher Ablauf</h4>
+                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                    <li>
+                      <strong>Sofort:</strong>
+                      Tenant wird als "zur Löschung markiert"
+                    </li>
+                    <li>
+                      <strong>24h:</strong>
+                      Cooling-Off (Bedenkzeit) - Genehmigung noch nicht möglich
+                    </li>
+                    <li>
+                      <strong>Nach 24h:</strong>
+                      Zweiter Root-User kann genehmigen
+                    </li>
+                    <li>
+                      <strong>+30 Tage:</strong>
+                      Grace Period - Tenant kann noch reaktiviert werden
+                    </li>
+                    <li>
+                      <strong>Nach 30 Tagen:</strong>
+                      Automatische endgültige Löschung durch Worker
+                    </li>
+                    <li>
+                      <strong>Löschdauer:</strong>
+                      Ca. 5-30 Minuten je nach Datenmenge
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 style="color: var(--text-primary)">🔒 Sicherheit & Backup</h4>
+                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                    <li>Vollständiges Backup vor Löschung</li>
+                    <li>30 Tage Aufbewahrung des Backups</li>
+                    <li>Audit-Log aller Aktionen</li>
+                    <li>Emergency Stop möglich während Löschvorgang</li>
+                    <li>DSGVO-konform: Recht auf Löschung</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
             <div class="card-body">
               <div id="statusContent" class="status-grid">
                 <!-- Status cards will be inserted here -->
@@ -313,28 +144,64 @@
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module">
-      import { fetchWithAuth, showSuccess, showError } from '/scripts/auth.js';
+      import { ApiClient } from '/utils/api-client.js';
+      import { showSuccessAlert, showErrorAlert, showConfirm } from '/scripts/utils/alerts.js';
+
+      const apiClient = ApiClient.getInstance();
 
       let statusData = [];
+      let refreshTimer = null;
 
       async function loadDeletionStatus() {
         try {
-          const response = await fetchWithAuth('/api/root/deletion-status');
-          if (!response.ok) {
-            throw new Error('Failed to load deletion status');
-          }
+          const response = await apiClient.request('/root/tenant/deletion-status', {
+            method: 'GET',
+          });
 
-          const data = await response.json();
-          statusData = data.data || [];
+          // Handle both single object and array responses
+          const data = response.data || response || [];
+          console.log('🔍 API Response:', data); // Debug output
+
+          if (Array.isArray(data)) {
+            statusData = data;
+          } else if (data && typeof data === 'object') {
+            // Single object response - wrap in array
+            statusData = [data];
+          } else {
+            statusData = [];
+          }
           displayStatus();
+
+          // Schedule next refresh only on success
+          scheduleRefresh();
         } catch (error) {
           console.error('Error loading status:', error);
-          showError('Fehler beim Laden des Status');
+
+          // Check if it's a 404 (no deletion found) - show empty state instead of error
+          if (error.error === 'NOT_FOUND' || error.message?.includes('No active deletion found')) {
+            statusData = [];
+            displayStatus();
+            // Also schedule refresh for 404 (might get new data later)
+            scheduleRefresh();
+          } else {
+            // Only show error for actual errors, not for "no data" scenarios
+            showErrorAlert('Fehler beim Laden des Status');
+            // Don't schedule refresh on real errors to avoid loop
+          }
         }
       }
 
+      function scheduleRefresh() {
+        // Clear any existing timer
+        if (refreshTimer) {
+          clearTimeout(refreshTimer);
+        }
+        // Schedule next refresh in 60 seconds (reduced from 10s to avoid excessive API calls)
+        refreshTimer = setTimeout(loadDeletionStatus, 60000);
+      }
+
       function displayStatus() {
-        const container = document.getElementById('statusContent');
+        const container = document.querySelector('#statusContent');
 
         if (statusData.length === 0) {
           container.innerHTML = `
@@ -348,36 +215,80 @@
           return;
         }
 
-        container.innerHTML = statusData.map((item) => createStatusCard(item)).join('');
+        // eslint-disable-next-line no-undef, no-unsanitized/property -- DOMPurify from CDN, sanitized content
+        container.innerHTML = DOMPurify.sanitize(statusData.map((item) => createStatusCard(item)).join(''));
       }
 
       function createStatusCard(item) {
         const progress = item.progress || 0;
-        const createdAt = new Date(item.created_at);
-        const scheduledAt = item.scheduled_deletion_date ? new Date(item.scheduled_deletion_date) : null;
+        // Handle different field names from v1 and v2 APIs
+        const createdAt = new Date(item.requestedAt || item.created_at || item.requested_at);
+        // const scheduledAt = item.scheduled_deletion_date ? new Date(item.scheduled_deletion_date) : null; // Currently unused
         const coolingOffRemaining = calculateCoolingOff(item);
+        const currentUserId = getCurrentUserId();
+        const isCreator = currentUserId === (item.requestedBy || item.requested_by || item.created_by);
 
         return `
           <div class="status-card">
             <div class="status-header">
               <div class="tenant-info">
-                <h3>${item.company_name}</h3>
-                <p>Tenant ID: ${item.tenant_id}</p>
-                <p>Subdomain: ${item.subdomain}</p>
-                <p>Beantragt von: ${item.requester_name}</p>
+                <h3>${item.company_name || 'Tenant ' + (item.tenantId || item.tenant_id)}</h3>
+                <p>Tenant ID: ${item.tenantId || item.tenant_id}</p>
+                ${item.subdomain ? `<p>Subdomain: ${item.subdomain}</p>` : ''}
+                <p>Beantragt von: ${item.requestedByName || item.requester_name || 'ID: ' + (item.requestedBy || item.requested_by)} (User ID: ${item.requestedBy || item.requested_by || item.created_by})</p>
                 <p>Beantragt am: ${createdAt.toLocaleString('de-DE')}</p>
+                <p><strong>Aktueller User ID:</strong> ${currentUserId}</p>
+                <p><strong>Status Info:</strong> canApprove=${item.canApprove}, canCancel=${item.canCancel}</p>
               </div>
-              <span class="status-badge ${item.status}">${getStatusText(item.status)}</span>
+              <span class="status-badge ${item.status || 'pending'}">${getStatusText(item.status || 'pending')}</span>
             </div>
+            
+            ${
+              isCreator
+                ? `
+              <div class="info-box" style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <i class="fas fa-info-circle" style="color: #ff9800;"></i>
+                <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br>
+                Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung genehmigt.
+              </div>
+              `
+                : item.canApprove
+                  ? `
+              <div class="info-box" style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <i class="fas fa-user-shield" style="color: #4caf50;"></i>
+                <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br>
+                Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
+              </div>
+              `
+                  : ''
+            }
 
             ${
-              item.approval_status === 'pending' && coolingOffRemaining > 0
+              (item.status === 'pending' || item.approval_status === 'pending') && coolingOffRemaining > 0
                 ? `
               <div class="cooling-off-warning">
                 <i class="fas fa-clock"></i>
                 <div>
-                  <strong>Cooling-off Periode aktiv</strong><br>
-                  Noch ${Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich
+                  <strong>⏰ Cooling-off Periode aktiv</strong><br>
+                  Noch ${Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br>
+                  <small>Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small>
+                </div>
+              </div>
+            `
+                : ''
+            }
+
+            ${
+              item.status === 'approved' || item.status === 'queued'
+                ? `
+              <div class="grace-period-info" style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
+                <i class="fas fa-calendar-clock" style="color: #2196F3;"></i>
+                <div>
+                  <strong>🕐 30 Tage Grace Period läuft!</strong><br>
+                  <p style="margin: 8px 0;"><strong>Geplante Löschung:</strong> ${item.scheduledFor ? new Date(item.scheduledFor).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }) : '30 Tage ab Genehmigung'}</p>
+                  <p style="margin: 8px 0;">Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.</p>
+                  <p style="margin: 8px 0;">Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche Löschung.</p>
+                  <small>Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small>
                 </div>
               </div>
             `
@@ -406,33 +317,49 @@
             </div>
 
             ${
-              item.approval_status === 'pending' && item.created_by !== getCurrentUserId()
+              // Show approve/reject buttons based on API response
+              item.canApprove || item.canCancel
                 ? `
               <div class="action-buttons">
                 ${
-                  coolingOffRemaining === 0
+                  item.canApprove
                     ? `
-                  <button class="btn btn-approve" onclick="approveDeletion(${item.id})">
+                  <button class="btn btn-approve" onclick="approveDeletion(${item.queueId || item.id})">
                     <i class="fas fa-check"></i> Genehmigen
+                  </button>
+                  <button class="btn btn-reject" onclick="rejectDeletion(${item.queueId || item.id})">
+                    <i class="fas fa-times"></i> Ablehnen
                   </button>
                 `
                     : ''
                 }
-                <button class="btn btn-reject" onclick="rejectDeletion(${item.id})">
-                  <i class="fas fa-times"></i> Ablehnen
-                </button>
+                ${
+                  item.canCancel
+                    ? `
+                  <button class="btn btn-secondary" onclick="cancelDeletion(${item.queueId || item.id})">
+                    <i class="fas fa-ban"></i> Abbrechen (als Ersteller)
+                  </button>
+                `
+                    : ''
+                }
               </div>
             `
                 : ''
             }
 
             ${
-              item.status === 'processing'
+              // Emergency Stop Button für alle Root-User bei Status queued, approved oder processing
+              item.status === 'queued' || item.status === 'approved' || item.status === 'processing'
                 ? `
               <div class="action-buttons">
-                <button class="btn btn-emergency" onclick="emergencyStop(${item.id})">
+                <button class="btn btn-emergency" onclick="emergencyStop(${item.queueId || item.id})">
                   <i class="fas fa-stop-circle"></i> Emergency Stop
                 </button>
+                ${
+                  item.status === 'queued' || item.status === 'approved'
+                    ? '<small class="text-muted d-block mt-2">Stoppt die geplante Löschung sofort</small>'
+                    : '<small class="text-muted d-block mt-2">Stoppt den laufenden Löschvorgang</small>'
+                }
               </div>
             `
                 : ''
@@ -443,22 +370,39 @@
 
       function getStatusText(status) {
         const statusMap = {
+          pending: 'Genehmigung ausstehend',
           pending_approval: 'Genehmigung ausstehend',
-          queued: 'In Warteschlange',
+          approved: 'Genehmigt - 30 Tage Grace Period läuft',
+          queued: 'In Warteschlange (30 Tage Grace Period)',
           processing: 'In Bearbeitung',
+          executing: 'Wird ausgeführt',
           completed: 'Abgeschlossen',
           failed: 'Fehlgeschlagen',
           cancelled: 'Abgebrochen',
+          stopped: 'Gestoppt',
         };
+        // eslint-disable-next-line security/detect-object-injection -- status is from controlled enum
         return statusMap[status] || status;
       }
 
       function calculateCoolingOff(item) {
-        if (!item.approval_requested_at) return 0;
-        const requestedAt = new Date(item.approval_requested_at);
+        // For v2 API, use requestedAt instead of approval_requested_at
+        const requestTime = item.requestedAt || item.approval_requested_at || item.created_at;
+        if (!requestTime) return 0;
+
+        const requestedAt = new Date(requestTime);
         const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
+
         // Use actual cooling_off_hours from DB (can be 0 for development)
         const coolingOffHours = item.cooling_off_hours !== undefined ? item.cooling_off_hours : 24;
+
+        console.log('⏰ Cooling-off calculation:', {
+          requestTime,
+          hoursSince: hoursSince.toFixed(2),
+          coolingOffHours,
+          remaining: Math.max(0, coolingOffHours - hoursSince),
+        });
+
         return Math.max(0, coolingOffHours - hoursSince);
       }
 
@@ -469,7 +413,7 @@
         timeline.push({
           icon: 'fa-plus-circle',
           title: 'Löschung beantragt',
-          date: new Date(item.created_at),
+          date: new Date(item.requestedAt || item.created_at || item.requested_at),
           completed: true,
         });
 
@@ -544,23 +488,19 @@
       }
 
       window.approveDeletion = async function (queueId) {
-        if (!confirm('Möchten Sie diese Löschung wirklich genehmigen?')) return;
+        const confirmed = await showConfirm('Möchten Sie diese Löschung wirklich genehmigen?');
+        if (!confirmed) return;
 
         try {
-          const response = await fetchWithAuth(`/api/root/deletion-approvals/${queueId}/approve`, {
+          await apiClient.request(`/v2/root/deletion-approvals/${queueId}/approve`, {
             method: 'POST',
           });
 
-          if (response.ok) {
-            showSuccess('Löschung genehmigt!');
-            await loadDeletionStatus();
-          } else {
-            const error = await response.json();
-            showError(error.error || 'Fehler bei der Genehmigung');
-          }
+          showSuccessAlert('Löschung genehmigt! 30 Tage Grace Period beginnt.');
+          await loadDeletionStatus();
         } catch (error) {
           console.error('Error approving:', error);
-          showError('Fehler bei der Genehmigung');
+          showErrorAlert(error.message || 'Fehler bei der Genehmigung');
         }
       };
 
@@ -569,51 +509,66 @@
         if (!reason) return;
 
         try {
-          const response = await fetchWithAuth(`/api/root/deletion-approvals/${queueId}/reject`, {
+          await apiClient.request(`/v2/root/deletion-approvals/${queueId}/reject`, {
             method: 'POST',
             body: JSON.stringify({ reason }),
           });
 
-          if (response.ok) {
-            showSuccess('Löschung abgelehnt!');
-            await loadDeletionStatus();
-          } else {
-            const error = await response.json();
-            showError(error.error || 'Fehler beim Ablehnen');
-          }
+          showSuccessAlert('Löschung abgelehnt!');
+          await loadDeletionStatus();
         } catch (error) {
           console.error('Error rejecting:', error);
-          showError('Fehler beim Ablehnen');
+          showErrorAlert(error.message || 'Fehler beim Ablehnen');
         }
       };
 
-      window.emergencyStop = async function (queueId) {
-        if (!confirm('WARNUNG: Emergency Stop aktivieren?\n\nDies stoppt die Löschung sofort!')) return;
+      window.cancelDeletion = async function (queueId) {
+        const confirmed = await showConfirm('Möchten Sie Ihre Löschanfrage wirklich abbrechen?');
+        if (!confirmed) return;
 
         try {
-          const response = await fetchWithAuth(`/api/root/deletion-emergency/${queueId}/stop`, {
+          await apiClient.request('/v2/root/tenant/cancel-deletion', {
             method: 'POST',
           });
 
-          if (response.ok) {
-            showSuccess('Emergency Stop aktiviert!');
-            await loadDeletionStatus();
-          } else {
-            const error = await response.json();
-            showError(error.error || 'Fehler beim Emergency Stop');
-          }
+          showSuccessAlert('Löschanfrage abgebrochen!');
+          await loadDeletionStatus();
         } catch (error) {
-          console.error('Error emergency stop:', error);
-          showError('Fehler beim Emergency Stop');
+          console.error('Error cancelling:', error);
+          showErrorAlert(error.message || 'Fehler beim Abbrechen');
+        }
+      };
+
+      // EMERGENCY STOP - Für alle Root-User verfügbar!
+      window.emergencyStop = async function (queueId) {
+        const confirmed = await showConfirm(
+          '⚠️ EMERGENCY STOP ⚠️\n\n' +
+            'Dies stoppt die Tenant-Löschung SOFORT!\n\n' +
+            'Der Tenant wird reaktiviert und die Löschung abgebrochen.\n\n' +
+            'Sind Sie sicher?',
+        );
+        if (!confirmed) return;
+
+        try {
+          await apiClient.request(`/v2/root/deletion-queue/${queueId}/emergency-stop`, {
+            method: 'POST',
+            body: JSON.stringify({
+              reason: 'Emergency Stop durch Root-User aktiviert',
+            }),
+          });
+
+          showSuccessAlert('🛑 EMERGENCY STOP aktiviert! Löschung wurde gestoppt.');
+          await loadDeletionStatus();
+        } catch (error) {
+          console.error('Error during emergency stop:', error);
+          showErrorAlert(error.message || 'Fehler beim Emergency Stop');
         }
       };
 
       // Load status on page load
       document.addEventListener('DOMContentLoaded', () => {
+        // Initial load will automatically schedule refreshes
         loadDeletionStatus();
-
-        // Refresh every 10 seconds
-        setInterval(loadDeletionStatus, 10000);
       });
     </script>
 

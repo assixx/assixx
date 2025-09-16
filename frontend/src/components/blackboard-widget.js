@@ -18,7 +18,7 @@ function escapeHtml(unsafe) {
 
 class BlackboardWidget {
   constructor(containerId, limit = 3, isDashboard = true) {
-    this.container = document.getElementById(containerId);
+    this.container = document.querySelector(`#${containerId}`);
     this.limit = limit;
     this.isDashboard = isDashboard;
 
@@ -176,12 +176,13 @@ class BlackboardWidget {
 
     html += '</div>';
 
+    // eslint-disable-next-line no-unsanitized/property -- HTML is sanitized via escapeHtml function
     this.container.innerHTML = html;
 
     // Add event listeners for confirmation buttons
     this.container.querySelectorAll('.confirm-entry-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const entryId = e.target.getAttribute('data-id');
+        const entryId = e.target.dataset.id;
         this.confirmEntry(entryId);
       });
     });
@@ -230,12 +231,13 @@ class BlackboardWidget {
 
     html += '</ul>';
 
+    // eslint-disable-next-line no-unsanitized/property -- HTML is sanitized via escapeHtml function
     this.container.innerHTML = html;
 
     // Add event listeners for confirmation buttons
     this.container.querySelectorAll('.confirm-entry-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        const entryId = e.target.getAttribute('data-id');
+        const entryId = e.target.dataset.id;
         this.confirmEntry(entryId);
       });
     });
@@ -268,7 +270,7 @@ class BlackboardWidget {
     } catch (error) {
       console.error('Error confirming entry:', error);
 
-      alert('Fehler bei der Lesebestätigung.');
+      showError('Fehler bei der Lesebestätigung.');
     }
   }
 
@@ -277,7 +279,7 @@ class BlackboardWidget {
    */
   truncateText(text, maxLength) {
     // Remove HTML tags
-    const plainText = text.replace(/<\/?[^>]+(>|$)/g, '');
+    const plainText = text.replace(/<[^>]+(>|$)/g, '');
 
     if (plainText.length <= maxLength) {
       return plainText;

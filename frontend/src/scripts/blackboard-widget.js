@@ -5,7 +5,7 @@
 
 class BlackboardWidget {
   constructor(containerId) {
-    this.container = document.getElementById(containerId);
+    this.container = document.querySelector(`#${containerId}`);
     this.entries = [];
     this.loading = false;
     // Check sidebar state from localStorage immediately
@@ -69,7 +69,7 @@ class BlackboardWidget {
 
   async loadEntries() {
     this.loading = true;
-    const contentElement = document.getElementById('blackboard-widget-content');
+    const contentElement = document.querySelector('#blackboard-widget-content');
 
     try {
       // Use pre-determined sidebar state
@@ -101,7 +101,7 @@ class BlackboardWidget {
   }
 
   renderEntries() {
-    const contentElement = document.getElementById('blackboard-widget-content');
+    const contentElement = document.querySelector('#blackboard-widget-content');
     const widgetElement = this.container.querySelector('.blackboard-widget');
 
     if (this.entries.length === 0) {
@@ -114,19 +114,30 @@ class BlackboardWidget {
       return;
     }
 
-    const notesHtml = this.entries.map((entry) => this.createMiniNote(entry)).join('');
-    contentElement.innerHTML = `
-            <div class="mini-notes-container">
-                ${notesHtml}
-            </div>
-        `;
+    // Create DOM elements safely instead of using innerHTML
+    const containerDiv = document.createElement('div');
+    containerDiv.className = 'mini-notes-container';
+
+    // Create each note element safely
+    this.entries.forEach((entry) => {
+      const noteHtml = this.createMiniNote(entry);
+      const tempDiv = document.createElement('div');
+      // Since createMiniNote already escapes HTML, we can safely use innerHTML here
+      // eslint-disable-next-line no-unsanitized/property -- Content is sanitized via escapeHtml() in createMiniNote
+      tempDiv.innerHTML = noteHtml;
+      containerDiv.append(tempDiv.firstElementChild);
+    });
+
+    // Clear and append the safe content
+    contentElement.textContent = '';
+    contentElement.append(containerDiv);
 
     // Initialize lazy loading for images
     this.initLazyLoading();
 
     // Add click handlers
     this.entries.forEach((entry) => {
-      const noteElement = document.getElementById(`mini-note-${entry.id}`);
+      const noteElement = document.querySelector(`#mini-note-${entry.id}`);
       if (noteElement) {
         noteElement.addEventListener('click', () => this.openEntry(entry.id));
       }
@@ -150,7 +161,7 @@ class BlackboardWidget {
           if (entry.isIntersecting) {
             const img = entry.target;
             img.src = img.dataset.src;
-            img.removeAttribute('data-src');
+            delete img.dataset.src;
             observer.unobserve(img);
           }
         });
@@ -161,7 +172,7 @@ class BlackboardWidget {
       // Fallback for browsers without IntersectionObserver
       lazyImages.forEach((img) => {
         img.src = img.dataset.src;
-        img.removeAttribute('data-src');
+        delete img.dataset.src;
       });
     }
   }
@@ -201,8 +212,8 @@ class BlackboardWidget {
       if (isImage) {
         contentHtml = `
           <div class="mini-note-attachment">
-            <img data-src="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview" 
-                 alt="${this.escapeHtml(attachment.original_name)}" 
+            <img data-src="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview"
+                 alt="${this.escapeHtml(attachment.original_name)}"
                  style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
                  loading="lazy"
                  onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -215,8 +226,8 @@ class BlackboardWidget {
       } else if (isPDF) {
         contentHtml = `
           <div class="mini-note-attachment" style="position: relative; height: 120px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
-            <object data="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview" 
-                    type="application/pdf" 
+            <object data="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview"
+                    type="application/pdf"
                     style="width: 100%; height: 100%; pointer-events: none;">
               <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666;">
                 <i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545; margin-bottom: 5px;"></i>
@@ -269,6 +280,7 @@ class BlackboardWidget {
       normal: 'Normal',
       low: 'Niedrig',
     };
+    // eslint-disable-next-line security/detect-object-injection -- priority is from predefined values (urgent/high/normal/low), not user input
     return labels[priority] || 'Normal';
   }
 
@@ -290,7 +302,7 @@ class BlackboardWidget {
 
 // Auto-initialize if container exists
 document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('blackboard-widget-container')) {
+  if (document.querySelector('#blackboard-widget-container')) {
     window.blackboardWidget = new BlackboardWidget('blackboard-widget-container');
   }
 });

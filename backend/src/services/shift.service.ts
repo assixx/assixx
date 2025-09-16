@@ -7,24 +7,23 @@
  * createShiftTemplate, getShiftPlans, createShiftPlan, etc.
  * This should be refactored to expose the full shift planning functionality.
  */
-
-import { Pool } from "mysql2/promise";
+import { Pool } from 'mysql2/promise';
 
 import {
-  getShiftTemplates,
-  createShiftTemplate,
-  getShiftPlans,
-  createShiftPlan,
-  getShiftsByPlan,
-  createShift,
   assignEmployeeToShift,
+  createShift,
+  createShiftPlan,
+  createShiftTemplate,
   // getEmployeeAvailability, // Unused
   // setEmployeeAvailability, // Unused
   // getShiftExchangeRequests, // Unused
   // createShiftExchangeRequest, // Unused
   // canAccessShiftPlan, // Unused
   getEmployeeShifts,
-} from "../models/shift";
+  getShiftPlans,
+  getShiftTemplates,
+  getShiftsByPlan,
+} from '../models/shift';
 
 // Interfaces - these would typically match the Shift model interfaces
 interface ShiftEntry {
@@ -37,7 +36,7 @@ interface ShiftEntry {
   end_time: string;
   position?: string | null;
   required_employees: number;
-  assigned_employees?: number;
+  assigned_employees?: { name: string; status: string }[] | number[];
   created_at: Date;
   updated_at: Date;
 }
@@ -47,7 +46,7 @@ interface ShiftFilters {
   team_id?: number;
   start_date?: string | Date;
   end_date?: string | Date;
-  status?: "draft" | "published" | "archived";
+  status?: 'draft' | 'published' | 'archived';
   plan_id?: number;
   template_id?: number;
 }
@@ -79,7 +78,7 @@ interface ShiftTemplate {
   description?: string | null;
   start_time: string;
   end_time: string;
-  duration_hours: number;
+  durationHours: number;
   break_minutes: number;
   color: string;
   is_active: boolean | number;
@@ -97,31 +96,29 @@ interface ShiftPlan {
   end_date: Date;
   department_id?: number | null;
   team_id?: number | null;
-  status: "draft" | "published" | "archived";
+  status: 'draft' | 'published' | 'archived';
   created_by: number;
   created_at: Date;
   updated_at: Date;
 }
 
+/**
+ *
+ */
 class ShiftService {
   /**
    * Holt alle Shift Einträge für einen Tenant
    * NOTE: This generic method doesn't match the actual Shift model functionality
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _filters - The _filters parameter
    */
-  async getAll(
-    _tenantDb: Pool,
-    _filters: ShiftFilters = {},
-  ): Promise<ShiftEntry[]> {
+  getAll(_tenantDb: Pool, _filters: ShiftFilters = {}): ShiftEntry[] {
     try {
       // The actual Shift model doesn't have a generic getAll method
-      console.warn(
-        "ShiftService.getAll: This method should use specific Shift model methods",
-      );
-      throw new Error(
-        "Method needs refactoring - use getShiftPlans or getShiftTemplates instead",
-      );
-    } catch (error) {
-      console.error("Error in ShiftService.getAll:", error);
+      console.warn('ShiftService.getAll: This method should use specific Shift model methods');
+      throw new Error('Method needs refactoring - use getShiftPlans or getShiftTemplates instead');
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.getAll:', error);
       throw error;
     }
   }
@@ -129,17 +126,15 @@ class ShiftService {
   /**
    * Holt einen Shift Eintrag per ID
    * NOTE: This should use specific methods depending on what's being retrieved
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async getById(_tenantDb: Pool, _id: number): Promise<ShiftEntry | null> {
+  getById(_tenantDb: Pool, _id: number): ShiftEntry | null {
     try {
-      console.warn(
-        "ShiftService.getById: This method should use specific Shift model methods",
-      );
-      throw new Error(
-        "Method needs refactoring - use specific getter methods instead",
-      );
-    } catch (error) {
-      console.error("Error in ShiftService.getById:", error);
+      console.warn('ShiftService.getById: This method should use specific Shift model methods');
+      throw new Error('Method needs refactoring - use specific getter methods instead');
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.getById:', error);
       throw error;
     }
   }
@@ -147,17 +142,17 @@ class ShiftService {
   /**
    * Erstellt einen neuen Shift Eintrag
    * NOTE: This should use createShift, createShiftPlan, or createShiftTemplate
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _data - The _data parameter
    */
-  async create(_tenantDb: Pool, _data: ShiftCreateData): Promise<ShiftEntry> {
+  create(_tenantDb: Pool, _data: ShiftCreateData): ShiftEntry {
     try {
-      console.warn(
-        "ShiftService.create: This method should use specific Shift model methods",
-      );
+      console.warn('ShiftService.create: This method should use specific Shift model methods');
       throw new Error(
-        "Method needs refactoring - use createShift, createShiftPlan, or createShiftTemplate instead",
+        'Method needs refactoring - use createShift, createShiftPlan, or createShiftTemplate instead',
       );
-    } catch (error) {
-      console.error("Error in ShiftService.create:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.create:', error);
       throw error;
     }
   }
@@ -165,21 +160,18 @@ class ShiftService {
   /**
    * Aktualisiert einen Shift Eintrag
    * NOTE: The Shift model doesn't have generic update methods
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
+   * @param _data - The _data parameter
    */
-  async update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: ShiftUpdateData,
-  ): Promise<ShiftEntry | null> {
+  update(_tenantDb: Pool, _id: number, _data: ShiftUpdateData): ShiftEntry | null {
     try {
-      console.warn(
-        "ShiftService.update: This method should use specific Shift model methods",
-      );
+      console.warn('ShiftService.update: This method should use specific Shift model methods');
       throw new Error(
-        "Method needs refactoring - Shift model does not have generic update methods",
+        'Method needs refactoring - Shift model does not have generic update methods',
       );
-    } catch (error) {
-      console.error("Error in ShiftService.update:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.update:', error);
       throw error;
     }
   }
@@ -187,17 +179,17 @@ class ShiftService {
   /**
    * Löscht einen Shift Eintrag
    * NOTE: The Shift model doesn't have generic delete methods
+   * @param _tenantDb - The _tenantDb parameter
+   * @param _id - The _id parameter
    */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
+  delete(_tenantDb: Pool, _id: number): boolean {
     try {
-      console.warn(
-        "ShiftService.delete: This method should use specific Shift model methods",
-      );
+      console.warn('ShiftService.delete: This method should use specific Shift model methods');
       throw new Error(
-        "Method needs refactoring - Shift model does not have generic delete methods",
+        'Method needs refactoring - Shift model does not have generic delete methods',
       );
-    } catch (error) {
-      console.error("Error in ShiftService.delete:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.delete:', error);
       throw error;
     }
   }
@@ -207,18 +199,27 @@ class ShiftService {
 
   /**
    * Get all shift templates for a tenant
+   * @param tenantId - The tenant ID
+   * @returns Promise resolving to array of shift templates
    */
   async getShiftTemplates(tenantId: number): Promise<ShiftTemplate[]> {
     try {
-      return await getShiftTemplates(tenantId);
-    } catch (error) {
-      console.error("Error in ShiftService.getShiftTemplates:", error);
+      const templates = await getShiftTemplates(tenantId);
+      // Map duration_hours to durationHours for interface compatibility
+      return templates.map((template) => ({
+        ...template,
+        durationHours: template.duration_hours,
+      }));
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.getShiftTemplates:', error);
       throw error;
     }
   }
 
   /**
    * Create a new shift template
+   * @param templateData - The templateData parameter
+   * @returns Promise resolving to the created shift template
    */
   async createShiftTemplate(templateData: {
     tenant_id: number;
@@ -231,28 +232,38 @@ class ShiftService {
     created_by: number;
   }): Promise<ShiftTemplate> {
     try {
-      // Calculate duration_hours from start_time and end_time
+      // Calculate durationHours from start_time and end_time
       const start = new Date(`2000-01-01 ${templateData.start_time}`);
       const end = new Date(`2000-01-01 ${templateData.end_time}`);
-      let duration_hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      let durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
 
       // Handle overnight shifts
-      if (duration_hours < 0) {
-        duration_hours += 24;
+      if (durationHours < 0) {
+        durationHours += 24;
       }
 
-      return await createShiftTemplate({
+      const template = await createShiftTemplate({
         ...templateData,
-        duration_hours,
+        duration_hours: durationHours,
       });
-    } catch (error) {
-      console.error("Error in ShiftService.createShiftTemplate:", error);
+
+      // Map duration_hours to durationHours for interface compatibility
+      return {
+        ...template,
+        durationHours: template.duration_hours || 0,
+      };
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.createShiftTemplate:', error);
       throw error;
     }
   }
 
   /**
    * Get all shift plans for a tenant with optional filters
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param options - The options object
+   * @returns Promise resolving to shift plans with metadata
    */
   async getShiftPlans(
     tenantId: number,
@@ -269,14 +280,16 @@ class ShiftService {
   }> {
     try {
       return await getShiftPlans(tenantId, userId, options);
-    } catch (error) {
-      console.error("Error in ShiftService.getShiftPlans:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.getShiftPlans:', error);
       throw error;
     }
   }
 
   /**
    * Create a new shift plan
+   * @param planData - The planData parameter
+   * @returns Promise resolving to the created shift plan
    */
   async createShiftPlan(planData: {
     tenant_id: number;
@@ -290,20 +303,20 @@ class ShiftService {
   }): Promise<ShiftPlan> {
     try {
       return await createShiftPlan(planData);
-    } catch (error) {
-      console.error("Error in ShiftService.createShiftPlan:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.createShiftPlan:', error);
       throw error;
     }
   }
 
   /**
    * Get shifts for a specific plan
+   * @param planId - The planId parameter
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @returns Promise resolving to array of shift entries
    */
-  async getShiftsByPlan(
-    planId: number,
-    tenantId: number,
-    userId: number,
-  ): Promise<ShiftEntry[]> {
+  async getShiftsByPlan(planId: number, tenantId: number, userId: number): Promise<ShiftEntry[]> {
     try {
       const shifts = await getShiftsByPlan(planId, tenantId, userId);
       // Map DbShift to ShiftEntry
@@ -317,22 +330,22 @@ class ShiftService {
         end_time: shift.end_time,
         position: null as string | null,
         required_employees: shift.required_employees,
-        assigned_employees: shift.assigned_employees,
+        assigned_employees: shift.assignedEmployees,
         created_at: shift.created_at,
         updated_at: shift.updated_at,
       }));
-    } catch (error) {
-      console.error("Error in ShiftService.getShiftsByPlan:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.getShiftsByPlan:', error);
       throw error;
     }
   }
 
   /**
    * Create a shift
+   * @param shiftData - The shiftData parameter
+   * @returns Promise resolving to the created shift entry
    */
-  async createShift(
-    shiftData: ShiftCreateData & { created_by: number },
-  ): Promise<ShiftEntry> {
+  async createShift(shiftData: ShiftCreateData & { created_by: number }): Promise<ShiftEntry> {
     try {
       // Map ShiftCreateData to ShiftData expected by model
       const modelData = {
@@ -357,18 +370,20 @@ class ShiftService {
         end_time: shift.end_time,
         position: shiftData.position ?? null,
         required_employees: shift.required_employees,
-        assigned_employees: 0,
+        assigned_employees: [],
         created_at: shift.created_at,
         updated_at: shift.updated_at,
       };
-    } catch (error) {
-      console.error("Error in ShiftService.createShift:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.createShift:', error);
       throw error;
     }
   }
 
   /**
    * Assign employee to a shift
+   * @param assignmentData - The assignmentData parameter
+   * @returns Promise resolving to the shift assignment details
    */
   async assignEmployeeToShift(assignmentData: {
     shift_id: number;
@@ -397,14 +412,19 @@ class ShiftService {
         employee_id: assignment.user_id, // Map user_id back to employee_id
         assigned_at: assignment.assigned_at,
       };
-    } catch (error) {
-      console.error("Error in ShiftService.assignEmployeeToShift:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.assignEmployeeToShift:', error);
       throw error;
     }
   }
 
   /**
    * Get employee shifts for a date range
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param startDate - The startDate parameter
+   * @param endDate - The endDate parameter
+   * @returns Promise resolving to array of employee shifts
    */
   async getEmployeeShifts(
     tenantId: number,
@@ -412,7 +432,7 @@ class ShiftService {
     startDate: string | Date,
     endDate: string | Date,
   ): Promise<
-    Array<{
+    {
       id: number;
       date: Date;
       start_time: string;
@@ -420,12 +440,12 @@ class ShiftService {
       position?: string | null;
       template_name?: string | null;
       plan_name?: string | null;
-    }>
+    }[]
   > {
     try {
       return await getEmployeeShifts(tenantId, userId, startDate, endDate);
-    } catch (error) {
-      console.error("Error in ShiftService.getEmployeeShifts:", error);
+    } catch (error: unknown) {
+      console.error('Error in ShiftService.getEmployeeShifts:', error);
       throw error;
     }
   }

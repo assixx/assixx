@@ -4,8 +4,11 @@ FROM node:20-alpine
 # Install development tools
 RUN apk add --no-cache curl jq
 
+# Update npm to latest version first
+RUN npm install -g npm@latest
+
 # Install pnpm and development tools globally
-RUN npm install -g pnpm@10.13.1 tsx nodemon
+RUN npm install -g pnpm@10.14.0 tsx nodemon
 
 # Arbeitsverzeichnis
 WORKDIR /app
@@ -14,6 +17,7 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
+# Install with frozen lockfile (onlyBuiltDependencies in package.json handles script blocking)
 RUN pnpm install --frozen-lockfile
 
 # Frontend package files kopieren

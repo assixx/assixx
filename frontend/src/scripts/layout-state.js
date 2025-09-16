@@ -11,7 +11,7 @@ function initLayoutState() {
   const root = document.documentElement;
 
   // Set data attribute for CSS selectors
-  root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+  root.dataset.sidebar = sidebarCollapsed ? 'collapsed' : 'expanded';
 
   // Set CSS custom properties for immediate use
   root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
