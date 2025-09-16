@@ -4,10 +4,8 @@ FROM node:20-alpine
 # Install development tools
 RUN apk add --no-cache curl jq
 
-# Update npm to latest version first
-RUN npm install -g npm@latest
-
 # Install pnpm and development tools globally
+# Using npm only to bootstrap pnpm, then pnpm handles everything else
 RUN npm install -g pnpm@latest tsx nodemon
 
 # Arbeitsverzeichnis
