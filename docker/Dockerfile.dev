@@ -8,7 +8,7 @@ RUN apk add --no-cache curl jq
 RUN npm install -g npm@latest
 
 # Install pnpm and development tools globally
-RUN npm install -g pnpm@10.14.0 tsx nodemon
+RUN npm install -g pnpm@latest tsx nodemon
 
 # Arbeitsverzeichnis
 WORKDIR /app
