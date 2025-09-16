@@ -30,6 +30,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Convert repository name to lowercase
+        id: lowercase
+        run: |
+          echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -44,7 +49,8 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Use lowercase repository name for Docker registry compatibility
+          images: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -194,14 +200,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Convert repository name to lowercase
+        id: lowercase
+        run: |
+          echo "repository=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Wait for image to be available
         run: sleep 30
 
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          # Use only the first image tag (split by newline and take first)
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+          # Use lowercase repository name for Docker registry compatibility
+          image-ref: ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ github.ref_name }}
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
