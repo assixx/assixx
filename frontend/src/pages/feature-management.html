@@ -419,7 +419,7 @@
                 null, // status with special formatting
                 feature.valid_until || '-',
                 `${feature.current_usage || 0} / ${feature.usage_limit || '∞'}`,
-                null  // action button
+                null, // action button
               ];
 
               // Name cell
@@ -584,7 +584,7 @@
           }
 
           // Event Delegation for dynamic content
-          document.addEventListener('click', function(e) {
+          document.addEventListener('click', function (e) {
             const target = e.target;
 
             // Handle feature actions
@@ -601,7 +601,7 @@
           });
 
           // Tenant select change handler
-          document.querySelector('#tenant-select')?.addEventListener('change', function() {
+          document.querySelector('#tenant-select')?.addEventListener('change', function () {
             loadTenantFeatures();
           });
 
@@ -688,7 +688,6 @@
               }, 300);
             }, 3500);
           }
-
         </script>
       </main>
     </div>

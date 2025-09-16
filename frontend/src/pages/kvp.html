@@ -967,7 +967,9 @@
                     </svg>
                   </div>
                   <div class="dropdown-options" id="categoryDropdown">
-                    <div class="dropdown-option" data-action="select-category" data-value="" data-text="Alle Kategorien">Alle Kategorien</div>
+                    <div class="dropdown-option" data-action="select-category" data-value="" data-text="Alle Kategorien">
+                      Alle Kategorien
+                    </div>
                     <!-- Dynamisch geladen -->
                   </div>
                   <input type="hidden" name="categoryFilter" id="categoryFilterValue" />
@@ -982,7 +984,9 @@
                     </svg>
                   </div>
                   <div class="dropdown-options" id="departmentDropdown">
-                    <div class="dropdown-option" data-action="select-department" data-value="" data-text="Alle Abteilungen">Alle Abteilungen</div>
+                    <div class="dropdown-option" data-action="select-department" data-value="" data-text="Alle Abteilungen">
+                      Alle Abteilungen
+                    </div>
                     <!-- Dynamisch geladen für Admins -->
                   </div>
                   <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
@@ -1130,14 +1134,7 @@
                 <small class="text-muted">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</small>
               </label>
               <div class="photo-upload-area">
-                <input
-                  type="file"
-                  id="kvpPhotos"
-                  name="photos"
-                  accept="image/jpeg,image/jpg,image/png"
-                  multiple
-                  class="u-hidden"
-                />
+                <input type="file" id="kvpPhotos" name="photos" accept="image/jpeg,image/jpg,image/png" multiple class="u-hidden" />
                 <div class="upload-box" data-action="upload-photos">
                   <i class="fas fa-camera"></i>
                   <p>Klicken Sie hier, um Fotos auszuwählen</p>
@@ -1166,7 +1163,7 @@
       window.selectedPhotos = selectedPhotos;
 
       // Event Delegation Handler
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', function (e) {
         const target = e.target;
 
         // Dropdown toggle
@@ -1244,14 +1241,14 @@
       });
 
       // Click outside modal to close
-      document.querySelector('#createKvpModal')?.addEventListener('click', function(e) {
+      document.querySelector('#createKvpModal')?.addEventListener('click', function (e) {
         if (e.target === this) {
           hideCreateModal();
         }
       });
 
       // File input change handler
-      document.querySelector('#kvpPhotos')?.addEventListener('change', function(e) {
+      document.querySelector('#kvpPhotos')?.addEventListener('change', function (e) {
         handlePhotoSelection(this);
       });
 
@@ -1362,7 +1359,7 @@
 
       function displayPhotoPreview(file, index) {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = function (e) {
           const preview = document.querySelector('#photoPreview');
           const item = document.createElement('div');
           item.className = 'photo-preview-item';
