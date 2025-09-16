@@ -79,15 +79,15 @@ async function loadEmployees(): Promise<void> {
 
       if (userSelect !== null) {
         // Clear existing options
-        while (userSelect.firstChild) {
-          userSelect.removeChild(userSelect.firstChild);
+        while (userSelect.firstChild !== null) {
+          userSelect.firstChild.remove();
         }
 
         // Add default option
         const defaultOption = document.createElement('option');
         defaultOption.value = '';
         defaultOption.textContent = '-- Mitarbeiter auswählen --';
-        userSelect.appendChild(defaultOption);
+        userSelect.append(defaultOption);
 
         employees.forEach((employee: User) => {
           const option = document.createElement('option');
