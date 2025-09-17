@@ -37,12 +37,12 @@
 .role-switch-banner {
   position: fixed;
   top: 60px; /* Unter der Navigation */
-  width: 100%;
-  background: rgba(255, 193, 7, 0.1);
-  border-bottom: 1px solid rgba(255, 193, 7, 0.3);
-  padding: 8px;
-  text-align: center;
   backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+  background: rgba(255, 193, 7, 0.1);
+  padding: 8px;
+  width: 100%;
+  text-align: center;
 }
 ```
 

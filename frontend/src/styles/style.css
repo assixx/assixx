@@ -207,7 +207,7 @@ header {
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-md);
 
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 
   background-color: #fff;
   background-clip: border-box;

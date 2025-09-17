@@ -391,37 +391,37 @@ function renderGroupTree(groups, level = 0) {
 
 ```css
 .user-departments-badge {
-  margin-top: 8px;
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 8px;
 }
 
 .user-departments-badge .badge {
-  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.8rem;
   border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 4px 12px;
+  font-size: 0.8rem;
 }
 
 .badge.badge-warning {
+  border-color: rgba(255, 193, 7, 0.3);
   background: rgba(255, 193, 7, 0.2);
   color: #ffc107;
-  border-color: rgba(255, 193, 7, 0.3);
 }
 
 .badge.badge-info {
+  border-color: rgba(0, 123, 255, 0.3);
   background: rgba(0, 123, 255, 0.2);
   color: #007bff;
-  border-color: rgba(0, 123, 255, 0.3);
 }
 
 .badge.badge-success {
+  border-color: rgba(40, 167, 69, 0.3);
   background: rgba(40, 167, 69, 0.2);
   color: #28a745;
-  border-color: rgba(40, 167, 69, 0.3);
 }
 ```
 

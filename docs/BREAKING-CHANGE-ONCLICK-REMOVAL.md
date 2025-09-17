@@ -67,18 +67,24 @@ manage-departments.ts
 **BEFORE (BROKEN NOW):**
 
 ```typescript
-setHTML(element, `
+setHTML(
+  element,
+  `
   <button onclick="surveyAdmin.editSurvey(${id})">Edit</button>
-`);
+`,
+);
 ```
 
 **AFTER (WORKING):**
 
 ```typescript
 // Step 1: Remove onclick, add data attributes
-setHTML(element, `
+setHTML(
+  element,
+  `
   <button data-action="edit-survey" data-id="${id}">Edit</button>
-`);
+`,
+);
 
 // Step 2: Add event delegation (once per file)
 document.addEventListener('click', (e) => {

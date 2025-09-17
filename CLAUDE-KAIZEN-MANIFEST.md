@@ -83,7 +83,7 @@
 
 **FEHLER #6: Datenbank-Daten OHNE Freigabe gelöscht**
 
-- **Was:** DELETE Befehle auf shift_rotation_* Tabellen ohne User-Freigabe ausgeführt
+- **Was:** DELETE Befehle auf shift*rotation*\* Tabellen ohne User-Freigabe ausgeführt
 - **Warum:** Wollte schnell Problem lösen, dachte es wäre nur Testdaten
 - **Richtig:** IMMER fragen: "Darf ich diese Daten löschen?" und auf EXPLIZITE Freigabe warten
 - **SHAME COUNTER:** 🔴🔴🔴 (KRITISCHER FEHLER!)
@@ -136,9 +136,11 @@
 
 ```markdown
 ## 📋 Verstanden:
+
 [EXAKT wiederholen was ich gelesen habe]
 
 ## 🎯 Aktion:
+
 [ERST DANN handeln]
 ```
 

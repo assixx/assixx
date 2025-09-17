@@ -20,12 +20,15 @@ areasTableBody.innerHTML = domPurify.sanitize(html); // html = "<tr>...</tr>"
 
 ```typescript
 // ✅ RICHTIG - Komplette Tabelle
-setHTML(tableContainer, `
+setHTML(
+  tableContainer,
+  `
   <table class="admin-table">
     <thead>...</thead>
     <tbody>${rows}</tbody>
   </table>
-`);
+`,
+);
 ```
 
 ## Regel

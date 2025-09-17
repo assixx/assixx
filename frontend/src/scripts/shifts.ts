@@ -759,17 +759,35 @@ class ShiftPlanningSystem {
 
       // Handle remove shift button
       if (target.dataset.action === 'remove-shift' || target.parentElement?.dataset.action === 'remove-shift') {
+        console.info('[REMOVE DEBUG] Remove button clicked!', {
+          target: target.tagName,
+          action: target.dataset.action,
+          parentAction: target.parentElement?.dataset.action,
+          classList: target.classList.toString(),
+        });
         e.stopPropagation();
+        e.preventDefault(); // Prevent any default behavior
+
         const btn = target.dataset.action === 'remove-shift' ? target : target.parentElement;
         if (btn) {
           const employeeId = btn.dataset.employeeId;
-          const card = btn.closest('.employee-shift-card');
+          const card = btn.closest('.employee-card'); // Changed from '.employee-shift-card'
           const cell = card?.closest(CSS_SELECTORS.SHIFT_CELL);
+
+          console.info('[REMOVE DEBUG] Button details:', {
+            btn,
+            employeeId,
+            card,
+            cell,
+            cellDataset: (cell as HTMLElement | null)?.dataset,
+          });
+
           if (cell && employeeId !== undefined && employeeId !== '') {
-            // Set flag to prevent autofill when removing
-            this.isRemoving = true;
-            this.assignShift(cell as HTMLElement, Number(employeeId));
-            this.isRemoving = false;
+            console.info('[REMOVE DEBUG] Removing employee', employeeId, 'from shift');
+            // Remove the employee from the shift
+            this.removeEmployeeFromShift(cell as HTMLElement, Number(employeeId));
+          } else {
+            console.error('[REMOVE DEBUG] Missing data:', { cell: !!cell, employeeId });
           }
         }
       }
@@ -2644,6 +2662,33 @@ class ShiftPlanningSystem {
 
     // Let assignShift handle the date calculation
     this.assignShift(shiftCell, this.selectedEmployee.id);
+  }
+
+  removeEmployeeFromShift(shiftCell: HTMLElement, employeeId: number): void {
+    const date = shiftCell.dataset.date;
+    const shift = shiftCell.dataset.shift;
+
+    if (date === undefined || date === '' || shift === undefined || shift === '') {
+      console.error('[SHIFTS ERROR] Missing date or shift data on cell');
+      return;
+    }
+
+    // Get current employees for this shift
+    const currentEmployees = this.getShiftEmployees(date, shift);
+
+    // Check if employee is assigned to this shift
+    const index = currentEmployees.indexOf(employeeId);
+    if (index !== -1) {
+      // Remove assignment
+      const updatedEmployees = [...currentEmployees];
+      updatedEmployees.splice(index, 1);
+      this.setShiftEmployees(date, shift, updatedEmployees);
+
+      // Update UI
+      this.renderShiftAssignments(shiftCell, date, shift);
+
+      console.info('[SHIFTS DEBUG] Removed employee', employeeId, 'from shift', shift, 'on', date);
+    }
   }
 
   assignShift(shiftCell: HTMLElement, employeeId: number): void {

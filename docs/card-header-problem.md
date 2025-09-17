@@ -21,9 +21,9 @@ Es gibt eine Inkonsistenz bei der Gestaltung von Card/Container-Headern im Assix
 
 ```css
 .card-header {
+  margin-bottom: var(--spacing-md);
   border-bottom: 1px solid var(--border-color);
   border-radius: 10px;
-  margin-bottom: var(--spacing-md);
   padding: 24px;
   padding-bottom: var(--spacing-md);
 }

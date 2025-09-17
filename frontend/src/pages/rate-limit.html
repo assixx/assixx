@@ -186,7 +186,7 @@
       </p>
       <div class="retry-info">
         <div class="retry-label">Versuchen Sie es wieder in:</div>
-        <div class="retry-time countdown" id="countdown">1:00</div>
+        <div class="retry-time countdown" id="countdown">0:20</div>
       </div>
       <button class="btn-primary" id="retryBtn" data-action="redirect-login" disabled>Zurück zum Login</button>
     </div>
@@ -200,7 +200,7 @@
       sessionStorage.clear();
 
       // Constants
-      const RATE_LIMIT_DURATION = 60 * 1000; // 1 minute in milliseconds for testing
+      const RATE_LIMIT_DURATION = 20 * 1000; // 20 seconds in milliseconds
       const countdownEl = document.querySelector('#countdown');
       const retryBtn = document.querySelector('#retryBtn');
 
@@ -213,7 +213,7 @@
         localStorage.setItem('rateLimitTimestamp', rateLimitTimestamp);
       } else {
         rateLimitTimestamp = parseInt(rateLimitTimestamp);
-        // Clean up old timestamp if expired (>1 minute old)
+        // Clean up old timestamp if expired (>20 seconds old)
         if (Date.now() - rateLimitTimestamp > RATE_LIMIT_DURATION) {
           localStorage.removeItem('rateLimitTimestamp');
           rateLimitTimestamp = Date.now();

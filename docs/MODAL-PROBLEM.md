@@ -24,8 +24,8 @@ Nach der Umstellung von statischen auf dynamische Modals im Kalender-System wurd
    ```css
    /* Critical CSS - Modal verstecken bevor externes CSS lädt */
    .modal-overlay {
-     opacity: 0 !important;
      visibility: hidden !important;
+     opacity: 0 !important;
    }
    ```
 

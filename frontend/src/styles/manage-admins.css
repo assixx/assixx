@@ -1,0 +1,633 @@
+/* Glassmorphismus Background */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Container Styles */
+.container {
+  margin-top: -25px !important; /* Align first container with sidebar user-info-card */
+  padding: 24px;
+}
+
+/* Table Styles */
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.admin-table th {
+  padding: 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+
+  background: rgb(33 150 243 / 10%);
+}
+
+.admin-table tr:hover {
+  background: rgb(255 255 255 / 2%);
+}
+
+/* Action Buttons */
+.action-btn {
+  cursor: pointer;
+
+  margin: 0 4px;
+  padding: 6px 12px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  background: rgb(255 255 255 / 5%);
+}
+
+.action-btn:hover {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+.action-btn.edit {
+  border-color: rgb(33 150 243 / 30%);
+}
+
+.action-btn.edit:hover {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 20%);
+}
+
+.action-btn.delete {
+  border-color: rgb(244 67 54 / 30%);
+}
+
+.action-btn.delete:hover {
+  border-color: rgb(244 67 54 / 50%);
+  background: rgb(244 67 54 / 20%);
+}
+
+/* Add Admin Button */
+.add-admin-btn {
+  cursor: pointer;
+
+  position: fixed;
+  right: 30px;
+  bottom: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgb(33 150 243 / 30%);
+  border-radius: 50%;
+
+  font-size: 28px;
+  color: var(--primary-color);
+
+  background: rgb(33 150 243 / 20%);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+}
+
+.add-admin-btn:hover {
+  transform: scale(1.1);
+  background: rgb(33 150 243 / 30%);
+  box-shadow: 0 6px 24px rgb(33 150 243 / 40%);
+}
+
+/* Modal für Admin hinzufügen/bearbeiten - Design Standards konform */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  background-color: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(10px);
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  overflow-y: auto;
+
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  /* animation: fade-in-up 0.3s ease-out; */
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(30px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.modal-close {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 24px;
+  color: var(--text-secondary);
+
+  background: none;
+}
+
+.modal-close:hover {
+  color: var(--error-color);
+  background-color: var(--background-dark);
+}
+
+.modal form {
+  padding: var(--spacing-lg);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--spacing-2sm);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus {
+  border-color: rgb(0 142 255 / 50%);
+  background: rgb(255 255 255 / 5%);
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(0 142 255 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Custom Dropdown */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-display {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-md);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.dropdown-display:hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  position: absolute;
+  z-index: 1001;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  overflow-y: auto;
+
+  max-height: 200px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  visibility: hidden;
+  opacity: 0%;
+  background: rgb(18 18 18 / 80%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.dropdown-options.active {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
+}
+
+.dropdown-option {
+  cursor: pointer;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  color: var(--text-primary);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+/* Modal Actions */
+.button-group {
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.btn {
+  cursor: pointer;
+
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  box-shadow:
+    0 1px 4px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgb(33 150 243 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.btn-secondary {
+  border: 1px solid rgb(255 255 255 / 12%);
+  color: var(--primary-color);
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 8%);
+}
+
+/* Status Badge */
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+
+  /* display: block ruby; */
+}
+
+.status-badge.active {
+  border: 1px solid rgb(76 175 80 / 30%);
+  color: #4caf50;
+  text-align: center;
+  background: rgb(76 175 80 / 20%);
+}
+
+.status-badge.inactive {
+  border: 1px solid rgb(255 152 0 / 30%);
+  color: #ff9800;
+  text-align: center;
+  background: rgb(255 152 0 / 20%);
+}
+
+/* Checkbox Styling */
+
+/* Empty State */
+.empty-state {
+  padding: 60px 20px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-state-icon {
+  margin-bottom: 20px;
+  font-size: 64px;
+  opacity: 50%;
+}
+
+.empty-state-text {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.empty-state-subtext {
+  font-size: 14px;
+  opacity: 70%;
+}
+
+/* Department Badge Hover Effect */
+.department-badge {
+  position: relative;
+  display: inline-block;
+}
+
+.department-badge:hover .department-tooltip {
+  display: block !important;
+
+  /* animation: tooltip-fade-in 0.2s ease-out; */
+}
+
+@keyframes tooltip-fade-in {
+  from {
+    transform: translateX(-50%) translateY(5px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 100%;
+  }
+}
+
+/* Tooltip Arrow */
+.department-tooltip::after {
+  content: "";
+
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 0;
+  height: 0;
+  border-top: 6px solid rgb(18 18 18 / 95%);
+  border-right: 6px solid transparent;
+  border-left: 6px solid transparent;
+}
+
+/* Radio Button Styles */
+.permission-type-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.radio-label {
+  cursor: pointer;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+
+  padding: 12px 16px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: rgb(255 255 255 / 3%);
+}
+
+.radio-label:hover {
+  transform: translateY(-1px);
+  border-color: rgb(33 150 243 / 30%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.radio-label:has(input:checked) {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 10%);
+  box-shadow: 0 0 20px rgb(33 150 243 / 15%);
+}
+
+.radio-input {
+  cursor: pointer;
+
+  position: relative;
+
+  flex-shrink: 0;
+
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  border: 2px solid rgb(255 255 255 / 30%);
+  border-radius: 50%;
+
+  appearance: none;
+}
+
+.radio-input:checked {
+  border-color: var(--primary-color);
+  background: rgb(33 150 243 / 10%);
+}
+
+.radio-input:checked::after {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+
+  background: var(--primary-color);
+
+  animation: radio-check 0.3s ease;
+}
+
+@keyframes radio-check {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0%;
+  }
+
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 100%;
+  }
+}
+
+.radio-text {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgb(255 255 255 / 80%);
+}
+
+.radio-label-checked .radio-text {
+  font-weight: 500;
+  color: rgb(255 255 255 / 95%);
+}
+
+/* Checkbox Styles */
+.checkbox-label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.checkbox-label:last-child {
+  margin-bottom: 0;
+}
+
+.checkbox-text {
+  font-size: 14px;
+  color: rgb(255 255 255 / 80%);
+  transition: color 0.3s ease;
+}
+
+.checkbox-label:hover .checkbox-text {
+  color: rgb(255 255 255 / 95%);
+}
+
+.checkbox-input {
+  cursor: pointer;
+
+  position: relative;
+
+  flex-shrink: 0;
+
+  width: 18px;
+  height: 18px;
+  margin-right: 10px;
+  border: 2px solid rgb(255 255 255 / 30%);
+  border-radius: 4px;
+
+  vertical-align: middle;
+
+  appearance: none;
+  accent-color: var(--primary-color);
+}
+
+.checkbox-input:hover {
+  border-color: rgb(33 150 243 / 50%);
+}
+
+.checkbox-input:checked {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+}
+
+.checkbox-input:checked::after {
+  content: "✓";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.checkbox-input:disabled {
+  cursor: not-allowed;
+  opacity: 60%;
+}
+
+.checkbox-input:disabled ~ .checkbox-text {
+  cursor: not-allowed;
+  opacity: 60%;
+}

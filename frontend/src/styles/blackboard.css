@@ -42,6 +42,7 @@
 }
 
 /* Specific override for blackboard page - main element has both classes */
+/* stylelint-disable-next-line selector-max-specificity, selector-no-qualifying-type -- Needed for blackboard full-width layout */
 main.container.main-content.sidebar-collapsed {
   width: 100% !important;
   max-width: 100% !important;
@@ -55,25 +56,26 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Pinnwand Container */
+/* stylelint-disable-next-line no-descending-specificity -- General rule must come after specific override */
 .blackboard-container {
   position: relative;
 
   overflow: visible;
 
-  width: 101%;
+  width: 100%;
   min-height: calc(100vh - 120px);
   margin-left: -13px;
   padding: 40px;
   border-radius: 12px;
 
   background:
-    linear-gradient(45deg, #0000 25%, transparent 0), linear-gradient(-45deg, #2d2d2d 25%, transparent 0),
-    linear-gradient(45deg, transparent 75%, #b08d5700 0), linear-gradient(-45deg, #0000 75%, #2e2e2ee3 0);
+    linear-gradient(45deg, #51191900 25%, black 0), linear-gradient(-45deg, #fff0 25%, #fff0 0),
+    linear-gradient(45deg, #fff0 75%, #fff 0), linear-gradient(-45deg, #ffffff03 75%, #848484e3 0);
   background-position:
     0 0,
-    0 15px,
-    15px -15px,
-    -15px 0;
+    -2px 4px,
+    0 0,
+    -17px -12px;
   background-size: 30px 30px;
   box-shadow:
     inset 0 2px 8px rgb(0 0 0 / 30%),
@@ -85,7 +87,6 @@ main.container.main-content.sidebar-collapsed {
   pointer-events: none;
   content: "";
 
-  position: absolute;
   inset: 0;
 
   border-radius: 12px;
@@ -117,7 +118,6 @@ main.container.main-content.sidebar-collapsed {
 /* Sticky Note Style */
 .pinboard-sticky {
   position: relative;
-  transform: rotate(var(--rotation, -2deg));
 
   min-height: 200px;
   padding: 24px;
@@ -301,9 +301,11 @@ main.container.main-content.sidebar-collapsed {
   transform: scale(1.05);
 }
 
+/* stylelint-disable-next-line block-no-empty -- Placeholder for future styling */
 .pinboard-attachment .pinboard-image img {
 }
 
+/* stylelint-disable-next-line selector-max-specificity -- Deep hover state for image preview */
 .pinboard-attachment .pinboard-image:hover img {
   box-shadow: 0 4px 12px rgb(0 0 0 / 20%) !important;
 }
@@ -320,6 +322,7 @@ main.container.main-content.sidebar-collapsed {
   background: rgb(0 0 0 / 5%);
 }
 
+/* stylelint-disable-next-line selector-max-specificity -- Deep hover state for PDF icon */
 .pinboard-attachment .pinboard-pdf:hover i {
   transform: translateY(-2px);
   color: #b91c1c !important;
@@ -338,24 +341,14 @@ main.container.main-content.sidebar-collapsed {
   min-height: 200px;
   border-radius: 8px;
 
-  background: #525659; /* Grauer Hintergrund macht Lücken sichtbar */
+  /* Merged: was #525659, then #fff - keeping later value */
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
 }
 
 /* PDF-spezifische Attachment Styles - KEIN margin-right */
 .pinboard-attachment:has(.pinboard-pdf-preview) {
   /* Normale Abstände wie andere Karten */
-}
-
-/* PDF Preview Container */
-.pinboard-pdf-preview {
-  position: relative;
-
-  overflow: hidden;
-
-  border-radius: 8px;
-
-  background: white;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
 }
 
 .pinboard-pdf-preview .pdf-overlay {
@@ -379,6 +372,7 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* PDF Overlay for click */
+/* stylelint-disable-next-line no-descending-specificity -- General overlay styles after specific context */
 .pdf-overlay {
   cursor: pointer;
 
@@ -392,6 +386,7 @@ main.container.main-content.sidebar-collapsed {
   background: rgb(0 0 0 / 0%);
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Icon styles for overlay */
 .pdf-overlay i {
   font-size: 48px;
   color: #fff;
@@ -399,10 +394,12 @@ main.container.main-content.sidebar-collapsed {
   opacity: 0%;
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Hover state for overlay */
 .pdf-overlay:hover {
   background: rgb(0 0 0 / 30%);
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Hover icon state */
 .pdf-overlay:hover i {
   opacity: 100%;
 }
@@ -554,105 +551,491 @@ main.container.main-content.sidebar-collapsed {
   --rotation: -3deg;
 }
 
-/* Overlay für Modals */
-.modal-overlay {
-  position: fixed;
-  z-index: 2000;
-  inset: 0;
+/* ===============================================
+ * Modal Styles - Updated Design Standards
+ * Merged from blackboard-update.css
+ * =============================================== */
 
+/* Override alte Modal Styles nur für Entry Form Modal */
+.entry-form-modal.modal-overlay {
+  display: none !important;
+}
+
+/* Neue Modal Implementation gemäß Design Standards */
+.modal {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+
+  overflow-y: auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+
+  width: 100%;
+  height: 100%;
+  padding: 40px 20px;
 
   visibility: hidden;
   opacity: 0%;
   background-color: rgb(0 0 0 / 70%);
-
-  transition:
-    opacity 0.3s ease,
-    visibility 0.3s ease;
+  backdrop-filter: blur(10px);
 }
 
-.modal-overlay.active {
+.modal.active {
   visibility: visible;
   opacity: 100%;
 }
 
-.modal-container {
-  transform: translateY(20px);
-
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
+/* Form Controls gemäß Design Standards */
+/* stylelint-disable-next-line no-descending-specificity -- Base form styles after page-specific overrides */
+.form-control,
+.form-input,
+.big-input {
+  width: 100%;
+  padding: var(--spacing-2sm);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
 
-  background-color: var(--background-light);
-  box-shadow: var(--shadow-lg);
+  font-family: inherit;
+  font-size: 14px;
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
 }
 
-.modal-overlay.active .modal-container {
-  transform: translateY(0);
+.form-control:focus,
+.form-input:focus,
+.big-input:focus {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(255 255 255 / 5%);
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(33 150 243 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 20%);
 }
 
-.modal-sm {
-  max-width: 500px;
+/* Native Select verstecken */
+/* stylelint-disable selector-no-qualifying-type -- Need to target only select elements with these classes */
+select.big-input,
+select.form-control {
+  /* stylelint-enable selector-no-qualifying-type */
+  display: none;
 }
 
-.modal-lg {
-  max-width: 900px;
+/* Custom Dropdown Styles */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
 }
 
-.modal-header {
+.dropdown-display {
+  cursor: pointer;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
 
+  /* height: 42px; */
   padding: var(--spacing-2sm);
-  border-bottom: 1px solid var(--border-color);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
 }
 
-.modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  color: var(--primary-color);
+.dropdown-display:hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
 }
 
-.modal-close {
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  position: absolute;
+  z-index: 1001;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  overflow-y: auto;
+
+  max-height: 200px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  visibility: hidden;
+  opacity: 0%;
+  background: rgb(18 18 18 / 95%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.dropdown-options.active {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
+}
+
+.dropdown-option {
   cursor: pointer;
 
+  padding: 10px 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+/* Form Labels */
+.form-label,
+.big-label {
+  display: block;
+
+  margin-bottom: var(--spacing-xs);
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Buttons gemäß Design Standards */
+.btn-primary,
+.primary-button,
+.big-button.primary-button {
+  cursor: pointer;
+
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 10px 24px;
   border: none;
+  border-radius: var(--radius-sm);
 
-  font-size: 24px;
-  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
 
-  background: none;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 }
 
-.modal-close:hover {
+.btn-primary:hover,
+.primary-button:hover,
+.big-button.primary-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgb(33 150 243 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.btn-secondary,
+.secondary-button,
+.big-button.secondary-button {
+  cursor: pointer;
+
+  padding: 10px 24px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  font-weight: 500;
   color: var(--primary-color);
+
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
 }
 
-.modal-body {
+.btn-secondary:hover,
+.secondary-button:hover,
+.big-button.secondary-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 8%);
+}
+
+/* Color Picker Update */
+.color-picker {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.color-option {
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+
+  min-height: 60px;
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-sm);
+
+  font-size: 12px;
+  color: #000;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(10px);
+}
+
+.color-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+}
+
+.color-option.active {
+  border-color: var(--primary-color);
+  background: rgb(33 150 243 / 10%);
+  box-shadow: 0 0 0 2px rgb(33 150 243 / 30%);
+}
+
+.color-option span {
+  font-size: 20px;
+}
+
+/* Checkbox Update */
+.simple-checkbox {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: flex-start;
+}
+
+/* stylelint-disable-next-line selector-no-qualifying-type -- Specific targeting for checkbox input */
+.simple-checkbox input[type="checkbox"] {
+  cursor: pointer;
+
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+
+  accent-color: var(--primary-color);
+}
+
+.simple-checkbox label {
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+}
+
+/* Attachment Upload Zone Update */
+.attachment-upload-zone {
+  cursor: pointer;
+
+  padding: var(--spacing-xl);
+  border: 2px dashed rgb(255 255 255 / 20%);
+  border-radius: var(--radius-sm);
+
+  text-align: center;
+
+  background: rgb(255 255 255 / 1%);
+  backdrop-filter: blur(5px);
+}
+
+.attachment-upload-zone:hover {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(33 150 243 / 5%);
+}
+
+.attachment-upload-zone.drag-active {
+  transform: scale(1.02);
+  border-color: var(--primary-color);
+  background: rgb(33 150 243 / 10%);
+  box-shadow: 0 4px 20px rgb(33 150 243 / 20%);
+}
+
+.upload-icon {
+  margin-bottom: var(--spacing-md);
+  font-size: 48px;
+  color: rgb(255 255 255 / 40%);
+}
+
+.upload-text {
+  margin-bottom: var(--spacing-xs);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: rgb(255 255 255 / 60%);
+}
+
+/* Modal Content - Breiter und mit Scroll */
+.modal-content,
+.entry-form-modal .modal-content {
+  transform: translateY(0);
+
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+
+  width: 90%;
+  max-width: 900px;
+  max-height: 85vh !important;
+  padding: var(--spacing-lg);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: #121212c4;
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px #0006,
+    inset 0 1px #ffffff1a;
+}
+
+/* Modal Header - Fixed */
+.modal-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+/* Modal Body/Form - Scrollable */
+.entry-form-modal form {
   overflow-y: auto;
-  max-height: 70vh;
+  flex: 1;
+  max-height: calc(100vh - 250px);
   padding: var(--spacing-lg);
 }
 
-.modal-footer {
+/* Button Group - Fixed at bottom */
+.button-group {
   display: flex;
+  flex-shrink: 0;
   gap: var(--spacing-md);
   justify-content: flex-end;
 
-  padding: var(--spacing-2sm);
-  border-top: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgb(255 255 255 / 10%);
 
-  background-color: rgb(0 0 0 / 10%);
+  background: rgb(0 0 0 / 20%);
+  backdrop-filter: blur(10px);
 }
+
+/* Custom Scrollbar */
+.entry-form-modal form::-webkit-scrollbar {
+  width: 10px;
+}
+
+.entry-form-modal form::-webkit-scrollbar-track {
+  border-radius: 5px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.entry-form-modal form::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 10%);
+  background-clip: padding-box;
+}
+
+.entry-form-modal form::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 20%);
+}
+
+/* Firefox Scrollbar */
+/* Removed duplicate block: Duplicate of line 909 */
+
+/* Form Hints */
+.simple-hint,
+.form-hint {
+  display: block;
+
+  margin-top: var(--spacing-xs);
+
+  font-size: 12px;
+  font-style: italic;
+  color: rgb(255 255 255 / 60%);
+}
+
+/* 2-Spalten Layout für breites Modal */
+@media (width >= 1024px) {
+  .entry-form-modal form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-xl);
+    align-content: start;
+  }
+
+  /* Volle Breite für bestimmte Elemente */
+  /* stylelint-disable selector-max-specificity -- Complex selectors needed for specific form layout */
+  .entry-form-modal form > .form-group:nth-child(1), /* Hidden input */
+  .entry-form-modal form > .form-group:nth-child(2), /* Titel */
+  .entry-form-modal form > .form-group:nth-child(3), /* Inhalt */
+  .entry-form-modal form > .button-group {
+    /* stylelint-enable selector-max-specificity */
+    grid-column: 1 / -1;
+  }
+
+  /* Attachment Zone auch volle Breite */
+  /* stylelint-disable-next-line selector-max-specificity -- Complex selector for attachment zone layout */
+  .entry-form-modal form > .form-group:has(.attachment-upload-zone) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Responsive */
+@media (width <= 1023px) {
+  .modal-content,
+  .entry-form-modal .modal-content {
+    width: 95%;
+    max-width: 700px;
+  }
+}
+
+@media (width <= 768px) {
+  .modal-content,
+  .entry-form-modal .modal-content {
+    width: 95%;
+    max-height: 95vh;
+    margin: 20px auto;
+  }
+
+  .color-picker {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .button-group {
+    flex-direction: column-reverse;
+    gap: var(--spacing-sm);
+  }
+
+  .button-group .btn {
+    width: 100%;
+  }
+
+  .entry-form-modal form {
+    padding: var(--spacing-2sm);
+  }
+}
+
+/* ===============================================
+ * Original Blackboard Content Continues
+ * =============================================== */
 
 /* Progress bar für Confirmations */
 .progress-bar-container {
@@ -820,15 +1203,31 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Detail modal - Compact Design Standards */
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #entryDetailModal {
-  z-index: 2000;
+  position: fixed;
+  z-index: 2000; /* Merged: was 1001, keeping higher value */
+  top: 0;
+  left: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  background-color: rgb(0 0 0 / 70%);
+  backdrop-filter: blur(10px);
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #entryDetailModal .modal-container {
   width: 90%;
-  max-width: 600px;
+  max-width: 600px; /* Merged: kept original max-width */
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #entryDetailModal .modal-body {
   overflow-y: auto;
   max-height: 70vh;
@@ -870,6 +1269,7 @@ main.container.main-content.sidebar-collapsed {
   align-items: center;
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Icon styles for entry details */
 .entry-detail-meta i {
   font-size: 12px;
   opacity: 60%;
@@ -881,7 +1281,7 @@ main.container.main-content.sidebar-collapsed {
   font-size: 15px;
   line-height: 1.7;
   color: rgb(255 255 255 / 90%);
-  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Entry Tags - Compact Design */
@@ -939,6 +1339,7 @@ main.container.main-content.sidebar-collapsed {
   color: var(--text-primary);
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Base state after focus state */
 .big-input {
   display: block;
 
@@ -965,32 +1366,11 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Einfache Checkbox */
-.simple-checkbox {
-  margin: 10px 0;
-}
+/* Removed duplicate block: Duplicate of line 807 */
+/* Removed duplicate block: Duplicate of line 813 */
+/* Removed duplicate block: Duplicate of line 823 */
 
-.simple-checkbox input[type="checkbox"] {
-  transform: scale(1.3);
-  margin-right: 10px;
-}
-
-.simple-checkbox label {
-  cursor: pointer;
-  font-size: 16px;
-}
-
-/* Große, klare Buttons */
-.big-button {
-  cursor: pointer;
-
-  padding: 12px 25px;
-  border: none;
-  border-radius: var(--radius-md);
-
-  font-size: 16px;
-  font-weight: 500;
-}
-
+/* stylelint-disable-next-line no-descending-specificity -- Base state after hover state */
 .primary-button {
   color: #fff;
   background-color: var(--primary-color);
@@ -1000,6 +1380,7 @@ main.container.main-content.sidebar-collapsed {
   background-color: var(--primary-dark);
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Base state after hover state */
 .secondary-button {
   color: var(--text-primary);
   background-color: rgb(255 255 255 / 10%);
@@ -1029,6 +1410,7 @@ main.container.main-content.sidebar-collapsed {
   margin-bottom: 0.5rem;
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Icon styles for metadata items */
 .entry-metadata-item i {
   margin-right: 0.5rem;
   color: var(--primary-color, #2196f3);
@@ -1189,53 +1571,11 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Color Picker */
-.color-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.color-option {
-  cursor: pointer;
-
-  display: flex;
-  gap: 6px;
-  align-items: center;
-
-  padding: 8px 12px;
-  border: 2px solid transparent;
-  border-radius: 20px;
-
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
-
-  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
-}
-
-.color-option:hover {
-  transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 30%);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
-}
-
-.color-option.active {
-  transform: translateY(-2px);
-  border-color: #fff;
-  box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
-}
-
-.color-option span {
-  font-size: 16px;
-}
-
-/* Grid Layout */
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 0 -8px;
-}
+/* Removed duplicate block: Duplicate of line 765 */
+/* Removed duplicate block: Duplicate of line 771 */
+/* Removed duplicate block: Duplicate of line 791 */
+/* Removed duplicate block: Duplicate of line 796 */
+/* Removed duplicate block: Duplicate of line 802 */
 
 .col-12 {
   flex: 0 0 100%;
@@ -1277,11 +1617,11 @@ main.container.main-content.sidebar-collapsed {
   }
 
   .col-md-8 {
-    flex: 0 0 66.666667%;
+    flex: 0 0 66.667%;
   }
 
   .col-md-4 {
-    flex: 0 0 33.333333%;
+    flex: 0 0 33.333%;
   }
 }
 
@@ -1320,54 +1660,11 @@ main.container.main-content.sidebar-collapsed {
    ATTACHMENT UPLOAD ZONE
    ======================================== */
 
-.attachment-upload-zone {
-  cursor: pointer;
-
-  position: relative;
-
-  overflow: hidden;
-
-  padding: 40px;
-  border: 3px dashed rgb(255 255 255 / 20%);
-  border-radius: 12px;
-
-  text-align: center;
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.attachment-upload-zone:hover {
-  transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 40%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.attachment-upload-zone.drag-over {
-  border-color: var(--primary-color);
-  background: rgb(0 123 255 / 10%);
-  box-shadow: 0 0 20px rgb(0 123 255 / 30%);
-}
-
-.upload-icon {
-  margin-bottom: 16px;
-  font-size: 48px;
-  color: rgb(255 255 255 / 50%);
-}
-
-.upload-text {
-  margin-bottom: 8px;
-  font-size: 18px;
-  font-weight: 500;
-  color: rgb(255 255 255 / 80%);
-}
-
-.upload-hint {
-  margin-bottom: 0;
-  font-size: 14px;
-  color: rgb(255 255 255 / 50%);
-}
-
-/* Attachment Preview */
+/* Removed duplicate block: Duplicate of line 831 */
+/* Removed duplicate block: Duplicate of line 844 */
+/* Removed duplicate block: Duplicate of line 856 */
+/* Removed duplicate block: Duplicate of line 862 */
+/* Removed duplicate block: Duplicate of line 869 */
 .attachment-preview {
   margin-top: 20px;
   padding: 24px;
@@ -1480,6 +1777,7 @@ main.container.main-content.sidebar-collapsed {
   letter-spacing: 0.5px;
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Icon styles for attachment title */
 .entry-attachments-title i {
   font-size: 14px;
   color: var(--primary-color);
@@ -1525,15 +1823,18 @@ main.container.main-content.sidebar-collapsed {
   box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
 }
 
+/* stylelint-disable-next-line no-descending-specificity -- Icon styles for attachment items */
 .entry-attachment-item i {
   font-size: 18px;
   opacity: 80%;
 }
 
+/* stylelint-disable-next-line selector-no-qualifying-type -- Specific icon targeting */
 .entry-attachment-item i.fa-file-pdf {
   color: #e74c3c;
 }
 
+/* stylelint-disable-next-line selector-no-qualifying-type -- Specific icon targeting */
 .entry-attachment-item i.fa-file-image {
   color: #2ecc71;
 }
@@ -1542,12 +1843,7 @@ main.container.main-content.sidebar-collapsed {
   font-size: 14px;
 }
 
-.attachment-size {
-  margin-left: auto;
-  font-size: 12px;
-  color: rgb(255 255 255 / 50%);
-}
-
+/* Removed duplicate block: Duplicate of line 1824 */
 /* Highlight Effect for linked entries */
 .highlight-entry {
   /* animation: highlightPulse 3s ease-in-out; */
@@ -1574,10 +1870,12 @@ main.container.main-content.sidebar-collapsed {
 } */
 
 /* Attachment Preview Modal - Updated Glassmorphismus Design */
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal {
   z-index: 10000;
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-container {
   width: auto;
   max-width: 30%;
@@ -1595,6 +1893,7 @@ main.container.main-content.sidebar-collapsed {
   /* animation: fadeInUp 0.3s ease-out; */
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-header {
   display: flex;
   align-items: center;
@@ -1604,6 +1903,7 @@ main.container.main-content.sidebar-collapsed {
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-header h2 {
   margin: 0;
   font-size: 20px;
@@ -1611,6 +1911,7 @@ main.container.main-content.sidebar-collapsed {
   color: var(--primary-color);
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-body {
   overflow: auto;
   max-height: calc(90vh - 200px);
@@ -1618,6 +1919,7 @@ main.container.main-content.sidebar-collapsed {
   background: transparent;
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal img {
   display: block;
 
@@ -1629,6 +1931,7 @@ main.container.main-content.sidebar-collapsed {
   box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal object {
   width: 100%;
   min-height: 500px;
@@ -1636,6 +1939,7 @@ main.container.main-content.sidebar-collapsed {
   background: rgb(255 255 255 / 95%);
 }
 
+/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-footer {
   display: flex;
   gap: var(--spacing-md);
@@ -1648,178 +1952,9 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Entry Form Modal - Glassmorphismus Design Standards */
-.entry-form-modal {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  left: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-
-  background-color: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(10px);
-}
-
-.entry-form-modal .modal-content {
-  overflow-y: auto;
-
-  width: 90%;
-  max-width: 600px;
-  max-height: 90vh;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
-
-  background: #1a1a1a4a;
-  backdrop-filter: blur(20px) saturate(500%);
-  box-shadow:
-    0 8px 32px rgb(0 0 0 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 10%);
-
-  /* animation: fadeInUp 0.3s ease-out; */
-}
-
-.entry-form-modal .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.entry-form-modal .modal-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.entry-form-modal .modal-close {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-
-  font-size: 24px;
-  color: var(--text-secondary);
-
-  background: none;
-}
-
-.entry-form-modal .modal-close:hover {
-  color: var(--primary-color);
-  background: rgb(255 255 255 / 5%);
-}
 
 /* Entry Detail Modal - Glassmorphismus Design Standards */
-#entryDetailModal {
-  position: fixed;
-  z-index: 1001;
-  top: 0;
-  left: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-
-  background-color: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(10px);
-}
-
-#entryDetailModal .modal-container {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  width: 90%;
-  max-width: 700px;
-  max-height: 90vh;
-  padding: 10px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
-
-  background: #1a1a1a4a;
-
-  /* animation: fadeInUp 0.3s ease-out; */
-  backdrop-filter: blur(20px) saturate(500%);
-  box-shadow:
-    0 8px 32px #0006,
-    inset 0 1px #ffffff1a;
-}
-
-#entryDetailModal .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-lg);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-#entryDetailModal .modal-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-#entryDetailModal .modal-close {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-sm);
-
-  font-size: 28px;
-  color: var(--text-secondary);
-
-  background: none;
-}
-
-#entryDetailModal .modal-close:hover {
-  transform: rotate(90deg);
-  color: var(--error-color);
-  background: rgb(255 255 255 / 5%);
-}
-
-#entryDetailModal .modal-body {
-  overflow-y: auto;
-  flex: 1;
-  padding: var(--spacing-lg);
-}
-
-#entryDetailModal .modal-footer {
-  display: flex;
-  gap: var(--spacing-md);
-  align-items: center;
-  justify-content: end;
-
-  padding: var(--spacing-lg);
-  border-top: 1px solid rgb(255 255 255 / 10%);
-
-  background: rgb(0 0 0 / 10%);
-}
+/* Removed duplicate #entryDetailModal blocks from merge - properties already merged above */
 
 /* Modal Animation */
 /* @keyframes fadeInUp {
@@ -1852,4 +1987,553 @@ main.container.main-content.sidebar-collapsed {
 /* Hide d-none elements */
 .d-none {
   display: none !important;
+}
+
+/* ========================================
+   Extracted CSS from blackboard.html
+   Generated: 2025-09-17
+   ======================================== */
+
+/* Blackboard spezifisches Container Styling - kein Padding */
+.blackboard-page .container {
+  padding: 0 !important;
+}
+
+/* PDF Preview Modal - Enhanced styles from inline HTML (duplicates removed) */
+/* Note: Basic modal styles already exist above, these are additional enhancements */
+
+/* PDF.js spezifische Fixes */
+#attachmentPreviewModal object[type="application/pdf"] {
+  overflow: hidden !important;
+}
+
+/* PDF.js Styling - Moderne Alternativen */
+/* Note: Shadow DOM v0 (/deep/ und ::shadow) sind seit 2014 deprecated */
+/* Direkte Manipulation von PDF.js internen Elementen ist nicht mehr möglich */
+#attachmentPreviewModal .pdf-container {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Falls PDF.js in einem iframe läuft */
+#attachmentPreviewModal iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Glassmorphismus für Cards */
+.card {
+  /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
+  /* Verwendet die CSS-Variablen aus dem zentralen Theme */
+  /* animation: fadeInUp 0.6s ease-out; */
+}
+
+/* Modal Overlays - Glassmorphismus */
+.modal-overlay {
+  backdrop-filter: blur(10px);
+  transition:
+    opacity 0.1s ease,
+    visibility 0.1s ease;
+}
+
+.modal-container {
+  border: var(--glass-border);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--shadow-sm);
+
+  /* animation: fadeInUp 0.3s ease-out; */
+}
+
+/* Form Controls mit Glassmorphismus */
+.form-control,
+.big-input,
+.search-field,
+.modern-select {
+  color: #fff;
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus,
+.big-input:focus,
+.search-field:focus,
+.modern-select:focus {
+  border-color: rgb(0 142 255 / 50%);
+  background: rgb(255 255 255 / 5%);
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(0 142 255 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+/* Buttons mit Glassmorphismus und Shine-Effekt */
+.btn {
+  position: relative;
+
+  overflow: hidden;
+
+  border: 1px solid rgb(255 255 255 / 20%);
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+}
+
+.btn-primary,
+.primary-button {
+  border-color: rgb(0 142 255 / 30%);
+  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn::after {
+  content: "";
+
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  transform: rotate(45deg) translate(-70%, -70%);
+
+  width: 200%;
+  height: 200%;
+
+  background: linear-gradient(45deg, transparent 30%, rgb(255 255 255 / 10%) 50%, transparent 70%);
+
+  transition: transform 0.6s;
+}
+
+.btn:hover::after {
+  transform: rotate(45deg) translate(-30%, -30%);
+}
+
+/* Filter Pills - Glassmorphismus */
+.filter-pill {
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  color: var(--text-secondary);
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.filter-pill:hover {
+  transform: translateY(-2px);
+  border-color: rgb(0 142 255 / 30%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.filter-pill.active {
+  border-color: rgb(0 142 255 / 30%);
+  color: var(--primary-color);
+  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
+}
+
+/* Animationen */
+@keyframes fadeInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+/* Color Options - Glassmorphismus */
+.color-option {
+  border: 1px solid rgb(255 255 255 / 20%);
+  backdrop-filter: blur(10px);
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
+}
+
+/* Zoom Controls */
+.zoom-controls {
+  position: relative;
+
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: flex-end;
+
+  width: fit-content;
+  margin-bottom: 20px;
+  margin-left: auto;
+  padding: 10px;
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+}
+
+.zoom-btn {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 50%;
+
+  font-size: 16px;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+}
+
+.zoom-btn:hover {
+  transform: scale(1.1);
+  background: rgb(255 255 255 / 10%);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+}
+
+.zoom-btn:active {
+  transform: scale(0.95);
+}
+
+.zoom-level {
+  min-width: 45px;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: center;
+
+  opacity: 80%;
+}
+
+/* Remove transform transition since we're using CSS zoom */
+.blackboard-container {
+  /* zoom property will be applied via JavaScript */
+  position: relative;
+}
+
+.color-option.active {
+  border-color: rgb(255 255 255 / 50%);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 20%);
+}
+
+/* Fullscreen Mode Styles */
+/* .fullscreen-mode {
+  padding: 20px;
+  background: #000;
+} */
+
+.fullscreen-mode .blackboard-container {
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: auto;
+  gap: 30px;
+  align-content: start;
+
+  max-width: 100%;
+  height: 100vh;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.fullscreen-mode .filters-container,
+.fullscreen-mode .sidebar,
+.fullscreen-mode .navigation,
+.fullscreen-mode #navigation-container,
+.fullscreen-mode #breadcrumb-container,
+.fullscreen-mode .controls-row,
+.fullscreen-mode .flex.flex-between.mb-4,
+.fullscreen-mode .card.mb-4 {
+  display: none !important;
+}
+
+.fullscreen-mode .layout-container {
+  padding: 0;
+}
+
+.fullscreen-mode .main-content {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.fullscreen-mode .content-card {
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Exit fullscreen button */
+.fullscreen-exit-btn {
+  cursor: pointer;
+
+  position: fixed;
+  z-index: 9999;
+  top: 20px;
+  right: 20px;
+
+  display: none;
+
+  padding: 10px 20px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 8px;
+
+  font-size: 14px;
+  color: #fff;
+
+  background: rgb(255 255 255 / 10%);
+  backdrop-filter: blur(10px);
+}
+
+.fullscreen-exit-btn:hover {
+  transform: scale(1.05);
+  background: rgb(255 255 255 / 20%);
+}
+
+.fullscreen-mode .fullscreen-exit-btn {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Auto-refresh indicator */
+.auto-refresh-indicator {
+  position: fixed;
+  z-index: 9998;
+  right: 20px;
+  bottom: 20px;
+
+  display: none;
+
+  padding: 8px 16px;
+  border: 1px solid rgb(0 255 0 / 30%);
+  border-radius: 20px;
+
+  font-size: 12px;
+  color: #0f0;
+
+  background: rgb(0 255 0 / 10%);
+  backdrop-filter: blur(10px);
+}
+
+.fullscreen-mode .auto-refresh-indicator {
+  display: block;
+}
+
+/* Optimize notes for fullscreen */
+.fullscreen-mode .note {
+  transform: scale(1);
+  height: 100%;
+  min-height: 300px;
+  margin: 0;
+}
+
+/* ========================================
+   Second Style Block - Toast & Utilities
+   ======================================== */
+
+/* Toast-Styles direkt im HTML einbinden */
+.toast-container {
+  position: fixed;
+  z-index: 9999;
+  right: 16px;
+  bottom: 16px;
+}
+
+.toast-info,
+.toast-error,
+.toast-success {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--primary-color);
+  border-radius: var(--radius-md);
+
+  font-size: 14px;
+  color: var(--text-primary);
+
+  background-color: var(--background-light);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+
+.toast-error {
+  border-left-color: var(--error-color);
+}
+
+.toast-success {
+  border-left-color: var(--success-color);
+}
+
+/* Filter Toggle Styles */
+#filterToggle:hover {
+  background: rgb(255 255 255 / 5%);
+}
+
+#filterToggle {
+  transition: background 0.3s ease;
+}
+
+/* Override breadcrumb alignment for blackboard page */
+body #breadcrumb-container + .card,
+body #breadcrumb-container + * {
+  margin-top: -15px !important;
+}
+
+/* Breadcrumb linksbündig machen für blackboard */
+.breadcrumb {
+  padding-left: 0 !important;
+}
+
+/* ========================================
+   CSS Classes for Inline Styles Replacement
+   Generated: 2025-09-17
+   ======================================== */
+
+/* Filter Controls */
+.filter-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.chevron-icon {
+  transform: rotate(0deg);
+  transition: transform 0.3s ease;
+}
+
+.chevron-icon[data-expanded="true"] {
+  transform: rotate(180deg);
+}
+
+/* Controls Row */
+.controls-flex {
+  display: flex !important;
+  gap: 1rem;
+  align-items: center;
+}
+
+.zoom-controls-inline {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  backdrop-filter: none;
+}
+
+/* Empty State */
+.empty-icon {
+  font-size: 48px;
+  color: #000;
+  opacity: 50%;
+}
+
+.empty-title {
+  color: #000;
+}
+
+.empty-text {
+  color: #000;
+}
+
+/* Color Options - Use data attributes */
+.color-option[data-color="yellow"] {
+  background: #fde68a;
+}
+
+.color-option[data-color="blue"] {
+  background: #bfdbfe;
+}
+
+.color-option[data-color="red"] {
+  background: #fecaca;
+}
+
+.color-option[data-color="indigo"] {
+  background: #c7d2fe;
+}
+
+.color-option[data-color="green"] {
+  background: #d9f99d;
+}
+
+.color-option[data-color="pink"] {
+  background: #fbcfe8;
+}
+
+.color-option[data-color="orange"] {
+  background: #fed7aa;
+}
+
+.color-option[data-color="emerald"] {
+  background: #a7f3d0;
+}
+
+/* Utility Classes */
+.ml-2 {
+  margin-left: 10px;
+}
+
+.collapsed {
+  display: none;
+}
+
+/* Modal Specific Styles */
+.modal-content-medium {
+  max-width: 600px;
+}
+
+/* Dropzone Styles */
+.attachment-dropzone {
+  cursor: pointer;
+  border: 2px dashed rgb(255 255 255 / 30%);
+  border-radius: var(--radius-md);
+}
+
+.dropzone-icon {
+  margin-bottom: 16px;
+  font-size: 48px;
+  opacity: 50%;
+}
+
+.file-size-hint {
+  font-size: 0.85rem;
+}
+
+/* Preview Styles */
+.attachment-preview-box {
+  border-radius: var(--radius-sm);
+  background: rgb(255 255 255 / 5%);
+}
+
+.preview-image-container {
+  max-width: 150px;
+  max-height: 150px;
 }

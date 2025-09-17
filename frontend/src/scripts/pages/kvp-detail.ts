@@ -474,7 +474,13 @@ class KvpDetailPage {
     // Show/hide comment form based on permissions
     const commentForm = document.querySelector('#commentForm');
     if (commentForm instanceof HTMLElement) {
-      commentForm.style.display = canComment ? '' : 'none';
+      if (canComment) {
+        commentForm.classList.remove('hidden');
+        commentForm.style.display = '';
+      } else {
+        commentForm.classList.add('hidden');
+        commentForm.style.display = 'none';
+      }
     }
 
     // Show/hide admin elements (only for admin/root, NOT for employee authors)

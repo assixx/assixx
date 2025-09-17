@@ -495,26 +495,26 @@ private validateEventAccess(event: CalendarEvent, user: AuthUser): boolean {
 ```css
 /* Company Events - Blau */
 .fc-event[data-org-level='company'] {
-  background-color: #2196f3;
   border-color: #1976d2;
+  background-color: #2196f3;
 }
 
 /* Department Events - Grün */
 .fc-event[data-org-level='department'] {
-  background-color: #4caf50;
   border-color: #388e3c;
+  background-color: #4caf50;
 }
 
 /* Team Events - Orange */
 .fc-event[data-org-level='team'] {
-  background-color: #ff9800;
   border-color: #f57c00;
+  background-color: #ff9800;
 }
 
 /* Personal Events - Lila */
 .fc-event[data-org-level='personal'] {
-  background-color: #9c27b0;
   border-color: #7b1fa2;
+  background-color: #9c27b0;
 }
 ```
 

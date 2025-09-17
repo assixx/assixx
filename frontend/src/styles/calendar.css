@@ -195,25 +195,33 @@
 .fc-event[data-org-level="company"],
 .fc-event-company {
   border-color: #3498db !important;
-  background-color: #3498db !important; /* Blue for company (Firma) */
+  background-color: #3498db !important;
+
+  /* Blue for company (Firma) */
 }
 
 .fc-event[data-org-level="department"],
 .fc-event-department {
   border-color: #e67e22 !important;
-  background-color: #e67e22 !important; /* Orange for department (Abteilung) */
+  background-color: #e67e22 !important;
+
+  /* Orange for department (Abteilung) */
 }
 
 .fc-event[data-org-level="team"],
 .fc-event-team {
   border-color: #2ecc71 !important;
-  background-color: #2ecc71 !important; /* Green for team */
+  background-color: #2ecc71 !important;
+
+  /* Green for team */
 }
 
 .fc-event[data-org-level="personal"],
 .fc-event-personal {
   border-color: #9b59b6 !important;
-  background-color: #9b59b6 !important; /* Purple for personal (Persönlich) */
+  background-color: #9b59b6 !important;
+
+  /* Purple for personal (Persönlich) */
 }
 
 .fc-event-title {
@@ -1590,7 +1598,7 @@ select.big-input:disabled {
 }
 
 /* Responsive adjustments */
-@media (width <= 767.98px) {
+@media (width <=767.98px) {
   .flex-half {
     flex: 0 0 100%;
   }
@@ -1702,4 +1710,111 @@ select.big-input:disabled {
   cursor: pointer;
   user-select: none;
   margin: 0;
+}
+
+/* ========================================
+   Extracted CSS from calendar.html
+   Generated: 2025-09-17
+   ======================================== */
+
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Glassmorphismus für Cards */
+.card {
+  margin-top: auto;
+  border: 1px solid rgb(255 255 255 / 10%);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  /* animation: fadeInUp 0.6s ease-out; */
+}
+
+/* Toast-Styles */
+.toast-container {
+  position: fixed;
+  z-index: 9999;
+  right: 16px;
+  bottom: 16px;
+}
+
+.toast-info,
+.toast-error,
+.toast-success {
+  margin-top: 8px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--primary-color);
+  border-radius: var(--radius-md);
+
+  font-size: 14px;
+  color: var(--text-primary);
+
+  background-color: var(--background-light);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+
+.toast-error {
+  border-left-color: var(--error-color);
+}
+
+.toast-success {
+  border-left-color: var(--success-color);
+}
+
+/* Zusätzliche Styles für fehlende Klassen */
+.d-none {
+  display: none !important;
+}
+
+/* ========================================
+   CSS Classes for Inline Styles
+   ======================================== */
+
+/* Legend Colors */
+.legend-company {
+  background-color: #3498db;
+}
+
+.legend-department {
+  background-color: #e67e22;
+}
+
+.legend-team {
+  background-color: #2ecc71;
+}
+
+.legend-personal {
+  background-color: #9b59b6;
+}
+
+/* Controls Flex Layout */
+.controls-flex-calendar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Button inline flex */
+.btn-inline-flex {
+  display: inline-flex;
 }

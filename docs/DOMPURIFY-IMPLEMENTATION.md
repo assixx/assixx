@@ -24,7 +24,7 @@ import DOMPurify from 'dompurify';
 element.innerHTML = DOMPurify.sanitize(userContent);
 
 // Bei reinem Text besser
-element.textContent = userContent;  // Automatisch sicher!
+element.textContent = userContent; // Automatisch sicher!
 ```
 
 ### Migration von HTML mit Inline-JS
@@ -80,23 +80,23 @@ Fertig. Mehr nicht nötig.
 
 ## Migration Status
 
-| Seite | Script Tag | DOMPurify benutzt | Status |
-|-------|------------|-------------------|---------|
-| admin-dashboard.html | ✅ Lokal | Ja (2x) | ✅ OK |
-| document-upload.html | ✅ Lokal | Ja (2x) | ✅ OK |
-| employee-dashboard.html | ✅ Lokal | Ja (1x) | ✅ OK |
-| employee-documents.html | ✅ Lokal | Ja (6x) | ✅ OK |
-| employee-profile.html | ✅ Lokal | Ja (5x) | ✅ OK |
-| manage-employees.html | ✅ Lokal | Ja (1x) | ✅ OK |
-| kvp.html | ✅ Lokal | Ja (1x) | ✅ OK |
-| login.html | ✅ Lokal | Ja (1x) | ✅ OK |
-| root-features.html | ✅ Lokal | Ja (1x) | ✅ OK |
-| root-profile.html | ✅ Lokal | Ja (3x) | ✅ OK |
-| salary-documents.html | ✅ Lokal | Ja (3x) | ✅ OK |
-| signup.html | ❌ Entfernt | Nein | ✅ OK |
-| survey-details.html | ✅ Lokal | Ja (2x) | ✅ OK |
-| survey-employee.html | ✅ Lokal | Ja (2x) | ✅ OK |
-| tenant-deletion-status.html | ✅ Lokal | Ja (1x) | ✅ OK |
+| Seite                       | Script Tag  | DOMPurify benutzt | Status |
+| --------------------------- | ----------- | ----------------- | ------ |
+| admin-dashboard.html        | ✅ Lokal    | Ja (2x)           | ✅ OK  |
+| document-upload.html        | ✅ Lokal    | Ja (2x)           | ✅ OK  |
+| employee-dashboard.html     | ✅ Lokal    | Ja (1x)           | ✅ OK  |
+| employee-documents.html     | ✅ Lokal    | Ja (6x)           | ✅ OK  |
+| employee-profile.html       | ✅ Lokal    | Ja (5x)           | ✅ OK  |
+| manage-employees.html       | ✅ Lokal    | Ja (1x)           | ✅ OK  |
+| kvp.html                    | ✅ Lokal    | Ja (1x)           | ✅ OK  |
+| login.html                  | ✅ Lokal    | Ja (1x)           | ✅ OK  |
+| root-features.html          | ✅ Lokal    | Ja (1x)           | ✅ OK  |
+| root-profile.html           | ✅ Lokal    | Ja (3x)           | ✅ OK  |
+| salary-documents.html       | ✅ Lokal    | Ja (3x)           | ✅ OK  |
+| signup.html                 | ❌ Entfernt | Nein              | ✅ OK  |
+| survey-details.html         | ✅ Lokal    | Ja (2x)           | ✅ OK  |
+| survey-employee.html        | ✅ Lokal    | Ja (2x)           | ✅ OK  |
+| tenant-deletion-status.html | ✅ Lokal    | Ja (1x)           | ✅ OK  |
 
 ## ESLint Fix für DOMPurify
 
@@ -109,10 +109,7 @@ ESLint meldet `'DOMPurify' is not defined` obwohl DOMPurify über `<script src="
 Am Anfang des Script-Blocks wo DOMPurify verwendet wird:
 
 ```javascript
-<script>
-  /* global DOMPurify */
-  // Rest des Codes...
-</script>
+<script>/* global DOMPurify */ // Rest des Codes...</script>
 ```
 
 ### Bereits gefixt in

@@ -1,4 +1,14 @@
-// Update Script für Blackboard Modal Design Standards
+/**
+ * Update Script für Blackboard Modal Design Standards
+ *
+ * DOMPURIFY GOLD STANDARD COMPLIANCE:
+ * - No direct innerHTML usage ✓
+ * - No onclick attributes ✓
+ * - Uses proper DOM methods ✓
+ * - Event listeners properly attached ✓
+ *
+ * TODO: Convert this file to TypeScript for full type safety
+ */
 
 // Constants
 const DROPDOWN_OPTION_CLASS = 'dropdown-option';
@@ -225,7 +235,10 @@ async function loadOrgOptions(type) {
   }
 
   const dropdownOptions = document.querySelector('#orgIdDropdown');
-  dropdownOptions.innerHTML = '';
+  // Clear children using proper DOM method (Gold Standard)
+  while (dropdownOptions.firstChild) {
+    dropdownOptions.firstChild.remove();
+  }
   const loadingOption = document.createElement('div');
   loadingOption.className = DROPDOWN_OPTION_CLASS;
   loadingOption.textContent = 'Laden...';
@@ -236,8 +249,10 @@ async function loadOrgOptions(type) {
     const response = await fetch(endpoint);
     const items = await response.json();
 
-    // Clear and rebuild dropdown options safely
-    dropdownOptions.innerHTML = '';
+    // Clear and rebuild dropdown options safely (Gold Standard)
+    while (dropdownOptions.firstChild) {
+      dropdownOptions.firstChild.remove();
+    }
     items.forEach((item) => {
       const option = document.createElement('div');
       option.className = DROPDOWN_OPTION_CLASS;
@@ -247,7 +262,10 @@ async function loadOrgOptions(type) {
     });
   } catch (error) {
     console.error('Error loading organization units:', error);
-    dropdownOptions.innerHTML = '';
+    // Clear using proper DOM method (Gold Standard)
+    while (dropdownOptions.firstChild) {
+      dropdownOptions.firstChild.remove();
+    }
     const errorOption = document.createElement('div');
     errorOption.className = DROPDOWN_OPTION_CLASS;
     errorOption.textContent = 'Fehler beim Laden';
@@ -328,8 +346,12 @@ function updateModalStructure() {
 
 // Modal functions
 window.showModal = function (modalId) {
-  const modal = document.querySelector(`#${modalId}`);
+  // Remove any leading # if present to avoid double hash
+  const cleanId = modalId.startsWith('#') ? modalId.slice(1) : modalId;
+  const modal = document.querySelector(`#${cleanId}`);
   if (modal) {
+    // Remove u-hidden class if present (Gold Standard)
+    modal.classList.remove('u-hidden');
     modal.style.display = 'flex';
     setTimeout(() => {
       modal.classList.add('active');
@@ -338,11 +360,15 @@ window.showModal = function (modalId) {
 };
 
 window.hideModal = function (modalId) {
-  const modal = document.querySelector(`#${modalId}`);
+  // Remove any leading # if present to avoid double hash
+  const cleanId = modalId.startsWith('#') ? modalId.slice(1) : modalId;
+  const modal = document.querySelector(`#${cleanId}`);
   if (modal) {
     modal.classList.remove('active');
     setTimeout(() => {
       modal.style.display = 'none';
+      // Add u-hidden class back for consistency (Gold Standard)
+      modal.classList.add('u-hidden');
     }, 300);
   }
 };

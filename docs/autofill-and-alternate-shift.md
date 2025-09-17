@@ -97,8 +97,8 @@ AND us.category = 'shifts';
     "early_late_rotation": {
       "cycle_weeks": 1,
       "groups": [
-        {"id": 1, "week_odd": "early", "week_even": "late"},
-        {"id": 2, "week_odd": "late", "week_even": "early"}
+        { "id": 1, "week_odd": "early", "week_even": "late" },
+        { "id": 2, "week_odd": "late", "week_even": "early" }
       ]
     },
     "night_fixed": true,
@@ -143,30 +143,30 @@ AND us.category = 'shifts';
 .checkbox-label {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
   cursor: pointer;
   margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 16px;
 }
 
 .checkbox-label:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(33, 150, 243, 0.3);
   transform: translateY(-1px);
+  border-color: rgba(33, 150, 243, 0.3);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .checkbox-label:has(input:checked) {
-  background: rgba(33, 150, 243, 0.1);
-  border-color: rgba(33, 150, 243, 0.5);
   box-shadow: 0 0 20px rgba(33, 150, 243, 0.15);
+  border-color: rgba(33, 150, 243, 0.5);
+  background: rgba(33, 150, 243, 0.1);
 }
 
 .checkbox-hint {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
   margin-left: auto;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
 }
 ```
 
@@ -708,11 +708,7 @@ describe('ShiftRotationService', () => {
   });
 
   test('should keep night shifts constant', () => {
-    const assignments = service.calculateWeekAssignments(
-      [{ base_shift_type: 'night', user_id: 1 }],
-      22,
-      defaultConfig
-    );
+    const assignments = service.calculateWeekAssignments([{ base_shift_type: 'night', user_id: 1 }], 22, defaultConfig);
     expect(assignments[0].shiftType).toBe('night');
   });
 });
@@ -727,17 +723,17 @@ describe('ShiftRotationService', () => {
 
 ## 📅 Zeitplan
 
-| Phase | Aufgabe | Geschätzte Zeit | Priorität |
-|-------|---------|-----------------|-----------|
-| 1 | UI-Komponenten | 2h | Hoch |
-| 2 | Autofill Frontend | 2h | Hoch |
-| 3 | Autofill Backend | 2h | Hoch |
-| 4 | Rotation Frontend | 4h | Mittel |
-| 5 | Rotation Backend | 6h | Mittel |
-| 6 | Persistenz | 3h | Mittel |
-| 7 | Testing | 4h | Hoch |
-| 8 | Dokumentation | 2h | Niedrig |
-| **Gesamt** | | **25h** | |
+| Phase      | Aufgabe           | Geschätzte Zeit | Priorität |
+| ---------- | ----------------- | --------------- | --------- |
+| 1          | UI-Komponenten    | 2h              | Hoch      |
+| 2          | Autofill Frontend | 2h              | Hoch      |
+| 3          | Autofill Backend  | 2h              | Hoch      |
+| 4          | Rotation Frontend | 4h              | Mittel    |
+| 5          | Rotation Backend  | 6h              | Mittel    |
+| 6          | Persistenz        | 3h              | Mittel    |
+| 7          | Testing           | 4h              | Hoch      |
+| 8          | Dokumentation     | 2h              | Niedrig   |
+| **Gesamt** |                   | **25h**         |           |
 
 ## 💾 Speicher-Strategie für Rotation (WICHTIGSTE ENTSCHEIDUNG!)
 
@@ -749,11 +745,7 @@ describe('ShiftRotationService', () => {
 // Pattern-basierte Berechnung statt Massenspeicherung
 class ShiftRotationEngine {
   // Berechnet Schichten on-demand basierend auf Pattern
-  async calculateShiftForUser(
-    userId: number,
-    date: Date,
-    patternId: number
-  ): Promise<ShiftType> {
+  async calculateShiftForUser(userId: number, date: Date, patternId: number): Promise<ShiftType> {
     // 1. Pattern aus Cache/DB laden
     const pattern = await this.getPattern(patternId);
 
@@ -799,7 +791,7 @@ class ShiftRotationEngine {
 ```typescript
 const FEATURES = {
   SHIFT_AUTOFILL: process.env.FEATURE_SHIFT_AUTOFILL === 'true',
-  SHIFT_ROTATION: process.env.FEATURE_SHIFT_ROTATION === 'true'
+  SHIFT_ROTATION: process.env.FEATURE_SHIFT_ROTATION === 'true',
 };
 ```
 

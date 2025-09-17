@@ -114,11 +114,20 @@ const directAttachHandlers: {
 
 // Modal helper functions to handle different implementations
 function openModal(modalId: string): void {
+  console.log('[Blackboard] openModal called with modalId:', modalId);
   const modal = $$id(modalId);
-  if (!modal) return;
+  console.log('[Blackboard] Modal element found:', modal);
+  if (!modal) {
+    console.error('[Blackboard] Modal not found:', modalId);
+    return;
+  }
+
+  console.log('[Blackboard] Modal classList:', modal.classList.toString());
+  console.log('[Blackboard] window.showModal exists:', typeof window.showModal);
 
   // Check if it's the new modal style (class="modal")
   if (modal.classList.contains('modal') && typeof window.showModal === 'function') {
+    console.log('[Blackboard] Using window.showModal');
     window.showModal(modalId);
   }
   // Check if it's the old modal style (class="modal-overlay")
@@ -567,7 +576,9 @@ function setupEventListeners(): void {
   // New entry button
   const newEntryBtn = $$id('newEntryBtn');
   if (newEntryBtn) {
+    console.log('[Blackboard] Adding click listener to newEntryBtn');
     newEntryBtn.addEventListener('click', () => {
+      console.log('[Blackboard] newEntryBtn clicked!');
       openEntryForm();
     });
   } else {
@@ -1223,8 +1234,15 @@ function changePage(page: number): void {
  * Open entry form for creating/editing
  */
 function openEntryForm(entryId?: number): void {
+  console.log('[Blackboard] openEntryForm called with entryId:', entryId);
   const modal = document.querySelector('.entry-form-modal');
-  if (!modal) return;
+  console.log('[Blackboard] Found .entry-form-modal:', modal);
+  if (!modal) {
+    console.log('[Blackboard] Modal with class .entry-form-modal not found, trying #entryFormModal');
+    const modalById = $$id('entryFormModal');
+    console.log('[Blackboard] Found #entryFormModal:', modalById);
+    if (!modalById) return;
+  }
 
   // Reset form
   const form = $$('#entryForm') as HTMLFormElement | null;
@@ -1933,6 +1951,9 @@ declare global {
     viewEntry: typeof viewEntry;
     editEntry: typeof openEntryForm;
     deleteEntry: typeof deleteEntry;
+    // TODO: Lesebestätigungen Feature nicht implementiert
+    // confirmEntryRead: Würde Lesebestätigung für aktuellen User speichern
+    // viewConfirmationStatus: Würde Modal mit Übersicht aller Bestätigungen öffnen
     confirmEntryRead?: (entryId: number) => void;
     viewConfirmationStatus?: (entryId: number) => void;
     handleFileDownload?: (attachmentId: number, filename: string) => void;
@@ -2319,10 +2340,9 @@ function setupZoomControls(): void {
  */
 function setupFullscreenControls(): void {
   const fullscreenBtn = document.querySelector('#fullscreenBtn');
-  const exitFullscreenBtn = document.querySelector('#exitFullscreenBtn');
   const blackboardContainer = document.querySelector('#blackboardContainer');
 
-  if (!fullscreenBtn || !exitFullscreenBtn || !blackboardContainer) {
+  if (!fullscreenBtn || !blackboardContainer) {
     console.error('[Fullscreen] Required elements not found');
     return;
   }
@@ -2362,11 +2382,6 @@ function setupFullscreenControls(): void {
         document.body.classList.remove(FULLSCREEN_MODE_CLASS);
       }
     })();
-  });
-
-  // Exit fullscreen
-  exitFullscreenBtn.addEventListener('click', () => {
-    exitFullscreen();
   });
 
   // Handle ESC key or browser exit fullscreen

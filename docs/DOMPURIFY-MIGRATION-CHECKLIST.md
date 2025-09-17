@@ -138,18 +138,24 @@
 ### Before (BROKEN)
 
 ```typescript
-setHTML(element, `
+setHTML(
+  element,
+  `
   <button onclick="doSomething(${id})">Click</button>
-`);
+`,
+);
 ```
 
 ### After (WORKING)
 
 ```typescript
 // HTML with data attributes
-setHTML(element, `
+setHTML(
+  element,
+  `
   <button data-action="something" data-id="${id}">Click</button>
-`);
+`,
+);
 
 // Event Delegation (once per file)
 document.addEventListener('click', (e) => {
@@ -199,13 +205,13 @@ Start with these for quick progress!
 
 ## 📅 Estimated Timeline
 
-| Phase | Effort | Timeline |
-|-------|--------|----------|
-| Phase 2 - Critical files | 8-10 hours | 1-2 days |
-| Phase 2 - All TypeScript | 16-20 hours | 3-4 days |
-| Phase 3 - HTML files | 10-15 hours | 2-3 days |
-| Phase 4 - Testing | 4-6 hours | 1 day |
-| **TOTAL** | **38-51 hours** | **7-10 days** |
+| Phase                    | Effort          | Timeline      |
+| ------------------------ | --------------- | ------------- |
+| Phase 2 - Critical files | 8-10 hours      | 1-2 days      |
+| Phase 2 - All TypeScript | 16-20 hours     | 3-4 days      |
+| Phase 3 - HTML files     | 10-15 hours     | 2-3 days      |
+| Phase 4 - Testing        | 4-6 hours       | 1 day         |
+| **TOTAL**                | **38-51 hours** | **7-10 days** |
 
 ## 🎯 Success Criteria
 
@@ -234,32 +240,5 @@ Start with these for quick progress!
 
 **Remember:** This migration makes the codebase more secure, maintainable, and follows modern best practices. The temporary pain is worth the long-term gain!
 
-was ist mit   1. account-settings.html
-  2. admin-profile.html
-  3. blackboard.html
-  4. calendar.html
-  5. chat.html
-  6. documents-company.html
-  7. documents-department.html
-  8. documents-payroll.html
-  9. documents-personal.html
-  10. documents-search.html
-  11. documents-team.html
-  12. documents.html
-  13. hilfe.html
-  14. index.html
-  15. kvp-detail.html
-  16. logs.html
-  17. manage-admins.html
-  18. manage-areas.html
-  19. manage-department-groups.html
-  20. manage-departments.html
-  21. manage-machines.html
-  22. manage-root-users.html
-  23. manage-teams.html
-  24. rate-limit.html
-  25. shifts.html
-  26. storage-upgrade.html
-  27. survey-admin.html
-  28. survey-results.html
+was ist mit 1. account-settings.html 2. admin-profile.html 3. blackboard.html 4. calendar.html 5. chat.html 6. documents-company.html 7. documents-department.html 8. documents-payroll.html 9. documents-personal.html 10. documents-search.html 11. documents-team.html 12. documents.html 13. hilfe.html 14. index.html 15. kvp-detail.html 16. logs.html 17. manage-admins.html 18. manage-areas.html 19. manage-department-groups.html 20. manage-departments.html 21. manage-machines.html 22. manage-root-users.html 23. manage-teams.html 24. rate-limit.html 25. shifts.html 26. storage-upgrade.html 27. survey-admin.html 28. survey-results.html
 müssen ganz zum schluss prüfen

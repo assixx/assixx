@@ -1,0 +1,538 @@
+/* Extracted styles from manage-teams.html */
+@import "/styles/dashboard-theme.css";
+@import "/styles/breadcrumb-alignment.css";
+
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Glassmorphismus für Cards */
+
+/* Form-Controls mit Glassmorphismus */
+.form-control,
+.search-input {
+  padding: 10px 12px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  font-size: 0.95rem;
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus,
+.search-input:focus {
+  border-color: rgb(0 142 255 / 50%);
+  background: rgb(255 255 255 / 5%);
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(0 142 255 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+/* Buttons mit Glassmorphismus und Shine-Effekt */
+.btn {
+  cursor: pointer;
+
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 10px 20px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-sm);
+
+  font-weight: 500;
+  color: #fff;
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+}
+
+.btn-primary {
+  border-color: rgb(0 142 255 / 30%);
+  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
+}
+
+.btn-secondary {
+  border: 1px solid rgb(255 255 255 / 20%);
+  background: transparent;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.875rem;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn::after {
+  content: "";
+
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  transform: rotate(45deg) translate(-70%, -70%);
+
+  width: 200%;
+  height: 200%;
+
+  background: linear-gradient(45deg, transparent 30%, rgb(255 255 255 / 10%) 50%, transparent 70%);
+
+  transition: transform 0.6s;
+}
+
+.btn:hover::after {
+  transform: rotate(45deg) translate(-30%, -30%);
+}
+
+/* Tabellen mit Glassmorphismus */
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  background: transparent;
+}
+
+.table thead th {
+  padding: 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.table tbody tr {
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  background: rgb(255 255 255 / 1%);
+}
+
+.table tbody tr:hover {
+  background: rgb(255 255 255 / 3%);
+}
+
+.table tbody td {
+  padding: 12px;
+  color: var(--text-primary);
+}
+
+/* Layout styles */
+.page-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.content-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.page-title {
+  margin: 0 0 var(--spacing-sm) 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+/* Filter and search controls */
+.controls-wrapper {
+  padding: var(--spacing-lg);
+}
+
+.flex-between {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.search-container {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.search-input {
+  width: 250px;
+}
+
+/* Badge styles */
+.badge {
+  display: inline-block;
+
+  padding: 4px 8px;
+  border-radius: 12px;
+
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  border: 1px solid rgb(76 175 80 / 30%);
+  color: #4caf50;
+  background: rgb(76 175 80 / 20%);
+}
+
+.badge-warning {
+  border: 1px solid rgb(255 152 0 / 30%);
+  color: #ff9800;
+  background: rgb(255 152 0 / 20%);
+}
+
+.badge-info {
+  border: 1px solid rgb(33 150 243 / 30%);
+  color: #2196f3;
+  background: rgb(33 150 243 / 20%);
+}
+
+/* Action buttons */
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.btn-action {
+  min-width: auto;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+}
+
+/* Filter and Search */
+.filter-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.search-container {
+  display: flex;
+  gap: 8px;
+}
+
+.flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Empty state */
+.empty-state {
+  padding: 60px 20px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-state-icon {
+  margin-bottom: 20px;
+  font-size: 64px;
+  opacity: 50%;
+}
+
+.empty-state-title {
+  margin-bottom: var(--spacing-sm);
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.empty-state-text {
+  font-size: 0.95rem;
+}
+
+/* Loading state */
+.loading {
+  padding: 40px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.spinner {
+  display: inline-block;
+
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgb(255 255 255 / 10%);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal styles */
+.modal {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  backdrop-filter: blur(5px);
+}
+
+.modal.active {
+  display: flex;
+}
+
+.modal-content {
+  overflow-y: auto;
+
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  border: var(--glass-border);
+  border-radius: var(--radius-lg);
+
+  background: hsl(0deg 0% 8.2% / 84%);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+
+  background: transparent;
+
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 5%);
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgb(255 255 255 / 5%);
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: var(--spacing-md);
+}
+
+.form-label {
+  display: block;
+
+  margin-bottom: var(--spacing-xs);
+
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.form-control {
+  width: 100%;
+}
+
+select.form-control {
+  padding-right: 40px;
+
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 20px;
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Utility classes */
+.mb-3 {
+  margin-bottom: var(--spacing-lg);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.u-hidden {
+  display: none !important;
+}
+
+/* Media queries */
+@media (width <= 768px) {
+  .main-content {
+    margin-left: 0;
+    padding: var(--spacing-md);
+  }
+
+  .flex-between {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .modal-content {
+    width: 95%;
+    margin: var(--spacing-md);
+  }
+}
+
+/* Floating Add Button - wie bei departments */
+.add-team-btn {
+  cursor: pointer;
+
+  position: fixed;
+  z-index: 1000;
+  right: 30px;
+  bottom: 30px;
+
+  width: 60px;
+  height: 60px;
+  border: 2px solid rgb(33 150 243 / 40%);
+  border-radius: 50%;
+
+  font-size: 28px;
+  font-weight: 300;
+  color: var(--primary-color);
+
+  background: rgb(33 150 243 / 15%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+}
+
+.add-team-btn:hover {
+  transform: scale(1.1);
+  background: rgb(33 150 243 / 30%);
+  box-shadow: 0 6px 24px rgb(33 150 243 / 40%);
+}
+
+/* admin-table styles */
+
+/* Action Buttons - wie bei departments */
+.action-btn {
+  cursor: pointer;
+
+  margin: 0 4px;
+  padding: 6px 12px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 4px;
+
+  font-size: 12px;
+  color: var(--text-color);
+
+  background: rgb(255 255 255 / 5%);
+}
+
+.action-btn:hover {
+  border-color: rgb(255 255 255 / 30%);
+  background: rgb(255 255 255 / 10%);
+}
+
+.action-btn.edit {
+  border-color: rgb(33 150 243 / 40%);
+  color: #2196f3;
+}
+
+.action-btn.edit:hover {
+  background: rgb(33 150 243 / 10%);
+}
+
+.action-btn.deactivate {
+  border-color: rgb(255 152 0 / 40%);
+  color: #ff9800;
+}
+
+.action-btn.deactivate:hover {
+  background: rgb(255 152 0 / 10%);
+}
+
+.action-btn.delete {
+  border-color: rgb(244 67 54 / 40%);
+  color: #f44336;
+}
+
+.action-btn.delete:hover {
+  background: rgb(244 67 54 / 10%);
+}

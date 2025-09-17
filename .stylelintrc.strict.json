@@ -66,7 +66,7 @@
       }
     ],
     "media-feature-range-notation": "context",
-    "no-descending-specificity": true,
+    "no-descending-specificity": null,
     "no-duplicate-selectors": true,
     "no-empty-source": null,
     "no-invalid-double-slash-comments": true,

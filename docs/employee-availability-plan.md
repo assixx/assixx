@@ -1,6 +1,7 @@
 # 📋 Employee Availability System - Implementation Plan
 
 ## 🎯 Ziel
+
 Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in der Schichtplanung die Verfügbarkeit anzeigt und nur verfügbare Mitarbeiter zur Einplanung erlaubt.
 
 ## 🔍 IST-Zustand Analyse
@@ -8,6 +9,7 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
 ### 1. Frontend-Probleme
 
 #### manage-employees.html
+
 - ✅ Hat "Bearbeiten" Button bei jedem Mitarbeiter
 - ❌ Modal lädt nur Basic-Daten (Name, Email, Team, etc.)
 - ❌ **KEINE Verfügbarkeits-Felder im Modal**
@@ -15,12 +17,14 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
 - ❌ Keine Datums-Felder für Zeiträume
 
 #### shifts.html
+
 - ✅ Zeigt Badge mit Verfügbarkeitsstatus
 - ❌ Status ist **hartcodiert** als "Verfügbar"
 - ❌ Keine Prüfung bei Drag&Drop ob Mitarbeiter verfügbar
 - ❌ Keine Integration mit employee_availability Tabelle
 
 #### admin-dashboard.html
+
 - ⚠️ Hat ein **ungenutztes** Employee-Status-Modal (Zeilen 805-859)
 - ⚠️ Dieses Modal sollte eigentlich nach manage-employees.html migriert werden
 - ⚠️ Verwirrender Begriff "Beurlaubt" statt "Nicht verfügbar"
@@ -28,6 +32,7 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
 ### 2. Backend-Probleme
 
 #### Datenbank-Struktur
+
 ```sql
 -- employee_availability Tabelle existiert ✅
 -- ABER: 0 Einträge! Wird nicht genutzt!
@@ -40,17 +45,20 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
 ```
 
 #### API Endpoints
+
 - ❌ Kein `/api/v2/users/:id/availability` Endpoint
 - ❌ Kein `/api/v2/availability` für CRUD-Operationen
 - ❌ shifts.ts lädt keine Verfügbarkeitsdaten
 
 ### 3. Multi-Tenant Isolation
+
 - ⚠️ tenant_id in employee_availability vorhanden ✅
 - ❌ Aber keine Prüfung in Queries implementiert
 
 ## 🚀 SOLL-Zustand (Lösung)
 
 ### Phase 1: Backend API (2h)
+
 1. **Neue API Endpoints** in `/backend/src/routes/v2/users/`
    - `GET /api/v2/users/:id/availability` - Aktuelle Verfügbarkeit
    - `POST /api/v2/users/:id/availability` - Neue Verfügbarkeit setzen
@@ -63,7 +71,9 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
    - Auto-expire alte Einträge
 
 ### Phase 2: manage-employees.html Integration (3h)
+
 1. **Modal erweitern**
+
    ```html
    <!-- Neue Section im Edit-Modal -->
    <div class="form-section availability-section">
@@ -86,6 +96,7 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
    - Zeigt aktuelle Verfügbarkeiten als Liste
 
 ### Phase 3: shifts.html Integration (2h)
+
 1. **Employee Sidebar**
    - API Call für aktuelle Woche: `/api/v2/availability?week=34`
    - Badge dynamisch setzen basierend auf Status
@@ -101,6 +112,7 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
    ```
 
 ### Phase 4: Daten-Migration (1h)
+
 1. **Cleanup current_employee_availability**
    - View droppen (redundant)
    - Durch API-basierte Lösung ersetzen
@@ -146,17 +158,17 @@ Integration eines vollständigen Verfügbarkeitssystems für Mitarbeiter, das in
 
 ```javascript
 [
-  { content: "Create availability API endpoints in backend", status: "pending" },
-  { content: "Add availability service with multi-tenant isolation", status: "pending" },
-  { content: "Extend manage-employees modal with availability fields", status: "pending" },
-  { content: "Update editEmployee() to load availability", status: "pending" },
-  { content: "Update saveEmployee() to save availability", status: "pending" },
-  { content: "Modify shifts.ts to load weekly availability", status: "pending" },
-  { content: "Update employee sidebar badges dynamically", status: "pending" },
-  { content: "Add drag&drop validation for unavailable employees", status: "pending" },
-  { content: "Test with different status and date ranges", status: "pending" },
-  { content: "Clean up redundant current_employee_availability view", status: "pending" }
-]
+  { content: 'Create availability API endpoints in backend', status: 'pending' },
+  { content: 'Add availability service with multi-tenant isolation', status: 'pending' },
+  { content: 'Extend manage-employees modal with availability fields', status: 'pending' },
+  { content: 'Update editEmployee() to load availability', status: 'pending' },
+  { content: 'Update saveEmployee() to save availability', status: 'pending' },
+  { content: 'Modify shifts.ts to load weekly availability', status: 'pending' },
+  { content: 'Update employee sidebar badges dynamically', status: 'pending' },
+  { content: 'Add drag&drop validation for unavailable employees', status: 'pending' },
+  { content: 'Test with different status and date ranges', status: 'pending' },
+  { content: 'Clean up redundant current_employee_availability view', status: 'pending' },
+];
 ```
 
 ## ⚠️ Wichtige Überlegungen

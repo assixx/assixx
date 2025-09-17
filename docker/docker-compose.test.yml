@@ -18,11 +18,10 @@ services:
     networks:
       - assixx-network
     healthcheck:
-      test:
-        ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
-      interval: 3s      # Alle 3 Sekunden checken
-      timeout: 20s      # Großzügiger Timeout pro Check
-      retries: 60       # 60 Versuche = max 3 Minuten
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 3s # Alle 3 Sekunden checken
+      timeout: 20s # Großzügiger Timeout pro Check
+      retries: 60 # 60 Versuche = max 3 Minuten
       start_period: 120s # 2 Minuten Startzeit für MySQL Init
 
   # Assixx Backend (Development Mode with Live Reload)

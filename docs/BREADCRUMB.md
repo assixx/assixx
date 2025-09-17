@@ -46,13 +46,13 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
   align-items: center;
   gap: 8px;
   backdrop-filter: blur(20px) saturate(180%);
-  border-radius: 12px;
   box-shadow:
     0 0px 4px rgba(33, 150, 243, 0.3),
     inset 0 1px 0 hsla(0, 0%, 100%, 0.2);
+  border-radius: 12px;
+  padding: 6px 20px;
   color: #fff;
   font-size: 14px;
-  padding: 6px 20px;
 }
 
 /* Einzelne Breadcrumb-Items */
@@ -64,15 +64,15 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
 
 /* Verlinkbare Items */
 .breadcrumb-link {
+  border-radius: var(--radius-md);
+  padding: 4px 8px;
   color: var(--text-secondary);
   text-decoration: none;
-  padding: 4px 8px;
-  border-radius: var(--radius-md);
 }
 
 .breadcrumb-link:hover {
-  color: var(--primary-color);
   background: rgba(33, 150, 243, 0.1);
+  color: var(--primary-color);
 }
 
 /* Separator zwischen Items */
@@ -84,9 +84,9 @@ beachte h1 titel müssen jeweil dann von der Seite weg (Titel)
 /* Aktuelle Seite (nicht klickbar) */
 .breadcrumb-current {
   border-radius: var(--radius-md);
+  padding: 4px 8px;
   color: var(--text-primary);
   font-weight: 600;
-  padding: 4px 8px;
 }
 
 /* Icons in Breadcrumbs */

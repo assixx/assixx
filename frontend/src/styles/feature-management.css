@@ -1,0 +1,267 @@
+/**
+ * Feature Management Styles
+ * Generated: 2025-09-17
+ */
+
+/* ========================================
+   Extracted from feature-management.html
+   ======================================== */
+
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Align first container with sidebar user-info-card */
+.container {
+  margin-top: -25px !important;
+}
+
+/* Glassmorphismus für Cards */
+.card {
+  border: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  /* animation: fadeInUp 0.6s ease-out; */
+}
+
+/* Form Controls mit Glassmorphismus */
+.form-control {
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  color: #fff;
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus {
+  border-color: rgb(0 142 255 / 50%);
+  background: rgb(255 255 255 / 5%);
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(0 142 255 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 20%);
+}
+
+/* Buttons mit Glassmorphismus und Shine-Effekt */
+.btn {
+  position: relative;
+
+  overflow: hidden;
+
+  border: 1px solid rgb(255 255 255 / 20%);
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+}
+
+.btn-primary {
+  border-color: rgb(0 142 255 / 30%);
+  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
+}
+
+.btn-success {
+  border-color: rgb(76 175 80 / 30%);
+  background: linear-gradient(135deg, rgb(76 175 80 / 20%), rgb(76 175 80 / 10%));
+}
+
+.btn-danger {
+  border-color: rgb(244 67 54 / 30%);
+  background: linear-gradient(135deg, rgb(244 67 54 / 20%), rgb(244 67 54 / 10%));
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn::after {
+  content: "";
+
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  transform: rotate(45deg) translate(-70%, -70%);
+
+  width: 200%;
+  height: 200%;
+
+  background: linear-gradient(45deg, transparent 30%, rgb(255 255 255 / 10%) 50%, transparent 70%);
+
+  transition: transform 0.6s;
+}
+
+.btn:hover::after {
+  transform: rotate(45deg) translate(-30%, -30%);
+}
+
+/* Table mit Glassmorphismus */
+.table {
+  background: transparent;
+}
+
+.table thead th {
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.table tbody tr {
+  background: rgb(255 255 255 / 1%);
+}
+
+.table tbody tr:hover {
+  background: rgb(255 255 255 / 3%);
+}
+
+/* Badges */
+.badge {
+  border: 1px solid rgb(255 255 255 / 20%);
+  backdrop-filter: blur(10px);
+}
+
+.badge-success {
+  color: #4caf50;
+  background: rgb(76 175 80 / 20%);
+}
+
+.badge-warning {
+  color: #ffc107;
+  background: rgb(255 193 7 / 20%);
+}
+
+/* Animationen */
+@keyframes fadeInUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+/* Notification Styles */
+.notification {
+  position: fixed;
+  z-index: 9999;
+  top: 20px;
+  right: 20px;
+  transform: translateX(400px);
+
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  min-width: 300px;
+  max-width: 500px;
+  padding: 16px 20px;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  background: rgb(255 255 255 / 95%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgb(0 0 0 / 20%);
+
+  transition: all 0.3s ease-out;
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+
+.notification.notification-error {
+  border-left: 4px solid #f44;
+  color: #d32f2f;
+}
+
+.notification.notification-error i {
+  font-size: 16px;
+  color: #f44;
+}
+
+.notification.notification-success {
+  border-left: 4px solid #4caf50;
+  color: #2e7d32;
+}
+
+.notification.notification-success i {
+  font-size: 16px;
+  color: #4caf50;
+}
+
+.notification.notification-info {
+  border-left: 4px solid #2196f3;
+  color: #1976d2;
+}
+
+.notification.notification-info i {
+  font-size: 16px;
+  color: #2196f3;
+}
+
+/* ========================================
+   Second Style Block - Status Categories
+   ======================================== */
+
+.status-active {
+  font-weight: 700;
+  color: #28a745;
+}
+
+.status-trial {
+  font-weight: 700;
+  color: #ffc107;
+}
+
+.status-expired {
+  font-weight: 700;
+  color: #dc3545;
+}
+
+.status-disabled {
+  color: #6c757d;
+}
+
+.category-basic {
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #1976d2;
+  background-color: #e3f2fd;
+}
+
+.category-premium {
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #7b1fa2;
+  background-color: #f3e5f5;
+}
+
+.category-enterprise {
+  padding: 2px 8px;
+  border-radius: 3px;
+  color: #c2185b;
+  background-color: #fce4ec;
+}

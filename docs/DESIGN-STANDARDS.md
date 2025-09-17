@@ -161,14 +161,14 @@ body::after {
 /* Standard Glass-Effekt für alle Container */
 .glass-container,
 .card {
-  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  animation: fadeInUp 0.6s ease-out;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-md);
-  animation: fadeInUp 0.6s ease-out;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Hover-Zustand */
@@ -246,21 +246,21 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```css
 .header {
+  display: flex;
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.02);
+  left: 0;
+  align-items: center;
+  z-index: 1000;
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.02);
   padding: 0 var(--spacing-lg);
-  z-index: 1000;
+  height: 60px;
 }
 ```
 
@@ -338,15 +338,25 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```html
 <div class="custom-dropdown">
-  <div class="dropdown-display" id="myDropdownDisplay" on click(depcreated.itsnow eventhandler)="toggleDropdown('myDropdown')">
+  <div
+    class="dropdown-display"
+    id="myDropdownDisplay"
+    on
+    click(depcreated.itsnow
+    eventhandler)="toggleDropdown('myDropdown')"
+  >
     <span>Bitte wählen</span>
     <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
       <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     </svg>
   </div>
   <div class="dropdown-options" id="myDropdownDropdown">
-    <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('value1', 'Text 1')">Text 1</div>
-    <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('value2', 'Text 2')">Text 2</div>
+    <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('value1', 'Text 1')">
+      Text 1
+    </div>
+    <div class="dropdown-option" on click(depcreated.itsnow eventhandler)="selectOption('value2', 'Text 2')">
+      Text 2
+    </div>
   </div>
   <input type="hidden" name="fieldName" id="myDropdownValue" required />
 </div>
@@ -362,21 +372,20 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 .dropdown-display {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-2sm);
-  background: rgba(255, 255, 255, 0.03);
+  align-items: center;
   backdrop-filter: blur(10px);
+  cursor: pointer;
   border: 1px solid hsla(0, 0%, 100%, 0.1);
   border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+  padding: var(--spacing-2sm);
   color: #fff;
-  cursor: pointer;
-
 }
 
 .dropdown-display:hover {
-  background: rgba(255, 255, 255, 0.05);
   border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .dropdown-display.active svg {
@@ -386,36 +395,36 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 .dropdown-options {
   position: absolute;
   top: calc(100% + 4px);
-  left: 0;
   right: 0;
-  background: rgba(18, 18, 18, 0.8);
+  left: 0;
+  transform: translateY(-10px);
+  visibility: hidden;
+  opacity: 0;
+
+  z-index: 1001;
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-sm);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  border-radius: var(--radius-sm);
+  background: rgba(18, 18, 18, 0.8);
   max-height: 200px;
   overflow-y: auto;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-
-  z-index: 1001;
 }
 
 .dropdown-options.active {
-  opacity: 1;
-  visibility: visible;
   transform: translateY(0);
+  visibility: visible;
+  opacity: 1;
 }
 
 .dropdown-option {
-  padding: 10px 12px;
-  color: var(--text-primary);
   cursor: pointer;
 
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 10px 12px;
+  color: var(--text-primary);
 }
 ```
 
@@ -428,61 +437,61 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 ```css
 /* First-Level: KEIN background, nur Shadow-Effekt */
 .btn-primary-first {
-  background: none !important; /* Explizit kein Background */
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  padding: 10px 24px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-
-  border: none;
   display: inline-flex;
-  align-items: center;
+  position: relative;
   justify-content: center;
+  align-items: center;
   gap: 8px;
+  cursor: pointer;
   margin: 5px;
   box-shadow:
     0 1px 4px rgba(33, 150, 243, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none !important; /* Explizit kein Background */
+  padding: 10px 24px;
+  overflow: hidden;
+  color: #fff;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 /* Second-Level Button (.btn-primary - mit Gradient) */
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  padding: 10px 24px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-  font-size: 14px;
-  cursor: pointer;
-
-  border: none;
   display: inline-flex;
-  align-items: center;
+  position: relative;
   justify-content: center;
+  align-items: center;
   gap: 8px;
+  cursor: pointer;
   margin: 5px;
   box-shadow:
     0 1px 4px rgba(33, 150, 243, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
+
+  border: none;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  padding: 10px 24px;
+  overflow: hidden;
+  color: #fff;
+  font-weight: 500;
+  font-size: 14px;
 }
 
 /* Gemeinsamer Hover-Effekt */
 .btn-primary::before,
 .btn-primary-first::before {
-  content: '';
   position: absolute;
   top: 0;
   left: -100%;
+  transition: left 0.5s ease;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.5s ease;
+  content: '';
 }
 
 .btn-primary:hover,
@@ -550,21 +559,20 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```css
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--primary-color);
-  border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(5px);
-  padding: 10px 24px;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
   cursor: pointer;
-
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 10px 24px;
+  color: var(--primary-color);
+  font-weight: 500;
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--primary-color);
   transform: translateY(-1px);
+  border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.08);
 }
 ```
 
@@ -573,44 +581,42 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 ```css
 /* Active Status Button */
 .btn-status-active {
-  background: transparent;
-  border: 1px solid #ff6b35;
-  color: #ff6b35;
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-
   backdrop-filter: blur(10px);
   cursor: pointer;
+  border: 1px solid #ff6b35;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 0.375rem 0.75rem;
+  color: #ff6b35;
+  font-weight: 500;
 }
 
 .btn-status-active:hover {
-  background: rgba(255, 107, 53, 0.1);
-  border-color: #ff5722;
-  color: #ff5722;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 107, 53, 0.2);
+  border-color: #ff5722;
+  background: rgba(255, 107, 53, 0.1);
+  color: #ff5722;
 }
 
 /* Inactive Status Button */
 .btn-status-inactive {
-  background: transparent;
-  border: 1px solid #28a745;
-  color: #28a745;
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-
   backdrop-filter: blur(10px);
   cursor: pointer;
+  border: 1px solid #28a745;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 0.375rem 0.75rem;
+  color: #28a745;
+  font-weight: 500;
 }
 
 .btn-status-inactive:hover {
-  background: rgba(40, 167, 69, 0.1);
-  border-color: #218838;
-  color: #218838;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(40, 167, 69, 0.2);
+  border-color: #218838;
+  background: rgba(40, 167, 69, 0.1);
+  color: #218838;
 }
 ```
 
@@ -618,20 +624,19 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```css
 .btn-danger {
-  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-  border: 1px solid #bd2130;
-  color: #fff;
-  padding: 0.375rem 0.75rem;
-  border-radius: var(--radius-sm);
-  font-weight: 500;
-
   cursor: pointer;
+  border: 1px solid #bd2130;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  padding: 0.375rem 0.75rem;
+  color: #fff;
+  font-weight: 500;
 }
 
 .btn-danger:hover {
-  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+  background: linear-gradient(135deg, #c82333 0%, #bd2130 100%);
 }
 ```
 
@@ -653,7 +658,9 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
       </div>
       <div class="button-group">
         <button type="submit" class="btn btn-primary">Speichern</button>
-        <button type="button" class="btn btn-secondary" on click(depcreated.itsnow eventhandler)="hideModal('myModal')">Abbrechen</button>
+        <button type="button" class="btn btn-secondary" on click(depcreated.itsnow eventhandler)="hideModal('myModal')">
+          Abbrechen
+        </button>
       </div>
     </form>
   </div>
@@ -664,61 +671,60 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 
 ```css
 .modal {
-  position: fixed;
-  z-index: 1000;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  backdrop-filter: blur(10px);
   display: flex;
+  position: fixed;
+  top: 0;
+  left: 0;
   justify-content: center;
   align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  width: 100%;
+  height: 100%;
 }
 
 .modal-content {
   backdrop-filter: blur(20px) saturate(580%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-md);
+  animation: fadeInUp 0.3s ease-out;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  animation: fadeInUp 0.3s ease-out;
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg);
   border-bottom: 1px solid var(--border-color);
+  padding: var(--spacing-lg);
 }
 
 .modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color);
   margin: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+  font-size: 20px;
 }
 
 .modal-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: var(--text-secondary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
   padding: 0;
   width: 30px;
   height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-sm);
-
+  color: var(--text-secondary);
+  font-size: 24px;
 }
 
 .modal-close:hover {
@@ -749,37 +755,37 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.2rem 0.5rem;
   background: transparent;
-  font-size: 0.85rem;
+  padding: 0.2rem 0.5rem;
   color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 #user-avatar {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 50%;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
   object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 #logout-btn {
-  padding: 0.25rem 0.6rem;
-  background: linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(185, 28, 28, 0.8));
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 500;
   cursor: pointer;
 
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: none;
+  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(220, 38, 38, 0.8), rgba(185, 28, 28, 0.8));
+  padding: 0.25rem 0.6rem;
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.8rem;
 }
 
 #logout-btn:hover {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
   transform: translateY(-1px);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
 }
 ```
 
@@ -788,24 +794,23 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 ```css
 /* WICHTIG: backdrop-filter NUR auf der Card selbst, NICHT auf card-header! */
 .compact-card {
-  position: relative;
-  overflow: hidden;
-
   display: flex;
+  position: relative;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
 }
 
 .compact-card::before {
-  content: '';
   position: absolute;
   top: 0;
-  left: 0;
   right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+  left: 0;
   opacity: 0;
   transition: opacity 0.3s ease;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+  height: 3px;
+  content: '';
 }
 
 .compact-card:hover::before {
@@ -821,11 +826,11 @@ Das Navigation Container System ist der moderne Standard für konsistente Naviga
 }
 
 .compact-card .card-title::before {
-  content: '';
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
   width: 4px;
   height: 20px;
-  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-  border-radius: 2px;
+  content: '';
 }
 ```
 
@@ -884,12 +889,12 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 /* Fade In Up */
 @keyframes fadeInUp {
   from {
-    opacity: 0;
     transform: translateY(30px);
+    opacity: 0;
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
@@ -932,12 +937,12 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 @keyframes subtle-pulse {
   0%,
   100% {
-    opacity: 1;
     transform: scale(1);
+    opacity: 1;
   }
   50% {
-    opacity: 0.95;
     transform: scale(1.02);
+    opacity: 0.95;
   }
 }
 
@@ -968,9 +973,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 ```css
 /* Standard Transition */
 
-
 /* Schnelle Interaktionen */
-
 
 /* Langsame, smooth Animationen */
 transition: all 0.6s ease-out;
@@ -1010,43 +1013,43 @@ function showSuccessMessage() {
 ```css
 /* Success Overlay - Fullscreen mit Glassmorphismus */
 .success-overlay {
+  display: flex;
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
   animation: fadeIn 0.3s ease-out;
+  background: rgba(0, 0, 0, 0.8);
+  width: 100%;
+  height: 100%;
 }
 
 /* Success Message Container */
 .success-message {
-  background: rgba(76, 175, 80, 0.1);
-  border: 2px solid #4caf50;
   backdrop-filter: blur(20px);
+  animation: scaleIn 0.5s ease-out;
+  border: 2px solid #4caf50;
   border-radius: var(--radius-md);
+  background: rgba(76, 175, 80, 0.1);
   padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
   text-align: center;
-  animation: scaleIn 0.5s ease-out;
 }
 
 /* Success Icon mit Animation */
 .success-icon {
-  font-size: 4rem;
-  color: #4caf50;
-  margin-bottom: var(--spacing-lg);
   animation: checkmark 0.6s ease-out 0.3s both;
+  margin-bottom: var(--spacing-lg);
+  color: #4caf50;
+  font-size: 4rem;
 }
 
 /* Success Text */
 .success-text {
-  font-size: 1.5rem;
   color: var(--text-primary);
   font-weight: 600;
+  font-size: 1.5rem;
 }
 ```
 
@@ -1115,17 +1118,17 @@ function showSuccessMessage() {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(251, 191, 36, 0.02);
   backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
-  color: #fbbf24;
-  font-weight: 500;
+  animation: glow 2s ease-in-out infinite alternate;
   box-shadow:
     0 4px 12px rgba(251, 191, 36, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  animation: glow 2s ease-in-out infinite alternate;
+  border-radius: 20px;
+  background: rgba(251, 191, 36, 0.02);
+  padding: 6px 14px;
+  color: #fbbf24;
+  font-weight: 500;
+  font-size: 13px;
 }
 ```
 
@@ -1133,13 +1136,13 @@ function showSuccessMessage() {
 
 ```css
 .success-message {
-  background: rgba(16, 185, 129, 0.15);
   backdrop-filter: blur(10px);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
   box-shadow:
     0 4px 12px rgba(16, 185, 129, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
 ```
 
@@ -1150,93 +1153,92 @@ function showSuccessMessage() {
 .badge {
   display: inline-flex;
   align-items: center;
-  font-size: 11px;
-  padding: 3px 8px;
   border-radius: var(--radius-md);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  font-weight: 700;
+  padding: 3px 8px;
   width: fit-content;
-
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
 .badge-success {
-  color: rgba(76, 175, 80, 0.9);
-  background: rgba(76, 175, 80, 0.1);
   border: 1px solid rgba(76, 175, 80, 0.2);
+  background: rgba(76, 175, 80, 0.1);
+  color: rgba(76, 175, 80, 0.9);
 }
 
 .badge-success:hover {
-  background: rgba(76, 175, 80, 0.15);
   border-color: rgba(76, 175, 80, 0.3);
+  background: rgba(76, 175, 80, 0.15);
 }
 
 .badge-warning {
-  color: rgba(255, 152, 0, 0.9);
-  background: rgba(255, 152, 0, 0.1);
   border: 1px solid rgba(255, 152, 0, 0.2);
+  background: rgba(255, 152, 0, 0.1);
+  color: rgba(255, 152, 0, 0.9);
 }
 
 .badge-warning:hover {
-  background: rgba(255, 152, 0, 0.15);
   border-color: rgba(255, 152, 0, 0.3);
+  background: rgba(255, 152, 0, 0.15);
 }
 
 .badge-danger,
 .badge-error {
-  color: rgba(244, 67, 54, 0.9);
-  background: rgba(244, 67, 54, 0.1);
   border: 1px solid rgba(244, 67, 54, 0.2);
+  background: rgba(244, 67, 54, 0.1);
+  color: rgba(244, 67, 54, 0.9);
 }
 
 .badge-danger:hover,
 .badge-error:hover {
-  background: rgba(244, 67, 54, 0.15);
   border-color: rgba(244, 67, 54, 0.3);
+  background: rgba(244, 67, 54, 0.15);
 }
 
 .badge-primary {
-  color: rgba(33, 150, 243, 0.9);
-  background: rgba(33, 150, 243, 0.1);
   border: 1px solid rgba(33, 150, 243, 0.2);
+  background: rgba(33, 150, 243, 0.1);
+  color: rgba(33, 150, 243, 0.9);
 }
 
 .badge-primary:hover {
-  background: rgba(33, 150, 243, 0.15);
   border-color: rgba(33, 150, 243, 0.3);
+  background: rgba(33, 150, 243, 0.15);
 }
 
 .badge-secondary {
-  color: rgba(158, 158, 158, 0.9);
-  background: rgba(158, 158, 158, 0.1);
   border: 1px solid rgba(158, 158, 158, 0.2);
+  background: rgba(158, 158, 158, 0.1);
+  color: rgba(158, 158, 158, 0.9);
 }
 
 .badge-secondary:hover {
-  background: rgba(158, 158, 158, 0.15);
   border-color: rgba(158, 158, 158, 0.3);
+  background: rgba(158, 158, 158, 0.15);
 }
 
 .badge-info {
-  color: rgba(23, 162, 184, 0.9);
-  background: rgba(23, 162, 184, 0.1);
   border: 1px solid rgba(23, 162, 184, 0.2);
+  background: rgba(23, 162, 184, 0.1);
+  color: rgba(23, 162, 184, 0.9);
 }
 
 .badge-info:hover {
-  background: rgba(23, 162, 184, 0.15);
   border-color: rgba(23, 162, 184, 0.3);
+  background: rgba(23, 162, 184, 0.15);
 }
 
 .badge-dark {
-  color: rgba(52, 58, 64, 0.9);
-  background: rgba(52, 58, 64, 0.1);
   border: 1px solid rgba(52, 58, 64, 0.2);
+  background: rgba(52, 58, 64, 0.1);
+  color: rgba(52, 58, 64, 0.9);
 }
 
 .badge-dark:hover {
-  background: rgba(52, 58, 64, 0.15);
   border-color: rgba(52, 58, 64, 0.3);
+  background: rgba(52, 58, 64, 0.15);
 }
 ```
 
@@ -1244,10 +1246,10 @@ function showSuccessMessage() {
 
 ```css
 .unread-badge {
-  background: linear-gradient(135deg, #f44336, #e53935);
-  color: #fff;
   border-radius: 10px;
+  background: linear-gradient(135deg, #f44336, #e53935);
   padding: 2px 6px;
+  color: #fff;
   font-size: 0.75rem;
 }
 ```
@@ -1257,30 +1259,30 @@ function showSuccessMessage() {
 ```css
 .btn-role-switch {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.021);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--radius-md);
-  color: var(--text-primary);
-  font-size: 0.8rem;
-  cursor: pointer;
 
   position: relative;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.021);
+  padding: 6px 10px;
   overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.8rem;
 }
 
 .btn-role-switch:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--employee-color);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+  border-color: var(--employee-color);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .btn-role-switch i {
-  font-size: 1rem;
   transition: transform 0.3s ease;
+  font-size: 1rem;
 }
 
 .btn-role-switch:hover i {
@@ -1455,15 +1457,15 @@ document.addEventListener('click', function (e) {
 ```css
 /* Chat Container - Glassmorphismus */
 .chat-container {
-  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid hsla(0, 0%, 100%, 0.1);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Message Bubbles */
 .message.sent {
-  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.1));
   margin-left: auto;
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15), rgba(33, 150, 243, 0.1));
 }
 
 .message.received {
@@ -1472,10 +1474,10 @@ document.addEventListener('click', function (e) {
 
 /* Unread Badge */
 .unread-badge {
-  background: linear-gradient(135deg, #f44336, #e53935);
-  color: #fff;
   border-radius: 10px;
+  background: linear-gradient(135deg, #f44336, #e53935);
   padding: 2px 6px;
+  color: #fff;
   font-size: 0.75rem;
 }
 ```
@@ -1532,8 +1534,8 @@ document.addEventListener('click', function (e) {
   display: flex;
 }
 .flex-center {
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 .flex-between {
   justify-content: space-between;
@@ -1571,16 +1573,15 @@ document.addEventListener('click', function (e) {
 
 ```css
 .glass-card {
-  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-md);
+  animation: fadeInUp 0.6s ease-out;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
   padding: var(--spacing-lg);
-  animation: fadeInUp 0.6s ease-out;
-
 }
 
 .glass-card:hover {
@@ -1592,29 +1593,29 @@ document.addEventListener('click', function (e) {
 }
 
 .card-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px 10px 0 0;
   background: rgba(255, 255, 255, 0.01);
   /* WICHTIG: Kein backdrop-filter für card-header! */
   padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 10px 10px 0 0;
 }
 
 .card-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 1.1rem;
 }
 
 .card-title::before {
-  content: '';
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
   width: 4px;
   height: 20px;
-  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
-  border-radius: 2px;
+  content: '';
 }
 ```
 
@@ -1636,14 +1637,14 @@ document.addEventListener('click', function (e) {
 
 ```css
 .glass-form {
-  background: rgba(255, 255, 255, 0.02);
   backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid hsla(0, 0%, 100%, 0.1);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-xl);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 1px solid hsla(0, 0%, 100%, 0.1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  padding: var(--spacing-xl);
 }
 ```
 
