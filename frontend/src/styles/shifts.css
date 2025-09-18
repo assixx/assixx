@@ -2302,6 +2302,8 @@ body::after {
 .checkbox-label {
   cursor: pointer;
 
+  position: relative;
+
   display: inline-flex;
   align-items: center;
 
@@ -2309,7 +2311,6 @@ body::after {
   max-width: 450px;
   margin-right: 10px;
   padding: 10px 16px;
-  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 12px;
 
   background: rgb(255 255 255 / 3%);
@@ -2361,13 +2362,12 @@ body::after {
 
   position: absolute;
   top: 50%;
-  left: 41px;
+  left: 24.5px; /* Position über Checkbox: 10px padding + 7.5px (halbe Checkbox-Breite) */
   transform: translate(-50%, -50%) scale(0);
 
+  font-size: 12px;
   font-weight: 700;
   color: #fff;
-
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .checkbox-label:has(input:checked)::after {

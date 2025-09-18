@@ -125,6 +125,31 @@
         "property-no-vendor-prefix": null,
         "value-no-vendor-prefix": null
       }
+    },
+    {
+      "files": ["**/*.css"],
+      "excludeFiles": ["**/*.scss"],
+      "rules": {
+        "scss/selector-no-redundant-nesting-selector": null,
+        "scss/at-rule-no-unknown": null,
+        "at-rule-no-unknown": [
+          true,
+          {
+            "ignoreAtRules": [
+              "layer",
+              "custom-media",
+              "custom-selector"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/postcss-examples.css", "**/postcss-*.css"],
+      "rules": {
+        "max-nesting-depth": null,
+        "scss/selector-no-redundant-nesting-selector": null
+      }
     }
   ]
 }

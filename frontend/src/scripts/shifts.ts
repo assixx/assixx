@@ -13,7 +13,7 @@ import {
   type UserAPIResponse,
   type RotationPatternAPIResponse,
 } from '../utils/api-mappers';
-import { $$, $$id, createElement } from '../utils/dom-utils';
+import { $$, $$id, createElement, setData } from '../utils/dom-utils';
 import { getAuthToken, showInfo } from './auth';
 // escapeHtml removed - using DOM manipulation instead
 import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
@@ -445,21 +445,25 @@ class ShiftPlanningSystem {
         const context = windowWithShifts.shiftsSavedReloadContext;
 
         // Helper function to set custom dropdown
-        const setCustomDropdown = (selectId: string, displayId: string, value: number | null, label?: string): void => {
+        const setCustomDropdown = (
+          _selectId: string,
+          displayId: string,
+          value: number | null,
+          label?: string,
+        ): void => {
           if (value === null) return;
 
-          // Set the hidden input value
-          const hiddenInput = $$id(selectId) as HTMLInputElement | null;
-          if (hiddenInput !== null) {
-            hiddenInput.value = String(value);
-          }
-
-          // Update the display element
+          // Update the display element and store value in data attribute
           const display = $$id(displayId);
-          if (display !== null && label !== undefined) {
-            const span = display.querySelector('span');
-            if (span !== null) {
-              span.textContent = label;
+          if (display !== null) {
+            // Store value in data attribute (no hidden input anymore)
+            setData(display, 'value', String(value));
+
+            if (label !== undefined) {
+              const span = display.querySelector('span');
+              if (span !== null) {
+                span.textContent = label;
+              }
             }
           }
         };
@@ -980,43 +984,47 @@ class ShiftPlanningSystem {
   }
 
   setupContextEvents(): void {
-    // Area selection (TOP of hierarchy)
-    const areaSelect = document.querySelector('#areaSelect');
-    if (areaSelect !== null) {
-      areaSelect.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        this.selectedContext.areaId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
+    // Area selection (TOP of hierarchy) - Listen for custom dropdownChange event
+    const areaDisplay = document.querySelector('#areaDisplay');
+    if (areaDisplay !== null) {
+      areaDisplay.addEventListener('dropdownChange', (e) => {
+        const event = e as CustomEvent<{ value: string }>;
+        const value = event.detail.value;
+        this.selectedContext.areaId = value !== '' ? Number.parseInt(value, 10) : null;
         void this.onAreaSelected(this.selectedContext.areaId ?? undefined);
       });
     }
 
-    // Department selection
-    const departmentSelect = document.querySelector('#departmentSelect');
-    if (departmentSelect !== null) {
-      departmentSelect.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        this.selectedContext.departmentId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
+    // Department selection - Listen for custom dropdownChange event
+    const departmentDisplay = document.querySelector('#departmentDisplay');
+    if (departmentDisplay !== null) {
+      departmentDisplay.addEventListener('dropdownChange', (e) => {
+        const event = e as CustomEvent<{ value: string }>;
+        const value = event.detail.value;
+        this.selectedContext.departmentId = value !== '' ? Number.parseInt(value, 10) : null;
         void this.onContextChange();
         this.togglePlanningAreaVisibility();
       });
     }
 
-    // Team selection
-    const teamSelect = document.querySelector('#teamSelect');
-    if (teamSelect !== null) {
-      teamSelect.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        this.selectedContext.teamId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
+    // Team selection - Listen for custom dropdownChange event
+    const teamDisplay = document.querySelector('#teamDisplay');
+    if (teamDisplay !== null) {
+      teamDisplay.addEventListener('dropdownChange', (e) => {
+        const event = e as CustomEvent<{ value: string }>;
+        const value = event.detail.value;
+        this.selectedContext.teamId = value !== '' ? Number.parseInt(value, 10) : null;
         void this.onTeamSelected(this.selectedContext.teamId ?? undefined);
       });
     }
 
-    // Machine selection (now filters teams!)
-    const machineSelect = document.querySelector('#machineSelect');
-    if (machineSelect !== null) {
-      machineSelect.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        this.selectedContext.machineId = target.value !== '' ? Number.parseInt(target.value, 10) : null;
+    // Machine selection (now filters teams!) - Listen for custom dropdownChange event
+    const machineDisplay = document.querySelector('#machineDisplay');
+    if (machineDisplay !== null) {
+      machineDisplay.addEventListener('dropdownChange', (e) => {
+        const event = e as CustomEvent<{ value: string }>;
+        const value = event.detail.value;
+        this.selectedContext.machineId = value !== '' ? Number.parseInt(value, 10) : null;
         void this.onMachineSelected(this.selectedContext.machineId ?? undefined);
       });
     }
@@ -1443,14 +1451,14 @@ class ShiftPlanningSystem {
     // Reset team selection when machine changes
     this.selectedContext.teamId = null;
 
-    // Clear team dropdown display
-    const teamDisplay = document.querySelector('#teamDisplay span');
-    if (teamDisplay) teamDisplay.textContent = 'Team wählen...';
-
-    // Clear hidden input
-    const teamSelect = $$id('teamSelect') as HTMLInputElement | null;
-    if (teamSelect !== null) {
-      teamSelect.value = '';
+    // Clear team dropdown display and value
+    const teamDisplay = $$id('teamDisplay');
+    if (teamDisplay !== null) {
+      delete teamDisplay.dataset.value;
+      const span = teamDisplay.querySelector('span');
+      if (span !== null) {
+        span.textContent = 'Team wählen...';
+      }
     }
 
     // Load teams for this machine (via machine_teams junction)
@@ -1488,12 +1496,15 @@ class ShiftPlanningSystem {
     // Load team members when a team is selected
     if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
       console.info('[SHIFTS DEBUG] Team selected, loading data...');
-      await this.loadTeamMembers();
 
-      // Now show the planning area and load shifts
+      // IMPORTANT: Show UI IMMEDIATELY before loading data
       this.togglePlanningAreaVisibility();
-      await this.loadCurrentWeekData();
-      await this.loadEmployees();
+      console.info('[SHIFTS DEBUG] UI visibility updated, now loading data...');
+
+      // Then load the data
+      await this.loadTeamMembers();
+      await this.loadEmployees(); // Load employees FIRST
+      await this.loadCurrentWeekData(); // Then load shifts (can now use employee names)
     } else {
       console.info('[SHIFTS DEBUG] No team selected, hiding planning area');
       // Hide planning area if no team selected
@@ -1977,15 +1988,17 @@ class ShiftPlanningSystem {
     const mainPlanningArea = document.querySelector('#mainPlanningArea');
     const adminActions = document.querySelector('#adminActions');
     const weekNavigation = document.querySelector('.week-navigation');
+    const shiftControls = document.querySelector('.shift-controls');
 
-    console.info('[SHIFTS DEBUG] togglePlanningAreaVisibility called');
-    console.info('[SHIFTS DEBUG] isAdmin:', this.isAdmin);
-    console.info('[SHIFTS DEBUG] selectedContext:', this.selectedContext);
-    console.info('[SHIFTS DEBUG] Elements found:', {
+    console.info('[SHIFTS UI] togglePlanningAreaVisibility called');
+    console.info('[SHIFTS UI] isAdmin:', this.isAdmin);
+    console.info('[SHIFTS UI] selectedContext:', this.selectedContext);
+    console.info('[SHIFTS UI] Elements found:', {
       departmentNotice: !!departmentNotice,
       mainPlanningArea: !!mainPlanningArea,
       adminActions: !!adminActions,
       weekNavigation: !!weekNavigation,
+      shiftControls: !!shiftControls,
     });
 
     // Show planning area only when team is selected (or for employees with auto-selected team)
@@ -1993,42 +2006,76 @@ class ShiftPlanningSystem {
       ? this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0
       : this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0;
 
-    console.info('[SHIFTS DEBUG] shouldShowPlanning:', shouldShowPlanning);
+    console.info('[SHIFTS UI] shouldShowPlanning:', shouldShowPlanning);
 
     if (shouldShowPlanning) {
       // Team selected (or employee with auto-selected dept) - show planning area
-      if (departmentNotice) (departmentNotice as HTMLElement).style.display = 'none';
-      if (mainPlanningArea) (mainPlanningArea as HTMLElement).style.display = '';
-      if (adminActions && this.isAdmin) (adminActions as HTMLElement).style.display = 'block';
-      if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'flex';
+      console.info('[SHIFTS UI] Showing planning area elements...');
+
+      if (departmentNotice) {
+        (departmentNotice as HTMLElement).classList.add('u-hidden');
+        console.info('[SHIFTS UI] Hidden department notice');
+      }
+
+      if (mainPlanningArea) {
+        (mainPlanningArea as HTMLElement).classList.remove('u-hidden');
+        console.info('[SHIFTS UI] Shown main planning area');
+      }
+
+      if (adminActions && this.isAdmin) {
+        (adminActions as HTMLElement).classList.remove('u-hidden');
+        console.info('[SHIFTS UI] Shown admin actions');
+      }
+
+      // WICHTIG: u-hidden Klasse entfernen für Week Navigation
+      if (weekNavigation) {
+        (weekNavigation as HTMLElement).classList.remove('u-hidden');
+        console.info('[SHIFTS UI] Shown week navigation');
+      } else {
+        console.error('[SHIFTS UI] Week navigation element not found!');
+      }
 
       // Show shift controls when planning area is shown
-      const shiftControls = $$('.shift-controls');
-      if (shiftControls) shiftControls.style.display = 'block';
+      if (shiftControls) {
+        shiftControls.classList.remove('u-hidden');
+        console.info('[SHIFTS UI] Shown shift controls');
+      } else {
+        console.error('[SHIFTS UI] Shift controls element not found!');
+      }
 
-      // Load data for the selected department
-      void (async () => {
-        console.info('[SHIFTS DEBUG] Loading employees for selected team/department');
-        await this.loadEmployees();
-        console.info('[SHIFTS DEBUG] About to call loadCurrentWeekData');
-        await this.loadCurrentWeekData();
-        console.info('[SHIFTS DEBUG] loadCurrentWeekData completed');
-        // Load notes after shift data is loaded
-        if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-          console.info('[SHIFTS DEBUG] Loading notes in togglePlanningAreaVisibility');
-          this.loadWeeklyNotes();
-        }
-      })();
+      // NOTE: Data loading is handled by the calling function (onTeamSelected, etc.)
+      // This function ONLY handles UI visibility!
+      console.info('[SHIFTS UI] UI visibility update completed');
     } else {
       // No department selected (only for admins) - show notice
-      if (departmentNotice) (departmentNotice as HTMLElement).style.display = 'block';
-      if (mainPlanningArea) (mainPlanningArea as HTMLElement).style.display = 'none';
-      if (adminActions) (adminActions as HTMLElement).style.display = 'none';
-      if (weekNavigation) (weekNavigation as HTMLElement).style.display = 'none';
+      console.info('[SHIFTS UI] Hiding planning area elements...');
+
+      if (departmentNotice) {
+        (departmentNotice as HTMLElement).classList.remove('u-hidden');
+        console.info('[SHIFTS UI] Shown department notice');
+      }
+
+      if (mainPlanningArea) {
+        (mainPlanningArea as HTMLElement).classList.add('u-hidden');
+        console.info('[SHIFTS UI] Hidden main planning area');
+      }
+
+      if (adminActions) {
+        (adminActions as HTMLElement).classList.add('u-hidden');
+        console.info('[SHIFTS UI] Hidden admin actions');
+      }
+
+      // WICHTIG: u-hidden Klasse hinzufügen zum Verstecken
+      if (weekNavigation) {
+        (weekNavigation as HTMLElement).classList.add('u-hidden');
+        console.info('[SHIFTS UI] Hidden week navigation');
+      }
 
       // Hide shift controls when planning area is hidden
-      const shiftControls = $$('.shift-controls');
-      if (shiftControls) shiftControls.style.display = 'none';
+      if (shiftControls) {
+        shiftControls.classList.add('u-hidden');
+        console.info('[SHIFTS UI] Hidden shift controls');
+      }
     }
   }
 
@@ -3130,14 +3177,19 @@ class ShiftPlanningSystem {
             console.info('[SHIFTS PLAN DEBUG] Number of shifts:', planData.shifts.length);
 
             // Convert v2 format to legacy format for processShiftData
-            const legacyShifts = planData.shifts.map((shift) => ({
-              date: shift.date,
-              shift_type: shift.type,
-              employee_id: shift.userId,
-              first_name: shift.user?.firstName ?? 'Unknown',
-              last_name: shift.user?.lastName ?? 'User',
-              username: shift.user?.username ?? `user_${String(shift.userId)}`,
-            }));
+            const legacyShifts = planData.shifts.map((shift) => {
+              // Try to find employee in loaded employees array
+              const employee = this.employees.find((emp) => emp.id === shift.userId);
+
+              return {
+                date: shift.date,
+                shift_type: shift.type,
+                employee_id: shift.userId,
+                first_name: employee?.first_name ?? shift.user?.firstName ?? 'Unknown',
+                last_name: employee?.last_name ?? shift.user?.lastName ?? 'User',
+                username: employee?.email ?? shift.user?.username ?? `user_${String(shift.userId)}`,
+              };
+            });
 
             this.processShiftData(legacyShifts);
           } else if (response !== null && typeof response === 'object' && 'message' in response) {
@@ -3222,12 +3274,39 @@ class ShiftPlanningSystem {
         return; // Skip this shift for now
       }
 
+      // Fix: Handle undefined/null names - also check employees array
+      const employee = this.employees.find((emp) => emp.id === shift.employee_id);
+      const firstName =
+        employee?.first_name !== undefined && employee.first_name !== ''
+          ? employee.first_name
+          : shift.first_name !== ''
+            ? shift.first_name
+            : '';
+      const lastName =
+        employee?.last_name !== undefined && employee.last_name !== ''
+          ? employee.last_name
+          : shift.last_name !== ''
+            ? shift.last_name
+            : '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      const displayName =
+        fullName !== ''
+          ? fullName
+          : employee?.email !== undefined && employee.email !== ''
+            ? employee.email
+            : shift.username !== ''
+              ? shift.username
+              : `Employee #${shift.employee_id}`;
+
       console.info('[SHIFTS DEBUG] Processing shift:', {
         originalDate: dateString,
         extractedDate: date,
         shiftType,
         employee_id: shift.employee_id,
-        employee_name: `${shift.first_name} ${shift.last_name}`,
+        employee_name: displayName,
+        raw_first_name: shift.first_name,
+        raw_last_name: shift.last_name,
+        raw_username: shift.username,
       });
 
       // Use safe setter method to avoid object injection
@@ -4720,11 +4799,17 @@ class ShiftPlanningSystem {
                 assignmentDiv.append(employeeCard);
               } else if (shiftDetail !== undefined) {
                 // Create a temporary employee object from shift details
+                // FIX: Ensure names are not empty strings
+                const firstName = shiftDetail.first_name !== '' ? shiftDetail.first_name : undefined;
+                const lastName = shiftDetail.last_name !== '' ? shiftDetail.last_name : undefined;
+                const username =
+                  shiftDetail.username !== '' ? shiftDetail.username : `Employee #${shiftDetail.employee_id}`;
+
                 const tempEmployee: Employee = {
                   id: shiftDetail.employee_id,
-                  first_name: shiftDetail.first_name,
-                  last_name: shiftDetail.last_name,
-                  username: shiftDetail.username,
+                  first_name: firstName,
+                  last_name: lastName,
+                  username: username,
                   position: 'Mitarbeiter',
                   email: '',
                   role: 'employee' as const,
@@ -5705,18 +5790,15 @@ class ShiftPlanningSystem {
       // 1. Set and load Area
       console.info('[LOADFAVORITE] Setting area:', favorite.areaId, favorite.areaName);
       this.selectedContext.areaId = favorite.areaId;
-      const areaSelect = $$id('areaSelect') as HTMLInputElement | null;
-      if (areaSelect) {
-        areaSelect.value = String(favorite.areaId);
-        console.info('[LOADFAVORITE] Area select value set to:', areaSelect.value);
-      } else {
-        console.error('[LOADFAVORITE] Area select element not found!');
-      }
-
-      const areaDisplay = document.querySelector('#areaDisplay span');
+      const areaDisplay = $$id('areaDisplay');
       if (areaDisplay) {
-        areaDisplay.textContent = favorite.areaName;
-        console.info('[LOADFAVORITE] Area display updated to:', favorite.areaName);
+        areaDisplay.dataset.value = String(favorite.areaId);
+        const span = areaDisplay.querySelector('span');
+        if (span) {
+          span.textContent = favorite.areaName;
+          console.info('[LOADFAVORITE] Area display updated to:', favorite.areaName);
+        }
+        console.info('[LOADFAVORITE] Area display value set to:', favorite.areaId);
       } else {
         console.error('[LOADFAVORITE] Area display element not found!');
       }
@@ -5729,18 +5811,15 @@ class ShiftPlanningSystem {
       // 2. Set and load Department
       console.info('[LOADFAVORITE] Setting department:', favorite.departmentId, favorite.departmentName);
       this.selectedContext.departmentId = favorite.departmentId;
-      const departmentSelect = $$id('departmentSelect') as HTMLInputElement | null;
-      if (departmentSelect) {
-        departmentSelect.value = String(favorite.departmentId);
-        console.info('[LOADFAVORITE] Department select value set to:', departmentSelect.value);
-      } else {
-        console.error('[LOADFAVORITE] Department select element not found!');
-      }
-
-      const departmentDisplay = document.querySelector('#departmentDisplay span');
+      const departmentDisplay = $$id('departmentDisplay');
       if (departmentDisplay) {
-        departmentDisplay.textContent = favorite.departmentName;
-        console.info('[LOADFAVORITE] Department display updated to:', favorite.departmentName);
+        departmentDisplay.dataset.value = String(favorite.departmentId);
+        const span = departmentDisplay.querySelector('span');
+        if (span) {
+          span.textContent = favorite.departmentName;
+          console.info('[LOADFAVORITE] Department display updated to:', favorite.departmentName);
+        }
+        console.info('[LOADFAVORITE] Department display value set to:', favorite.departmentId);
       } else {
         console.error('[LOADFAVORITE] Department display element not found!');
       }
@@ -5751,11 +5830,12 @@ class ShiftPlanningSystem {
 
       // 3. Set and load Machine
       this.selectedContext.machineId = favorite.machineId;
-      const machineSelect = $$id('machineSelect') as HTMLInputElement | null;
-      if (machineSelect) machineSelect.value = String(favorite.machineId);
-
-      const machineDisplay = document.querySelector('#machineDisplay span');
-      if (machineDisplay) machineDisplay.textContent = favorite.machineName;
+      const machineDisplay = $$id('machineDisplay');
+      if (machineDisplay) {
+        machineDisplay.dataset.value = String(favorite.machineId);
+        const span = machineDisplay.querySelector('span');
+        if (span) span.textContent = favorite.machineName;
+      }
 
       // Load teams for this machine but WITHOUT resetting teamId
       // Store team ID temporarily
@@ -5763,11 +5843,12 @@ class ShiftPlanningSystem {
       await this.onMachineSelected(favorite.machineId);
       // Restore team ID after onMachineSelected resets it
       this.selectedContext.teamId = savedTeamId;
-      const teamSelect = $$id('teamSelect') as HTMLInputElement | null;
-      if (teamSelect) teamSelect.value = String(favorite.teamId);
-
-      const teamDisplay = document.querySelector('#teamDisplay span');
-      if (teamDisplay) teamDisplay.textContent = favorite.teamName;
+      const teamDisplay = $$id('teamDisplay');
+      if (teamDisplay) {
+        teamDisplay.dataset.value = String(favorite.teamId);
+        const span = teamDisplay.querySelector('span');
+        if (span) span.textContent = favorite.teamName;
+      }
 
       // Trigger team selection logic (loads shift plan and preferences!)
       console.info('[LOADFAVORITE] Calling onTeamSelected with teamId:', savedTeamId);
@@ -5798,6 +5879,9 @@ class ShiftPlanningSystem {
         console.info('[LOADFAVORITE] In timeout - context:', this.selectedContext);
         this.updateAddFavoriteButton();
       }, 100);
+
+      // NOTE: togglePlanningAreaVisibility wird bereits in onTeamSelected aufgerufen
+      // Kein doppelter Aufruf nötig!
 
       console.info('[LOADFAVORITE] Successfully loaded favorite!');
       showSuccessAlert(`Favorit "${favorite.name}" wurde geladen`);
@@ -6011,23 +6095,24 @@ function selectOption(type: string, value: string, text: string): void {
     display.textContent = text;
   }
 
-  // Update hidden input
-  const hiddenInput = document.querySelector<HTMLInputElement>(`#${type}Select`);
-  if (hiddenInput !== null) {
-    hiddenInput.value = value;
-    // Trigger change event
-    const changeEvent = new Event('change', { bubbles: true });
-    hiddenInput.dispatchEvent(changeEvent);
+  // Store value in data attribute on display element (no hidden input anymore)
+  const displayElement = document.querySelector(`#${type}Display`);
+  if (displayElement instanceof HTMLElement) {
+    setData(displayElement, 'value', value);
+    displayElement.classList.remove('active');
   }
+
+  // Trigger custom event for selection change
+  const changeEvent = new CustomEvent('dropdownChange', {
+    detail: { type, value, text },
+    bubbles: true,
+  });
+  displayElement?.dispatchEvent(changeEvent);
 
   // Close dropdown
   const dropdown = document.querySelector(`#${type}Dropdown`);
   if (dropdown) {
     dropdown.classList.remove('active');
-  }
-  const displayElement = document.querySelector(`#${type}Display`);
-  if (displayElement) {
-    displayElement.classList.remove('active');
   }
 }
 
