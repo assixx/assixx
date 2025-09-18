@@ -1,0 +1,417 @@
+@import "/styles/dashboard-theme.css";
+
+/* Back Button - Glassmorphismus Style */
+.back-button {
+  position: fixed;
+  z-index: 1001;
+  top: 20px;
+  left: 20px;
+
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  padding: 12px 20px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 4px 16px rgb(0 0 0 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.back-button:hover {
+  transform: translateX(-5px);
+
+  border-color: rgb(255 255 255 / 15%);
+
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 5%);
+  box-shadow:
+    0 6px 24px rgb(0 0 0 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.back-button:active {
+  transform: translateX(-3px) scale(0.98);
+}
+
+.back-button .icon {
+  font-size: 18px;
+  transition: transform 0.3s ease;
+}
+
+.back-button:hover .icon {
+  transform: translateX(-3px);
+}
+
+/* Login page specific styles */
+body {
+  position: relative;
+  overflow-x: hidden;
+  background: #000;
+}
+
+body::before {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+
+  /* background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%); */
+  opacity: 90%;
+}
+
+body::after {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 85vh;
+  padding: var(--spacing-lg);
+}
+
+.login-header {
+  position: relative;
+  top: -50px;
+  margin-bottom: var(--spacing-xl);
+  text-align: center;
+}
+
+.login-logo {
+  display: block;
+  width: 156px;
+  height: auto;
+  margin: 0 auto var(--spacing-lg);
+}
+
+.login-title {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.login-subtitle {
+  margin-top: var(--spacing-xs);
+  color: var(--text-secondary);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 450px;
+  margin-top: -100px;
+  padding: var(--spacing-xl);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  /* animation: fadeInUp 0.6s ease-out; */
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(30px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+.login-company {
+  margin-top: var(--spacing-xl);
+  text-align: center;
+}
+
+.btn-block {
+  display: block;
+
+  width: 60%;
+  margin: 0 auto;
+  margin-top: 25px;
+  padding: var(--spacing-2sm);
+
+  font-family:
+    Outfit,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.login-footer {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.login-footer a {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.login-footer a:hover {
+  color: var(--primary-light);
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (width <= 480px) {
+  .login-card {
+    padding: var(--spacing-lg);
+  }
+
+  .login-title {
+    font-size: 28px;
+  }
+
+  .login-logo {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+/* Help Button - Glassmorphismus wie in signup? */
+.help-button {
+  cursor: pointer;
+
+  position: fixed;
+  z-index: 100;
+  top: 20px;
+  right: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: 50%;
+
+  font-size: 19px;
+  color: var(--text-secondary);
+
+  background: rgb(255 255 255 / 8%);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 12px rgb(0 0 0 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.help-button:hover {
+  transform: scale(1.1);
+
+  border-color: var(--primary-color);
+
+  color: var(--primary-color);
+
+  background: rgb(33 150 243 / 15%);
+  box-shadow:
+    0 6px 16px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+/* Alert Styles */
+.alert {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-2sm);
+  border-radius: var(--radius-sm);
+
+  color: #ffa700;
+
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 0 0 rgb(255 72 0 / 0%),
+    inset 0 0 0 2px rgb(255 131 0 / 82%);
+}
+
+.alert-error {
+  border: 1px solid rgb(255 59 48 / 30%);
+  color: #ff3b30;
+  background: rgb(255 59 48 / 10%);
+  box-shadow:
+    0 0 0 rgb(255 72 0 / 0%),
+    inset 0 0 0 2px rgb(255 0 0 / 82%);
+}
+
+/* Special style for session timeout */
+.alert-timeout {
+  border: 1px solid rgb(255 149 0 / 30%);
+  color: #ff9500;
+  background: rgb(255 149 0 / 10%);
+}
+
+.alert-content {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@keyframes slide-down {
+  from {
+    transform: translateY(-20px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+/* Form Controls - Glassmorphismus */
+.form-control {
+  border: 1px solid rgb(255 255 255 / 12%);
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 8%);
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(33 150 243 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 10%);
+}
+
+/* Autofill Styles für verschiedene Browser */
+/* Webkit browsers (Chrome, Safari, Edge) */
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus,
+.form-control:-webkit-autofill:active {
+  border: 1px solid rgb(33 150 243 / 30%) !important;
+
+  background-color: rgb(255 255 255 / 4%) !important;
+
+  /* Transparenter Hintergrund mit Box-Shadow Trick */
+  box-shadow: 0 0 0 30px rgb(255 255 255 / 4%) inset !important;
+
+  transition: background-color 5000s ease-in-out 0s;
+
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+/* WebKit browsers */
+.form-control:-webkit-autofill {
+  border: 1px solid rgb(33 150 243 / 30%) !important;
+  color: var(--text-primary) !important;
+  background: rgb(255 255 255 / 6%) !important;
+}
+
+/* Firefox specific - :-moz-autofill pseudo-class */
+.form-control:-moz-autofill {
+  border: 1px solid rgb(33 150 243 / 30%) !important;
+  background: rgb(255 255 255 / 6%) !important;
+}
+
+/* Standard placeholder */
+.form-control::placeholder {
+  color: var(--text-secondary);
+  opacity: 60%;
+}
+
+/* Form Labels */
+.form-label {
+  margin-bottom: 5px;
+
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Logo Animation */
+/* .login-logo {
+  animation: subtle-pulse 3s ease-in-out infinite;
+} */
+
+@keyframes subtle-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 100%;
+  }
+
+  50% {
+    transform: scale(1.02);
+    opacity: 95%;
+  }
+}
+
+/* Button Glassmorphismus */
+.btn-primary {
+  position: relative;
+
+  overflow: hidden;
+
+  color: #fff;
+
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  box-shadow:
+    0 1px 4px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.btn-primary::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  left: -100%;
+
+  width: 100%;
+  height: 100%;
+
+  background: linear-gradient(90deg, transparent, hsl(0deg 0% 100% / 20%), transparent);
+
+  transition: left 0.5s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgb(33 150 243 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}

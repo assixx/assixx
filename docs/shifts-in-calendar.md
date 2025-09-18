@@ -117,7 +117,7 @@ calendar.on('datesSet', function (info) {
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   border-radius: 3px;
-  background: white;
+  background: #fff;
   width: 20px;
   height: 20px;
   font-weight: bold;

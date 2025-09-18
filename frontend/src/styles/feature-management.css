@@ -30,7 +30,7 @@ body::after {
 
 /* Align first container with sidebar user-info-card */
 .container {
-  margin-top: -25px !important;
+  margin-top: -30px !important;
 }
 
 /* Glassmorphismus für Cards */
@@ -148,7 +148,7 @@ body::after {
 }
 
 /* Animationen */
-@keyframes fadeInUp {
+@keyframes fade-in-up {
   from {
     transform: translateY(30px);
     opacity: 0%;

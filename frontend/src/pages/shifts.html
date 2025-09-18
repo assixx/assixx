@@ -21,6 +21,9 @@
       })();
     </script>
     <script src="/feature-flags.js"></script>
+
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <!-- Theme and Components -->
@@ -112,7 +115,7 @@
             </div>
 
             <!-- Week Navigation -->
-            <div class="week-navigation" style="display: none">
+            <div class="week-navigation u-hidden">
               <button class="week-nav-btn" id="prevWeekBtn">‹ Vorherige Woche</button>
               <div class="week-info">
                 <span id="currentWeekInfo">KW 21 - 20.05.2025 bis 26.05.2025</span>
@@ -121,7 +124,7 @@
             </div>
 
             <!-- Shift Control Checkboxes -->
-            <div class="shift-controls" style="display: none">
+            <div class="shift-controls u-hidden">
               <div class="controls-group">
                 <label class="checkbox-label">
                   <input type="checkbox" id="shift-autofill" />
@@ -161,7 +164,7 @@
             </div>
 
             <!-- Team Selection Notice -->
-            <div id="departmentNotice" class="department-notice" style="display: none">
+            <div id="departmentNotice" class="department-notice u-hidden">
               <div class="notice-icon">
                 <i class="fas fa-users"></i>
               </div>
@@ -170,7 +173,7 @@
             </div>
 
             <!-- Main Planning Area -->
-            <div class="main-planning-area" id="mainPlanningArea" style="display: none">
+            <div class="main-planning-area u-hidden" id="mainPlanningArea">
               <!-- Week Schedule -->
               <div class="week-schedule">
                 <!-- Header -->
@@ -382,7 +385,7 @@
             </div>
 
             <!-- Admin Actions -->
-            <div class="admin-actions" id="adminActions" style="display: none">
+            <div class="admin-actions u-hidden" id="adminActions">
               <button class="admin-btn" id="saveScheduleBtn">Schichtplan speichern</button>
               <button class="admin-btn cancel" id="resetScheduleBtn">Zurücksetzen</button>
             </div>

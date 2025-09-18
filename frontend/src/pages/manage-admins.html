@@ -76,7 +76,7 @@
           <div class="form-group" id="emailConfirmGroup">
             <label class="form-label">E-Mail wiederholen *</label>
             <input type="email" id="adminEmailConfirm" class="form-control" required />
-            <small class="text-danger" id="email-error" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="email-error">E-Mail-Adressen stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Personalnummer *</label>
@@ -89,9 +89,7 @@
               pattern="[A-Za-z0-9\-]{1,10}"
               required
             />
-            <small class="form-text" style="color: var(--text-secondary); font-size: 12px">
-              Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)
-            </small>
+            <small class="form-text text-secondary" style="font-size: 12px">Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)</small>
           </div>
           <div class="form-group" id="passwordGroup">
             <label class="form-label">Passwort *</label>
@@ -100,7 +98,7 @@
           <div class="form-group" id="passwordConfirmGroup">
             <label class="form-label">Passwort wiederholen *</label>
             <input type="password" id="adminPasswordConfirm" class="form-control" />
-            <small class="text-danger" id="password-error" style="display: none">Passwörter stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="password-error">Passwörter stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Position *</label>
@@ -202,7 +200,7 @@
                 margin-top: 8px;
               "
             >
-              <i class="fas fa-info-circle" style="color: #ffc107; margin-right: 8px"></i>
+              <i class="fas fa-info-circle text-warning u-mr-8"></i>
               <span style="color: rgba(255, 255, 255, 0.8); font-size: 14px">
                 Aus Sicherheitsgründen haben neue Admins standardmäßig keinen Zugriff auf Abteilungen.
               </span>
@@ -235,7 +233,7 @@
               <select id="departmentSelect" multiple class="form-control" style="min-height: 120px">
                 <!-- Dynamisch befüllt -->
               </select>
-              <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block">
+              <small class="form-text text-secondary u-mt-4" style="font-size: 12px; display: block">
                 Halten Sie Strg/Cmd gedrückt für Mehrfachauswahl
               </small>
             </div>
@@ -256,7 +254,7 @@
               >
                 <!-- Hierarchische Darstellung der Gruppen -->
               </div>
-              <small class="form-text" style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block">
+              <small class="form-text text-secondary u-mt-4" style="font-size: 12px; display: block">
                 Wählen Sie Gruppen aus. Alle untergeordneten Abteilungen werden automatisch eingeschlossen.
               </small>
             </div>
@@ -269,11 +267,9 @@
           <div class="form-group" id="activeStatusGroup" class="u-hidden">
             <label class="form-label">
               <input type="checkbox" id="adminIsActive" />
-              <span style="margin-left: 8px">Aktiv</span>
+              <span class="u-ml-8">Aktiv</span>
             </label>
-            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px">
-              Deaktivierte Administratoren können sich nicht anmelden
-            </div>
+            <div class="text-secondary u-mt-4" style="font-size: 12px">Deaktivierte Administratoren können sich nicht anmelden</div>
           </div>
           <div class="button-group">
             <button type="button" class="btn btn-secondary" data-action="close-admin-modal">Abbrechen</button>
@@ -421,6 +417,9 @@
     <!-- Scripts -->
     <!-- Enable v2 API for root users -->
     <script src="/feature-flags.js"></script>
+
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <script>
       window.FEATURE_FLAGS = window.FEATURE_FLAGS || {};
       window.FEATURE_FLAGS.USE_API_V2_AUTH = true;

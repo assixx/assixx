@@ -19,7 +19,7 @@ body::after {
 
 /* Container Styles */
 .container {
-  margin-top: -25px !important; /* Align first container with sidebar user-info-card */
+  margin-top: -30px !important; /* Align first container with sidebar user-info-card */
   padding: 24px;
 }
 

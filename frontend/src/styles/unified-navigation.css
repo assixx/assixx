@@ -1,0 +1,1304 @@
+/* Header Base Styles */
+.header {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  right: 0;
+  left: 0;
+
+  display: flex;
+  align-items: center;
+
+  height: 60px;
+  padding: 0 20px;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.header .header-content {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.header .logo-container {
+  display: flex;
+  align-items: center;
+
+  margin-right: var(--spacing-lg);
+  margin-bottom: -3px;
+
+  text-decoration: none;
+}
+
+.header .logo {
+  width: auto;
+  height: 50px;
+  margin-left: -13px;
+}
+
+.header .header-actions {
+  display: flex;
+  gap: calc(var(--spacing-lg) + 8px);
+  align-items: center;
+}
+
+.header-actions [id="user-info"] {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+
+  /* background: rgba(255, 255, 255, 0.1); */
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 20px;
+}
+
+.header-actions [id="user-name"] {
+  overflow: hidden;
+  max-width: 200px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-actions [id="user-info"]::before {
+  content: "";
+
+  /* background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* Role Switch Warning Banner */
+.role-switch-banner {
+  position: fixed;
+  z-index: 999;
+  top: 60px;
+  right: 30%;
+  left: 30%;
+
+  margin-top: 2px;
+  padding: 5px 20px;
+  border-bottom: 1px solid rgb(255 193 7 / 30%);
+  border-radius: 5px;
+
+  background: #ffc1071c;
+  box-shadow: -2px 5px 14px #ffc10724;
+}
+
+.role-switch-banner-content {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  max-width: 1200px;
+
+  font-size: 14px;
+  color: #ff9800;
+}
+
+.role-switch-banner-content strong {
+  font-weight: 600;
+  color: #ffb74d;
+}
+
+.role-switch-banner-close {
+  cursor: pointer;
+
+  position: absolute;
+  right: 0;
+
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+
+  color: #ff9800;
+
+  background: none;
+}
+
+.role-switch-banner-close:hover {
+  color: #ffb74d;
+  background: rgb(255 193 7 / 20%);
+}
+
+/* Base sidebar styles - lowest specificity first */
+.sidebar {
+  position: relative;
+  top: 0;
+  left: 0;
+
+  overflow: hidden auto;
+  flex-shrink: 0;
+
+  width: 280px !important;
+  min-width: 280px;
+
+  /* border-right: 1px solid rgba(255, 255, 255, 0.1); */
+  height: auto;
+  min-height: calc(100vh - 60px);
+
+  background: rgb(255 255 255 / 0%);
+  backdrop-filter: blur(20px);
+
+  transition:
+    width 0.1s ease,
+    min-width 0.1s ease;
+}
+
+/* Scrollbar Styling */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgb(255 255 255 / 5%);
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgb(255 255 255 / 20%);
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 30%);
+}
+
+/* Adjust layout when role-switch banner is visible - higher specificity */
+/* Moved before .layout-container base styles to fix specificity order */
+
+.sidebar-nav {
+  position: relative;
+
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+
+  min-height: 100%;
+  padding: var(--spacing-md);
+}
+
+.sidebar-title {
+  cursor: pointer;
+
+  position: relative;
+
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 98%;
+  margin-top: 23px;
+  margin-right: 1%;
+  margin-left: 1%;
+  padding: var(--spacing-sm);
+  border: 1px solid rgb(255 255 255 / 100%);
+  border-radius: 10px;
+
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: #ffff;
+  text-align: center;
+
+  background: rgb(234 187 0 / 0%);
+}
+
+/* Sticky Note folded corner - inner fold */
+.sidebar-title::after {
+  content: "";
+
+  position: absolute;
+  right: -0.6px;
+  bottom: -4px;
+  transform-origin: bottom right;
+
+  width: 20px;
+  height: 20px;
+
+  background: linear-gradient(45deg, transparent 50%, rgb(0 0 0 / 10%) 50%);
+}
+
+.sidebar-title::before {
+  content: "";
+
+  position: absolute;
+  z-index: 1;
+  right: -2px;
+  bottom: -5px;
+
+  width: 0;
+  height: 0;
+  border-color: #fff #00060a #0000 transparent;
+  border-style: solid;
+  border-width: 13px 10px 4px 3px;
+}
+
+.sidebar-title:hover {
+  box-shadow:
+    0 5px 10px rgb(0 0 0 / 25%),
+    0 2px 4px rgb(0 0 0 / 15%);
+}
+
+/* Base pin styles - lowest specificity first */
+/* Pin head (only the head visible - like pushed in) */
+.pin-head {
+  position: relative;
+
+  display: block;
+
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+
+  background: #d32f2f;
+  box-shadow:
+    0 3px 6px rgb(0 0 0 / 40%),
+    inset -2px -2px 3px rgb(0 0 0 / 30%),
+    inset 2px 2px 3px rgb(255 255 255 / 40%);
+}
+
+.pin-head::after {
+  content: "";
+
+  position: absolute;
+  top: 4px;
+  left: 4px;
+
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Pin needle (appears on hover - full pushpin) */
+.pin-needle {
+  position: absolute;
+  z-index: 2;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  opacity: 0%;
+}
+
+/* Pin needle head */
+.pin-needle::before {
+  content: "";
+
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+
+  background: #d32f2f;
+  box-shadow:
+    0 3px 6px rgb(0 0 0 / 40%),
+    inset -2px -2px 3px rgb(0 0 0 / 30%),
+    inset 2px 2px 3px rgb(255 255 255 / 40%);
+}
+
+/* Pin needle shaft */
+.pin-needle::after {
+  content: "";
+
+  position: absolute;
+  top: 7px;
+
+  /* Von 17px auf 8px reduziert um Lücke zu schließen */
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 2px;
+  height: 22px;
+
+  background: linear-gradient(to bottom, #aaa 0%, #888 50%, #666 100%);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 40%);
+}
+
+/* Hover states for pins - higher specificity */
+.sidebar-title:hover .pin-head {
+  opacity: 0%;
+}
+
+.sidebar-title:hover .pin-needle {
+  top: -18px;
+  opacity: 100%;
+}
+
+/* Pinned icon styles */
+.pinned-icon {
+  position: absolute;
+  z-index: 2;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.title-content {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
+
+  width: 100%;
+  min-width: 0;
+}
+
+.title-text {
+  overflow: hidden;
+
+  /* transition: opacity 0.3s ease, width 0.3s ease; */
+  font-family:
+    Outfit,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+  white-space: nowrap;
+}
+
+/* Toggle button im Header */
+.header .sidebar-toggle {
+  cursor: pointer;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+  margin-right: 15px;
+  margin-left: -6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+
+  color: #fff;
+
+  background: transparent;
+}
+
+.header .sidebar-toggle:hover {
+  transform: scale(1.05);
+  background: rgb(255 255 255 / 9%);
+}
+
+.sidebar-toggle:hover .toggle-icon {
+  opacity: 80%;
+}
+
+.toggle-icon {
+  /* transition: transform 0.3s ease; */
+}
+
+/* Collapsed Sidebar Styles */
+.sidebar.collapsed {
+  width: 4.5rem !important;
+
+  /* 72px bei 16px base - durch 8 teilbar! */
+  min-width: 4.5rem !important;
+}
+
+/* Logo size adjustment when sidebar is collapsed */
+body:has(.sidebar.collapsed) .header .logo {
+  width: auto;
+  height: 24px;
+  margin-bottom: 7px;
+  margin-left: -4px;
+}
+
+.sidebar.collapsed .sidebar-title {
+  justify-content: center;
+
+  width: calc(100% - 8px);
+  min-height: 26px;
+  margin-left: 4px;
+  padding: var(--spacing-sm);
+
+  font-size: 0;
+
+  background: #e6b80000;
+}
+
+.sidebar.collapsed .title-text {
+  display: none;
+  width: 0;
+  opacity: 0%;
+}
+
+.sidebar.collapsed .title-content {
+  gap: 0;
+  justify-content: center;
+}
+
+.sidebar.collapsed .pinned-icon {
+  top: -0.438rem;
+
+  /* -7px in rem */
+}
+
+.sidebar.collapsed .pin-head {
+  width: 1rem;
+
+  /* 16px in rem */
+  height: 1rem;
+}
+
+.sidebar.collapsed .pin-head::after {
+  top: 0.188rem;
+
+  /* 3px in rem */
+  left: 0.188rem;
+  width: 0.313rem;
+
+  /* 5px in rem */
+  height: 0.313rem;
+}
+
+.sidebar.collapsed .user-info-card {
+  flex-direction: column;
+  align-items: center;
+
+  min-height: auto;
+  margin-top: 5rem;
+
+  /* 80px in rem */
+  margin-bottom: 1.25rem;
+
+  /* 20px in rem */
+  padding: 1.063rem;
+
+  /* 17px in rem */
+}
+
+.sidebar.collapsed .user-details {
+  display: none;
+}
+
+/* Im collapsed state NUR Label verstecken - sonst KEINE Änderungen! */
+.sidebar.collapsed .sidebar-link .label {
+  display: none;
+}
+
+/* Collapsed state: Hover/Active NUR auf Icon */
+.sidebar.collapsed .sidebar-link {
+  overflow: visible !important;
+
+  /* Wichtig: overflow visible für collapsed sidebar damit der Kreis größer werden kann */
+  gap: 0;
+
+  /* Kein gap im collapsed state */
+  justify-content: flex-start;
+
+  /* NICHT center! */
+
+  padding: 0.5rem;
+
+  /* 8px in rem */
+
+  font-size: 0.875rem !important;
+
+  /* 14px in rem */
+  line-height: 1.25rem !important;
+
+  /* 20px in rem */
+
+  background: transparent;
+}
+
+.sidebar-link .icon svg {
+  display: block;
+  width: 1.063rem !important;
+
+  /* 17px in rem */
+  height: 1.063rem !important;
+}
+
+.sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+  inset: -0.55rem;
+
+  /* -9px in rem */
+
+  border: 1px solid hsl(0deg 0% 39.6%);
+  border-radius: 50%;
+
+  background: rgb(139 139 139 / 41%);
+}
+
+/* Hover - Icon wird primary color */
+.sidebar.collapsed .sidebar-link:hover .icon {
+  color: var(--primary-color);
+}
+
+/* Hover nur bei NICHT active */
+.sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+  inset: -0.55rem;
+
+  /* -9px in rem */
+
+  border-radius: 50%;
+
+  background: rgb(33 150 243 / 10%);
+}
+
+/* Active + Hover = stärkerer active effect */
+.sidebar.collapsed .sidebar-item.active .sidebar-link:hover .icon::before {
+  background: linear-gradient(135deg, rgb(33 150 243 / 25%), rgb(33 150 243 / 15%));
+}
+
+/* Moved to after base styles - see lines 954+ and 1029+ */
+
+.sidebar.collapsed .sidebar-menu {
+  /* margin-top: 72px;  Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
+  margin-top: 4.44rem;
+}
+
+/* Main content adjustment for collapsed sidebar - not needed with flex layout */
+.main-content.sidebar-collapsed {
+  margin-left: 0;
+}
+
+/* Container full width when sidebar collapsed */
+.main-content.sidebar-collapsed .container {
+  max-width: none;
+}
+
+/* Content sections full width when sidebar collapsed */
+.main-content.sidebar-collapsed .content-section {
+  width: 100%;
+  max-width: none;
+}
+
+/* Cards inside collapsed layout use more space */
+.main-content.sidebar-collapsed .card {
+  max-width: none;
+}
+
+/* Tooltip styles for collapsed items - DEAKTIVIERT wegen Icon-Verschiebung */
+/*
+.sidebar.collapsed .sidebar-link:hover::after,
+.sidebar.collapsed .sidebar-title:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 10px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    border-radius: var(--radius-md);
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    opacity: 0;
+}
+*/
+
+@keyframes tooltip-fade-in {
+  to {
+    opacity: 100%;
+  }
+}
+
+/* Badge adjustments for collapsed sidebar */
+
+/* Smooth transitions */
+/* Removed empty transition rule block - transitions handled individually where needed */
+
+.user-info-card {
+  position: relative;
+
+  overflow: hidden;
+
+  /* display: flex; */
+  align-items: center;
+
+  min-height: 100px;
+
+  /* animation: fadeInUp 0.6s ease-out; */
+  margin-top: 20px;
+  margin-bottom: 20px;
+
+  /* ap: 15px; */
+  padding: 14px 10px 15px 40px;
+
+  /* border: 1px solid rgba(115, 115, 115, 0.36); */
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px rgb(0 0 0 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+/* Welcome hero style gradient backgrounds */
+.user-info-card::before {
+  content: "";
+
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+
+  opacity: 100%;
+  background:
+    radial-gradient(circle at 20% 80%, rgb(255 255 255 / 6%) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgb(255 255 255 / 6%) 0%, transparent 50%);
+}
+
+.user-info-card::after {
+  content: "";
+
+  position: absolute;
+  z-index: 0;
+  top: -50%;
+  right: -20%;
+
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+}
+
+.user-info-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Avatar Styles - Ohne Border */
+[id="sidebar-user-avatar"],
+.sidebar .user-avatar,
+.user-info-card .user-avatar,
+[id="user-avatar"] {
+  position: relative;
+
+  overflow: hidden;
+  flex-shrink: 0 !important;
+
+  /* display: block !important; */
+  width: 31px !important;
+  height: 31px !important;
+  margin-left: 0;
+  border: none !important;
+  border-radius: 50% !important;
+
+  object-fit: cover !important;
+}
+
+/* Header avatar specific size */
+[id="user-avatar"] {
+  width: 31px !important;
+  height: 31px !important;
+}
+
+/* Avatar with initials */
+.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  text-transform: uppercase;
+
+  background: linear-gradient(135deg, #2196f3, #42a5f5);
+}
+
+/* Avatar padding when sidebar is collapsed */
+.sidebar.collapsed .user-avatar {
+  padding: 3px;
+}
+
+/* Avatar margin adjustment when sidebar is collapsed */
+.sidebar.collapsed [id="sidebar-user-avatar"],
+.sidebar.collapsed .user-avatar,
+.sidebar.collapsed .user-info-card .user-avatar {
+  margin-left: -13px !important;
+}
+
+.user-details {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  align-items: flex-start;
+
+  min-width: 0;
+}
+
+.company-info {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+
+  margin-bottom: 4px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.company-name {
+  overflow: hidden;
+
+  margin-top: 8px;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-light);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.company-domain {
+  overflow: hidden;
+
+  font-size: 12px;
+  color: rgb(255 255 255 / 50%);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-name {
+  overflow: hidden;
+
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-full-name {
+  overflow: hidden;
+
+  font-size: 13px;
+  color: rgb(255 255 255 / 60%);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role-badge {
+  display: inline-block;
+
+  width: fit-content;
+  margin: 6px 0 0;
+  padding: 2px 8px;
+  border-radius: 8px;
+
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+/* Role-specific badge colors - Exact match from logs */
+.role-badge.root {
+  /* color: #9C27B0; */
+  /* border: 1px solid rgba(156, 39, 176, 0.9); */
+  margin-left: -2px;
+  background: rgb(156 39 176 / 15%);
+  box-shadow: 0 0 1px rgb(255 0 230 / 100%);
+}
+
+.role-badge.admin {
+  /* color: #03A9F4; */
+  /* border: 1px solid rgba(3, 169, 244, 0.9); */
+  margin-left: -2px;
+  background: rgb(3 169 244 / 15%);
+  box-shadow: 0 0 1px rgb(0 190 255);
+}
+
+.role-badge.employee {
+  /* color: #607D8B; */
+  /* border: 1px solid rgba(96, 125, 139, 0.9); */
+  margin-left: -2px;
+  background: rgb(96 125 139 / 15%);
+  box-shadow: 0 0 1px rgb(100 116 122 / 100%);
+}
+
+/* Role Switch Dropdown - Using styles from dashboard-theme.css */
+/* Only adding the specific margin that's different */
+.role-switch-dropdown {
+  margin-right: 12px;
+}
+
+.sidebar-menu {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* .sidebar-item - Using styles from dashboard-theme.css */
+
+.sidebar-link {
+  position: relative;
+
+  overflow: hidden;
+  display: flex;
+
+  /* Zurück zu Flexbox! */
+  align-items: center;
+
+  box-sizing: border-box;
+  height: 2.1rem;
+
+  /* 34px in rem */
+  margin-bottom: 0.313rem;
+
+  /* 5px in rem */
+  padding: 0.5rem;
+
+  /* 8px in rem */
+  border: 1px solid transparent;
+
+  /* Reserviert Platz für active border */
+  border-radius: 18px;
+
+  font-size: 0.875rem;
+
+  /* 14px in rem */
+  line-height: 1.25rem;
+
+  /* 20px in rem */
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.sidebar-link .icon {
+  position: absolute;
+
+  /* ABSOLUTE positionieren! */
+
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 1.063rem;
+  min-width: 1.063rem;
+
+  /* 17px in rem */
+  height: 1.063rem;
+  margin-left: 0;
+
+  text-align: center;
+}
+
+.sidebar-link .label {
+  overflow: hidden;
+  flex: 1;
+
+  margin-left: 1.75rem;
+
+  /* Platz für Icon + Gap */
+
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-indicator {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* .sidebar-item.active .nav-indicator {
+    background: var(--primary-color);
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
+} */
+
+.nav-ripple {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+
+  background: rgb(33 150 243 / 30%);
+
+  /* animation: ripple 0.6s ease-out; */
+}
+
+@keyframes ripple {
+  to {
+    width: 200px;
+    height: 200px;
+    opacity: 0%;
+  }
+}
+
+/* Submenu Styles */
+.sidebar-item {
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-item.has-submenu .sidebar-link {
+  position: relative;
+}
+
+/* Hover/Active nur wenn NICHT collapsed - moved here to fix specificity order */
+.sidebar:not(.collapsed) .sidebar-link:hover {
+  background: rgb(33 150 243 / 10%);
+}
+
+.sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
+  border: 1px solid hsl(0deg 0% 39.6%);
+  background: rgb(139 139 139 / 41%);
+}
+
+.submenu-arrow {
+  margin-left: auto;
+
+  /* transition: transform 0.3s ease; */
+  opacity: 60%;
+}
+
+/* Collapsed state for submenu-arrow - must come before .open state */
+.sidebar.collapsed .submenu-arrow {
+  display: none;
+}
+
+.sidebar-item.has-submenu.open .submenu-arrow {
+  transform: rotate(180deg);
+}
+
+.submenu {
+  overflow: hidden;
+
+  margin-top: 0.25rem;
+
+  /* 4px in rem */
+  margin-bottom: 0.313rem;
+
+  /* 5px in rem */
+  margin-left: 2rem;
+
+  /* 32px in rem */
+  padding: 0;
+
+  list-style: none;
+}
+
+/* Collapsed state for submenu */
+.sidebar.collapsed .submenu {
+  display: none !important;
+}
+
+.submenu-item {
+  margin-bottom: 0.125rem;
+
+  /* 2px in rem */
+}
+
+.submenu-link {
+  position: relative;
+
+  display: inline flow-root list-item;
+
+  /* transform: translateX(6px); */
+  margin-left: 0.375rem;
+
+  /* 6px in rem */
+  padding: 0.188rem 1.25rem;
+
+  /* 3px 20px in rem */
+  border-radius: 12px;
+
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.submenu-link:hover {
+  border-color: rgb(33 150 243 / 15%);
+  background: rgb(33 150 243 / 8%);
+}
+
+.submenu-link.active,
+.submenu-item.active .submenu-link {
+  transform: translateX(1.25rem);
+
+  /* 20px in rem */
+
+  margin-right: 2rem;
+
+  /* 80px in rem */
+  border: 1px solid hsl(0deg 0% 39.6% / 44%);
+  border-radius: var(--radius-md);
+
+  background: rgb(139 139 139 / 12%);
+}
+
+/* Layout adjustments */
+.layout-container {
+  display: flex;
+  box-sizing: border-box;
+  min-height: calc(100vh - 60px);
+}
+
+.role-switch-banner:not([style*="display: none"]) ~ .layout-container {
+  min-height: calc(100vh - 100px) !important;
+  margin-top: 100px !important;
+
+  /* 60px header + 40px banner */
+}
+
+.role-switch-banner:not([style*="display: none"]) ~ .layout-container .sidebar {
+  min-height: calc(100vh - 100px) !important;
+}
+
+.main-content {
+  flex: 1;
+  min-height: calc(100vh - 60px);
+  padding: var(--spacing-xl);
+  background: var(--background-primary);
+}
+
+/* Storage Widget - Glassmorphismus Style */
+.storage-widget {
+  margin-top: 50px;
+
+  /* position: sticky;
+    bottom: 0;
+    margin: var(--spacing-md);
+    margin-top: auto;
+    margin-top: 40px;
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid hsla(0,0%,100%,.1);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+     */
+}
+
+/* Collapsed state for storage widget */
+.sidebar.collapsed .storage-widget {
+  display: none;
+}
+
+.storage-widget:hover {
+  /* background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+    box-shadow:
+        0 10px 40px rgba(33, 150, 243, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1); */
+}
+
+.storage-header {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+
+  margin-bottom: var(--spacing-md);
+
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.storage-info {
+  margin-bottom: var(--spacing-md);
+}
+
+.storage-usage-text {
+  margin-bottom: var(--spacing-sm);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.storage-usage-text span {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.storage-progress {
+  overflow: hidden;
+
+  width: 100%;
+  height: 8px;
+  margin-bottom: var(--spacing-xs);
+  border-radius: 4px;
+
+  background: rgb(255 255 255 / 10%);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+.storage-progress-bar {
+  /* transition: width 0.5s ease, background-color 0.3s ease; */
+  position: relative;
+
+  overflow: hidden;
+
+  height: 100%;
+  border-radius: 4px;
+
+  background: var(--success-color);
+}
+
+.storage-progress-bar::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    45deg,
+    transparent 25%,
+    rgb(255 255 255 / 20%) 25%,
+    rgb(255 255 255 / 20%) 50%,
+    transparent 50%,
+    transparent 75%,
+    rgb(255 255 255 / 20%) 75%,
+    rgb(255 255 255 / 20%)
+  );
+  background-size: 20px 20px;
+
+  /* animation: progress-stripes 1s linear infinite; */
+}
+
+@keyframes progress-stripes {
+  0% {
+    background-position: 0 0;
+  }
+
+  100% {
+    background-position: 20px 20px;
+  }
+}
+
+.storage-percentage {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.storage-upgrade-btn {
+  cursor: pointer;
+
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  padding: var(--spacing-2sm);
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  box-shadow:
+    0 2px 8px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.storage-upgrade-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgb(33 150 243 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+/* Responsive Design */
+@media (width <=768px) {
+  .sidebar {
+    top: 60px;
+    transform: translateX(-100%);
+    width: 100%;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
+  }
+
+  .layout-container {
+    flex-direction: column;
+  }
+
+  .storage-widget {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+
+    margin-top: var(--spacing-lg);
+  }
+}
+
+/* Collapsed sidebar - show badges as dots */
+.sidebar.collapsed .nav-badge {
+  position: absolute !important;
+  top: 4px !important;
+  right: 4px !important;
+  left: auto !important;
+
+  overflow: hidden !important;
+
+  width: 8px !important;
+  min-width: 8px !important;
+  height: 8px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+
+  font-size: 0 !important;
+  text-indent: -9999px !important;
+}
+
+/* Collapsed sidebar - submenu badges as dots */
+.sidebar.collapsed .submenu-link .nav-badge {
+  top: 50% !important;
+  right: 8px !important;
+  transform: translateY(-50%) !important;
+}

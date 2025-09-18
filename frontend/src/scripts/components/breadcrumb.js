@@ -213,7 +213,6 @@ function injectStyles() {
         color: #fff;
         font-size: 14px;
         padding: 6px 20px;
-        margin-top: -12px;
       }
 
       .breadcrumb-item {

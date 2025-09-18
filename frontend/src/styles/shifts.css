@@ -2396,7 +2396,6 @@ body::after {
   color: rgb(255 255 255 / 80%);
 }
 
-/* stylelint-disable-next-line selector-max-specificity -- Needed for checkbox state styling */
 .checkbox-label:has(input:checked) .checkbox-text {
   color: rgb(255 255 255 / 95%);
 }
@@ -2408,7 +2407,6 @@ body::after {
   color: rgb(255 255 255 / 50%);
 }
 
-/* stylelint-disable-next-line selector-max-specificity -- Needed for checkbox state styling */
 .checkbox-label:has(input:checked) .checkbox-hint {
   color: rgb(33 150 243 / 70%);
 }
@@ -2518,7 +2516,6 @@ body::after {
   opacity: 100%;
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Hover state needs to come after parent hover */
 .remove-favorite:hover {
   transform: scale(1.2);
   border-color: rgb(244 67 54);

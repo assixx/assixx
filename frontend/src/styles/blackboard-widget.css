@@ -13,6 +13,8 @@
 
 /* After content loads */
 .blackboard-widget.loaded {
+  /* Placeholder for loaded state styles */
+  opacity: 100%;
 }
 
 .blackboard-widget-header {
@@ -66,6 +68,10 @@
   justify-content: center;
 
   min-height: 200px;
+  padding: 2rem;
+
+  color: var(--text-muted);
+  text-align: center;
 }
 
 /* Mini Note Styles */
@@ -228,16 +234,8 @@
   opacity: 50%;
 }
 
-/* Loading State */
-.blackboard-widget-loading {
-  padding: 2rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.blackboard-widget-loading i {
-  /* animation: spin 1s linear infinite; */
-}
+/* Loading State - Merged with line 64 */
+/* Removed duplicate selector - styles merged above at line 64 */
 
 /* Responsive */
 @media (width <= 768px) {
@@ -251,8 +249,9 @@
   }
 }
 
-/* Attachment Styles */
+/* Attachment Styles - Combined with line 311 */
 .mini-note-attachment {
+  position: relative;
   overflow: hidden;
   margin: 0.5rem 0;
   border-radius: 4px;
@@ -309,11 +308,7 @@
   background: rgb(255 255 255 / 30%);
 }
 
-/* Mini note attachment preview */
-.mini-note-attachment {
-  position: relative;
-  margin: 8px 0;
-}
+/* Mini note attachment preview - Merged with line 253 */
 
 .mini-note-attachment object {
   pointer-events: none !important;
@@ -325,22 +320,4 @@
   box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
 }
 
-/* Mini note attachments indicator */
-.mini-note-attachments {
-  position: absolute;
-  right: 5px;
-  bottom: 5px;
-
-  display: flex;
-  gap: 3px;
-  align-items: center;
-
-  font-size: 10px;
-  color: #666;
-
-  opacity: 80%;
-}
-
-.mini-note-attachments i {
-  font-size: 10px;
-}
+/* Mini note attachments indicator - Removed duplicate (already defined at line 269) */

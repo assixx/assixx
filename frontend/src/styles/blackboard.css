@@ -42,7 +42,6 @@
 }
 
 /* Specific override for blackboard page - main element has both classes */
-/* stylelint-disable-next-line selector-max-specificity, selector-no-qualifying-type -- Needed for blackboard full-width layout */
 main.container.main-content.sidebar-collapsed {
   width: 100% !important;
   max-width: 100% !important;
@@ -56,7 +55,6 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Pinnwand Container */
-/* stylelint-disable-next-line no-descending-specificity -- General rule must come after specific override */
 .blackboard-container {
   position: relative;
 
@@ -69,7 +67,7 @@ main.container.main-content.sidebar-collapsed {
   border-radius: 12px;
 
   background:
-    linear-gradient(45deg, #51191900 25%, black 0), linear-gradient(-45deg, #fff0 25%, #fff0 0),
+    linear-gradient(45deg, #51191900 25%, #000 0), linear-gradient(-45deg, #fff0 25%, #fff0 0),
     linear-gradient(45deg, #fff0 75%, #fff 0), linear-gradient(-45deg, #ffffff03 75%, #848484e3 0);
   background-position:
     0 0,
@@ -108,11 +106,12 @@ main.container.main-content.sidebar-collapsed {
 .pinboard-item {
   position: relative;
   z-index: 1;
+  padding: 0 100px 100px;
 }
 
 .pinboard-item:hover {
   z-index: 10;
-  transform: translateY(-5px) scale(1.02);
+  transform: translateY(-5px) scale(1.01);
 }
 
 /* Sticky Note Style */
@@ -139,22 +138,27 @@ main.container.main-content.sidebar-collapsed {
 
 /* Different sticky note colors */
 .pinboard-sticky.color-yellow {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 5px;
+  background: linear-gradient(135deg, #ffd041, #ffd21d);
 }
 
 .pinboard-sticky.color-pink {
+  border-radius: 5px;
   background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
 }
 
 .pinboard-sticky.color-blue {
+  border-radius: 5px;
   background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
 }
 
 .pinboard-sticky.color-green {
+  border-radius: 5px;
   background: linear-gradient(135deg, #d9f99d 0%, #bef264 100%);
 }
 
 .pinboard-sticky.color-orange {
+  border-radius: 5px;
   background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
 }
 
@@ -305,7 +309,6 @@ main.container.main-content.sidebar-collapsed {
 .pinboard-attachment .pinboard-image img {
 }
 
-/* stylelint-disable-next-line selector-max-specificity -- Deep hover state for image preview */
 .pinboard-attachment .pinboard-image:hover img {
   box-shadow: 0 4px 12px rgb(0 0 0 / 20%) !important;
 }
@@ -322,7 +325,6 @@ main.container.main-content.sidebar-collapsed {
   background: rgb(0 0 0 / 5%);
 }
 
-/* stylelint-disable-next-line selector-max-specificity -- Deep hover state for PDF icon */
 .pinboard-attachment .pinboard-pdf:hover i {
   transform: translateY(-2px);
   color: #b91c1c !important;
@@ -372,7 +374,6 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* PDF Overlay for click */
-/* stylelint-disable-next-line no-descending-specificity -- General overlay styles after specific context */
 .pdf-overlay {
   cursor: pointer;
 
@@ -386,7 +387,6 @@ main.container.main-content.sidebar-collapsed {
   background: rgb(0 0 0 / 0%);
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Icon styles for overlay */
 .pdf-overlay i {
   font-size: 48px;
   color: #fff;
@@ -394,12 +394,10 @@ main.container.main-content.sidebar-collapsed {
   opacity: 0%;
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Hover state for overlay */
 .pdf-overlay:hover {
   background: rgb(0 0 0 / 30%);
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Hover icon state */
 .pdf-overlay:hover i {
   opacity: 100%;
 }
@@ -589,7 +587,6 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Form Controls gemäß Design Standards */
-/* stylelint-disable-next-line no-descending-specificity -- Base form styles after page-specific overrides */
 .form-control,
 .form-input,
 .big-input {
@@ -618,7 +615,7 @@ main.container.main-content.sidebar-collapsed {
 }
 
 /* Native Select verstecken */
-/* stylelint-disable selector-no-qualifying-type -- Need to target only select elements with these classes */
+/* stylelint-disable -- Need to target only select elements with these classes */
 select.big-input,
 select.form-control {
   /* stylelint-enable selector-no-qualifying-type */
@@ -818,7 +815,6 @@ select.form-control {
   align-items: flex-start;
 }
 
-/* stylelint-disable-next-line selector-no-qualifying-type -- Specific targeting for checkbox input */
 .simple-checkbox input[type="checkbox"] {
   cursor: pointer;
 
@@ -982,17 +978,14 @@ select.form-control {
   }
 
   /* Volle Breite für bestimmte Elemente */
-  /* stylelint-disable selector-max-specificity -- Complex selectors needed for specific form layout */
   .entry-form-modal form > .form-group:nth-child(1), /* Hidden input */
   .entry-form-modal form > .form-group:nth-child(2), /* Titel */
   .entry-form-modal form > .form-group:nth-child(3), /* Inhalt */
   .entry-form-modal form > .button-group {
-    /* stylelint-enable selector-max-specificity */
     grid-column: 1 / -1;
   }
 
   /* Attachment Zone auch volle Breite */
-  /* stylelint-disable-next-line selector-max-specificity -- Complex selector for attachment zone layout */
   .entry-form-modal form > .form-group:has(.attachment-upload-zone) {
     grid-column: 1 / -1;
   }
@@ -1203,7 +1196,6 @@ select.form-control {
 }
 
 /* Detail modal - Compact Design Standards */
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #entryDetailModal {
   position: fixed;
   z-index: 2000; /* Merged: was 1001, keeping higher value */
@@ -1221,13 +1213,11 @@ select.form-control {
   backdrop-filter: blur(10px);
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #entryDetailModal .modal-container {
   width: 90%;
   max-width: 600px; /* Merged: kept original max-width */
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #entryDetailModal .modal-body {
   overflow-y: auto;
   max-height: 70vh;
@@ -1269,7 +1259,6 @@ select.form-control {
   align-items: center;
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Icon styles for entry details */
 .entry-detail-meta i {
   font-size: 12px;
   opacity: 60%;
@@ -1339,7 +1328,6 @@ select.form-control {
   color: var(--text-primary);
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Base state after focus state */
 .big-input {
   display: block;
 
@@ -1370,7 +1358,6 @@ select.form-control {
 /* Removed duplicate block: Duplicate of line 813 */
 /* Removed duplicate block: Duplicate of line 823 */
 
-/* stylelint-disable-next-line no-descending-specificity -- Base state after hover state */
 .primary-button {
   color: #fff;
   background-color: var(--primary-color);
@@ -1380,7 +1367,6 @@ select.form-control {
   background-color: var(--primary-dark);
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Base state after hover state */
 .secondary-button {
   color: var(--text-primary);
   background-color: rgb(255 255 255 / 10%);
@@ -1410,7 +1396,6 @@ select.form-control {
   margin-bottom: 0.5rem;
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Icon styles for metadata items */
 .entry-metadata-item i {
   margin-right: 0.5rem;
   color: var(--primary-color, #2196f3);
@@ -1777,7 +1762,6 @@ select.form-control {
   letter-spacing: 0.5px;
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Icon styles for attachment title */
 .entry-attachments-title i {
   font-size: 14px;
   color: var(--primary-color);
@@ -1823,18 +1807,15 @@ select.form-control {
   box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
 }
 
-/* stylelint-disable-next-line no-descending-specificity -- Icon styles for attachment items */
 .entry-attachment-item i {
   font-size: 18px;
   opacity: 80%;
 }
 
-/* stylelint-disable-next-line selector-no-qualifying-type -- Specific icon targeting */
 .entry-attachment-item i.fa-file-pdf {
   color: #e74c3c;
 }
 
-/* stylelint-disable-next-line selector-no-qualifying-type -- Specific icon targeting */
 .entry-attachment-item i.fa-file-image {
   color: #2ecc71;
 }
@@ -1870,12 +1851,10 @@ select.form-control {
 } */
 
 /* Attachment Preview Modal - Updated Glassmorphismus Design */
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal {
   z-index: 10000;
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-container {
   width: auto;
   max-width: 30%;
@@ -1890,10 +1869,9 @@ select.form-control {
     0 8px 32px rgb(0 0 0 / 40%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
 
-  /* animation: fadeInUp 0.3s ease-out; */
+  /* animation: fade-in-up 0.3s ease-out; */
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-header {
   display: flex;
   align-items: center;
@@ -1903,7 +1881,6 @@ select.form-control {
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-header h2 {
   margin: 0;
   font-size: 20px;
@@ -1911,7 +1888,6 @@ select.form-control {
   color: var(--primary-color);
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-body {
   overflow: auto;
   max-height: calc(90vh - 200px);
@@ -1919,7 +1895,6 @@ select.form-control {
   background: transparent;
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal img {
   display: block;
 
@@ -1931,7 +1906,6 @@ select.form-control {
   box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal object {
   width: 100%;
   min-height: 500px;
@@ -1939,7 +1913,6 @@ select.form-control {
   background: rgb(255 255 255 / 95%);
 }
 
-/* stylelint-disable-next-line selector-id-pattern, selector-max-id, selector-max-specificity -- Modal ID required for JS targeting */
 #attachmentPreviewModal .modal-footer {
   display: flex;
   gap: var(--spacing-md);
@@ -1957,7 +1930,7 @@ select.form-control {
 /* Removed duplicate #entryDetailModal blocks from merge - properties already merged above */
 
 /* Modal Animation */
-/* @keyframes fadeInUp {
+/* @keyframes fade-in-up {
   from {
     opacity: 0;
     transform: translateY(20px);
@@ -2003,20 +1976,20 @@ select.form-control {
 /* Note: Basic modal styles already exist above, these are additional enhancements */
 
 /* PDF.js spezifische Fixes */
-#attachmentPreviewModal object[type="application/pdf"] {
+.attachment-preview-modal object[type="application/pdf"] {
   overflow: hidden !important;
 }
 
 /* PDF.js Styling - Moderne Alternativen */
 /* Note: Shadow DOM v0 (/deep/ und ::shadow) sind seit 2014 deprecated */
 /* Direkte Manipulation von PDF.js internen Elementen ist nicht mehr möglich */
-#attachmentPreviewModal .pdf-container {
+.attachment-preview-modal .pdf-container {
   margin: 0 !important;
   padding: 0 !important;
 }
 
 /* Falls PDF.js in einem iframe läuft */
-#attachmentPreviewModal iframe {
+.attachment-preview-modal iframe {
   width: 100%;
   height: 100%;
   border: none;
@@ -2047,7 +2020,7 @@ body::after {
 .card {
   /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
   /* Verwendet die CSS-Variablen aus dem zentralen Theme */
-  /* animation: fadeInUp 0.6s ease-out; */
+  /* animation: fade-in-up 0.6s ease-out; */
 }
 
 /* Modal Overlays - Glassmorphismus */
@@ -2064,7 +2037,7 @@ body::after {
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--shadow-sm);
 
-  /* animation: fadeInUp 0.3s ease-out; */
+  /* animation: fade-in-up 0.3s ease-out; */
 }
 
 /* Form Controls mit Glassmorphismus */
@@ -2131,28 +2104,10 @@ body::after {
   transform: rotate(45deg) translate(-30%, -30%);
 }
 
-/* Filter Pills - Glassmorphismus */
-.filter-pill {
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  color: var(--text-secondary);
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.filter-pill:hover {
-  transform: translateY(-2px);
-  border-color: rgb(0 142 255 / 30%);
-  background: rgb(255 255 255 / 5%);
-}
-
-.filter-pill.active {
-  border-color: rgb(0 142 255 / 30%);
-  color: var(--primary-color);
-  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
-}
+/* Filter Pills - Glassmorphismus - bereits bei Zeile 1514 definiert */
 
 /* Animationen */
-@keyframes fadeInUp {
+@keyframes fade-in-up {
   from {
     transform: translateY(30px);
     opacity: 0%;
@@ -2164,16 +2119,7 @@ body::after {
   }
 }
 
-/* Color Options - Glassmorphismus */
-.color-option {
-  border: 1px solid rgb(255 255 255 / 20%);
-  backdrop-filter: blur(10px);
-}
-
-.color-option:hover {
-  transform: scale(1.1);
-  box-shadow: 0 4px 16px rgb(0 0 0 / 30%);
-}
+/* Color Options - Glassmorphismus - bereits bei Zeile 783 definiert */
 
 /* Zoom Controls */
 .zoom-controls {
@@ -2235,16 +2181,8 @@ body::after {
   opacity: 80%;
 }
 
-/* Remove transform transition since we're using CSS zoom */
-.blackboard-container {
-  /* zoom property will be applied via JavaScript */
-  position: relative;
-}
-
-.color-option.active {
-  border-color: rgb(255 255 255 / 50%);
-  box-shadow: 0 0 0 3px rgb(255 255 255 / 20%);
-}
+/* Remove transform transition since we're using CSS zoom - bereits definiert bei Zeile 60 */
+/* .color-option.active - bereits definiert bei Zeile 808 */
 
 /* Fullscreen Mode Styles */
 /* .fullscreen-mode {
@@ -2267,6 +2205,7 @@ body::after {
 
 .fullscreen-mode .filters-container,
 .fullscreen-mode .sidebar,
+.fullscreen-mode .header,
 .fullscreen-mode .navigation,
 .fullscreen-mode #navigation-container,
 .fullscreen-mode #breadcrumb-container,
@@ -2394,12 +2333,12 @@ body::after {
 }
 
 /* Filter Toggle Styles */
-#filterToggle:hover {
-  background: rgb(255 255 255 / 5%);
+.filter-toggle {
+  transition: background 0.3s ease;
 }
 
-#filterToggle {
-  transition: background 0.3s ease;
+.filter-toggle:hover {
+  background: rgb(255 255 255 / 5%);
 }
 
 /* Override breadcrumb alignment for blackboard page */

@@ -21,6 +21,9 @@
       })();
     </script>
     <script src="/feature-flags.js"></script>
+
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
@@ -95,7 +98,7 @@
           <div class="form-group" id="email-confirm-group">
             <label class="form-label">E-Mail bestätigen *</label>
             <input type="email" name="emailConfirm" class="form-control" />
-            <small class="text-danger" id="email-error" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="email-error">E-Mail-Adressen stimmen nicht überein</small>
           </div>
           <div class="form-group" id="password-group">
             <label class="form-label">Passwort *</label>
@@ -104,7 +107,7 @@
           <div class="form-group" id="password-confirm-group">
             <label class="form-label">Passwort bestätigen *</label>
             <input type="password" name="passwordConfirm" class="form-control" />
-            <small class="text-danger" id="password-error" style="display: none">Passwörter stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="password-error">Passwörter stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Telefon</label>
@@ -147,7 +150,7 @@
 
           <!-- Availability Section -->
           <div class="form-section" style="border-top: 1px solid rgba(255, 255, 255, 0.1); margin-top: 20px; padding-top: 20px">
-            <h4 style="color: #fff; margin-bottom: 15px">Verfügbarkeit</h4>
+            <h4 class="text-white" style="margin-bottom: 15px">Verfügbarkeit</h4>
             <div class="form-group">
               <label class="form-label">Verfügbarkeitsstatus</label>
               <select name="availabilityStatus" id="availability-status-select" class="form-control">
@@ -363,7 +366,9 @@
       // Legacy functions for backwards compatibility
       async function loadEmployees() {
         try {
-          const employees = await apiClient.get('/api/v2/users');
+          // ApiClient already adds /api/v2 prefix
+          const apiClientInstance = window.ApiClient?.getInstance();
+          const employees = await apiClientInstance.request('/users', { method: 'GET' });
           const employeeUsers = employees.filter((u) => u.role === 'employee');
 
           // V2 API already provides availability data in the user objects
@@ -510,7 +515,8 @@
       // Helper function to load availability data
       async function loadAvailabilityData(form, employeeId) {
         try {
-          const response = await apiClient.get(`/availability?employee_id=${employeeId}`);
+          const apiClientInstance = window.ApiClient?.getInstance();
+          const response = await apiClientInstance.request(`/availability?employee_id=${employeeId}`, { method: 'GET' });
           if (response.availability && response.availability.length > 0) {
             const current = response.availability[0];
             setFormValue(form, 'availabilityStatus', current.status || 'available');
@@ -574,7 +580,9 @@
 
       async function editEmployee(id) {
         try {
-          const emp = await apiClient.get(`/api/v2/users/${id}`);
+          // ApiClient already adds /api/v2 prefix
+          const apiClientInstance = window.ApiClient?.getInstance();
+          const emp = await apiClientInstance.request(`/users/${id}`, { method: 'GET' });
           document.querySelector('#modalTitle').textContent = 'Mitarbeiter bearbeiten';
 
           const form = document.querySelector('#employee-form');
@@ -626,7 +634,9 @@
         }
 
         try {
-          await apiClient.delete(`/api/v2/users/${id}`);
+          // ApiClient already adds /api/v2 prefix
+          const apiClientInstance = window.ApiClient?.getInstance();
+          await apiClientInstance.request(`/users/${id}`, { method: 'DELETE' });
           alert('Mitarbeiter erfolgreich gelöscht');
           loadEmployees();
         } catch (error) {
@@ -643,7 +653,9 @@
 
       async function loadDepartments() {
         try {
-          const departments = await apiClient.get('/api/v2/departments');
+          // ApiClient already adds /api/v2 prefix
+          const apiClientInstance = window.ApiClient?.getInstance();
+          const departments = await apiClientInstance.request('/departments', { method: 'GET' });
           const select = document.querySelector('#employee-department-select');
           if (select && departments) {
             select.innerHTML = '<option value="">Keine Abteilung</option>';
@@ -661,7 +673,9 @@
 
       async function loadTeams() {
         try {
-          const teams = await apiClient.get('/api/v2/teams');
+          // ApiClient already adds /api/v2 prefix
+          const apiClientInstance = window.ApiClient?.getInstance();
+          const teams = await apiClientInstance.request('/teams', { method: 'GET' });
           const select = document.querySelector('#employee-team-select');
           if (select && teams) {
             select.innerHTML = '<option value="">Kein Team</option>';

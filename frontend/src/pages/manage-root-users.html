@@ -18,6 +18,9 @@
     </script>
     <script src="/feature-flags.js"></script>
 
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
+
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/manage-root-users.css" />
@@ -87,8 +90,8 @@
           <div class="form-group" id="emailConfirmGroup">
             <label class="form-label">E-Mail wiederholen *</label>
             <input type="email" id="rootEmailConfirm" class="form-control" required />
-            <small class="text-danger" id="email-error" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
-            <small class="text-danger" id="emailMismatchError" style="display: none">E-Mail-Adressen stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="email-error">E-Mail-Adressen stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="emailMismatchError">E-Mail-Adressen stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Personalnummer</label>
@@ -109,8 +112,8 @@
           <div class="form-group" id="passwordConfirmGroup">
             <label class="form-label">Passwort wiederholen *</label>
             <input type="password" id="rootPasswordConfirm" class="form-control" />
-            <small class="text-danger" id="password-error" style="display: none">Passwörter stimmen nicht überein</small>
-            <small class="text-danger" id="passwordMismatchError" style="display: none">Passwörter stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="password-error">Passwörter stimmen nicht überein</small>
+            <small class="text-danger u-hidden" id="passwordMismatchError">Passwörter stimmen nicht überein</small>
           </div>
           <div class="form-group">
             <label class="form-label">Abteilung</label>
@@ -175,14 +178,12 @@
             <textarea id="rootNotes" class="form-control" rows="3"></textarea>
           </div>
 
-          <div class="form-group" id="activeStatusGroup" style="display: none">
+          <div class="form-group u-hidden" id="activeStatusGroup">
             <label class="form-label">
               <input type="checkbox" id="rootIsActive" />
-              <span style="margin-left: 8px">Aktiv</span>
+              <span class="u-ml-8">Aktiv</span>
             </label>
-            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px">
-              Deaktivierte Root-User können sich nicht anmelden
-            </div>
+            <div class="text-secondary u-mt-4" style="font-size: 12px">Deaktivierte Root-User können sich nicht anmelden</div>
           </div>
 
           <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">

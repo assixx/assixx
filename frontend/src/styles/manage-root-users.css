@@ -23,7 +23,7 @@ body::after {
 
 /* Container Styles */
 .container {
-  margin-top: -25px !important; /* Align first container with sidebar user-info-card */
+  margin-top: -30px !important; /* Align first container with sidebar user-info-card */
   padding: 24px;
 }
 
@@ -189,7 +189,7 @@ body::after {
     inset 0 1px #ffffff1a;
 }
 
-@keyframes fadeInUp {
+@keyframes fade-in-up {
   from {
     transform: translateY(30px);
     opacity: 0%;

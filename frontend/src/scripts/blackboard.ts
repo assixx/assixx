@@ -1052,7 +1052,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       const scale = attachmentSize === 'small' ? 0.3 : attachmentSize === 'medium' ? 0.4 : 0.5;
 
       contentHtml = `
-        <div class="pinboard-pdf-preview" style="${sizeStyle} height: ${containerHeight}px; position: relative; overflow: hidden; background: white; border-radius: 8px; border: 1px solid #ddd;">
+        <div class="pinboard-pdf-preview" style="${sizeStyle} height: ${containerHeight}px; position: relative; overflow: hidden; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
           <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden;">
             <div style="transform: scale(${scale}); transform-origin: top left; width: ${100 / scale}%; height: ${100 / scale}%;">
               <object

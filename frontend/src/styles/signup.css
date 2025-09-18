@@ -78,7 +78,7 @@ body::after {
   /* animation: fadeInUp 0.6s ease-out; */
 }
 
-@keyframes fadeInUp {
+@keyframes fade-in-up {
   from {
     transform: translateY(30px);
     opacity: 0%;
@@ -677,11 +677,11 @@ body::after {
   background: rgb(255 255 255 / 4%) !important;
 }
 
-/* Edge Legacy */
-.form-control:input-placeholder {
+/* Placeholder - Duplicate removed (first defined at line 193) */
+/* .form-control::placeholder {
   color: var(--text-secondary);
   opacity: 60%;
-}
+} */
 
 /* Phone input specific autofill */
 .phone-number:-webkit-autofill,
@@ -759,8 +759,8 @@ select.form-control:hover:not(:focus),
   background: rgb(255 255 255 / 6%);
 }
 
-/* Firefox spezifisch für bessere Option Styles */
-@document url-prefix() {
+/* Firefox spezifisch für bessere Option Styles - Using supports instead of deprecated @document */
+@supports (-moz-appearance: none) {
   select.form-control option,
   .country-select option {
     color: #e0e0e0 !important;
@@ -769,7 +769,7 @@ select.form-control:hover:not(:focus),
 }
 
 /* Webkit Browser (Chrome, Safari) */
-@media screen and (min-device-pixel-ratio: 0) {
+@media screen and (resolution >= 0dpi) {
   select.form-control,
   .country-select {
     background-color: rgb(255 255 255 / 4%);

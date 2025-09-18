@@ -27,6 +27,9 @@
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
     <!-- Feature Flags -->
     <script src="/feature-flags.js"></script>
+
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       import { setHTML } from '/utils/dom-utils.js';
@@ -83,7 +86,7 @@
                   </a>
                 </div>
                 <div id="blackboard-widget-content" style="min-height: 200px; display: flex; align-items: center; justify-content: center">
-                  <div style="text-align: center; color: var(--text-muted)">
+                  <div class="text-muted" style="text-align: center">
                     <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem"></i>
                     <p>Lade Einträge...</p>
                   </div>
@@ -2095,10 +2098,10 @@
     </script>
 
     <!-- Floating Action Buttons -->
-    <button class="add-employee-btn" id="floating-add-employee" data-action="show-employee-modal" style="display: none">+</button>
-    <button class="add-employee-btn" id="floating-add-team" data-action="show-team-modal" style="display: none">+</button>
-    <button class="add-employee-btn" id="floating-add-machine" data-action="show-machine-modal" style="display: none">+</button>
-    <button class="add-employee-btn" id="floating-add-area" data-action="show-area-modal" style="display: none">+</button>
+    <button class="add-employee-btn u-hidden" id="floating-add-employee" data-action="show-employee-modal">+</button>
+    <button class="add-employee-btn u-hidden" id="floating-add-team" data-action="show-team-modal">+</button>
+    <button class="add-employee-btn u-hidden" id="floating-add-machine" data-action="show-machine-modal">+</button>
+    <button class="add-employee-btn u-hidden" id="floating-add-area" data-action="show-area-modal">+</button>
 
     <!-- Team Creation Modal -->
     <div class="modal-overlay" id="teamModal">

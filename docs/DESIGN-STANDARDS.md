@@ -887,7 +887,7 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Ubuntu', Roboto, sa
 
 ```css
 /* Fade In Up */
-@keyframes fadeInUp {
+@keyframes fade-in-up {
   from {
     transform: translateY(30px);
     opacity: 0;

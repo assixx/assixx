@@ -248,7 +248,7 @@ h1 {
 }
 
 /* Animations */
-@keyframes fadeInUp {
+@keyframes fade-in-up {
   from {
     transform: translateY(20px);
     opacity: 0%;
@@ -260,7 +260,7 @@ h1 {
   }
 }
 
-@keyframes slideDown {
+@keyframes slide-down {
   from {
     transform: translateY(-10px);
     opacity: 0%;
@@ -288,7 +288,7 @@ h1 {
 
   background: rgb(0 0 0 / 80%);
 
-  /* animation: fadeIn 0.3s ease-out; */
+  /* animation: fade-in 0.3s ease-out; */
 }
 
 .success-message {
@@ -301,7 +301,7 @@ h1 {
   background: rgb(76 175 80 / 10%);
   backdrop-filter: blur(20px);
 
-  /* animation: scaleIn 0.5s ease-out; */
+  /* animation: scale-in 0.5s ease-out; */
 }
 
 .success-icon {
@@ -318,7 +318,7 @@ h1 {
   color: var(--text-primary);
 }
 
-@keyframes fadeIn {
+@keyframes fade-in {
   from {
     opacity: 0%;
   }
@@ -328,7 +328,7 @@ h1 {
   }
 }
 
-@keyframes scaleIn {
+@keyframes scale-in {
   from {
     transform: scale(0.8);
     opacity: 0%;

@@ -349,8 +349,6 @@ body::after {
   font-weight: 700 !important;
   line-height: 1 !important;
   color: #fff !important;
-
-  background-color: #1b8e01 !important;
 }
 
 .comment-internal {
@@ -648,10 +646,10 @@ body::after {
   background-color: rgb(0 0 0 / 70%);
   backdrop-filter: blur(10px);
 
-  animation: fadeIn 0.3s ease-out;
+  animation: fade-in 0.3s ease-out;
 }
 
-@keyframes fadeIn {
+@keyframes fade-in {
   from {
     opacity: 0%;
   }
@@ -674,10 +672,10 @@ body::after {
   backdrop-filter: blur(20px) saturate(500%);
   box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
 
-  animation: slideUp 0.3s ease-out;
+  animation: slide-up 0.3s ease-out;
 }
 
-@keyframes slideUp {
+@keyframes slide-up {
   from {
     transform: translateY(20px);
     opacity: 0%;
@@ -815,8 +813,8 @@ body::after {
   background: #1a1a1a;
 }
 
-/* Button Styles matching Create KVP Modal */
-.btn {
+/* Button Styles matching Create KVP Modal - Duplicate removed (first defined at line 593) */
+/* .btn {
   cursor: pointer;
 
   padding: 12px 24px;
@@ -828,9 +826,10 @@ body::after {
   font-weight: 600;
 
   transition: all 0.3s ease;
-}
+} */
 
-.btn-primary {
+/* Button variants - Duplicates removed (first defined at lines 611-627) */
+/* .btn-primary {
   color: #fff;
   background: linear-gradient(135deg, #00d4ff 0%, #09c 100%);
   box-shadow: 0 4px 15px rgb(0 212 255 / 30%);
@@ -850,7 +849,7 @@ body::after {
 .btn-secondary:hover {
   border-color: rgb(255 255 255 / 30%);
   background: rgb(255 255 255 / 15%);
-}
+} */
 
 /* ========================================
    CSS Classes for Inline Styles

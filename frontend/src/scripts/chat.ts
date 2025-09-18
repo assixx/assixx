@@ -3121,7 +3121,7 @@ class ChatClient {
 
       const dialog = document.createElement('div');
       dialog.className = 'confirm-dialog';
-      dialog.style.cssText = 'background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;';
+      dialog.style.cssText = 'background: #fff; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;';
 
       // Build dialog content with DOM methods
       const p = document.createElement('p');
@@ -3134,7 +3134,7 @@ class ChatClient {
       const cancelButton = document.createElement('button');
       cancelButton.id = 'confirmCancel';
       cancelButton.style.cssText =
-        'padding: 8px 16px; border: 1px solid #ccc; background: white; border-radius: 4px; cursor: pointer;';
+        'padding: 8px 16px; border: 1px solid #ccc; background: #fff; border-radius: 4px; cursor: pointer;';
       cancelButton.textContent = 'Abbrechen';
 
       const okButton = document.createElement('button');

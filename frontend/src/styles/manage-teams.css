@@ -238,22 +238,24 @@ body::after {
   font-size: 0.875rem;
 }
 
-/* Filter and Search */
-.filter-buttons {
+/* Filter and Search - Duplicate removed (first defined at line 182) */
+/* .filter-buttons {
   display: flex;
   gap: 8px;
-}
+} */
 
-.search-container {
+/* .search-container - Duplicate removed (first defined at line 188) */
+/* .search-container {
   display: flex;
   gap: 8px;
-}
+} */
 
-.flex-between {
+/* .flex-between - Duplicate removed (first defined at line 174) */
+/* .flex-between {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
+} */
 
 /* Empty state */
 .empty-state {

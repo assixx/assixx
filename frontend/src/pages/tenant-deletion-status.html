@@ -23,17 +23,18 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <script src="/feature-flags.js"></script>
+
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       import { setHTML } from '/utils/dom-utils.js';
       window.setHTML = setHTML; // Make available globally
     </script>
-    <style>
-      @import url('/styles/dashboard-theme.css');
-      @import url('/styles/breadcrumb-alignment.css');
-      @import url('/styles/user-info-update.css');
-      @import url('/styles/tenant-deletion-status.css');
-    </style>
+    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/tenant-deletion-status.css" />
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -64,15 +65,15 @@
                 margin: 16px;
               "
             >
-              <h3 style="color: var(--primary-color); margin-bottom: 16px">
+              <h3 class="text-primary" style="margin-bottom: 16px">
                 <i class="fas fa-info-circle"></i>
                 Löschprozess & Rechtliche Konformität
               </h3>
 
               <div style="display: grid; gap: 16px">
                 <div>
-                  <h4 style="color: var(--text-primary)">📋 Zwei-Personen-Prinzip (DSGVO-konform)</h4>
-                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                  <h4 class="text-primary">📋 Zwei-Personen-Prinzip (DSGVO-konform)</h4>
+                  <ul class="text-secondary" style="margin-left: 20px">
                     <li>Root-User 1 beantragt Löschung</li>
                     <li>Root-User 2 muss genehmigen (nicht der Ersteller)</li>
                     <li>24h Cooling-Off Periode (kann für Entwicklung auf 0 gesetzt werden)</li>
@@ -81,8 +82,8 @@
                 </div>
 
                 <div>
-                  <h4 style="color: var(--text-primary)">🗑️ Was wird gelöscht?</h4>
-                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                  <h4 class="text-primary">🗑️ Was wird gelöscht?</h4>
+                  <ul class="text-secondary" style="margin-left: 20px">
                     <li>Alle Benutzerdaten und Profile</li>
                     <li>Dokumente und Dateien</li>
                     <li>Abteilungen, Teams, Schichten</li>
@@ -94,8 +95,8 @@
                 </div>
 
                 <div>
-                  <h4 style="color: var(--text-primary)">⏱️ Zeitlicher Ablauf</h4>
-                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                  <h4 class="text-primary">⏱️ Zeitlicher Ablauf</h4>
+                  <ul class="text-secondary" style="margin-left: 20px">
                     <li>
                       <strong>Sofort:</strong>
                       Tenant wird als "zur Löschung markiert"
@@ -124,8 +125,8 @@
                 </div>
 
                 <div>
-                  <h4 style="color: var(--text-primary)">🔒 Sicherheit & Backup</h4>
-                  <ul style="color: var(--text-secondary); margin-left: 20px">
+                  <h4 class="text-primary">🔒 Sicherheit & Backup</h4>
+                  <ul class="text-secondary" style="margin-left: 20px">
                     <li>Vollständiges Backup vor Löschung</li>
                     <li>30 Tage Aufbewahrung des Backups</li>
                     <li>Audit-Log aller Aktionen</li>
@@ -251,7 +252,7 @@
               isCreator
                 ? `
               <div class="info-box" style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <i class="fas fa-info-circle" style="color: #ff9800;"></i>
+                <i class="fas fa-info-circle text-warning"></i>
                 <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br>
                 Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung genehmigt.
               </div>
@@ -259,7 +260,7 @@
                 : item.canApprove
                   ? `
               <div class="info-box" style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <i class="fas fa-user-shield" style="color: #4caf50;"></i>
+                <i class="fas fa-user-shield text-success"></i>
                 <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br>
                 Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
               </div>
@@ -286,7 +287,7 @@
               item.status === 'approved' || item.status === 'queued'
                 ? `
               <div class="grace-period-info" style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <i class="fas fa-calendar-clock" style="color: #2196F3;"></i>
+                <i class="fas fa-calendar-clock text-info"></i>
                 <div>
                   <strong>🕐 30 Tage Grace Period läuft!</strong><br>
                   <p style="margin: 8px 0;"><strong>Geplante Löschung:</strong> ${item.scheduledFor ? new Date(item.scheduledFor).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }) : '30 Tage ab Genehmigung'}</p>

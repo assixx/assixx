@@ -7,7 +7,6 @@
   overflow-y: auto;
   width: 100%;
   height: calc(100vh - 56px);
-  padding: var(--spacing-lg);
 }
 
 /* Calendar Container */
@@ -23,7 +22,7 @@
 
   display: inline-block;
 
-  font-family: "Font Awesome 6 Free";
+  font-family: "Font Awesome 6 Free", sans-serif;
   font-size: 1em;
   font-weight: 900;
   line-height: 1;
@@ -39,7 +38,7 @@
 
   display: inline-block;
 
-  font-family: "Font Awesome 6 Free";
+  font-family: "Font Awesome 6 Free", sans-serif;
   font-size: 1em;
   font-weight: 900;
   line-height: 1;
@@ -399,7 +398,7 @@
   }
 } */
 
-/* @keyframes fadeInUp {
+/* @keyframes fade-in-up {
   from {
     opacity: 0;
     transform: translateY(30px);
@@ -854,6 +853,8 @@
   margin: 0 !important;
   border-radius: 0 !important;
 
+  background: none;
+
   /* background: linear-gradient(
     5deg,
     transparent,
@@ -1119,23 +1120,8 @@ textarea.form-control {
   backdrop-filter: blur(5px);
 }
 
-.attendee-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 5px;
-  padding: 8px 12px;
-  border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
-
-  background: rgb(255 255 255 / 3%);
-}
-
-.attendee-item:hover {
-  border-color: rgb(255 255 255 / 12%);
-  background: rgb(255 255 255 / 5%);
-}
+/* Duplicate selector removed - already defined at line 691 */
+/* .attendee-item:hover already defined at line 703 */
 
 .attendee-item:last-child {
   margin-bottom: 0;
@@ -1145,12 +1131,7 @@ textarea.form-control {
   flex: 1;
 }
 
-.attendee-status {
-  margin-right: 10px;
-  padding: 2px 8px;
-  border-radius: var(--radius-sm);
-  font-size: 0.8rem;
-}
+/* .attendee-status already defined at line 708 - removed duplicate */
 
 .status-pending {
   display: inline-block;
@@ -1421,55 +1402,14 @@ select.big-input:disabled {
   background-color: rgb(255 255 255 / 5%);
 }
 
-/* FullCalendar Event Styling */
-.fc-event {
-  cursor: pointer !important;
+/* FullCalendar Event Styling - removed duplicate (already defined at line 182) */
+/* .fc-event:hover already defined at line 189 - removed duplicate */
 
-  margin: 1px 2px !important;
-  padding: 2px 4px !important;
-  border: none !important;
-  border-radius: 4px !important;
+/* Event styling by organization level - removed duplicates (already defined at lines 239, 244, 249) */
 
-  font-size: 0.875rem !important;
-  font-weight: 500 !important;
-}
+/* Event titles - removed duplicate (already defined at line 226) */
 
-.fc-event:hover {
-  opacity: 80% !important;
-}
-
-/* Event styling by organization level - fallback colors only */
-.event-company {
-  border-left: 4px solid #0d47a1;
-  color: #fff;
-  background-color: #1976d2;
-}
-
-.event-department {
-  border-left: 4px solid #1b5e20;
-  color: #fff;
-  background-color: #388e3c;
-}
-
-.event-team {
-  border-left: 4px solid #e65100;
-  color: #fff;
-  background-color: #f57c00;
-}
-
-/* Event titles */
-.fc-event-title {
-  overflow: hidden !important;
-  font-weight: 500 !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-}
-
-/* Time display in events */
-.fc-event-time {
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-}
+/* Time display in events - removed duplicate (already defined at line 232) */
 
 /* Day cell styling for better event visibility */
 .fc-daygrid-day {
@@ -1480,10 +1420,7 @@ select.big-input:disabled {
   background-color: rgb(var(--primary-rgb), 0.05) !important;
 }
 
-/* Today highlighting */
-.fc-day-today {
-  background-color: rgb(var(--primary-rgb), 0.1) !important;
-}
+/* Today highlighting - removed duplicate (already defined at line 171) */
 
 /* Event dot indicator for list view */
 .fc-daygrid-dot-event .fc-event-title {
@@ -1550,38 +1487,7 @@ select.big-input:disabled {
   color: var(--text-primary);
 }
 
-/* Color Picker Styles */
-.color-picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-
-  padding: 8px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
-
-  background: rgb(255 255 255 / 2%);
-}
-
-.color-option {
-  cursor: pointer;
-
-  position: relative;
-
-  width: 36px;
-  height: 36px;
-  border: 2px solid transparent;
-  border-radius: 50%;
-}
-
-.color-option:hover {
-  box-shadow: 0 0 10px rgb(255 255 255 / 30%);
-}
-
-.color-option.selected {
-  border-color: #fff;
-  box-shadow: 0 0 0 3px rgb(255 255 255 / 20%);
-}
+/* Color Picker Styles - removed duplicates (already defined at lines 413, 420, 427, 431) */
 
 .color-option.selected::after {
   content: "\2713";
@@ -1694,7 +1600,7 @@ select.big-input:disabled {
   height: 18px;
   border-radius: 50%;
 
-  background: white;
+  background: #fff;
 }
 
 .form-switch .form-check-input:checked {

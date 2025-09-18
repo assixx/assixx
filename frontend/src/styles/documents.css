@@ -1,3 +1,6 @@
+@import "/styles/dashboard-theme.css";
+@import "/styles/breadcrumb-alignment.css";
+
 /* Document Pages Styles */
 
 /* View Mode Toggle */
@@ -605,7 +608,7 @@
   width: 100%;
   height: 600px;
   border: none;
-  background: white;
+  background: #fff;
 }
 
 .preview-error {
@@ -789,10 +792,6 @@
   min-height: 400px;
 }
 
-/* Extracted styles from documents.html */
-@import "/styles/dashboard-theme.css";
-@import "/styles/breadcrumb-alignment.css";
-
 /* Glassmorphismus Design-Standards */
 
 /* Dramatischer Hintergrund-Gradient */
@@ -814,40 +813,11 @@ body::after {
   background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
 }
 
-/* Glassmorphismus für Stat-Cards */
-.stat-card {
-  position: relative;
+/* Glassmorphismus für Stat-Cards - removed duplicate (already defined at line 258) */
 
-  overflow: hidden;
-
-  padding: var(--spacing-lg);
-
-  /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
-  /* stat-card verwendet die zentralen CSS-Variablen */
-  border-radius: var(--radius-md);
-
-  text-align: center;
-}
-
-.stat-icon {
-  margin-bottom: var(--spacing-sm);
-  font-size: 2rem;
-  color: var(--primary-color);
-}
-
-.stat-value {
-  margin-bottom: var(--spacing-xs);
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.stat-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
+/* .stat-icon already defined at line 272 - removed duplicate */
+/* .stat-value already defined at line 410 - removed duplicate */
+/* .stat-label already defined at line 406 - removed duplicate */
 
 /* Glassmorphismus für Cards */
 .card {
@@ -983,147 +953,11 @@ body::after {
   min-width: 200px;
 }
 
-/* Document Grid */
-.documents-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-}
+/* Document Grid - removed duplicate (already defined at line 218) */
 
-/* Document Card */
-.document-card {
-  cursor: pointer;
+/* Document Card - removed large duplicate block (already defined at line 54) */
 
-  position: relative;
-
-  overflow: hidden;
-
-  padding: var(--spacing-lg);
-  border: var(--glass-border);
-  border-radius: var(--radius-md);
-
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-}
-
-.document-card::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-
-  height: 3px;
-
-  opacity: 0%;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-}
-
-.document-card:hover::before {
-  opacity: 100%;
-}
-
-.document-card:hover {
-  transform: translateY(-5px);
-  background: rgb(255 255 255 / 3%);
-  box-shadow:
-    0 12px 40px rgb(0 0 0 / 50%),
-    inset 0 1px 0 rgb(255 255 255 / 15%);
-}
-
-.document-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 48px;
-  height: 48px;
-  margin-bottom: var(--spacing-md);
-  border-radius: var(--radius-sm);
-
-  font-size: 24px;
-  color: var(--primary-color);
-
-  background: rgb(33 150 243 / 10%);
-}
-
-.document-title {
-  overflow: hidden;
-
-  margin-bottom: var(--spacing-sm);
-
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.document-meta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-
-  font-size: 13px;
-  color: rgb(255 255 255 / 70%);
-}
-
-.document-meta-item {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: center;
-}
-
-.document-meta-item i {
-  width: 16px;
-  opacity: 60%;
-}
-
-.document-badge {
-  position: absolute;
-  top: var(--spacing-md);
-  right: var(--spacing-md);
-
-  padding: 4px 10px;
-  border: 1px solid rgb(76 175 80 / 20%);
-  border-radius: 12px;
-
-  font-size: 11px;
-  font-weight: 600;
-  color: rgb(76 175 80 / 90%);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  background: rgb(76 175 80 / 10%);
-}
-
-.document-badge.unread {
-  border-color: rgb(33 150 243 / 20%);
-  color: rgb(33 150 243 / 90%);
-  background: rgb(33 150 243 / 10%);
-}
-
-/* Empty State */
-.empty-state {
-  padding: var(--spacing-xl) * 2;
-  color: rgb(255 255 255 / 50%);
-  text-align: center;
-}
-
-.empty-state i {
-  margin-bottom: var(--spacing-lg);
-  font-size: 64px;
-  opacity: 30%;
-}
-
-.empty-state h3 {
-  margin-bottom: var(--spacing-sm);
-  font-size: 20px;
-  font-weight: 600;
-  color: rgb(255 255 255 / 70%);
-}
+/* Document elements - removed large duplicate block (already defined starting at line 150) */
 
 /* Loading State */
 .loading-state {
@@ -1133,15 +967,7 @@ body::after {
   min-height: 400px;
 }
 
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid rgb(255 255 255 / 10%);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-
-  /* animation: spin 1s linear infinite; */
-}
+/* .loading-spinner already defined at line 379 - removed duplicate */
 
 @keyframes spin {
   to {
@@ -1149,20 +975,9 @@ body::after {
   }
 }
 
-/* Search Box */
-.search-box {
-  position: relative;
-}
+/* Search Box - removed duplicate (already defined at line 915) */
 
-.search-icon {
-  position: absolute;
-  top: 50%;
-  left: 12px;
-  transform: translateY(-50%);
-
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
+/* .search-icon already defined at line 368 - removed duplicate */
 
 .form-control {
   width: 100%;
@@ -1188,12 +1003,13 @@ body::after {
   color: rgb(255 255 255 / 50%);
 }
 
-/* Custom Dropdown */
-.custom-dropdown {
+/* Custom Dropdown - Duplicate removed (first defined at line 416) */
+/* .custom-dropdown {
   position: relative;
-}
+} */
 
-.dropdown-display {
+/* Dropdown styles - All duplicates removed (first defined at lines 421-491) */
+/* .dropdown-display {
   cursor: pointer;
 
   display: flex;
@@ -1218,9 +1034,6 @@ body::after {
 .dropdown-display.active svg {
   transform: rotate(180deg);
 }
-
-/* .dropdown-display svg {
-} */
 
 .dropdown-options {
   position: absolute;
@@ -1254,7 +1067,7 @@ body::after {
 
 .dropdown-option:last-child {
   border-bottom: none;
-}
+} */
 
 /* Stats Bar */
 .stats-bar {
@@ -1269,7 +1082,8 @@ body::after {
   background: var(--glass-bg);
 }
 
-.stat-item {
+/* Stat items - Duplicates removed (first defined at lines 397-410) */
+/* .stat-item {
   display: flex;
   gap: var(--spacing-sm);
   align-items: center;
@@ -1290,7 +1104,7 @@ body::after {
   margin-left: 4px;
   font-size: 13px;
   color: rgb(255 255 255 / 60%);
-}
+} */
 
 /* Responsive */
 @media (width <= 768px) {
@@ -1317,8 +1131,8 @@ body::after {
   }
 }
 
-/* Modal Styles */
-.modal {
+/* Modal Styles - All duplicates commented (first defined at lines 497-596) */
+/* .modal {
   position: fixed;
   z-index: 9999;
   top: 0;
@@ -1330,7 +1144,7 @@ body::after {
 
   width: 100%;
   height: 100%;
-}
+} */
 
 .modal-backdrop {
   position: absolute;
@@ -1344,7 +1158,7 @@ body::after {
   backdrop-filter: blur(5px);
 }
 
-.modal-content {
+/* .modal-content {
   position: relative;
 
   overflow: hidden;
@@ -1361,20 +1175,20 @@ body::after {
   box-shadow:
     0 24px 48px rgb(0 0 0 / 60%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
-}
+} */
 
 .modal-lg {
   width: 1000px;
 }
 
-.modal-header {
+/* .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 
   padding: var(--spacing-lg);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
+} */
 
 .modal-title {
   margin: 0;
@@ -1407,42 +1221,42 @@ body::after {
   background: rgb(255 255 255 / 10%);
 }
 
-.modal-body {
+/* .modal-body {
   overflow-y: auto;
   flex: 1;
   padding: var(--spacing-lg);
-}
+} */
 
-.modal-footer {
+/* .modal-footer {
   display: flex;
   gap: var(--spacing-md);
   justify-content: flex-end;
 
   padding: var(--spacing-lg);
   border-top: 1px solid rgb(255 255 255 / 10%);
-}
+} */
 
-/* Document Info Grid */
-.document-info {
+/* Document Info Grid - Duplicates commented (first defined at lines 637-670) */
+/* .document-info {
   margin-bottom: var(--spacing-lg);
   padding: var(--spacing-2sm);
   border: var(--glass-border);
   border-radius: var(--radius-md);
 
   background: var(--glass-bg);
-}
+} */
 
-.info-grid {
+/* .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--spacing-md);
-}
+} */
 
-.info-item {
+/* .info-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
+} */
 
 .info-label {
   font-size: 0.875rem;
@@ -1464,8 +1278,8 @@ body::after {
   margin-right: 0.5rem;
 }
 
-/* Button Styles for Modal */
-.btn {
+/* Button Styles - Duplicates commented (first defined at lines 695-727) */
+/* .btn {
   cursor: pointer;
 
   display: inline-flex;
@@ -1483,32 +1297,32 @@ body::after {
 
   background: rgb(255 255 255 / 3%);
   backdrop-filter: blur(10px);
-}
+} */
 
-.btn:hover {
+/* .btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
-}
+} */
 
-.btn-primary {
+/* .btn-primary {
   border-color: var(--primary-color);
   background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-}
+} */
 
-.btn-primary:hover {
+/* .btn-primary:hover {
   background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
-}
+} */
 
-.btn-secondary {
+/* .btn-secondary {
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 5%);
-}
+} */
 
-.btn-secondary:hover {
+/* .btn-secondary:hover {
   background: rgb(255 255 255 / 8%);
-}
+} */
 
-/* Page Header */
-.page-header {
+/* Page Header - Duplicate commented (first defined at line 733) */
+/* .page-header {
   margin-bottom: var(--spacing-xl);
-}
+} */
