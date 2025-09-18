@@ -394,7 +394,7 @@ body {
 .form-label {
   display: block;
   margin-bottom: var(--spacing-xs);
-  font-size: 0.8125rem; /* 13px */
+  font-size: 0.813rem; /* 13px */
   color: var(--text-secondary);
 }
 
@@ -930,18 +930,7 @@ body {
 }
 
 /* Admin Dashboard Sidebar */
-.layout-container {
-  display: flex;
-  min-height: calc(100vh - 56px);
-}
-
-.main-content {
-  flex: 1;
-
-  /* Use CSS custom properties for dynamic layout */
-  margin-left: var(--content-margin, 250px);
-  padding: var(--spacing-lg);
-}
+/* Layout container styles moved to unified-navigation.css to avoid duplication */
 
 .alert-warning {
   border-color: rgb(255 165 0 / 30%);
@@ -1139,10 +1128,7 @@ body {
   background: rgb(33 150 243 / 10%);
 }
 
-/* Header actions adjustment */
-.header-actions {
-  gap: 16px;
-}
+/* Header actions adjustment - removed duplicate (already defined at line 210) */
 
 #user-info {
   align-items: center;

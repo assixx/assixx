@@ -2,6 +2,9 @@
  * Globale Stile für Assixx
  */
 
+/* Import Outfit font definitions - must be at the top */
+@import "fonts-outfit.css";
+
 :root {
   /* Farben */
   --primary-color: #2196f3;
@@ -32,9 +35,6 @@
   --shadow-md: 0 4px 6px rgb(0 0 0 / 10%);
   --shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
 }
-
-/* Import Outfit font definitions */
-@import "fonts-outfit.css";
 
 body {
   margin: 0;
@@ -207,7 +207,7 @@ header {
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-md);
 
-  word-wrap: break-word;
+  overflow-wrap: break-word;
 
   background-color: #fff;
   background-clip: border-box;

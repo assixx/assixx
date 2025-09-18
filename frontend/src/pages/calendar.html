@@ -11,336 +11,11 @@
     <!-- Calendar spezifische Styles -->
     <link rel="stylesheet" href="/styles/calendar.css" />
     <script src="/feature-flags.js"></script>
-    <style>
-      @import url('/styles/dashboard-theme.css');
-      @import url('/styles/breadcrumb-alignment.css');
 
-      /* Glassmorphismus Design-Standards */
-
-      /* Dramatischer Hintergrund-Gradient */
-      body {
-        position: relative;
-        min-height: 100vh;
-        overflow-x: hidden;
-        background: #000;
-      }
-
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
-        pointer-events: none;
-        z-index: -1;
-      }
-
-      /* Glassmorphismus für Cards */
-      .card {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
-        margin-top: auto;
-        /* animation: fadeInUp 0.6s ease-out; */
-      }
-
-      /* Calendar Container - Glassmorphismus */
-      #calendar {
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        box-shadow: var(--shadow-sm);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-lg);
-        margin-bottom: auto;
-      }
-
-      /* Calendar Events - Glassmorphismus */
-      .fc-event {
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .modal-lg .modal-body {
-        max-height: calc(85vh - 120px);
-        overflow-y: auto;
-        flex: 1;
-      }
-
-      /* Form in Modal scrollbar */
-      .modal-body::-webkit-scrollbar {
-        width: 6px;
-      }
-
-      .modal-body::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-      }
-
-      .modal-body::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 3px;
-      }
-
-      .form-control:focus,
-      input:focus,
-      textarea:focus {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 0 0 3px rgba(0, 142, 255, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        outline: none;
-      }
-
-      /* Select Dropdowns - Glassmorphismus wie in signup? */
-      select {
-        appearance: none;
-        -webkit-appearance: none;
-        -moz-appearance: none;
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        color: #fff;
-
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 8px center;
-        background-size: 14px;
-        padding-right: 32px;
-        cursor: pointer;
-      }
-
-      select:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.15);
-      }
-
-      select:focus {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow:
-          0 0 0 3px rgba(0, 142, 255, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.2);
-        outline: none;
-      }
-
-      select option {
-        background: rgba(18, 18, 18, 0.95);
-        color: var(--text-primary);
-        padding: 8px;
-      }
-
-      select:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        background-image: none;
-      }
-
-      /* Buttons mit Glassmorphismus und Shine-Effekt */
-      .btn {
-        position: relative;
-        overflow: hidden;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .btn-primary {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
-      }
-
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--shadow-sm);
-      }
-
-      .btn::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-        transform: rotate(45deg) translate(-70%, -70%);
-        transition: transform 0.6s;
-      }
-
-      .btn:hover::after {
-        transform: rotate(45deg) translate(-30%, -30%);
-      }
-
-      /* View Selector Buttons - Glassmorphismus */
-      .view-selector .btn {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        color: var(--text-primary);
-      }
-
-      .view-selector .btn.active {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
-      }
-
-      /* Filter Tags - Glassmorphismus */
-      .filter-tag {
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-      }
-
-      .filter-tag.active {
-        background: linear-gradient(135deg, rgba(0, 142, 255, 0.2), rgba(0, 142, 255, 0.1));
-        border-color: rgba(0, 142, 255, 0.3);
-      }
-
-      /* Animationen */
-      @keyframes fadeInUp {
-        from {
-          opacity: 0;
-          transform: translateY(30px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      /* Custom Dropdown Styles werden aus calendar.css geladen */
-
-      /* Custom Dropdown Wrapper - Korrigiert */
-      .custom-dropdown {
-        position: relative;
-        width: 100%;
-      }
-
-      /* Dropdown Styles werden aus calendar.css geladen */
-
-      /* Search Input Styling - Glassmorphismus */
-      .search-input-wrapper {
-        position: relative;
-        display: flex;
-        align-items: center;
-        background: rgba(255, 255, 255, 0.04);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: var(--radius-md);
-        overflow: hidden;
-
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        min-width: 250px;
-      }
-
-      .search-input-wrapper:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.15);
-      }
-
-      .search-input-wrapper:focus-within {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: var(--primary-color);
-        box-shadow:
-          0 0 0 3px rgba(33, 150, 243, 0.15),
-          inset 0 1px 2px rgba(0, 0, 0, 0.1);
-      }
-
-      .search-input {
-        flex: 1;
-        background: transparent;
-        border: none;
-        padding: 10px 15px;
-        color: var(--text-primary);
-        font-size: 14px;
-        outline: none;
-      }
-
-      .search-input::placeholder {
-        color: rgba(255, 255, 255, 0.4);
-        font-size: 14px;
-      }
-
-      .search-button {
-        background: transparent;
-        border: none;
-        padding: 10px 15px;
-        color: rgba(255, 255, 255, 0.6);
-        cursor: pointer;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .search-button:hover {
-        color: var(--primary-color);
-        background: rgba(33, 150, 243, 0.1);
-      }
-
-      .search-button:active {
-        background: rgba(33, 150, 243, 0.2);
-      }
-
-      .search-button i {
-        font-size: 16px;
-      }
-
-      /* When search has content, highlight button */
-      .search-input:not(:placeholder-shown) ~ .search-button {
-        color: var(--primary-color);
-      }
-
-      /* Override breadcrumb alignment for calendar page */
-      #breadcrumb-container + .card {
-        margin-top: -15px !important;
-      }
-
-      /* Shift Indicators */
-      .shift-indicator {
-        position: absolute;
-        background: #ffffff0d;
-        bottom: 5px;
-        right: 20px;
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        font-weight: 700;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-        z-index: 10;
-      }
-
-      .shift-indicator.shift-F {
-        color: #ffffff; /* Blue for Frühschicht */
-      }
-
-      .shift-indicator.shift-S {
-        color: #ff9800; /* Orange for Spätschicht */
-      }
-
-      .shift-indicator.shift-N {
-        color: #3498db; /* Black for Nachtschicht */
-      }
-
-      /* Make day cell position relative for absolute positioning */
-      .fc-daygrid-day-top {
-        position: relative !important;
-      }
-
-      /* Checkbox styling */
-      .form-checkbox {
-        width: 18px;
-        height: 18px;
-        cursor: pointer;
-      }
-    </style>
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link rel="stylesheet" href="/styles/unified-navigation.css" />
+    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
@@ -403,19 +78,19 @@
                   <label class="form-label">Legende</label>
                   <div class="legend-container">
                     <div class="legend-item">
-                      <span class="legend-color" style="background-color: #3498db"></span>
+                      <span class="legend-color legend-company"></span>
                       <span class="legend-label">Firma</span>
                     </div>
                     <div class="legend-item">
-                      <span class="legend-color" style="background-color: #e67e22"></span>
+                      <span class="legend-color legend-department"></span>
                       <span class="legend-label">Abteilung</span>
                     </div>
                     <div class="legend-item">
-                      <span class="legend-color" style="background-color: #2ecc71"></span>
+                      <span class="legend-color legend-team"></span>
                       <span class="legend-label">Team</span>
                     </div>
                     <div class="legend-item">
-                      <span class="legend-color" style="background-color: #9b59b6"></span>
+                      <span class="legend-color legend-personal"></span>
                       <span class="legend-label">Persönlich</span>
                     </div>
                   </div>
@@ -429,11 +104,11 @@
             <div class="card-header">
               <div class="flex flex-between align-center">
                 <h3 class="card-title">Kalender</h3>
-                <div style="display: flex; gap: 10px; align-items: center">
+                <div class="controls-flex-calendar">
                   <button id="fullscreenBtn" class="zoom-btn" title="Vollbild">
                     <i class="fas fa-expand"></i>
                   </button>
-                  <button id="newCalendarEventBtn" class="btn btn-primary u-m-0" style="display: inline-flex">
+                  <button id="newCalendarEventBtn" class="btn btn-primary u-m-0 btn-inline-flex">
                     <i class="fas fa-plus me-2"></i>
                     Neuer Eintrag
                   </button>
@@ -531,37 +206,6 @@
         },
       };
     </script>
-    <style>
-      /* Toast-Styles direkt im HTML einbinden */
-      .toast-container {
-        position: fixed;
-        bottom: 16px;
-        right: 16px;
-        z-index: 9999;
-      }
-      .toast-info,
-      .toast-error,
-      .toast-success {
-        background-color: var(--background-light);
-        color: var(--text-primary);
-        border-left: 4px solid var(--primary-color);
-        padding: 12px 16px;
-        margin-top: 8px;
-        border-radius: var(--radius-md);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-        font-size: 14px;
-      }
-      .toast-error {
-        border-left-color: var(--error-color);
-      }
-      .toast-success {
-        border-left-color: var(--success-color);
-      }
-      /* Zusätzliche Styles für fehlende Klassen */
-      .d-none {
-        display: none !important;
-      }
-    </style>
     <!-- Calendar Scripts -->
 
     <!-- MutationObserver zum Schutz der Header-Struktur -->

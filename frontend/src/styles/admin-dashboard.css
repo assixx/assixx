@@ -6,29 +6,6 @@
 /* ===============================================
    Glassmorphismus Design-Standards
    =============================================== */
-
-/* Fix for sidebar title alignment - TEMPORARILY REMOVED FOR TESTING */
-/* .sidebar-title {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  margin: 0 0 16px 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  background: rgba(33, 150, 243, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(33, 150, 243, 0.2);
-}
-
-.sidebar-title .title-icon {
-  display: flex;
-  align-items: center;
-  font-size: 1.1rem;
-} */
-
 /* Dramatischer Hintergrund-Gradient */
 body {
   position: relative;
@@ -599,9 +576,6 @@ body::after {
 }
 
 /* Apply to all main content */
-.main-content {
-  margin-left: var(--content-margin);
-}
 
 /* Apply to all cards and widgets
 .card,

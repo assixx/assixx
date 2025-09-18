@@ -60,10 +60,13 @@ if (isKontischicht) {
   const yearStart = `${currentYear}-01-01`;
   const yearEnd = `${currentYear}-12-31`;
 
-  await db.query(`
+  await db.query(
+    `
     INSERT INTO shift_plans (tenant_id, name, start_date, end_date, created_by)
     VALUES (?, 'Kontischicht Pattern', ?, ?, ?)
-  `, [tenantId, yearStart, yearEnd, userId]);
+  `,
+    [tenantId, yearStart, yearEnd, userId],
+  );
 }
 ```
 
@@ -83,7 +86,7 @@ if (isKontischicht) {
 
 ```typescript
 interface WeekPattern {
-  weekType: 'A' | 'B';  // Woche 1 oder Woche 2
+  weekType: 'A' | 'B'; // Woche 1 oder Woche 2
   shifts: ShiftEntry[];
 }
 
@@ -124,7 +127,10 @@ Pattern: [A, B, A, B, A, B, A, B, A, B, A, B, A, B, A, B, A, B...]
    let planStartDate = data.startDate;
    let planEndDate = data.endDate;
 
-   if (planName.toLowerCase().includes('kontischicht') || (data.name && data.name.toLowerCase().includes('kontischicht'))) {
+   if (
+     planName.toLowerCase().includes('kontischicht') ||
+     (data.name && data.name.toLowerCase().includes('kontischicht'))
+   ) {
      // For Kontischicht, use full year range to ensure all weeks are covered
      const currentYear = new Date(data.startDate).getFullYear();
      planStartDate = `${currentYear}-01-01`;

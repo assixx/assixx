@@ -28,6 +28,23 @@
 
 ## 📅 FEHLER-ARCHIV (Chronologisch)
 
+### 09.17.2025 - DATEI-SUCH-INKOMPETENZ KATASTROPHE
+
+**FEHLER: Blind nach Dateien suchen ohne Kontext zu prüfen**
+
+- **Was:** Wollte tenant-deletion-status.css NEU erstellen obwohl sie EXISTIERTE und BENUTZT wurde
+- **Warum:** Inkompetente Suche - NUR Glob verwendet, NIE geschaut wo Dateien REFERENZIERT werden
+- **Fast-Katastrophe:** Hätte 355 Zeilen CSS überschrieben! Seite wäre kaputt!
+- **GRUNDPROBLEM:** Ich suche wie ein Idiot nur nach Dateinamen statt zu schauen WO Dateien verwendet werden!
+- **Richtig:**
+  1. ZUERST in HTML/Code schauen wo Dateien referenziert werden (imports, links, requires)
+  2. DANN Glob/Read verwenden um zu verifizieren
+  3. NIE blind annehmen eine Datei existiert nicht
+  4. IMMER Kontext prüfen bevor Dateien erstellt werden
+- **NEUE REGEL:** Bei JEDER Dateisuche ERST Referenzen prüfen, DANN Dateisystem!
+- **LEKTION:** Eine Datei kann existieren auch wenn Glob sie nicht findet - sie wird vielleicht woanders referenziert!
+- **SHAME COUNTER:** 🔴🔴🔴🔴🔴
+
 ### 04.09.2025 - TODO-Kommentare VERBOTEN
 
 **FEHLER: TODO-Kommentare statt Implementierung**
@@ -83,7 +100,7 @@
 
 **FEHLER #6: Datenbank-Daten OHNE Freigabe gelöscht**
 
-- **Was:** DELETE Befehle auf shift_rotation_* Tabellen ohne User-Freigabe ausgeführt
+- **Was:** DELETE Befehle auf shift*rotation*\* Tabellen ohne User-Freigabe ausgeführt
 - **Warum:** Wollte schnell Problem lösen, dachte es wäre nur Testdaten
 - **Richtig:** IMMER fragen: "Darf ich diese Daten löschen?" und auf EXPLIZITE Freigabe warten
 - **SHAME COUNTER:** 🔴🔴🔴 (KRITISCHER FEHLER!)
@@ -136,9 +153,11 @@
 
 ```markdown
 ## 📋 Verstanden:
+
 [EXAKT wiederholen was ich gelesen habe]
 
 ## 🎯 Aktion:
+
 [ERST DANN handeln]
 ```
 

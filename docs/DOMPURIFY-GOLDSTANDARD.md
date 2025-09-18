@@ -10,10 +10,10 @@
 
 ### Zwei konkurrierende Ansätze
 
-| Ansatz | Verwendet von | Config | onclick | Problem |
-|--------|--------------|--------|---------|---------|
-| **dom-utils.ts setHTML()** | 17 TypeScript Dateien | Custom (erlaubt onclick) | ✅ Funktioniert | Sicherheitsrisiko |
-| **DOMPurify.sanitize()** | 19 HTML Dateien | Default (entfernt onclick) | ❌ Entfernt | Inkonsistentes Verhalten |
+| Ansatz                     | Verwendet von         | Config                     | onclick         | Problem                  |
+| -------------------------- | --------------------- | -------------------------- | --------------- | ------------------------ |
+| **dom-utils.ts setHTML()** | 17 TypeScript Dateien | Custom (erlaubt onclick)   | ✅ Funktioniert | Sicherheitsrisiko        |
+| **DOMPurify.sanitize()**   | 19 HTML Dateien       | Default (entfernt onclick) | ❌ Entfernt     | Inkonsistentes Verhalten |
 
 ### Warum existieren beide?
 
@@ -28,6 +28,7 @@
 ```typescript
 // IMMER so:
 import { setHTML } from '../utils/dom-utils';
+
 setHTML(element, htmlContent);
 
 // NIEMALS so:
@@ -79,7 +80,7 @@ ALLOWED_ATTR: [
   // 'onclick',  ← ENTFERNEN!
   // 'onchange', ← ENTFERNEN!
   // Alle on* Handler entfernen
-]
+];
 ```
 
 ### Phase 2: TypeScript Module fixen
@@ -95,11 +96,12 @@ Alle Module die setHTML() nutzen und onclick erwarten:
 Option A: **Quick Fix**
 
 ```javascript
+// Neu (temporär):
+import { setHTML } from '/utils/dom-utils.js';
+
 // Statt:
 element.innerHTML = DOMPurify.sanitize(html);
 
-// Neu (temporär):
-import { setHTML } from '/utils/dom-utils.js';
 setHTML(element, html);
 ```
 
@@ -113,7 +115,7 @@ Option B: **Proper Migration** (empfohlen)
 
 - [ ] **Verwende dom-utils.ts setHTML()** - nicht DOMPurify direkt
 - [ ] **Keine onclick/onchange Handler** - nutze Event Delegation
-- [ ] **data-* Attribute für Parameter** - statt onclick="func(123)"
+- [ ] **data-\* Attribute für Parameter** - statt onclick="func(123)"
 - [ ] **TypeScript Module** - kein Inline JavaScript in HTML
 - [ ] **Test ohne onclick** - stelle sicher dass Events funktionieren
 
@@ -127,11 +129,11 @@ element.innerHTML = DOMPurify.sanitize(`
 
 // ❌ FALSCH - Custom Config mit onclick
 DOMPurify.sanitize(html, {
-  ALLOWED_ATTR: ['onclick'] // NIEMALS!
+  ALLOWED_ATTR: ['onclick'], // NIEMALS!
 });
 
 // ❌ FALSCH - Inline Handler
-<button onclick="alert('XSS!')">Click</button>
+<button onclick="alert('XSS!')">Click</button>;
 ```
 
 ## ✅ Was STATTDESSEN tun
@@ -183,12 +185,12 @@ Muss ich HTML mit User-Content rendern?
 
 ## 🔄 Migration Status
 
-| Komponente | Status | Nächster Schritt |
-|------------|--------|------------------|
-| dom-utils.ts Config | ⚠️ Erlaubt noch onclick | onclick entfernen |
-| TypeScript Module | ⚠️ Erwarten onclick | Event Delegation |
-| HTML Dateien | ❌ Nutzen DOMPurify direkt | Auf dom-utils migrieren |
-| Neue Features | ✅ | Folgen Gold Standard |
+| Komponente          | Status                     | Nächster Schritt        |
+| ------------------- | -------------------------- | ----------------------- |
+| dom-utils.ts Config | ⚠️ Erlaubt noch onclick    | onclick entfernen       |
+| TypeScript Module   | ⚠️ Erwarten onclick        | Event Delegation        |
+| HTML Dateien        | ❌ Nutzen DOMPurify direkt | Auf dom-utils migrieren |
+| Neue Features       | ✅                         | Folgen Gold Standard    |
 
 ## 📚 Referenzen
 

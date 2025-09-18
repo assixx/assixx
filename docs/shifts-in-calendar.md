@@ -92,7 +92,7 @@ Response: Array of { date, type }
 
 ```javascript
 // Hook into dayRender callback
-calendar.on('datesSet', function(info) {
+calendar.on('datesSet', function (info) {
   if (showShifts) {
     renderShiftIndicators(info.start, info.end);
   }
@@ -109,24 +109,30 @@ calendar.on('datesSet', function(info) {
 
 ```css
 .shift-indicator {
+  display: flex;
   position: absolute;
-  bottom: 2px;
   right: 2px;
+  bottom: 2px;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  background: #fff;
   width: 20px;
   height: 20px;
-  background: white;
-  border-radius: 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
   font-weight: bold;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  font-size: 12px;
 }
 
-.shift-indicator.shift-F { color: #3498db; } /* Blau */
-.shift-indicator.shift-S { color: #ff9800; } /* Orange */
-.shift-indicator.shift-N { color: #000000; } /* Schwarz */
+.shift-indicator.shift-F {
+  color: #3498db;
+} /* Blau */
+.shift-indicator.shift-S {
+  color: #ff9800;
+} /* Orange */
+.shift-indicator.shift-N {
+  color: #000000;
+} /* Schwarz */
 ```
 
 ## 🚀 API Response Format

@@ -120,8 +120,8 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/pages/manage-machines': ['admin', 'root'],
   '/manage-employees': ['admin', 'root'],
   '/pages/manage-employees': ['admin', 'root'],
-  '/blackboard': ['admin', 'root'],
-  '/pages/blackboard': ['admin', 'root'],
+  '/blackboard': ['employee', 'admin', 'root'],
+  '/pages/blackboard': ['employee', 'admin', 'root'],
   '/document-upload': ['admin', 'root'],
   '/pages/document-upload': ['admin', 'root'],
   '/survey-admin': ['admin', 'root'],
@@ -1120,9 +1120,20 @@ class UnifiedNavigation {
     // Check for navigation-container first (new approach)
     const navigationContainer = document.querySelector('#navigation-container');
     if (navigationContainer) {
-      // Create full navigation structure with header and sidebar
-      const fullNavigation = this.createFullNavigationStructure();
-      setHTML(navigationContainer as HTMLElement, fullNavigation);
+      // Create header and insert it directly into body as first element
+      const existingHeader = document.querySelector('.header');
+      if (!existingHeader) {
+        const headerHTML = this.createHeaderOnly();
+        // eslint-disable-next-line no-unsanitized/method -- Safe: headerHTML is internally generated, not user input
+        document.body.insertAdjacentHTML('afterbegin', headerHTML);
+      }
+
+      // Create modals and banner for navigation-container
+      const modalsAndBanner = this.createModalsAndBanner();
+      setHTML(navigationContainer as HTMLElement, modalsAndBanner);
+
+      // Now inject sidebar into layout-container
+      this.injectSidebarIntoLayout();
 
       // Re-attach event listeners after inserting HTML
       setTimeout(() => {
@@ -1146,23 +1157,75 @@ class UnifiedNavigation {
     }
   }
 
-  private createFullNavigationStructure(): string {
-    const { storedUserRole, activeRole, userRole } = this.getUserRoles();
+  private injectSidebarIntoLayout(): void {
+    // Find or create layout-container
+    let layoutContainer = document.querySelector('.layout-container');
+
+    if (!layoutContainer) {
+      // Create layout-container if it doesn't exist
+      layoutContainer = document.createElement('div');
+      layoutContainer.className = 'layout-container';
+
+      // Move main-content into layout-container if it exists outside
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent !== null && mainContent.parentElement?.classList.contains('layout-container') !== true) {
+        document.body.append(layoutContainer);
+        layoutContainer.append(mainContent);
+      }
+    }
+
+    // Check if sidebar already exists in layout-container
+    let sidebar = layoutContainer.querySelector('.sidebar');
+
+    if (!sidebar) {
+      // Create sidebar element
+      sidebar = document.createElement('aside');
+      sidebar.className = `sidebar ${this.isCollapsed ? 'collapsed' : ''}`;
+
+      // Insert sidebar as first child of layout-container
+      layoutContainer.insertBefore(sidebar, layoutContainer.firstChild);
+    }
+
+    // Set sidebar content
+    setHTML(sidebar as HTMLElement, this.createNavigationHTML());
+  }
+
+  // Unused method - kept for potential future use
+  // private _createFullNavigationStructure(): string {
+  //   const { storedUserRole, activeRole, userRole } = this.getUserRoles();
+  //   const { displayName, firstName, lastName, profilePicture } = this.getUserDisplayInfo();
+  //   const dashboardUrl = this.getDashboardUrl(storedUserRole, userRole);
+  //   const logoSrc = this.getLogoSrc();
+  //   const warningBanner = this.createRoleSwitchBanner(storedUserRole, activeRole);
+  //   const roleSwitchDropdown = this.createRoleSwitchDropdown(userRole, activeRole);
+  //   const userAvatar = this.createUserAvatar(profilePicture, firstName, lastName);
+
+  //   return `
+  //     ${this.createHeader(dashboardUrl, logoSrc, roleSwitchDropdown, userAvatar, displayName)}
+  //     ${this.createLogoutModal()}
+  //     ${warningBanner}
+  //   `;
+  // }
+
+  private createHeaderOnly(): string {
+    const { storedUserRole, userRole } = this.getUserRoles();
     const { displayName, firstName, lastName, profilePicture } = this.getUserDisplayInfo();
     const dashboardUrl = this.getDashboardUrl(storedUserRole, userRole);
     const logoSrc = this.getLogoSrc();
-    const warningBanner = this.createRoleSwitchBanner(storedUserRole, activeRole);
+    const { activeRole } = this.getUserRoles();
     const roleSwitchDropdown = this.createRoleSwitchDropdown(userRole, activeRole);
     const userAvatar = this.createUserAvatar(profilePicture, firstName, lastName);
 
+    return this.createHeader(dashboardUrl, logoSrc, roleSwitchDropdown, userAvatar, displayName);
+  }
+
+  private createModalsAndBanner(): string {
+    const { storedUserRole, activeRole } = this.getUserRoles();
+    const warningBanner = this.createRoleSwitchBanner(storedUserRole, activeRole);
+
     return `
-      ${this.createHeader(dashboardUrl, logoSrc, roleSwitchDropdown, userAvatar, displayName)}
       ${this.createLogoutModal()}
       ${warningBanner}
-      <!-- Sidebar -->
-      <aside class="sidebar ${this.isCollapsed ? 'collapsed' : ''}">
-        ${this.createNavigationHTML()}
-      </aside>
     `;
   }
 
@@ -1695,9 +1758,8 @@ class UnifiedNavigation {
       console.info(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
     });
 
-    // Try to find the navigation sidebar specifically
-    const navContainer = $$('#navigation-container');
-    const sidebar = navContainer ? $$('.sidebar', navContainer) : $$('.sidebar');
+    // Try to find the navigation sidebar specifically (now in layout-container)
+    const sidebar = $$('.layout-container .sidebar') ?? $$('.sidebar');
     const mainContent = $$('.main-content');
     const chatMain = $$('.chat-main');
     const chatSidebar = $$('.chat-sidebar');
@@ -2362,9 +2424,21 @@ class UnifiedNavigation {
     // Get the navigation container
     const navigationContainer = document.querySelector('#navigation-container');
     if (navigationContainer) {
-      // Clear and recreate entire navigation structure
-      const fullNavigation = this.createFullNavigationStructure();
-      setHTML(navigationContainer as HTMLElement, fullNavigation);
+      // Clear existing header and recreate it directly in body
+      const existingHeader = document.querySelector('.header');
+      if (existingHeader) {
+        existingHeader.remove();
+      }
+      const headerHTML = this.createHeaderOnly();
+      // eslint-disable-next-line no-unsanitized/method -- Safe: headerHTML is internally generated, not user input
+      document.body.insertAdjacentHTML('afterbegin', headerHTML);
+
+      // Create modals and banner for navigation-container
+      const modalsAndBanner = this.createModalsAndBanner();
+      setHTML(navigationContainer as HTMLElement, modalsAndBanner);
+
+      // Inject sidebar into layout-container
+      this.injectSidebarIntoLayout();
 
       // Re-attach event listeners after DOM update
       setTimeout(() => {
@@ -2378,7 +2452,7 @@ class UnifiedNavigation {
         // Restore sidebar state
         const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
         if (isCollapsed) {
-          const sidebar = navigationContainer.querySelector('.sidebar');
+          const sidebar = document.querySelector('.layout-container .sidebar');
           const mainContent = document.querySelector('.main-content');
           sidebar?.classList.add('collapsed');
           mainContent?.classList.add(SIDEBAR_COLLAPSED_CLASS);
@@ -2832,20 +2906,11 @@ class UnifiedNavigation {
 
   private visibilityListenerAdded = false;
 
-  // CSS injection method
+  // CSS injection method - DISABLED: CSS is now loaded statically via HTML
   private injectCSS(): void {
-    if (!document.querySelector('#unified-navigation-styles')) {
-      console.info('[UnifiedNav] Injecting CSS styles in init');
-      const styleSheet = document.createElement('style');
-      styleSheet.id = 'unified-navigation-styles';
-      styleSheet.textContent = unifiedNavigationCSS;
-      document.head.append(styleSheet);
-
-      // Force style recalculation
-      void document.body.offsetHeight;
-    } else {
-      console.info('[UnifiedNav] CSS styles already present');
-    }
+    // CSS is already loaded via <link> tags in HTML files
+    // No dynamic injection needed anymore
+    console.info('[UnifiedNav] CSS loaded via HTML link tags');
   }
 
   // Storage Widget erstellen (nur für Root User)
@@ -2940,1152 +3005,9 @@ class UnifiedNavigation {
   // If needed in future, consider using the showToast from role-switch.ts instead
 }
 
-// CSS Styles für die Unified Navigation
-const unifiedNavigationCSS = `
-    /* Header Base Styles */
-    .header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 60px;
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        box-shadow: var(--shadow-sm);
-        display: flex;
-        align-items: center;
-        padding: 0 20px;
-        z-index: 1000;
-    }
-
-    .header .header-content {
-        flex: 1;
-        display: flex;
-        justify-content: flex-end;
-    }
-
-    .header .logo-container {
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-        margin-right: var(--spacing-lg);
-        margin-bottom: -3px;
-    }
-
-    .header .logo {
-        height: 50px;
-        width: auto;
-        margin-left: -13px;
-    }
-
-    .header .header-actions {
-        display: flex;
-        align-items: center;
-        gap: calc(var(--spacing-lg) + 8px);
-    }
-
-    .header .header-actions #user-info {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        /*background: rgba(255, 255, 255, 0.1);*/
-        padding: var(--spacing-xs) var(--spacing-sm);
-        border-radius: 20px;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .header .header-actions #user-name {
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px;
-    }
-
-    .header .header-actions #user-info::before {
-        content: "";
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        /*background: linear-gradient(135deg, var(--primary-color), var(--primary-light));*/
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        font-weight: 600;
-        font-size: 0.9rem;
-    }
-
-    /* Role Switch Warning Banner */
-    .role-switch-banner {
-        position: fixed;
-        top: 60px; /* Unter der Navigation */
-        left: 0;
-        right: 0;
-        background: rgba(255, 193, 7, 0.1);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 193, 7, 0.3);
-        padding: 8px 20px;
-        z-index: 999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 10px rgba(255, 193, 7, 0.2);
-    }
-
-    .role-switch-banner-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #ff9800;
-        font-size: 14px;
-        max-width: 1200px;
-        width: 100%;
-        position: relative;
-    }
-
-    .role-switch-banner-content strong {
-        color: #ffb74d;
-        font-weight: 600;
-    }
-
-    .role-switch-banner-close {
-        position: absolute;
-        right: 0;
-        background: none;
-        border: none;
-        color: #ff9800;
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        /*  */
-    }
-
-    .role-switch-banner-close:hover {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffb74d;
-    }
-
-    /* Adjust sidebar and main content when banner is visible */
-    .role-switch-banner:not([style*="display: none"]) ~ .sidebar {
-        top: 100px !important; /* 60px header + 40px banner */
-        height: calc(100vh - 100px) !important;
-    }
-
-    .sidebar {
-        width: 280px !important;
-        background: rgba(255, 255, 255, 0);
-        backdrop-filter: blur(20px);
-        /*border-right: 1px solid rgba(255, 255, 255, 0.1);*/
-        height: calc(100vh - 60px);
-        position: fixed;
-        left: 0;
-        top: 60px;
-        overflow-y: auto;
-        overflow-x: hidden;
-    }
-
-    /* Scrollbar Styling */
-    .sidebar::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .sidebar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
-    }
-
-    .sidebar::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.2);
-        border-radius: 3px;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
-    }
-
-    .sidebar-nav {
-        padding: var(--spacing-md);
-        min-height: 100%;
-        display: flex;
-        flex-direction: column;
-        overflow: visible;
-        position: relative;
-    }
-
-    .sidebar-title {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.825rem;
-        font-weight: 600;
-        color: #ffffffff;
-        padding: var(--spacing-sm);
-        background:rgba(234, 187, 0, 0);
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 1);
-        /*  */
-        cursor: pointer;
-        width: 98%;
-        margin-left: 1%;
-        margin-right: 1%;
-        text-align: center;
-        position: relative;
-        overflow: visible;
-        /*transform: rotate(-3deg);*/
-        margin-top: 23px;
-    }
-
-    /* Sticky Note folded corner - inner fold */
-    .sidebar-title::after {
-        content: '';
-        position: absolute;
-        bottom: -4px;
-        right: -0.6px;
-        width: 20px;
-        height: 20px;
-        background: linear-gradient(45deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
-        transform: rotate(45deg);
-        transform-origin: bottom right;
-    }
-
-    .sidebar-title::before {
-        content: '';
-        position: absolute;
-        bottom: -5px;
-        right: -2px;
-        width: 0;
-        height: 0;
-        border-style: solid;
-        border-width: 13px 10px 4px 3px;
-        border-color: #fff #00060a #0000 transparent;
-        z-index: 1;
-    }
-
-    .sidebar-title:hover {
-        transform: rotate(-1deg) translateY(-2px);
-        box-shadow:
-            0 5px 10px rgba(0, 0, 0, 0.25),
-            0 2px 4px rgba(0, 0, 0, 0.15);
-    }
-
-    .sidebar-title:hover .pin-head {
-        opacity: 0;
-    }
-
-    .sidebar-title:hover .pin-needle {
-        opacity: 1;
-        top: -18px;
-    }
-
-    .sidebar-title:active {
-        transform: rotate(-1deg) translateY(0);
-    }
-
-    /* Pinned icon styles */
-    .pinned-icon {
-        position: absolute;
-        top: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        z-index: 2;
-    }
-
-    /* Pin head (only the head visible - like pushed in) */
-    .pin-head {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #d32f2f;
-        display: block;
-        position: relative;
-        box-shadow:
-            0 3px 6px rgba(0, 0, 0, 0.4),
-            inset -2px -2px 3px rgba(0, 0, 0, 0.3),
-            inset 2px 2px 3px rgba(255, 255, 255, 0.4);
-        /*  */
-    }
-
-    .pin-head::after {
-        content: '';
-        position: absolute;
-        top: 4px;
-        left: 4px;
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-    }
-
-    /* Pin needle (appears on hover - full pushpin) */
-    .pin-needle {
-        position: absolute;
-        top: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        opacity: 0;
-        /*  */
-        z-index: 2;
-    }
-
-    /* Pin needle head */
-    .pin-needle::before {
-        content: '';
-        position: absolute;
-        top: -10px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: #d32f2f;
-        box-shadow:
-            0 3px 6px rgba(0, 0, 0, 0.4),
-            inset -2px -2px 3px rgba(0, 0, 0, 0.3),
-            inset 2px 2px 3px rgba(255, 255, 255, 0.4);
-    }
-
-    /* Pin needle shaft */
-    .pin-needle::after {
-        content: '';
-        position: absolute;
-        top: 7px;  /* Von 17px auf 8px reduziert um Lücke zu schließen */
-        left: 50%;
-        transform: translateX(-50%);
-        width: 2px;
-        height: 22px;
-        background: linear-gradient(to bottom,
-            #aaa 0%,
-            #888 50%,
-            #666 100%);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-    }
-
-    .title-content {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--spacing-sm);
-        width: 100%;
-        min-width: 0;
-    }
-
-    .title-text {
-        /* transition: opacity 0.3s ease, width 0.3s ease; */
-        font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-        white-space: nowrap;
-        overflow: hidden;
-    }
-
-    /* Toggle button im Header */
-    .header .sidebar-toggle {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        background: transparent;
-        border: 1px solid transparent;
-        border-radius: 8px;
-        cursor: pointer;
-        /*  */
-        color: #fff;
-        margin-right: 15px;
-        margin-left: -6px;
-    }
-
-    .header .sidebar-toggle:hover {
-        background: rgba(255, 255, 255, 0.09);
-        transform: scale(1.05);
-    }
-
-    .sidebar-toggle:hover .toggle-icon {
-        opacity: 0.8;
-    }
-
-    .toggle-icon {
-        /* transition: transform 0.3s ease; */
-    }
-
-    /* Collapsed Sidebar Styles */
-    .sidebar.collapsed {
-        width: 4.5rem !important; /* 72px bei 16px base - durch 8 teilbar! */
-    }
-
-    /* Logo size adjustment when sidebar is collapsed */
-    body:has(.sidebar.collapsed) .header .logo {
-        height: 24px;
-        width: auto;
-        margin-left: -4px;
-        margin-bottom: 7px;
-    }
-
-    .sidebar.collapsed .sidebar-title {
-        padding: var(--spacing-sm);
-        justify-content: center;
-        width: calc(100% - 8px);
-        font-size: 0;
-        transform: rotate(-2deg);
-        background: #e6b80000;
-        min-height: 26px;
-        margin-left: 4px;
-    }
-
-    .sidebar.collapsed .title-text {
-        opacity: 0;
-        width: 0;
-        display: none;
-    }
-
-    .sidebar.collapsed .title-content {
-        gap: 0;
-        justify-content: center;
-    }
-
-
-    .sidebar.collapsed .pinned-icon {
-        top: -0.4375rem; /* -7px in rem */
-    }
-
-    .sidebar.collapsed .pin-head {
-        width: 1rem; /* 16px in rem */
-        height: 1rem;
-    }
-
-    .sidebar.collapsed .pin-head::after {
-        width: 0.3125rem; /* 5px in rem */
-        height: 0.3125rem;
-        top: 0.1875rem; /* 3px in rem */
-        left: 0.1875rem;
-    }
-
-    .sidebar.collapsed .user-info-card {
-        padding: 1.0625rem; /* 17px in rem */
-        flex-direction: column;
-        align-items: center;
-        min-height: auto;
-        margin-top: 5rem; /* 80px in rem */
-        margin-bottom: 1.25rem; /* 20px in rem */
-    }
-
-    .sidebar.collapsed .user-details {
-        display: none;
-    }
-
-
-    /* Im collapsed state NUR Label verstecken - sonst KEINE Änderungen! */
-    .sidebar.collapsed .sidebar-link .label {
-        display: none;
-    }
-
-    /* Collapsed state: Hover/Active NUR auf Icon */
-    .sidebar.collapsed .sidebar-link {
-        background: transparent;
-        font-size: 0.875rem !important; /* 14px in rem */
-        line-height: 1.25rem !important; /* 20px in rem */
-        justify-content: flex-start; /* NICHT center! */
-        gap: 0; /* Kein gap im collapsed state */
-        padding: 0.5rem; /* 8px in rem */
-    }
-
-    /* Wichtig: overflow visible für collapsed sidebar damit der Kreis größer werden kann */
-    .sidebar.collapsed .sidebar-link {
-        overflow: visible !important;
-    }
-
-
-
-.sidebar-link .icon svg {
-  width: 1.0625rem !important; /* 17px in rem */
-  height: 1.0625rem !important;
-  display: block;
-}
-    .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
-        content: '';
-        position: absolute;
-        inset: -0.55rem; /* -9px in rem */
-        border-radius: 50%;
-        z-index: -1;
-        background: rgba(139, 139, 139, 0.41);
-        border: 1px solid hsl(0, 0%, 39.6%);
-
-    }
-
-    /* Hover - Icon wird primary color */
-    .sidebar.collapsed .sidebar-link:hover .icon {
-        color: var(--primary-color);
-    }
-
-    /* Hover nur bei NICHT active */
-    .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
-        content: '';
-        position: absolute;
-        inset: -0.55rem; /* -9px in rem */
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: 50%;
-        z-index: -1;
-    }
-
-    /* Active + Hover = stärkerer active effect */
-    .sidebar.collapsed .sidebar-item.active .sidebar-link:hover .icon::before {
-        background: linear-gradient(135deg, rgba(33, 150, 243, 0.25), rgba(33, 150, 243, 0.15));
-    }
-
-    .sidebar.collapsed .submenu-arrow {
-        display: none;
-    }
-
-    .sidebar.collapsed .submenu {
-        display: none !important;
-    }
-
-    .sidebar.collapsed .storage-widget {
-        display: none;
-    }
-
-    .sidebar.collapsed .sidebar-menu {
-        /*margin-top: 72px;  Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
-        margin-top: 4.44rem;
-    }
-
-
-    /* Main content adjustment for collapsed sidebar */
-    .main-content.sidebar-collapsed {
-        margin-left: 4.5rem; /* Gleicher Wert wie sidebar width */
-    }
-
-    /* Container full width when sidebar collapsed */
-    .main-content.sidebar-collapsed .container {
-        max-width: none;
-    }
-
-    /* Content sections full width when sidebar collapsed */
-    .main-content.sidebar-collapsed .content-section {
-        max-width: none;
-        width: 100%;
-    }
-
-    /* Cards inside collapsed layout use more space */
-    .main-content.sidebar-collapsed .card {
-        max-width: none;
-    }
-
-
-    /* Tooltip styles for collapsed items - DEAKTIVIERT wegen Icon-Verschiebung */
-    /*
-    .sidebar.collapsed .sidebar-link:hover::after,
-    .sidebar.collapsed .sidebar-title:hover::after {
-        content: attr(title);
-        position: absolute;
-        left: 100%;
-        top: 50%;
-        transform: translateY(-50%);
-        margin-left: 10px;
-        padding: 8px 12px;
-        background: rgba(0, 0, 0, 0.9);
-        color: #fff;
-        border-radius: var(--radius-md);
-        font-size: 14px;
-        white-space: nowrap;
-        z-index: 1000;
-        pointer-events: none;
-        opacity: 0;
-    }
-    */
-
-    @keyframes tooltipFadeIn {
-        to {
-            opacity: 1;
-        }
-    }
-
-    /* Badge adjustments for collapsed sidebar */
-
-
-    /* Smooth transitions */
-    .sidebar,
-    .main-content,
-    .sidebar-link,
-    .sidebar-link .label,
-    .title-text,
-    .user-details,
-    .storage-widget {
-        /**/
-    }
-
-
-
-    .user-info-card {
-        /*display: flex;*/
-        align-items: center;
-        /*ap: 15px;*/
-        padding: 14px 10px 15px 40px;
-        background: rgba(255, 255, 255, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        /*border: 1px solid rgba(115, 115, 115, 0.36);*/
-        border-radius: var(--radius-md);
-        margin-bottom: 20px;
-        position: relative;
-        overflow: hidden;
-        /**/
-        box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-        min-height: 100px;
-        /*animation: fadeInUp 0.6s ease-out;*/
-        margin-top: 20px;
-    }
-
-    /* Welcome hero style gradient backgrounds */
-    .user-info-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background:
-            radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.06) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-        opacity: 1;
-        z-index: 0;
-    }
-
-    .user-info-card::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 200px;
-        height: 200px;
-
-        border-radius: 50%;
-        z-index: 0;
-    }
-
-    .user-info-card > * {
-        position: relative;
-        z-index: 1;
-    }
-
-
-
-    /* Avatar Styles - Ohne Border */
-    #sidebar-user-avatar,
-    .sidebar .user-avatar,
-    .user-info-card .user-avatar,
-    #user-avatar {
-        /*display: block !important;*/
-        width: 31px !important;
-        height: 31px !important;
-        border-radius: 50% !important;
-        object-fit: cover !important;
-        border: none !important;
-        flex-shrink: 0 !important;
-        /*  */
-        margin-left: 0px;
-        overflow: hidden;
-        position: relative;
-    }
-
-    /* Header avatar specific size */
-    #user-avatar {
-        width: 24px !important;
-        height: 24px !important;
-    }
-
-    /* Avatar with initials */
-    .avatar-initials {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, #2196F3, #42a5f5);
-        color: #fff;
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-    }
-
-    /* Avatar padding when sidebar is collapsed */
-    .sidebar.collapsed .user-avatar {
-        padding: 3px;
-    }
-
-    /* Avatar margin adjustment when sidebar is collapsed */
-    .sidebar.collapsed #sidebar-user-avatar,
-    .sidebar.collapsed .user-avatar,
-    .sidebar.collapsed .user-info-card .user-avatar {
-        margin-left: -13px !important;
-    }
-
-    .user-details {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        min-width: 0;
-        align-items: flex-start;
-    }
-
-    .company-info {
-        display: flex;
-        align-items: baseline;
-        gap: 6px;
-        margin-bottom: 4px;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .company-name {
-        font-weight: 600;
-        color: var(--primary-light);
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        margin-top: 8px;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .company-domain {
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.5);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .user-name {
-        font-weight: 500;
-        color: var(--text-primary);
-        font-size: 15px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.2;
-    }
-
-    .user-full-name {
-        font-size: 13px;
-        color: rgba(255, 255, 255, 0.6);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .role-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 8px;
-        font-size: 10px;
-        font-weight: 500;
-        /*  */
-        margin: 6px 0 0 0;
-        width: fit-content;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-    }
-
-    /* Role-specific badge colors - Exact match from logs */
-    .role-badge.root {
-        background: rgba(156, 39, 176, 0.15);
-        /* color: #9C27B0; */
-        /* border: 1px solid rgba(156, 39, 176, 0.9); */
-        margin-left: -2px;
-        box-shadow: 0px 0px 1px rgba(255, 0, 230, 1);
-    }
-
-    .role-badge.admin {
-        background: rgba(3, 169, 244, 0.15);
-        /* color: #03A9F4; */
-        /* border: 1px solid rgba(3, 169, 244, 0.9); */
-        margin-left: -2px;
-        box-shadow: 0px 0px 1px rgb(0, 190, 255);
-    }
-
-    .role-badge.employee {
-        background: rgba(96, 125, 139, 0.15);
-        /* color: #607D8B; */
-        /* border: 1px solid rgba(96, 125, 139, 0.9); */
-        margin-left: -2px;
-        box-shadow: 0px 0px 1px rgba(100, 116, 122, 1);
-    }
-
-    /* Role Switch Dropdown - Using styles from dashboard-theme.css */
-    /* Only adding the specific margin that's different */
-    .role-switch-dropdown {
-        margin-right: 12px;
-    }
-
-    .sidebar-menu {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-        flex: 1;
-    }
-
-    /* .sidebar-item - Using styles from dashboard-theme.css */
-
-    .sidebar-link {
-        display: flex; /* Zurück zu Flexbox! */
-        align-items: center;
-        padding: 0.5rem; /* 8px in rem */
-        color: var(--text-secondary);
-        text-decoration: none;
-        border-radius: 18px;
-        position: relative;
-        overflow: hidden;
-        font-size: 0.875rem; /* 14px in rem */
-        line-height: 1.25rem; /* 20px in rem */
-        margin-bottom: 0.3125rem; /* 5px in rem */
-        height: 2.1rem; /* 34px in rem */
-        box-sizing: border-box;
-        border: 1px solid transparent; /* Reserviert Platz für active border */
-    }
-
-    /* Hover/Active nur wenn NICHT collapsed */
-    .sidebar:not(.collapsed) .sidebar-link:hover {
-        background: rgba(33, 150, 243, 0.1);
-    }
-
-    .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
-        border: 1px solid hsl(0, 0%, 39.6%);
-        background: rgba(139, 139, 139, 0.41);
-
-    }
-
-    .sidebar-link .icon {
-        position: absolute; /* ABSOLUTE positionieren! */
-        min-width: 1.0625rem; /* 17px in rem */
-        width: 1.0625rem;
-        height: 1.0625rem;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        margin-left: 0;
-    }
-
-    .sidebar-link .label {
-        margin-left: 1.75rem; /* Platz für Icon + Gap */
-        font-weight: 500;
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .nav-indicator {
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: transparent;
-        /*  */
-    }
-
-    /*.sidebar-item.active .nav-indicator {
-        background: var(--primary-color);
-        box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
-    }*/
-
-    .nav-ripple {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        border-radius: 50%;
-        background: rgba(33, 150, 243, 0.3);
-        transform: translate(-50%, -50%);
-        /* animation: ripple 0.6s ease-out; */
-    }
-
-    @keyframes ripple {
-        to {
-            width: 200px;
-            height: 200px;
-            opacity: 0;
-        }
-    }
-
-    /* Submenu Styles */
-    .sidebar-item {
-        margin: 0;
-        padding: 0;
-    }
-
-    .sidebar-item.has-submenu .sidebar-link {
-        position: relative;
-    }
-
-    .submenu-arrow {
-        margin-left: auto;
-        /* transition: transform 0.3s ease; */
-        opacity: 0.6;
-    }
-
-    .sidebar-item.has-submenu.open .submenu-arrow {
-        transform: rotate(180deg);
-    }
-
-    .submenu {
-        margin-left: 2rem; /* 32px in rem */
-        margin-top: 0.25rem; /* 4px in rem */
-        margin-bottom: 0.3125rem; /* 5px in rem */
-        list-style: none;
-        padding: 0;
-        overflow: hidden;
-        /*  */
-    }
-
-    .submenu-item {
-        margin-bottom: 0.125rem; /* 2px in rem */
-    }
-
-    .submenu-link {
-        display: inline flow-root list-item;
-        padding: 0.1875rem 1.25rem; /* 3px 20px in rem */
-        color: var(--text-secondary);
-        text-decoration: none;
-        font-size: 0.85rem;
-        border-radius: 12px;
-        /*  */
-        /*transform: translateX(6px);*/
-        margin-left: 0.375rem; /* 6px in rem */
-        position: relative;
-    }
-
-    .submenu-link:hover {
-        background: rgba(33, 150, 243, 0.08);
-        border-color: rgba(33, 150, 243, 0.15);
-    }
-
-    .submenu-link.active,
-    .submenu-item.active .submenu-link {
-        transform: translateX(1.25rem); /* 20px in rem */
-        background: rgba(139, 139, 139, 0.12);
-        border-radius: var(--radius-md);
-        border: 1px solid hsla(0, 0%, 39.6%, 0.44);
-        margin-right: 2rem; /* 80px in rem */
-    }
-
-    /* Layout adjustments */
-    .layout-container {
-        display: flex;
-        min-height: 100vh;
-        padding-top: 68px; /* Space for fixed header */
-    }
-
-    .main-content {
-        flex: 1;
-        margin-left: 280px;
-        padding: var(--spacing-xl);
-        background: var(--background-primary);
-        min-height: calc(100vh - 60px);
-    }
-
-    /* Storage Widget - Glassmorphismus Style */
-    .storage-widget {
-        margin-top: 50px
-        /*position: sticky;
-        bottom: 0;
-        margin: var(--spacing-md);
-        margin-top: auto;
-        margin-top: 40px;
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0,0%,100%,.1);
-        border-radius: var(--radius-md);
-        padding: var(--spacing-md);
-        box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-         */
-    }
-
-    .storage-widget:hover {
-        /*background: rgba(255, 255, 255, 0.05);
-        transform: translateY(-2px);
-        box-shadow:
-            0 10px 40px rgba(33, 150, 243, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);*/
-    }
-
-    .storage-header {
-        display: flex;
-        align-items: center;
-        gap: var(--spacing-sm);
-        margin-bottom: var(--spacing-md);
-        color: var(--primary-color);
-        font-weight: 600;
-        font-size: 14px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .storage-info {
-        margin-bottom: var(--spacing-md);
-    }
-
-    .storage-usage-text {
-        font-size: 13px;
-        color: var(--text-secondary);
-        margin-bottom: var(--spacing-sm);
-    }
-
-    .storage-usage-text span {
-        color: var(--text-primary);
-        font-weight: 600;
-    }
-
-    .storage-progress {
-        width: 100%;
-        height: 8px;
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 4px;
-        overflow: hidden;
-        margin-bottom: var(--spacing-xs);
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-    }
-
-    .storage-progress-bar {
-        height: 100%;
-        background: var(--success-color);
-        border-radius: 4px;
-        /* transition: width 0.5s ease, background-color 0.3s ease; */
-        position: relative;
-        overflow: hidden;
-    }
-
-    .storage-progress-bar::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-        background: linear-gradient(
-            45deg,
-            transparent 25%,
-            rgba(255, 255, 255, 0.2) 25%,
-            rgba(255, 255, 255, 0.2) 50%,
-            transparent 50%,
-            transparent 75%,
-            rgba(255, 255, 255, 0.2) 75%,
-            rgba(255, 255, 255, 0.2)
-        );
-        background-size: 20px 20px;
-        /* animation: progress-stripes 1s linear infinite; */
-    }
-
-    @keyframes progress-stripes {
-        0% {
-            background-position: 0 0;
-        }
-        100% {
-            background-position: 20px 20px;
-        }
-    }
-
-    .storage-percentage {
-        font-size: 12px;
-        color: var(--text-secondary);
-        text-align: right;
-    }
-
-    .storage-upgrade-btn {
-        width: 100%;
-        padding: var(--spacing-2sm);
-        background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-        color: #fff;
-        border: none;
-        border-radius: var(--radius-sm);
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        /*  */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: var(--spacing-xs);
-        box-shadow:
-            0 2px 8px rgba(33, 150, 243, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    }
-
-    .storage-upgrade-btn:hover {
-        transform: translateY(-2px);
-        box-shadow:
-            0 6px 20px rgba(33, 150, 243, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .sidebar {
-            width: 100%;
-            transform: translateX(-100%);
-            top: 60px;
-        }
-
-        .sidebar.mobile-open {
-            transform: translateX(0);
-        }
-
-        .main-content {
-            margin-left: 0;
-        }
-
-        .layout-container {
-            flex-direction: column;
-        }
-
-        .storage-widget {
-            position: relative;
-            bottom: auto;
-            left: auto;
-            right: auto;
-            margin-top: var(--spacing-lg);
-        }
-    }
-
-    /* Collapsed sidebar - show badges as dots */
-    .sidebar.collapsed .nav-badge {
-        position: absolute !important;
-        top: 4px !important;
-        right: 4px !important;
-        left: auto !important;
-        width: 8px !important;
-        height: 8px !important;
-        min-width: 8px !important;
-        padding: 0 !important;
-        border-radius: 50% !important;
-        font-size: 0 !important;
-        overflow: hidden !important;
-        text-indent: -9999px !important;
-    }
-
-    /* Collapsed sidebar - submenu badges as dots */
-    .sidebar.collapsed .submenu-link .nav-badge {
-        top: 50% !important;
-        right: 8px !important;
-        transform: translateY(-50%) !important;
-    }
-`;
-
 // CSS automatisch einbinden
-if (!document.querySelector('#unified-navigation-styles')) {
-  console.info('[UnifiedNav] Injecting CSS styles');
-  const styleSheet = document.createElement('style');
-  styleSheet.id = 'unified-navigation-styles';
-  styleSheet.textContent = unifiedNavigationCSS;
-  document.head.append(styleSheet);
-} else {
-  console.info('[UnifiedNav] CSS styles already present');
-}
+// CSS loading removed - now handled via static HTML link tags
+console.info('[UnifiedNav] CSS loaded via HTML link tags');
 
 // Export to window for backwards compatibility
 

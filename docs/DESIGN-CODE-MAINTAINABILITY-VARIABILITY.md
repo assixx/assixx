@@ -146,10 +146,10 @@
 /* BEISPIEL: Sicherstellen dass beide identisch sind */
 .main-content,
 .layout-container {
+  margin: 0 auto;
   /* Exakt die gleichen Styles */
   padding: 2rem;
   max-width: 1200px;
-  margin: 0 auto;
 }
 ```
 
@@ -259,8 +259,8 @@
   padding: var(--spacing-lg) !important;
 }
 .u-px-lg {
-  padding-left: var(--spacing-lg) !important;
   padding-right: var(--spacing-lg) !important;
+  padding-left: var(--spacing-lg) !important;
 }
 
 /* === Flex Utilities === */
@@ -274,8 +274,8 @@
 }
 .u-flex-center {
   display: flex;
-  align-items: center;
   justify-content: center !important;
+  align-items: center;
 }
 
 /* === Width Utilities === */

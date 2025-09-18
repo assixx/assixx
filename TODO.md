@@ -12,7 +12,6 @@
 
 ###DOM-purify-siehe Goldstandard###
 
-
 ## 🔥 DEAL-BREAKER Features
 
 ### Urlaubsverwaltung System (20h)

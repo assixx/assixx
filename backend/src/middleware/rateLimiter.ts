@@ -39,8 +39,8 @@ const createRateLimitHandler = (message: string) => {
 const rateLimiterConfigs = {
   // Public endpoints (login, signup, password reset)
   [RateLimiterType.PUBLIC]: {
-    windowMs: 60 * 1000, // 1 minute for testing
-    max: isTestEnv ? 100000 : 100, // 100 requests for public endpoints (ERHÖHT)
+    windowMs: 20 * 1000, // 20 seconds
+    max: isTestEnv ? 100000 : 500, // 500 requests for public endpoints (ERHÖHT)
     handler: createRateLimitHandler('Too many requests from this IP, please try again later.'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -49,8 +49,8 @@ const rateLimiterConfigs = {
 
   // Authentication endpoints (login, signup)
   [RateLimiterType.AUTH]: {
-    windowMs: 60 * 1000, // 1 minute for testing
-    max: isTestEnv ? 100000 : 5, // 5 attempts in 1 minute
+    windowMs: 20 * 1000, // 20 seconds
+    max: isTestEnv ? 100000 : 50, // 50 attempts in 20 seconds
     handler: createRateLimitHandler('Too many authentication attempts, please try again later.'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -60,8 +60,8 @@ const rateLimiterConfigs = {
 
   // Authenticated user endpoints
   [RateLimiterType.AUTHENTICATED]: {
-    windowMs: 60 * 1000, // 1 minute for testing
-    max: isTestEnv ? 100000 : 5000, // 5000 requests in 1 minute for normal users (erhöht für Dashboard)
+    windowMs: 20 * 1000, // 20 seconds
+    max: isTestEnv ? 100000 : 20000, // 20000 requests in 20 seconds for normal users (erhöht für Dashboard)
     handler: createRateLimitHandler('Rate limit exceeded, please slow down.'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -71,8 +71,8 @@ const rateLimiterConfigs = {
 
   // Admin endpoints
   [RateLimiterType.ADMIN]: {
-    windowMs: 60 * 1000, // 1 minute for testing
-    max: isTestEnv ? 100000 : 5000, // 5000 requests in 1 minute for admins (erhöht für Dashboard)
+    windowMs: 20 * 1000, // 20 seconds
+    max: isTestEnv ? 100000 : 25000, // 25000 requests in 20 seconds for admins (erhöht für Dashboard)
     handler: createRateLimitHandler('Admin rate limit exceeded.'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -82,8 +82,8 @@ const rateLimiterConfigs = {
 
   // API endpoints (for external integrations)
   [RateLimiterType.API]: {
-    windowMs: 60 * 1000, // 1 minute
-    max: isTestEnv ? 100000 : 5000, // 5000 requests per minute for API (erhöht für Dashboard)
+    windowMs: 20 * 1000, // 20 seconds
+    max: isTestEnv ? 100000 : 20000, // 20000 requests per 20 seconds for API (erhöht für Dashboard)
     handler: createRateLimitHandler('API rate limit exceeded.'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -94,7 +94,7 @@ const rateLimiterConfigs = {
   // File upload endpoints
   [RateLimiterType.UPLOAD]: {
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: isTestEnv ? 100000 : 10, // 10 uploads per hour
+    max: isTestEnv ? 100000 : 100, // 100 uploads per hour
     handler: createRateLimitHandler('Upload limit exceeded, please try again later.'),
     standardHeaders: true,
     legacyHeaders: false,
@@ -105,7 +105,7 @@ const rateLimiterConfigs = {
   // File download endpoints
   [RateLimiterType.DOWNLOAD]: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: isTestEnv ? 100000 : 50, // 50 downloads in 15 minutes
+    max: isTestEnv ? 100000 : 500, // 500 downloads in 15 minutes
     handler: createRateLimitHandler('Download limit exceeded, please try again later.'),
     standardHeaders: true,
     legacyHeaders: false,

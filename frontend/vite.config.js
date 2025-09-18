@@ -62,6 +62,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
 
+  css: {
+    // PostCSS configuration
+    postcss: './postcss.config.js',
+    // Enable CSS source maps in development
+    devSourcemap: true,
+  },
+
   server: {
     port: 5173,
     proxy: {

@@ -10,7 +10,7 @@
 
 /* General fallback - gilt für alle nicht spezifisch definierten Elemente */
 #breadcrumb-container + * {
-  margin-top: -25px !important;
+  margin-top: -30px !important;
 }
 
 /* Spezifische Selektoren für Klarheit (nutzen auch -37px) */
@@ -23,7 +23,7 @@
 #breadcrumb-container + .current-usage,
 #breadcrumb-container + #upload-success,
 #breadcrumb-container + #content-area {
-  margin-top: -25px !important;
+  margin-top: -30px !important;
 }
 
 /* ========================================

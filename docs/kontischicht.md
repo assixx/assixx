@@ -32,7 +32,7 @@ Die **Kontischicht Ansicht** ermöglicht es Benutzern, 2-Wochen-Schichtmuster in
 <!-- In controls-group nach shift-fallback -->
 <div class="divider"></div>
 <label class="checkbox-label">
-  <input type="checkbox" id="shift-kontischicht">
+  <input type="checkbox" id="shift-kontischicht" />
   <span class="checkbox-text">Kontischicht Ansicht</span>
   <span class="checkbox-hint">2-Wochen-Muster erstellen</span>
 </label>
@@ -55,7 +55,7 @@ Die **Kontischicht Ansicht** ermöglicht es Benutzern, 2-Wochen-Schichtmuster in
 <!-- 7 weitere day-headers für Woche 2 -->
 <div class="day-header week-2-header" style="display: none;">
   Montag
-  <br>
+  <br />
   <span class="u-fs-12 u-fw-400">15.09</span>
 </div>
 <!-- ... weitere 6 Tage ... -->
@@ -85,9 +85,9 @@ interface WeekSchedule {
 
 interface DaySchedule {
   early: number[]; // User IDs
-  late: number[];  // User IDs
+  late: number[]; // User IDs
   night: number[]; // User IDs
-  free: number[];  // User IDs (frei)
+  free: number[]; // User IDs (frei)
 }
 ```
 
@@ -113,9 +113,9 @@ async function saveKontischichtPattern() {
     pattern_config: {
       customPattern: {
         week1: extractWeek1Schedule(),
-        week2: extractWeek2Schedule()
-      }
-    }
+        week2: extractWeek2Schedule(),
+      },
+    },
   };
 
   // Verwendet bestehende Rotation API
@@ -175,6 +175,7 @@ export const kontischichtManager = new KontischichtManager();
 <!-- Import new module -->
 <script type="module">
   import { kontischichtManager } from '/scripts/kontischicht.js';
+
   kontischichtManager.init();
 </script>
 ```
@@ -198,28 +199,27 @@ if (kontischichtManager.isActive()) {
 ```css
 .week-slider-container {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: var(--radius-md);
   margin-bottom: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+  padding: var(--spacing-md);
 }
 
 .week-slide-btn {
-  padding: 8px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: var(--text-primary);
-  border-radius: var(--radius-sm);
   cursor: pointer;
-
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  padding: 8px 16px;
+  color: var(--text-primary);
 }
 
 .week-slide-btn.active {
-  background: var(--primary-color);
   border-color: var(--primary-color);
+  background: var(--primary-color);
 }
 ```
 

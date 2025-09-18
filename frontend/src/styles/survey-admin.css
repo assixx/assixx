@@ -1,0 +1,821 @@
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Header und Sidebar werden von unified-navigation gehandelt */
+
+/* Survey-specific styles */
+.survey-container {
+  margin: 0 auto;
+}
+
+.survey-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xl);
+}
+
+.survey-title {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.survey-title i {
+  color: var(--primary-color);
+}
+
+/* Survey Cards Grid */
+.surveys-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.survey-card {
+  cursor: pointer;
+
+  margin-top: 10px;
+  margin-left: -5px;
+
+  /* animation: fadeInUp 0.6s ease-out; */
+  padding: var(--spacing-lg);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.survey-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--primary-color);
+  box-shadow: 0 8px 25px rgb(0 0 0 / 30%);
+}
+
+.survey-card-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.survey-card-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.survey-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.survey-status.draft {
+  color: #ff9800;
+  background: rgb(255 152 0 / 20%);
+}
+
+.survey-status.active {
+  color: #4caf50;
+  background: rgb(76 175 80 / 20%);
+}
+
+.survey-status.closed {
+  color: #f44336;
+  background: rgb(244 67 54 / 20%);
+}
+
+.survey-status.archived {
+  color: #9e9e9e;
+  background: rgb(158 158 158 / 20%);
+}
+
+.survey-card-description {
+  margin-bottom: var(--spacing-md);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.survey-stats {
+  display: flex;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+}
+
+.survey-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.survey-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.survey-stat-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.survey-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.survey-action-btn {
+  cursor: pointer;
+
+  display: flex;
+  flex: 1;
+  gap: var(--spacing-xs);
+  align-items: center;
+  justify-content: center;
+
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-md);
+
+  font-size: 0.9rem;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 10%);
+}
+
+.survey-action-btn:hover {
+  border-color: var(--primary-color);
+  background: rgb(33 150 243 / 20%);
+}
+
+/* Create Survey Modal */
+.modal,
+.modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  backdrop-filter: blur(10px);
+
+  transition:
+    opacity 0.1s ease,
+    visibility 0.1s ease;
+}
+
+.modal-overlay {
+  display: flex;
+  visibility: hidden;
+  opacity: 0%;
+  transition:
+    opacity 0.1s ease,
+    visibility 0.1s ease;
+}
+
+.modal-overlay.active {
+  visibility: visible;
+  opacity: 100%;
+}
+
+.modal-content,
+.modal-container {
+  transform: translateY(0);
+
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+
+  width: 90%;
+  max-width: 1150px;
+  max-height: 85vh !important;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: #121212c4;
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 8px 32px #0006,
+    inset 0 1px #ffffff1a;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-lg);
+
+  background: #ffffff05;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.close-btn {
+  cursor: pointer;
+
+  padding: var(--spacing-xs);
+  border: none;
+  border-radius: 50%;
+
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+
+  background: none;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+.modal-content form {
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(85vh - 120px);
+  padding: var(--spacing-lg);
+}
+
+.modal-content .form-actions {
+  margin: 0 calc(-1 * var(--spacing-lg)) calc(-1 * var(--spacing-lg));
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+  background: rgb(255 255 255 / 2%);
+}
+
+/* Question Builder */
+.question-builder {
+  margin-top: var(--spacing-lg);
+}
+
+.question-item {
+  position: relative;
+
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 5%);
+}
+
+.question-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.question-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+
+  background: var(--primary-color);
+}
+
+.question-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.question-action,
+.remove-question {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 32px;
+  height: 32px;
+  padding: var(--spacing-xs);
+  border: none;
+  border-radius: 50%;
+
+  color: var(--text-secondary);
+
+  background: rgb(255 255 255 / 10%);
+
+  transition: all 0.2s ease;
+}
+
+.question-action:hover,
+.remove-question:hover {
+  transform: scale(1.1);
+  color: #ff5252;
+  background: rgb(244 67 54 / 30%);
+}
+
+.question-action.delete:hover {
+  color: #f44336;
+  background: rgb(244 67 54 / 20%);
+}
+
+.remove-question svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Utility Classes */
+.u-hidden {
+  display: none !important;
+}
+
+/* Checkbox Styles */
+.checkbox-label {
+  cursor: pointer;
+  user-select: none;
+
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  padding: 10px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0%;
+}
+
+.checkbox-custom {
+  position: relative;
+
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgb(255 255 255 / 30%);
+  border-radius: 4px;
+
+  background: rgb(255 255 255 / 5%);
+
+  transition: all 0.3s ease;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+  border-color: var(--primary-color);
+  background: var(--primary-color);
+}
+
+.checkbox-custom::after {
+  content: "";
+
+  position: absolute;
+  top: 2px;
+  left: 6px;
+  transform: rotate(45deg);
+
+  display: none;
+
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+  display: block;
+}
+
+.checkbox-label:hover .checkbox-custom {
+  border-color: var(--primary-color);
+  background: rgb(33 150 243 / 10%);
+}
+
+.checkbox-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* Form Elements */
+.form-group {
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--spacing-2sm);
+
+  font-size: 1rem;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 5%);
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+}
+
+textarea.form-control {
+  resize: vertical;
+  min-height: 100px;
+}
+
+select.form-control {
+  cursor: pointer;
+}
+
+.checkbox-group {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-top: var(--spacing-sm);
+}
+
+.checkbox-group input[type="checkbox"] {
+  cursor: pointer;
+  width: 20px;
+  height: 20px;
+}
+
+/* Options for multiple choice */
+.options-container {
+  margin-top: var(--spacing-md);
+}
+
+.option-item {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.option-input {
+  flex: 1;
+
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-sm);
+
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 5%);
+}
+
+.remove-option {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 28px;
+  height: 28px;
+  padding: var(--spacing-xs);
+  border: none;
+  border-radius: 50%;
+
+  color: #f44336;
+
+  background: rgb(244 67 54 / 20%);
+}
+
+.remove-option:hover {
+  background: rgb(244 67 54 / 30%);
+}
+
+.add-option-btn {
+  cursor: pointer;
+
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+
+  padding: var(--spacing-2sm);
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 0.9rem;
+  color: #4caf50;
+
+  background: rgb(76 175 80 / 20%);
+}
+
+.add-option-btn:hover {
+  background: rgb(76 175 80 / 30%);
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+  margin-top: var(--spacing-xl);
+}
+
+.btn {
+  cursor: pointer;
+
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+
+  padding: var(--spacing-2sm);
+  border: none;
+  border-radius: var(--radius-md);
+
+  font-weight: 500;
+}
+
+.btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgb(33 150 243 / 30%);
+}
+
+.btn-secondary {
+  border: 1px solid rgb(255 255 255 / 20%);
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+.btn-secondary:hover {
+  background: rgb(255 255 255 / 20%);
+}
+
+.btn-success {
+  color: #fff;
+  background: linear-gradient(135deg, #4caf50, #66bb6a);
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgb(76 175 80 / 30%);
+}
+
+/* Empty State */
+.empty-state {
+  padding: var(--spacing-xl) * 2;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.empty-state-icon {
+  margin-bottom: 20px;
+  font-size: 40px;
+  opacity: 50%;
+}
+
+.empty-state-title {
+  margin-bottom: var(--spacing-md);
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.empty-state-description {
+  max-width: 500px;
+  margin: 0 auto var(--spacing-lg) auto;
+  line-height: 1.6;
+}
+
+/* Templates Section */
+.drafts-section,
+.templates-section {
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.drafts-header,
+.templates-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+}
+
+.drafts-title,
+.templates-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.template-card {
+  cursor: pointer;
+
+  padding: var(--spacing-lg);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 5%);
+}
+
+.template-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary-color);
+  background: rgb(33 150 243 / 10%);
+}
+
+.template-name {
+  margin-bottom: var(--spacing-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.template-description {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* Custom Dropdowns */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-display {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-2sm);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  color: #fff;
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.dropdown-display:hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.dropdown-display svg {
+  transition: transform 0.3s ease;
+}
+
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  position: absolute;
+  z-index: 1001;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  overflow-y: auto;
+
+  max-height: 200px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  visibility: hidden;
+  opacity: 0%;
+  background: rgb(18 18 18 / 95%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.dropdown-options.active {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
+}
+
+.dropdown-option {
+  cursor: pointer;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  color: var(--text-primary);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+}
+
+/* Scrollbar styling for dropdowns */
+.dropdown-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-options::-webkit-scrollbar-track {
+  background: rgb(255 255 255 / 5%);
+}
+
+.dropdown-options::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: rgb(255 255 255 / 20%);
+}
+
+.dropdown-options::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 30%);
+}
+
+/* Floating Add Button */
+.add-survey-btn {
+  cursor: pointer;
+
+  position: fixed;
+  z-index: 100;
+  right: 30px;
+  bottom: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgb(33 150 243 / 30%);
+  border-radius: 50%;
+
+  font-size: 28px;
+  color: var(--primary-color);
+
+  background: rgb(33 150 243 / 20%);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
+
+  transition: all 0.3s ease;
+}
+
+.add-survey-btn:hover {
+  transform: scale(1.1);
+  background: rgb(33 150 243 / 30%);
+  box-shadow: 0 6px 24px rgb(33 150 243 / 40%);
+}

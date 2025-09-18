@@ -35,36 +35,36 @@ private showRoleSwitchIndicator(): void {
 .role-switch-banner {
   position: fixed;
   top: 0;
-  left: 0;
   right: 0;
-  background: rgba(255, 193, 7, 0.95);
-  color: #000;
-  padding: 10px;
-  text-align: center;
+  left: 0;
   z-index: 9999;
   backdrop-filter: blur(10px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 193, 7, 0.95);
+  padding: 10px;
+  color: #000;
+  text-align: center;
 }
 
 .role-switch-warning {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   gap: 15px;
 }
 
 .role-switch-warning i {
-  font-size: 20px;
   color: #d32f2f;
+  font-size: 20px;
 }
 
 .role-switch-warning button {
-  background: #333;
-  color: #fff;
-  border: none;
-  padding: 5px 15px;
-  border-radius: 20px;
   cursor: pointer;
+  border: none;
+  border-radius: 20px;
+  background: #333;
+  padding: 5px 15px;
+  color: #fff;
 }
 ```
 

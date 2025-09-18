@@ -1,0 +1,866 @@
+/**
+ * Signup Page Styles
+ * Generated: $(date +%Y-%m-%d)
+ */
+
+/* ========================================
+   Extracted from signup.html - First Style Block
+   ======================================== */
+
+/* Dashboard-Style Design - weniger bunt, mehr dunkel/weiß/blau */
+
+/* Emoji Font Support */
+.country-option,
+#selectedFlag {
+  font-family:
+    Outfit,
+    "Noto Color Emoji",
+    "Apple Color Emoji",
+    "Segoe UI Emoji",
+    "Segoe UI Symbol",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+}
+
+body {
+  position: relative;
+
+  overflow-x: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 100vh;
+  padding: 10px;
+
+  background: #000;
+}
+
+body::before {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+
+  /* background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%); */
+  opacity: 90%;
+}
+
+body::after {
+  content: "";
+
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Weniger kompakter Container für 16-Zoll Monitore - Glassmorphismus */
+.signup-container {
+  position: relative;
+
+  width: 100%;
+  max-width: 1200px;
+  padding: 28px 40px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  /* animation: fadeInUp 0.6s ease-out; */
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(30px);
+    opacity: 0%;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 100%;
+  }
+}
+
+/* Header mit mehr Raum */
+.signup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+}
+
+.header-left {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.signup-logo {
+  height: 48px;
+}
+
+.header-text h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.header-text p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  opacity: 70%;
+}
+
+/* Kompakte Pricing Info */
+.pricing-info {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pricing-item {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.pricing-item strong {
+  color: var(--primary-color);
+}
+
+/* Weniger kompakte Form - 3 Spalten */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  margin-bottom: 5px;
+
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--radius-sm);
+
+  font-size: 15px;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 8%);
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgb(33 150 243 / 15%),
+    inset 0 1px 2px rgb(0 0 0 / 10%);
+}
+
+.form-control::placeholder {
+  font-size: 13px;
+  color: var(--text-secondary);
+  opacity: 40%;
+}
+
+/* Subdomain Input Group */
+.input-group {
+  display: flex;
+  align-items: center;
+}
+
+.input-group .form-control {
+  border-right: none;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.input-group-suffix {
+  padding: 8px 12px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-left: none;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+
+  font-size: 14px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+
+  background: rgb(255 255 255 / 2%);
+}
+
+/* Phone Input Group */
+.phone-input-group {
+  display: flex;
+  gap: 8px;
+}
+
+/* Custom Country Select - Glassmorphismus */
+.custom-country-select {
+  position: relative;
+  width: 85px;
+}
+
+.country-display {
+  cursor: pointer;
+
+  display: flex;
+  gap: 4px;
+  align-items: center;
+
+  padding: 8px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
+}
+
+.country-display:hover {
+  border-color: rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 6%);
+}
+
+.country-display svg {
+  margin-left: auto;
+  opacity: 60%;
+}
+
+.country-display.active svg {
+  transform: rotate(180deg);
+}
+
+/* Custom Dropdown - Transparentes Glassmorphismus */
+.country-dropdown {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  overflow-y: auto;
+
+  max-height: 200px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  visibility: hidden;
+  opacity: 0%;
+  background: rgb(18 18 18 / 80%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.country-dropdown.active {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
+}
+
+.country-option {
+  cursor: pointer;
+
+  padding: 10px 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.country-option:last-child {
+  border-bottom: none;
+}
+
+.country-option:hover {
+  padding-left: 16px;
+  color: #fff;
+  background: rgb(33 150 243 / 20%);
+}
+
+.country-option:active {
+  background: rgb(33 150 243 / 30%);
+}
+
+/* Scrollbar für Dropdown */
+.country-dropdown::-webkit-scrollbar {
+  width: 4px;
+}
+
+.country-dropdown::-webkit-scrollbar-track {
+  background: rgb(255 255 255 / 5%);
+}
+
+.country-dropdown::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+  background: rgb(255 255 255 / 20%);
+}
+
+.country-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgb(255 255 255 / 30%);
+}
+
+.phone-input-group .phone-number {
+  flex: 1;
+}
+
+/* Custom Plan Select - Glassmorphismus */
+.custom-plan-select {
+  position: relative;
+  width: 100%;
+}
+
+.plan-display {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 8px 12px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: var(--radius-sm);
+
+  font-size: 15px;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
+}
+
+.plan-display:hover {
+  border-color: rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 6%);
+}
+
+.plan-display svg {
+  opacity: 60%;
+}
+
+.plan-display.active svg {
+  transform: rotate(180deg);
+}
+
+/* Plan Dropdown - Transparentes Glassmorphismus */
+.plan-dropdown {
+  position: absolute;
+  z-index: 1000;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  transform: translateY(-10px);
+
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-sm);
+
+  visibility: hidden;
+  opacity: 0%;
+  background: rgb(18 18 18 / 80%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-dropdown.active {
+  transform: translateY(0);
+  visibility: visible;
+  opacity: 100%;
+}
+
+.plan-option {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px 16px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.plan-option:last-child {
+  border-bottom: none;
+}
+
+.plan-option:hover {
+  padding-left: 20px;
+  color: #fff;
+  background: rgb(33 150 243 / 20%);
+}
+
+.plan-option:active {
+  background: rgb(33 150 243 / 30%);
+}
+
+.plan-price {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary-color);
+}
+
+.plan-option:hover .plan-price {
+  color: #fff;
+}
+
+.error-message {
+  position: relative;
+
+  display: none;
+
+  margin-top: 4px;
+
+  font-size: 11px;
+  color: #ef4444;
+}
+
+/* Bottom Section */
+.bottom-section {
+  display: flex;
+  grid-column: 1 / -1;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+.terms-checkbox {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.terms-checkbox input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary-color);
+}
+
+.terms-link {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.terms-link:hover {
+  text-decoration: underline;
+}
+
+.submit-button {
+  cursor: pointer;
+
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  box-shadow:
+    0 1px 4px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.submit-button::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  left: -100%;
+
+  width: 100%;
+  height: 100%;
+
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%), transparent);
+}
+
+.submit-button:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 6px 20px rgb(33 150 243 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.submit-button:hover::before {
+  left: 100%;
+}
+
+.submit-button:disabled {
+  cursor: not-allowed;
+  transform: none;
+  opacity: 60%;
+}
+
+.login-link {
+  font-size: 13px;
+  color: var(--primary-color);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.login-link:hover {
+  text-decoration: underline;
+}
+
+/* Success Message - Glassmorphismus */
+.success-message {
+  display: none;
+
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px solid rgb(16 185 129 / 30%);
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  color: #10b981;
+
+  background: rgb(16 185 129 / 15%);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 12px rgb(16 185 129 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+/* Special Offer Banner - unten bei Submit */
+.offer-banner {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+
+  /* animation: glow 2s ease-in-out infinite alternate; */
+  margin: 0 16px;
+  padding: 6px 14px;
+  border-radius: 20px;
+
+  font-size: 13px;
+  font-weight: 500;
+  color: #fbbf24;
+
+  background: rgb(251 191 36 / 2%);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 12px rgb(251 191 36 / 25%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+@keyframes glow {
+  from {
+    box-shadow:
+      0 4px 12px rgb(251 191 36 / 25%),
+      inset 0 1px 0 rgb(255 255 255 / 20%);
+  }
+
+  to {
+    box-shadow:
+      0 4px 20px rgb(251 191 36 / 40%),
+      inset 0 1px 0 rgb(255 255 255 / 20%);
+  }
+}
+
+/* Help Button - Glassmorphismus */
+.help-button {
+  cursor: pointer;
+
+  position: fixed;
+  z-index: 100;
+  top: 20px;
+  right: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 36px;
+  height: 36px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: 50%;
+
+  font-size: 19px;
+  color: var(--text-secondary);
+
+  background: rgb(255 255 255 / 8%);
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 4px 12px rgb(0 0 0 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.help-button:hover {
+  transform: scale(1.1);
+
+  border-color: var(--primary-color);
+
+  color: var(--primary-color);
+
+  background: rgb(33 150 243 / 15%);
+  box-shadow:
+    0 6px 16px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+/* Autofill Styles für verschiedene Browser */
+/* Webkit browsers (Chrome, Safari, Edge) */
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus,
+.form-control:-webkit-autofill:active {
+  border: 1px solid rgb(255 255 255 / 12%) !important;
+
+  background-color: rgb(255 255 255 / 4%) !important;
+
+  /* Transparenter Hintergrund mit Box-Shadow Trick */
+  box-shadow: 0 0 0 30px rgb(255 255 255 / 4%) inset !important;
+
+  transition: background-color 5000s ease-in-out 0s;
+
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+/* Firefox */
+.form-control:autofill {
+  border: 1px solid rgb(255 255 255 / 12%) !important;
+  color: var(--text-primary) !important;
+  background: rgb(255 255 255 / 4%) !important;
+}
+
+/* Firefox specific - :-moz-autofill pseudo-class */
+.form-control:-moz-autofill {
+  border: 1px solid rgb(255 255 255 / 12%) !important;
+  background: rgb(255 255 255 / 4%) !important;
+}
+
+/* Placeholder - Duplicate removed (first defined at line 193) */
+/* .form-control::placeholder {
+  color: var(--text-secondary);
+  opacity: 60%;
+} */
+
+/* Phone input specific autofill */
+.phone-number:-webkit-autofill,
+.phone-number:-webkit-autofill:hover,
+.phone-number:-webkit-autofill:focus,
+.phone-number:-webkit-autofill:active {
+  padding-left: 12px !important;
+  box-shadow: 0 0 0 30px rgb(255 255 255 / 4%) inset !important;
+
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+/* Responsive für kleinere Bildschirme */
+@media (width <= 1200px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (width <= 768px) {
+  .signup-container {
+    padding: 16px;
+
+    /* animation: none; */
+  }
+
+  .signup-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .bottom-section {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .submit-button {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   Extracted from signup.html - Second Style Block
+   ======================================== */
+
+/* Zusätzliche Glassmorphismus-Effekte */
+.form-control:hover:not(:focus) {
+  border-color: rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 6%);
+}
+
+select.form-control {
+  padding-right: 40px;
+
+  appearance: none;
+  background: rgb(255 255 255 / 4%);
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 20px;
+  backdrop-filter: blur(5px);
+}
+
+/* Hover Effekte für alle Select-Felder */
+select.form-control:hover:not(:focus),
+.country-select:hover:not(:focus) {
+  border-color: rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 6%);
+}
+
+/* Firefox spezifisch für bessere Option Styles - Using supports instead of deprecated @document */
+@supports (-moz-appearance: none) {
+  select.form-control option,
+  .country-select option {
+    color: #e0e0e0 !important;
+    background-color: #121212 !important;
+  }
+}
+
+/* Webkit Browser (Chrome, Safari) */
+@media screen and (resolution >= 0dpi) {
+  select.form-control,
+  .country-select {
+    background-color: rgb(255 255 255 / 4%);
+  }
+
+  select option {
+    padding: 10px;
+    color: #e0e0e0;
+    background: #1a1a1a;
+  }
+
+  select option:hover {
+    background: #2a2a2a;
+    box-shadow: 0 0 10px 100px #2a2a2a inset;
+  }
+}
+
+/* Pulse Animation für Logo */
+/* .signup-logo {
+        animation: subtle-pulse 3s ease-in-out infinite;
+      } */
+
+@keyframes subtle-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 100%;
+  }
+
+  50% {
+    transform: scale(1.02);
+    opacity: 95%;
+  }
+}
+
+/* Glassmorphismus für alle Cards */
+.card {
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  background: rgb(255 255 255 / 7%);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* Back Button - Glassmorphismus Style wie in design-standards.html */
+.back-button {
+  position: fixed;
+  z-index: 1001;
+  top: 20px;
+  left: 20px;
+
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  padding: 12px 20px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    0 4px 16px rgb(0 0 0 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+.back-button:hover {
+  transform: translateX(-5px);
+
+  border-color: rgb(255 255 255 / 15%);
+
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 5%);
+  box-shadow:
+    0 6px 24px rgb(0 0 0 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+}
+
+.back-button:active {
+  transform: translateX(-3px) scale(0.98);
+}
+
+.back-button .icon {
+  font-size: 18px;
+}
+
+.back-button:hover .icon {
+  transform: translateX(-3px);
+}

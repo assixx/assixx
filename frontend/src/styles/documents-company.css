@@ -1,0 +1,29 @@
+/* Extracted styles from documents-company.html */
+@import "/styles/dashboard-theme.css";
+@import "/styles/breadcrumb-alignment.css";
+@import "/styles/documents.css";
+@import "/styles/user-info-update.css";
+
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Seiten-spezifische Styles */
+/* Alle Glassmorphismus-Styles werden aus dashboard-theme.css verwendet */

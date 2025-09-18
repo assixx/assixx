@@ -26,7 +26,6 @@
 - Perform Fast-Forward merge (always --no-ff)
 - Use ESLint disable comments WITHOUT justification (wenn 100% sicher/nötig → MIT Kommentar WARUM)
 - Create new files when existing ones can be edited
-- Do more than requested
 
 **ALWAYS:**
 
@@ -229,4 +228,4 @@ git diff master..<branch-name> -- TODO.md
 
 **MySQL Password:** AssixxP@ss2025!
 
-**Core Philosophy:** Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear.
+**Core Philosophy:** Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear. KISS PRINCIPLE

@@ -24,10 +24,10 @@
 
 ```typescript
 // v1 (alt)
-fetch('/api/kvp', { credentials: 'include' })
+fetch('/api/kvp', { credentials: 'include' });
 
 // v2 (neu)
-apiClient.get<KvpData[]>('/kvp')
+apiClient.get<KvpData[]>('/kvp');
 ```
 
 ### 3. API-V2-MASTERPLAN-CHECKLIST.md
@@ -144,7 +144,7 @@ if (token !== null && token !== "") {
 
 ```javascript
 window.FEATURE_FLAGS = {
-  USE_API_V2_KVP: true  // Enable for testing
+  USE_API_V2_KVP: true, // Enable for testing
 };
 ```
 
@@ -184,11 +184,11 @@ interface KvpSuggestion {
   status: 'pending' | 'approved' | 'rejected' | 'implemented';
   category: string;
   createdBy: number;
-  createdAt: string;  // ISO 8601
+  createdAt: string; // ISO 8601
   updatedAt: string;
   savings?: number;
   implementationCost?: number;
-  roi?: number;  // NEW in v2!
+  roi?: number; // NEW in v2!
   attachments?: string[];
   comments?: KvpComment[];
   votes?: number;
@@ -240,9 +240,7 @@ interface KvpComment {
 
    ```typescript
    // Use feature flag consistently
-   const endpoint = isV2Enabled('USE_API_V2_KVP')
-     ? '/kvp'
-     : '/kvp';
+   const endpoint = isV2Enabled('USE_API_V2_KVP') ? '/kvp' : '/kvp';
    ```
 
 ## ✅ Definition of Done

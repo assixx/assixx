@@ -14,9 +14,9 @@ CSS-Regel für `.active` hinzugefügt in admin-dashboard.html (Zeile ~1630):
 
 ```css
 .dropdown-options.active {
-  opacity: 1;
-  visibility: visible;
   transform: translateY(0);
+  visibility: visible;
+  opacity: 1;
 }
 ```
 

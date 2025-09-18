@@ -1,0 +1,301 @@
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Survey Details Specific Styles */
+
+/* Survey Details Specific Styles */
+.details-card {
+  overflow: hidden;
+
+  margin-bottom: var(--spacing-lg);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-md);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+}
+
+.details-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  background: rgb(255 255 255 / 1%);
+}
+
+.details-title {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+
+  margin: 0;
+
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.details-title::before {
+  content: "";
+
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+
+  background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+}
+
+.details-body {
+  padding: var(--spacing-lg);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.info-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.info-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+.status-badge {
+  display: inline-block;
+
+  padding: 4px 12px;
+  border-radius: 20px;
+
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.status-active {
+  border: 1px solid rgb(76 175 80 / 30%);
+  color: #4caf50;
+  background: rgb(76 175 80 / 20%);
+}
+
+.status-draft {
+  border: 1px solid rgb(255 152 0 / 30%);
+  color: #ff9800;
+  background: rgb(255 152 0 / 20%);
+}
+
+.status-completed {
+  border: 1px solid rgb(158 158 158 / 30%);
+  color: #9e9e9e;
+  background: rgb(158 158 158 / 20%);
+}
+
+.question-list {
+  margin-top: var(--spacing-lg);
+}
+
+.question-item {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: var(--radius-sm);
+
+  background: rgb(255 255 255 / 2%);
+}
+
+.question-number {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+
+  background: var(--primary-color);
+}
+
+.question-content {
+  flex: 1;
+}
+
+.question-text {
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--text-primary);
+}
+
+.question-meta {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.btn {
+  cursor: pointer;
+
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.btn-primary {
+  position: relative;
+
+  overflow: hidden;
+
+  color: #fff;
+
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+  box-shadow:
+    0 1px 4px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgb(33 150 243 / 40%);
+}
+
+.btn-secondary {
+  border: 1px solid rgb(255 255 255 / 12%);
+  color: var(--primary-color);
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(5px);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 8%);
+}
+
+.btn-danger {
+  border: 1px solid rgb(244 67 54 / 30%);
+  color: #f44336;
+  background: rgb(244 67 54 / 10%);
+}
+
+.btn-danger:hover {
+  transform: translateY(-1px);
+  background: rgb(244 67 54 / 20%);
+}
+
+/* Respondents Section */
+.respondents-list {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.respondent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: var(--radius-sm);
+
+  background: rgb(255 255 255 / 2%);
+}
+
+.respondent-info {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+}
+
+.respondent-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+
+  font-weight: 600;
+  color: #fff;
+
+  background: var(--primary-color);
+}
+
+.respondent-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.respondent-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.respondent-date {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.response-status {
+  display: flex;
+  gap: var(--spacing-xs);
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+/* Removed duplicate - already defined at line 114 */
+/* .status-completed {
+  color: #4caf50;
+} */
+
+.status-pending {
+  color: #ff9800;
+}

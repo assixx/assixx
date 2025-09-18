@@ -31,15 +31,11 @@ body::after {
 
 /* Header wird von unified-navigation gehandelt */
 
-/* Layout Container - Standard Assixx Layout */
-.layout-container {
-  display: flex;
-  min-height: 100vh;
-}
+/* Layout Container - siehe unified-navigation.css für gemeinsame Styles */
 
 /* Container Styles */
 .container {
-  margin-top: -25px !important; /* Align first container with sidebar user-info-card */
+  margin-top: -30px !important; /* Align first container with sidebar user-info-card */
   padding: 24px;
 }
 

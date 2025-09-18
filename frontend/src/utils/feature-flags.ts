@@ -89,7 +89,9 @@ export class FeatureFlagManager {
       Object.assign(this.flags, window.FEATURE_FLAGS);
     }
 
-    // 2. Load from localStorage (for persistence)
+    // 2. Load from localStorage - DISABLED since v2 is globally active
+    // Keeping code for potential future use but skipping execution
+    /*
     const savedFlags = localStorage.getItem('featureFlags');
     if (savedFlags != null && savedFlags !== '') {
       try {
@@ -99,6 +101,7 @@ export class FeatureFlagManager {
         console.error('[FeatureFlags] Failed to parse saved flags:', error);
       }
     }
+    */
 
     // 3. Apply global flag if enabled
     if (this.flags.USE_API_V2_GLOBAL) {

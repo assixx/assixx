@@ -83,7 +83,7 @@ jobs:
     # Prevent multiple integration tests from running simultaneously
     concurrency:
       group: docker-integration-test
-      cancel-in-progress: false  # Don't cancel, wait for completion
+      cancel-in-progress: false # Don't cancel, wait for completion
     permissions:
       contents: read
 
@@ -216,7 +216,7 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
-        continue-on-error: true  # Keep for now to not break CI
+        continue-on-error: true # Keep for now to not break CI
 
       - name: Check if SARIF file exists
         id: check_sarif

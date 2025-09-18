@@ -280,7 +280,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
               animation: fadeInUp 0.6s ease-out;
             }
 
-            @keyframes fadeInUp {
+            @keyframes fade-in-up {
               from { opacity: 0; transform: translateY(30px); }
               to { opacity: 1; transform: translateY(0); }
             }
@@ -379,37 +379,37 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
 
 // API Rate Limiters - Enhanced with more granular controls
 export const generalLimiter = createTenantRateLimiter(
-  60 * 1000, // 1 minute for testing
+  20 * 1000, // 20 seconds
   process.env.NODE_ENV === 'test' ? 100000
-  : process.env.NODE_ENV === 'development' ? 50000
-  : 5000,
-); // 100000 requests per minute in test, 50000 in dev, 5000 in prod (erhöht für normale Dashboard-Nutzung)
+  : process.env.NODE_ENV === 'development' ? 80000
+  : 20000,
+); // 100000 requests per 20 seconds in test, 80000 in dev, 20000 in prod (erhöht für normale Dashboard-Nutzung)
 export const authLimiter = createTenantRateLimiter(
-  60 * 1000, // 1 minute for testing
+  20 * 1000, // 20 seconds
   process.env.NODE_ENV === 'test' ? 100000
-  : process.env.NODE_ENV === 'development' ? 100
-  : 5,
-); // 100000 auth attempts in test, 100 in dev, 5 in prod (per minute)
+  : process.env.NODE_ENV === 'development' ? 300
+  : 50,
+); // 100000 auth attempts in test, 300 in dev, 50 in prod (per 20 seconds)
 export const uploadLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === 'development' ? 100 : 10,
-); // 100 uploads per 15 minutes in dev, 10 in prod
+  process.env.NODE_ENV === 'development' ? 200 : 100,
+); // 200 uploads per 15 minutes in dev, 100 in prod
 
 // Specific API endpoint rate limiters
 export const strictAuthLimiter = createTenantRateLimiter(
   5 * 60 * 1000,
-  process.env.NODE_ENV === 'development' ? 50 : 3,
-); // 50 login attempts in dev, 3 in prod
+  process.env.NODE_ENV === 'development' ? 100 : 20,
+); // 100 login attempts in dev, 20 in prod
 export const apiLimiter = createTenantRateLimiter(
-  60 * 1000,
-  process.env.NODE_ENV === 'development' ? 10000 : 5000,
-); // 10000 API requests per minute in dev, 5000 in prod (ERHÖHT für Dashboard)
+  20 * 1000,
+  process.env.NODE_ENV === 'development' ? 30000 : 20000,
+); // 30000 API requests per 20 seconds in dev, 20000 in prod (ERHÖHT für Dashboard)
 export const searchLimiter = createTenantRateLimiter(
-  60 * 1000,
-  process.env.NODE_ENV === 'development' ? 500 : 200,
-); // 500 search requests per minute in dev, 200 in prod (ERHÖHT)
-export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 5); // 5 bulk operations per hour
-export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 20); // 20 reports per hour
+  20 * 1000,
+  process.env.NODE_ENV === 'development' ? 1000 : 500,
+); // 1000 search requests per 20 seconds in dev, 500 in prod (ERHÖHT)
+export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 50); // 50 bulk operations per hour
+export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 100); // 100 reports per hour
 
 // Progressive Rate Limiting - increases delay based on violations
 const createProgressiveRateLimiter = (windowMs: number, max: number): RateLimitRequestHandler =>
@@ -446,7 +446,7 @@ const createProgressiveRateLimiter = (windowMs: number, max: number): RateLimitR
 // IP-based strict rate limiting for suspicious activity
 export const suspiciousActivityLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10, // 10 requests per hour for suspicious IPs
+  max: 100, // 100 requests per hour for suspicious IPs
   // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
   message: {
     error: 'Suspicious activity detected',
@@ -461,11 +461,11 @@ export const suspiciousActivityLimiter = rateLimit({
 });
 
 // Enhanced progressive limiters
-export const progressiveApiLimiter = createProgressiveRateLimiter(60 * 1000, 200); // 200 requests per minute
+export const progressiveApiLimiter = createProgressiveRateLimiter(20 * 1000, 1000); // 1000 requests per 20 seconds
 export const progressiveAuthLimiter = createProgressiveRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === 'development' ? 100 : 10,
-); // 100 auth attempts in dev, 10 in prod
+  process.env.NODE_ENV === 'development' ? 200 : 50,
+); // 200 auth attempts in dev, 50 in prod
 
 // Tenant Context Validation
 export const validateTenantContext = (req: Request, res: Response, next: NextFunction): void => {

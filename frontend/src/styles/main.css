@@ -18,7 +18,6 @@
 /* Component-specific styles */
 @import "./blackboard.css";
 @import "./blackboard-widget.css";
-@import "./blackboard-update.css";
 @import "./calendar.css";
 @import "./shifts.css";
 @import "./profile-picture.css";

@@ -21,465 +21,13 @@
       })();
     </script>
     <script src="/feature-flags.js"></script>
+
+    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
-    <style>
-      @import url('/styles/dashboard-theme.css');
-
-      /* Glassmorphismus Background */
-      body {
-        position: relative;
-        min-height: 100vh;
-        overflow-x: hidden;
-        background: #000;
-      }
-
-      body::after {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(5deg, transparent, rgba(0, 142, 255, 0.1) 100%, #01000482 0, rgba(0, 0, 4, 0.6) 100%, #000);
-        pointer-events: none;
-        z-index: -1;
-      }
-
-      /* Container */
-      .container {
-        padding: 24px;
-        margin-top: -25px !important; /* Align first container with sidebar user-info-card */
-      }
-
-      /* Card Styles - Genau wie in departments.html */
-      .card {
-        background: hsla(0, 0%, 100%, 0.02);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-md);
-        box-shadow: var(--shadow-sm);
-        margin-bottom: 24px;
-        overflow: hidden;
-      }
-
-      .card-header {
-        padding: 24px;
-        border-bottom: 1px solid var(--border-color);
-        border-radius: 10px;
-        margin-bottom: var(--spacing-md);
-        padding-bottom: var(--spacing-md);
-      }
-
-      .card-title {
-        margin: 0;
-        color: var(--primary-color);
-        font-size: 18px;
-        font-weight: 600;
-      }
-
-      /* Filters */
-      .filters-section {
-        background: rgba(255, 255, 255, 0.02);
-        padding: 24px;
-        border-radius: 12px;
-        margin-bottom: 24px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .filters-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-bottom: 16px;
-      }
-
-      .filter-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .filter-label {
-        color: var(--text-secondary);
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-weight: 500;
-      }
-
-      /* Table */
-      .table {
-        width: 100%;
-        border-collapse: collapse;
-        /*background: var(--background-light);*/
-        border-radius: var(--radius-md);
-        overflow: hidden;
-      }
-
-      .table th {
-        background: rgba(255, 255, 255, 0.03);
-        padding: 12px 16px;
-        text-align: left;
-        font-weight: 600;
-        color: var(--text-secondary);
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .table td {
-        padding: 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        color: var(--text-primary);
-        font-size: 14px;
-      }
-
-      .table tbody tr {
-      }
-
-      .table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.02);
-      }
-
-      /* Action Badge */
-      .action-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 12px;
-        font-size: 12px;
-        font-weight: 500;
-      }
-
-      /*.action-login {
-        background: rgba(33, 150, 243, 0.15);
-        color: #2196F3;
-        border: 1px solid rgba(33, 150, 243, 0.3);
-      }
-
-      .action-create {
-        background: rgba(76, 175, 80, 0.15);
-        color: #4CAF50;
-        border: 1px solid rgba(76, 175, 80, 0.3);
-      }
-
-      .action-update {
-        background: rgba(255, 152, 0, 0.15);
-        color: #FF9800;
-        border: 1px solid rgba(255, 152, 0, 0.3);
-      }
-
-      .action-delete {
-        background: rgba(244, 67, 54, 0.15);
-        color: #F44336;
-        border: 1px solid rgba(244, 67, 54, 0.3);
-      }*/
-
-      /* Role Badge */
-      .role-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 8px;
-        font-size: 11px;
-        font-weight: 500;
-      }
-
-      .role-root {
-        background: rgba(156, 39, 176, 0.15);
-        color: #9c27b0;
-        border: 1px solid rgba(156, 39, 176, 0.3);
-      }
-
-      .role-admin {
-        background: rgba(3, 169, 244, 0.15);
-        color: #03a9f4;
-        border: 1px solid rgba(3, 169, 244, 0.3);
-      }
-
-      .role-employee {
-        background: rgba(96, 125, 139, 0.15);
-        color: #607d8b;
-        border: 1px solid rgba(96, 125, 139, 0.3);
-      }
-
-      /* Pagination */
-      .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 16px;
-        margin-top: 24px;
-      }
-
-      .pagination-info {
-        color: var(--text-secondary);
-        font-size: 14px;
-      }
-
-      .pagination-btn {
-        padding: 8px 16px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        cursor: pointer;
-        font-size: 14px;
-      }
-
-      .pagination-btn:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.1);
-        border-color: var(--primary-color);
-      }
-
-      .pagination-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      /* Loading State */
-      .loading {
-        text-align: center;
-        padding: 40px;
-        color: var(--text-secondary);
-      }
-
-      .loading-spinner {
-        display: inline-block;
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(255, 255, 255, 0.1);
-        border-radius: 50%;
-        border-top-color: var(--primary-color);
-        /* animation: spin 1s ease-in-out infinite; */
-      }
-
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-
-      /* Empty State */
-      .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        color: var(--text-secondary);
-      }
-
-      .empty-state-icon {
-        font-size: 64px;
-        margin-bottom: 20px;
-        opacity: 0.5;
-      }
-
-      .empty-state-text {
-        font-size: 18px;
-        margin-bottom: 10px;
-      }
-
-      .empty-state-subtext {
-        font-size: 14px;
-        opacity: 0.7;
-      }
-
-      /* Modal Styles */
-      .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(5px);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .modal.active {
-        display: flex;
-      }
-
-      /* Delete Modal Styles */
-      .modal-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        backdrop-filter: blur(10px);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-        transition:
-          opacity 0.1s ease,
-          visibility 0.1s ease;
-      }
-
-      .modal-overlay.active {
-        display: flex;
-      }
-
-      .modal-content {
-        /*background: rgba(18, 18, 18, 0.95);*/
-        background: hsla(0, 0%, 8.2%, 0.84);
-        backdrop-filter: blur(20px) saturate(580%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: 16px;
-        max-width: 600px;
-        width: 90%;
-        max-height: 90vh;
-        overflow-y: auto;
-        box-shadow:
-          0 24px 48px rgba(0, 0, 0, 0.8),
-          inset 0 1px 0 rgba(255, 255, 255, 0.1);
-      }
-
-      .modal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      .modal-title {
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--primary-color);
-        margin: 0;
-      }
-
-      .modal-close {
-        background: none;
-        border: none;
-        font-size: 24px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        padding: 0;
-        width: 30px;
-        height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 4px;
-      }
-
-      .modal-close:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: var(--error-color);
-      }
-
-      .modal-body {
-        padding: 24px;
-      }
-
-      /* Custom Dropdown */
-      .custom-dropdown {
-        position: relative;
-        width: 100%;
-      }
-
-      .dropdown-display {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 10px 15px;
-        background: rgba(255, 255, 255, 0.03);
-        backdrop-filter: blur(10px);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        color: #fff;
-        cursor: pointer;
-        min-height: 42px;
-        font-size: 14px;
-      }
-
-      .dropdown-display:hover {
-        background: rgba(255, 255, 255, 0.05);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .dropdown-display.active {
-        border-color: rgba(0, 142, 255, 0.5);
-        box-shadow: 0 0 0 3px rgba(0, 142, 255, 0.15);
-      }
-
-      .dropdown-display svg {
-      }
-
-      .dropdown-display.active svg {
-        transform: rotate(180deg);
-      }
-
-      .dropdown-options {
-        position: absolute;
-        top: calc(100% + 4px);
-        left: 0;
-        right: 0;
-        background: rgba(18, 18, 18, 0.95);
-        backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid hsla(0, 0%, 100%, 0.1);
-        border-radius: var(--radius-sm);
-        box-shadow: var(--shadow-sm);
-        max-height: 200px;
-        overflow-y: auto;
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(-10px);
-        z-index: 1001;
-      }
-
-      .dropdown-options.active {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0);
-      }
-
-      .dropdown-option {
-        padding: 10px 12px;
-        color: var(--text-primary);
-        cursor: pointer;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-      }
-
-      .dropdown-option:last-child {
-        border-bottom: none;
-      }
-
-      .dropdown-option.selected {
-        background: rgba(33, 150, 243, 0.1);
-        color: var(--primary-color);
-      }
-
-      /* Form Control for text inputs */
-      .form-control {
-        width: 100%;
-        padding: 10px 15px;
-        background: rgba(255, 255, 255, 0.05);
-        backdrop-filter: blur(5px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: var(--radius-sm);
-        color: var(--text-primary);
-        font-size: 14px;
-      }
-
-      .form-control:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.2);
-      }
-
-      .form-control:focus {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
-        outline: none;
-      }
-    </style>
+    <link rel="stylesheet" href="/styles/logs.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
@@ -899,8 +447,8 @@
     <div id="deleteLogsModal" class="modal-overlay">
       <div class="modal-content" class="u-max-w-modal">
         <div class="modal-header" style="text-align: center; padding: 24px; border-bottom: 1px solid rgba(255, 255, 255, 0.1)">
-          <i class="fas fa-exclamation-triangle fa-2x" style="color: #f44336; display: block; margin-bottom: 16px"></i>
-          <h3 style="color: var(--primary-color); margin: 0; font-size: 24px">Gefilterte Logs löschen</h3>
+          <i class="fas fa-exclamation-triangle fa-2x text-danger" style="display: block; margin-bottom: 16px"></i>
+          <h3 class="text-primary" style="margin: 0; font-size: 24px">Gefilterte Logs löschen</h3>
         </div>
 
         <div class="modal-body" class="u-p-container">
@@ -914,26 +462,24 @@
               margin-bottom: 20px;
             "
           >
-            <p style="color: #f44336; font-weight: bold; margin-bottom: 12px">
+            <p class="text-danger u-mb-12" style="font-weight: bold">
               <i class="fas fa-skull-crossbones"></i>
               WARNUNG!
             </p>
-            <p style="color: var(--text-primary); margin-bottom: 12px">
-              Sie sind dabei, alle Logs zu löschen, die den folgenden Filtern entsprechen:
-            </p>
+            <p class="text-primary u-mb-12">Sie sind dabei, alle Logs zu löschen, die den folgenden Filtern entsprechen:</p>
             <div
               id="activeFiltersDisplay"
               style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px"
             >
               <!-- Aktive Filter werden hier angezeigt -->
             </div>
-            <p style="color: var(--text-primary); font-weight: bold">Diese Aktion kann NICHT rückgängig gemacht werden!</p>
+            <p class="text-primary" style="font-weight: bold">Diese Aktion kann NICHT rückgängig gemacht werden!</p>
           </div>
 
           <div class="confirmation-input" style="margin-top: 20px">
-            <p style="color: var(--text-secondary); margin-bottom: 12px">
+            <p class="text-secondary u-mb-12">
               Geben Sie zur Bestätigung
-              <strong style="color: #f44336">LÖSCHEN</strong>
+              <strong class="text-danger">LÖSCHEN</strong>
               ein:
             </p>
             <input
@@ -946,13 +492,11 @@
 
             <!-- Passwort-Feld nur bei "Alle Aktionen" -->
             <div id="passwordConfirmSection" style="display: none; margin-bottom: 20px">
-              <p style="color: #f44336; font-weight: bold; margin-bottom: 8px">
+              <p class="text-danger u-mb-8" style="font-weight: bold">
                 <i class="fas fa-lock"></i>
                 Zusätzliche Sicherheit erforderlich!
               </p>
-              <p style="color: var(--text-secondary); margin-bottom: 12px">
-                Da Sie ALLE Aktionen löschen möchten, geben Sie bitte Ihr Root-Passwort ein:
-              </p>
+              <p class="text-secondary u-mb-12">Da Sie ALLE Aktionen löschen möchten, geben Sie bitte Ihr Root-Passwort ein:</p>
               <input type="password" id="deleteLogsPassword" class="form-control" placeholder="Root-Passwort" class="u-w-full" />
             </div>
           </div>

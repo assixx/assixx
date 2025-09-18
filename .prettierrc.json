@@ -16,7 +16,7 @@
   "embeddedLanguageFormatting": "auto",
   "experimentalTernaries": true,
   "singleAttributePerLine": false,
-  "plugins": ["@trivago/prettier-plugin-sort-imports"],
+  "plugins": ["@trivago/prettier-plugin-sort-imports", "prettier-plugin-css-order"],
   "importOrder": ["^react", "^@?\\w", "^(@/|src/)", "^[./]"],
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,

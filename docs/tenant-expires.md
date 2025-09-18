@@ -75,7 +75,7 @@ for (const feature of features) {
   await conn.query(
     `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at)
      VALUES (?, ?, TRUE, DATE_ADD(NOW(), INTERVAL 14 DAY))`,
-    [tenantId, feature.id]
+    [tenantId, feature.id],
   );
 }
 ```

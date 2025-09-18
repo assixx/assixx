@@ -1,3 +1,6 @@
+@import "/styles/dashboard-theme.css";
+@import "/styles/breadcrumb-alignment.css";
+
 /* Document Pages Styles */
 
 /* View Mode Toggle */
@@ -605,7 +608,7 @@
   width: 100%;
   height: 600px;
   border: none;
-  background: white;
+  background: #fff;
 }
 
 .preview-error {
@@ -788,3 +791,538 @@
   justify-content: center;
   min-height: 400px;
 }
+
+/* Glassmorphismus Design-Standards */
+
+/* Dramatischer Hintergrund-Gradient */
+body {
+  position: relative;
+  overflow-x: hidden;
+  min-height: 100vh;
+  background: #000;
+}
+
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
+}
+
+/* Glassmorphismus für Stat-Cards - removed duplicate (already defined at line 258) */
+
+/* .stat-icon already defined at line 272 - removed duplicate */
+/* .stat-value already defined at line 410 - removed duplicate */
+/* .stat-label already defined at line 406 - removed duplicate */
+
+/* Glassmorphismus für Cards */
+.card {
+  overflow: hidden;
+  margin-bottom: var(--spacing-xl);
+
+  /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
+  /* Verwendet die CSS-Variablen aus dem zentralen Theme */
+  border-radius: var(--radius-md);
+}
+
+.card-header {
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 1%);
+}
+
+.card-title {
+  display: flex;
+  align-items: center;
+
+  margin: 0;
+
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-body {
+  padding: var(--spacing-lg);
+}
+
+/* Filter Pills */
+.filter-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+}
+
+.filter-pill {
+  cursor: pointer;
+
+  position: relative;
+
+  overflow: hidden;
+
+  padding: 8px 20px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 50px;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 4%);
+  backdrop-filter: blur(10px);
+}
+
+.filter-pill:hover {
+  transform: translateY(-1px);
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
+}
+
+.filter-pill.active {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: rgb(33 150 243 / 15%);
+  box-shadow: 0 4px 12px rgb(33 150 243 / 20%);
+}
+
+.filter-pill .count {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+
+  font-size: 12px;
+
+  background: rgb(255 255 255 / 10%);
+}
+
+/* Search and Sort Section */
+.controls-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px 15px 10px 45px;
+  border: var(--glass-border);
+  border-radius: var(--radius-sm);
+
+  font-size: 14px;
+  color: var(--text-primary);
+
+  background: var(--glass-bg-active);
+  backdrop-filter: blur(5px);
+}
+
+.search-box input:focus {
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 8%);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 20%);
+}
+
+.search-box .search-icon {
+  pointer-events: none;
+
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+
+  color: rgb(255 255 255 / 50%);
+}
+
+.sort-dropdown {
+  min-width: 200px;
+}
+
+/* Document Grid - removed duplicate (already defined at line 218) */
+
+/* Document Card - removed large duplicate block (already defined at line 54) */
+
+/* Document elements - removed large duplicate block (already defined starting at line 150) */
+
+/* Loading State */
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+/* .loading-spinner already defined at line 379 - removed duplicate */
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Search Box - removed duplicate (already defined at line 915) */
+
+/* .search-icon already defined at line 368 - removed duplicate */
+
+.form-control {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  font-size: 0.95rem;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 5%);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+}
+
+.form-control::placeholder {
+  color: rgb(255 255 255 / 50%);
+}
+
+/* Custom Dropdown - Duplicate removed (first defined at line 416) */
+/* .custom-dropdown {
+  position: relative;
+} */
+
+/* Dropdown styles - All duplicates removed (first defined at lines 421-491) */
+/* .dropdown-display {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px 12px;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+}
+
+.dropdown-display:hover {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
+}
+
+.dropdown-display.active svg {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  position: absolute;
+  z-index: 1001;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+
+  overflow-y: auto;
+  display: none;
+
+  max-height: 200px;
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+
+  background: rgb(18 18 18 / 98%);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--shadow-sm);
+}
+
+.dropdown-options.active {
+  display: block;
+}
+
+.dropdown-option {
+  cursor: pointer;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  color: rgb(255 255 255 / 80%);
+}
+
+.dropdown-option:last-child {
+  border-bottom: none;
+} */
+
+/* Stats Bar */
+.stats-bar {
+  display: flex;
+  gap: var(--spacing-xl);
+
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-2sm);
+  border: 1px solid rgb(255 255 255 / 5%);
+  border-radius: var(--radius-sm);
+
+  background: var(--glass-bg);
+}
+
+/* Stat items - Duplicates removed (first defined at lines 397-410) */
+/* .stat-item {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.stat-item i {
+  color: var(--primary-color);
+  opacity: 80%;
+}
+
+.stat-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.stat-label {
+  margin-left: 4px;
+  font-size: 13px;
+  color: rgb(255 255 255 / 60%);
+} */
+
+/* Responsive */
+@media (width <= 768px) {
+  .controls-section {
+    flex-direction: column;
+  }
+
+  .search-box {
+    min-width: 100%;
+  }
+
+  .filter-pills {
+    overflow-x: auto;
+    padding-bottom: var(--spacing-sm);
+  }
+
+  .documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-bar {
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+}
+
+/* Modal Styles - All duplicates commented (first defined at lines 497-596) */
+/* .modal {
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+} */
+
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background: rgb(0 0 0 / 80%);
+  backdrop-filter: blur(5px);
+}
+
+/* .modal-content {
+  position: relative;
+
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  max-width: 90%;
+  max-height: 90vh;
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-md);
+
+  background: hsl(0deg 0% 8.2% / 84%);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow:
+    0 24px 48px rgb(0 0 0 / 60%),
+    inset 0 1px 0 rgb(255 255 255 / 10%);
+} */
+
+.modal-lg {
+  width: 1000px;
+}
+
+/* .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+} */
+
+.modal-title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+
+  font-size: 2rem;
+  color: var(--text-secondary);
+
+  background: none;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+/* .modal-body {
+  overflow-y: auto;
+  flex: 1;
+  padding: var(--spacing-lg);
+} */
+
+/* .modal-footer {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+
+  padding: var(--spacing-lg);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+} */
+
+/* Document Info Grid - Duplicates commented (first defined at lines 637-670) */
+/* .document-info {
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-2sm);
+  border: var(--glass-border);
+  border-radius: var(--radius-md);
+
+  background: var(--glass-bg);
+} */
+
+/* .info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+} */
+
+/* .info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+} */
+
+.info-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.info-value {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+/* Utility Classes */
+.me-1 {
+  margin-right: 0.25rem;
+}
+
+.me-2 {
+  margin-right: 0.5rem;
+}
+
+/* Button Styles - Duplicates commented (first defined at lines 695-727) */
+/* .btn {
+  cursor: pointer;
+
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+
+  padding: 10px 20px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-md);
+
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+} */
+
+/* .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+} */
+
+/* .btn-primary {
+  border-color: var(--primary-color);
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+} */
+
+/* .btn-primary:hover {
+  background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
+} */
+
+/* .btn-secondary {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 5%);
+} */
+
+/* .btn-secondary:hover {
+  background: rgb(255 255 255 / 8%);
+} */
+
+/* Page Header - Duplicate commented (first defined at line 733) */
+/* .page-header {
+  margin-bottom: var(--spacing-xl);
+} */

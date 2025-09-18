@@ -53,11 +53,11 @@ element.innerHTML = DOMPurify.sanitize(htmlWithOnclick);
 
 ### Summary Table
 
-| Aspect | survey-admin (WORKS) | survey-employee (BROKEN) |
-|--------|---------------------|-------------------------|
+| Aspect | survey-admin (WORKS)       | survey-employee (BROKEN)      |
+| ------ | -------------------------- | ----------------------------- |
 | Method | `setHTML()` from dom-utils | Direct `DOMPurify.sanitize()` |
-| Config | Custom config WITH onclick | No config (default) |
-| Result | ✅ onclick preserved | ❌ onclick removed |
+| Config | Custom config WITH onclick | No config (default)           |
+| Result | ✅ onclick preserved       | ❌ onclick removed            |
 
 ### Quick Fix Options
 
