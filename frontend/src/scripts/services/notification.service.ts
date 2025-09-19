@@ -155,6 +155,91 @@ export class NotificationService {
   }
 
   /**
+   * Get notification colors based on type
+   */
+  private getNotificationColors(type: Notification['type']): {
+    bgColor: string;
+    borderColor: string;
+    textColor: string;
+  } {
+    switch (type) {
+      case 'success':
+        return {
+          bgColor: 'rgba(76, 175, 80, 0.1)',
+          borderColor: 'rgba(76, 175, 80, 0.2)',
+          textColor: 'rgba(76, 175, 80, 0.9)',
+        };
+      case 'warning':
+        return {
+          bgColor: 'rgba(255, 152, 0, 0.1)',
+          borderColor: 'rgba(255, 152, 0, 0.2)',
+          textColor: 'rgba(255, 152, 0, 0.9)',
+        };
+      case 'error':
+        return {
+          bgColor: 'rgba(244, 67, 54, 0.1)',
+          borderColor: 'rgba(244, 67, 54, 0.2)',
+          textColor: 'rgba(244, 67, 54, 0.9)',
+        };
+      case 'info':
+      default:
+        return {
+          bgColor: 'rgba(33, 150, 243, 0.1)',
+          borderColor: 'rgba(33, 150, 243, 0.2)',
+          textColor: 'rgba(33, 150, 243, 0.9)',
+        };
+    }
+  }
+
+  /**
+   * Get notification icon HTML
+   */
+  private getNotificationIcon(type: Notification['type']): string {
+    switch (type) {
+      case 'success':
+        return '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
+      case 'warning':
+        return '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
+      case 'error':
+        return '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      case 'info':
+      default:
+        return '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>';
+    }
+  }
+
+  /**
+   * Generate actions HTML
+   */
+  private generateActionsHtml(actions?: Notification['actions']): string {
+    if (!actions || actions.length === 0) return '';
+
+    const buttons = actions
+      .map(
+        (action) => `
+        <button
+          class="notification-action-btn"
+          data-action="${action.label}"
+          style="
+            background: none;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 4px 12px;
+            margin-right: 8px;
+            cursor: pointer;
+            font-size: 14px;
+          "
+        >
+          ${this.escapeHtml(action.label)}
+        </button>
+      `,
+      )
+      .join('');
+
+    return `<div class="notification-actions" style="margin-top: 12px;">${buttons}</div>`;
+  }
+
+  /**
    * Render notification
    * @param notification
    */
@@ -165,26 +250,8 @@ export class NotificationService {
     element.id = `notification-${notification.id}`;
     element.className = `notification notification-${notification.type}`;
 
-    // Define colors based on type (matching role-switch toast style)
-    let bgColor, borderColor, textColor;
-    if (notification.type === 'success') {
-      bgColor = 'rgba(76, 175, 80, 0.1)';
-      borderColor = 'rgba(76, 175, 80, 0.2)';
-      textColor = 'rgba(76, 175, 80, 0.9)';
-    } else if (notification.type === 'warning') {
-      bgColor = 'rgba(255, 152, 0, 0.1)';
-      borderColor = 'rgba(255, 152, 0, 0.2)';
-      textColor = 'rgba(255, 152, 0, 0.9)';
-    } else if (notification.type === 'error') {
-      bgColor = 'rgba(244, 67, 54, 0.1)';
-      borderColor = 'rgba(244, 67, 54, 0.2)';
-      textColor = 'rgba(244, 67, 54, 0.9)';
-    } else {
-      // info
-      bgColor = 'rgba(33, 150, 243, 0.1)';
-      borderColor = 'rgba(33, 150, 243, 0.2)';
-      textColor = 'rgba(33, 150, 243, 0.9)';
-    }
+    // Get colors for notification type
+    const { bgColor, borderColor, textColor } = this.getNotificationColors(notification.type);
 
     element.style.cssText = `
       position: relative;
@@ -207,51 +274,9 @@ export class NotificationService {
       max-width: 400px;
     `;
 
-    let actionsHtml = '';
-    if (notification.actions && notification.actions.length > 0) {
-      actionsHtml = `
-        <div class="notification-actions" style="margin-top: 12px;">
-          ${notification.actions
-            .map(
-              (action) => `
-            <button
-              class="notification-action-btn"
-              data-action="${action.label}"
-              style="
-                background: none;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                padding: 4px 12px;
-                margin-right: 8px;
-                cursor: pointer;
-                font-size: 14px;
-              "
-            >
-              ${this.escapeHtml(action.label)}
-            </button>
-          `,
-            )
-            .join('')}
-        </div>
-      `;
-    }
-
-    // Create icon HTML (matching role-switch toast)
-    let iconHtml = '';
-    if (notification.type === 'success') {
-      iconHtml =
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
-    } else if (notification.type === 'warning') {
-      iconHtml =
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
-    } else if (notification.type === 'error') {
-      iconHtml =
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
-    } else {
-      // info
-      iconHtml =
-        '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>';
-    }
+    // Generate HTML parts
+    const actionsHtml = this.generateActionsHtml(notification.actions);
+    const iconHtml = this.getNotificationIcon(notification.type);
 
     // Combine title and message into one text
     const displayText =
@@ -269,8 +294,6 @@ export class NotificationService {
       </span>
       ${actionsHtml}
     `;
-
-    // No close button anymore - notifications auto-dismiss
 
     // Add action listeners
     if (notification.actions) {

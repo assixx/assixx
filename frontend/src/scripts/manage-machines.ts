@@ -158,37 +158,28 @@ class MachinesManager {
       if (modal) modal.classList.remove('active');
     });
 
+    // Helper to handle machine action
+    const handleMachineAction = (
+      button: HTMLElement | null,
+      handler: ((id: number) => Promise<void>) | undefined,
+    ): void => {
+      if (!button || !handler) return;
+      const machineId = button.dataset.machineId;
+      if (machineId !== undefined) {
+        void handler(Number.parseInt(machineId, 10));
+      }
+    };
+
     // Event delegation for machine actions
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const w = window as WindowWithMachineHandlers;
 
-      // Handle edit machine
-      const editBtn = target.closest<HTMLElement>('[data-action="edit-machine"]');
-      if (editBtn) {
-        const machineId = editBtn.dataset.machineId;
-        if (machineId !== undefined && w.editMachine) {
-          void w.editMachine(Number.parseInt(machineId, 10));
-        }
-      }
+      handleMachineAction(target.closest<HTMLElement>('[data-action="edit-machine"]'), w.editMachine);
 
-      // Handle view machine details
-      const viewBtn = target.closest<HTMLElement>('[data-action="view-machine-details"]');
-      if (viewBtn) {
-        const machineId = viewBtn.dataset.machineId;
-        if (machineId !== undefined && w.viewMachineDetails) {
-          void w.viewMachineDetails(Number.parseInt(machineId, 10));
-        }
-      }
+      handleMachineAction(target.closest<HTMLElement>('[data-action="view-machine-details"]'), w.viewMachineDetails);
 
-      // Handle delete machine
-      const deleteBtn = target.closest<HTMLElement>('[data-action="delete-machine"]');
-      if (deleteBtn) {
-        const machineId = deleteBtn.dataset.machineId;
-        if (machineId !== undefined && w.deleteMachine) {
-          void w.deleteMachine(Number.parseInt(machineId, 10));
-        }
-      }
+      handleMachineAction(target.closest<HTMLElement>('[data-action="delete-machine"]'), w.deleteMachine);
     });
   }
 

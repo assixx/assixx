@@ -188,10 +188,10 @@ export class ChatWebSocketServer {
     try {
       // Berechtigung prüfen
       const participantQuery = `
-        SELECT cp.user_id 
+        SELECT cp.user_id
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? 
+        WHERE cp.conversation_id = ?
         AND c.tenant_id = ?
         AND cp.tenant_id = ?
       `;
@@ -241,7 +241,7 @@ export class ChatWebSocketServer {
 
       // Sender-Informationen abrufen
       const senderQuery = `
-        SELECT id, username, first_name, last_name, profile_picture_url 
+        SELECT id, username, first_name, last_name, profile_picture_url
         FROM users WHERE id = ?
       `;
       const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [ws.userId]);
@@ -313,11 +313,11 @@ export class ChatWebSocketServer {
     try {
       // Teilnehmer der Unterhaltung ermitteln
       const participantQuery = `
-        SELECT cp.user_id 
+        SELECT cp.user_id
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? 
-        AND c.tenant_id = ? 
+        WHERE cp.conversation_id = ?
+        AND c.tenant_id = ?
         AND cp.tenant_id = ?
         AND cp.user_id != ?
       `;
@@ -355,13 +355,13 @@ export class ChatWebSocketServer {
       // Nachricht als gelesen markieren
       await execute<ResultSetHeader>(
         `
-        UPDATE messages 
-        SET is_read = 1 
-        WHERE id = ? 
+        UPDATE messages
+        SET is_read = 1
+        WHERE id = ?
         AND tenant_id = ?
         AND EXISTS (
           SELECT 1 FROM conversation_participants cp
-          WHERE cp.conversation_id = messages.conversation_id 
+          WHERE cp.conversation_id = messages.conversation_id
           AND cp.user_id = ?
         )
       `,
@@ -407,11 +407,11 @@ export class ChatWebSocketServer {
     // Anderen Teilnehmern mitteilen, dass Benutzer online ist
     try {
       const participantQuery = `
-        SELECT cp.user_id 
+        SELECT cp.user_id
         FROM conversation_participants cp
         JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ? 
-        AND c.tenant_id = ? 
+        WHERE cp.conversation_id = ?
+        AND c.tenant_id = ?
         AND cp.tenant_id = ?
         AND cp.user_id != ?
       `;
@@ -524,7 +524,7 @@ export class ChatWebSocketServer {
         SELECT m.*, c.id as conversation_id
         FROM messages m
         JOIN conversations c ON m.conversation_id = c.id
-        WHERE m.scheduled_delivery IS NOT NULL 
+        WHERE m.scheduled_delivery IS NOT NULL
         AND m.scheduled_delivery <= NOW()
         AND m.delivery_status = 'scheduled'
       `;
@@ -540,7 +540,7 @@ export class ChatWebSocketServer {
 
         // Nachricht an alle Teilnehmer senden
         const participantQuery = `
-          SELECT user_id FROM conversation_participants 
+          SELECT user_id FROM conversation_participants
           WHERE conversation_id = ?
         `;
         const [participants] = await query<RowDataPacket[]>(participantQuery, [
@@ -549,7 +549,7 @@ export class ChatWebSocketServer {
 
         // Sender-Informationen abrufen
         const senderQuery = `
-          SELECT first_name, last_name, profile_picture_url 
+          SELECT first_name, last_name, profile_picture_url
           FROM users WHERE id = ?
         `;
         const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [message.sender_id]);
@@ -613,110 +613,156 @@ export class ChatWebSocketServer {
     }, 60000); // Alle 60 Sekunden
   }
 
+  /**
+   * Get queued messages from database
+   */
+  private async getQueuedMessages(): Promise<RowDataPacket[]> {
+    const queueQuery = `
+      SELECT
+        mdq.id as queue_id,
+        mdq.message_id,
+        mdq.recipient_id,
+        m.conversation_id,
+        m.content,
+        m.sender_id,
+        m.created_at,
+        u.first_name,
+        u.last_name,
+        u.profile_picture_url
+      FROM message_delivery_queue mdq
+      JOIN messages m ON mdq.message_id = m.id
+      JOIN users u ON m.sender_id = u.id
+      WHERE mdq.status = 'pending'
+      AND mdq.attempts < 3
+      LIMIT 50
+    `;
+
+    const [queuedMessages] = await query<RowDataPacket[]>(queueQuery);
+    return queuedMessages;
+  }
+
+  /**
+   * Build message data object
+   */
+  private buildMessageData(message: RowDataPacket): {
+    id: number;
+    conversation_id: number;
+    content: string;
+    sender_id: number;
+    sender_name: string;
+    first_name: string;
+    last_name: string;
+    profile_picture_url: string | null;
+    created_at: string;
+    delivery_status: string;
+    is_read: boolean;
+    attachments: {
+      filename: string;
+      content?: string | Buffer;
+      path?: string;
+      contentType?: string;
+    }[];
+  } {
+    return {
+      id: message.message_id as number,
+      conversation_id: message.conversation_id as number,
+      content: message.content as string,
+      sender_id: message.sender_id as number,
+      sender_name:
+        `${String(message.first_name ?? '')} ${String(message.last_name ?? '')}`.trim() ||
+        'Unbekannter Benutzer',
+      first_name: (message.first_name ?? '') as string,
+      last_name: (message.last_name ?? '') as string,
+      profile_picture_url: (message.profile_picture_url ?? null) as string | null,
+      created_at: message.created_at as string,
+      delivery_status: 'delivered',
+      is_read: false,
+      attachments: [],
+    };
+  }
+
+  /**
+   * Deliver message to recipient
+   */
+  private async deliverMessage(message: RowDataPacket): Promise<void> {
+    // Update status to processing
+    await execute<ResultSetHeader>(
+      'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
+      [message.queue_id],
+    );
+
+    // Build message data
+    const messageData = this.buildMessageData(message);
+
+    // Send to recipient if online
+    const recipientId = message.recipient_id as number;
+    const recipientWs = this.clients.get(recipientId);
+    if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
+      this.sendMessage(recipientWs, {
+        type: 'new_message',
+        data: messageData,
+      });
+    }
+
+    // Mark as delivered
+    await execute<ResultSetHeader>(
+      'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
+      [message.queue_id],
+    );
+
+    await execute<ResultSetHeader>(
+      'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
+      [message.message_id],
+    );
+  }
+
+  /**
+   * Handle message delivery failure
+   */
+  private async handleDeliveryFailure(message: RowDataPacket): Promise<void> {
+    const [result] = await query<RowDataPacket[]>(
+      'SELECT attempts FROM message_delivery_queue WHERE id = ?',
+      [message.queue_id],
+    );
+
+    if (result[0] && result[0].attempts >= 3) {
+      // Mark as failed after max attempts
+      await execute<ResultSetHeader>(
+        'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
+        [message.queue_id],
+      );
+      await execute<ResultSetHeader>(
+        'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
+        [message.message_id],
+      );
+    } else {
+      // Reset to pending for retry
+      await execute<ResultSetHeader>(
+        'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
+        [message.queue_id],
+      );
+    }
+  }
+
+  /**
+   * Process single message from queue
+   */
+  private async processSingleMessage(message: RowDataPacket): Promise<void> {
+    try {
+      await this.deliverMessage(message);
+    } catch (error: unknown) {
+      logger.error(`Fehler beim Zustellen der Nachricht ${String(message.message_id)}:`, error);
+      await this.handleDeliveryFailure(message);
+    }
+  }
+
   // Message Delivery Queue verarbeiten
   private async processMessageDeliveryQueue(): Promise<void> {
     try {
-      // Hole ausstehende Nachrichten aus der Queue
-      const queueQuery = `
-        SELECT 
-          mdq.id as queue_id,
-          mdq.message_id,
-          mdq.recipient_id,
-          m.conversation_id,
-          m.content,
-          m.sender_id,
-          m.created_at,
-          u.first_name,
-          u.last_name,
-          u.profile_picture_url
-        FROM message_delivery_queue mdq
-        JOIN messages m ON mdq.message_id = m.id
-        JOIN users u ON m.sender_id = u.id
-        WHERE mdq.status = 'pending'
-        AND mdq.attempts < 3
-        LIMIT 50
-      `;
-
-      const [queuedMessages] = await query<RowDataPacket[]>(queueQuery);
+      const queuedMessages = await this.getQueuedMessages();
 
       for (const message of queuedMessages) {
-        try {
-          // Update status to processing
-          await execute<ResultSetHeader>(
-            'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
-            [message.queue_id],
-          );
-
-          // Nachricht-Objekt erstellen
-          const messageData = {
-            id: message.message_id as number,
-            conversation_id: message.conversation_id as number,
-            content: message.content as string,
-            sender_id: message.sender_id as number,
-            sender_name:
-              `${String(message.first_name ?? '')} ${String(message.last_name ?? '')}`.trim() ||
-              'Unbekannter Benutzer',
-            first_name: (message.first_name ?? '') as string,
-            last_name: (message.last_name ?? '') as string,
-            profile_picture_url: (message.profile_picture_url ?? null) as string | null,
-            created_at: message.created_at as string,
-            delivery_status: 'delivered',
-            is_read: false,
-            attachments: [] as {
-              filename: string;
-              content?: string | Buffer;
-              path?: string;
-              contentType?: string;
-            }[],
-          };
-
-          // An Empfänger senden wenn online
-          const recipientId = message.recipient_id as number;
-          const recipientWs = this.clients.get(recipientId);
-          if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
-            this.sendMessage(recipientWs, {
-              type: 'new_message',
-              data: messageData,
-            });
-          }
-
-          // Als zugestellt markieren
-          await execute<ResultSetHeader>(
-            'UPDATE message_delivery_queue SET status = "delivered" WHERE id = ?',
-            [message.queue_id],
-          );
-
-          // Delivery status in messages table aktualisieren
-          await execute<ResultSetHeader>(
-            'UPDATE messages SET delivery_status = "delivered" WHERE id = ?',
-            [message.message_id],
-          );
-        } catch (error: unknown) {
-          logger.error(`Fehler beim Zustellen der Nachricht ${String(message.message_id)}:`, error);
-
-          // Bei Fehler als failed markieren wenn max attempts erreicht
-          const [result] = await query<RowDataPacket[]>(
-            'SELECT attempts FROM message_delivery_queue WHERE id = ?',
-            [message.queue_id],
-          );
-
-          if (result[0] && result[0].attempts >= 3) {
-            await execute<ResultSetHeader>(
-              'UPDATE message_delivery_queue SET status = "failed" WHERE id = ?',
-              [message.queue_id],
-            );
-            await execute<ResultSetHeader>(
-              'UPDATE messages SET delivery_status = "failed" WHERE id = ?',
-              [message.message_id],
-            );
-          } else {
-            // Zurück auf pending setzen für erneuten Versuch
-            await execute<ResultSetHeader>(
-              'UPDATE message_delivery_queue SET status = "pending" WHERE id = ?',
-              [message.queue_id],
-            );
-          }
-        }
+        await this.processSingleMessage(message);
       }
     } catch (error: unknown) {
       logger.error('Fehler beim Verarbeiten der Message Delivery Queue:', error);

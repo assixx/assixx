@@ -168,7 +168,7 @@ body::after {
   align-items: center;
   justify-content: center;
 
-  padding: var(--spacing-2sm);
+  padding: 8px 15px;
   border: none;
   border-radius: var(--radius-sm);
 
@@ -494,43 +494,6 @@ body::after {
   margin-bottom: var(--spacing-lg);
   font-size: 13px;
   color: var(--text-secondary);
-}
-
-.form-group {
-  margin-bottom: var(--spacing-md);
-}
-
-.form-label {
-  display: block;
-
-  margin-bottom: var(--spacing-xs);
-
-  font-size: 13px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--spacing-2sm);
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-sm);
-
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(33 150 243 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 10%);
 }
 
 .subdomain-input {

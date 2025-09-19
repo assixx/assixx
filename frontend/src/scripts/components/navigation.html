@@ -385,6 +385,7 @@
     }
 
     // Benutzerdaten für die Navigation laden
+    // eslint-disable-next-line sonarjs/cognitive-complexity
     async function loadUserData() {
       try {
         const response = await fetch('/users/current', {

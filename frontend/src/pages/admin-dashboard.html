@@ -638,55 +638,60 @@
           });
         }
 
+        // Helper to reset form fields
+        function resetFormFields(form) {
+          form.reset();
+          delete form.dataset.mode;
+          delete form.dataset.employeeId;
+        }
+
+        // Helper to update modal UI
+        function updateModalUI(modal, form) {
+          const modalTitle = modal.querySelector('.modal-title');
+          if (modalTitle) {
+            modalTitle.textContent = 'Neuer Mitarbeiter';
+          }
+
+          const passwordInput = form.querySelector('input[name="password"]');
+          const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
+          if (passwordInput) passwordInput.setAttribute('required', 'required');
+          if (passwordConfirmInput) passwordConfirmInput.setAttribute('required', 'required');
+
+          const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
+          if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
+
+          const submitBtn = document.querySelector('#employee-submit-btn');
+          if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> <span>Mitarbeiter erstellen</span>';
+          }
+        }
+
+        // Helper to reset dropdowns
+        function resetDropdowns() {
+          if (typeof window.selectDropdownOption === 'function') {
+            window.selectDropdownOption('employee-department', '', 'Keine Abteilung');
+            window.selectDropdownOption('employee-team', '', 'Kein Team');
+          }
+          if (typeof window.selectActiveStatusOption === 'function') {
+            window.selectActiveStatusOption('1', 'Aktiv');
+          }
+        }
+
         // Function to show new employee modal
         window.showNewEmployeeModal = function () {
           const modal = document.querySelector('#employee-modal');
           const form = document.querySelector('#create-employee-form');
 
-          if (modal && form) {
-            // Reset form
-            form.reset();
-            delete form.dataset.mode;
-            delete form.dataset.employeeId;
+          if (!modal || !form) return;
 
-            // Reset modal title
-            const modalTitle = modal.querySelector('.modal-title');
-            if (modalTitle) {
-              modalTitle.textContent = 'Neuer Mitarbeiter';
-            }
+          resetFormFields(form);
+          updateModalUI(modal, form);
+          resetDropdowns();
 
-            // Make password fields required again for new employee
-            const passwordInput = form.querySelector('input[name="password"]');
-            const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
-            if (passwordInput) passwordInput.setAttribute('required', 'required');
-            if (passwordConfirmInput) passwordConfirmInput.setAttribute('required', 'required');
+          modal.style.display = 'flex';
 
-            // Show email confirm field again
-            const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
-            if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
-
-            // Reset submit button
-            const submitBtn = document.querySelector('#employee-submit-btn');
-            if (submitBtn) {
-              submitBtn.innerHTML = '<i class="fas fa-save"></i> <span>Mitarbeiter erstellen</span>';
-            }
-
-            // Reset dropdowns
-            if (typeof window.selectDropdownOption === 'function') {
-              window.selectDropdownOption('employee-department', '', 'Keine Abteilung');
-              window.selectDropdownOption('employee-team', '', 'Kein Team');
-            }
-            if (typeof window.selectActiveStatusOption === 'function') {
-              window.selectActiveStatusOption('1', 'Aktiv');
-            }
-
-            // Show modal
-            modal.style.display = 'flex';
-
-            // Load departments for dropdown
-            if (typeof window.loadDepartmentsForEmployeeSelect === 'function') {
-              window.loadDepartmentsForEmployeeSelect();
-            }
+          if (typeof window.loadDepartmentsForEmployeeSelect === 'function') {
+            window.loadDepartmentsForEmployeeSelect();
           }
         };
 
@@ -709,43 +714,42 @@
           console.info('Dokument Upload Button ist ein Submit-Button im Formular');
         }
 
+        // Helper for sidebar link actions
+        function handleSidebarClick(href, e) {
+          const sectionMap = new Map([
+            [
+              '#departments',
+              () => {
+                window.location.href = '/manage-departments';
+              },
+            ],
+            ['#employees', 'employees'],
+            ['#documents', 'documents'],
+            ['#teams', 'teams'],
+            ['#settings', 'settings'],
+          ]);
+
+          const action = sectionMap.get(href);
+          if (!action) return;
+
+          e.preventDefault();
+
+          if (typeof action === 'function') {
+            action();
+          } else {
+            e.stopPropagation();
+            console.info(`Showing ${action} section`);
+            if (typeof window.showSection === 'function') {
+              window.showSection(action);
+            }
+          }
+        }
+
         // Direkter Link für Sidebar-Links
         document.querySelectorAll('.sidebar-link').forEach((link) => {
           link.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
-
-            if (href === '#departments') {
-              e.preventDefault();
-              window.location.href = '/manage-departments';
-            } else if (href === '#employees') {
-              e.preventDefault();
-              e.stopPropagation();
-              console.info('Showing employees section');
-              if (typeof window.showSection === 'function') {
-                window.showSection('employees');
-              }
-            } else if (href === '#documents') {
-              e.preventDefault();
-              e.stopPropagation();
-              console.info('Showing documents section');
-              if (typeof window.showSection === 'function') {
-                window.showSection('documents');
-              }
-            } else if (href === '#teams') {
-              e.preventDefault();
-              e.stopPropagation();
-              console.info('Showing teams section');
-              if (typeof window.showSection === 'function') {
-                window.showSection('teams');
-              }
-            } else if (href === '#settings') {
-              e.preventDefault();
-              e.stopPropagation();
-              console.info('Showing settings section');
-              if (typeof window.showSection === 'function') {
-                window.showSection('settings');
-              }
-            }
+            handleSidebarClick(href, e);
           });
         });
 
@@ -789,6 +793,50 @@
         }
       });
 
+      // Action handlers map
+      const actionHandlers = new Map([
+        ['show-team-modal', () => typeof showTeamModal === 'function' && showTeamModal()],
+        ['close-team-modal', () => typeof closeTeamModal === 'function' && closeTeamModal()],
+        ['save-team', () => typeof saveTeam === 'function' && saveTeam()],
+        ['show-machine-modal', () => typeof showMachineModal === 'function' && showMachineModal()],
+        ['close-machine-modal', () => typeof closeMachineModal === 'function' && closeMachineModal()],
+        ['save-machine', () => typeof saveMachine === 'function' && saveMachine()],
+        ['show-area-modal', () => typeof showAreaModal === 'function' && showAreaModal()],
+        ['close-area-modal', () => typeof closeAreaModal === 'function' && closeAreaModal()],
+        ['save-area', () => typeof saveArea === 'function' && saveArea()],
+        ['show-employee-modal', () => typeof showEmployeeModal === 'function' && showEmployeeModal()],
+        [
+          'show-all-teams',
+          (e) => {
+            e.preventDefault();
+            typeof showAllTeams === 'function' && showAllTeams();
+          },
+        ],
+        [
+          'hide-modal',
+          (e, target) => {
+            const modalId = target.dataset.modal;
+            modalId && typeof hideModal === 'function' && hideModal(modalId);
+          },
+        ],
+        [
+          'toggle-dropdown',
+          (e, target) => {
+            const dropdownId = target.dataset.dropdown;
+            dropdownId && typeof toggleDropdown === 'function' && toggleDropdown(dropdownId);
+          },
+        ],
+        [
+          'select-dropdown',
+          (e, target) => {
+            const dropdown = target.dataset.dropdown;
+            const value = target.dataset.value || '';
+            const display = target.dataset.display || '';
+            typeof selectDropdownOption === 'function' && selectDropdownOption(dropdown, value, display);
+          },
+        ],
+      ]);
+
       // Event Delegation for all data-action buttons (replacing onclick handlers)
       /* global showTeamModal, closeTeamModal, saveTeam, showMachineModal, closeMachineModal, saveMachine, showAreaModal, closeAreaModal, saveArea, showEmployeeModal, showAllTeams, hideModal, toggleDropdown, selectDropdownOption */
       document.addEventListener('click', function (e) {
@@ -796,69 +844,49 @@
         if (!target) return;
 
         const action = target.dataset.action;
+        const handler = actionHandlers.get(action);
 
-        switch (action) {
-          // Modal controls
-          case 'show-team-modal':
-            if (typeof showTeamModal === 'function') showTeamModal();
-            break;
-          case 'close-team-modal':
-            if (typeof closeTeamModal === 'function') closeTeamModal();
-            break;
-          case 'save-team':
-            if (typeof saveTeam === 'function') saveTeam();
-            break;
-          case 'show-machine-modal':
-            if (typeof showMachineModal === 'function') showMachineModal();
-            break;
-          case 'close-machine-modal':
-            if (typeof closeMachineModal === 'function') closeMachineModal();
-            break;
-          case 'save-machine':
-            if (typeof saveMachine === 'function') saveMachine();
-            break;
-          case 'show-area-modal':
-            if (typeof showAreaModal === 'function') showAreaModal();
-            break;
-          case 'close-area-modal':
-            if (typeof closeAreaModal === 'function') closeAreaModal();
-            break;
-          case 'save-area':
-            if (typeof saveArea === 'function') saveArea();
-            break;
-          case 'show-employee-modal':
-            if (typeof showEmployeeModal === 'function') showEmployeeModal();
-            break;
-          case 'show-all-teams':
-            e.preventDefault();
-            if (typeof showAllTeams === 'function') showAllTeams();
-            break;
-          case 'hide-modal': {
-            const modalId = target.dataset.modal;
-            if (modalId && typeof hideModal === 'function') hideModal(modalId);
-            break;
-          }
-
-          // Dropdown controls
-          case 'toggle-dropdown': {
-            const dropdownId = target.dataset.dropdown;
-            if (dropdownId && typeof toggleDropdown === 'function') toggleDropdown(dropdownId);
-            break;
-          }
-          case 'select-dropdown': {
-            const dropdown = target.dataset.dropdown;
-            const value = target.dataset.value || '';
-            const display = target.dataset.display || '';
-            if (typeof selectDropdownOption === 'function') {
-              selectDropdownOption(dropdown, value, display);
-            }
-            break;
-          }
+        if (handler) {
+          handler(e, target);
         }
       });
 
+      // Helper to handle employee status dropdown logic
+      function handleEmployeeStatusChange(value) {
+        const startDateInput = document.querySelector('#availability-start-date');
+        const endDateInput = document.querySelector('#availability-end-date');
+
+        if (!startDateInput || !endDateInput) return;
+
+        const isAvailable = value === 'available';
+        startDateInput.disabled = isAvailable;
+        endDateInput.disabled = isAvailable;
+
+        if (isAvailable) {
+          startDateInput.value = '';
+          endDateInput.value = '';
+          startDateInput.removeAttribute('required');
+          endDateInput.removeAttribute('required');
+        } else {
+          startDateInput.setAttribute('required', 'required');
+          endDateInput.setAttribute('required', 'required');
+        }
+      }
+
+      // Helper to update dropdown UI
+      function updateDropdownUI(hiddenInput, display, dropdown, value, text) {
+        hiddenInput.value = value;
+        const span = display.querySelector('span');
+        if (span) {
+          span.textContent = text;
+        }
+        dropdown.classList.remove('active');
+        display.classList.remove('active');
+      }
+
       function selectDropdownOption(dropdownId, value, text) {
         console.info('selectDropdownOption called:', dropdownId, value, text);
+
         // Try both ID formats for compatibility
         let hiddenInput = document.querySelector(dropdownId + '-select');
         if (!hiddenInput) {
@@ -867,51 +895,19 @@
         const display = document.querySelector(dropdownId + '-display');
         const dropdown = document.querySelector(dropdownId + '-dropdown');
 
-        if (hiddenInput && display && dropdown) {
-          hiddenInput.value = value;
-          const span = display.querySelector('span');
-          if (span) {
-            span.textContent = text;
-          }
-          dropdown.classList.remove('active'); // USE ACTIVE NOT SHOW!
-          display.classList.remove('active');
-
-          // Log successful selection
-          console.info('✅ dropdown selected:', { dropdownId, value, text });
-
-          // Spezielle Logik für Employee Status Dropdown
-          if (dropdownId === 'employee-status') {
-            const startDateInput = document.querySelector('#availability-start-date');
-            const endDateInput = document.querySelector('#availability-end-date');
-
-            if (startDateInput && endDateInput) {
-              if (value === 'available') {
-                // Bei "Verfügbar" Datumsfelder deaktivieren und leeren
-                startDateInput.disabled = true;
-                endDateInput.disabled = true;
-                startDateInput.value = '';
-                endDateInput.value = '';
-                startDateInput.removeAttribute('required');
-                endDateInput.removeAttribute('required');
-              } else {
-                // Bei anderen Status Datumsfelder aktivieren
-                startDateInput.disabled = false;
-                endDateInput.disabled = false;
-                startDateInput.setAttribute('required', 'required');
-                endDateInput.setAttribute('required', 'required');
-              }
-            }
-          }
-
-          // Trigger change event for dependent dropdowns
-          if (dropdownId === 'employeeDepartment') {
-            // Reload teams when department changes
-            if (typeof window.loadTeamsForEmployeeSelect === 'function') {
-              window.loadTeamsForEmployeeSelect();
-            }
-          }
-        } else {
+        if (!hiddenInput || !display || !dropdown) {
           console.error('Dropdown elements not found for selection:', dropdownId);
+          return;
+        }
+
+        updateDropdownUI(hiddenInput, display, dropdown, value, text);
+        console.info('✅ dropdown selected:', { dropdownId, value, text });
+
+        // Handle special cases
+        if (dropdownId === 'employee-status') {
+          handleEmployeeStatusChange(value);
+        } else if (dropdownId === 'employeeDepartment' && typeof window.loadTeamsForEmployeeSelect === 'function') {
+          window.loadTeamsForEmployeeSelect();
         }
       }
 
@@ -923,6 +919,81 @@
       /* global DOMPurify */
       // Funktionstabelle direkt definieren
 
+      // Helper to handle document actions
+      function handleDocumentAction(e) {
+        const button = e.target.closest('[data-action]');
+        if (!button) return;
+
+        const action = button.dataset.action;
+        const docId = parseInt(button.dataset.docId);
+
+        const actionMap = new Map([
+          ['download-document', window.downloadDocument],
+          ['archive-document', window.archiveDocument],
+          ['delete-document', window.deleteDocument],
+        ]);
+
+        const handler = actionMap.get(action);
+        if (handler) handler(docId);
+      }
+
+      // Helper to get recipient display text
+      function getRecipientDisplay(doc) {
+        const typeMap = {
+          user: () => doc.employee_name || '-',
+          team: () => (doc.team_name ? `Team: ${doc.team_name}` : '-'),
+          department: () => (doc.department_name ? `Abteilung: ${doc.department_name}` : '-'),
+          company: () => 'Gesamte Firma',
+        };
+
+        const handler = typeMap[doc.recipient_type];
+        if (handler) return handler();
+
+        // Fallback für alte Dokumente
+        return doc.employee_name || '-';
+      }
+
+      // Helper to create document row HTML
+      function createDocumentRow(doc) {
+        const recipientDisplay = getRecipientDisplay(doc);
+        const uploadDate = doc.upload_date ? new Date(doc.upload_date).toLocaleDateString('de-DE') : '-';
+        const archiveButton = !doc.is_archived
+          ? `
+          <button class="btn btn-sm btn-warning" data-action="archive-document" data-doc-id="${doc.id}" title="Archivieren">
+            <i class="fas fa-archive me-1"></i>
+            Archiv
+          </button>
+        `
+          : '';
+
+        return `
+          <tr>
+            <td>${doc.file_name || doc.filename || '-'}</td>
+            <td>${recipientDisplay}</td>
+            <td>${doc.category || '-'}</td>
+            <td>${uploadDate}</td>
+            <td>
+              <span class="badge ${doc.is_archived ? 'badge-secondary' : 'badge-success'}">
+                ${doc.is_archived ? 'Archiviert' : 'Aktiv'}
+              </span>
+            </td>
+            <td>
+              <div class="btn-group" role="group">
+                <button class="btn btn-sm btn-primary" data-action="download-document" data-doc-id="${doc.id}" title="Herunterladen">
+                  <i class="fas fa-download me-1"></i>
+                  Download
+                </button>
+                ${archiveButton}
+                <button class="btn btn-sm btn-danger" data-action="delete-document" data-doc-id="${doc.id}" title="Löschen">
+                  <i class="fas fa-trash me-1"></i>
+                  Löschen
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+
       // Load documents table
       async function loadDocumentsTable() {
         console.info('Loading documents table');
@@ -933,94 +1004,21 @@
             headers: { Authorization: `Bearer ${token}` },
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            const documents = data.documents || data;
-            console.info(`Loaded ${documents.length} documents`);
+          if (!response.ok) return;
 
-            const tbody = document.querySelector('#documents-table-body');
-            if (tbody) {
-              // Safe: HTML is generated from server data and sanitized with dom-utils
-              const htmlContent = documents
-                .map((doc) => {
-                  // Bestimme den Empfänger-Text basierend auf recipient_type
-                  let recipientDisplay = '-';
-                  if (doc.recipient_type === 'user' && doc.employee_name) {
-                    recipientDisplay = doc.employee_name;
-                  } else if (doc.recipient_type === 'team' && doc.team_name) {
-                    recipientDisplay = `Team: ${doc.team_name}`;
-                  } else if (doc.recipient_type === 'department' && doc.department_name) {
-                    recipientDisplay = `Abteilung: ${doc.department_name}`;
-                  } else if (doc.recipient_type === 'company') {
-                    recipientDisplay = 'Gesamte Firma';
-                  } else if (doc.employee_name) {
-                    // Fallback für alte Dokumente
-                    recipientDisplay = doc.employee_name;
-                  }
+          const data = await response.json();
+          const documents = data.documents || data;
+          console.info(`Loaded ${documents.length} documents`);
 
-                  return `
-                    <tr>
-                      <td>${doc.file_name || doc.filename || '-'}</td>
-                      <td>${recipientDisplay}</td>
-                      <td>${doc.category || '-'}</td>
-                      <td>${doc.upload_date ? new Date(doc.upload_date).toLocaleDateString('de-DE') : '-'}</td>
-                      <td>
-                        <span class="badge ${doc.is_archived ? 'badge-secondary' : 'badge-success'}">
-                          ${doc.is_archived ? 'Archiviert' : 'Aktiv'}
-                        </span>
-                      </td>
-                      <td>
-                        <div class="btn-group" role="group">
-                          <button class="btn btn-sm btn-primary" data-action="download-document" data-doc-id="${doc.id}" title="Herunterladen">
-                            <i class="fas fa-download me-1"></i>
-                            Download
-                          </button>
-                          ${
-                            !doc.is_archived
-                              ? `
-                            <button class="btn btn-sm btn-warning" data-action="archive-document" data-doc-id="${doc.id}" title="Archivieren">
-                              <i class="fas fa-archive me-1"></i>
-                              Archiv
-                            </button>
-                          `
-                              : ''
-                          }
-                          <button class="btn btn-sm btn-danger" data-action="delete-document" data-doc-id="${doc.id}" title="Löschen">
-                            <i class="fas fa-trash me-1"></i>
-                            Löschen
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  `;
-                })
-                .join('');
-              // Use dom-utils setHTML for safe sanitization
-              window.setHTML(tbody, htmlContent);
+          const tbody = document.querySelector('#documents-table-body');
+          if (tbody) {
+            const htmlContent = documents.map(createDocumentRow).join('');
+            window.setHTML(tbody, htmlContent);
 
-              // Event delegation for document actions
-              if (!tbody.dataset.delegationInitialized) {
-                tbody.dataset.delegationInitialized = 'true';
-                tbody.addEventListener('click', (e) => {
-                  const button = e.target.closest('[data-action]');
-                  if (button) {
-                    const action = button.dataset.action;
-                    const docId = button.dataset.docId;
-
-                    switch (action) {
-                      case 'download-document':
-                        if (window.downloadDocument) window.downloadDocument(parseInt(docId));
-                        break;
-                      case 'archive-document':
-                        if (window.archiveDocument) window.archiveDocument(parseInt(docId));
-                        break;
-                      case 'delete-document':
-                        if (window.deleteDocument) window.deleteDocument(parseInt(docId));
-                        break;
-                    }
-                  }
-                });
-              }
+            // Event delegation for document actions
+            if (!tbody.dataset.delegationInitialized) {
+              tbody.dataset.delegationInitialized = 'true';
+              tbody.addEventListener('click', handleDocumentAction);
             }
           }
         } catch (error) {
@@ -1028,152 +1026,143 @@
         }
       }
 
+      // Helper to fetch employee data
+      async function fetchEmployeeData(employeeId) {
+        const token = localStorage.getItem('token');
+        const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+
+        const url = useV2 ? `/api/v2/users/${employeeId}` : `/api/users/${employeeId}`;
+        const headers = { Authorization: `Bearer ${localStorage.getItem('accessToken') || token}` };
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+        });
+
+        if (!response.ok) {
+          console.error('Response not OK:', response.status, response.statusText);
+          const errorData = await response.text();
+          console.error('Error data:', errorData);
+          throw new Error('Failed to load employee data');
+        }
+
+        const responseData = await response.json();
+        return useV2 && responseData.success !== undefined ? responseData.data || {} : responseData;
+      }
+
+      // Helper to populate modal fields
+      function populateModalFields(employee, employeeId) {
+        const elements = {
+          employeeIdInput: document.querySelector('#status-employee-id'),
+          employeeName: document.querySelector('#status-employee-name'),
+          statusDisplay: document.querySelector('#employee-status-display'),
+          modal: document.querySelector('#employee-status-modal'),
+        };
+
+        if (elements.employeeIdInput) {
+          elements.employeeIdInput.value = employeeId;
+        }
+
+        if (elements.employeeName) {
+          const firstName = employee.firstName || employee.first_name || '';
+          const lastName = employee.lastName || employee.last_name || '';
+          elements.employeeName.value = `${firstName} ${lastName}`;
+        }
+
+        return elements;
+      }
+
+      // Helper to set current status
+      function setCurrentStatus(employee, statusDisplay) {
+        let currentStatus = employee.availabilityStatus || employee.availability_status || 'available';
+
+        if (window.FEATURE_FLAGS?.USE_API_V2_USERS && currentStatus === 'other') {
+          currentStatus = 'unavailable';
+        }
+
+        if (statusDisplay) {
+          const statusMap = new Map([
+            ['available', 'Verfügbar'],
+            ['vacation', 'Urlaub'],
+            ['sick', 'Krank'],
+            ['unavailable', 'Nicht verfügbar'],
+          ]);
+          const statusText = statusMap.get(currentStatus) || 'Verfügbar';
+          statusDisplay.querySelector('span').textContent = statusText;
+        }
+
+        return currentStatus;
+      }
+
+      // Helper to configure date fields
+      function configureDateFields(currentStatus, employee) {
+        const startDateInput = document.querySelector('#availability-start-date');
+        const endDateInput = document.querySelector('#availability-end-date');
+
+        if (!startDateInput || !endDateInput) return;
+
+        const isAvailable = currentStatus === 'available';
+        startDateInput.disabled = isAvailable;
+        endDateInput.disabled = isAvailable;
+
+        if (isAvailable) {
+          startDateInput.value = '';
+          endDateInput.value = '';
+          startDateInput.removeAttribute('required');
+          endDateInput.removeAttribute('required');
+        } else {
+          startDateInput.setAttribute('required', 'required');
+          endDateInput.setAttribute('required', 'required');
+
+          if (employee.availability_start) {
+            startDateInput.value = employee.availability_start.split('T')[0];
+          }
+          if (employee.availability_end) {
+            endDateInput.value = employee.availability_end.split('T')[0];
+          }
+        }
+      }
+
+      // Helper to reset form fields
+      function resetFormFields(currentStatus) {
+        const form = document.querySelector('#employee-status-form');
+        if (!form) return;
+
+        const fields = {
+          startDate: form.querySelector('input[name="start_date"]'),
+          endDate: form.querySelector('input[name="end_date"]'),
+          notes: form.querySelector('textarea[name="notes"]'),
+          hiddenInput: form.querySelector('input[name="status"]'),
+        };
+
+        if (fields.startDate) fields.startDate.value = '';
+        if (fields.endDate) fields.endDate.value = '';
+        if (fields.notes) fields.notes.value = '';
+        if (fields.hiddenInput) fields.hiddenInput.value = currentStatus;
+      }
+
       // Mitarbeiter-Status ändern
       window.changeEmployeeStatus = async function (employeeId) {
         console.info(`Changing status for employee ${employeeId}`);
-        const token = localStorage.getItem('token');
 
         try {
-          // Mitarbeiter-Daten laden
-          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? fetch(`/api/v2/users/${employeeId}`, {
-                method: 'GET',
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                },
-              })
-            : fetch(`/api/users/${employeeId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-              }));
-
-          if (!response.ok) {
-            console.error('Response not OK:', response.status, response.statusText);
-            const errorData = await response.text();
-            console.error('Error data:', errorData);
-            throw new Error('Failed to load employee data');
-          }
-
-          const responseData = await response.json();
-          // Handle v2 API response structure
-          const employee =
-            window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined ? responseData.data || {} : responseData;
+          const employee = await fetchEmployeeData(employeeId);
           console.info('Employee data loaded:', employee);
 
-          // Modal-Felder befüllen
-          console.info('Looking for modal elements...');
-          const modal = document.querySelector('#employee-status-modal');
-          console.info('Modal found:', !!modal);
+          const elements = populateModalFields(employee, employeeId);
 
-          const employeeIdInput = document.querySelector('#status-employee-id');
-          const employeeName = document.querySelector('#status-employee-name');
-          const statusDropdown = document.querySelector('#employee-status-dropdown');
-          const statusDisplay = document.querySelector('#employee-status-display');
-
-          console.info('Elements found:', {
-            employeeIdInput: !!employeeIdInput,
-            employeeName: !!employeeName,
-            statusDropdown: !!statusDropdown,
-            statusDisplay: !!statusDisplay,
-          });
-
-          console.info('DOM Elements:', {
-            employeeIdInput: employeeIdInput,
-            employeeName: employeeName,
-            employeeNameType: employeeName ? employeeName.tagName : 'null',
-          });
-
-          if (employeeIdInput) {
-            employeeIdInput.value = employeeId;
-            console.info('Set employee ID:', employeeId);
-          }
-          if (employeeName) {
-            // Handle both v1 (snake_case) and v2 (camelCase) field names
-            const firstName = employee.firstName || employee.first_name || '';
-            const lastName = employee.lastName || employee.last_name || '';
-            const fullName = `${firstName} ${lastName}`;
-            employeeName.value = fullName;
-            console.info('Set employee name:', fullName);
-          } else {
-            console.error('Employee name input not found! Element might not exist in DOM.');
-            // Try to recover by checking if modal exists
-            const modalCheck = document.querySelector('#employee-status-modal');
-            if (!modalCheck) {
-              console.error('Modal itself not found! Cannot proceed.');
-              alert('Ein Fehler ist aufgetreten. Bitte laden Sie die Seite neu.');
-              return;
-            }
+          if (!elements.employeeName && !document.querySelector('#employee-status-modal')) {
+            alert('Ein Fehler ist aufgetreten. Bitte laden Sie die Seite neu.');
+            return;
           }
 
-          // Aktuellen Status setzen - handle both v1 and v2 field names
-          let currentStatus = employee.availabilityStatus || employee.availability_status || 'available';
-          // Map v2 API's "other" back to "unavailable" for display
-          if (window.FEATURE_FLAGS?.USE_API_V2_USERS && currentStatus === 'other') {
-            currentStatus = 'unavailable';
-          }
-          if (statusDisplay) {
-            // Use Map to avoid object injection vulnerability
-            const statusMap = new Map([
-              ['available', 'Verfügbar'],
-              ['vacation', 'Urlaub'],
-              ['sick', 'Krank'],
-              ['unavailable', 'Nicht verfügbar'],
-            ]);
-            const statusText = statusMap.get(currentStatus) || 'Verfügbar';
-            statusDisplay.querySelector('span').textContent = statusText;
-          }
+          const currentStatus = setCurrentStatus(employee, elements.statusDisplay);
+          configureDateFields(currentStatus, employee);
 
-          // Datumsfelder initial setzen
-          const startDateInput = document.querySelector('#availability-start-date');
-          const endDateInput = document.querySelector('#availability-end-date');
-
-          if (startDateInput && endDateInput) {
-            if (currentStatus === 'available') {
-              // Bei "Verfügbar" Datumsfelder deaktivieren
-              startDateInput.disabled = true;
-              endDateInput.disabled = true;
-              startDateInput.value = '';
-              endDateInput.value = '';
-              startDateInput.removeAttribute('required');
-              endDateInput.removeAttribute('required');
-            } else {
-              // Bei anderen Status Datumsfelder aktivieren und vorhandene Werte setzen
-              startDateInput.disabled = false;
-              endDateInput.disabled = false;
-              startDateInput.setAttribute('required', 'required');
-              endDateInput.setAttribute('required', 'required');
-
-              // Vorhandene Daten setzen falls vorhanden
-              if (employee.availability_start) {
-                startDateInput.value = employee.availability_start.split('T')[0];
-              }
-              if (employee.availability_end) {
-                endDateInput.value = employee.availability_end.split('T')[0];
-              }
-            }
-          }
-
-          // Modal öffnen (reuse the already declared modal variable)
-          if (modal) {
-            modal.style.display = 'flex';
+          if (elements.modal) {
+            elements.modal.style.display = 'flex';
             console.info('Modal opened');
-
-            // Form zurücksetzen - NACH dem Setzen der Werte!
-            // Das war das Problem - form.reset() löscht alle Werte
-            const form = document.querySelector('#employee-status-form');
-            if (form) {
-              // Nur die Date-Felder und Notes zurücksetzen, nicht alle Felder
-              const startDate = form.querySelector('input[name="start_date"]');
-              const endDate = form.querySelector('input[name="end_date"]');
-              const notes = form.querySelector('textarea[name="notes"]');
-
-              if (startDate) startDate.value = '';
-              if (endDate) endDate.value = '';
-              if (notes) notes.value = '';
-
-              // Hidden input für status setzen
-              const hiddenInput = form.querySelector('input[name="status"]');
-              if (hiddenInput) hiddenInput.value = currentStatus;
-            }
+            resetFormFields(currentStatus);
           }
         } catch (error) {
           console.error('Error loading employee for status change:', error);
@@ -1490,77 +1479,81 @@
         }
       }
 
+      // Helper to create team option element
+      function createTeamOption(team) {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'dropdown-option';
+        optionDiv.setAttribute('data-value', team.id.toString());
+
+        const teamDisplay = team.departmentName ? `${team.name} (${team.departmentName})` : team.name;
+        optionDiv.setAttribute('data-text', teamDisplay);
+
+        const iconElement = document.createElement('i');
+        iconElement.className = 'fas fa-users';
+
+        const textNode = document.createTextNode(teamDisplay);
+
+        optionDiv.append(iconElement);
+        optionDiv.append(document.createTextNode(' '));
+        optionDiv.append(textNode);
+
+        return optionDiv;
+      }
+
+      // Helper to populate teams dropdown
+      function populateTeamsDropdown(dropdown, teams) {
+        dropdown.innerHTML = `
+          <div class="dropdown-option" data-value="" data-action="select-dropdown" data-dropdown="employeeTeam" data-display="Kein Team">
+            <i class="fas fa-times-circle"></i> Kein Team
+          </div>
+        `;
+
+        teams.forEach((team) => {
+          dropdown.append(createTeamOption(team));
+        });
+      }
+
       // Lade Teams für Employee Modal
       async function loadTeamsForEmployeeSelect() {
+        if (typeof ApiClient === 'undefined') {
+          console.error('ApiClient not loaded yet');
+          return;
+        }
+
         try {
-          // Ensure ApiClient is available
-          if (typeof ApiClient === 'undefined') {
-            console.error('ApiClient not loaded yet');
-            return;
-          }
-
           const apiClient = new ApiClient();
-
-          // Get selected department to filter teams
           const selectedDeptId = document.querySelector('#employeeDepartmentSelect')?.value;
 
           const response = await apiClient.get('/teams');
-          // API v2 returns { success: true, data: [...] }
           const allTeams = response.data || response;
           const dropdown = document.querySelector('#employeeTeam-dropdown');
 
-          if (dropdown && allTeams) {
-            // Filter teams by department if one is selected
-            let teams = allTeams;
-            if (selectedDeptId) {
-              teams = allTeams.filter((team) => team.departmentId == selectedDeptId);
-            }
+          if (!dropdown || !allTeams) return;
 
-            // Clear existing options and add default
-            dropdown.innerHTML = `
-              <div class="dropdown-option" data-value="" data-action="select-dropdown" data-dropdown="employeeTeam" data-display="Kein Team">
-                <i class="fas fa-times-circle"></i> Kein Team
-              </div>
-            `;
+          const teams = selectedDeptId ? allTeams.filter((team) => team.departmentId == selectedDeptId) : allTeams;
 
-            // Add team options
-            teams.forEach((team) => {
-              const optionDiv = document.createElement('div');
-              optionDiv.className = 'dropdown-option';
-              optionDiv.setAttribute('data-value', team.id.toString());
-              const teamDisplay = team.departmentName ? `${team.name} (${team.departmentName})` : team.name;
-              optionDiv.setAttribute('data-text', teamDisplay);
-              // Escape HTML to prevent XSS
-              const textNode = document.createTextNode(teamDisplay);
-              const iconElement = document.createElement('i');
-              iconElement.className = 'fas fa-users';
-              optionDiv.append(iconElement);
-              optionDiv.append(document.createTextNode(' '));
-              optionDiv.append(textNode);
-              dropdown.append(optionDiv);
-            });
+          populateTeamsDropdown(dropdown, teams);
 
-            // Setup event delegation for dropdown clicks
-            const dropdownEl = document.querySelector('#employee-team-dropdown');
-            if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
-              dropdownEl.setAttribute('data-listener-attached', 'true');
-              dropdownEl.addEventListener('click', (event) => {
-                const target = event.target;
-                const option = target.closest('.dropdown-option');
-                if (option) {
-                  const value = option.getAttribute('data-value') || '';
-                  const text = option.getAttribute('data-text') || '';
-                  if (typeof window.selectDropdownOption === 'function') {
-                    window.selectDropdownOption('employeeTeam', value, text);
-                  }
+          // Setup event delegation for dropdown clicks
+          const dropdownEl = document.querySelector('#employee-team-dropdown');
+          if (dropdownEl && !dropdownEl.hasAttribute('data-listener-attached')) {
+            dropdownEl.setAttribute('data-listener-attached', 'true');
+            dropdownEl.addEventListener('click', (event) => {
+              const target = event.target;
+              const option = target.closest('.dropdown-option');
+              if (option) {
+                const value = option.getAttribute('data-value') || '';
+                const text = option.getAttribute('data-text') || '';
+                if (typeof window.selectDropdownOption === 'function') {
+                  window.selectDropdownOption('employeeTeam', value, text);
                 }
-              });
-            }
-
-            console.info(
-              `Loaded teams for employee select: ${teams.length} teams ${selectedDeptId ? 'for department ' + selectedDeptId : '(all)'}`,
-            );
+              }
+            });
           }
+
+          console.info(
+            `Loaded teams for employee select: ${teams.length} teams ${selectedDeptId ? 'for department ' + selectedDeptId : '(all)'}`,
+          );
         } catch (error) {
           console.error('Error loading teams:', error);
         }
@@ -1655,45 +1648,135 @@
         console.info('Show all employees');
       };
 
+      // Helper to fetch employees
+      async function fetchEmployees() {
+        const token = localStorage.getItem('token');
+        const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+
+        const url = useV2 ? '/api/v2/users?role=employee' : '/api/users?role=employee';
+        const headers = { Authorization: `Bearer ${localStorage.getItem('accessToken') || token}` };
+
+        const response = await fetch(url, {
+          method: 'GET',
+          headers,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load employees');
+        }
+
+        const responseData = await response.json();
+        console.info('Loaded employees response:', responseData);
+
+        // Handle v2 API response structure
+        if (useV2 && responseData.success !== undefined) {
+          return responseData.data || [];
+        }
+        return responseData;
+      }
+
+      // Helper to render empty table
+      function renderEmptyTable(tableBody) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
+          </tr>
+        `;
+      }
+
+      // Helper to get availability status
+      function getEmployeeAvailabilityStatus(employee) {
+        let status = employee.availabilityStatus || employee.availability_status || 'available';
+        if (window.FEATURE_FLAGS?.USE_API_V2_USERS && status === 'other') {
+          status = 'unavailable';
+        }
+        return status;
+      }
+
+      // Helper to calculate effective status based on date range
+      function calculateEffectiveStatus(status, start, end) {
+        if (status === 'available' || !start || !end) {
+          return status;
+        }
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        return today < startDate || today > endDate ? 'available' : status;
+      }
+
+      // Helper to create employee row HTML
+      function createEmployeeRowHtml(employee, effectiveStatus, availabilityStart, availabilityEnd) {
+        const badgeClassMap = new Map([
+          ['available', 'badge-success'],
+          ['vacation', 'badge-warning'],
+          ['sick', 'badge-danger'],
+          ['unavailable', 'badge-secondary'],
+        ]);
+
+        const textMap = new Map([
+          ['available', 'Verfügbar'],
+          ['vacation', 'Urlaub'],
+          ['sick', 'Krank'],
+          ['unavailable', 'Beurlaubt'],
+        ]);
+
+        const badgeClass = badgeClassMap.get(effectiveStatus) || 'badge-success';
+        const statusText = textMap.get(effectiveStatus) || 'Verfügbar';
+
+        const firstName = employee.firstName || employee.first_name || '';
+        const lastName = employee.lastName || employee.last_name || '';
+        const isActive = employee.isActive ?? employee.is_active;
+
+        const dateRange =
+          effectiveStatus !== 'available' && availabilityStart && availabilityEnd
+            ? `<br><small class="text-muted">${new Date(availabilityStart).toLocaleDateString('de-DE')} - ${new Date(availabilityEnd).toLocaleDateString('de-DE')}</small>`
+            : '';
+
+        return `
+          <td>${firstName} ${lastName}</td>
+          <td>${employee.email || ''}</td>
+          <td>${employee.employeeId || employee.employee_id || employee.id || ''}</td>
+          <td>${employee.departmentName || employee.department || 'Keine Abteilung'}</td>
+          <td>
+            <span class="badge ${isActive ? 'badge-success' : 'badge-danger'}">
+              ${isActive ? 'Aktiv' : 'Inaktiv'}
+            </span>
+          </td>
+          <td>
+            <span class="badge ${badgeClass}">
+              ${statusText}
+            </span>
+            ${dateRange}
+          </td>
+          <td>
+            <button class="btn btn-sm btn-info" data-action="change-employee-status" data-employee-id="${employee.id}">
+              <i class="fas fa-user-clock"></i> Status ändern
+            </button>
+            <button class="btn btn-sm btn-secondary" data-action="edit-employee" data-employee-id="${employee.id}">
+              <i class="fas fa-edit"></i> Bearbeiten
+            </button>
+            <a href="/manage-employees" class="btn btn-sm btn-danger">
+              <i class="fas fa-users-cog"></i> Verwalten
+            </a>
+          </td>
+        `;
+      }
+
       // Load employees table
       async function loadEmployeesTable() {
         console.info('Loading employees table...');
-        const token = localStorage.getItem('token');
 
         try {
-          const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-            ? fetch('/api/v2/users?role=employee', {
-                method: 'GET',
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                },
-              })
-            : fetch('/api/users?role=employee', {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }));
+          const employees = await fetchEmployees();
+          console.info('Processed employees:', employees);
 
-          if (!response.ok) {
-            throw new Error('Failed to load employees');
-          }
-
-          const responseData = await response.json();
-          console.info('Loaded employees response:', responseData); // Debug
-
-          // Handle v2 API response structure
-          let employees;
-          if (window.FEATURE_FLAGS?.USE_API_V2_USERS && responseData.success !== undefined) {
-            // v2 API returns { success: true, data: [...] }
-            employees = responseData.data || [];
-          } else {
-            // v1 API returns array directly
-            employees = responseData;
-          }
-
-          console.info('Processed employees:', employees); // Debug
           const tableBody = document.querySelector('#employees-table-body');
-
           if (!tableBody) {
             console.error('employees-table-body not found');
             return;
@@ -1702,120 +1785,19 @@
           tableBody.innerHTML = '';
 
           if (!employees || !Array.isArray(employees) || employees.length === 0) {
-            tableBody.innerHTML = `
-              <tr>
-                <td colspan="8" class="text-center text-muted">Keine Mitarbeiter gefunden</td>
-              </tr>
-            `;
+            renderEmptyTable(tableBody);
             return;
           }
 
           employees.forEach((employee) => {
             const row = document.createElement('tr');
 
-            // Handle both v1 (snake_case) and v2 (camelCase) field names for availability
-            let availabilityStatus = employee.availabilityStatus || employee.availability_status || 'available';
-            // Map v2 API's "other" back to "unavailable" for display
-            if (window.FEATURE_FLAGS?.USE_API_V2_USERS && availabilityStatus === 'other') {
-              availabilityStatus = 'unavailable';
-            }
+            const availabilityStatus = getEmployeeAvailabilityStatus(employee);
             const availabilityStart = employee.availabilityStart || employee.availability_start;
             const availabilityEnd = employee.availabilityEnd || employee.availability_end;
+            const effectiveStatus = calculateEffectiveStatus(availabilityStatus, availabilityStart, availabilityEnd);
 
-            // Verfügbarkeitsstatus bestimmen - prüfe ob innerhalb des Datumbereichs
-            let effectiveStatus = availabilityStatus;
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Zeit auf Mitternacht setzen für korrekten Vergleich
-
-            // Debug-Ausgabe für ersten Mitarbeiter
-            if (employee.id === 19) {
-              console.info('Employee 19 debug:', {
-                availability_status: availabilityStatus,
-                availability_start: availabilityStart,
-                availability_end: availabilityEnd,
-                today: today.toISOString(),
-              });
-            }
-
-            // Prüfe ob Verfügbarkeitsdaten vorhanden sind und ob wir im Zeitraum sind
-            if (availabilityStatus !== 'available' && availabilityStart && availabilityEnd) {
-              const startDate = new Date(availabilityStart);
-              const endDate = new Date(availabilityEnd);
-              startDate.setHours(0, 0, 0, 0);
-              endDate.setHours(23, 59, 59, 999);
-
-              // Debug für Employee 19
-              if (employee.id === 19) {
-                console.info('Date comparison:', {
-                  startDate: startDate.toISOString(),
-                  endDate: endDate.toISOString(),
-                  todayIsAfterStart: today >= startDate,
-                  todayIsBeforeEnd: today <= endDate,
-                  shouldShowStatus: today >= startDate && today <= endDate,
-                });
-              }
-
-              // Wenn heute außerhalb des Zeitraums liegt, ist der Mitarbeiter verfügbar
-              if (today < startDate || today > endDate) {
-                effectiveStatus = 'available';
-              }
-            }
-
-            // Use Map to avoid object injection vulnerability
-            const badgeClassMap = new Map([
-              ['available', 'badge-success'],
-              ['vacation', 'badge-warning'],
-              ['sick', 'badge-danger'],
-              ['unavailable', 'badge-secondary'],
-            ]);
-            const availabilityBadgeClass = badgeClassMap.get(effectiveStatus) || 'badge-success';
-
-            // Use Map to avoid object injection vulnerability
-            const availabilityTextMap = new Map([
-              ['available', 'Verfügbar'],
-              ['vacation', 'Urlaub'],
-              ['sick', 'Krank'],
-              ['unavailable', 'Beurlaubt'],
-            ]);
-            const availabilityText = availabilityTextMap.get(effectiveStatus) || 'Verfügbar';
-
-            // Handle both v1 (snake_case) and v2 (camelCase) field names
-            const firstName = employee.firstName || employee.first_name || '';
-            const lastName = employee.lastName || employee.last_name || '';
-
-            // Safe: HTML is generated from server data and sanitized with dom-utils
-            const rowHtml = `
-              <td>${firstName} ${lastName}</td>
-              <td>${employee.email || ''}</td>
-              <td>${employee.employeeId || employee.employee_id || employee.id || ''}</td>
-              <td>${employee.departmentName || employee.department || 'Keine Abteilung'}</td>
-              <td>
-                <span class="badge ${(employee.isActive ?? employee.is_active) ? 'badge-success' : 'badge-danger'}">
-                  ${(employee.isActive ?? employee.is_active) ? 'Aktiv' : 'Inaktiv'}
-                </span>
-              </td>
-              <td>
-                <span class="badge ${availabilityBadgeClass}">
-                  ${availabilityText}
-                </span>
-                ${
-                  effectiveStatus !== 'available' && availabilityStart && availabilityEnd
-                    ? `<br><small class="text-muted">${new Date(availabilityStart).toLocaleDateString('de-DE')} - ${new Date(availabilityEnd).toLocaleDateString('de-DE')}</small>`
-                    : ''
-                }
-              </td>
-              <td>
-                <button class="btn btn-sm btn-info" data-action="change-employee-status" data-employee-id="${employee.id}">
-                  <i class="fas fa-user-clock"></i> Status ändern
-                </button>
-                <button class="btn btn-sm btn-secondary" data-action="edit-employee" data-employee-id="${employee.id}">
-                  <i class="fas fa-edit"></i> Bearbeiten
-                </button>
-                <a href="/manage-employees" class="btn btn-sm btn-danger">
-                  <i class="fas fa-users-cog"></i> Verwalten
-                </a>
-              </td>
-            `;
+            const rowHtml = createEmployeeRowHtml(employee, effectiveStatus, availabilityStart, availabilityEnd);
             // Use dom-utils setHTML for safe sanitization
             window.setHTML(row, rowHtml);
             tableBody.append(row);
@@ -1881,18 +1863,98 @@
         window.loadDashboardStats = window.loadDashboardStats || (() => console.info('loadDashboardStats not implemented'));
       });
 
+      // Helper to prepare form for edit mode
+      function prepareEditForm(form, employeeId) {
+        form.dataset.employeeId = employeeId;
+        form.dataset.mode = 'edit';
+
+        // Make password fields optional
+        const passwordInput = form.querySelector('input[name="password"]');
+        const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
+        if (passwordInput) passwordInput.removeAttribute('required');
+        if (passwordConfirmInput) passwordConfirmInput.removeAttribute('required');
+
+        // Hide email confirm field
+        const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
+        if (emailConfirmGroup) emailConfirmGroup.style.display = 'none';
+
+        // Change submit button text
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+          submitBtn.innerHTML = '<i class="fas fa-save"></i> Änderungen speichern';
+        }
+      }
+
+      // Helper to fill basic form fields
+      function fillBasicFields(form, employee) {
+        const fieldMap = {
+          username: employee.username,
+          email: employee.email,
+          firstName: employee.first_name || employee.firstName,
+          lastName: employee.last_name || employee.lastName,
+          phone: employee.phone,
+          position: employee.position,
+          employeeNumber: employee.employee_id || employee.employeeId,
+        };
+
+        Object.entries(fieldMap).forEach(([name, value]) => {
+          const input = form.querySelector(`input[name="${name}"]`);
+          if (input && value) input.value = value;
+        });
+
+        // Handle birthday separately
+        const birthdayInput = form.querySelector('input[name="birthday"]');
+        if (birthdayInput && employee.birthday) {
+          birthdayInput.value = employee.birthday.split('T')[0];
+        }
+      }
+
+      // Helper to set a single dropdown
+      function setDropdown(type, id, name) {
+        if (!id || typeof window.selectDropdownOption !== 'function') return;
+        window.selectDropdownOption(type, id, name);
+      }
+
+      // Helper to set dropdown values
+      function setDropdownValues(employee) {
+        // Set department
+        const deptId = employee.department_id || employee.departmentId;
+        const deptName = employee.department_name || employee.departmentName || 'Unbekannte Abteilung';
+        setDropdown('employee-department', deptId, deptName);
+
+        // Set team
+        const teamId = employee.team_id || employee.teamId;
+        const teamName = employee.team_name || employee.teamName || 'Unbekanntes Team';
+        setDropdown('employee-team', teamId, teamName);
+
+        // Set active status
+        const isActive = employee.is_active !== undefined ? employee.is_active : 1;
+        if (typeof window.selectActiveStatusOption === 'function') {
+          window.selectActiveStatusOption(isActive ? '1' : '0', isActive ? 'Aktiv' : 'Inaktiv');
+        }
+      }
+
+      // Helper to load dropdown data
+      function loadDropdownData(employee) {
+        if (typeof loadDepartmentsForEmployeeSelect === 'function') {
+          loadDepartmentsForEmployeeSelect();
+        }
+
+        const deptId = employee.department_id || employee.departmentId;
+        if (deptId && typeof loadTeamsForEmployeeSelect === 'function') {
+          loadTeamsForEmployeeSelect(deptId);
+        }
+      }
+
       // Edit employee - Opens the employee modal with existing data
       async function editEmployee(employeeId) {
         console.info(`Editing employee ${employeeId}`);
         const token = localStorage.getItem('token');
 
         try {
-          // Load employee data
           const response = await fetch(`/api/v2/users/${employeeId}`, {
             method: 'GET',
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+            headers: { Authorization: `Bearer ${token}` },
           });
 
           if (!response.ok) {
@@ -1903,110 +1965,27 @@
           const employee = responseData.data || responseData;
           console.info('Employee data loaded:', employee);
 
-          // Open the employee modal
           const modal = document.querySelector('#employee-modal');
-          if (modal) {
-            modal.style.display = 'flex';
+          if (!modal) return;
 
-            // Change modal title
-            const modalTitle = modal.querySelector('.modal-title');
-            if (modalTitle) {
-              modalTitle.textContent = 'Mitarbeiter bearbeiten';
-            }
+          modal.style.display = 'flex';
 
-            // Fill the form with employee data
-            const form = document.querySelector('#create-employee-form');
-            if (form) {
-              // Store employee ID for update
-              form.dataset.employeeId = employeeId;
-              form.dataset.mode = 'edit';
-
-              // Make password fields optional for edit mode
-              const passwordInput = form.querySelector('input[name="password"]');
-              const passwordConfirmInput = form.querySelector('input[name="passwordConfirm"]');
-              if (passwordInput) passwordInput.removeAttribute('required');
-              if (passwordConfirmInput) passwordConfirmInput.removeAttribute('required');
-
-              // Hide email confirm field for edit mode
-              const emailConfirmGroup = form.querySelector('input[name="emailConfirm"]')?.closest('.form-group');
-              if (emailConfirmGroup) emailConfirmGroup.style.display = 'none';
-
-              // Fill basic fields
-              const usernameInput = form.querySelector('input[name="username"]');
-              if (usernameInput) usernameInput.value = employee.username || '';
-
-              const emailInput = form.querySelector('input[name="email"]');
-              if (emailInput) emailInput.value = employee.email || '';
-
-              const firstNameInput = form.querySelector('input[name="firstName"]');
-              if (firstNameInput) firstNameInput.value = employee.first_name || employee.firstName || '';
-
-              const lastNameInput = form.querySelector('input[name="lastName"]');
-              if (lastNameInput) lastNameInput.value = employee.last_name || employee.lastName || '';
-
-              const phoneInput = form.querySelector('input[name="phone"]');
-              if (phoneInput) phoneInput.value = employee.phone || '';
-
-              const positionInput = form.querySelector('input[name="position"]');
-              if (positionInput) positionInput.value = employee.position || '';
-
-              const employeeNumberInput = form.querySelector('input[name="employeeNumber"]');
-              if (employeeNumberInput) employeeNumberInput.value = employee.employee_id || employee.employeeId || '';
-
-              const birthdayInput = form.querySelector('input[name="birthday"]');
-              if (birthdayInput && employee.birthday) {
-                birthdayInput.value = employee.birthday.split('T')[0];
-              }
-
-              // Set department dropdown
-              if (employee.department_id || employee.departmentId) {
-                const deptId = employee.department_id || employee.departmentId;
-                const deptName = employee.department_name || employee.departmentName || 'Unbekannte Abteilung';
-                if (typeof window.selectDropdownOption === 'function') {
-                  window.selectDropdownOption('employee-department', deptId, deptName);
-                }
-              }
-
-              // Set team dropdown if exists
-              if (employee.team_id || employee.teamId) {
-                const teamId = employee.team_id || employee.teamId;
-                const teamName = employee.team_name || employee.teamName || 'Unbekanntes Team';
-                if (typeof window.selectDropdownOption === 'function') {
-                  window.selectDropdownOption('employee-team', teamId, teamName);
-                }
-              }
-
-              // Set active status
-              const isActive = employee.is_active !== undefined ? employee.is_active : 1;
-              if (typeof window.selectActiveStatusOption === 'function') {
-                window.selectActiveStatusOption(isActive ? '1' : '0', isActive ? 'Aktiv' : 'Inaktiv');
-              }
-
-              // Change submit button text
-              const submitBtn = form.querySelector('button[type="submit"]');
-              if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fas fa-save"></i> Änderungen speichern';
-              }
-
-              // Load departments and teams for dropdowns
-              if (typeof loadDepartmentsForEmployeeSelect === 'function') {
-                loadDepartmentsForEmployeeSelect();
-              }
-              if (employee.department_id || employee.departmentId) {
-                const deptId = employee.department_id || employee.departmentId;
-                if (typeof loadTeamsForEmployeeSelect === 'function') {
-                  loadTeamsForEmployeeSelect(deptId);
-                }
-              }
-            }
+          const modalTitle = modal.querySelector('.modal-title');
+          if (modalTitle) {
+            modalTitle.textContent = 'Mitarbeiter bearbeiten';
           }
+
+          const form = document.querySelector('#create-employee-form');
+          if (!form) return;
+
+          prepareEditForm(form, employeeId);
+          fillBasicFields(form, employee);
+          setDropdownValues(employee);
+          loadDropdownData(employee);
         } catch (error) {
           console.error('Error loading employee:', error);
-          if (typeof window.showError === 'function') {
-            window.showError('Fehler beim Laden der Mitarbeiterdaten');
-          } else {
-            alert('Fehler beim Laden der Mitarbeiterdaten');
-          }
+          const showError = typeof window.showError === 'function' ? window.showError : alert;
+          showError('Fehler beim Laden der Mitarbeiterdaten');
         }
       }
 
@@ -2540,27 +2519,34 @@
         const floatingBtnMachine = document.querySelector('#floating-add-machine');
         const floatingBtnArea = document.querySelector('#floating-add-area');
 
+        // Helper to hide all floating buttons
+        function hideAllButtons() {
+          const buttons = [floatingBtnEmployee, floatingBtnTeam, floatingBtnMachine, floatingBtnArea];
+          buttons.forEach((btn) => {
+            if (btn) btn.style.display = 'none';
+          });
+        }
+
+        // Helper to show specific button
+        function showButton(section) {
+          const buttonMap = new Map([
+            ['employees', floatingBtnEmployee],
+            ['teams', floatingBtnTeam],
+            ['machines', floatingBtnMachine],
+            ['areas', floatingBtnArea],
+          ]);
+
+          const button = buttonMap.get(section);
+          if (button) button.style.display = 'flex';
+        }
+
         // Function to check which section is active
         function updateFloatingButton() {
           const urlParams = new URLSearchParams(window.location.search);
           const section = urlParams.get('section');
 
-          // Hide all buttons first
-          if (floatingBtnEmployee) floatingBtnEmployee.style.display = 'none';
-          if (floatingBtnTeam) floatingBtnTeam.style.display = 'none';
-          if (floatingBtnMachine) floatingBtnMachine.style.display = 'none';
-          if (floatingBtnArea) floatingBtnArea.style.display = 'none';
-
-          // Show the appropriate button
-          if (section === 'employees' && floatingBtnEmployee) {
-            floatingBtnEmployee.style.display = 'flex';
-          } else if (section === 'teams' && floatingBtnTeam) {
-            floatingBtnTeam.style.display = 'flex';
-          } else if (section === 'machines' && floatingBtnMachine) {
-            floatingBtnMachine.style.display = 'flex';
-          } else if (section === 'areas' && floatingBtnArea) {
-            floatingBtnArea.style.display = 'flex';
-          }
+          hideAllButtons();
+          if (section) showButton(section);
         }
 
         // Check on page load

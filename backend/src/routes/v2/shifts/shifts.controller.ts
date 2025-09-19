@@ -84,6 +84,60 @@ interface SwapRequestCreateData {
 // ============= SHIFTS CRUD =============
 
 /**
+ * Parse query parameter as integer or return undefined
+ */
+function parseIntParam(value: unknown): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return Number.parseInt(value as string);
+}
+
+/**
+ * Parse query parameter with default value
+ */
+function parseParamWithDefault<T>(value: unknown, defaultValue: T): T {
+  return value !== undefined ? (value as T) : defaultValue;
+}
+
+/**
+ * Extract and parse filter parameters from request query
+ */
+function parseShiftFilters(query: AuthenticatedRequest['query']): {
+  date: string;
+  startDate: string;
+  endDate: string;
+  userId: number | undefined;
+  departmentId: number | undefined;
+  teamId: number | undefined;
+  status: string;
+  type: string;
+  templateId: number | undefined;
+  planId: number | undefined;
+  page: number;
+  limit: number;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+} {
+  return {
+    date: query.date as string,
+    startDate: query.startDate as string,
+    endDate: query.endDate as string,
+    userId: parseIntParam(query.userId),
+    departmentId: parseIntParam(query.departmentId),
+    teamId: parseIntParam(query.teamId),
+    status: query.status as string,
+    type: query.type as string,
+    templateId: parseIntParam(query.templateId),
+    planId: parseIntParam(query.planId),
+    page: parseParamWithDefault(parseIntParam(query.page), 1),
+    limit: parseParamWithDefault(parseIntParam(query.limit), 20),
+    sortBy: parseParamWithDefault(query.sortBy, 'date') as string,
+    sortOrder: parseParamWithDefault(query.sortOrder, 'desc') as 'asc' | 'desc',
+  };
+}
+
+/**
  * List all shifts with filters
  * @param req - The authenticated request
  * @param res - The response object
@@ -91,33 +145,7 @@ interface SwapRequestCreateData {
  */
 export async function listShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      date: req.query.date as string,
-      startDate: req.query.startDate as string,
-      endDate: req.query.endDate as string,
-      userId:
-        req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : undefined,
-      departmentId:
-        req.query.departmentId !== undefined ?
-          Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId:
-        req.query.teamId !== undefined ? Number.parseInt(req.query.teamId as string) : undefined,
-      status: req.query.status as string,
-      type: req.query.type as string,
-      templateId:
-        req.query.templateId !== undefined ?
-          Number.parseInt(req.query.templateId as string)
-        : undefined,
-      planId:
-        req.query.planId !== undefined ? Number.parseInt(req.query.planId as string) : undefined,
-      page: req.query.page !== undefined ? Number.parseInt(req.query.page as string) : 1,
-      limit: req.query.limit !== undefined ? Number.parseInt(req.query.limit as string) : 20,
-      sortBy: req.query.sortBy !== undefined ? (req.query.sortBy as string) : 'date',
-      sortOrder:
-        req.query.sortOrder !== undefined ? (req.query.sortOrder as 'asc' | 'desc') : 'desc',
-    };
-
+    const filters = parseShiftFilters(req.query);
     const shifts = await shiftsService.listShifts(req.user.tenant_id, filters);
 
     // TODO: Implement proper pagination
@@ -554,6 +582,51 @@ export async function getOvertimeReport(req: AuthenticatedRequest, res: Response
 // ============= EXPORT =============
 
 /**
+ * Extract and parse export filter parameters from request query
+ */
+function parseExportFilters(query: AuthenticatedRequest['query']): {
+  startDate: string;
+  endDate: string;
+  departmentId: number | undefined;
+  teamId: number | undefined;
+  userId: number | undefined;
+} {
+  return {
+    startDate: query.startDate as string,
+    endDate: query.endDate as string,
+    departmentId: parseIntParam(query.departmentId),
+    teamId: parseIntParam(query.teamId),
+    userId: parseIntParam(query.userId),
+  };
+}
+
+/**
+ * Get export format from query or return default
+ */
+function getExportFormat(query: AuthenticatedRequest['query']): 'csv' | 'excel' {
+  return parseParamWithDefault(query.format, 'csv') as 'csv' | 'excel';
+}
+
+/**
+ * Handle export error response
+ */
+function handleExportError(error: unknown, res: Response): void {
+  if (error instanceof ServiceError && error.code === 'NOT_IMPLEMENTED') {
+    res.status(501).json(errorResponse('NOT_IMPLEMENTED', error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : 'Failed to export shifts',
+      ),
+    );
+}
+
+/**
  * List all shifts with filters
  * @param req - The authenticated request
  * @param res - The response object
@@ -561,20 +634,8 @@ export async function getOvertimeReport(req: AuthenticatedRequest, res: Response
  */
 export async function exportShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      startDate: req.query.startDate as string,
-      endDate: req.query.endDate as string,
-      departmentId:
-        req.query.departmentId !== undefined ?
-          Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId:
-        req.query.teamId !== undefined ? Number.parseInt(req.query.teamId as string) : undefined,
-      userId:
-        req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : undefined,
-    };
-
-    const format = req.query.format !== undefined ? (req.query.format as 'csv' | 'excel') : 'csv';
+    const filters = parseExportFilters(req.query);
+    const format = getExportFormat(req.query);
     const csvData = await shiftsService.exportShifts(filters, req.user.tenant_id, format);
 
     res.setHeader('Content-Type', 'text/csv');
@@ -584,18 +645,7 @@ export async function exportShifts(req: AuthenticatedRequest, res: Response): Pr
     );
     res.send(csvData);
   } catch (error: unknown) {
-    if (error instanceof ServiceError && error.code === 'NOT_IMPLEMENTED') {
-      res.status(501).json(errorResponse('NOT_IMPLEMENTED', error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to export shifts',
-          ),
-        );
-    }
+    handleExportError(error, res);
   }
 }
 
@@ -647,46 +697,92 @@ export async function createShiftPlan(req: AuthenticatedRequest, res: Response):
 }
 
 /**
+ * Extract and parse shift plan filter parameters from request query
+ */
+function parseShiftPlanFilters(query: AuthenticatedRequest['query']): {
+  areaId: number | undefined;
+  departmentId: number | undefined;
+  teamId: number | undefined;
+  machineId: number | undefined;
+  startDate: string;
+  endDate: string;
+} {
+  return {
+    areaId: parseIntParam(query.areaId),
+    departmentId: parseIntParam(query.departmentId),
+    teamId: parseIntParam(query.teamId),
+    machineId: parseIntParam(query.machineId),
+    startDate: query.startDate as string,
+    endDate: query.endDate as string,
+  };
+}
+
+/**
+ * Handle shift plan error response
+ */
+function handleShiftPlanError(error: unknown, res: Response, operation: string): void {
+  if (error instanceof ServiceError) {
+    res.status(400).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : `Failed to ${operation}`,
+      ),
+    );
+}
+
+/**
  * Get shift plan with shifts and notes
  * @param req - The authenticated request
  * @param res - The response object
  */
 export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      areaId:
-        req.query.areaId !== undefined ? Number.parseInt(req.query.areaId as string) : undefined,
-      departmentId:
-        req.query.departmentId !== undefined ?
-          Number.parseInt(req.query.departmentId as string)
-        : undefined,
-      teamId:
-        req.query.teamId !== undefined ? Number.parseInt(req.query.teamId as string) : undefined,
-      machineId:
-        req.query.machineId !== undefined ?
-          Number.parseInt(req.query.machineId as string)
-        : undefined,
-      startDate: req.query.startDate as string,
-      endDate: req.query.endDate as string,
-    };
-
+    const filters = parseShiftPlanFilters(req.query);
     const result = await shiftsService.getShiftPlan(filters, req.user.tenant_id);
-
     res.json(successResponse(result, 'Shift plan retrieved successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res.status(400).json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to get shift plan',
-          ),
-        );
-    }
+    handleShiftPlanError(error, res, 'get shift plan');
   }
+}
+
+/**
+ * Validate and parse plan ID from request params
+ */
+function validatePlanId(params: AuthenticatedRequest['params'], res: Response): number | null {
+  const planId = Number.parseInt(params.id);
+
+  if (Number.isNaN(planId)) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Invalid plan ID'));
+    return null;
+  }
+
+  return planId;
+}
+
+/**
+ * Handle shift plan update error response
+ */
+function handleShiftPlanUpdateError(error: unknown, res: Response): void {
+  if (error instanceof ServiceError) {
+    const status = error.code === 'NOT_FOUND' ? 404 : 400;
+    res.status(status).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : 'Failed to update shift plan',
+      ),
+    );
 }
 
 /**
@@ -696,10 +792,8 @@ export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function updateShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const planId = Number.parseInt(req.params.id);
-
-    if (Number.isNaN(planId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid plan ID'));
+    const planId = validatePlanId(req.params, res);
+    if (planId === null) {
       return;
     }
 
@@ -730,20 +824,7 @@ export async function updateShiftPlan(req: AuthenticatedRequest, res: Response):
 
     res.json(successResponse(result, 'Shift plan updated successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res
-        .status(error.code === 'NOT_FOUND' ? 404 : 400)
-        .json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to update shift plan',
-          ),
-        );
-    }
+    handleShiftPlanUpdateError(error, res);
   }
 }
 
@@ -808,36 +889,74 @@ export async function createFavorite(req: AuthenticatedRequest, res: Response): 
 }
 
 /**
+ * Validate and parse favorite ID from request params
+ */
+function validateFavoriteId(params: AuthenticatedRequest['params'], res: Response): number | null {
+  const favoriteId = Number.parseInt(params.id, 10);
+
+  if (Number.isNaN(favoriteId)) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Invalid favorite ID'));
+    return null;
+  }
+
+  return favoriteId;
+}
+
+/**
+ * Handle delete operation error response
+ */
+function handleDeleteError(error: unknown, res: Response, resource: string): void {
+  if (error instanceof ServiceError) {
+    const status = error.code === 'NOT_FOUND' ? 404 : 400;
+    res.status(status).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : `Failed to delete ${resource}`,
+      ),
+    );
+}
+
+/**
  * Delete shift planning favorite
  */
 export async function deleteFavorite(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const favoriteId = Number.parseInt(req.params.id, 10);
-
-    if (Number.isNaN(favoriteId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid favorite ID'));
+    const favoriteId = validateFavoriteId(req.params, res);
+    if (favoriteId === null) {
       return;
     }
 
     await shiftsService.deleteFavorite(favoriteId, req.user.tenant_id, req.user.id);
-
     res.json(successResponse(null, 'Favorite deleted successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res
-        .status(error.code === 'NOT_FOUND' ? 404 : 400)
-        .json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to delete favorite',
-          ),
-        );
-    }
+    handleDeleteError(error, res, 'favorite');
   }
+}
+
+/**
+ * Handle delete shift plan error response (403 for permission errors)
+ */
+function handleDeleteShiftPlanError(error: unknown, res: Response): void {
+  if (error instanceof ServiceError) {
+    const status = error.code === 'NOT_FOUND' ? 404 : 403;
+    res.status(status).json(errorResponse(error.code, error.message));
+    return;
+  }
+
+  res
+    .status(500)
+    .json(
+      errorResponse(
+        ERROR_CODES.SERVER_ERROR,
+        error instanceof Error ? error.message : 'Failed to delete shift plan',
+      ),
+    );
 }
 
 /**
@@ -845,32 +964,15 @@ export async function deleteFavorite(req: AuthenticatedRequest, res: Response): 
  */
 export async function deleteShiftPlan(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const planId = Number(req.params.id);
-
-    if (Number.isNaN(planId)) {
-      res.status(400).json(errorResponse('INVALID_INPUT', 'Invalid plan ID'));
+    const planId = validatePlanId(req.params, res);
+    if (planId === null) {
       return;
     }
 
-    // Delete the shift plan and associated shifts
     await shiftsService.deleteShiftPlan(planId, req.user.tenant_id);
-
     res.json(successResponse(null, 'Shift plan deleted successfully'));
   } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      res
-        .status(error.code === 'NOT_FOUND' ? 404 : 403)
-        .json(errorResponse(error.code, error.message));
-    } else {
-      res
-        .status(500)
-        .json(
-          errorResponse(
-            ERROR_CODES.SERVER_ERROR,
-            error instanceof Error ? error.message : 'Failed to delete shift plan',
-          ),
-        );
-    }
+    handleDeleteShiftPlanError(error, res);
   }
 }
 

@@ -41,6 +41,98 @@ interface MockDocument extends RowDataPacket {
   upload_date: Date;
 }
 
+// Helper functions for mock queries
+function getMockEmployees<T>(): Promise<[T, mysql.FieldPacket[]]> {
+  return Promise.resolve([[[] as MockUser[]], []] as unknown as [T, mysql.FieldPacket[]]);
+}
+
+function getMockDepartments<T>(): Promise<[T, mysql.FieldPacket[]]> {
+  const departments = [
+    { id: 1, name: 'Entwicklung', description: 'Software-Entwicklung', status: 'active' },
+    { id: 2, name: 'Marketing', description: 'Marketing und Verkauf', status: 'active' },
+  ] as MockDepartment[];
+  return Promise.resolve([[[...departments]], []] as unknown as [T, mysql.FieldPacket[]]);
+}
+
+function getMockDocuments<T>(): Promise<[T, mysql.FieldPacket[]]> {
+  const documents = [
+    {
+      id: 1,
+      user_id: 1,
+      file_name: 'Arbeitsvertrag.pdf',
+      category: 'Vertrag',
+      upload_date: new Date(),
+    },
+    {
+      id: 2,
+      user_id: 2,
+      file_name: 'Gehaltsabrechnung.pdf',
+      category: 'Gehaltsabrechnung',
+      upload_date: new Date(),
+    },
+  ] as MockDocument[];
+  return Promise.resolve([[[...documents]], []] as unknown as [T, mysql.FieldPacket[]]);
+}
+
+function getMockCount<T>(count: number): Promise<[T, mysql.FieldPacket[]]> {
+  return Promise.resolve([[[{ count }] as RowDataPacket[]], []] as unknown as [
+    T,
+    mysql.FieldPacket[],
+  ]);
+}
+
+function getMockUserByUsername<T>(params?: unknown[]): Promise<[T, mysql.FieldPacket[]]> {
+  if (params !== undefined && params[0] === 'admin') {
+    const adminUser = {
+      id: 999,
+      username: 'admin',
+      password: '$2b$10$0h85p.WVUvyRJ1taW9vEvehv7Lz.GcMRkRdSOWLG.GaOSydbE8u3a',
+      first_name: 'Admin',
+      last_name: 'User',
+      email: 'admin@example.com',
+      role: 'admin',
+    } as MockUser;
+    return Promise.resolve([[[[adminUser]]], []] as unknown as [T, mysql.FieldPacket[]]);
+  }
+  return Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
+}
+
+function getMockUserById<T>(params?: unknown[]): Promise<[T, mysql.FieldPacket[]]> {
+  const userId = params !== undefined ? params[0] : null;
+  if (userId === 999) {
+    const adminUser = {
+      id: 999,
+      username: 'admin',
+      first_name: 'Admin',
+      last_name: 'User',
+      email: 'admin@example.com',
+      role: 'admin',
+      department_id: null,
+      department_name: null,
+    } as MockUser;
+    return Promise.resolve([[[[adminUser]]], []] as unknown as [T, mysql.FieldPacket[]]);
+  }
+  return Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
+}
+
+function getMockMutationResult<T>(): Promise<[T, mysql.FieldPacket[]]> {
+  return Promise.resolve([[{ affectedRows: 1 } as ResultSetHeader], []] as unknown as [
+    T,
+    mysql.FieldPacket[],
+  ]);
+}
+
+function getMockInsertResult<T>(): Promise<[T, mysql.FieldPacket[]]> {
+  return Promise.resolve([[{ insertId: 4 } as ResultSetHeader], []] as unknown as [
+    T,
+    mysql.FieldPacket[],
+  ]);
+}
+
+function getEmptyResult<T>(): Promise<[T, mysql.FieldPacket[]]> {
+  return Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
+}
+
 if (USE_MOCK_DB) {
   // Mock-Implementierung
   const mockDb: MockDatabase = {
@@ -48,133 +140,55 @@ if (USE_MOCK_DB) {
       sql: string,
       params?: unknown[],
     ): Promise<[T, mysql.FieldPacket[]]> {
-      // Einfache Mock-Daten für Entwicklung
+      // Employee queries
       if (sql.includes('SELECT * FROM users WHERE role = "employee"')) {
-        return await Promise.resolve([[[] as MockUser[]], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ]);
-      } else if (sql.includes('SELECT * FROM departments')) {
-        return await Promise.resolve([
-          [
-            [
-              {
-                id: 1,
-                name: 'Entwicklung',
-                description: 'Software-Entwicklung',
-                status: 'active',
-              },
-              {
-                id: 2,
-                name: 'Marketing',
-                description: 'Marketing und Verkauf',
-                status: 'active',
-              },
-            ] as MockDepartment[],
-          ],
-          [],
-        ] as unknown as [T, mysql.FieldPacket[]]);
-      } else if (sql.includes('SELECT * FROM documents')) {
-        return await Promise.resolve([
-          [
-            [
-              {
-                id: 1,
-                user_id: 1,
-                file_name: 'Arbeitsvertrag.pdf',
-                category: 'Vertrag',
-                upload_date: new Date(),
-              },
-              {
-                id: 2,
-                user_id: 2,
-                file_name: 'Gehaltsabrechnung.pdf',
-                category: 'Gehaltsabrechnung',
-                upload_date: new Date(),
-              },
-            ] as MockDocument[],
-          ],
-          [],
-        ] as unknown as [T, mysql.FieldPacket[]]);
-      } else if (sql.includes('COUNT(*) as count FROM users')) {
-        return await Promise.resolve([[[{ count: 0 }] as RowDataPacket[]], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ]);
-      } else if (
+        return await getMockEmployees<T>();
+      }
+
+      // Department queries
+      if (sql.includes('SELECT * FROM departments')) {
+        return await getMockDepartments<T>();
+      }
+
+      // Document queries
+      if (sql.includes('SELECT * FROM documents')) {
+        return await getMockDocuments<T>();
+      }
+
+      // Count queries
+      if (sql.includes('COUNT(*) as count FROM users')) {
+        return await getMockCount<T>(0);
+      }
+      if (
         sql.includes('COUNT(*) as count FROM departments') ||
         sql.includes('COUNT(*) as count FROM documents')
       ) {
-        return await Promise.resolve([[[{ count: 2 }] as RowDataPacket[]], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ]);
-      } else if (sql.includes('SELECT * FROM users WHERE username = ?')) {
-        if (params !== undefined && params[0] === 'admin') {
-          return await Promise.resolve([
-            [
-              [
-                {
-                  id: 999,
-                  username: 'admin',
-                  password: '$2b$10$0h85p.WVUvyRJ1taW9vEvehv7Lz.GcMRkRdSOWLG.GaOSydbE8u3a',
-                  first_name: 'Admin',
-                  last_name: 'User',
-                  email: 'admin@example.com',
-                  role: 'admin',
-                },
-              ] as MockUser[],
-            ],
-            [],
-          ] as unknown as [T, mysql.FieldPacket[]]);
-        }
-        return await Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
-      } else if (
-        sql.includes(
-          'SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d ON u.department_id = d.id WHERE u.id = ?',
-        )
+        return await getMockCount<T>(2);
+      }
+
+      // User queries
+      if (sql.includes('SELECT * FROM users WHERE username = ?')) {
+        return await getMockUserByUsername<T>(params);
+      }
+      if (
+        sql.includes('SELECT u.*, d.name as department_name FROM users u LEFT JOIN departments d')
       ) {
-        // Mock für findById
-        const userId = params !== undefined ? params[0] : null;
-        if (userId === 999) {
-          return await Promise.resolve([
-            [
-              [
-                {
-                  id: 999,
-                  username: 'admin',
-                  first_name: 'Admin',
-                  last_name: 'User',
-                  email: 'admin@example.com',
-                  role: 'admin',
-                  department_id: null,
-                  department_name: null,
-                },
-              ] as MockUser[],
-            ],
-            [],
-          ] as unknown as [T, mysql.FieldPacket[]]);
-        }
-        return await Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
-      } else if (
+        return await getMockUserById<T>(params);
+      }
+
+      // Mutation queries
+      if (
         (sql.includes('UPDATE users SET') && sql.includes('WHERE id = ?')) ||
         sql.includes('DELETE FROM users WHERE id = ?')
       ) {
-        // Mock für update/delete
-        return await Promise.resolve([[{ affectedRows: 1 } as ResultSetHeader], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ]);
-      } else if (sql.includes('INSERT INTO users')) {
-        // Mock für create
-        return await Promise.resolve([[{ insertId: 4 } as ResultSetHeader], []] as unknown as [
-          T,
-          mysql.FieldPacket[],
-        ]);
+        return await getMockMutationResult<T>();
+      }
+      if (sql.includes('INSERT INTO users')) {
+        return await getMockInsertResult<T>();
       }
 
-      // Standardantwort für nicht implementierte Abfragen
-      return await Promise.resolve([[[]], []] as unknown as [T, mysql.FieldPacket[]]);
+      // Default for unimplemented queries
+      return await getEmptyResult<T>();
     },
     // Execute method (alias for query in mock)
     async execute<T extends RowDataPacket[][] | RowDataPacket[] | ResultSetHeader>(

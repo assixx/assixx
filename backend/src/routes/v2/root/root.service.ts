@@ -196,6 +196,56 @@ export class RootService {
   }
 
   /**
+   * Helper: Build update data from request
+   */
+  private buildUpdateData(data: UpdateAdminRequest): Record<string, unknown> {
+    const updateData: Record<string, unknown> = {};
+
+    // Explicit property assignments to avoid object injection warnings
+    if (data.username !== undefined) {
+      updateData.username = data.username;
+    }
+    if (data.email !== undefined) {
+      updateData.email = data.email;
+    }
+    if (data.firstName !== undefined) {
+      updateData.first_name = data.firstName;
+    }
+    if (data.lastName !== undefined) {
+      updateData.last_name = data.lastName;
+    }
+    if (data.company !== undefined) {
+      updateData.company = data.company;
+    }
+    if (data.notes !== undefined) {
+      updateData.notes = data.notes;
+    }
+    if (data.isActive !== undefined) {
+      updateData.is_active = data.isActive;
+    }
+    if (data.employeeNumber !== undefined) {
+      updateData.employee_number = data.employeeNumber;
+    }
+    if (data.position !== undefined) {
+      updateData.position = data.position;
+    }
+
+    return updateData;
+  }
+
+  /**
+   * Helper: Hash password if provided
+   */
+  private async hashPasswordIfProvided(
+    password: string | undefined,
+    updateData: Record<string, unknown>,
+  ): Promise<void> {
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+  }
+
+  /**
    * Update admin user
    * @param id - The resource ID
    * @param data - The data object
@@ -209,22 +259,8 @@ export class RootService {
         throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
-      const updateData: Record<string, unknown> = {};
-
-      if (data.username !== undefined) updateData.username = data.username;
-      if (data.email !== undefined) updateData.email = data.email;
-      if (data.firstName !== undefined) updateData.first_name = data.firstName;
-      if (data.lastName !== undefined) updateData.last_name = data.lastName;
-      if (data.company !== undefined) updateData.company = data.company;
-      if (data.notes !== undefined) updateData.notes = data.notes;
-      if (data.isActive !== undefined) updateData.is_active = data.isActive;
-      if (data.employeeNumber !== undefined) updateData.employee_number = data.employeeNumber;
-      if (data.position !== undefined) updateData.position = data.position;
-
-      // Hash password if provided
-      if (data.password) {
-        updateData.password = await bcrypt.hash(data.password, 10);
-      }
+      const updateData = this.buildUpdateData(data);
+      await this.hashPasswordIfProvided(data.password, updateData);
 
       const success = await userModel.update(id, updateData, tenantId);
       if (!success) {
@@ -534,6 +570,40 @@ export class RootService {
   }
 
   /**
+   * Helper: Build SQL update fields and values
+   */
+  private buildRootUserUpdateFields(data: UpdateRootUserRequest): {
+    fields: string[];
+    values: unknown[];
+  } {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    // Map of request properties to database columns
+    const fieldMappings: { field: keyof UpdateRootUserRequest; column: string }[] = [
+      { field: 'firstName', column: 'first_name' },
+      { field: 'lastName', column: 'last_name' },
+      { field: 'email', column: 'email' },
+      { field: 'position', column: 'position' },
+      { field: 'notes', column: 'notes' },
+      { field: 'employeeNumber', column: 'employee_number' },
+      { field: 'departmentId', column: 'department_id' },
+      { field: 'isActive', column: 'is_active' },
+    ];
+
+    // Build fields and values arrays
+    for (const mapping of fieldMappings) {
+      const value = data[mapping.field];
+      if (value !== undefined) {
+        fields.push(`${mapping.column} = ?`);
+        values.push(value);
+      }
+    }
+
+    return { fields, values };
+  }
+
+  /**
    * Update root user
    * @param id - The resource ID
    * @param data - The data object
@@ -547,46 +617,13 @@ export class RootService {
         throw new ServiceError('NOT_FOUND', 'Root user not found', 404);
       }
 
-      const fields: string[] = [];
-      const values: unknown[] = [];
-
-      if (data.firstName !== undefined) {
-        fields.push('first_name = ?');
-        values.push(data.firstName);
-      }
-      if (data.lastName !== undefined) {
-        fields.push('last_name = ?');
-        values.push(data.lastName);
-      }
-      if (data.email !== undefined) {
-        fields.push('email = ?');
-        values.push(data.email);
-      }
-      if (data.position !== undefined) {
-        fields.push('position = ?');
-        values.push(data.position);
-      }
-      if (data.notes !== undefined) {
-        fields.push('notes = ?');
-        values.push(data.notes);
-      }
-      if (data.employeeNumber !== undefined) {
-        fields.push('employee_number = ?');
-        values.push(data.employeeNumber);
-      }
-      if (data.departmentId !== undefined) {
-        fields.push('department_id = ?');
-        values.push(data.departmentId);
-      }
-      if (data.isActive !== undefined) {
-        fields.push('is_active = ?');
-        values.push(data.isActive);
-      }
+      const { fields, values } = this.buildRootUserUpdateFields(data);
 
       if (fields.length === 0) {
         return; // Nothing to update
       }
 
+      // Add timestamp and ID for WHERE clause
       fields.push('updated_at = NOW()');
       values.push(id);
 

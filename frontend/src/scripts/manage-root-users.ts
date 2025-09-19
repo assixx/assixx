@@ -262,77 +262,118 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     `;
   }
 
-  // Handle form submission
-  async function handleFormSubmit(event: Event): Promise<void> {
-    event.preventDefault();
+  // Get form values
+  interface FormValues {
+    firstName: string;
+    lastName: string;
+    email: string;
+    emailConfirm: string;
+    password: string;
+    passwordConfirm: string;
+    position: string;
+    notes: string;
+    employeeNumber: string;
+    departmentId: string;
+    isActive: boolean;
+  }
 
-    const firstName = ($('#rootFirstName') as HTMLInputElement).value;
-    const lastName = ($('#rootLastName') as HTMLInputElement).value;
-    const email = ($('#rootEmail') as HTMLInputElement).value;
-    const emailConfirm = ($('#rootEmailConfirm') as HTMLInputElement | null)?.value ?? '';
-    const password = ($('#rootPassword') as HTMLInputElement | null)?.value ?? '';
-    const passwordConfirm = ($('#rootPasswordConfirm') as HTMLInputElement | null)?.value ?? '';
-    const position = ($('#positionDropdownValue') as HTMLInputElement | null)?.value ?? '';
-    const notes = ($('#rootNotes') as HTMLTextAreaElement | null)?.value ?? '';
-    const employeeNumber = ($('#rootEmployeeNumber') as HTMLInputElement | null)?.value ?? '';
-    const departmentId = ($('#rootDepartmentId') as HTMLSelectElement | null)?.value ?? '';
-    const isActive =
-      currentEditId !== null ? (($('#rootIsActive') as HTMLInputElement | null)?.checked ?? false) : true;
+  function getFormValues(): FormValues {
+    return {
+      firstName: ($('#rootFirstName') as HTMLInputElement).value,
+      lastName: ($('#rootLastName') as HTMLInputElement).value,
+      email: ($('#rootEmail') as HTMLInputElement).value,
+      emailConfirm: ($('#rootEmailConfirm') as HTMLInputElement | null)?.value ?? '',
+      password: ($('#rootPassword') as HTMLInputElement | null)?.value ?? '',
+      passwordConfirm: ($('#rootPasswordConfirm') as HTMLInputElement | null)?.value ?? '',
+      position: ($('#positionDropdownValue') as HTMLInputElement | null)?.value ?? '',
+      notes: ($('#rootNotes') as HTMLTextAreaElement | null)?.value ?? '',
+      employeeNumber: ($('#rootEmployeeNumber') as HTMLInputElement | null)?.value ?? '',
+      departmentId: ($('#rootDepartmentId') as HTMLSelectElement | null)?.value ?? '',
+      isActive: currentEditId !== null ? (($('#rootIsActive') as HTMLInputElement | null)?.checked ?? false) : true,
+    };
+  }
 
-    // Clear previous error messages
+  // Clear error messages
+  function clearErrorMessages(): void {
     const emailError = $('#email-error');
     const passwordError = $('#password-error');
     emailError.style.display = 'none';
     passwordError.style.display = 'none';
+  }
 
-    // Validation
-    if (email !== emailConfirm) {
+  // Validate form
+  function validateForm(values: FormValues, isEdit: boolean): boolean {
+    const emailError = $('#email-error');
+    const passwordError = $('#password-error');
+
+    if (values.email !== values.emailConfirm) {
       emailError.style.display = 'block';
       showErrorAlert('E-Mail-Adressen stimmen nicht überein');
-      return;
+      return false;
     }
 
-    if (currentEditId === null && password !== passwordConfirm) {
+    if (!isEdit && values.password !== values.passwordConfirm) {
       passwordError.style.display = 'block';
       showErrorAlert('Passwörter stimmen nicht überein');
-      return;
+      return false;
     }
 
-    if (currentEditId === null && password.length < 8) {
+    if (!isEdit && values.password.length < 8) {
       showErrorAlert('Passwort muss mindestens 8 Zeichen lang sein');
-      return;
+      return false;
     }
 
+    return true;
+  }
+
+  // Build user data
+  function buildUserData(values: FormValues, isEdit: boolean): Record<string, unknown> {
     const userData: Record<string, unknown> = {
-      firstName,
-      lastName,
-      email,
-      position,
-      notes,
-      isActive,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      email: values.email,
+      position: values.position,
+      notes: values.notes,
+      isActive: values.isActive,
     };
 
-    // Add optional fields only if they have values
-    if (employeeNumber !== '') {
-      userData.employeeNumber = employeeNumber;
+    if (values.employeeNumber !== '') {
+      userData.employeeNumber = values.employeeNumber;
     }
 
-    if (departmentId !== '') {
-      userData.departmentId = Number.parseInt(departmentId, 10);
+    if (values.departmentId !== '') {
+      userData.departmentId = Number.parseInt(values.departmentId, 10);
     }
 
-    if (currentEditId === null) {
-      userData.password = password;
-      userData.username = email;
+    if (!isEdit) {
+      userData.password = values.password;
+      userData.username = values.email;
     }
+
+    return userData;
+  }
+
+  // Handle form submission
+  async function handleFormSubmit(event: Event): Promise<void> {
+    event.preventDefault();
+
+    const values = getFormValues();
+    clearErrorMessages();
+
+    const isEdit = currentEditId !== null;
+    if (!validateForm(values, isEdit)) {
+      return;
+    }
+
+    const userData = buildUserData(values, isEdit);
 
     try {
-      const endpoint = currentEditId !== null ? `/root/users/${currentEditId}` : '/root/users';
-      const method = currentEditId !== null ? 'PUT' : 'POST';
+      const endpoint = isEdit && currentEditId !== null ? `/root/users/${currentEditId}` : '/root/users';
+      const method = isEdit ? 'PUT' : 'POST';
 
       await apiClient.request(endpoint, { method, body: JSON.stringify(userData) }, { version: 'v2' });
 
-      showSuccessAlert(currentEditId !== null ? 'Root-Benutzer aktualisiert' : 'Root-Benutzer erstellt');
+      showSuccessAlert(isEdit ? 'Root-Benutzer aktualisiert' : 'Root-Benutzer erstellt');
       closeRootModal();
       await loadRootUsers();
     } catch (error) {

@@ -568,6 +568,32 @@
         }
       });
 
+      // Helper functions for event delegation
+      function handleToggleDropdown(element) {
+        const dropdown = element.dataset.dropdown;
+        if (dropdown) {
+          toggleDropdown('#' + dropdown);
+        }
+      }
+
+      function handleSelectOption(element) {
+        const type = element.dataset.type;
+        const value = element.dataset.value;
+        const text = element.dataset.text;
+        if (type && value && text) {
+          selectOption('#' + type, value, text);
+        }
+      }
+
+      function getActionElement(target, action) {
+        return target.closest(`[data-action="${action}"]`);
+      }
+
+      function isBusinessLogicAction(action) {
+        const businessActions = ['reset-filters', 'apply-filters', 'load-previous-page', 'load-next-page', 'confirm-delete'];
+        return businessActions.includes(action);
+      }
+
       // Event Delegation for data-action attributes
       document.addEventListener('click', function (e) {
         const target = e.target;
@@ -575,43 +601,31 @@
 
         if (!action) return;
 
+        // Handle business logic actions (handled in logs.ts)
+        if (isBusinessLogicAction(action)) {
+          return;
+        }
+
+        // Handle UI actions
         switch (action) {
           case 'toggle-dropdown': {
-            const element = target.closest('[data-action="toggle-dropdown"]');
+            const element = getActionElement(target, 'toggle-dropdown');
             if (element) {
-              const dropdown = element.dataset.dropdown;
-              if (dropdown) {
-                toggleDropdown('#' + dropdown);
-              }
+              handleToggleDropdown(element);
             }
             break;
           }
 
           case 'select-option': {
-            const element = target.closest('[data-action="select-option"]');
+            const element = getActionElement(target, 'select-option');
             if (element) {
-              const type = element.dataset.type;
-              const value = element.dataset.value;
-              const text = element.dataset.text;
-              if (type && value && text) {
-                selectOption('#' + type, value, text);
-              }
+              handleSelectOption(element);
             }
             break;
           }
 
           case 'close-delete-modal': {
             closeDeleteLogsModal();
-            break;
-          }
-
-          // Business logic actions (handled in logs.ts)
-          case 'reset-filters':
-          case 'apply-filters':
-          case 'load-previous-page':
-          case 'load-next-page':
-          case 'confirm-delete': {
-            // These will be handled in logs.ts
             break;
           }
         }

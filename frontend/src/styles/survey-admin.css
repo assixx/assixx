@@ -441,43 +441,6 @@ body::after {
   color: var(--text-primary);
 }
 
-/* Form Elements */
-.form-group {
-  margin-bottom: var(--spacing-lg);
-}
-
-.form-label {
-  display: block;
-  margin-bottom: var(--spacing-sm);
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--spacing-2sm);
-
-  font-size: 1rem;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
-}
-
-textarea.form-control {
-  resize: vertical;
-  min-height: 100px;
-}
-
-select.form-control {
-  cursor: pointer;
-}
-
 .checkbox-group {
   display: flex;
   gap: var(--spacing-sm);

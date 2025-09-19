@@ -409,7 +409,6 @@ body {
   color: var(--text-primary);
 
   background: var(--glass-form-bg);
-  backdrop-filter: var(--glass-form-backdrop);
 }
 
 .form-control:hover {
@@ -418,10 +417,17 @@ body {
 }
 
 .form-control:focus {
-  border-color: var(--primary-color);
-  background: var(--glass-form-bg-focus);
+  background:
+    linear-gradient(#1a1a1a, #1a1a1a) padding-box,
+    linear-gradient(90deg, #007cff, #0bafff) border-box;
+}
+
+/* Form Focus Styles */
+:where(textarea),
+:where(input[type="text"], input[type="email"], input[type="search"], input[type="password"], input[type="url"]) {
+  border-style: solid;
+  appearance: none;
   outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 15%);
 }
 
 /* Fix für Browser Autofill */
@@ -431,8 +437,6 @@ body {
 .form-control:-webkit-autofill:active {
   box-shadow: 0 0 0 30px rgb(255 255 255 / 4%) inset !important;
   caret-color: var(--text-primary) !important;
-
-  -webkit-text-fill-color: var(--text-primary) !important;
 }
 
 /* Tables */
@@ -540,7 +544,6 @@ body {
 .stat-card:hover {
   position: relative; /* Neuer stacking context */
   z-index: 1; /* Unter der Sidebar bleiben */
-  transform: translateY(-8px);
 
   border-color: rgb(0 142 255 / 50%);
 
@@ -1048,12 +1051,6 @@ body {
 
   background: rgb(255 255 255 / 2.1%);
   backdrop-filter: blur(10px);
-}
-
-.role-switch-dropdown .dropdown-display:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 5%);
-  box-shadow: 0 4px 12px rgb(52 152 219 / 30%);
 }
 
 .role-switch-dropdown .dropdown-display.active svg {

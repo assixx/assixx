@@ -256,6 +256,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Extract admins from response
+  function extractAdmins(response: AdminUser[] | { admins: AdminUser[] }): AdminUser[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if ('admins' in response && Array.isArray(response.admins)) {
+      return response.admins;
+    }
+    return [];
+  }
+
+  // Extract users from response
+  function extractUsers(response: User[] | { data: User[] }): User[] {
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if ('data' in response && Array.isArray(response.data)) {
+      return response.data;
+    }
+    return [];
+  }
+
+  // Update dashboard counters
+  function updateDashboardCounters(admins: AdminUser[], users: User[]): void {
+    const adminCount = document.querySelector<HTMLElement>('#admin-count');
+    const userCount = document.querySelector<HTMLElement>('#user-count');
+    const tenantCount = document.querySelector<HTMLElement>('#tenant-count');
+
+    if (adminCount !== null) {
+      adminCount.textContent = admins.length.toString();
+    }
+    if (userCount !== null) {
+      userCount.textContent = users.length.toString();
+    }
+    if (tenantCount !== null) {
+      tenantCount.textContent = '1'; // TODO: Implement tenant count
+    }
+  }
+
   // Dashboard-Statistiken laden
   async function loadDashboardStats(): Promise<void> {
     try {
@@ -264,31 +303,10 @@ document.addEventListener('DOMContentLoaded', () => {
         apiClient.request<User[] | { data: User[] }>(API_ENDPOINTS.USERS),
       ]);
 
-      // Handle both array and object responses
-      const admins = Array.isArray(adminsResponse)
-        ? adminsResponse
-        : 'admins' in adminsResponse && Array.isArray(adminsResponse.admins)
-          ? adminsResponse.admins
-          : [];
+      const admins = extractAdmins(adminsResponse);
+      const users = extractUsers(usersResponse);
 
-      const users = Array.isArray(usersResponse)
-        ? usersResponse
-        : 'data' in usersResponse && Array.isArray(usersResponse.data)
-          ? usersResponse.data
-          : [];
-
-      // Update counters
-      const adminCount = document.querySelector<HTMLElement>('#admin-count');
-      const userCount = document.querySelector<HTMLElement>('#user-count');
-      const tenantCount = document.querySelector<HTMLElement>('#tenant-count');
-
-      if (adminCount !== null) {
-        adminCount.textContent = admins.length.toString();
-      }
-      if (userCount !== null) {
-        userCount.textContent = users.length.toString();
-      }
-      if (tenantCount) tenantCount.textContent = '1'; // TODO: Implement tenant count
+      updateDashboardCounters(admins, users);
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
     }
@@ -343,57 +361,82 @@ document.addEventListener('DOMContentLoaded', () => {
   //   }
   // }
 
+  // Parse JWT token to get username
+  function parseUsernameFromToken(token: string): string {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1])) as { userName?: string };
+      return payload.userName ?? 'Root';
+    } catch (error) {
+      console.error('Error parsing JWT token:', error);
+      return 'Root';
+    }
+  }
+
+  // Get display name for user
+  function getUserDisplayName(user: User): string {
+    const hasFirstName = user.first_name !== undefined && user.first_name !== '';
+    const hasLastName = user.last_name !== undefined && user.last_name !== '';
+
+    if (!hasFirstName && !hasLastName) {
+      return user.username;
+    }
+
+    const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+    return fullName !== '' ? fullName : user.username;
+  }
+
+  // Update user avatar
+  function updateUserAvatar(userAvatar: HTMLImageElement, profilePictureUrl: string | undefined): void {
+    if (profilePictureUrl === undefined || profilePictureUrl === '') {
+      return;
+    }
+
+    userAvatar.src = profilePictureUrl;
+    userAvatar.onerror = function () {
+      this.src = '/images/default-avatar.svg';
+    };
+  }
+
+  // Load username from local storage fallback
+  function loadUsernameFromStorage(): string {
+    const userStr = localStorage.getItem('user');
+    if (userStr === null || userStr === '') {
+      return 'Root';
+    }
+
+    try {
+      const userData = JSON.parse(userStr) as { userName?: string };
+      return userData.userName ?? 'Root';
+    } catch {
+      return 'Root';
+    }
+  }
+
   // Load user info in header
   async function loadHeaderUserInfo(): Promise<void> {
+    const authToken = getAuthToken();
+    const userNameElement = document.querySelector<HTMLElement>('#user-name');
+    const userAvatar = document.querySelector<HTMLImageElement>('#user-avatar');
+
+    if (authToken === null || authToken === '' || userNameElement === null) {
+      return;
+    }
+
+    // Set initial username from token
+    userNameElement.textContent = parseUsernameFromToken(authToken);
+
+    // Try to fetch full user profile
     try {
-      const authToken = getAuthToken();
-      const userNameElement = document.querySelector<HTMLElement>('#user-name');
-      const userAvatar = document.querySelector<HTMLImageElement>('#user-avatar');
+      const user = await apiClient.request<User>(API_ENDPOINTS.USERS_ME);
+      userNameElement.textContent = getUserDisplayName(user);
 
-      if (authToken === null || authToken === '' || userNameElement === null) return;
-
-      // Parse JWT token to get basic user info
-      try {
-        const payload = JSON.parse(atob(authToken.split('.')[1])) as { userName?: string };
-        userNameElement.textContent = payload.userName ?? 'Root';
-      } catch (error) {
-        console.error('Error parsing JWT token:', error);
-      }
-
-      // Try to fetch full user profile for more details
-      try {
-        const user = await apiClient.request<User>(API_ENDPOINTS.USERS_ME);
-
-        // Update username with full name if available
-        if (
-          (user.first_name !== undefined && user.first_name !== '') ||
-          (user.last_name !== undefined && user.last_name !== '')
-        ) {
-          const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
-          userNameElement.textContent = fullName !== '' ? fullName : user.username;
-        } else {
-          userNameElement.textContent = user.username;
-        }
-
-        // Update avatar if available
-        if (userAvatar !== null && user.profile_picture_url !== undefined && user.profile_picture_url !== '') {
-          userAvatar.src = user.profile_picture_url;
-          userAvatar.onerror = function () {
-            this.src = '/images/default-avatar.svg';
-          };
-        }
-      } catch {
-        // Error is already logged in the outer catch
+      if (userAvatar !== null) {
+        updateUserAvatar(userAvatar, user.profile_picture_url);
       }
     } catch (error) {
       console.error('Error loading user info:', error);
       // Fallback to local storage
-      const userStr = localStorage.getItem('user');
-      const userData = userStr !== null && userStr !== '' ? (JSON.parse(userStr) as { userName?: string }) : {};
-      const userName = document.querySelector<HTMLElement>('#user-name');
-      if (userName !== null) {
-        userName.textContent = userData.userName ?? 'Root';
-      }
+      userNameElement.textContent = loadUsernameFromStorage();
     }
   }
 

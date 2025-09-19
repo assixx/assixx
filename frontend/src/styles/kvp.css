@@ -662,52 +662,6 @@ body::after {
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
-/* Form Elements */
-.form-group {
-  margin-bottom: var(--spacing-lg);
-}
-
-.form-label {
-  display: block;
-
-  margin-bottom: var(--spacing-sm);
-
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.form-label .required {
-  color: var(--error-color);
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--spacing-2sm);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
-
-  font-size: 0.95rem;
-  color: #fff;
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.form-control:focus {
-  border-color: rgb(0 142 255 / 50%);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(0 142 255 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 20%);
-}
-
-textarea.form-control {
-  resize: vertical;
-  min-height: 80px;
-}
-
 /* Buttons */
 .btn {
   cursor: pointer;

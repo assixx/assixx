@@ -603,22 +603,9 @@ main.container.main-content.sidebar-collapsed {
   backdrop-filter: blur(10px);
 }
 
-.form-control:focus,
-.form-input:focus,
-.big-input:focus {
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(33 150 243 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 20%);
-}
-
 /* Native Select verstecken */
-/* stylelint-disable -- Need to target only select elements with these classes */
 select.big-input,
 select.form-control {
-  /* stylelint-enable selector-no-qualifying-type */
   display: none;
 }
 

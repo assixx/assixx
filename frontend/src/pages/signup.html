@@ -407,85 +407,169 @@
         }
       });
 
-      // Form submission
-      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        // Validate emails match
+      // Validation helper functions
+      function validateEmailMatch() {
         if (emailInput.value !== emailConfirmInput.value) {
           emailMatchError.style.display = 'block';
           emailConfirmInput.focus();
-          return;
+          return false;
         }
+        return true;
+      }
 
-        // Validate passwords match
+      function validatePasswordMatch() {
         if (passwordInput.value !== passwordConfirmInput.value) {
           passwordError.style.display = 'block';
           passwordConfirmInput.focus();
-          return;
+          return false;
         }
+        return true;
+      }
 
-        // Validate phone number
-        const phoneValue = phoneInput.value.trim();
+      function isDACHCountry(countryCode) {
+        return countryCode === '+49' || countryCode === '+43' || countryCode === '+41';
+      }
+
+      function validatePhoneNumber(phoneValue) {
         if (!phoneValue) {
           phoneError.textContent = 'Telefonnummer ist ein Pflichtfeld';
           phoneError.style.display = 'block';
           phoneInput.focus();
-          return;
+          return false;
         }
 
-        // Check for leading 0 in DACH countries
-        if ((currentCountryCode === '+49' || currentCountryCode === '+43' || currentCountryCode === '+41') && phoneValue.startsWith('0')) {
+        if (isDACHCountry(currentCountryCode) && phoneValue.startsWith('0')) {
           phoneError.textContent = 'Bitte ohne führende 0 eingeben (die Ländervorwahl ersetzt die 0)';
           phoneError.style.display = 'block';
           phoneInput.focus();
-          return;
+          return false;
         }
 
-        // General phone validation
         if (!/^[1-9][0-9]{6,14}$/.test(phoneValue)) {
           phoneError.textContent = 'Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)';
           phoneError.style.display = 'block';
           phoneInput.focus();
-          return;
+          return false;
         }
 
+        return true;
+      }
+
+      function isUsingV2Api() {
+        return window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_SIGNUP;
+      }
+
+      function prepareSignupData(data, fullPhone, useV2) {
+        if (useV2) {
+          return {
+            companyName: data.company_name,
+            subdomain: data.subdomain,
+            email: data.email,
+            adminEmail: data.email,
+            adminPassword: data.password,
+            adminFirstName: data.first_name,
+            adminLastName: data.last_name,
+            phone: fullPhone,
+            plan: currentPlan,
+          };
+        }
+
+        return {
+          company_name: data.company_name,
+          subdomain: data.subdomain,
+          email: data.email,
+          admin_email: data.email,
+          admin_password: data.password,
+          admin_first_name: data.first_name,
+          admin_last_name: data.last_name,
+          phone: fullPhone,
+          plan: currentPlan,
+        };
+      }
+
+      function parseResponse(responseText) {
+        try {
+          return JSON.parse(responseText);
+        } catch (e) {
+          console.error('Failed to parse response:', responseText, e);
+          return { message: 'Server response was not valid JSON: ' + responseText };
+        }
+      }
+
+      function handleSuccessfulSignup(form) {
+        document.querySelector('#successMessage').style.display = 'block';
+        window.setHTML(
+          document.querySelector('#successMessage'),
+          `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`,
+        );
+
+        form.reset();
+
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 3000);
+      }
+
+      function resetSubmitButton(button, originalText) {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+
+      function handleError(message, submitButton, originalText) {
+        alert(message);
+        resetSubmitButton(submitButton, originalText);
+      }
+
+      function validateForm() {
+        if (!validateEmailMatch()) return false;
+        if (!validatePasswordMatch()) return false;
+
+        const phoneValue = phoneInput.value.trim();
+        return validatePhoneNumber(phoneValue);
+      }
+
+      async function submitSignupForm(form, signupData, apiUrl, useV2) {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(signupData),
+        });
+
+        const responseText = await response.text();
+        const result = parseResponse(responseText);
+
+        return { response, result };
+      }
+
+      function isSignupSuccessful(response, result, useV2) {
+        if (useV2 && result.success === false) return false;
+        return response.ok || (useV2 && result.success);
+      }
+
+      function getErrorMessage(result, useV2) {
+        if (useV2) {
+          return result.error?.message || result.message || 'Fehler bei der Registrierung';
+        }
+        return result.message || 'Fehler bei der Registrierung';
+      }
+
+      // Form submission
+      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Validate form
+        if (!validateForm()) return;
+
+        // Prepare data
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
+        const fullPhone = `${currentCountryCode}${data.phone.replace(/\s+/g, '')}`;
 
-        // Get country code and format phone without spaces
-        const phoneNumber = data.phone;
-        const fullPhone = `${currentCountryCode}${phoneNumber.replace(/\s+/g, '')}`;
-
-        // Check if v2 API should be used
-        const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_SIGNUP;
-
-        // Add root user credentials - use camelCase for v2, snake_case for v1
-        const signupData = useV2
-          ? {
-              // v2 format (camelCase)
-              companyName: data.company_name,
-              subdomain: data.subdomain,
-              email: data.email,
-              adminEmail: data.email,
-              adminPassword: data.password,
-              adminFirstName: data.first_name,
-              adminLastName: data.last_name,
-              phone: fullPhone,
-              plan: currentPlan,
-            }
-          : {
-              // v1 format (snake_case)
-              company_name: data.company_name,
-              subdomain: data.subdomain,
-              email: data.email,
-              admin_email: data.email,
-              admin_password: data.password,
-              admin_first_name: data.first_name,
-              admin_last_name: data.last_name,
-              phone: fullPhone,
-              plan: currentPlan,
-            };
+        const useV2 = isUsingV2Api();
+        const signupData = prepareSignupData(data, fullPhone, useV2);
+        const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
 
         const submitButton = e.target.querySelector('button[type="submit"]');
         const originalText = submitButton.textContent;
@@ -494,66 +578,18 @@
           submitButton.disabled = true;
           submitButton.textContent = '⏳ Wird erstellt...';
 
-          // API URL based on feature flag (useV2 already defined above)
-          const apiUrl = useV2 ? '/api/v2/signup' : '/api/signup';
-
           console.info(`[Signup] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
 
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(signupData),
-          });
+          const { response, result } = await submitSignupForm(e.target, signupData, apiUrl, useV2);
 
-          let result;
-          const responseText = await response.text();
-
-          try {
-            result = JSON.parse(responseText);
-          } catch (e) {
-            console.error('Failed to parse response:', responseText, e);
-            result = { message: 'Server response was not valid JSON: ' + responseText };
-          }
-
-          // Handle v2 response format
-          if (useV2 && result.success === false) {
-            // v2 error format
-            const errorMessage = result.error?.message || result.message || 'Fehler bei der Registrierung';
-            alert(errorMessage);
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
-            return;
-          }
-
-          if (response.ok || (useV2 && result.success)) {
-            // v2 response handled, data extraction not needed here
-
-            document.querySelector('#successMessage').style.display = 'block';
-            window.setHTML(
-              document.querySelector('#successMessage'),
-              `✅ <strong>Erfolgreich registriert!</strong> Sie werden in 3 Sekunden zur Anmeldung weitergeleitet...`,
-            );
-
-            // Clear form
-            e.target.reset();
-
-            // Redirect after 3 seconds
-            setTimeout(() => {
-              window.location.href = '/login';
-            }, 3000);
+          if (isSignupSuccessful(response, result, useV2)) {
+            handleSuccessfulSignup(e.target);
           } else {
-            // v1 error handling
-            alert(result.message || 'Fehler bei der Registrierung');
-            submitButton.disabled = false;
-            submitButton.textContent = originalText;
+            handleError(getErrorMessage(result, useV2), submitButton, originalText);
           }
         } catch (error) {
           console.error('Signup error:', error);
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-          submitButton.disabled = false;
-          submitButton.textContent = originalText;
+          handleError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.', submitButton, originalText);
         }
       });
     </script>

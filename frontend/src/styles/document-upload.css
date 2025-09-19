@@ -100,47 +100,6 @@ body::after {
   margin: 0 auto;
 }
 
-.form-group {
-  margin-bottom: var(--spacing-md);
-}
-
-/* Form Controls - wie im Dashboard */
-.form-control {
-  width: 100%;
-  padding: 10px 15px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
-
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(5px);
-}
-
-.form-control:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 20%);
-}
-
-/* Form Label */
-.form-label {
-  display: block;
-
-  margin-bottom: 8px;
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
 /* Custom Glassmorphismus Dropdown - Nach Design Standards */
 .custom-dropdown {
   position: relative;

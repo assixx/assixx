@@ -293,23 +293,6 @@ body::after {
   }
 }
 
-/* Form Controls - Glassmorphismus */
-.form-control {
-  border: 1px solid rgb(255 255 255 / 12%);
-  color: var(--text-primary);
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(33 150 243 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 10%);
-}
-
 /* Autofill Styles für verschiedene Browser */
 /* Webkit browsers (Chrome, Safari, Edge) */
 .form-control:-webkit-autofill,

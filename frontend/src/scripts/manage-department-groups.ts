@@ -411,57 +411,69 @@ import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
     })();
   });
 
+  // Helper to get group ID from element
+  function getGroupIdFromElement(element: HTMLElement): number | null {
+    const groupId = element.dataset.groupId;
+    if (groupId === undefined) return null;
+    return Number.parseInt(groupId, 10);
+  }
+
+  // Get window instance with proper type
+  function getGroupWindow(): ManageDeptGroupsWindow {
+    return window as unknown as ManageDeptGroupsWindow;
+  }
+
+  // Handle action with group ID
+  function handleActionWithGroupId(element: HTMLElement | null, action: (id: number) => void): void {
+    if (!element) return;
+    const groupId = getGroupIdFromElement(element);
+    if (groupId !== null) {
+      action(groupId);
+    }
+  }
+
+  // Handle async action with group ID
+  function handleAsyncActionWithGroupId(element: HTMLElement | null, action: (id: number) => Promise<void>): void {
+    if (!element) return;
+    const groupId = getGroupIdFromElement(element);
+    if (groupId !== null) {
+      void action(groupId);
+    }
+  }
+
   // Event delegation for all actions
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
+    const win = getGroupWindow();
 
     // Handle show create group modal
-    const createBtn = target.closest<HTMLElement>('[data-action="show-create-group-modal"]');
-    if (createBtn) {
-      (window as unknown as ManageDeptGroupsWindow).showCreateGroupModal();
+    if (target.closest<HTMLElement>('[data-action="show-create-group-modal"]')) {
+      win.showCreateGroupModal();
+      return;
     }
 
     // Handle close modal
-    const closeBtn = target.closest<HTMLElement>('[data-action="close-modal"]');
-    if (closeBtn) {
-      (window as unknown as ManageDeptGroupsWindow).closeModal();
+    if (target.closest<HTMLElement>('[data-action="close-modal"]')) {
+      win.closeModal();
+      return;
     }
 
-    // Handle select group
-    const selectBtn = target.closest<HTMLElement>('[data-action="select-group"]');
-    if (selectBtn) {
-      const groupId = selectBtn.dataset.groupId;
-      if (groupId !== undefined) {
-        (window as unknown as ManageDeptGroupsWindow).selectGroup(Number.parseInt(groupId, 10));
-      }
-    }
+    // Handle group actions
+    handleActionWithGroupId(target.closest<HTMLElement>('[data-action="select-group"]'), (id) => {
+      win.selectGroup(id);
+    });
 
-    // Handle edit group
-    const editBtn = target.closest<HTMLElement>('[data-action="edit-group"]');
-    if (editBtn) {
-      const groupId = editBtn.dataset.groupId;
-      if (groupId !== undefined) {
-        (window as unknown as ManageDeptGroupsWindow).editGroup(Number.parseInt(groupId, 10));
-      }
-    }
+    handleActionWithGroupId(target.closest<HTMLElement>('[data-action="edit-group"]'), (id) => {
+      win.editGroup(id);
+    });
 
-    // Handle add departments
-    const addDeptBtn = target.closest<HTMLElement>('[data-action="add-departments"]');
-    if (addDeptBtn) {
-      const groupId = addDeptBtn.dataset.groupId;
-      if (groupId !== undefined) {
-        void (window as unknown as ManageDeptGroupsWindow).addDepartmentsToGroup(Number.parseInt(groupId, 10));
-      }
-    }
+    handleAsyncActionWithGroupId(target.closest<HTMLElement>('[data-action="add-departments"]'), (id) =>
+      win.addDepartmentsToGroup(id),
+    );
 
-    // Handle delete group
-    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-group"]');
-    if (deleteBtn) {
-      const groupId = deleteBtn.dataset.groupId;
-      if (groupId !== undefined) {
-        void (window as unknown as ManageDeptGroupsWindow).deleteGroup(Number.parseInt(groupId, 10));
-      }
-    }
+    handleAsyncActionWithGroupId(target.closest<HTMLElement>('[data-action="delete-group"]'), (id) =>
+      win.deleteGroup(id),
+    );
   });
 
   // Close modal on outside click

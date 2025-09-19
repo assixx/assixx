@@ -224,11 +224,89 @@
         window.setHTML(container, statusData.map((item) => createStatusCard(item)).join(''));
       }
 
+      // Helper functions for createStatusCard
+      function getTenantInfo(item, currentUserId, createdAt) {
+        const tenantId = item.tenantId || item.tenant_id;
+        const requestedBy = item.requestedBy || item.requested_by || item.created_by;
+        const requestedByName = item.requestedByName || item.requester_name || `ID: ${requestedBy}`;
+
+        return `
+          <div class="tenant-info">
+            <h3>${item.company_name || `Tenant ${tenantId}`}</h3>
+            <p>Tenant ID: ${tenantId}</p>
+            ${item.subdomain ? `<p>Subdomain: ${item.subdomain}</p>` : ''}
+            <p>Beantragt von: ${requestedByName} (User ID: ${requestedBy})</p>
+            <p>Beantragt am: ${createdAt.toLocaleString('de-DE')}</p>
+            <p><strong>Aktueller User ID:</strong> ${currentUserId}</p>
+            <p><strong>Status Info:</strong> canApprove=${item.canApprove}, canCancel=${item.canCancel}</p>
+          </div>
+        `;
+      }
+
+      function getPermissionInfoBox(isCreator, canApprove) {
+        if (isCreator) {
+          return `
+            <div class="info-box" style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <i class="fas fa-info-circle text-warning"></i>
+              <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br>
+              Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung genehmigt.
+            </div>
+          `;
+        }
+        if (canApprove) {
+          return `
+            <div class="info-box" style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <i class="fas fa-user-shield text-success"></i>
+              <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br>
+              Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
+            </div>
+          `;
+        }
+        return '';
+      }
+
+      function getCoolingOffWarning(item, coolingOffRemaining) {
+        const isPending = item.status === 'pending' || item.approval_status === 'pending';
+        if (isPending && coolingOffRemaining > 0) {
+          return `
+            <div class="cooling-off-warning">
+              <i class="fas fa-clock"></i>
+              <div>
+                <strong>⏰ Cooling-off Periode aktiv</strong><br>
+                Noch ${Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br>
+                <small>Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small>
+              </div>
+            </div>
+          `;
+        }
+        return '';
+      }
+
+      function getGracePeriodInfo(item) {
+        if (item.status === 'approved' || item.status === 'queued') {
+          const scheduledDate = item.scheduledFor
+            ? new Date(item.scheduledFor).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
+            : '30 Tage ab Genehmigung';
+
+          return `
+            <div class="grace-period-info" style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
+              <i class="fas fa-calendar-clock text-info"></i>
+              <div>
+                <strong>🕐 30 Tage Grace Period läuft!</strong><br>
+                <p style="margin: 8px 0;"><strong>Geplante Löschung:</strong> ${scheduledDate}</p>
+                <p style="margin: 8px 0;">Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.</p>
+                <p style="margin: 8px 0;">Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche Löschung.</p>
+                <small>Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small>
+              </div>
+            </div>
+          `;
+        }
+        return '';
+      }
+
       function createStatusCard(item) {
         const progress = item.progress || 0;
-        // Handle different field names from v1 and v2 APIs
         const createdAt = new Date(item.requestedAt || item.created_at || item.requested_at);
-        // const scheduledAt = item.scheduled_deletion_date ? new Date(item.scheduled_deletion_date) : null; // Currently unused
         const coolingOffRemaining = calculateCoolingOff(item);
         const currentUserId = getCurrentUserId();
         const isCreator = currentUserId === (item.requestedBy || item.requested_by || item.created_by);
@@ -236,69 +314,13 @@
         return `
           <div class="status-card">
             <div class="status-header">
-              <div class="tenant-info">
-                <h3>${item.company_name || 'Tenant ' + (item.tenantId || item.tenant_id)}</h3>
-                <p>Tenant ID: ${item.tenantId || item.tenant_id}</p>
-                ${item.subdomain ? `<p>Subdomain: ${item.subdomain}</p>` : ''}
-                <p>Beantragt von: ${item.requestedByName || item.requester_name || 'ID: ' + (item.requestedBy || item.requested_by)} (User ID: ${item.requestedBy || item.requested_by || item.created_by})</p>
-                <p>Beantragt am: ${createdAt.toLocaleString('de-DE')}</p>
-                <p><strong>Aktueller User ID:</strong> ${currentUserId}</p>
-                <p><strong>Status Info:</strong> canApprove=${item.canApprove}, canCancel=${item.canCancel}</p>
-              </div>
+              ${getTenantInfo(item, currentUserId, createdAt)}
               <span class="status-badge ${item.status || 'pending'}">${getStatusText(item.status || 'pending')}</span>
             </div>
-            
-            ${
-              isCreator
-                ? `
-              <div class="info-box" style="background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <i class="fas fa-info-circle text-warning"></i>
-                <strong>Sie sind der Ersteller dieser Löschanfrage.</strong><br>
-                Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die Löschung genehmigt.
-              </div>
-              `
-                : item.canApprove
-                  ? `
-              <div class="info-box" style="background: rgba(76, 175, 80, 0.1); border: 1px solid rgba(76, 175, 80, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <i class="fas fa-user-shield text-success"></i>
-                <strong>Sie können diese Löschanfrage genehmigen oder ablehnen.</strong><br>
-                Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
-              </div>
-              `
-                  : ''
-            }
 
-            ${
-              (item.status === 'pending' || item.approval_status === 'pending') && coolingOffRemaining > 0
-                ? `
-              <div class="cooling-off-warning">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <strong>⏰ Cooling-off Periode aktiv</strong><br>
-                  Noch ${Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br>
-                  <small>Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small>
-                </div>
-              </div>
-            `
-                : ''
-            }
-
-            ${
-              item.status === 'approved' || item.status === 'queued'
-                ? `
-              <div class="grace-period-info" style="background: rgba(33, 150, 243, 0.1); border: 1px solid rgba(33, 150, 243, 0.3); padding: 16px; border-radius: 8px; margin: 16px 0;">
-                <i class="fas fa-calendar-clock text-info"></i>
-                <div>
-                  <strong>🕐 30 Tage Grace Period läuft!</strong><br>
-                  <p style="margin: 8px 0;"><strong>Geplante Löschung:</strong> ${item.scheduledFor ? new Date(item.scheduledFor).toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }) : '30 Tage ab Genehmigung'}</p>
-                  <p style="margin: 8px 0;">Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.</p>
-                  <p style="margin: 8px 0;">Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche Löschung.</p>
-                  <small>Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small>
-                </div>
-              </div>
-            `
-                : ''
-            }
+            ${getPermissionInfoBox(isCreator, item.canApprove)}
+            ${getCoolingOffWarning(item, coolingOffRemaining)}
+            ${getGracePeriodInfo(item)}
 
             ${
               item.status === 'processing'

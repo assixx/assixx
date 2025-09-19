@@ -234,6 +234,46 @@
 
       // loadUserInfo() removed - unified-navigation handles user display in header
 
+      function parseToken(token) {
+        try {
+          return JSON.parse(atob(token.split('.')[1]));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function isEmployeeAccess(payload) {
+        if (payload.role === 'employee') {
+          return true;
+        }
+
+        const isAdminAsEmployee = payload.role === 'admin' && payload.activeRole === 'employee';
+        const isRootAsEmployee = payload.role === 'root' && payload.activeRole === 'employee';
+
+        return isAdminAsEmployee || isRootAsEmployee;
+      }
+
+      function getRedirectUrl(role) {
+        switch (role) {
+          case 'admin':
+            return '/admin-dashboard';
+          case 'root':
+            return '/root-dashboard';
+          default:
+            return '/login';
+        }
+      }
+
+      function logRoleCheck(payload) {
+        console.info('[Employee Dashboard Auth] Role check:', {
+          role: payload.role,
+          activeRole: payload.activeRole,
+          isRoleSwitched: payload.isRoleSwitched,
+          isAdminAsEmployee: payload.role === 'admin' && payload.activeRole === 'employee',
+          isRootAsEmployee: payload.role === 'root' && payload.activeRole === 'employee',
+        });
+      }
+
       function checkAuth() {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -241,35 +281,26 @@
           return;
         }
 
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          currentUser = payload;
-
-          // User info is handled by unified-navigation
-
-          // Update welcome message
-          document.querySelector('#employee-name').textContent = `${payload.first_name || payload.username}`;
-
-          // Redirect if not employee (but allow admins and root viewing as employee)
-          const isAdminAsEmployee = payload.role === 'admin' && payload.activeRole === 'employee';
-          const isRootAsEmployee = payload.role === 'root' && payload.activeRole === 'employee';
-          console.info('[Employee Dashboard Auth] Role check:', {
-            role: payload.role,
-            activeRole: payload.activeRole,
-            isRoleSwitched: payload.isRoleSwitched,
-            isAdminAsEmployee,
-            isRootAsEmployee,
-          });
-
-          if (payload.role !== 'employee' && !isAdminAsEmployee && !isRootAsEmployee) {
-            console.info('[Employee Dashboard Auth] Redirecting - not authorized');
-            window.location.href = payload.role === 'admin' ? '/admin-dashboard' : payload.role === 'root' ? '/root-dashboard' : '/login';
-          } else {
-            console.info('[Employee Dashboard Auth] Access granted');
-          }
-        } catch (e) {
+        const payload = parseToken(token);
+        if (!payload) {
           localStorage.removeItem('token');
           window.location.href = '/login';
+          return;
+        }
+
+        currentUser = payload;
+
+        // Update welcome message
+        document.querySelector('#employee-name').textContent = `${payload.first_name || payload.username}`;
+
+        // Check access rights
+        logRoleCheck(payload);
+
+        if (!isEmployeeAccess(payload)) {
+          console.info('[Employee Dashboard Auth] Redirecting - not authorized');
+          window.location.href = getRedirectUrl(payload.role);
+        } else {
+          console.info('[Employee Dashboard Auth] Access granted');
         }
       }
 

@@ -43,6 +43,45 @@ function setupEventListeners(): void {
 }
 
 /**
+ * Fetch user data from API
+ */
+async function fetchUserData(token: string): Promise<User | null> {
+  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
+
+  if (useV2 === true) {
+    const response = await apiClient.get<User>('/users/me');
+    return ResponseAdapter.adaptUserResponse(response) as User;
+  }
+
+  const userResponse = await fetch('/api/user/profile', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!userResponse.ok) {
+    return null;
+  }
+
+  return (await userResponse.json()) as User;
+}
+
+/**
+ * Render navigation based on user data
+ */
+function renderNavigation(navPlaceholder: HTMLElement, userData: User | null): void {
+  if (userData === null) {
+    setHTML(navPlaceholder, createGuestNavigation());
+    return;
+  }
+
+  const isAdminOrRoot = userData.role === 'admin' || userData.role === 'root';
+  const navigationHtml = isAdminOrRoot ? createAdminNavigation(userData) : createEmployeeNavigation(userData);
+
+  setHTML(navPlaceholder, navigationHtml);
+}
+
+/**
  * Load navigation based on user role
  */
 async function loadNavigation(): Promise<void> {
@@ -51,57 +90,21 @@ async function loadNavigation(): Promise<void> {
     if (!navPlaceholder || !(navPlaceholder instanceof HTMLElement)) return;
 
     const token = getAuthToken();
-    let userRole: string | null = null;
+    const hasValidToken = token !== null && token !== '';
+
     let userData: User | null = null;
 
-    if (token !== null && token !== '') {
-      // Check if v2 API should be used
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-
+    if (hasValidToken) {
       try {
-        if (useV2 === true) {
-          // Use API client for v2
-          const response = await apiClient.get<User>('/users/me');
-          // Convert v2 response to v1 format
-          userData = ResponseAdapter.adaptUserResponse(response) as User;
-          userRole = userData.role;
-        } else {
-          // Use traditional fetch for v1
-          const userResponse = await fetch('/api/user/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (userResponse.ok) {
-            userData = (await userResponse.json()) as User;
-            userRole = userData.role;
-          } else {
-            setHTML(navPlaceholder, createGuestNavigation());
-            return;
-          }
-        }
+        userData = await fetchUserData(token);
       } catch (error) {
         console.error('Error fetching user profile:', error);
-        setHTML(navPlaceholder, createGuestNavigation());
-        return;
       }
-    } else {
-      setHTML(navPlaceholder, createGuestNavigation());
-      return;
     }
 
-    // Load proper navigation based on role
-    if (userRole === 'admin' || userRole === 'root') {
-      setHTML(navPlaceholder, createAdminNavigation(userData));
-    } else {
-      setHTML(navPlaceholder, createEmployeeNavigation(userData));
-    }
+    renderNavigation(navPlaceholder, userData);
 
-    // Initialize Bootstrap components
     initializeBootstrapComponents();
-
-    // Check for unread notifications
     void checkUnreadNotifications();
   } catch (error) {
     console.error('Error loading navigation:', error);

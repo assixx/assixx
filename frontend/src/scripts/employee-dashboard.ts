@@ -146,43 +146,82 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   /**
+   * Get full name for display
+   */
+  function getDisplayName(info: EmployeeInfo): string {
+    const fullName = `${info.first_name ?? ''} ${info.last_name ?? ''}`.trim();
+    return fullName !== '' ? fullName : info.username;
+  }
+
+  /**
+   * Update employee name elements
+   */
+  function updateNameElements(info: EmployeeInfo): void {
+    const employeeName = document.querySelector('#employee-name');
+    if (employeeName) {
+      employeeName.textContent = getDisplayName(info);
+    }
+
+    const userName = document.querySelector('#user-name');
+    if (userName) {
+      userName.textContent = info.first_name ?? info.username;
+    }
+  }
+
+  /**
+   * Generate employee details HTML
+   */
+  function generateEmployeeDetailsHTML(info: EmployeeInfo): string {
+    const parts = [
+      `<p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name ?? '')}</p>`,
+      `<p><strong>E-Mail:</strong> ${escapeHtml(info.email)}</p>`,
+    ];
+
+    if (info.department !== undefined && info.department !== '') {
+      parts.push(`<p><strong>Abteilung:</strong> ${escapeHtml(info.department)}</p>`);
+    }
+
+    if (info.team !== undefined && info.team !== '') {
+      parts.push(`<p><strong>Team:</strong> ${escapeHtml(info.team)}</p>`);
+    }
+
+    if (info.position !== undefined && info.position !== '') {
+      parts.push(`<p><strong>Position:</strong> ${escapeHtml(info.position)}</p>`);
+    }
+
+    return parts.join('\n');
+  }
+
+  /**
+   * Update employee details section
+   */
+  function updateEmployeeDetails(info: EmployeeInfo): void {
+    const employeeDetails = $$id('employee-details');
+    if (employeeDetails) {
+      setHTML(employeeDetails, generateEmployeeDetailsHTML(info));
+    }
+  }
+
+  /**
+   * Update document count
+   */
+  function updateDocumentCount(count: number | undefined): void {
+    if (count === undefined) return;
+
+    const docCount = document.querySelector('#doc-count');
+    if (docCount) {
+      docCount.textContent = count.toString();
+    }
+  }
+
+  /**
    * Display employee information
    */
   function displayEmployeeInfo(info: EmployeeInfo): void {
     try {
-      // Update username in header
-      const employeeName = document.querySelector('#employee-name');
-      if (employeeName) {
-        const fullName = `${info.first_name ?? ''} ${info.last_name ?? ''}`.trim();
-        employeeName.textContent = fullName !== '' ? fullName : info.username;
-      }
-
-      // Update username in welcome message
-      const userName = document.querySelector('#user-name');
-      if (userName) {
-        userName.textContent = info.first_name ?? info.username;
-      }
-
-      // Update employee details if container exists
-      const employeeDetails = $$id('employee-details');
-      if (employeeDetails) {
-        setHTML(
-          employeeDetails,
-          `
-          <p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name ?? '')}</p>
-          <p><strong>E-Mail:</strong> ${escapeHtml(info.email)}</p>
-          ${info.department !== undefined && info.department !== '' ? `<p><strong>Abteilung:</strong> ${escapeHtml(info.department)}</p>` : ''}
-          ${info.team !== undefined && info.team !== '' ? `<p><strong>Team:</strong> ${escapeHtml(info.team)}</p>` : ''}
-          ${info.position !== undefined && info.position !== '' ? `<p><strong>Position:</strong> ${escapeHtml(info.position)}</p>` : ''}
-        `,
-        );
-      }
-
-      // Update document count if exists
-      const docCount = document.querySelector('#doc-count');
-      if (docCount && info.documents_count !== undefined) {
-        docCount.textContent = info.documents_count.toString();
-      }
+      updateNameElements(info);
+      updateEmployeeDetails(info);
+      updateDocumentCount(info.documents_count);
     } catch (error) {
       console.error('Fehler beim Anzeigen der Mitarbeiterinformationen:', error);
     }

@@ -153,49 +153,6 @@ body::after {
   margin-bottom: 20px;
 }
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-}
-
-.form-label {
-  margin-bottom: 5px;
-
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.form-control {
-  width: 100%;
-  padding: 8px 12px;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-sm);
-
-  font-size: 15px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(33 150 243 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 10%);
-}
-
-.form-control::placeholder {
-  font-size: 13px;
-  color: var(--text-secondary);
-  opacity: 40%;
-}
-
 /* Subdomain Input Group */
 .input-group {
   display: flex;

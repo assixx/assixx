@@ -291,6 +291,115 @@
         window.location.href = '/';
       };
 
+      // Helper functions to reduce complexity
+      function isUsingV2Api() {
+        return window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_AUTH;
+      }
+
+      function prepareApiRequest(username, password, fingerprint, useV2) {
+        if (useV2) {
+          return {
+            url: '/api/v2/auth/login',
+            body: { email: username, password },
+          };
+        }
+        return {
+          url: '/api/auth/login',
+          body: { username, password, fingerprint },
+        };
+      }
+
+      function storeV2Tokens(data) {
+        const token = data.data.accessToken;
+        const refreshToken = data.data.refreshToken;
+
+        localStorage.setItem('accessToken', token);
+        localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('token', token); // Compatibility
+
+        // Set cookie for server-side page protection
+        setTimeout(() => {
+          document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+        }, 0);
+
+        return {
+          token,
+          user: data.data.user,
+          role: data.data.user?.role || data.data.role,
+        };
+      }
+
+      function storeV1Tokens(data) {
+        const token = data.data.token;
+        localStorage.setItem('token', token);
+
+        return {
+          token,
+          user: data.data.user,
+          role: data.data.role,
+        };
+      }
+
+      function storeUserData(role, user) {
+        localStorage.setItem('userRole', role);
+        if (user) {
+          localStorage.setItem('user', JSON.stringify(user));
+        }
+        // Clear any stored navigation state
+        localStorage.removeItem('activeNavigation');
+        localStorage.removeItem('activeRole');
+      }
+
+      function redirectToDashboard(role) {
+        setTimeout(() => {
+          switch (role) {
+            case 'root':
+              window.location.href = '/root-dashboard';
+              break;
+            case 'admin':
+              window.location.href = '/admin-dashboard';
+              break;
+            case 'employee':
+              window.location.href = '/employee-dashboard';
+              break;
+            default:
+              showError('Unknown role');
+          }
+        }, 0);
+      }
+
+      function extractErrorMessage(data, useV2) {
+        if (useV2) {
+          return data.error?.message || data.message || 'Login fehlgeschlagen';
+        }
+        return data.message || 'Login fehlgeschlagen';
+      }
+
+      async function handleLoginResponse(response, data, useV2) {
+        if (!response.ok && !(useV2 && data.success)) {
+          showError(extractErrorMessage(data, useV2));
+          return false;
+        }
+
+        if (!useV2) {
+          const { token, user, role } = storeV1Tokens(data);
+          storeUserData(role, user);
+          redirectToDashboard(role);
+          return true;
+        }
+
+        // Handle V2 response
+        if (!data.success || !data.data) {
+          showError(data.error?.message || 'Login fehlgeschlagen');
+          return false;
+        }
+
+        const { token, user, role } = storeV2Tokens(data);
+        storeUserData(role, user);
+        redirectToDashboard(role);
+        return true;
+      }
+
       document.querySelector('#loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -298,115 +407,30 @@
         const password = document.querySelector('#password').value;
 
         try {
-          // Check if v2 API should be used
-          const useV2 = window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_AUTH;
-
-          // Generate browser fingerprint
+          const useV2 = isUsingV2Api();
           const fingerprint = await BrowserFingerprint.generate();
           BrowserFingerprint.store(fingerprint);
 
-          // Prepare request based on API version
-          let apiUrl, requestBody;
-          if (useV2) {
-            apiUrl = '/api/v2/auth/login';
-            // v2 uses 'email' instead of 'username'
-            requestBody = { email: username, password };
-          } else {
-            apiUrl = '/api/auth/login';
-            requestBody = { username, password, fingerprint };
-          }
+          const { url, body } = prepareApiRequest(username, password, fingerprint, useV2);
+          console.info(`[Login] Using ${useV2 ? 'v2' : 'v1'} API at ${url}`);
 
-          console.info(`[Login] Using ${useV2 ? 'v2' : 'v1'} API at ${apiUrl}`);
-
-          const response = await fetch(apiUrl, {
+          const response = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'X-Browser-Fingerprint': fingerprint,
             },
-            body: JSON.stringify(requestBody),
+            body: JSON.stringify(body),
           });
 
-          // Handle rate limiting error
+          // Handle rate limiting
           if (response.status === 429) {
             showError('Zu viele Anmeldeversuche!\n\nBitte warten Sie einige Minuten und versuchen Sie es erneut.');
             return;
           }
 
           const data = await response.json();
-
-          if (response.ok || (useV2 && data.success)) {
-            let token, role, user;
-
-            if (useV2) {
-              // v2 response format
-              if (data.success && data.data) {
-                token = data.data.accessToken;
-                const refreshToken = data.data.refreshToken;
-                user = data.data.user;
-                role = user?.role || data.data.role;
-
-                // Store v2 tokens
-                localStorage.setItem('accessToken', token);
-                localStorage.setItem('refreshToken', refreshToken);
-
-                // Also store in old format for compatibility
-                localStorage.setItem('token', token);
-
-                // Set cookie for server-side page protection (temporary compatibility)
-                // Using setTimeout to avoid race condition warning
-                setTimeout(() => {
-                  document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-                }, 0);
-              } else {
-                showError(data.error?.message || 'Login fehlgeschlagen');
-                return;
-              }
-            } else {
-              // v1 response format
-              token = data.data.token;
-              role = data.data.role;
-              user = data.data.user;
-
-              // Store v1 token
-              localStorage.setItem('token', token);
-            }
-
-            // Store role separately for easy access
-            localStorage.setItem('userRole', role);
-
-            // Also store user info
-            if (user) {
-              localStorage.setItem('user', JSON.stringify(user));
-            }
-
-            // Clear any stored navigation state to ensure dashboard is active
-            localStorage.removeItem('activeNavigation');
-            localStorage.removeItem('activeRole'); // Clear role switching state
-
-            // Redirect based on role (using setTimeout to avoid race condition warning)
-            setTimeout(() => {
-              switch (role) {
-                case 'root':
-                  window.location.href = '/root-dashboard';
-                  break;
-                case 'admin':
-                  window.location.href = '/admin-dashboard';
-                  break;
-                case 'employee':
-                  window.location.href = '/employee-dashboard';
-                  break;
-                default:
-                  showError('Unknown role');
-              }
-            }, 0);
-          } else {
-            // Show specific error message from backend
-            const errorMessage = useV2
-              ? data.error?.message || data.message || 'Login fehlgeschlagen'
-              : data.message || 'Login fehlgeschlagen';
-            showError(errorMessage);
-          }
+          await handleLoginResponse(response, data, useV2);
         } catch (error) {
           console.error('Login error:', error);
           showError('An error occurred during login');

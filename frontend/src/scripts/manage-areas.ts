@@ -301,45 +301,76 @@ function getStatusBadgeClass(status: string): string {
   }
 }
 
+// Get area form elements
+interface AreaFormElements {
+  areaId: HTMLInputElement | null;
+  areaName: HTMLInputElement | null;
+  areaDescription: HTMLTextAreaElement | null;
+  areaType: HTMLSelectElement | null;
+  areaCapacity: HTMLInputElement | null;
+  areaAddress: HTMLInputElement | null;
+  areaParent: HTMLSelectElement | null;
+  areaStatus: HTMLSelectElement | null;
+}
+
+// Get all area form elements
+function getAreaFormElements(): AreaFormElements {
+  return {
+    areaId: document.querySelector<HTMLInputElement>('#area-id'),
+    areaName: document.querySelector<HTMLInputElement>('#area-name'),
+    areaDescription: document.querySelector<HTMLTextAreaElement>('#area-description'),
+    areaType: document.querySelector<HTMLSelectElement>('#area-type'),
+    areaCapacity: document.querySelector<HTMLInputElement>('#area-capacity'),
+    areaAddress: document.querySelector<HTMLInputElement>('#area-address'),
+    areaParent: document.querySelector<HTMLSelectElement>('#area-parent'),
+    areaStatus: document.querySelector<HTMLSelectElement>('#area-status'),
+  };
+}
+
+// Populate form with area data
+function populateAreaForm(area: Area): void {
+  const elements = getAreaFormElements();
+
+  if (elements.areaId) elements.areaId.value = area.id.toString();
+  if (elements.areaName) elements.areaName.value = area.name;
+  if (elements.areaDescription) elements.areaDescription.value = area.description ?? '';
+  if (elements.areaType) elements.areaType.value = area.type;
+  if (elements.areaCapacity) elements.areaCapacity.value = area.capacity?.toString() ?? '';
+  if (elements.areaAddress) elements.areaAddress.value = area.address ?? '';
+  if (elements.areaParent) elements.areaParent.value = area.parent_id?.toString() ?? '';
+  if (elements.areaStatus) elements.areaStatus.value = area.is_active === 1 ? 'active' : 'inactive';
+}
+
+// Reset form for new area
+function resetAreaForm(): void {
+  areaForm?.reset();
+  const areaIdInput = document.querySelector<HTMLInputElement>('#area-id');
+  if (areaIdInput) areaIdInput.value = '';
+}
+
+// Update modal title
+function updateModalTitle(isEdit: boolean): void {
+  const modalTitle = document.querySelector('#area-modal-title');
+  if (modalTitle) {
+    modalTitle.textContent = isEdit ? 'Bereich bearbeiten' : 'Neuer Bereich';
+  }
+}
+
 // Open area modal
 function openAreaModal(areaId?: number): void {
   editingAreaId = areaId ?? null;
+  const isEdit = areaId !== undefined;
 
-  const modalTitle = document.querySelector('#area-modal-title');
-  if (modalTitle) {
-    modalTitle.textContent = areaId !== undefined ? 'Bereich bearbeiten' : 'Neuer Bereich';
-  }
-
-  // Load parent areas for dropdown
+  updateModalTitle(isEdit);
   loadParentAreas(areaId);
 
-  if (areaId !== undefined) {
-    // Load area data for editing
+  if (isEdit) {
     const area = areas.find((a) => a.id === areaId);
     if (area) {
-      const areaIdInput = document.querySelector<HTMLInputElement>('#area-id');
-      const areaNameInput = document.querySelector<HTMLInputElement>('#area-name');
-      const areaDescriptionInput = document.querySelector<HTMLTextAreaElement>('#area-description');
-      const areaTypeSelect = document.querySelector<HTMLSelectElement>('#area-type');
-      const areaCapacityInput = document.querySelector<HTMLInputElement>('#area-capacity');
-      const areaAddressInput = document.querySelector<HTMLInputElement>('#area-address');
-      const areaParentSelect = document.querySelector<HTMLSelectElement>('#area-parent');
-      const areaStatusSelect = document.querySelector<HTMLSelectElement>('#area-status');
-
-      if (areaIdInput) areaIdInput.value = area.id.toString();
-      if (areaNameInput) areaNameInput.value = area.name;
-      if (areaDescriptionInput) areaDescriptionInput.value = area.description ?? '';
-      if (areaTypeSelect) areaTypeSelect.value = area.type;
-      if (areaCapacityInput) areaCapacityInput.value = area.capacity?.toString() ?? '';
-      if (areaAddressInput) areaAddressInput.value = area.address ?? '';
-      if (areaParentSelect) areaParentSelect.value = area.parent_id?.toString() ?? '';
-      if (areaStatusSelect) areaStatusSelect.value = area.is_active === 1 ? 'active' : 'inactive';
+      populateAreaForm(area);
     }
   } else {
-    // Reset form for new area
-    areaForm?.reset();
-    const areaIdInput = document.querySelector<HTMLInputElement>('#area-id');
-    if (areaIdInput) areaIdInput.value = '';
+    resetAreaForm();
   }
 
   areaModal?.classList.add('active');

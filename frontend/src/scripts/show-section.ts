@@ -47,52 +47,53 @@ export function showSection(sectionName: string): void {
     console.info(`[ShowSection] Section ${sectionId} displayed`);
 
     // Load section-specific data (with small delay to ensure functions are loaded)
-    setTimeout(() => {
-      const sectionBaseName = sectionName.replace('-section', '');
-      interface SectionWindow {
-        loadEmployeesTable?: () => void;
-        loadDocumentsTable?: () => void;
-        loadPayslipsTable?: () => void;
-        loadEmployeesForPayslipSelect?: () => void;
-        loadDepartmentsTable?: () => void;
-        loadTeamsTable?: () => void;
+    interface SectionWindow {
+      loadEmployeesTable?: () => void;
+      loadDocumentsTable?: () => void;
+      loadPayslipsTable?: () => void;
+      loadEmployeesForPayslipSelect?: () => void;
+      loadDepartmentsTable?: () => void;
+      loadTeamsTable?: () => void;
+    }
+
+    // Helper to safely call a function if it exists
+    function callIfExists(fn: (() => void) | undefined, name?: string): void {
+      if (typeof fn === 'function') {
+        if (name !== undefined && name !== '') {
+          console.info(`[ShowSection] Calling ${name}`);
+        }
+        fn();
+      } else if (name !== undefined && name !== '') {
+        console.warn(`[ShowSection] ${name} function not found`);
       }
+    }
 
-      const sectionWindow = window as unknown as SectionWindow;
-
+    // Map section names to their loader functions
+    function loadSectionData(sectionBaseName: string, sectionWindow: SectionWindow): void {
       switch (sectionBaseName) {
         case 'employees':
-          if (typeof sectionWindow.loadEmployeesTable === 'function') {
-            console.info('[ShowSection] Calling loadEmployeesTable');
-            sectionWindow.loadEmployeesTable();
-          } else {
-            console.warn('[ShowSection] loadEmployeesTable function not found');
-          }
+          callIfExists(sectionWindow.loadEmployeesTable, 'loadEmployeesTable');
           break;
         case 'documents':
-          if (typeof sectionWindow.loadDocumentsTable === 'function') {
-            sectionWindow.loadDocumentsTable();
-          }
+          callIfExists(sectionWindow.loadDocumentsTable);
           break;
         case 'payslips':
-          if (typeof sectionWindow.loadPayslipsTable === 'function') {
-            sectionWindow.loadPayslipsTable();
-          }
-          if (typeof sectionWindow.loadEmployeesForPayslipSelect === 'function') {
-            sectionWindow.loadEmployeesForPayslipSelect();
-          }
+          callIfExists(sectionWindow.loadPayslipsTable);
+          callIfExists(sectionWindow.loadEmployeesForPayslipSelect);
           break;
         case 'departments':
-          if (typeof sectionWindow.loadDepartmentsTable === 'function') {
-            sectionWindow.loadDepartmentsTable();
-          }
+          callIfExists(sectionWindow.loadDepartmentsTable);
           break;
         case 'teams':
-          if (typeof sectionWindow.loadTeamsTable === 'function') {
-            sectionWindow.loadTeamsTable();
-          }
+          callIfExists(sectionWindow.loadTeamsTable);
           break;
       }
+    }
+
+    setTimeout(() => {
+      const sectionBaseName = sectionName.replace('-section', '');
+      const sectionWindow = window as unknown as SectionWindow;
+      loadSectionData(sectionBaseName, sectionWindow);
     }, 100);
   } else {
     console.error(`[ShowSection] Section ${sectionId} not found`);

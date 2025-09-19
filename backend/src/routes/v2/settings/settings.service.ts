@@ -65,6 +65,43 @@ function parseSettingValue(
 }
 
 /**
+ * Helper: Serialize boolean value
+ */
+function serializeBooleanValue(value: string | number | boolean | Record<string, unknown>): string {
+  if (typeof value === 'string') {
+    const isFalsy = value.toLowerCase() === 'false' || value === '0' || value === '';
+    return isFalsy ? 'false' : 'true';
+  }
+  return value ? 'true' : 'false';
+}
+
+/**
+ * Helper: Serialize number value
+ */
+function serializeNumberValue(value: string | number | boolean | Record<string, unknown>): string {
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  return '0';
+}
+
+/**
+ * Helper: Serialize default/string value
+ */
+function serializeDefaultValue(value: string | number | boolean | Record<string, unknown>): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'boolean' || typeof value === 'number') {
+    return String(value);
+  }
+  return JSON.stringify(value);
+}
+
+/**
  * Serialize setting value for storage
  * @param value - The value parameter
  * @param type - The type parameter
@@ -73,36 +110,19 @@ function serializeSettingValue(
   value: string | number | boolean | Record<string, unknown> | null,
   type: SettingType,
 ): string {
-  if (value === null) return '';
+  if (value === null) {
+    return '';
+  }
 
   switch (type) {
     case 'boolean':
-      // Handle string "false" and "true" properly
-      if (typeof value === 'string') {
-        return value.toLowerCase() === 'false' || value === '0' || value === '' ? 'false' : 'true';
-      }
-      return value ? 'true' : 'false';
+      return serializeBooleanValue(value);
     case 'number':
-      if (typeof value === 'number') {
-        return String(value);
-      }
-      // If it's a string that looks like a number, return it
-      if (typeof value === 'string') {
-        return value;
-      }
-      return '0';
+      return serializeNumberValue(value);
     case 'json':
       return JSON.stringify(value);
     default:
-      // For string type or default
-      if (typeof value === 'string') {
-        return value;
-      }
-      if (typeof value === 'boolean' || typeof value === 'number') {
-        return String(value);
-      }
-      // For objects, stringify them
-      return JSON.stringify(value);
+      return serializeDefaultValue(value);
   }
 }
 

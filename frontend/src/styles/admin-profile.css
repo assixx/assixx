@@ -71,51 +71,6 @@ h1 {
   background: var(--primary-color);
 }
 
-/* Form Styles */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-}
-
-.form-group {
-  margin-bottom: var(--spacing-md);
-}
-
-.form-label {
-  display: block;
-
-  margin-bottom: var(--spacing-xs);
-
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--spacing-2sm);
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
-
-  font-size: 1rem;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 2%);
-
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(56 189 248 / 10%),
-    inset 0 1px 2px rgb(0 0 0 / 10%);
-}
-
 .form-control[readonly] {
   cursor: not-allowed;
   opacity: 60%;

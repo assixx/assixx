@@ -471,6 +471,42 @@
         }
       });
 
+      // Handler functions
+      function handleShowAddAdminModal() {
+        if (window.showAddAdminModal) {
+          window.showAddAdminModal();
+        }
+      }
+
+      function handleCloseAdminModal() {
+        if (window.closeAdminModal) {
+          window.closeAdminModal();
+        }
+      }
+
+      function handleToggleDropdown(target) {
+        const dropdown = target.dataset.dropdown;
+        if (dropdown) {
+          toggleDropdown('#' + dropdown);
+        }
+      }
+
+      function handleSelectOption(target) {
+        const dropdown = target.dataset.dropdown;
+        const value = target.dataset.value;
+        const text = target.dataset.text;
+        if (dropdown && value && text) {
+          selectOption('#' + dropdown, value, text);
+        }
+      }
+
+      function handleSwitchPermTab(target) {
+        const tab = target.dataset.tab;
+        if (tab) {
+          switchPermTab(tab);
+        }
+      }
+
       // Event Delegation for data-action
       document.addEventListener('click', function (e) {
         const target = e.target.closest('[data-action]');
@@ -480,31 +516,17 @@
 
         switch (action) {
           case 'show-add-admin-modal':
-            if (window.showAddAdminModal) {
-              window.showAddAdminModal();
-            }
+            handleShowAddAdminModal();
             break;
           case 'close-admin-modal':
-            if (window.closeAdminModal) {
-              window.closeAdminModal();
-            }
+            handleCloseAdminModal();
             break;
-          case 'toggle-dropdown': {
-            const dropdown = target.dataset.dropdown;
-            if (dropdown) {
-              toggleDropdown('#' + dropdown);
-            }
+          case 'toggle-dropdown':
+            handleToggleDropdown(target);
             break;
-          }
-          case 'select-option': {
-            const dropdown = target.dataset.dropdown;
-            const value = target.dataset.value;
-            const text = target.dataset.text;
-            if (dropdown && value && text) {
-              selectOption('#' + dropdown, value, text);
-            }
+          case 'select-option':
+            handleSelectOption(target);
             break;
-          }
           case 'close-permissions-modal':
             closePermissionsModal();
             break;
@@ -514,13 +536,9 @@
           case 'select-no-departments':
             selectNoDepartments();
             break;
-          case 'switch-perm-tab': {
-            const tab = target.dataset.tab;
-            if (tab) {
-              switchPermTab(tab);
-            }
+          case 'switch-perm-tab':
+            handleSwitchPermTab(target);
             break;
-          }
           case 'save-permissions':
             savePermissions();
             break;

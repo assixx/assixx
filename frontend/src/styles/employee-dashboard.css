@@ -48,7 +48,7 @@ body::after {
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--shadow-sm);
 
-  /* animation: fadeInUp 0.6s ease-out; */
+  animation: fade-in-up 0.6s ease-out;
 }
 
 .welcome-hero::before {
@@ -60,7 +60,7 @@ body::after {
   opacity: 100%;
   background:
     radial-gradient(circle at 20% 80%, rgb(255 255 255 / 10%) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgb(255 255 255 / 15%) 0%, transparent 50%);
+    radial-gradient(circle at 80% 20%, rgb(39 72 89) 0%, #235472a1 50%);
 }
 
 .welcome-hero::after {
@@ -447,7 +447,6 @@ body::after {
 }
 
 .feature-card:hover {
-  transform: translateY(-8px);
   border-color: rgb(0 142 255 / 50%);
   background: rgb(255 255 255 / 3%);
   box-shadow:

@@ -102,6 +102,76 @@ class BlackboardWidget {
   /**
    * Render dashboard style widget
    */
+  /**
+   * Get priority class based on priority level
+   */
+  getPriorityClass(priority) {
+    switch (priority) {
+      case 'low':
+        return 'border-success';
+      case 'normal':
+        return 'border-primary';
+      case 'high':
+        return 'border-warning';
+      case 'urgent':
+        return 'border-danger';
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Get level badge HTML based on org level
+   */
+  getLevelBadge(orgLevel) {
+    switch (orgLevel) {
+      case 'company':
+        return '<span class="badge bg-primary">Firma</span>';
+      case 'department':
+        return '<span class="badge bg-warning">Abteilung</span>';
+      case 'team':
+        return '<span class="badge bg-success">Team</span>';
+      default:
+        return '';
+    }
+  }
+
+  /**
+   * Format entry HTML
+   */
+  formatEntryHtml(entry) {
+    const createdDate = new Date(entry.created_at);
+    const formattedDate = createdDate.toLocaleDateString('de-DE');
+    const priorityClass = this.getPriorityClass(entry.priority);
+    const levelBadge = this.getLevelBadge(entry.org_level);
+    const unreadBadge =
+      entry.requires_confirmation && !entry.is_confirmed ? '<span class="badge bg-danger ms-2">Ungelesen</span>' : '';
+
+    const confirmButton =
+      entry.requires_confirmation && !entry.is_confirmed
+        ? `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${escapeHtml(String(entry.id))}">
+             Bestätigen
+           </button>`
+        : '';
+
+    return `
+      <div class="blackboard-entry card mb-3 ${priorityClass}">
+        <div class="card-body">
+          <h5 class="card-title">${escapeHtml(entry.title)} ${unreadBadge}</h5>
+          <div class="entry-meta mb-2">
+            ${levelBadge}
+            <small class="text-muted ms-2">${formattedDate}</small>
+          </div>
+          <p class="card-text">${escapeHtml(this.truncateText(entry.content, 100))}</p>
+          <div class="entry-actions">
+            <a href="/blackboard?id=${escapeHtml(String(entry.id))}" class="btn btn-sm btn-primary">Details</a>
+            ${confirmButton}
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   renderDashboardWidget(entries) {
     let html = '';
 
@@ -120,58 +190,7 @@ class BlackboardWidget {
     html += '<div class="blackboard-entries">';
 
     entries.forEach((entry) => {
-      // Format date
-      const createdDate = new Date(entry.created_at);
-      const formattedDate = createdDate.toLocaleDateString('de-DE');
-
-      // Prepare priority class
-      let priorityClass = '';
-      if (entry.priority === 'low') {
-        priorityClass = 'border-success';
-      } else if (entry.priority === 'normal') {
-        priorityClass = 'border-primary';
-      } else if (entry.priority === 'high') {
-        priorityClass = 'border-warning';
-      } else if (entry.priority === 'urgent') {
-        priorityClass = 'border-danger';
-      }
-
-      // Prepare level badge
-      let levelBadge = '';
-      if (entry.org_level === 'company') {
-        levelBadge = '<span class="badge bg-primary">Firma</span>';
-      } else if (entry.org_level === 'department') {
-        levelBadge = '<span class="badge bg-warning">Abteilung</span>';
-      } else if (entry.org_level === 'team') {
-        levelBadge = '<span class="badge bg-success">Team</span>';
-      }
-
-      // Prepare unread indicator
-      const unreadBadge =
-        entry.requires_confirmation && !entry.is_confirmed ? '<span class="badge bg-danger ms-2">Ungelesen</span>' : '';
-
-      html += `
-        <div class="blackboard-entry card mb-3 ${priorityClass}">
-          <div class="card-body">
-            <h5 class="card-title">${escapeHtml(entry.title)} ${unreadBadge}</h5>
-            <div class="entry-meta mb-2">
-              ${levelBadge}
-              <small class="text-muted ms-2">${formattedDate}</small>
-            </div>
-            <p class="card-text">${escapeHtml(this.truncateText(entry.content, 100))}</p>
-            <div class="entry-actions">
-              <a href="/blackboard?id=${escapeHtml(String(entry.id))}" class="btn btn-sm btn-primary">Details</a>
-              ${
-                entry.requires_confirmation && !entry.is_confirmed
-                  ? `<button class="btn btn-sm btn-outline-success ms-2 confirm-entry-btn" data-id="${escapeHtml(String(entry.id))}">
-                     Bestätigen
-                   </button>`
-                  : ''
-              }
-            </div>
-          </div>
-        </div>
-      `;
+      html += this.formatEntryHtml(entry);
     });
 
     html += '</div>';

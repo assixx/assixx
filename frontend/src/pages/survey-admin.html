@@ -234,6 +234,41 @@
       // Make modalManager available globally
       window.modalManager = modalManager;
 
+      // Action handlers
+      function handleToggleDropdown(target) {
+        const dropdown = target.dataset.dropdown;
+        if (window.surveyAdmin && window.surveyAdmin.toggleDropdown) {
+          window.surveyAdmin.toggleDropdown(dropdown);
+        }
+      }
+
+      function handleSelectAssignment(target) {
+        const value = target.dataset.value;
+        const text = target.dataset.text;
+        if (window.surveyAdmin && window.surveyAdmin.selectAssignmentOption) {
+          window.surveyAdmin.selectAssignmentOption(value, text);
+        }
+      }
+
+      function handleSaveSurvey(target) {
+        const status = target.dataset.status;
+        if (window.surveyAdmin && window.surveyAdmin.saveSurvey) {
+          window.surveyAdmin.saveSurvey(status);
+        }
+      }
+
+      function handleAddQuestion() {
+        if (window.surveyAdmin && window.surveyAdmin.addQuestion) {
+          window.surveyAdmin.addQuestion();
+        }
+      }
+
+      function handleShowCreateModal() {
+        if (window.surveyAdmin && window.surveyAdmin.showCreateModal) {
+          window.surveyAdmin.showCreateModal();
+        }
+      }
+
       // Event Delegation for HTML-specific actions
       document.addEventListener('click', function (e) {
         const target = e.target.closest('[data-action]');
@@ -242,37 +277,20 @@
         const action = target.dataset.action;
 
         switch (action) {
-          case 'toggle-dropdown': {
-            const dropdown = target.dataset.dropdown;
-            if (window.surveyAdmin && window.surveyAdmin.toggleDropdown) {
-              window.surveyAdmin.toggleDropdown(dropdown);
-            }
+          case 'toggle-dropdown':
+            handleToggleDropdown(target);
             break;
-          }
-          case 'select-assignment': {
-            const value = target.dataset.value;
-            const text = target.dataset.text;
-            if (window.surveyAdmin && window.surveyAdmin.selectAssignmentOption) {
-              window.surveyAdmin.selectAssignmentOption(value, text);
-            }
+          case 'select-assignment':
+            handleSelectAssignment(target);
             break;
-          }
           case 'add-question':
-            if (window.surveyAdmin && window.surveyAdmin.addQuestion) {
-              window.surveyAdmin.addQuestion();
-            }
+            handleAddQuestion();
             break;
-          case 'save-survey': {
-            const status = target.dataset.status;
-            if (window.surveyAdmin && window.surveyAdmin.saveSurvey) {
-              window.surveyAdmin.saveSurvey(status);
-            }
+          case 'save-survey':
+            handleSaveSurvey(target);
             break;
-          }
           case 'show-create-modal':
-            if (window.surveyAdmin && window.surveyAdmin.showCreateModal) {
-              window.surveyAdmin.showCreateModal();
-            }
+            handleShowCreateModal();
             break;
         }
       });

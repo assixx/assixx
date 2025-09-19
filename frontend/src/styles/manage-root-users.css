@@ -245,43 +245,6 @@ body::after {
   padding: var(--spacing-lg);
 }
 
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
-
-.form-control {
-  width: 100%;
-  padding: var(--spacing-2sm);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
-
-  color: #fff;
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.form-control:focus {
-  border-color: rgb(0 142 255 / 50%);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(0 142 255 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 20%);
-}
-
-textarea.form-control {
-  resize: vertical;
-  min-height: 80px;
-}
-
 /* Custom Dropdown */
 .custom-dropdown {
   position: relative;

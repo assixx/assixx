@@ -7,34 +7,37 @@
 
 export class BrowserFingerprint {
   /**
-   * Generate a browser fingerprint
-   * @returns {Promise<string>} The generated fingerprint
+   * Get screen-related components
+   * @returns {string[]} Screen components
    */
-  static async generate() {
-    const components = [];
+  static getScreenComponents() {
+    return [`${screen.width}x${screen.height}`, `${screen.colorDepth}`];
+  }
 
-    // Screen resolution
-    components.push(`${screen.width}x${screen.height}`);
-    components.push(`${screen.colorDepth}`);
+  /**
+   * Get timezone and language components
+   * @returns {string[]} Locale components
+   */
+  static getLocaleComponents() {
+    return [
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+      new Date().getTimezoneOffset(),
+      navigator.language || navigator.userLanguage,
+      navigator.platform,
+    ];
+  }
 
-    // Timezone
-    components.push(Intl.DateTimeFormat().resolvedOptions().timeZone);
-    components.push(new Date().getTimezoneOffset());
-
-    // Language
-    components.push(navigator.language || navigator.userLanguage);
-
-    // Platform
-    components.push(navigator.platform);
-
-    // Canvas fingerprint
+  /**
+   * Get canvas fingerprint
+   * @returns {string} Canvas fingerprint
+   */
+  static getCanvasFingerprint() {
     try {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       canvas.width = 200;
       canvas.height = 50;
 
-      // Draw some text with specific font and colors
       ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = '#f60';
       ctx.fillRect(125, 1, 62, 20);
@@ -45,42 +48,58 @@ export class BrowserFingerprint {
       ctx.font = '18pt Arial';
       ctx.fillText('BrowserLeaks.com', 4, 45);
 
-      // Get canvas data
-      const canvasData = canvas.toDataURL();
-      components.push(canvasData);
+      return canvas.toDataURL();
     } catch {
-      components.push('canvas-blocked');
+      return 'canvas-blocked';
+    }
+  }
+
+  /**
+   * Get WebGL parameters
+   * @param {WebGLRenderingContext} gl WebGL context
+   * @returns {string[]} WebGL parameters
+   */
+  static getWebGLParams(gl) {
+    const vendor = gl.getParameter(gl.VENDOR);
+    const renderer = gl.getParameter(gl.RENDERER);
+
+    const isWebKit = vendor === 'WebKit' && renderer === 'WebKit WebGL';
+    if (!isWebKit) {
+      return [vendor, renderer];
     }
 
-    // WebGL fingerprint
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!debugInfo) {
+      return [vendor, renderer];
+    }
+
+    return [gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL), gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL)];
+  }
+
+  /**
+   * Get WebGL fingerprint
+   * @returns {string[]} WebGL fingerprint
+   */
+  static getWebGLFingerprint() {
     try {
       const canvas = document.createElement('canvas');
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-      if (gl) {
-        // Try modern approach first (standard WebGL parameters)
-        const vendor = gl.getParameter(gl.VENDOR);
-        const renderer = gl.getParameter(gl.RENDERER);
 
-        // If standard parameters don't give enough info, try debug extension as fallback
-        if (vendor === 'WebKit' && renderer === 'WebKit WebGL') {
-          const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-          if (debugInfo) {
-            components.push(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
-            components.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
-          } else {
-            components.push(vendor);
-            components.push(renderer);
-          }
-        } else {
-          components.push(vendor);
-          components.push(renderer);
-        }
+      if (!gl) {
+        return ['webgl-not-supported'];
       }
-    } catch {
-      components.push('webgl-blocked');
-    }
 
-    // Audio fingerprint
+      return this.getWebGLParams(gl);
+    } catch {
+      return ['webgl-blocked'];
+    }
+  }
+
+  /**
+   * Get audio fingerprint
+   * @returns {Promise<string>} Audio fingerprint
+   */
+  static async getAudioFingerprint() {
     try {
       const audioContext = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
@@ -88,7 +107,7 @@ export class BrowserFingerprint {
       const gain = audioContext.createGain();
       const scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
 
-      gain.gain.value = 0; // Mute
+      gain.gain.value = 0;
       oscillator.connect(analyser);
       analyser.connect(scriptProcessor);
       scriptProcessor.connect(gain);
@@ -106,33 +125,52 @@ export class BrowserFingerprint {
         setTimeout(resolve, 100);
       });
 
-      components.push(audioData);
-
       oscillator.stop();
       audioContext.close();
-    } catch {
-      components.push('audio-blocked');
-    }
 
-    // Hardware concurrency
+      return audioData;
+    } catch {
+      return 'audio-blocked';
+    }
+  }
+
+  /**
+   * Get hardware components
+   * @returns {(string|number|boolean)[]} Hardware components
+   */
+  static getHardwareComponents() {
+    const components = [];
+
     components.push(navigator.hardwareConcurrency || 'unknown');
 
-    // Device memory (if available)
     if (navigator.deviceMemory) {
       components.push(navigator.deviceMemory);
     }
 
-    // Touch support
     components.push('ontouchstart' in window);
 
-    // Plugins (for older browsers)
     if (navigator.plugins && navigator.plugins.length > 0) {
-      // Use Array.from to avoid object injection warning
       const plugins = [...navigator.plugins].map((plugin) => plugin.name);
       components.push(plugins.join(','));
     }
 
-    // Generate hash from components
+    return components;
+  }
+
+  /**
+   * Generate a browser fingerprint
+   * @returns {Promise<string>} The generated fingerprint
+   */
+  static async generate() {
+    const components = [];
+
+    components.push(...this.getScreenComponents());
+    components.push(...this.getLocaleComponents());
+    components.push(this.getCanvasFingerprint());
+    components.push(...this.getWebGLFingerprint());
+    components.push(await this.getAudioFingerprint());
+    components.push(...this.getHardwareComponents());
+
     return this.hashComponents(components.join('|||'));
   }
 

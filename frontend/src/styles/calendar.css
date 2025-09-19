@@ -927,37 +927,6 @@
   border-radius: 3px;
 }
 
-/* Form Styles gemäß Design-Standards */
-.form-group {
-  margin-bottom: 1.25rem;
-}
-
-.form-group label {
-  display: block;
-
-  margin-bottom: 0.5rem;
-
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.form-group label i {
-  margin-right: 0.5rem;
-  color: var(--primary-color);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 15%);
-}
-
-.form-control::placeholder {
-  color: rgb(255 255 255 / 50%);
-}
-
 textarea.form-control {
   resize: vertical;
   min-height: 100px;

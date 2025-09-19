@@ -340,47 +340,70 @@
         }
       });
 
+      // Helper functions
+      function getPlanId(plan) {
+        switch (plan) {
+          case 'basic':
+            return 1;
+          case 'professional':
+            return 2;
+          case 'enterprise':
+            return 3;
+          default:
+            return null;
+        }
+      }
+
+      function formatPlanName(plan) {
+        return plan.charAt(0).toUpperCase() + plan.slice(1);
+      }
+
+      function isV2ApiEnabled() {
+        return window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
+      }
+
+      async function performV2Upgrade(planId) {
+        const result = await apiClient.put('/plans/upgrade', {
+          planId: planId,
+        });
+
+        if (result) {
+          alert('Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.');
+          await loadStorageInfo();
+        }
+      }
+
+      function showV1NotAvailable() {
+        alert('Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktieren Sie unseren Support.');
+      }
+
+      function showUpgradeError() {
+        alert('Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.');
+      }
+
       // Upgrade storage
       window.upgradeStorage = async function (plan) {
-        if (confirm(`Möchten Sie wirklich auf den ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan upgraden?`)) {
-          try {
-            const useV2 = window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
+        const formattedPlan = formatPlanName(plan);
+        if (!confirm(`Möchten Sie wirklich auf den ${formattedPlan} Plan upgraden?`)) {
+          return;
+        }
 
-            if (useV2) {
-              // V2 API: Upgrade plan - Use safe property access
-              let planId;
-              switch (plan) {
-                case 'basic':
-                  planId = 1;
-                  break;
-                case 'professional':
-                  planId = 2;
-                  break;
-                case 'enterprise':
-                  planId = 3;
-                  break;
-                default:
-                  alert('Ungültiger Plan ausgewählt');
-                  return;
-              }
-
-              const result = await apiClient.put('/plans/upgrade', {
-                planId: planId,
-              });
-
-              if (result) {
-                alert('Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.');
-                // Reload storage info to reflect changes
-                await loadStorageInfo();
-              }
-            } else {
-              // V1 API or not implemented yet
-              alert('Diese Funktion wird in Kürze verfügbar sein. Bitte kontaktieren Sie unseren Support.');
-            }
-          } catch (error) {
-            console.error('Error upgrading plan:', error);
-            alert('Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.');
+        try {
+          if (!isV2ApiEnabled()) {
+            showV1NotAvailable();
+            return;
           }
+
+          const planId = getPlanId(plan);
+          if (!planId) {
+            alert('Ungültiger Plan ausgewählt');
+            return;
+          }
+
+          await performV2Upgrade(planId);
+        } catch (error) {
+          console.error('Error upgrading plan:', error);
+          showUpgradeError();
         }
       };
 

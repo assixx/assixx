@@ -113,60 +113,82 @@ function initTabs(): void {
 }
 
 /**
+ * Fetch user data from API v1 or v2
+ */
+async function fetchUserData(token: string): Promise<User> {
+  const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+
+  if (useV2Users === true) {
+    return await apiClient.get<User>('/users/profile');
+  }
+
+  const response = await fetch('/api/user/profile', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Fehler beim Laden der Benutzerdaten');
+  }
+
+  return (await response.json()) as User;
+}
+
+/**
+ * Get display name from user data
+ */
+function getDisplayName(userData: User): string {
+  if (userData.first_name !== undefined && userData.first_name !== '') {
+    return `${userData.first_name} ${userData.last_name ?? ''}`;
+  }
+  return userData.username;
+}
+
+/**
+ * Handle user info display
+ */
+async function handleUserInfoDisplay(userInfo: Element): Promise<void> {
+  const token = getAuthToken();
+
+  if (token === null || token === '') {
+    window.location.href = '/login';
+    return;
+  }
+
+  try {
+    const userData = await fetchUserData(token);
+    const displayName = getDisplayName(userData);
+    userInfo.textContent = displayName;
+  } catch (error) {
+    console.error('Fehler beim Laden der Benutzerdaten:', error);
+    window.location.href = '/login';
+  }
+}
+
+/**
+ * Setup logout button handler
+ */
+function setupLogoutHandler(logoutBtn: Element): void {
+  logoutBtn.addEventListener('click', () => {
+    removeAuthToken();
+    window.location.href = '/login';
+  });
+}
+
+/**
  * Benutzerdaten und Logout-Funktionalität
  */
 async function setupUserAndLogout(): Promise<void> {
   const userInfo = document.querySelector('#user-info');
   const logoutBtn = document.querySelector('#logout-btn');
 
-  if (userInfo) {
-    // Lade Benutzerdaten
-    const token = getAuthToken();
-    if (token !== null && token !== '') {
-      try {
-        const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
-        let userData: User | null = null;
-
-        if (useV2Users === true) {
-          // Use API v2 with apiClient
-          userData = await apiClient.get<User>('/users/profile');
-        } else {
-          // Use API v1 with fetch
-          const response = await fetch('/api/user/profile', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!response.ok) {
-            throw new Error('Fehler beim Laden der Benutzerdaten');
-          }
-
-          userData = (await response.json()) as User;
-        }
-
-        // Anzeigename setzen (Name oder Username)
-        const displayName =
-          userData.first_name !== undefined && userData.first_name !== ''
-            ? `${userData.first_name} ${userData.last_name ?? ''}`
-            : userData.username;
-        userInfo.textContent = displayName;
-      } catch (error) {
-        console.error('Fehler beim Laden der Benutzerdaten:', error);
-        // Bei Fehler zur Login-Seite weiterleiten
-        // eslint-disable-next-line require-atomic-updates -- Safe: window is a global object
-        window.location.href = '/login';
-      }
-    } else {
-      window.location.href = '/login';
-    }
+  if (userInfo !== null) {
+    await handleUserInfoDisplay(userInfo);
   }
 
   if (logoutBtn !== null) {
-    logoutBtn.addEventListener('click', () => {
-      removeAuthToken();
-      window.location.href = '/login';
-    });
+    setupLogoutHandler(logoutBtn);
   }
 }
 

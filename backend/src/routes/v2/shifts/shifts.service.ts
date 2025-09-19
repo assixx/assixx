@@ -150,6 +150,59 @@ interface DbShiftData extends RowDataPacket {
   team_name?: string;
 }
 
+// Helper functions for date/time parsing
+/**
+ * Parse a datetime field and return formatted time string (HH:mm)
+ * @param dateTimeValue - DateTime value to parse
+ * @param fieldName - Field name for error logging
+ * @returns Formatted time string or undefined
+ */
+function parseTimeFromDateTime(
+  dateTimeValue: string | Date | undefined,
+  fieldName: string,
+): string | undefined {
+  if (!dateTimeValue) {
+    return undefined;
+  }
+
+  try {
+    const dateTime = new Date(dateTimeValue);
+    if (Number.isNaN(dateTime.getTime())) {
+      return undefined;
+    }
+
+    const hours = dateTime.getHours().toString().padStart(2, '0');
+    const minutes = dateTime.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  } catch (error: unknown) {
+    logger.error(`Error parsing ${fieldName}:`, error);
+    return undefined;
+  }
+}
+
+/**
+ * Parse a date field and return formatted date string (YYYY-MM-DD)
+ * @param dateValue - Date value to parse
+ * @returns Formatted date string or undefined
+ */
+function parseDateToString(dateValue: string | Date | undefined): string | undefined {
+  if (!dateValue) {
+    return undefined;
+  }
+
+  try {
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+      return undefined;
+    }
+
+    return date.toISOString().split('T')[0];
+  } catch (error: unknown) {
+    logger.error('Error parsing date:', error);
+    return undefined;
+  }
+}
+
 // Helper function to convert DB shift to API format
 /**
  * Convert database shift to API format
@@ -159,45 +212,21 @@ interface DbShiftData extends RowDataPacket {
 function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
   const apiShift = dbToApi(dbShift) as unknown as ShiftApiResponse;
 
-  // Extract time from datetime fields
-  if (dbShift.start_time) {
-    try {
-      const startTime = new Date(dbShift.start_time);
-      if (!Number.isNaN(startTime.getTime())) {
-        // Get hours and minutes in local timezone
-        const hours = startTime.getHours().toString().padStart(2, '0');
-        const minutes = startTime.getMinutes().toString().padStart(2, '0');
-        apiShift.startTime = `${hours}:${minutes}`;
-      }
-    } catch (error: unknown) {
-      logger.error('Error parsing start_time:', error);
-    }
+  // Extract and format times
+  const startTime = parseTimeFromDateTime(dbShift.start_time, 'start_time');
+  if (startTime) {
+    apiShift.startTime = startTime;
   }
 
-  if (dbShift.end_time) {
-    try {
-      const endTime = new Date(dbShift.end_time);
-      if (!Number.isNaN(endTime.getTime())) {
-        // Get hours and minutes in local timezone
-        const hours = endTime.getHours().toString().padStart(2, '0');
-        const minutes = endTime.getMinutes().toString().padStart(2, '0');
-        apiShift.endTime = `${hours}:${minutes}`;
-      }
-    } catch (error: unknown) {
-      logger.error('Error parsing end_time:', error);
-    }
+  const endTime = parseTimeFromDateTime(dbShift.end_time, 'end_time');
+  if (endTime) {
+    apiShift.endTime = endTime;
   }
 
   // Format date
-  if (dbShift.date) {
-    try {
-      const date = new Date(dbShift.date);
-      if (!Number.isNaN(date.getTime())) {
-        apiShift.date = date.toISOString().split('T')[0]; // YYYY-MM-DD format
-      }
-    } catch (error: unknown) {
-      logger.error('Error parsing date:', error);
-    }
+  const formattedDate = parseDateToString(dbShift.date);
+  if (formattedDate) {
+    apiShift.date = formattedDate;
   }
 
   return apiShift;
@@ -810,6 +839,258 @@ export class ShiftsService {
     return Math.round((diffHours - breakHours) * 100) / 100;
   }
 
+  // ============= SHIFT PLAN HELPER METHODS =============
+
+  /**
+   * Check if a plan is a Kontischicht type plan
+   * @param planName - Name of the plan
+   * @param dataName - Optional name from data
+   * @param kontischichtPattern - Optional pattern indicator
+   * @returns true if this is a Kontischicht plan
+   */
+  private isKontischichtPlan(
+    planName: string,
+    dataName?: string,
+    kontischichtPattern?: string,
+  ): boolean {
+    return (
+      planName.toLowerCase().includes('kontischicht') ||
+      dataName?.toLowerCase().includes('kontischicht') === true ||
+      kontischichtPattern !== undefined
+    );
+  }
+
+  /**
+   * Calculate end of first week (KW1) in the next year
+   * @param fromDate - Date to calculate from
+   * @returns Date representing Sunday of KW1 next year
+   */
+  private calculateEndOfFirstWeekNextYear(fromDate: Date): Date {
+    const nextYear = fromDate.getFullYear() + 1;
+    const jan1 = new Date(nextYear, 0, 1);
+    const dayOfWeek = jan1.getDay() || 7;
+    const daysToThursday = (4 - dayOfWeek + 7) % 7 || 7;
+    const firstThursday = new Date(nextYear, 0, 1 + daysToThursday);
+
+    const sundayKW1 = new Date(firstThursday);
+    sundayKW1.setDate(firstThursday.getDate() + (7 - firstThursday.getDay()));
+
+    return sundayKW1;
+  }
+
+  /**
+   * Calculate date range for Kontischicht plans
+   * @param startDate - Start date string
+   * @param endDate - Optional end date string
+   * @returns Object with planStartDate and planEndDate
+   */
+  private calculateKontischichtDateRange(
+    startDate: string,
+    endDate?: string,
+  ): { planStartDate: string; planEndDate: string } {
+    const planStartDate = startDate;
+    let planEndDate = endDate ?? '';
+
+    if (!endDate) {
+      const startDateObj = new Date(startDate);
+      const endOfKW1 = this.calculateEndOfFirstWeekNextYear(startDateObj);
+      planEndDate = endOfKW1.toISOString().split('T')[0];
+    }
+
+    console.info('[KONTISCHICHT] Using dates for shift_plan:', {
+      startDate: planStartDate,
+      endDate: planEndDate,
+    });
+
+    return { planStartDate, planEndDate };
+  }
+
+  /**
+   * Create a shift plan record in the database
+   * @param data - Plan data
+   * @param tenantId - Tenant ID
+   * @param userId - User ID
+   * @param planName - Name of the plan
+   * @param dateRange - Date range object
+   * @returns Promise resolving to plan ID
+   */
+  private async createShiftPlanRecord(
+    data: {
+      shiftNotes?: string;
+      departmentId: number;
+      teamId?: number;
+      machineId?: number;
+      areaId?: number;
+    },
+    tenantId: number,
+    userId: number,
+    planName: string,
+    dateRange: { planStartDate: string; planEndDate: string },
+  ): Promise<number> {
+    const [planResult] = await execute(
+      `INSERT INTO shift_plans (
+        tenant_id, name, shift_notes,
+        department_id, team_id, machine_id, area_id,
+        start_date, end_date, status, created_by
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+      [
+        tenantId,
+        planName,
+        data.shiftNotes ?? '',
+        data.departmentId,
+        data.teamId ?? null,
+        data.machineId ?? null,
+        data.areaId ?? null,
+        dateRange.planStartDate,
+        dateRange.planEndDate,
+        userId,
+      ],
+    );
+
+    return (planResult as { insertId: number }).insertId;
+  }
+
+  /**
+   * Create shift records in the database
+   * @param shifts - Array of shifts to create
+   * @param planId - Associated plan ID
+   * @param data - Additional shift data
+   * @param tenantId - Tenant ID
+   * @param userId - User ID creating the shifts
+   * @returns Promise resolving to array of shift IDs
+   */
+  private async createShiftRecords(
+    shifts: {
+      userId: number;
+      date: string;
+      type: string;
+      startTime: string;
+      endTime: string;
+    }[],
+    planId: number,
+    data: {
+      areaId?: number;
+      departmentId: number;
+      teamId?: number;
+      machineId?: number;
+    },
+    tenantId: number,
+    userId: number,
+  ): Promise<number[]> {
+    const shiftIds: number[] = [];
+
+    for (const shift of shifts) {
+      const [shiftResult] = await execute(
+        `INSERT INTO shifts (
+          tenant_id, plan_id, user_id,
+          date, start_time, end_time, type,
+          area_id, department_id, team_id, machine_id,
+          status, created_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?)`,
+        [
+          tenantId,
+          planId,
+          shift.userId,
+          shift.date,
+          `${shift.date} ${shift.startTime}:00`,
+          `${shift.date} ${shift.endTime}:00`,
+          shift.type,
+          data.areaId ?? null,
+          data.departmentId,
+          data.teamId ?? null,
+          data.machineId ?? null,
+          userId,
+        ],
+      );
+      shiftIds.push((shiftResult as { insertId: number }).insertId);
+    }
+
+    return shiftIds;
+  }
+
+  /**
+   * Prepare shifts for creation, handling Kontischicht pattern generation if needed
+   * @param data - Shift plan data
+   * @param isKontischicht - Whether this is a Kontischicht plan
+   * @returns Array of shifts to create
+   */
+  private prepareShiftsForCreation(
+    data: {
+      startDate: string;
+      endDate?: string;
+      name?: string;
+      shifts: {
+        userId: number;
+        date: string;
+        type: string;
+        startTime: string;
+        endTime: string;
+      }[];
+    },
+    isKontischicht: boolean,
+  ): {
+    userId: number;
+    date: string;
+    type: string;
+    startTime: string;
+    endTime: string;
+  }[] {
+    if (!isKontischicht || data.shifts.length === 0) {
+      return data.shifts;
+    }
+
+    console.info('[KONTISCHICHT] Generating pattern from template');
+    const patternType = this.detectPatternType(data);
+    console.info(`[KONTISCHICHT] Pattern type detected: ${patternType}`);
+
+    const effectiveEndDateStr = this.calculateEffectiveEndDate(data);
+    const startDate = new Date(data.startDate);
+    const endDate = new Date(effectiveEndDateStr);
+    const weeks = Math.ceil((endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000));
+
+    console.info(
+      `[KONTISCHICHT] Generating pattern from ${data.startDate} to ${effectiveEndDateStr} (${weeks} weeks)`,
+    );
+
+    const generatedShifts = this.generateKontischichtPeriod(
+      data.shifts,
+      data.startDate,
+      effectiveEndDateStr,
+      patternType,
+    );
+
+    console.info(
+      `[KONTISCHICHT] Generated ${generatedShifts.length} shifts for period ${data.startDate} to ${effectiveEndDateStr}`,
+    );
+
+    return generatedShifts;
+  }
+
+  /**
+   * Calculate effective end date for Kontischicht
+   * @param data - Shift plan data
+   * @returns Effective end date string
+   */
+  private calculateEffectiveEndDate(data: { startDate: string; endDate?: string }): string {
+    if (data.endDate) {
+      console.info(`[KONTISCHICHT] Using provided end date from modal: ${data.endDate}`);
+      return data.endDate;
+    }
+
+    const startDate = new Date(data.startDate);
+    const seventeenWeeksLater = new Date(startDate);
+    seventeenWeeksLater.setDate(startDate.getDate() + 17 * 7);
+
+    const endOfKW1NextYear = this.calculateEndOfFirstWeekNextYear(startDate);
+
+    const effectiveEndDate =
+      seventeenWeeksLater > endOfKW1NextYear ? seventeenWeeksLater : endOfKW1NextYear;
+    const effectiveEndDateStr = effectiveEndDate.toISOString().split('T')[0];
+
+    console.info(`[KONTISCHICHT] Calculated default end date: ${effectiveEndDateStr}`);
+    return effectiveEndDateStr;
+  }
+
   // ============= SHIFT PLAN METHODS =============
 
   /**
@@ -828,8 +1109,8 @@ export class ShiftsService {
       teamId?: number;
       machineId?: number;
       name?: string;
-      shiftNotes?: string; // Renamed from description, using camelCase
-      kontischichtPattern?: string; // Pattern type from frontend (3er, 4er-standard, etc.)
+      shiftNotes?: string;
+      kontischichtPattern?: string;
       shifts: {
         userId: number;
         date: string;
@@ -837,13 +1118,11 @@ export class ShiftsService {
         startTime: string;
         endTime: string;
       }[];
-      // dailyNotes removed - redundant with shift_notes
     },
     tenantId: number,
     userId: number,
   ): Promise<{ planId: number; shiftIds: number[]; message: string }> {
     try {
-      // Debug logging
       console.info('[SHIFT PLAN CREATE] Starting with data:', {
         startDate: data.startDate,
         endDate: data.endDate,
@@ -856,181 +1135,37 @@ export class ShiftsService {
         userId,
       });
 
-      // Start transaction (using query, not execute, because transactions don't work with prepared statements)
       await query('START TRANSACTION');
 
-      // 1. Create shift_plan
+      // Prepare plan name
       const weekNumber = this.getWeekNumber(new Date(data.startDate));
       const planName =
         data.name ??
         `Wochenplan KW ${String(weekNumber)}/${String(new Date(data.startDate).getFullYear())}`;
 
-      // Check if this is a Kontischicht plan and use appropriate date range
-      let planStartDate = data.startDate;
-      let planEndDate = data.endDate;
+      // Determine date range based on plan type
+      const isKontischicht = this.isKontischichtPlan(planName, data.name, data.kontischichtPattern);
 
-      if (
-        planName.toLowerCase().includes('kontischicht') ||
-        data.name?.toLowerCase().includes('kontischicht') ||
-        data.kontischichtPattern
-      ) {
-        // For Kontischicht, use the dates provided from modal (already in data.startDate and data.endDate)
-        // These come from the Kontischicht modal date inputs
-        planStartDate = data.startDate;
-        planEndDate = data.endDate;
+      const dateRange =
+        isKontischicht ?
+          this.calculateKontischichtDateRange(data.startDate, data.endDate)
+        : { planStartDate: data.startDate, planEndDate: data.endDate };
 
-        // If no endDate provided, calculate default (end of KW1 next year)
-        if (!planEndDate) {
-          const startDate = new Date(data.startDate);
-          const nextYear = startDate.getFullYear() + 1;
-          const jan1 = new Date(nextYear, 0, 1);
-          const dayOfWeek = jan1.getDay() || 7;
-          const daysToThursday = (4 - dayOfWeek + 7) % 7 || 7;
-          const firstThursday = new Date(nextYear, 0, 1 + daysToThursday);
-          const sundayKW1 = new Date(firstThursday);
-          sundayKW1.setDate(firstThursday.getDate() + (7 - firstThursday.getDay()));
-          planEndDate = sundayKW1.toISOString().split('T')[0];
-        }
+      // Create the shift plan
+      const planId = await this.createShiftPlanRecord(data, tenantId, userId, planName, dateRange);
 
-        console.info('[KONTISCHICHT] Using dates for shift_plan:', {
-          startDate: planStartDate,
-          endDate: planEndDate,
-          planName,
-        });
-      }
+      // Prepare shifts (with Kontischicht pattern generation if needed)
+      const shiftsToCreate = this.prepareShiftsForCreation(data, isKontischicht);
 
-      const [planResult] = await execute(
-        `INSERT INTO shift_plans (
-          tenant_id, name, shift_notes,
-          department_id, team_id, machine_id, area_id,
-          start_date, end_date, status, created_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?)`,
-        [
-          tenantId,
-          planName,
-          data.shiftNotes ?? '',
-          data.departmentId,
-          data.teamId ?? null,
-          data.machineId ?? null,
-          data.areaId ?? null,
-          planStartDate,
-          planEndDate,
-          userId,
-        ],
+      // Create all shifts
+      const shiftIds = await this.createShiftRecords(
+        shiftsToCreate,
+        planId,
+        data,
+        tenantId,
+        userId,
       );
 
-      const planId = (planResult as { insertId: number }).insertId;
-
-      // 2. Create shifts with plan_id
-      const shiftIds: number[] = [];
-
-      // Check if this is Kontischicht and generate pattern for whole year
-      let shiftsToCreate = data.shifts;
-      const isKontischicht =
-        planName.toLowerCase().includes('kontischicht') ||
-        data.name?.toLowerCase().includes('kontischicht');
-
-      if (isKontischicht && data.shifts.length > 0) {
-        console.info('[KONTISCHICHT] Generating pattern from template');
-
-        // Detect pattern type from data
-        const patternType = this.detectPatternType(data);
-        console.info(`[KONTISCHICHT] Pattern type detected: ${patternType}`);
-
-        // Use the provided endDate from modal, or calculate a default
-        let effectiveEndDateStr: string;
-
-        if (data.endDate) {
-          // Use the date from modal
-          effectiveEndDateStr = data.endDate;
-          console.info(`[KONTISCHICHT] Using provided end date from modal: ${effectiveEndDateStr}`);
-        } else {
-          // Fallback: generate until end of KW1 of next year for seamless transition
-          const startDate = new Date(data.startDate);
-
-          // Function to get last Sunday of KW1 in next year
-          const getEndOfFirstWeekNextYear = (fromDate: Date): Date => {
-            const nextYear = fromDate.getFullYear() + 1;
-            // Find first Thursday of next year (determines KW1)
-            const jan1 = new Date(nextYear, 0, 1);
-            const dayOfWeek = jan1.getDay() || 7; // Sunday = 7
-            const daysToThursday = (4 - dayOfWeek + 7) % 7 || 7;
-            const firstThursday = new Date(nextYear, 0, 1 + daysToThursday);
-
-            // Go to Sunday of that week
-            const sundayKW1 = new Date(firstThursday);
-            sundayKW1.setDate(firstThursday.getDate() + (7 - firstThursday.getDay()));
-
-            return sundayKW1;
-          };
-
-          // Calculate end date - either 17 weeks minimum or end of KW1 next year
-          const seventeenWeeksLater = new Date(startDate);
-          seventeenWeeksLater.setDate(startDate.getDate() + 17 * 7);
-
-          const endOfKW1NextYear = getEndOfFirstWeekNextYear(startDate);
-
-          // Use the later date to ensure continuous coverage
-          const effectiveEndDate =
-            seventeenWeeksLater > endOfKW1NextYear ? seventeenWeeksLater : endOfKW1NextYear;
-          effectiveEndDateStr = effectiveEndDate.toISOString().split('T')[0];
-          console.info(`[KONTISCHICHT] Calculated default end date: ${effectiveEndDateStr}`);
-        }
-
-        const startDate = new Date(data.startDate);
-        const endDate = new Date(effectiveEndDateStr);
-        const weeks = Math.ceil(
-          (endDate.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000),
-        );
-
-        console.info(
-          `[KONTISCHICHT] Generating pattern from ${data.startDate} to ${effectiveEndDateStr} (${weeks} weeks)`,
-        );
-
-        // Generate shifts based on pattern type for the specified period
-        shiftsToCreate = this.generateKontischichtPeriod(
-          data.shifts,
-          data.startDate,
-          effectiveEndDateStr,
-          patternType,
-        );
-
-        console.info(
-          `[KONTISCHICHT] Generated ${shiftsToCreate.length} shifts for period ${data.startDate} to ${effectiveEndDateStr} from ${data.shifts.length} template shifts`,
-        );
-      }
-
-      for (const shift of shiftsToCreate) {
-        const [shiftResult] = await execute(
-          `INSERT INTO shifts (
-            tenant_id, plan_id, user_id,
-            date, start_time, end_time, type,
-            area_id, department_id, team_id, machine_id,
-            status, created_by
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?)`,
-          [
-            tenantId,
-            planId,
-            shift.userId,
-            shift.date,
-            `${shift.date} ${shift.startTime}:00`,
-            `${shift.date} ${shift.endTime}:00`,
-            shift.type,
-            data.areaId ?? null,
-            data.departmentId,
-            data.teamId ?? null,
-            data.machineId ?? null,
-            userId,
-          ],
-        );
-        shiftIds.push((shiftResult as { insertId: number }).insertId);
-      }
-
-      // 3. REMOVED: shift_notes - using shift_plans.description instead
-      // Daily notes are redundant when we have shift_plans.description
-      // If we need daily notes in future, they should be DIFFERENT per day
-
-      // Commit transaction
       await query('COMMIT');
 
       return {
@@ -1039,11 +1174,9 @@ export class ShiftsService {
         message: `Schichtplan erfolgreich erstellt (${String(shiftIds.length)} Schichten)`,
       };
     } catch (error) {
-      // Rollback on error
       await query('ROLLBACK');
       logger.error('Error creating shift plan:', error);
 
-      // More detailed error for debugging
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.error('[SHIFT PLAN ERROR] Details:', {
         error: errorMessage,
@@ -1059,6 +1192,138 @@ export class ShiftsService {
 
       throw new ServiceError('CREATE_PLAN_ERROR', `Failed to create shift plan: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Build UPDATE query fields and values for shift plan
+   * @param data - Update data
+   * @returns Object with fields array and values array
+   */
+  private buildPlanUpdateQuery(data: {
+    name?: string;
+    shiftNotes?: string;
+    startDate?: string;
+    endDate?: string;
+    departmentId?: number;
+    teamId?: number;
+    machineId?: number;
+    areaId?: number;
+  }): { fields: string[]; values: unknown[] } {
+    const updateFields: string[] = [];
+    const updateValues: unknown[] = [];
+
+    // Explicitly check each field to avoid object injection
+    if (data.name !== undefined) {
+      updateFields.push('name = ?');
+      updateValues.push(data.name);
+    }
+    if (data.shiftNotes !== undefined) {
+      updateFields.push('shift_notes = ?');
+      updateValues.push(data.shiftNotes);
+    }
+    if (data.startDate !== undefined) {
+      updateFields.push('start_date = ?');
+      updateValues.push(data.startDate);
+    }
+    if (data.endDate !== undefined) {
+      updateFields.push('end_date = ?');
+      updateValues.push(data.endDate);
+    }
+    if (data.departmentId !== undefined) {
+      updateFields.push('department_id = ?');
+      updateValues.push(data.departmentId);
+    }
+    if (data.teamId !== undefined) {
+      updateFields.push('team_id = ?');
+      updateValues.push(data.teamId);
+    }
+    if (data.machineId !== undefined) {
+      updateFields.push('machine_id = ?');
+      updateValues.push(data.machineId);
+    }
+    if (data.areaId !== undefined) {
+      updateFields.push('area_id = ?');
+      updateValues.push(data.areaId);
+    }
+
+    // Always update timestamp
+    updateFields.push('updated_at = NOW()');
+
+    return { fields: updateFields, values: updateValues };
+  }
+
+  /**
+   * Validate that a shift plan exists and belongs to tenant
+   * @param planId - Plan ID to check
+   * @param tenantId - Tenant ID for validation
+   * @returns The existing plan data
+   */
+  private async validatePlanExists(
+    planId: number,
+    tenantId: number,
+  ): Promise<{ id: number; department_id: number }> {
+    const [existingPlans] = await execute(
+      'SELECT id, department_id FROM shift_plans WHERE id = ? AND tenant_id = ?',
+      [planId, tenantId],
+    );
+
+    if ((existingPlans as unknown[]).length === 0) {
+      throw new ServiceError('NOT_FOUND', 'Shift plan not found');
+    }
+
+    return (existingPlans as { id: number; department_id: number }[])[0];
+  }
+
+  /**
+   * Replace all shifts for a plan
+   * @param planId - Plan ID
+   * @param shifts - New shifts to create
+   * @param departmentId - Department ID for shifts
+   * @param tenantId - Tenant ID
+   * @param userId - User performing the update
+   * @returns Array of new shift IDs
+   */
+  private async replacePlanShifts(
+    planId: number,
+    shifts: {
+      date: string;
+      type: string;
+      userId: number;
+      startTime?: string;
+      endTime?: string;
+    }[],
+    departmentId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<number[]> {
+    // Delete existing shifts
+    await execute('DELETE FROM shifts WHERE plan_id = ? AND tenant_id = ?', [planId, tenantId]);
+
+    // Insert new shifts
+    const shiftIds: number[] = [];
+    for (const shift of shifts) {
+      const [result] = await execute(
+        `INSERT INTO shifts (
+          tenant_id, plan_id, user_id, date, type,
+          start_time, end_time, department_id, created_by, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        [
+          tenantId,
+          planId,
+          shift.userId,
+          shift.date,
+          shift.type,
+          shift.startTime ?? '06:00:00',
+          shift.endTime ?? '14:00:00',
+          departmentId,
+          userId,
+        ],
+      );
+
+      shiftIds.push((result as { insertId: number }).insertId);
+    }
+
+    return shiftIds;
   }
 
   /**
@@ -1187,96 +1452,31 @@ export class ShiftsService {
     try {
       await query('START TRANSACTION');
 
-      // Check if plan exists and belongs to tenant
-      const [existingPlans] = await execute(
-        'SELECT id, department_id FROM shift_plans WHERE id = ? AND tenant_id = ?',
-        [planId, tenantId],
-      );
-
-      if ((existingPlans as unknown[]).length === 0) {
-        throw new ServiceError('NOT_FOUND', 'Shift plan not found');
-      }
-
-      const existingPlan = (existingPlans as { id: number; department_id: number }[])[0];
+      // Validate plan exists
+      const existingPlan = await this.validatePlanExists(planId, tenantId);
       const currentDepartmentId = data.departmentId ?? existingPlan.department_id;
 
-      // Update plan metadata
-      const updateFields: string[] = [];
-      const updateValues: unknown[] = [];
+      // Build and execute update query
+      const { fields, values } = this.buildPlanUpdateQuery(data);
 
-      if (data.name !== undefined) {
-        updateFields.push('name = ?');
-        updateValues.push(data.name);
-      }
-      if (data.shiftNotes !== undefined) {
-        updateFields.push('shift_notes = ?');
-        updateValues.push(data.shiftNotes);
-      }
-      if (data.startDate !== undefined) {
-        updateFields.push('start_date = ?');
-        updateValues.push(data.startDate);
-      }
-      if (data.endDate !== undefined) {
-        updateFields.push('end_date = ?');
-        updateValues.push(data.endDate);
-      }
-      if (data.departmentId !== undefined) {
-        updateFields.push('department_id = ?');
-        updateValues.push(data.departmentId);
-      }
-      if (data.teamId !== undefined) {
-        updateFields.push('team_id = ?');
-        updateValues.push(data.teamId);
-      }
-      if (data.machineId !== undefined) {
-        updateFields.push('machine_id = ?');
-        updateValues.push(data.machineId);
-      }
-      if (data.areaId !== undefined) {
-        updateFields.push('area_id = ?');
-        updateValues.push(data.areaId);
-      }
-
-      // Always update updated_at
-      updateFields.push('updated_at = NOW()');
-      updateValues.push(planId, tenantId);
-
-      if (updateFields.length > 0) {
+      if (fields.length > 0) {
+        values.push(planId, tenantId);
         await execute(
-          `UPDATE shift_plans SET ${updateFields.join(', ')} WHERE id = ? AND tenant_id = ?`,
-          updateValues,
+          `UPDATE shift_plans SET ${fields.join(', ')} WHERE id = ? AND tenant_id = ?`,
+          values,
         );
       }
 
-      // If shifts are provided, update them
-      const shiftIds: number[] = [];
-      if (data.shifts !== undefined && data.shifts.length > 0) {
-        // Delete existing shifts for this plan
-        await execute('DELETE FROM shifts WHERE plan_id = ? AND tenant_id = ?', [planId, tenantId]);
-
-        // Insert new shifts
-        for (const shift of data.shifts) {
-          const [result] = await execute(
-            `INSERT INTO shifts (
-              tenant_id, plan_id, user_id, date, type,
-              start_time, end_time, department_id, created_by, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [
-              tenantId,
-              planId,
-              shift.userId,
-              shift.date,
-              shift.type,
-              shift.startTime ?? '06:00:00',
-              shift.endTime ?? '14:00:00',
-              currentDepartmentId,
-              userId,
-            ],
-          );
-
-          const insertResult = result as { insertId: number };
-          shiftIds.push(insertResult.insertId);
-        }
+      // Handle shift updates if provided
+      let shiftIds: number[] = [];
+      if (data.shifts && data.shifts.length > 0) {
+        shiftIds = await this.replacePlanShifts(
+          planId,
+          data.shifts,
+          currentDepartmentId,
+          tenantId,
+          userId,
+        );
       }
 
       await query('COMMIT');
@@ -1632,6 +1832,83 @@ export class ShiftsService {
   }
 
   /**
+   * Get shift times based on shift type
+   */
+  private getShiftTimes(shiftType: string): { startTime: string; endTime: string } {
+    const shiftTimeMap: Record<string, { startTime: string; endTime: string }> = {
+      F: { startTime: '06:00', endTime: '14:00' },
+      S: { startTime: '14:00', endTime: '22:00' },
+      N: { startTime: '22:00', endTime: '06:00' },
+    };
+    // eslint-disable-next-line security/detect-object-injection -- shiftType is from controlled enum
+    return shiftTimeMap[shiftType] ?? { startTime: '00:00', endTime: '00:00' };
+  }
+
+  /**
+   * Create a shift entry object
+   */
+  private createShiftEntry(
+    userId: number,
+    date: string,
+    shiftType: string,
+  ): {
+    userId: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  } {
+    const { startTime, endTime } = this.getShiftTimes(shiftType);
+    return { userId, date, startTime, endTime, type: shiftType };
+  }
+
+  /**
+   * Process daily shifts for 3er rotation
+   */
+  private processDailyShifts(
+    employees: number[],
+    currentDate: Date,
+    patternIndex: number,
+    employeeOffset: number,
+  ): {
+    userId: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }[] {
+    const rotationPattern = [
+      { days: 3, shift: 'F' },
+      { days: 3, shift: 'S' },
+      { days: 3, shift: 'N' },
+      { days: 3, shift: null },
+    ];
+
+    const shifts: {
+      userId: number;
+      date: string;
+      startTime: string;
+      endTime: string;
+      type: string;
+    }[] = [];
+    const dateString = currentDate.toISOString().split('T')[0];
+
+    for (let i = 0; i < 3; i++) {
+      const employeeIndex = (i + employeeOffset) % 3;
+      const patternPhase = (patternIndex + i) % 4;
+      // eslint-disable-next-line security/detect-object-injection -- bounded by modulo
+      const shiftType = rotationPattern[patternPhase].shift;
+
+      if (shiftType) {
+        // eslint-disable-next-line security/detect-object-injection -- bounded by modulo
+        shifts.push(this.createShiftEntry(employees[employeeIndex], dateString, shiftType));
+      }
+    }
+
+    return shifts;
+  }
+
+  /**
    * Generate 3er rotation pattern (3 employees, 9-day cycle)
    */
   private generate3erRotation(
@@ -1650,65 +1927,40 @@ export class ShiftsService {
     endTime: string;
     type: string;
   }[] {
-    const yearShifts: typeof templateShifts = [];
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31);
-
-    // 3er rotation pattern: 3 days early, 3 days late, 3 days night, 3 days free
-    const rotationPattern = [
-      { days: 3, shift: 'F' }, // Früh
-      { days: 3, shift: 'S' }, // Spät
-      { days: 3, shift: 'N' }, // Nacht
-      { days: 3, shift: null }, // Frei
-    ];
-
-    // Get unique employees
     const employees = [...new Set(templateShifts.map((s) => s.userId))].slice(0, 3);
+
     if (employees.length !== 3) {
       console.warn('[3ER ROTATION] Need exactly 3 employees, falling back to standard');
       return this.generateYearPatternFromTwoWeeks(templateShifts, year);
     }
+
+    const yearShifts: typeof templateShifts = [];
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
 
     let currentDate = new Date(yearStart);
     let patternIndex = 0;
     let employeeOffset = 0;
 
     while (currentDate <= yearEnd) {
-      for (let i = 0; i < 3; i++) {
-        const employeeIndex = (i + employeeOffset) % 3;
-        const patternPhase = (patternIndex + i) % 4;
-        // eslint-disable-next-line security/detect-object-injection -- patternPhase is bounded by modulo 4
-        const shiftType = rotationPattern[patternPhase].shift;
+      const dailyShifts = this.processDailyShifts(
+        employees,
+        currentDate,
+        patternIndex,
+        employeeOffset,
+      );
 
-        if (shiftType) {
-          yearShifts.push({
-            // eslint-disable-next-line security/detect-object-injection -- employeeIndex is bounded by modulo 3
-            userId: employees[employeeIndex],
-            date: currentDate.toISOString().split('T')[0],
-            startTime:
-              shiftType === 'F' ? '06:00'
-              : shiftType === 'S' ? '14:00'
-              : '22:00',
-            endTime:
-              shiftType === 'F' ? '14:00'
-              : shiftType === 'S' ? '22:00'
-              : '06:00',
-            type: shiftType,
-          });
-        }
-      }
-
+      yearShifts.push(...dailyShifts);
       currentDate.setDate(currentDate.getDate() + 1);
 
-      // After each day, check if we completed a phase
       const daysSinceStart = Math.floor(
         (currentDate.getTime() - yearStart.getTime()) / (1000 * 60 * 60 * 24),
       );
+
       if (daysSinceStart % 3 === 0) {
         patternIndex = (patternIndex + 1) % 4;
       }
 
-      // After 12 days (full cycle), shift employee positions
       if (daysSinceStart % 12 === 0) {
         employeeOffset = (employeeOffset + 1) % 3;
       }
@@ -1810,6 +2062,51 @@ export class ShiftsService {
   }
 
   /**
+   * Process daily shifts for 4er rotation
+   */
+  private process4erDailyShifts(
+    employees: number[],
+    currentDate: Date,
+    phaseIndex: number,
+  ): {
+    userId: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }[] {
+    const rotationPattern = [
+      { days: 4, shift: 'F' },
+      { days: 4, shift: 'S' },
+      { days: 4, shift: 'N' },
+      { days: 4, shift: null }, // Free
+    ];
+
+    const shifts: {
+      userId: number;
+      date: string;
+      startTime: string;
+      endTime: string;
+      type: string;
+    }[] = [];
+
+    const dateString = currentDate.toISOString().split('T')[0];
+
+    for (let i = 0; i < 4; i++) {
+      const employeePhase = (phaseIndex + i) % 4;
+      // eslint-disable-next-line security/detect-object-injection -- bounded by modulo
+      const shiftType = rotationPattern[employeePhase].shift;
+
+      if (shiftType) {
+        // eslint-disable-next-line security/detect-object-injection -- bounded by for loop
+        shifts.push(this.createShiftEntry(employees[i], dateString, shiftType));
+      }
+    }
+
+    return shifts;
+  }
+
+  /**
    * Generate 4er long rotation (4 employees, 4-4-4 pattern)
    */
   private generate4erLangRotation(
@@ -1828,58 +2125,108 @@ export class ShiftsService {
     endTime: string;
     type: string;
   }[] {
-    const yearShifts: typeof templateShifts = [];
-    const yearStart = new Date(year, 0, 1);
-    const yearEnd = new Date(year, 11, 31);
-
-    // 4er long pattern: 4 days each shift type
-    const rotationPattern = [
-      { days: 4, shift: 'F' },
-      { days: 4, shift: 'S' },
-      { days: 4, shift: 'N' },
-      { days: 4, shift: null }, // Free
-    ];
-
     const employees = [...new Set(templateShifts.map((s) => s.userId))].slice(0, 4);
+
     if (employees.length !== 4) {
       return this.generateYearPatternFromTwoWeeks(templateShifts, year);
     }
+
+    const yearShifts: typeof templateShifts = [];
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
 
     let currentDate = new Date(yearStart);
     let dayCount = 0;
 
     while (currentDate <= yearEnd) {
-      const cycleDay = dayCount % 16; // 16-day cycle
+      const cycleDay = dayCount % 16;
       const phaseIndex = Math.floor(cycleDay / 4);
 
-      for (let i = 0; i < 4; i++) {
-        const employeePhase = (phaseIndex + i) % 4;
-        // eslint-disable-next-line security/detect-object-injection -- employeePhase is bounded by modulo 4
-        const shiftType = rotationPattern[employeePhase].shift;
-
-        if (shiftType) {
-          yearShifts.push({
-            // eslint-disable-next-line security/detect-object-injection -- i is bounded by for loop (0-3)
-            userId: employees[i],
-            date: currentDate.toISOString().split('T')[0],
-            startTime:
-              shiftType === 'F' ? '06:00'
-              : shiftType === 'S' ? '14:00'
-              : '22:00',
-            endTime:
-              shiftType === 'F' ? '14:00'
-              : shiftType === 'S' ? '22:00'
-              : '06:00',
-            type: shiftType,
-          });
-        }
-      }
+      const dailyShifts = this.process4erDailyShifts(employees, currentDate, phaseIndex);
+      yearShifts.push(...dailyShifts);
 
       currentDate.setDate(currentDate.getDate() + 1);
       dayCount++;
     }
 
     return yearShifts;
+  }
+
+  /**
+   * Group shifts by week
+   */
+  private groupShiftsByWeek(
+    sortedTemplate: {
+      userId: number;
+      date: string;
+      startTime: string;
+      endTime: string;
+      type: string;
+    }[],
+    firstTemplateDate: Date,
+  ): {
+    weekA: typeof sortedTemplate;
+    weekB: typeof sortedTemplate;
+  } {
+    const weekAShifts: typeof sortedTemplate = [];
+    const weekBShifts: typeof sortedTemplate = [];
+    const firstWeekNumber = this.getWeekNumber(firstTemplateDate);
+
+    for (const shift of sortedTemplate) {
+      const shiftDate = new Date(shift.date);
+      const weekNumber = this.getWeekNumber(shiftDate);
+
+      if (weekNumber === firstWeekNumber) {
+        weekAShifts.push(shift);
+      } else {
+        weekBShifts.push(shift);
+      }
+    }
+
+    return { weekA: weekAShifts, weekB: weekBShifts };
+  }
+
+  /**
+   * Generate shifts for a single week
+   */
+  private generateWeekShifts(
+    templateWeek: {
+      userId: number;
+      date: string;
+      startTime: string;
+      endTime: string;
+      type: string;
+    }[],
+    currentWeekMonday: Date,
+    year: number,
+  ): {
+    userId: number;
+    date: string;
+    startTime: string;
+    endTime: string;
+    type: string;
+  }[] {
+    const weekShifts: typeof templateWeek = [];
+
+    for (const templateShift of templateWeek) {
+      const templateDate = new Date(templateShift.date);
+      const templateWeekday = templateDate.getDay() || 7;
+
+      const shiftDate = new Date(currentWeekMonday);
+      shiftDate.setDate(currentWeekMonday.getDate() + (templateWeekday - 1));
+
+      if (shiftDate.getFullYear() === year) {
+        weekShifts.push({
+          userId: templateShift.userId,
+          date: shiftDate.toISOString().split('T')[0],
+          startTime: templateShift.startTime,
+          endTime: templateShift.endTime,
+          type: templateShift.type,
+        });
+      }
+    }
+
+    return weekShifts;
   }
 
   /**
@@ -1904,89 +2251,39 @@ export class ShiftsService {
     endTime: string;
     type: string;
   }[] {
-    const yearShifts: {
-      userId: number;
-      date: string;
-      startTime: string;
-      endTime: string;
-      type: string;
-    }[] = [];
-
-    // Sort template shifts by date to understand the pattern
     const sortedTemplate = [...twoWeekShifts].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
 
     if (sortedTemplate.length === 0) {
-      return yearShifts;
+      return [];
     }
 
-    // Get the first Monday of the template
     const firstTemplateDate = new Date(sortedTemplate[0].date);
-    const firstTemplateWeekday = firstTemplateDate.getDay() || 7; // Sunday = 0 -> 7
-    const templateStartMonday = new Date(firstTemplateDate);
-    templateStartMonday.setDate(firstTemplateDate.getDate() - (firstTemplateWeekday - 1));
-
-    // Group template shifts by week (Week A and Week B)
-    const weekAShifts: typeof twoWeekShifts = [];
-    const weekBShifts: typeof twoWeekShifts = [];
-
-    for (const shift of sortedTemplate) {
-      const shiftDate = new Date(shift.date);
-      const weekNumber = this.getWeekNumber(shiftDate);
-      const firstWeekNumber = this.getWeekNumber(firstTemplateDate);
-
-      if (weekNumber === firstWeekNumber) {
-        weekAShifts.push(shift);
-      } else {
-        weekBShifts.push(shift);
-      }
-    }
+    const { weekA, weekB } = this.groupShiftsByWeek(sortedTemplate, firstTemplateDate);
 
     console.info('[KONTISCHICHT] Pattern analysis:', {
-      weekACount: weekAShifts.length,
-      weekBCount: weekBShifts.length,
+      weekACount: weekA.length,
+      weekBCount: weekB.length,
       year,
     });
 
-    // Generate shifts for entire year
+    const yearShifts: typeof twoWeekShifts = [];
     const yearStart = new Date(year, 0, 1);
-    // Find first Monday of the year
     const firstMonday = new Date(yearStart);
     const yearStartWeekday = yearStart.getDay() || 7;
+
     if (yearStartWeekday !== 1) {
       firstMonday.setDate(yearStart.getDate() + (8 - yearStartWeekday));
     }
 
-    // Iterate through all weeks of the year
     for (let weekOffset = 0; weekOffset < 52; weekOffset++) {
       const currentWeekMonday = new Date(firstMonday);
       currentWeekMonday.setDate(firstMonday.getDate() + weekOffset * 7);
 
-      // Determine which pattern to use (A or B) - alternating
-      const useWeekA = weekOffset % 2 === 0;
-      const templateWeek = useWeekA ? weekAShifts : weekBShifts;
-
-      // Generate shifts for this week based on pattern
-      for (const templateShift of templateWeek) {
-        const templateDate = new Date(templateShift.date);
-        const templateWeekday = templateDate.getDay() || 7;
-
-        // Calculate the actual date for this shift in the current week
-        const shiftDate = new Date(currentWeekMonday);
-        shiftDate.setDate(currentWeekMonday.getDate() + (templateWeekday - 1));
-
-        // Only add shifts that are actually in the target year
-        if (shiftDate.getFullYear() === year) {
-          yearShifts.push({
-            userId: templateShift.userId,
-            date: shiftDate.toISOString().split('T')[0],
-            startTime: templateShift.startTime,
-            endTime: templateShift.endTime,
-            type: templateShift.type,
-          });
-        }
-      }
+      const templateWeek = weekOffset % 2 === 0 ? weekA : weekB;
+      const weekShifts = this.generateWeekShifts(templateWeek, currentWeekMonday, year);
+      yearShifts.push(...weekShifts);
     }
 
     console.info(`[KONTISCHICHT] Generated ${yearShifts.length} shifts for year ${year}`);

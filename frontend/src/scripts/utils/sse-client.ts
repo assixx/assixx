@@ -95,75 +95,86 @@ export class SSEClient {
     };
   }
 
+  private updateSurveyBadge(): void {
+    if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      void (window.unifiedNav as any).updatePendingSurveys();
+    }
+  }
+
+  private handleConnected(data: SSEMessage): void {
+    console.info('[SSE] Successfully connected to notification stream');
+    console.info('[SSE] User info:', data.user);
+  }
+
+  private handleNewSurvey(data: SSEMessage): void {
+    console.info('[SSE] New survey notification received');
+    this.updateSurveyBadge();
+
+    if (data.survey?.title !== undefined && data.survey.title !== '') {
+      this.showToast(`Neue Umfrage: ${data.survey.title}`, 'info');
+    }
+  }
+
+  private handleSurveyUpdated(): void {
+    console.info('[SSE] Survey updated notification received');
+    this.updateSurveyBadge();
+  }
+
+  private handleNewSurveyCreated(data: SSEMessage): void {
+    console.info('[SSE] Admin: New survey created');
+
+    if (data.survey?.title !== undefined && data.survey.title !== '') {
+      this.showToast(`Umfrage erstellt: ${data.survey.title}`, 'success');
+    }
+  }
+
+  private handleNewDocument(data: SSEMessage): void {
+    console.info('[SSE] New document notification received');
+
+    if (window.unifiedNav?.updateUnreadDocuments) {
+      void window.unifiedNav.updateUnreadDocuments();
+    }
+
+    if (data.document?.filename !== undefined && data.document.filename !== '') {
+      this.showToast(`Neues Dokument: ${data.document.filename}`, 'info');
+    }
+  }
+
+  private handleNewKvp(data: SSEMessage): void {
+    console.info('[SSE] New KVP notification received');
+
+    if (window.unifiedNav?.updateNewKvpSuggestions) {
+      void window.unifiedNav.updateNewKvpSuggestions();
+    }
+
+    if (data.kvp?.title !== undefined && data.kvp.title !== '') {
+      this.showToast(`Neuer KVP-Vorschlag: ${data.kvp.title}`, 'info');
+    }
+  }
+
   private handleMessage(data: SSEMessage): void {
     console.info('[SSE] Received:', data.type, data);
 
     switch (data.type) {
       case 'CONNECTED':
-        console.info('[SSE] Successfully connected to notification stream');
-        console.info('[SSE] User info:', data.user);
+        this.handleConnected(data);
         break;
-
       case 'NEW_SURVEY':
-        console.info('[SSE] New survey notification received');
-
-        // Update survey badge immediately
-        if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          void (window.unifiedNav as any).updatePendingSurveys();
-        }
-
-        // Show toast notification
-        if (data.survey?.title !== undefined && data.survey.title !== '') {
-          this.showToast(`Neue Umfrage: ${data.survey.title}`, 'info');
-        }
+        this.handleNewSurvey(data);
         break;
-
       case 'SURVEY_UPDATED':
-        console.info('[SSE] Survey updated notification received');
-
-        // Refresh survey badge
-        if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-          void (window.unifiedNav as any).updatePendingSurveys();
-        }
+        this.handleSurveyUpdated();
         break;
-
       case 'NEW_SURVEY_CREATED':
-        // Admin notification when they create a survey
-        console.info('[SSE] Admin: New survey created');
-
-        if (data.survey?.title !== undefined && data.survey.title !== '') {
-          this.showToast(`Umfrage erstellt: ${data.survey.title}`, 'success');
-        }
+        this.handleNewSurveyCreated(data);
         break;
-
       case 'NEW_DOCUMENT':
-        console.info('[SSE] New document notification received');
-
-        // Update document badge
-        if (window.unifiedNav?.updateUnreadDocuments) {
-          void window.unifiedNav.updateUnreadDocuments();
-        }
-
-        if (data.document?.filename !== undefined && data.document.filename !== '') {
-          this.showToast(`Neues Dokument: ${data.document.filename}`, 'info');
-        }
+        this.handleNewDocument(data);
         break;
-
       case 'NEW_KVP':
-        console.info('[SSE] New KVP notification received');
-
-        // Update KVP badge for admins
-        if (window.unifiedNav?.updateNewKvpSuggestions) {
-          void window.unifiedNav.updateNewKvpSuggestions();
-        }
-
-        if (data.kvp?.title !== undefined && data.kvp.title !== '') {
-          this.showToast(`Neuer KVP-Vorschlag: ${data.kvp.title}`, 'info');
-        }
+        this.handleNewKvp(data);
         break;
-
       default:
         console.warn('[SSE] Unknown message type:', data.type);
     }

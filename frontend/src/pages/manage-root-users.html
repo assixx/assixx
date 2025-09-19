@@ -250,6 +250,35 @@
         }
       });
 
+      // Handler functions for actions
+      function handleShowAddRootModal() {
+        if (window.showAddRootModal) {
+          window.showAddRootModal();
+        }
+      }
+
+      function handleCloseRootModal() {
+        if (window.closeRootModal) {
+          window.closeRootModal();
+        }
+      }
+
+      function handleToggleDropdown(target) {
+        const dropdown = target.dataset.dropdown;
+        if (dropdown) {
+          toggleDropdown(dropdown);
+        }
+      }
+
+      function handleSelectOption(target) {
+        const dropdown = target.dataset.dropdown;
+        const value = target.dataset.value;
+        const text = target.dataset.text;
+        if (dropdown && value && text) {
+          selectOption(dropdown, value, text);
+        }
+      }
+
       // Event Delegation for data-action
       document.addEventListener('click', function (e) {
         const target = e.target.closest('[data-action]');
@@ -259,31 +288,17 @@
 
         switch (action) {
           case 'show-add-root-modal':
-            if (window.showAddRootModal) {
-              window.showAddRootModal();
-            }
+            handleShowAddRootModal();
             break;
           case 'close-root-modal':
-            if (window.closeRootModal) {
-              window.closeRootModal();
-            }
+            handleCloseRootModal();
             break;
-          case 'toggle-dropdown': {
-            const dropdown = target.dataset.dropdown;
-            if (dropdown) {
-              toggleDropdown(dropdown);
-            }
+          case 'toggle-dropdown':
+            handleToggleDropdown(target);
             break;
-          }
-          case 'select-option': {
-            const dropdown = target.dataset.dropdown;
-            const value = target.dataset.value;
-            const text = target.dataset.text;
-            if (dropdown && value && text) {
-              selectOption(dropdown, value, text);
-            }
+          case 'select-option':
+            handleSelectOption(target);
             break;
-          }
         }
       });
 

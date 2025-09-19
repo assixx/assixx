@@ -21,6 +21,76 @@ const INVALID_CREDENTIALS_MSG = 'Ungültige Anmeldedaten';
  */
 class AuthService {
   /**
+   * Get appropriate error message based on auth error
+   * @param error - The error type from auth result
+   * @returns The error message to display
+   */
+  private getAuthErrorMessage(error?: string): string {
+    if (error === 'USER_INACTIVE') {
+      return 'Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.';
+    }
+    return INVALID_CREDENTIALS_MSG;
+  }
+
+  /**
+   * Validate user belongs to specified tenant
+   * @param tenantSubdomain - The subdomain to validate
+   * @param userTenantId - The user's tenant ID
+   * @param username - Username for logging
+   * @returns Validation result with success flag and tenant ID
+   */
+  private async validateUserTenant(
+    tenantSubdomain: string,
+    userTenantId: number | null,
+    username: string,
+  ): Promise<{ success: boolean; tenantId?: number }> {
+    // Get tenant by subdomain
+    const [tenantRows] = await execute<RowDataPacket[]>(
+      'SELECT id FROM tenants WHERE subdomain = ?',
+      [tenantSubdomain],
+    );
+
+    if (tenantRows.length === 0) {
+      logger.warn(`Login attempt with invalid subdomain: ${tenantSubdomain}`);
+      return { success: false };
+    }
+
+    const tenantId = tenantRows[0].id as number;
+
+    // Check if user belongs to the specified tenant
+    if (userTenantId !== tenantId) {
+      logger.warn(
+        `User ${username} attempted to login to tenant ${String(tenantId)} but belongs to tenant ${String(userTenantId ?? 'none')}`,
+      );
+      return { success: false };
+    }
+
+    return { success: true, tenantId };
+  }
+
+  /**
+   * Store user session information
+   * @param userId - User ID
+   * @param sessionId - Session ID
+   * @param fingerprint - Browser fingerprint
+   */
+  private async storeUserSession(
+    userId: number,
+    sessionId: string,
+    fingerprint: string,
+  ): Promise<void> {
+    try {
+      await execute<ResultSetHeader>(
+        'INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))',
+        [userId, sessionId, fingerprint],
+      );
+    } catch (error: unknown) {
+      logger.warn('Failed to store session info:', error);
+      // Continue anyway - session will work without stored fingerprint
+    }
+  }
+
+  /**
    * Authenticate user with username and password
    * @param username - Username
    * @param password - Plain text password
@@ -39,46 +109,22 @@ class AuthService {
       const result = await authUser(username, password);
 
       if (!result.user) {
-        // Provide specific error messages based on error type
-        let message = INVALID_CREDENTIALS_MSG;
-        if (result.error === 'USER_INACTIVE') {
-          message =
-            'Ihr Account wurde deaktiviert.\n\nBitte kontaktieren Sie Ihren IT-Administrator, um Ihren Account wieder zu aktivieren.';
-        } else if (result.error === 'USER_NOT_FOUND' || result.error === 'INVALID_PASSWORD') {
-          message = INVALID_CREDENTIALS_MSG;
-        }
-
         return {
           success: false,
           user: null,
-          message,
+          message: this.getAuthErrorMessage(result.error),
         };
       }
 
       // Validate tenant if subdomain is provided
       if (tenantSubdomain !== undefined && tenantSubdomain !== '') {
-        // Get tenant by subdomain
-        const [tenantRows] = await execute<RowDataPacket[]>(
-          'SELECT id FROM tenants WHERE subdomain = ?',
-          [tenantSubdomain],
+        const tenantValidation = await this.validateUserTenant(
+          tenantSubdomain,
+          result.user.tenant_id,
+          username,
         );
 
-        if (tenantRows.length === 0) {
-          logger.warn(`Login attempt with invalid subdomain: ${tenantSubdomain}`);
-          return {
-            success: false,
-            user: null,
-            message: INVALID_CREDENTIALS_MSG,
-          };
-        }
-
-        const tenantId = tenantRows[0].id as number;
-
-        // Check if user belongs to the specified tenant
-        if (result.user.tenant_id !== tenantId) {
-          logger.warn(
-            `User ${username} attempted to login to tenant ${String(tenantId)} but belongs to tenant ${String(result.user.tenant_id ?? 'none')}`,
-          );
+        if (!tenantValidation.success) {
           return {
             success: false,
             user: null,
@@ -103,15 +149,7 @@ class AuthService {
 
       // Store session info if fingerprint provided
       if (fingerprint !== undefined && fingerprint !== '') {
-        try {
-          await execute<ResultSetHeader>(
-            'INSERT INTO user_sessions (user_id, session_id, fingerprint, created_at, expires_at) VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 MINUTE))',
-            [result.user.id, sessionId, fingerprint],
-          );
-        } catch (error: unknown) {
-          logger.warn('Failed to store session info:', error);
-          // Continue anyway - session will work without stored fingerprint
-        }
+        await this.storeUserSession(result.user.id, sessionId, fingerprint);
       }
 
       // Convert database user to app user format and remove sensitive data

@@ -309,69 +309,89 @@ export async function authenticateToken(
 }
 
 /**
+ * Helper function to check if user is authenticated
+ */
+function checkAuthentication(req: Request, res: Response): boolean {
+  if (!('user' in req) || !req.user) {
+    const acceptHeader = req.headers.accept ?? '';
+    const isHtmlRequest = acceptHeader.includes('text/html');
+
+    if (isHtmlRequest) {
+      res.redirect('/login?session=expired');
+    } else {
+      res.status(401).json({ error: 'Authentication required' });
+    }
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Helper function to check if user has required role
+ */
+function hasRequiredRole(userRole: string, requiredRole: 'admin' | 'employee' | 'root'): boolean {
+  // Root has access to everything
+  if (userRole === 'root') return true;
+
+  // Admin has access to admin and employee resources
+  if (userRole === 'admin' && (requiredRole === 'admin' || requiredRole === 'employee')) {
+    return true;
+  }
+
+  // Exact role match
+  return userRole === requiredRole;
+}
+
+/**
+ * Helper function to get dashboard redirect path
+ */
+function getDashboardPath(userRole: string): string {
+  // Use switch or explicit mapping to avoid object injection
+  switch (userRole) {
+    case 'employee':
+      return '/employee-dashboard';
+    case 'admin':
+      return '/admin-dashboard';
+    case 'root':
+      return '/root-dashboard';
+    default:
+      return '/login';
+  }
+}
+
+/**
+ * Helper function to handle unauthorized access
+ */
+function handleUnauthorizedAccess(req: Request, res: Response, userRole: string): void {
+  const acceptHeader = req.headers.accept ?? '';
+  const isHtmlRequest = acceptHeader.includes('text/html');
+
+  if (isHtmlRequest) {
+    const redirectPath = getDashboardPath(userRole);
+    res.redirect(`${redirectPath}?error=unauthorized`);
+  } else {
+    res.status(403).json({ error: 'Unauthorized - insufficient permissions' });
+  }
+}
+
+/**
  * Middleware zur Rollenbasierte Autorisierung
  */
 export function authorizeRole(role: 'admin' | 'employee' | 'root') {
   return (req: Request, res: Response, next: NextFunction): void => {
-    // Check if user exists on request (might not be authenticated yet)
-    if (!('user' in req) || !req.user) {
-      // Check if client expects HTML (browser page request) or JSON (API request)
-      const acceptHeader = req.headers.accept ?? '';
-      if (acceptHeader.includes('text/html')) {
-        // Browser request - redirect to login
-        res.redirect('/login?session=expired');
-      } else {
-        // API request - return JSON error
-        res.status(401).json({ error: 'Authentication required' });
-      }
+    if (!checkAuthentication(req, res)) {
       return;
     }
 
-    // Now we know user exists, cast to AuthenticatedRequest
     const authReq = req as AuthenticatedRequest;
     const userRole: string = authReq.user.role;
 
-    // Root hat Zugriff auf alles
-    if (userRole === 'root') {
+    if (hasRequiredRole(userRole, role)) {
       next();
       return;
     }
 
-    // Admin hat Zugriff auf Admin- und Employee-Ressourcen
-    if (userRole === 'admin' && (role === 'admin' || role === 'employee')) {
-      next();
-      return;
-    }
-
-    // Genauer Rollen-Match
-    if (userRole === role) {
-      next();
-      return;
-    }
-
-    // Check if client expects HTML (browser page request) or JSON (API request)
-    const acceptHeader = req.headers.accept ?? '';
-    if (acceptHeader.includes('text/html')) {
-      // Browser request - redirect to appropriate dashboard based on role
-      const dashboardMap: Record<string, string> = {
-        employee: '/employee-dashboard',
-        admin: '/admin-dashboard',
-        root: '/root-dashboard',
-      };
-      // Validate userRole is a valid key to prevent object injection
-      let redirectPath = '/login';
-      if (userRole === 'employee') {
-        redirectPath = dashboardMap.employee;
-      } else if (userRole === 'admin') {
-        redirectPath = dashboardMap.admin;
-      } else if (userRole === 'root') {
-        redirectPath = dashboardMap.root;
-      }
-      res.redirect(`${redirectPath}?error=unauthorized`);
-    } else {
-      // API request - return JSON error
-      res.status(403).json({ error: 'Unauthorized - insufficient permissions' });
-    }
+    handleUnauthorizedAccess(req, res, userRole);
   };
 }
 

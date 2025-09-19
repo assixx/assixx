@@ -271,6 +271,48 @@
         document.querySelector('#photoLightbox').classList.remove('active');
       }
 
+      function closeShareModal() {
+        document.querySelector('#shareModal').style.display = 'none';
+        // Reset selections
+        document.querySelectorAll('input[name="orgLevel"]').forEach((input) => (input.checked = false));
+        document.querySelector('#teamSelect').style.display = 'none';
+        document.querySelector('#departmentSelect').style.display = 'none';
+      }
+
+      function confirmShare() {
+        const selectedLevel = document.querySelector('input[name="orgLevel"]:checked');
+        if (!selectedLevel) {
+          alert('Bitte wählen Sie eine Organisationsebene aus.');
+          return;
+        }
+
+        let orgId = null;
+        const level = selectedLevel.value;
+
+        if (level === 'team') {
+          orgId = document.querySelector('#teamSelect').value;
+          if (!orgId) {
+            alert('Bitte wählen Sie ein Team aus.');
+            return;
+          }
+        } else if (level === 'department') {
+          orgId = document.querySelector('#departmentSelect').value;
+          if (!orgId) {
+            alert('Bitte wählen Sie eine Abteilung aus.');
+            return;
+          }
+        }
+
+        // Dispatch share event with data
+        window.dispatchEvent(
+          new CustomEvent('shareKvp', {
+            detail: { orgLevel: level, orgId: orgId },
+          }),
+        );
+
+        closeShareModal();
+      }
+
       // Close lightbox on click outside
       document.querySelector('#photoLightbox')?.addEventListener('click', function (e) {
         if (e.target === this) {
@@ -419,48 +461,6 @@
         document.querySelector('#shareModal').style.display = 'flex';
         // Trigger load of teams and departments if needed
         window.dispatchEvent(new CustomEvent('loadOrgData'));
-      }
-
-      function closeShareModal() {
-        document.querySelector('#shareModal').style.display = 'none';
-        // Reset selections
-        document.querySelectorAll('input[name="orgLevel"]').forEach((input) => (input.checked = false));
-        document.querySelector('#teamSelect').style.display = 'none';
-        document.querySelector('#departmentSelect').style.display = 'none';
-      }
-
-      function confirmShare() {
-        const selectedLevel = document.querySelector('input[name="orgLevel"]:checked');
-        if (!selectedLevel) {
-          alert('Bitte wählen Sie eine Organisationsebene aus.');
-          return;
-        }
-
-        let orgId = null;
-        const level = selectedLevel.value;
-
-        if (level === 'team') {
-          orgId = document.querySelector('#teamSelect').value;
-          if (!orgId) {
-            alert('Bitte wählen Sie ein Team aus.');
-            return;
-          }
-        } else if (level === 'department') {
-          orgId = document.querySelector('#departmentSelect').value;
-          if (!orgId) {
-            alert('Bitte wählen Sie eine Abteilung aus.');
-            return;
-          }
-        }
-
-        // Dispatch share event with data
-        window.dispatchEvent(
-          new CustomEvent('shareKvp', {
-            detail: { orgLevel: level, orgId: orgId },
-          }),
-        );
-
-        closeShareModal();
       }
 
       // Show/hide selects based on radio selection

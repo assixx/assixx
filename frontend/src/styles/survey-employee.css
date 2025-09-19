@@ -572,24 +572,6 @@ body::after {
   margin-top: var(--spacing-md);
 }
 
-.form-control {
-  width: 100%;
-  padding: var(--spacing-2sm);
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-md);
-
-  font-size: 1rem;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
-}
-
 textarea.form-control {
   resize: vertical;
   min-height: 100px;

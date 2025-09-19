@@ -43,23 +43,6 @@ body::after {
   /* animation: fadeInUp 0.6s ease-out; */
 }
 
-/* Form Controls mit Glassmorphismus */
-.form-control {
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  color: #fff;
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.form-control:focus {
-  border-color: rgb(0 142 255 / 50%);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(0 142 255 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 20%);
-}
-
 /* Buttons mit Glassmorphismus und Shine-Effekt */
 .btn {
   position: relative;

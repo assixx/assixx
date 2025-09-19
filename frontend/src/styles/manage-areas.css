@@ -39,30 +39,6 @@ body::after {
   width: 250px;
 }
 
-.form-control {
-  width: 100%;
-}
-
-.form-select {
-  padding-right: 40px;
-
-  appearance: none;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 20px;
-}
-
-.form-control:focus,
-.search-input:focus {
-  border-color: rgb(0 142 255 / 50%);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(0 142 255 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 20%);
-}
-
 /* Buttons mit Glassmorphismus und Shine-Effekt */
 .btn {
   cursor: pointer;

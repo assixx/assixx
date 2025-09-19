@@ -219,38 +219,56 @@
           const originalUserName = document.querySelector('#user-name');
           const originalRoleIndicator = document.querySelector('#role-indicator');
 
+          function restoreElement(original, elementType, id, defaultContent, additionalSetup) {
+            const element = original ? original.cloneNode(true) : document.createElement(elementType);
+            element.id = id;
+            if (defaultContent) {
+              element.textContent = element.textContent || defaultContent;
+            }
+            if (additionalSetup) {
+              additionalSetup(element);
+            }
+            return element;
+          }
+
+          function restoreUserInfoElements() {
+            console.info('[Calendar] Restoring user-info elements');
+            userInfoDiv.innerHTML = '';
+
+            // Avatar wiederherstellen
+            const newAvatar = restoreElement(originalAvatar, 'img', 'user-avatar', null, (el) => {
+              el.src = '/assets/images/default-avatar.svg';
+              el.alt = 'Avatar';
+            });
+            userInfoDiv.append(newAvatar);
+
+            // Username wiederherstellen
+            const newUserName = restoreElement(originalUserName, 'span', 'user-name', 'Lade...');
+            userInfoDiv.append(newUserName);
+
+            // Role Badge wiederherstellen
+            const newRoleIndicator = restoreElement(originalRoleIndicator, 'span', 'role-indicator', 'Admin', (el) => {
+              el.className = 'role-badge admin';
+            });
+            userInfoDiv.append(newRoleIndicator);
+          }
+
+          function checkUserInfoElements() {
+            const currentAvatar = document.querySelector('#user-avatar');
+            const currentUserName = document.querySelector('#user-name');
+            const currentRoleIndicator = document.querySelector('#role-indicator');
+
+            return !currentAvatar || !currentUserName || !currentRoleIndicator;
+          }
+
           const observer = new MutationObserver(function (mutations) {
             mutations.forEach(function (mutation) {
-              if (mutation.type === 'childList' && mutation.target.id === 'user-info') {
-                // Prüfe ob alle 3 Elemente vorhanden sind
-                const currentAvatar = document.querySelector('#user-avatar');
-                const currentUserName = document.querySelector('#user-name');
-                const currentRoleIndicator = document.querySelector('#role-indicator');
+              if (mutation.type !== 'childList' || mutation.target.id !== 'user-info') {
+                return;
+              }
 
-                if (!currentAvatar || !currentUserName || !currentRoleIndicator) {
-                  console.info('[Calendar] Restoring user-info elements');
-                  userInfoDiv.innerHTML = '';
-
-                  // Avatar wiederherstellen
-                  const newAvatar = originalAvatar ? originalAvatar.cloneNode(true) : document.createElement('img');
-                  newAvatar.id = 'user-avatar';
-                  newAvatar.src = '/assets/images/default-avatar.svg';
-                  newAvatar.alt = 'Avatar';
-                  userInfoDiv.append(newAvatar);
-
-                  // Username wiederherstellen
-                  const newUserName = originalUserName ? originalUserName.cloneNode(true) : document.createElement('span');
-                  newUserName.id = 'user-name';
-                  newUserName.textContent = newUserName.textContent || 'Lade...';
-                  userInfoDiv.append(newUserName);
-
-                  // Role Badge wiederherstellen
-                  const newRoleIndicator = originalRoleIndicator ? originalRoleIndicator.cloneNode(true) : document.createElement('span');
-                  newRoleIndicator.id = 'role-indicator';
-                  newRoleIndicator.className = 'role-badge admin';
-                  newRoleIndicator.textContent = newRoleIndicator.textContent || 'Admin';
-                  userInfoDiv.append(newRoleIndicator);
-                }
+              if (checkUserInfoElements()) {
+                restoreUserInfoElements();
               }
             });
           });

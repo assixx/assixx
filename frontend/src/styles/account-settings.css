@@ -285,43 +285,6 @@ body::after {
   margin-top: 20px;
 }
 
-/* Form Controls */
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px 14px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
-
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-
-  transition: all 0.3s ease;
-}
-
-.form-control:focus {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 7%);
-  outline: none;
-}
-
-.form-control::placeholder {
-  color: var(--text-secondary);
-  opacity: 60%;
-}
-
 /* Responsive Design */
 @media (width <= 768px) {
   .settings-container {

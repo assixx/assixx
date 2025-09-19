@@ -4,7 +4,7 @@
  */
 import * as dotenv from 'dotenv';
 import * as mysql from 'mysql2';
-import { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { Pool, PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import * as path from 'path';
 
 // Handle both ESM and CommonJS environments
@@ -394,6 +394,94 @@ class ChatService {
   }
 
   /**
+   * Check if user has permission to create conversation with target
+   */
+  private async validateEmployeePermission(
+    connection: PoolConnection,
+    tenantId: string | number,
+    userId: number,
+    participantIds: number[],
+    isGroup: boolean,
+  ): Promise<void> {
+    const [currentUserInfo] = await connection.query<RowDataPacket[]>(
+      `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
+      [userId, tenantId],
+    );
+
+    if (currentUserInfo.length === 0) {
+      throw new Error('Current user not found');
+    }
+
+    const userRole = currentUserInfo[0].role as string;
+
+    // Employee permission check for non-group conversations
+    if (userRole === 'employee' && !isGroup) {
+      const [targetUserInfo] = await connection.query<RowDataPacket[]>(
+        `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
+        [participantIds[0], tenantId],
+      );
+
+      if (targetUserInfo.length > 0 && targetUserInfo[0].role === 'employee') {
+        throw new Error('Mitarbeiter können keine Nachrichten an andere Mitarbeiter initiieren');
+      }
+    }
+  }
+
+  /**
+   * Check if 1:1 conversation already exists
+   */
+  private async findExistingConversation(
+    connection: PoolConnection,
+    tenantId: string | number,
+    userId: number,
+    targetUserId: number,
+  ): Promise<number | null> {
+    const [existing] = await connection.query<RowDataPacket[]>(
+      `SELECT c.id
+       FROM conversations c
+       INNER JOIN conversation_participants cp1 ON c.id = cp1.conversation_id
+       INNER JOIN conversation_participants cp2 ON c.id = cp2.conversation_id
+       WHERE c.tenant_id = ?
+         AND c.is_group = 0
+         AND cp1.user_id = ?
+         AND cp2.user_id = ?
+         AND c.id IN (
+           SELECT conversation_id
+           FROM conversation_participants
+           GROUP BY conversation_id
+           HAVING COUNT(*) = 2
+         )`,
+      [tenantId, userId, targetUserId],
+    );
+
+    return existing.length > 0 ? (existing[0].id as number) : null;
+  }
+
+  /**
+   * Add participants to conversation
+   */
+  private async addParticipants(
+    connection: PoolConnection,
+    conversationId: number,
+    userId: number,
+    participantIds: number[],
+  ): Promise<void> {
+    // Add creator as participant
+    await connection.query(
+      'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
+      [conversationId, userId],
+    );
+
+    // Add other participants
+    for (const participantId of participantIds) {
+      await connection.query(
+        'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
+        [conversationId, participantId],
+      );
+    }
+  }
+
+  /**
    * Erstellt eine neue Konversation
    * Nur Admins und Root können initial Nachrichten an Employees senden
    * @param tenantId - The tenant ID
@@ -414,60 +502,25 @@ class ChatService {
     try {
       await connection.beginTransaction();
 
-      // Hole die Rolle des aktuellen Users
-      const [currentUserInfo] = await connection.query<RowDataPacket[]>(
-        `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
-        [userId, tenantId],
-      );
+      // Validate employee permissions
+      await this.validateEmployeePermission(connection, tenantId, userId, participantIds, isGroup);
 
-      if (currentUserInfo.length === 0) {
-        throw new Error('Current user not found');
-      }
-
-      const userRole = currentUserInfo[0].role as string;
-
-      // Prüfe Berechtigung für Employees
-      if (userRole === 'employee' && !isGroup) {
-        // Employee darf nur antworten, nicht initiieren
-        // Prüfe ob bereits eine Konversation mit einem Admin existiert
-        const [targetUserInfo] = await connection.query<RowDataPacket[]>(
-          `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
-          [participantIds[0], tenantId],
-        );
-
-        if (targetUserInfo.length > 0 && targetUserInfo[0].role === 'employee') {
-          await connection.rollback();
-          throw new Error('Mitarbeiter können keine Nachrichten an andere Mitarbeiter initiieren');
-        }
-      }
-
-      // Prüfe ob bereits eine 1:1 Konversation existiert
+      // Check for existing 1:1 conversation
       if (!isGroup && participantIds.length === 1) {
-        const [existing] = await connection.query<RowDataPacket[]>(
-          `SELECT c.id
-           FROM conversations c
-           INNER JOIN conversation_participants cp1 ON c.id = cp1.conversation_id
-           INNER JOIN conversation_participants cp2 ON c.id = cp2.conversation_id
-           WHERE c.tenant_id = ?
-             AND c.is_group = 0
-             AND cp1.user_id = ?
-             AND cp2.user_id = ?
-             AND c.id IN (
-               SELECT conversation_id
-               FROM conversation_participants
-               GROUP BY conversation_id
-               HAVING COUNT(*) = 2
-             )`,
-          [tenantId, userId, participantIds[0]],
+        const existingId = await this.findExistingConversation(
+          connection,
+          tenantId,
+          userId,
+          participantIds[0],
         );
 
-        if (existing.length > 0) {
+        if (existingId !== null) {
           await connection.commit();
-          return { id: existing[0].id as number, existing: true };
+          return { id: existingId, existing: true };
         }
       }
 
-      // Erstelle neue Konversation
+      // Create new conversation
       const [result] = await connection.query<ResultSetHeader>(
         'INSERT INTO conversations (tenant_id, is_group, name) VALUES (?, ?, ?)',
         [tenantId, isGroup, name],
@@ -475,19 +528,8 @@ class ChatService {
 
       const conversationId = result.insertId;
 
-      // Füge Ersteller als Teilnehmer hinzu
-      await connection.query(
-        'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
-        [conversationId, userId],
-      );
-
-      // Füge andere Teilnehmer hinzu
-      for (const participantId of participantIds) {
-        await connection.query(
-          'INSERT INTO conversation_participants (conversation_id, user_id) VALUES (?, ?)',
-          [conversationId, participantId],
-        );
-      }
+      // Add all participants
+      await this.addParticipants(connection, conversationId, userId, participantIds);
 
       await connection.commit();
       return { id: conversationId, existing: false };

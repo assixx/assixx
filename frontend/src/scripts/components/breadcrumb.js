@@ -490,14 +490,10 @@ function handleCommonPages(items, currentPage) {
   return false;
 }
 
-// Main function
-function generateBreadcrumbsFromURL() {
-  const path = window.location.pathname;
-  const urlParams = new URLSearchParams(window.location.search);
-  const section = urlParams.get('section');
-  const items = [];
-
-  // Add home
+/**
+ * Add home breadcrumb item
+ */
+function addHomeBreadcrumb(items) {
   const userRole = getUserRole();
   const homeHref = getHomeUrl(userRole);
 
@@ -506,91 +502,181 @@ function generateBreadcrumbsFromURL() {
     href: homeHref,
     icon: defaultConfig.homeIcon,
   });
+}
 
-  // Get current page
+/**
+ * Handle archived employees breadcrumb
+ */
+function handleArchivedEmployees(items) {
+  items.push({
+    label: ADMIN_DASHBOARD_LABEL,
+    href: ADMIN_DASHBOARD_URL,
+    icon: ICON_TACHOMETER,
+  });
+  items.push({
+    label: BENUTZER_VERWALTEN_LABEL,
+    href: '/manage-users',
+    icon: ICON_USERS,
+  });
+}
+
+/**
+ * Handle department groups breadcrumb
+ */
+function handleDepartmentGroups(items) {
+  items.push({
+    label: ADMIN_DASHBOARD_LABEL,
+    href: ADMIN_DASHBOARD_URL,
+    icon: ICON_TACHOMETER,
+  });
+  items.push({
+    label: 'Abteilungen verwalten',
+    href: '/manage-departments',
+    icon: 'fa-sitemap',
+  });
+}
+
+/**
+ * Handle account settings breadcrumb
+ */
+function handleAccountSettings(items) {
+  const currentUserRole = getUserRole();
+  addDashboardBreadcrumb(items, currentUserRole);
+}
+
+/**
+ * Process special page handlers
+ */
+function processSpecialHandlers(items, currentPage) {
+  return (
+    handleSurveyPages(items, currentPage) ||
+    handleAdminPages(items, currentPage) ||
+    handleRootPages(items, currentPage) ||
+    handleCommonPages(items, currentPage) ||
+    handleDocumentPages(items, currentPage)
+  );
+}
+
+/**
+ * Process special case pages
+ */
+function processSpecialCases(items, currentPage) {
+  const isArchivedEmployees = currentPage === '/archived-employees' || currentPage === '/pages/archived-employees';
+  const isDepartmentGroups =
+    currentPage === '/manage-department-groups' || currentPage === '/pages/manage-department-groups';
+  const isAccountRelated = [
+    '/account-settings',
+    '/pages/account-settings',
+    '/storage-upgrade',
+    '/pages/storage-upgrade',
+  ].includes(currentPage);
+
+  if (isArchivedEmployees) {
+    handleArchivedEmployees(items);
+    return true;
+  }
+
+  if (isDepartmentGroups) {
+    handleDepartmentGroups(items);
+    return true;
+  }
+
+  if (isAccountRelated) {
+    handleAccountSettings(items);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Add section breadcrumb for admin dashboard
+ */
+function addSectionBreadcrumb(items, section) {
+  const sectionMapping = findMapping(sectionMappings, section);
+
+  if (sectionMapping) {
+    items.push({
+      ...sectionMapping,
+      current: true,
+    });
+  } else {
+    items.push({
+      label: section.charAt(0).toUpperCase() + section.slice(1).replace(/[^\s\w\-]/g, ''),
+      current: true,
+    });
+  }
+}
+
+/**
+ * Add current page breadcrumb
+ */
+function addCurrentPageBreadcrumb(items, currentPage, mapping, section) {
+  const isAdminDashboard = currentPage === '/admin-dashboard' || currentPage === '/pages/admin-dashboard';
+
+  if (isAdminDashboard && section) {
+    addSectionBreadcrumb(items, section);
+    return;
+  }
+
+  items.push({
+    ...mapping,
+    current: true,
+  });
+}
+
+/**
+ * Add fallback breadcrumb for unmapped pages
+ */
+function addFallbackBreadcrumb(items, currentPage) {
+  const pageName = currentPage
+    .split('/')
+    .pop()
+    .replace(/-/g, ' ')
+    .replace(/[^\s0-9A-Za-z]/g, '');
+
+  items.push({
+    label: pageName.charAt(0).toUpperCase() + pageName.slice(1),
+    current: true,
+  });
+}
+
+/**
+ * Check if current page is a root page
+ */
+function isRootPage(currentPage) {
+  return currentPage === '/' || currentPage === '/index' || currentPage === '';
+}
+
+// Main function
+function generateBreadcrumbsFromURL() {
+  const path = window.location.pathname;
+  const urlParams = new URLSearchParams(window.location.search);
+  const section = urlParams.get('section');
+  const items = [];
+
+  addHomeBreadcrumb(items);
+
   const currentPage = path.replace(/\.html$/, '');
 
-  if (currentPage !== '/' && currentPage !== '/index' && currentPage !== '') {
-    const mapping = findMapping(urlMappings, currentPage);
-
-    if (mapping) {
-      // Try special handlers first
-      if (
-        !handleSurveyPages(items, currentPage) &&
-        !handleAdminPages(items, currentPage) &&
-        !handleRootPages(items, currentPage) &&
-        !handleCommonPages(items, currentPage) &&
-        !handleDocumentPages(items, currentPage)
-      ) {
-        // Handle special cases
-        if (currentPage === '/archived-employees' || currentPage === '/pages/archived-employees') {
-          items.push({
-            label: ADMIN_DASHBOARD_LABEL,
-            href: ADMIN_DASHBOARD_URL,
-            icon: ICON_TACHOMETER,
-          });
-          items.push({
-            label: BENUTZER_VERWALTEN_LABEL,
-            href: '/manage-users',
-            icon: ICON_USERS,
-          });
-        } else if (currentPage === '/manage-department-groups' || currentPage === '/pages/manage-department-groups') {
-          items.push({
-            label: ADMIN_DASHBOARD_LABEL,
-            href: ADMIN_DASHBOARD_URL,
-            icon: ICON_TACHOMETER,
-          });
-          items.push({
-            label: 'Abteilungen verwalten',
-            href: '/manage-departments',
-            icon: 'fa-sitemap',
-          });
-        } else if (
-          currentPage === '/account-settings' ||
-          currentPage === '/pages/account-settings' ||
-          currentPage === '/storage-upgrade' ||
-          currentPage === '/pages/storage-upgrade'
-        ) {
-          const currentUserRole = getUserRole();
-          addDashboardBreadcrumb(items, currentUserRole);
-        }
-      }
-
-      // Handle section parameter for admin dashboard
-      if ((currentPage === '/admin-dashboard' || currentPage === '/pages/admin-dashboard') && section) {
-        const sectionMapping = findMapping(sectionMappings, section);
-        if (sectionMapping) {
-          items.push({
-            ...sectionMapping,
-            current: true,
-          });
-        } else {
-          // Fallback for unknown sections
-          items.push({
-            label: section.charAt(0).toUpperCase() + section.slice(1).replace(/[^\s\w\-]/g, ''),
-            current: true,
-          });
-        }
-      } else {
-        // Normal page without section
-        items.push({
-          ...mapping,
-          current: true,
-        });
-      }
-    } else {
-      // Fallback for unmapped pages
-      const pageName = currentPage
-        .split('/')
-        .pop()
-        .replace(/-/g, ' ')
-        .replace(/[^\s0-9A-Za-z]/g, '');
-      items.push({
-        label: pageName.charAt(0).toUpperCase() + pageName.slice(1),
-        current: true,
-      });
-    }
+  if (isRootPage(currentPage)) {
+    return items;
   }
+
+  const mapping = findMapping(urlMappings, currentPage);
+
+  if (!mapping) {
+    addFallbackBreadcrumb(items, currentPage);
+    return items;
+  }
+
+  const handledBySpecial = processSpecialHandlers(items, currentPage);
+
+  if (!handledBySpecial) {
+    processSpecialCases(items, currentPage);
+  }
+
+  addCurrentPageBreadcrumb(items, currentPage, mapping, section);
 
   return items;
 }

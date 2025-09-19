@@ -636,6 +636,64 @@ export class RootController {
   }
 
   /**
+   * Helper: Validate root users for two-person principle
+   */
+  private async validateRootUsers(tenantId: number, res: Response): Promise<boolean> {
+    const rootUsers = await rootService.getRootUsers(tenantId);
+    if (rootUsers.length < 2) {
+      const errorMessage = this.getRootUserErrorMessage(rootUsers.length);
+      res.status(400).json(errorResponse('INSUFFICIENT_ROOT_USERS', errorMessage));
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * Helper: Get error message for insufficient root users
+   */
+  private getRootUserErrorMessage(userCount: number): string {
+    const countMessage =
+      userCount === 1 ? 'Es gibt nur 1 Root-Benutzer' : 'Es gibt keine Root-Benutzer';
+    return `Tenant-Löschung nicht möglich: ${countMessage}. Um den Tenant zu löschen, erstellen Sie bitte mindestens einen weiteren Root-Benutzer (Zwei-Personen-Prinzip).`;
+  }
+
+  /**
+   * Helper: Check if error indicates deletion already scheduled
+   */
+  private isDeletionAlreadyScheduledError(error: unknown): boolean {
+    if (error instanceof ServiceError && error.code === 'ALREADY_SCHEDULED') {
+      return true;
+    }
+
+    const errorMessage = error instanceof Error ? error.message : '';
+    return (
+      errorMessage.includes('already scheduled') ||
+      errorMessage.includes('already marked_for_deletion')
+    );
+  }
+
+  /**
+   * Helper: Handle deletion error responses
+   */
+  private handleDeletionError(error: unknown, res: Response): void {
+    logger.error('Error deleting tenant:', error);
+
+    if (this.isDeletionAlreadyScheduledError(error)) {
+      res
+        .status(409)
+        .json(
+          errorResponse(
+            'ALREADY_SCHEDULED',
+            'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
+          ),
+        );
+      return;
+    }
+
+    res.status(500).json(errorResponse('SERVER_ERROR', 'Fehler beim Löschen des Tenants'));
+  }
+
+  /**
    * DELETE /api/v2/root/tenants/current
    * Delete current tenant (uses JWT token for tenant_id)
    * Compatible with v1 API
@@ -643,35 +701,28 @@ export class RootController {
   async deleteCurrentTenant(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       const body = req.body as TenantDeletionRequest | undefined;
-      const reason = body?.reason;
-      const tenantId = req.user.tenant_id; // Always use tenant from JWT
+      const reason = body?.reason ?? 'Keine Angabe';
+      const tenantId = req.user.tenant_id;
 
       logger.warn(
         `🔒 SECURE DELETE: Root user ${req.user.username} (ID: ${req.user.id}) requesting deletion of their own tenant ${tenantId}`,
       );
 
-      // Check if there are at least 2 root users (two-person principle)
-      const rootUsers = await rootService.getRootUsers(tenantId);
-      if (rootUsers.length < 2) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              'INSUFFICIENT_ROOT_USERS',
-              `Tenant-Löschung nicht möglich: ${rootUsers.length === 1 ? 'Es gibt nur 1 Root-Benutzer' : 'Es gibt keine Root-Benutzer'}. Um den Tenant zu löschen, erstellen Sie bitte mindestens einen weiteren Root-Benutzer (Zwei-Personen-Prinzip).`,
-            ),
-          );
+      // Validate two-person principle
+      const isValid = await this.validateRootUsers(tenantId, res);
+      if (!isValid) {
         return;
       }
 
-      // Initiate deletion - use requestTenantDeletion from rootService
+      // Initiate deletion
       logger.info(
-        `Calling rootService.requestTenantDeletion with: tenantId=${tenantId}, userId=${req.user.id}, reason=${reason ?? 'none'}, ip=${req.ip ?? 'unknown'}`,
+        `Calling rootService.requestTenantDeletion with: tenantId=${tenantId}, userId=${req.user.id}, reason=${reason}, ip=${req.ip ?? 'unknown'}`,
       );
+
       const queueId = await rootService.requestTenantDeletion(
         tenantId,
         req.user.id,
-        reason ?? 'Keine Angabe',
+        reason,
         req.ip ?? 'unknown',
       );
 
@@ -685,39 +736,7 @@ export class RootController {
         }),
       );
     } catch (error: unknown) {
-      logger.error('Error deleting tenant:', error);
-
-      // Handle ServiceError with specific codes
-      if (error instanceof ServiceError && error.code === 'ALREADY_SCHEDULED') {
-        res
-          .status(409)
-          .json(
-            errorResponse(
-              'ALREADY_SCHEDULED',
-              'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
-            ),
-          );
-        return;
-      }
-
-      // Legacy check for error messages
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      if (
-        errorMessage.includes('already scheduled') ||
-        errorMessage.includes('already marked_for_deletion')
-      ) {
-        res
-          .status(409)
-          .json(
-            errorResponse(
-              'ALREADY_SCHEDULED',
-              'Eine Löschung für diesen Tenant ist bereits geplant. Bitte prüfen Sie den Status unter "Tenant-Löschung Status".',
-            ),
-          );
-        return;
-      }
-
-      res.status(500).json(errorResponse('SERVER_ERROR', 'Fehler beim Löschen des Tenants'));
+      this.handleDeletionError(error, res);
     }
   }
 

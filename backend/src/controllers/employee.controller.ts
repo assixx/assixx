@@ -99,6 +99,79 @@ interface EmployeeQueryRequest extends TenantRequest {
 }
 
 /**
+ * Helper function to validate tenant context
+ */
+function validateTenantContext(
+  req: EmployeeQueryRequest,
+  res: Response,
+): { isValid: boolean; tenantId?: number } {
+  if (req.tenantDb === undefined) {
+    res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
+    return { isValid: false };
+  }
+
+  const tenantId = req.tenantId ?? req.user?.tenantId;
+  if (tenantId === undefined || tenantId === 0) {
+    res.status(400).json({ error: 'Tenant ID not found' });
+    return { isValid: false };
+  }
+
+  return { isValid: true, tenantId };
+}
+
+/**
+ * Helper function to parse optional number from query string
+ */
+function parseOptionalNumber(value: string | undefined): number | undefined {
+  if (value === undefined || value === '') {
+    return undefined;
+  }
+  return Number.parseInt(value);
+}
+
+/**
+ * Helper function to parse optional boolean from query string
+ */
+function parseOptionalBoolean(value: string | undefined): boolean | undefined {
+  if (value === undefined || value === '') {
+    return undefined;
+  }
+  return value === 'true';
+}
+
+/**
+ * Helper function to build filters from query parameters
+ */
+function buildEmployeeFilters(
+  query: EmployeeQueryRequest['query'],
+  tenantId: number,
+): {
+  tenant_id: number;
+  search: string | undefined;
+  role: string | undefined;
+  department_id: number | undefined;
+  team_id: number | undefined;
+  is_active: boolean | undefined;
+  page: number | undefined;
+  limit: number | undefined;
+  sortBy: string | undefined;
+  sortDir: 'ASC' | 'DESC' | undefined;
+} {
+  return {
+    tenant_id: tenantId,
+    search: query.search,
+    role: query.role,
+    department_id: parseOptionalNumber(query.department_id),
+    team_id: parseOptionalNumber(query.team_id),
+    is_active: parseOptionalBoolean(query.is_active),
+    page: parseOptionalNumber(query.page),
+    limit: parseOptionalNumber(query.limit),
+    sortBy: query.sortBy,
+    sortDir: query.sortDir,
+  };
+}
+
+/**
  *
  */
 class EmployeeController {
@@ -110,46 +183,12 @@ class EmployeeController {
    */
   async getAll(req: EmployeeQueryRequest, res: Response): Promise<void> {
     try {
-      if (req.tenantDb === undefined) {
-        res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
+      const validation = validateTenantContext(req, res);
+      if (!validation.isValid || validation.tenantId === undefined || req.tenantDb === undefined) {
         return;
       }
 
-      // Parse query parameters to appropriate types
-      const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (tenantId === undefined || tenantId === 0) {
-        res.status(400).json({ error: 'Tenant ID not found' });
-        return;
-      }
-
-      const filters = {
-        tenant_id: tenantId,
-        search: req.query.search,
-        role: req.query.role,
-        department_id:
-          req.query.department_id !== undefined && req.query.department_id !== '' ?
-            Number.parseInt(req.query.department_id)
-          : undefined,
-        team_id:
-          req.query.team_id !== undefined && req.query.team_id !== '' ?
-            Number.parseInt(req.query.team_id)
-          : undefined,
-        is_active:
-          req.query.is_active !== undefined && req.query.is_active !== '' ?
-            req.query.is_active === 'true'
-          : undefined,
-        page:
-          req.query.page !== undefined && req.query.page !== '' ?
-            Number.parseInt(req.query.page)
-          : undefined,
-        limit:
-          req.query.limit !== undefined && req.query.limit !== '' ?
-            Number.parseInt(req.query.limit)
-          : undefined,
-        sortBy: req.query.sortBy,
-        sortDir: req.query.sortDir,
-      };
-
+      const filters = buildEmployeeFilters(req.query, validation.tenantId);
       const result = await employeeService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error: unknown) {

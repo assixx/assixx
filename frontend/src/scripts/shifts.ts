@@ -344,6 +344,219 @@ class ShiftPlanningSystem {
     }
   }
 
+  private restoreSavedContext(): boolean {
+    const savedContextStr = localStorage.getItem('shiftsReloadContext');
+    if (savedContextStr === null) return false;
+
+    try {
+      const savedContext = JSON.parse(savedContextStr) as {
+        areaId: number | null;
+        departmentId: number | null;
+        machineId: number | null;
+        teamId: number | null;
+        currentWeek: string;
+        planId: number | null;
+        timestamp: number;
+      };
+
+      // Check if the saved context is recent (less than 5 minutes old)
+      const ageInMs = Date.now() - savedContext.timestamp;
+      if (ageInMs >= 5 * 60 * 1000) {
+        console.info('[SHIFTS RELOAD DEBUG] Saved context is too old, ignoring');
+        localStorage.removeItem('shiftsReloadContext');
+        return false;
+      }
+
+      console.info('[SHIFTS RELOAD DEBUG] Restoring saved context after reload:', savedContext);
+
+      // Restore the context
+      this.selectedContext.areaId = savedContext.areaId;
+      this.selectedContext.departmentId = savedContext.departmentId;
+      this.selectedContext.machineId = savedContext.machineId;
+      this.selectedContext.teamId = savedContext.teamId;
+      this.currentWeek = new Date(savedContext.currentWeek);
+      this.currentPlanId = savedContext.planId;
+
+      // Store for later use after loadContextData() populates the dropdowns
+      // Using explicit interface for better type safety
+      interface WindowWithShifts extends Window {
+        shiftsRestoringFromReload?: boolean;
+        shiftsSavedReloadContext?: typeof savedContext;
+      }
+      (window as WindowWithShifts).shiftsRestoringFromReload = true;
+      (window as WindowWithShifts).shiftsSavedReloadContext = savedContext;
+
+      localStorage.removeItem('shiftsReloadContext');
+      console.info('[SHIFTS RELOAD DEBUG] Context restored and cleared from localStorage');
+      return true;
+    } catch (error) {
+      console.error('[SHIFTS RELOAD DEBUG] Error parsing saved context:', error);
+      localStorage.removeItem('shiftsReloadContext');
+      return false;
+    }
+  }
+
+  private setCustomDropdown(_selectId: string, displayId: string, value: number | null, label?: string): void {
+    if (value === null) return;
+
+    const display = $$id(displayId);
+    if (display !== null) {
+      setData(display, 'value', String(value));
+      if (label !== undefined) {
+        const span = display.querySelector('span');
+        if (span !== null) {
+          span.textContent = label;
+        }
+      }
+    }
+  }
+
+  private async restoreAreaSelection(areaId: number | null): Promise<void> {
+    if (areaId === null) return;
+
+    const area = this.areas.find((a) => a.id === areaId);
+    if (area !== undefined) {
+      this.setCustomDropdown('areaSelect', 'areaDisplay', areaId, area.name);
+      await this.loadDepartments(areaId);
+      this.populateDepartmentSelect();
+    }
+  }
+
+  private async restoreDepartmentSelection(departmentId: number | null): Promise<void> {
+    if (departmentId === null) return;
+
+    const dept = this.departments.find((d) => d.id === departmentId);
+    if (dept !== undefined) {
+      this.setCustomDropdown('departmentSelect', 'departmentDisplay', departmentId, dept.name);
+      this.selectedContext.departmentId = departmentId;
+      await this.loadMachines();
+      this.populateMachineSelect();
+    }
+  }
+
+  private async restoreMachineSelection(machineId: number | null): Promise<void> {
+    if (machineId === null) return;
+
+    const machine = this.machines.find((m) => m.id === machineId);
+    if (machine !== undefined) {
+      this.setCustomDropdown('machineSelect', 'machineDisplay', machineId, machine.name);
+      await this.loadTeamsForMachine(machineId);
+      this.populateTeamSelect();
+    }
+  }
+
+  private restoreTeamSelection(teamId: number | null): void {
+    if (teamId === null) return;
+
+    const team = this.teams.find((t) => t.id === teamId);
+    if (team !== undefined) {
+      this.setCustomDropdown('teamSelect', 'teamDisplay', teamId, team.name);
+    }
+  }
+
+  private async restoreDropdownSelections(): Promise<void> {
+    interface WindowWithShifts extends Window {
+      shiftsRestoringFromReload?: boolean;
+      shiftsSavedReloadContext?: {
+        areaId: number | null;
+        departmentId: number | null;
+        machineId: number | null;
+        teamId: number | null;
+        currentWeek: string;
+        planId: number | null;
+        timestamp: number;
+      };
+    }
+
+    const windowWithShifts = window as WindowWithShifts;
+    if (
+      windowWithShifts.shiftsRestoringFromReload !== true ||
+      windowWithShifts.shiftsSavedReloadContext === undefined
+    ) {
+      return;
+    }
+
+    console.info('[SHIFTS RELOAD DEBUG] Restoring dropdown selections...');
+    const context = windowWithShifts.shiftsSavedReloadContext;
+
+    // Restore each dropdown selection
+    await this.restoreAreaSelection(context.areaId);
+    await this.restoreDepartmentSelection(context.departmentId);
+    await this.restoreMachineSelection(context.machineId);
+    this.restoreTeamSelection(context.teamId);
+
+    // Clean up temporary properties
+    delete windowWithShifts.shiftsRestoringFromReload;
+    delete windowWithShifts.shiftsSavedReloadContext;
+
+    console.info('[SHIFTS RELOAD DEBUG] Dropdown selections restored');
+
+    // Reload user preferences with the restored team_id
+    if (context.teamId !== null) {
+      console.info('[SHIFTS RELOAD DEBUG] Loading preferences for restored team:', context.teamId);
+      await this.loadUserPreferencesFromDatabase();
+    }
+  }
+
+  private shouldLoadInitialData(): boolean {
+    return this.isAdmin
+      ? this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0
+      : this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0;
+  }
+
+  private async loadInitialData(): Promise<void> {
+    console.info('[SHIFTS DEBUG] Team/Department selected, loading data...');
+
+    // Load user preferences for the selected team
+    if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+      console.info('[SHIFTS DEBUG] Loading preferences for selected team on init:', this.selectedContext.teamId);
+      await this.loadUserPreferencesFromDatabase();
+    }
+
+    console.info('[SHIFTS DEBUG] Loading employees...');
+    await this.loadEmployees();
+    console.info('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
+
+    console.info('[SHIFTS DEBUG] Loading current week data...');
+    await this.loadCurrentWeekData();
+
+    console.info('[SHIFTS DEBUG] Loading weekly notes...');
+    try {
+      this.loadWeeklyNotes();
+    } catch (error) {
+      console.error('[SHIFTS ERROR] Failed to load weekly notes:', error);
+    }
+  }
+
+  private async finalizeInitialization(): Promise<void> {
+    // Update UI based on user role
+    console.info('[SHIFTS DEBUG] Updating UI for role:', this.userRole);
+    this.updateUIForRole();
+
+    // Initialize the week display immediately
+    this.updateWeekDisplay();
+
+    // Check if department is selected and toggle visibility
+    this.togglePlanningAreaVisibility();
+
+    // For employees, load department info
+    if (!this.isAdmin && this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+      await this.loadDepartments();
+    }
+
+    // Load notes again after department is properly set
+    if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+      console.info('[SHIFTS DEBUG] Loading notes after department is set:', this.selectedContext.departmentId);
+      this.loadWeeklyNotes();
+    }
+
+    // Highlight employee's own shifts
+    this.highlightEmployeeShifts();
+
+    // Render favorites on init
+    this.renderFavorites();
+  }
+
   async init(): Promise<void> {
     console.info('[SHIFTS] Initializing Shift Planning System...');
     console.info('[SHIFTS] Initial context:', {
@@ -354,60 +567,7 @@ class ShiftPlanningSystem {
     });
 
     // Check if there's a saved context from before a reload
-    const savedContextStr = localStorage.getItem('shiftsReloadContext');
-    if (savedContextStr !== null) {
-      try {
-        const savedContext = JSON.parse(savedContextStr) as {
-          areaId: number | null;
-          departmentId: number | null;
-          machineId: number | null;
-          teamId: number | null;
-          currentWeek: string;
-          planId: number | null;
-          timestamp: number;
-        };
-
-        // Check if the saved context is recent (less than 5 minutes old)
-        const ageInMs = Date.now() - savedContext.timestamp;
-        if (ageInMs < 5 * 60 * 1000) {
-          console.info('[SHIFTS RELOAD DEBUG] Restoring saved context after reload:', savedContext);
-
-          // Restore the context
-          this.selectedContext.areaId = savedContext.areaId;
-          this.selectedContext.departmentId = savedContext.departmentId;
-          this.selectedContext.machineId = savedContext.machineId;
-          this.selectedContext.teamId = savedContext.teamId;
-          this.currentWeek = new Date(savedContext.currentWeek);
-          this.currentPlanId = savedContext.planId;
-
-          // Mark that we're restoring from reload - will be processed after dropdowns are loaded
-          // Store this for later use after loadContextData() populates the dropdowns
-          // Using window object to store temporary data to avoid TypeScript issues
-          (
-            window as Window & {
-              shiftsRestoringFromReload?: boolean;
-              shiftsSavedReloadContext?: typeof savedContext;
-            }
-          ).shiftsRestoringFromReload = true;
-          (
-            window as Window & {
-              shiftsRestoringFromReload?: boolean;
-              shiftsSavedReloadContext?: typeof savedContext;
-            }
-          ).shiftsSavedReloadContext = savedContext;
-
-          // Clear the saved context from localStorage
-          localStorage.removeItem('shiftsReloadContext');
-          console.info('[SHIFTS RELOAD DEBUG] Context restored and cleared from localStorage');
-        } else {
-          console.info('[SHIFTS RELOAD DEBUG] Saved context is too old, ignoring');
-          localStorage.removeItem('shiftsReloadContext');
-        }
-      } catch (error) {
-        console.error('[SHIFTS RELOAD DEBUG] Error parsing saved context:', error);
-        localStorage.removeItem('shiftsReloadContext');
-      }
-    }
+    this.restoreSavedContext();
 
     try {
       // Check user authentication and role
@@ -424,165 +584,17 @@ class ShiftPlanningSystem {
       await this.loadContextData();
 
       // If we're restoring from reload, set the custom dropdowns
-      const windowWithShifts = window as Window & {
-        shiftsRestoringFromReload?: boolean;
-        shiftsSavedReloadContext?: {
-          areaId: number | null;
-          departmentId: number | null;
-          machineId: number | null;
-          teamId: number | null;
-          currentWeek: string;
-          planId: number | null;
-          timestamp: number;
-        };
-      };
+      await this.restoreDropdownSelections();
 
-      if (
-        windowWithShifts.shiftsRestoringFromReload === true &&
-        windowWithShifts.shiftsSavedReloadContext !== undefined
-      ) {
-        console.info('[SHIFTS RELOAD DEBUG] Restoring dropdown selections...');
-        const context = windowWithShifts.shiftsSavedReloadContext;
-
-        // Helper function to set custom dropdown
-        const setCustomDropdown = (
-          _selectId: string,
-          displayId: string,
-          value: number | null,
-          label?: string,
-        ): void => {
-          if (value === null) return;
-
-          // Update the display element and store value in data attribute
-          const display = $$id(displayId);
-          if (display !== null) {
-            // Store value in data attribute (no hidden input anymore)
-            setData(display, 'value', String(value));
-
-            if (label !== undefined) {
-              const span = display.querySelector('span');
-              if (span !== null) {
-                span.textContent = label;
-              }
-            }
-          }
-        };
-
-        // Load and set dropdowns in cascade order
-        // 1. Set Area
-        if (context.areaId !== null) {
-          const area = this.areas.find((a) => a.id === context.areaId);
-          if (area !== undefined) {
-            setCustomDropdown('areaSelect', 'areaDisplay', context.areaId, area.name);
-            // Load departments for this area
-            await this.loadDepartments(context.areaId);
-            this.populateDepartmentSelect();
-          }
-        }
-
-        // 2. Set Department
-        if (context.departmentId !== null) {
-          const dept = this.departments.find((d) => d.id === context.departmentId);
-          if (dept !== undefined) {
-            setCustomDropdown('departmentSelect', 'departmentDisplay', context.departmentId, dept.name);
-            // Load machines for this department
-            this.selectedContext.departmentId = context.departmentId; // Set context before loading
-            await this.loadMachines();
-            this.populateMachineSelect();
-          }
-        }
-
-        // 3. Set Machine
-        if (context.machineId !== null) {
-          const machine = this.machines.find((m) => m.id === context.machineId);
-          if (machine !== undefined) {
-            setCustomDropdown('machineSelect', 'machineDisplay', context.machineId, machine.name);
-            // Load teams for this machine (or department if no machine-specific teams)
-            await this.loadTeamsForMachine(context.machineId);
-            this.populateTeamSelect();
-          }
-        }
-
-        // 4. Set Team
-        if (context.teamId !== null) {
-          const team = this.teams.find((t) => t.id === context.teamId);
-          if (team !== undefined) {
-            setCustomDropdown('teamSelect', 'teamDisplay', context.teamId, team.name);
-          }
-        }
-
-        // Clean up temporary properties
-        delete windowWithShifts.shiftsRestoringFromReload;
-        delete windowWithShifts.shiftsSavedReloadContext;
-
-        console.info('[SHIFTS RELOAD DEBUG] Dropdown selections restored');
-
-        // Reload user preferences with the restored team_id
-        if (context.teamId !== null) {
-          console.info('[SHIFTS RELOAD DEBUG] Loading preferences for restored team:', context.teamId);
-          await this.loadUserPreferencesFromDatabase();
-        }
-      }
-
-      // Only load data if a team is already selected (e.g., from saved state)
-      // For admins, check if teamId is selected
-      // For employees, they will have departmentId pre-selected
-      const shouldLoadData = this.isAdmin
-        ? this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0
-        : this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0;
-
-      if (shouldLoadData) {
-        console.info('[SHIFTS DEBUG] Team/Department selected, loading data...');
-
-        // Load user preferences for the selected team (important for rotation checkbox!)
-        if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
-          console.info('[SHIFTS DEBUG] Loading preferences for selected team on init:', this.selectedContext.teamId);
-          await this.loadUserPreferencesFromDatabase();
-        }
-
-        console.info('[SHIFTS DEBUG] Loading employees...');
-        await this.loadEmployees();
-        console.info('[SHIFTS DEBUG] Loaded employees:', this.employees.length);
-
-        console.info('[SHIFTS DEBUG] Loading current week data...');
-        await this.loadCurrentWeekData();
-
-        console.info('[SHIFTS DEBUG] Loading weekly notes...');
-        try {
-          this.loadWeeklyNotes();
-        } catch (error) {
-          console.error('[SHIFTS ERROR] Failed to load weekly notes:', error);
-        }
+      // Only load data if a team is already selected
+      if (this.shouldLoadInitialData()) {
+        await this.loadInitialData();
       } else {
         console.info('[SHIFTS DEBUG] No team/department selected, skipping initial data load');
       }
 
-      // Update UI based on user role
-      console.info('[SHIFTS DEBUG] Updating UI for role:', this.userRole);
-      this.updateUIForRole();
-
-      // Initialize the week display immediately
-      this.updateWeekDisplay();
-
-      // Check if department is selected and toggle visibility
-      this.togglePlanningAreaVisibility();
-
-      // For employees, load department info
-      if (!this.isAdmin && this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-        await this.loadDepartments();
-      }
-
-      // Load notes again after department is properly set
-      if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-        console.info('[SHIFTS DEBUG] Loading notes after department is set:', this.selectedContext.departmentId);
-        this.loadWeeklyNotes();
-      }
-
-      // Highlight employee's own shifts
-      this.highlightEmployeeShifts();
-
-      // Render favorites on init
-      this.renderFavorites();
+      // Finalize initialization
+      await this.finalizeInitialization();
 
       console.info('[SHIFTS] Shift Planning System initialized successfully');
     } catch (error) {
@@ -590,39 +602,51 @@ class ShiftPlanningSystem {
     }
   }
 
+  private setUserRoleAndPermissions(user: User, activeRole: string | null): void {
+    this.userRole = activeRole ?? user.role;
+    this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
+    this.currentUserId = user.id;
+  }
+
+  private updateUserNameDisplay(username: string): void {
+    const userNameElement = document.querySelector('#userName');
+    if (userNameElement) {
+      userNameElement.textContent = username;
+    }
+  }
+
+  private setEmployeeDepartment(user: User): void {
+    if (!this.isAdmin && user.department_id !== undefined && user.department_id !== 0) {
+      this.selectedContext.departmentId = user.department_id;
+      console.info('[SHIFTS DEBUG] Employee department auto-selected:', user.department_id);
+    }
+  }
+
+  private updateDepartmentDisplay(departmentId: number | undefined): void {
+    const currentDeptElement = document.querySelector('#currentDepartment');
+    if (currentDeptElement && departmentId !== undefined && departmentId !== 0) {
+      currentDeptElement.textContent = `Department ${String(departmentId)}`;
+    }
+  }
+
+  private updateTeamLeaderDisplay(user: User): void {
+    const currentTeamLeaderElement = document.querySelector('#currentTeamLeader');
+    if (currentTeamLeaderElement && user.position !== undefined && user.position !== '') {
+      currentTeamLeaderElement.textContent = user.username;
+    }
+  }
+
   async checkUserRole(): Promise<void> {
     try {
-      // First check localStorage for active role (for role switching)
       const activeRole = localStorage.getItem('activeRole');
-
       const user = await this.getStoredUserData();
+
       if (user) {
-        // Use activeRole if available (for role switching), otherwise use API role or stored role
-        this.userRole = activeRole ?? user.role;
-        this.isAdmin = ['admin', 'root', 'manager', 'team_lead'].includes(this.userRole);
-        this.currentUserId = user.id;
-
-        const userNameElement = document.querySelector('#userName');
-        if (userNameElement) {
-          userNameElement.textContent = user.username;
-        }
-
-        // For employees, set their department as selected
-        if (!this.isAdmin && user.department_id !== undefined && user.department_id !== 0) {
-          this.selectedContext.departmentId = user.department_id;
-          console.info('[SHIFTS DEBUG] Employee department auto-selected:', user.department_id);
-        }
-
-        // Update info row with user's department/team info
-        const currentDeptElement = document.querySelector('#currentDepartment');
-        if (currentDeptElement && user.department_id !== undefined && user.department_id !== 0) {
-          currentDeptElement.textContent = `Department ${String(user.department_id)}`;
-        }
-
-        const currentTeamLeaderElement = document.querySelector('#currentTeamLeader');
-        if (currentTeamLeaderElement && user.position !== undefined && user.position !== '') {
-          currentTeamLeaderElement.textContent = user.username;
-        }
+        this.setUserRoleAndPermissions(user, activeRole);
+        this.updateUserNameDisplay(user.username);
+        this.setEmployeeDepartment(user);
+        this.updateDepartmentDisplay(user.department_id);
+        this.updateTeamLeaderDisplay(user);
       }
     } catch (error) {
       console.error('Error checking user role:', error);
@@ -648,6 +672,79 @@ class ShiftPlanningSystem {
     }
 
     return null;
+  }
+
+  private handleScheduleButtons(target: HTMLElement): void {
+    if (target.id === 'editScheduleBtn') {
+      this.toggleEditMode(true);
+    } else if (target.id === 'updateScheduleBtn') {
+      void this.updateSchedule();
+    }
+  }
+
+  private handleRemoveShiftAction(e: Event, target: HTMLElement): void {
+    if (target.dataset.action !== 'remove-shift' && target.parentElement?.dataset.action !== 'remove-shift') {
+      return;
+    }
+
+    console.info('[REMOVE DEBUG] Remove button clicked!', {
+      target: target.tagName,
+      action: target.dataset.action,
+      parentAction: target.parentElement?.dataset.action,
+      classList: target.classList.toString(),
+    });
+    e.stopPropagation();
+    e.preventDefault();
+
+    const btn = target.dataset.action === 'remove-shift' ? target : target.parentElement;
+    if (!btn) return;
+
+    const employeeId = btn.dataset.employeeId;
+    const card = btn.closest('.employee-card');
+    const cell = card?.closest(CSS_SELECTORS.SHIFT_CELL);
+
+    console.info('[REMOVE DEBUG] Button details:', {
+      btn,
+      employeeId,
+      card,
+      cell,
+      cellDataset: (cell as HTMLElement | null)?.dataset,
+    });
+
+    if (cell && employeeId !== undefined && employeeId !== '') {
+      console.info('[REMOVE DEBUG] Removing employee', employeeId, 'from shift');
+      this.removeEmployeeFromShift(cell as HTMLElement, Number(employeeId));
+    } else {
+      console.error('[REMOVE DEBUG] Missing data:', { cell: !!cell, employeeId });
+    }
+  }
+
+  private handleCloseModalAction(target: HTMLElement): void {
+    if (target.dataset.action !== 'close-modal') return;
+
+    const w = window as unknown as { modalManager?: { closeModal?: () => void } };
+    if (w.modalManager && typeof w.modalManager.closeModal === 'function') {
+      w.modalManager.closeModal();
+    }
+  }
+
+  private handleAddToFavoritesAction(target: HTMLElement): void {
+    if (target.dataset.action === 'add-to-favorites') {
+      void this.addToFavorites();
+    }
+  }
+
+  private handleDropdownOption(target: HTMLElement): void {
+    const option = target.closest<HTMLElement>('.dropdown-option');
+    if (!option) return;
+
+    const type = option.dataset.type;
+    const value = option.dataset.value;
+    const text = option.dataset.text;
+
+    if (type !== undefined && type !== '' && value !== undefined && value !== '' && text !== undefined && text !== '') {
+      this.selectOption(type, value, text);
+    }
   }
 
   setupEventListeners(): void {
@@ -755,77 +852,12 @@ class ShiftPlanningSystem {
     // Edit mode button (will be created dynamically)
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      if (target.id === 'editScheduleBtn') {
-        this.toggleEditMode(true);
-      } else if (target.id === 'updateScheduleBtn') {
-        void this.updateSchedule();
-      }
 
-      // Handle remove shift button
-      if (target.dataset.action === 'remove-shift' || target.parentElement?.dataset.action === 'remove-shift') {
-        console.info('[REMOVE DEBUG] Remove button clicked!', {
-          target: target.tagName,
-          action: target.dataset.action,
-          parentAction: target.parentElement?.dataset.action,
-          classList: target.classList.toString(),
-        });
-        e.stopPropagation();
-        e.preventDefault(); // Prevent any default behavior
-
-        const btn = target.dataset.action === 'remove-shift' ? target : target.parentElement;
-        if (btn) {
-          const employeeId = btn.dataset.employeeId;
-          const card = btn.closest('.employee-card'); // Changed from '.employee-shift-card'
-          const cell = card?.closest(CSS_SELECTORS.SHIFT_CELL);
-
-          console.info('[REMOVE DEBUG] Button details:', {
-            btn,
-            employeeId,
-            card,
-            cell,
-            cellDataset: (cell as HTMLElement | null)?.dataset,
-          });
-
-          if (cell && employeeId !== undefined && employeeId !== '') {
-            console.info('[REMOVE DEBUG] Removing employee', employeeId, 'from shift');
-            // Remove the employee from the shift
-            this.removeEmployeeFromShift(cell as HTMLElement, Number(employeeId));
-          } else {
-            console.error('[REMOVE DEBUG] Missing data:', { cell: !!cell, employeeId });
-          }
-        }
-      }
-
-      // Handle close modal button
-      if (target.dataset.action === 'close-modal') {
-        const w = window as unknown as { modalManager?: { closeModal?: () => void } };
-        if (w.modalManager && typeof w.modalManager.closeModal === 'function') {
-          w.modalManager.closeModal();
-        }
-      }
-
-      // Handle add to favorites button
-      if (target.dataset.action === 'add-to-favorites') {
-        void this.addToFavorites();
-      }
-
-      // Handle dropdown options
-      const option = target.closest<HTMLElement>('.dropdown-option');
-      if (option) {
-        const type = option.dataset.type;
-        const value = option.dataset.value;
-        const text = option.dataset.text;
-        if (
-          type !== undefined &&
-          type !== '' &&
-          value !== undefined &&
-          value !== '' &&
-          text !== undefined &&
-          text !== ''
-        ) {
-          this.selectOption(type, value, text);
-        }
-      }
+      this.handleScheduleButtons(target);
+      this.handleRemoveShiftAction(e, target);
+      this.handleCloseModalAction(target);
+      this.handleAddToFavoritesAction(target);
+      this.handleDropdownOption(target);
     });
 
     // Setup shift control checkboxes (preferences will be loaded after team selection)
@@ -1176,55 +1208,61 @@ class ShiftPlanningSystem {
     this.populateMachineSelect();
   }
 
+  private buildTeamsUrl(baseUrl: string, isV2: boolean): string {
+    if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
+      return baseUrl;
+    }
+
+    const paramName = isV2 ? 'departmentId' : 'department_id';
+    return `${baseUrl}?${paramName}=${String(this.selectedContext.departmentId)}`;
+  }
+
+  private async loadTeamsV1(): Promise<void> {
+    try {
+      const url = this.buildTeamsUrl('/api/teams', false);
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const data = (await response.json()) as Team[];
+        this.teams = Array.isArray(data) ? data : [];
+      }
+    } catch (error) {
+      console.error('Error loading teams (v1):', error);
+      this.teams = [];
+    }
+  }
+
+  private async loadTeamsV2(): Promise<void> {
+    try {
+      const url = this.buildTeamsUrl('/teams', true);
+      const response = await this.apiClient.request<TeamAPIResponse[]>(url, {
+        method: 'GET',
+      });
+
+      const mappedTeams = mapTeams(response);
+      this.teams = mappedTeams.map((t) => ({
+        id: t.id,
+        name: t.name,
+        department_id: t.departmentId ?? 0,
+        team_lead_id: t.leaderId ?? undefined,
+        description: t.description,
+      }));
+      console.info('Teams loaded (v2):', this.teams);
+    } catch (error) {
+      console.error('Error loading teams (v2):', error);
+      this.teams = [];
+    }
+  }
+
   async loadTeams(): Promise<void> {
     if (!this.useV2API) {
-      // Fallback to v1 API
-      try {
-        let url = '/api/teams';
-        if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-          url += `?department_id=${String(this.selectedContext.departmentId)}`;
-        }
-        const response = await fetch(url, {
-          headers: {
-            Authorization: `Bearer ${getAuthToken() ?? ''}`,
-            'Content-Type': 'application/json',
-          },
-        });
-        if (response.ok) {
-          const data = (await response.json()) as Team[];
-          this.teams = Array.isArray(data) ? data : [];
-        }
-      } catch (error) {
-        console.error('Error loading teams (v1):', error);
-        this.teams = [];
-      }
+      await this.loadTeamsV1();
     } else {
-      // Use v2 API with ApiClient
-      try {
-        let url = '/teams';
-        if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-          url += `?departmentId=${String(this.selectedContext.departmentId)}`;
-        }
-
-        const response = await this.apiClient.request<TeamAPIResponse[]>(url, {
-          method: 'GET',
-        });
-
-        // Map snake_case to camelCase
-        const mappedTeams = mapTeams(response);
-        // Convert to internal Team interface
-        this.teams = mappedTeams.map((t) => ({
-          id: t.id,
-          name: t.name,
-          department_id: t.departmentId ?? 0,
-          team_lead_id: t.leaderId ?? undefined,
-          description: t.description,
-        }));
-        console.info('Teams loaded (v2):', this.teams);
-      } catch (error) {
-        console.error('Error loading teams (v2):', error);
-        this.teams = [];
-      }
+      await this.loadTeamsV2();
     }
     // populateTeamSelect() is called by the calling function
   }
@@ -1685,91 +1723,132 @@ class ShiftPlanningSystem {
         const dragEvent = e as DragEvent;
         if (!dragEvent.dataTransfer) return;
 
-        const userId = dragEvent.dataTransfer.getData('userId'); // Always returns string
         const cellElement = cell as HTMLElement;
-        const date = cellElement.dataset.date; // Can be string | undefined
-        const shiftType = cellElement.dataset.shiftType; // Can be string | undefined
-
-        if (
-          userId !== '' && // userId is always string from getData
-          date !== undefined &&
-          date !== '' &&
-          shiftType !== undefined &&
-          shiftType !== ''
-        ) {
-          // Find the employee to check availability
-          const employeeId = Number(userId);
-          const employee = this.employees.find((emp) => emp.id === employeeId);
-
-          if (employee !== undefined) {
-            // Check if employee is available on this specific date
-            if (this.isEmployeeAvailableOnDate(employee, date)) {
-              // Wrap async call in void to handle promise correctly
-              void this.assignUserToShift(employeeId, date, shiftType, cellElement);
-            } else {
-              // Employee is not available on this date
-              const firstName = employee.first_name ?? '';
-              const lastName = employee.last_name ?? '';
-              const name = `${firstName} ${lastName}`.trim();
-              const displayName = name !== '' ? name : employee.username;
-
-              // Format date for display
-              const dateObj = new Date(date);
-              const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getFullYear()}`;
-
-              showErrorAlert(`${displayName} ist am ${formattedDate} nicht verfügbar`);
-            }
-          }
-        }
+        this.handleShiftAssignment(dragEvent, cellElement);
       });
     });
   }
 
-  validateHierarchy(): { valid: boolean; message?: string } {
-    // Check if area is selected (if areas are available)
+  private getEmployeeDisplayName(employee: Employee): string {
+    const firstName = employee.first_name ?? '';
+    const lastName = employee.last_name ?? '';
+    const name = `${firstName} ${lastName}`.trim();
+    return name !== '' ? name : employee.username;
+  }
+
+  private formatDateForDisplay(date: string): string {
+    const dateObj = new Date(date);
+    const day = dateObj.getDate().toString().padStart(2, '0');
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateObj.getFullYear();
+    return `${day}.${month}.${year}`;
+  }
+
+  private handleEmployeeAvailability(
+    employee: Employee,
+    date: string,
+    shiftType: string,
+    cellElement: HTMLElement,
+  ): void {
+    if (this.isEmployeeAvailableOnDate(employee, date)) {
+      void this.assignUserToShift(employee.id, date, shiftType, cellElement);
+    } else {
+      const displayName = this.getEmployeeDisplayName(employee);
+      const formattedDate = this.formatDateForDisplay(date);
+      showErrorAlert(`${displayName} ist am ${formattedDate} nicht verfügbar`);
+    }
+  }
+
+  private handleShiftAssignment(dragEvent: DragEvent, cellElement: HTMLElement): void {
+    const userId = dragEvent.dataTransfer?.getData('userId') ?? '';
+    const date = cellElement.dataset.date;
+    const shiftType = cellElement.dataset.shiftType;
+
+    if (userId === '' || date === undefined || date === '' || shiftType === undefined || shiftType === '') {
+      return;
+    }
+
+    const employeeId = Number(userId);
+    const employee = this.employees.find((emp) => emp.id === employeeId);
+
+    if (employee !== undefined) {
+      this.handleEmployeeAvailability(employee, date, shiftType, cellElement);
+    }
+  }
+
+  private validateAreaSelection(): { valid: boolean; message?: string } | null {
     if (this.areas.length > 0 && (this.selectedContext.areaId === null || this.selectedContext.areaId === 0)) {
       return { valid: false, message: 'Bitte wählen Sie einen Bereich aus' };
     }
+    return null;
+  }
 
-    // Check if essential context is selected
+  private validateDepartmentSelection(): { valid: boolean; message?: string } | null {
     if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
       return { valid: false, message: 'Bitte wählen Sie eine Abteilung aus' };
     }
+    return null;
+  }
 
-    // If machine is selected, verify it belongs to the department
-    if (this.selectedContext.machineId !== null && this.selectedContext.machineId !== 0) {
-      const machine = this.machines.find((m) => m.id === this.selectedContext.machineId);
-      if (!machine) {
-        return { valid: false, message: 'Ungültige Maschinen-Auswahl' };
-      }
-      if (machine.department_id !== this.selectedContext.departmentId) {
-        return { valid: false, message: 'Maschine gehört nicht zur ausgewählten Abteilung' };
-      }
+  private validateMachineSelection(): { valid: boolean; message?: string } | null {
+    if (this.selectedContext.machineId === null || this.selectedContext.machineId === 0) {
+      return null;
     }
 
-    // If team is selected, verify it belongs to the department
-    if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
-      const team = this.teams.find((t) => t.id === this.selectedContext.teamId);
-      if (!team) {
-        return { valid: false, message: 'Ungültige Team-Auswahl' };
-      }
-      if (team.department_id !== this.selectedContext.departmentId) {
-        return { valid: false, message: 'Team gehört nicht zur ausgewählten Abteilung' };
-      }
+    const machine = this.machines.find((m) => m.id === this.selectedContext.machineId);
+    if (!machine) {
+      return { valid: false, message: 'Ungültige Maschinen-Auswahl' };
+    }
+    if (machine.department_id !== this.selectedContext.departmentId) {
+      return { valid: false, message: 'Maschine gehört nicht zur ausgewählten Abteilung' };
+    }
+    return null;
+  }
 
-      // If both machine and team are selected, verify they are linked via machine_teams
-      // Note: This would require loading machine_teams data, for now we trust the UI filtering
+  private validateTeamSelection(): { valid: boolean; message?: string } | null {
+    if (this.selectedContext.teamId === null || this.selectedContext.teamId === 0) {
+      return null;
     }
 
-    // If area is selected, verify department belongs to it
-    if (this.selectedContext.areaId !== null && this.selectedContext.areaId !== 0) {
-      const department = this.departments.find((d) => d.id === this.selectedContext.departmentId);
-      if (
-        department?.area_id !== undefined &&
-        department.area_id !== 0 &&
-        department.area_id !== this.selectedContext.areaId
-      ) {
-        return { valid: false, message: 'Abteilung gehört nicht zum ausgewählten Bereich' };
+    const team = this.teams.find((t) => t.id === this.selectedContext.teamId);
+    if (!team) {
+      return { valid: false, message: 'Ungültige Team-Auswahl' };
+    }
+    if (team.department_id !== this.selectedContext.departmentId) {
+      return { valid: false, message: 'Team gehört nicht zur ausgewählten Abteilung' };
+    }
+    return null;
+  }
+
+  private validateDepartmentBelongsToArea(): { valid: boolean; message?: string } | null {
+    if (this.selectedContext.areaId === null || this.selectedContext.areaId === 0) {
+      return null;
+    }
+
+    const department = this.departments.find((d) => d.id === this.selectedContext.departmentId);
+    if (
+      department?.area_id !== undefined &&
+      department.area_id !== 0 &&
+      department.area_id !== this.selectedContext.areaId
+    ) {
+      return { valid: false, message: 'Abteilung gehört nicht zum ausgewählten Bereich' };
+    }
+    return null;
+  }
+
+  validateHierarchy(): { valid: boolean; message?: string } {
+    // Run each validation and return first error if found
+    const validations = [
+      this.validateAreaSelection(),
+      this.validateDepartmentSelection(),
+      this.validateMachineSelection(),
+      this.validateTeamSelection(),
+      this.validateDepartmentBelongsToArea(),
+    ];
+
+    for (const result of validations) {
+      if (result !== null) {
+        return result;
       }
     }
 
@@ -1795,8 +1874,95 @@ class ShiftPlanningSystem {
     }
   }
 
+  private buildShiftPayload(userId: number, date: string, shiftType: string, isV2: boolean): Record<string, unknown> {
+    const convertedType = this.convertShiftTypeForAPI(shiftType);
+    const startTime = this.getShiftStartTime(shiftType);
+    const endTime = this.getShiftEndTime(shiftType);
+
+    if (isV2) {
+      return {
+        userId,
+        date,
+        type: convertedType,
+        departmentId: this.selectedContext.departmentId,
+        teamId: this.selectedContext.teamId,
+        machineId: this.selectedContext.machineId,
+        startTime,
+        endTime,
+      };
+    }
+
+    return {
+      user_id: userId,
+      date,
+      type: convertedType,
+      department_id: this.selectedContext.departmentId,
+      team_id: this.selectedContext.teamId,
+      machine_id: this.selectedContext.machineId,
+      start_time: startTime,
+      end_time: endTime,
+    };
+  }
+
+  private handleShiftAssignmentSuccess(cellElement: HTMLElement, userId: number, shiftType: string): void {
+    this.updateShiftCell(cellElement, userId, shiftType);
+
+    const day = cellElement.dataset.day;
+    if (this.autofillConfig.enabled && day !== undefined && day !== '') {
+      this.performAutofill(userId, day, shiftType);
+    }
+  }
+
+  private async assignShiftV1(
+    userId: number,
+    date: string,
+    shiftType: string,
+    cellElement: HTMLElement,
+  ): Promise<void> {
+    try {
+      const response = await fetch('/api/shifts', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${getAuthToken() ?? ''}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(this.buildShiftPayload(userId, date, shiftType, false)),
+      });
+
+      if (response.ok) {
+        await response.json();
+        showSuccessAlert('Schicht zugewiesen');
+        this.handleShiftAssignmentSuccess(cellElement, userId, shiftType);
+      } else {
+        showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
+      }
+    } catch (error) {
+      console.error('Error assigning shift (v1):', error);
+      showErrorAlert('Fehler beim Zuweisen der Schicht');
+    }
+  }
+
+  private async assignShiftV2(
+    userId: number,
+    date: string,
+    shiftType: string,
+    cellElement: HTMLElement,
+  ): Promise<void> {
+    try {
+      await this.apiClient.request('/shifts', {
+        method: 'POST',
+        body: JSON.stringify(this.buildShiftPayload(userId, date, shiftType, true)),
+      });
+
+      showSuccessAlert('Schicht erfolgreich zugewiesen');
+      this.handleShiftAssignmentSuccess(cellElement, userId, shiftType);
+    } catch (error) {
+      console.error('Error assigning shift (v2):', error);
+      showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
+    }
+  }
+
   async assignUserToShift(userId: number, date: string, shiftType: string, cellElement: HTMLElement): Promise<void> {
-    // Validate hierarchy before creating shift
     const validation = this.validateHierarchy();
     if (!validation.valid) {
       showErrorAlert(validation.message ?? 'Ungültige Auswahl-Hierarchie');
@@ -1804,73 +1970,9 @@ class ShiftPlanningSystem {
     }
 
     if (!this.useV2API) {
-      // Fallback to v1 API
-      try {
-        const response = await fetch('/api/shifts', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${getAuthToken() ?? ''}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            date,
-            type: this.convertShiftTypeForAPI(shiftType),
-            department_id: this.selectedContext.departmentId,
-            team_id: this.selectedContext.teamId,
-            machine_id: this.selectedContext.machineId,
-            start_time: this.getShiftStartTime(shiftType),
-            end_time: this.getShiftEndTime(shiftType),
-          }),
-        });
-
-        if (response.ok) {
-          await response.json();
-          showSuccessAlert('Schicht zugewiesen');
-          this.updateShiftCell(cellElement, userId, shiftType);
-
-          // Trigger autofill if enabled
-          const day = cellElement.dataset.day;
-          if (this.autofillConfig.enabled && day !== undefined && day !== '') {
-            this.performAutofill(userId, day, shiftType);
-          }
-        } else {
-          showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
-        }
-      } catch (error) {
-        console.error('Error assigning shift (v1):', error);
-        showErrorAlert('Fehler beim Zuweisen der Schicht');
-      }
+      await this.assignShiftV1(userId, date, shiftType, cellElement);
     } else {
-      // Use v2 API with ApiClient
-      try {
-        await this.apiClient.request('/shifts', {
-          method: 'POST',
-          body: JSON.stringify({
-            userId,
-            date,
-            type: this.convertShiftTypeForAPI(shiftType),
-            departmentId: this.selectedContext.departmentId,
-            teamId: this.selectedContext.teamId,
-            machineId: this.selectedContext.machineId,
-            startTime: this.getShiftStartTime(shiftType),
-            endTime: this.getShiftEndTime(shiftType),
-          }),
-        });
-
-        // Response is always truthy after successful await (throws on error)
-        showSuccessAlert('Schicht erfolgreich zugewiesen');
-        this.updateShiftCell(cellElement, userId, shiftType);
-
-        // Trigger autofill if enabled
-        const day = cellElement.dataset.day;
-        if (this.autofillConfig.enabled && day !== undefined && day !== '') {
-          this.performAutofill(userId, day, shiftType);
-        }
-      } catch (error) {
-        console.error('Error assigning shift (v2):', error);
-        showErrorAlert(ERROR_MESSAGES.SHIFT_ASSIGNMENT_FAILED);
-      }
+      await this.assignShiftV2(userId, date, shiftType, cellElement);
     }
   }
 
@@ -1892,40 +1994,80 @@ class ShiftPlanningSystem {
     cellElement.classList.add('assigned');
   }
 
-  private selectOption(type: string, value: string, displayText: string): void {
-    // Update the dropdown display
+  private updateDropdownDisplay(type: string, displayText: string): void {
     const displayElement = $$id(`${type}Display`);
-    if (displayElement) {
-      const span = displayElement.querySelector('span');
-      if (span) {
-        span.textContent = displayText;
-      }
-      // Close dropdown - use 'active' class like in HTML
-      const dropdown = $$id(`${type}Dropdown`);
-      if (dropdown) {
-        dropdown.classList.remove('active');
-      }
-      // Also remove active from display element
-      displayElement.classList.remove('active');
+    if (!displayElement) return;
+
+    const span = displayElement.querySelector('span');
+    if (span) {
+      span.textContent = displayText;
     }
 
-    // Handle selection based on type
-    if (type === 'area') {
-      const areaId = value !== '' ? Number(value) : undefined;
-      void this.onAreaSelected(areaId);
-    } else if (type === 'department') {
-      this.selectedContext.departmentId = value !== '' ? Number(value) : null;
-      void this.onContextChange();
-    } else if (type === 'machine') {
-      const machineId = value !== '' ? Number(value) : undefined;
-      if (machineId !== undefined) {
-        void this.onMachineSelected(machineId);
-      }
-    } else if (type === 'team') {
-      const teamId = value !== '' ? Number(value) : undefined;
-      if (teamId !== undefined) {
-        void this.onTeamSelected(teamId);
-      }
+    const dropdown = $$id(`${type}Dropdown`);
+    if (dropdown) {
+      dropdown.classList.remove('active');
+    }
+    displayElement.classList.remove('active');
+  }
+
+  private handleAreaSelection(value: string): void {
+    const areaId = value !== '' ? Number(value) : undefined;
+    void this.onAreaSelected(areaId);
+  }
+
+  private handleDepartmentSelection(value: string): void {
+    this.selectedContext.departmentId = value !== '' ? Number(value) : null;
+    void this.onContextChange();
+  }
+
+  private handleMachineSelection(value: string): void {
+    const machineId = value !== '' ? Number(value) : undefined;
+    if (machineId !== undefined) {
+      void this.onMachineSelected(machineId);
+    }
+  }
+
+  private handleTeamSelection(value: string): void {
+    const teamId = value !== '' ? Number(value) : undefined;
+    if (teamId !== undefined) {
+      void this.onTeamSelected(teamId);
+    }
+  }
+
+  private selectOption(type: string, value: string, displayText: string): void {
+    this.updateDropdownDisplay(type, displayText);
+
+    // Use Map to avoid complex if-else chain
+    const handlers = new Map<string, (value: string) => void>([
+      [
+        'area',
+        (v) => {
+          this.handleAreaSelection(v);
+        },
+      ],
+      [
+        'department',
+        (v) => {
+          this.handleDepartmentSelection(v);
+        },
+      ],
+      [
+        'machine',
+        (v) => {
+          this.handleMachineSelection(v);
+        },
+      ],
+      [
+        'team',
+        (v) => {
+          this.handleTeamSelection(v);
+        },
+      ],
+    ]);
+
+    const handler = handlers.get(type);
+    if (handler) {
+      handler(value);
     }
   }
 
@@ -1983,99 +2125,93 @@ class ShiftPlanningSystem {
     return displays[shiftType as (typeof validShiftTypes)[number]];
   }
 
+  private getPlanningAreaElements(): {
+    departmentNotice: Element | null;
+    mainPlanningArea: Element | null;
+    adminActions: Element | null;
+    weekNavigation: Element | null;
+    shiftControls: Element | null;
+  } {
+    return {
+      departmentNotice: document.querySelector('#departmentNotice'),
+      mainPlanningArea: document.querySelector('#mainPlanningArea'),
+      adminActions: document.querySelector('#adminActions'),
+      weekNavigation: document.querySelector('.week-navigation'),
+      shiftControls: document.querySelector('.shift-controls'),
+    };
+  }
+
+  private shouldShowPlanningArea(): boolean {
+    // Planning area should be shown when we have data to load
+    // This aligns UI visibility with data availability
+    return this.shouldLoadInitialData();
+  }
+
+  private toggleElement(element: Element | null, hide: boolean, elementName: string): void {
+    if (!element) {
+      if (elementName === 'week navigation' || elementName === 'shift controls') {
+        console.error(`[SHIFTS UI] ${elementName} element not found!`);
+      }
+      return;
+    }
+
+    const htmlElement = element as HTMLElement;
+    if (hide) {
+      htmlElement.classList.add('u-hidden');
+      console.info(`[SHIFTS UI] Hidden ${elementName}`);
+    } else {
+      htmlElement.classList.remove('u-hidden');
+      console.info(`[SHIFTS UI] Shown ${elementName}`);
+    }
+  }
+
+  private showPlanningArea(elements: ReturnType<typeof this.getPlanningAreaElements>): void {
+    console.info('[SHIFTS UI] Showing planning area elements...');
+
+    this.toggleElement(elements.departmentNotice, true, 'department notice');
+    this.toggleElement(elements.mainPlanningArea, false, 'main planning area');
+
+    if (this.isAdmin) {
+      this.toggleElement(elements.adminActions, false, 'admin actions');
+    }
+
+    this.toggleElement(elements.weekNavigation, false, 'week navigation');
+    this.toggleElement(elements.shiftControls, false, 'shift controls');
+
+    console.info('[SHIFTS UI] UI visibility update completed');
+  }
+
+  private hidePlanningArea(elements: ReturnType<typeof this.getPlanningAreaElements>): void {
+    console.info('[SHIFTS UI] Hiding planning area elements...');
+
+    this.toggleElement(elements.departmentNotice, false, 'department notice');
+    this.toggleElement(elements.mainPlanningArea, true, 'main planning area');
+    this.toggleElement(elements.adminActions, true, 'admin actions');
+    this.toggleElement(elements.weekNavigation, true, 'week navigation');
+    this.toggleElement(elements.shiftControls, true, 'shift controls');
+  }
+
   togglePlanningAreaVisibility(): void {
-    const departmentNotice = document.querySelector('#departmentNotice');
-    const mainPlanningArea = document.querySelector('#mainPlanningArea');
-    const adminActions = document.querySelector('#adminActions');
-    const weekNavigation = document.querySelector('.week-navigation');
-    const shiftControls = document.querySelector('.shift-controls');
+    const elements = this.getPlanningAreaElements();
 
     console.info('[SHIFTS UI] togglePlanningAreaVisibility called');
     console.info('[SHIFTS UI] isAdmin:', this.isAdmin);
     console.info('[SHIFTS UI] selectedContext:', this.selectedContext);
     console.info('[SHIFTS UI] Elements found:', {
-      departmentNotice: !!departmentNotice,
-      mainPlanningArea: !!mainPlanningArea,
-      adminActions: !!adminActions,
-      weekNavigation: !!weekNavigation,
-      shiftControls: !!shiftControls,
+      departmentNotice: !!elements.departmentNotice,
+      mainPlanningArea: !!elements.mainPlanningArea,
+      adminActions: !!elements.adminActions,
+      weekNavigation: !!elements.weekNavigation,
+      shiftControls: !!elements.shiftControls,
     });
 
-    // Show planning area only when team is selected (or for employees with auto-selected team)
-    const shouldShowPlanning = this.isAdmin
-      ? this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0
-      : this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0;
+    const shouldShow = this.shouldShowPlanningArea();
+    console.info('[SHIFTS UI] shouldShowPlanning:', shouldShow);
 
-    console.info('[SHIFTS UI] shouldShowPlanning:', shouldShowPlanning);
-
-    if (shouldShowPlanning) {
-      // Team selected (or employee with auto-selected dept) - show planning area
-      console.info('[SHIFTS UI] Showing planning area elements...');
-
-      if (departmentNotice) {
-        (departmentNotice as HTMLElement).classList.add('u-hidden');
-        console.info('[SHIFTS UI] Hidden department notice');
-      }
-
-      if (mainPlanningArea) {
-        (mainPlanningArea as HTMLElement).classList.remove('u-hidden');
-        console.info('[SHIFTS UI] Shown main planning area');
-      }
-
-      if (adminActions && this.isAdmin) {
-        (adminActions as HTMLElement).classList.remove('u-hidden');
-        console.info('[SHIFTS UI] Shown admin actions');
-      }
-
-      // WICHTIG: u-hidden Klasse entfernen für Week Navigation
-      if (weekNavigation) {
-        (weekNavigation as HTMLElement).classList.remove('u-hidden');
-        console.info('[SHIFTS UI] Shown week navigation');
-      } else {
-        console.error('[SHIFTS UI] Week navigation element not found!');
-      }
-
-      // Show shift controls when planning area is shown
-      if (shiftControls) {
-        shiftControls.classList.remove('u-hidden');
-        console.info('[SHIFTS UI] Shown shift controls');
-      } else {
-        console.error('[SHIFTS UI] Shift controls element not found!');
-      }
-
-      // NOTE: Data loading is handled by the calling function (onTeamSelected, etc.)
-      // This function ONLY handles UI visibility!
-      console.info('[SHIFTS UI] UI visibility update completed');
+    if (shouldShow) {
+      this.showPlanningArea(elements);
     } else {
-      // No department selected (only for admins) - show notice
-      console.info('[SHIFTS UI] Hiding planning area elements...');
-
-      if (departmentNotice) {
-        (departmentNotice as HTMLElement).classList.remove('u-hidden');
-        console.info('[SHIFTS UI] Shown department notice');
-      }
-
-      if (mainPlanningArea) {
-        (mainPlanningArea as HTMLElement).classList.add('u-hidden');
-        console.info('[SHIFTS UI] Hidden main planning area');
-      }
-
-      if (adminActions) {
-        (adminActions as HTMLElement).classList.add('u-hidden');
-        console.info('[SHIFTS UI] Hidden admin actions');
-      }
-
-      // WICHTIG: u-hidden Klasse hinzufügen zum Verstecken
-      if (weekNavigation) {
-        (weekNavigation as HTMLElement).classList.add('u-hidden');
-        console.info('[SHIFTS UI] Hidden week navigation');
-      }
-
-      // Hide shift controls when planning area is hidden
-      if (shiftControls) {
-        shiftControls.classList.add('u-hidden');
-        console.info('[SHIFTS UI] Hidden shift controls');
-      }
+      this.hidePlanningArea(elements);
     }
   }
 
@@ -2215,6 +2351,125 @@ class ShiftPlanningSystem {
     console.info('[SHIFTS] loadAvailabilityStatus is deprecated, use loadEmployeeAvailability');
   }
 
+  private createEmployeeListItem(employee: Employee): HTMLElement {
+    // Log ALL availability-related fields
+    console.info('[SHIFTS AVAILABILITY DEBUG]', {
+      id: employee.id,
+      name: `${employee.first_name ?? ''} ${employee.last_name ?? ''}`,
+      availability_status: employee.availability_status,
+      availabilityStatus: employee.availabilityStatus,
+      availability_start: employee.availability_start,
+      availability_end: employee.availability_end,
+      fullEmployee: employee,
+    });
+
+    const item = document.createElement('div');
+    item.className = 'employee-item';
+    item.dataset.employeeId = employee.id.toString();
+
+    // Get the week-specific availability status
+    const availabilityStatus = this.getWeekAvailabilityStatus(employee);
+
+    // Admin can drag any employee (availability check happens on drop)
+    const isDraggable = this.isAdmin && (this.currentPlanId === null || this.isEditMode);
+    item.setAttribute('draggable', isDraggable.toString());
+
+    this.logEmployeeDebugInfo(employee, isDraggable, availabilityStatus);
+
+    // Add visual indicators for unavailable employees
+    if (availabilityStatus !== 'available') {
+      item.classList.add('unavailable', `status-${availabilityStatus}`);
+    }
+
+    const infoDiv = this.buildEmployeeInfoDiv(employee, availabilityStatus);
+    item.append(infoDiv);
+
+    return item;
+  }
+
+  private logEmployeeDebugInfo(employee: Employee, isDraggable: boolean, availabilityStatus?: string): void {
+    console.info(
+      '[SHIFTS DEBUG] Employee:',
+      employee.username,
+      'Draggable:',
+      isDraggable,
+      'Week-specific status:',
+      availabilityStatus,
+      'Raw status:',
+      employee.availability_status ?? employee.availabilityStatus,
+      'Date range:',
+      employee.availability_start,
+      'to',
+      employee.availability_end,
+    );
+  }
+
+  private buildEmployeeInfoDiv(employee: Employee, availabilityStatus?: string): HTMLElement {
+    const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+    const displayName = name !== '' ? name : employee.username;
+
+    // Build DOM structure safely
+    const infoDiv = createElement('div', { className: 'employee-info' });
+    const nameSpan = createElement('span', { className: CSS_CLASSES.EMPLOYEE_NAME }, displayName);
+    infoDiv.append(nameSpan);
+
+    // Add status icon if present
+    const iconElement = this.createAvailabilityIcon(availabilityStatus);
+    if (iconElement) {
+      infoDiv.append(iconElement);
+    }
+
+    // Add status badge if present
+    const badgeElement = this.createAvailabilityBadge(availabilityStatus);
+    if (badgeElement) {
+      infoDiv.append(badgeElement);
+    }
+
+    // Add date range if not available
+    if (availabilityStatus !== 'available') {
+      const dateRangeElement = this.createAvailabilityDateRange(employee);
+      if (dateRangeElement) {
+        infoDiv.append(dateRangeElement);
+      }
+    }
+
+    // Add "Verfügbar ab" date if relevant
+    this.addAvailabilityReturnDate(infoDiv, employee);
+
+    return infoDiv;
+  }
+
+  private addAvailabilityReturnDate(infoDiv: HTMLElement, employee: Employee): void {
+    if (employee.availability_end === undefined || employee.availability_end === '') {
+      return;
+    }
+
+    const endDate = new Date(employee.availability_end);
+    endDate.setDate(endDate.getDate() + 1); // Add one day (this is when employee returns)
+
+    // Get current week boundaries
+    const weekStart = this.getWeekStart(this.currentWeek);
+    const weekEnd = this.getWeekEnd(this.currentWeek);
+
+    // Only show "Verfügbar ab" if the return date is within the current week
+    if (endDate < weekStart || endDate > weekEnd) return;
+
+    const day = endDate.getDate().toString().padStart(2, '0');
+    const month = (endDate.getMonth() + 1).toString().padStart(2, '0');
+    const year = endDate.getFullYear();
+    const availableFromDate = `${day}.${month}.${year}`;
+
+    const availableFromSpan = createElement(
+      'div',
+      { className: 'availability-return-date' },
+      `Verfügbar ab ${availableFromDate}`,
+    );
+    availableFromSpan.style.fontSize = '11px';
+    availableFromSpan.style.color = '#4caf50';
+    availableFromSpan.style.marginTop = '2px';
+    infoDiv.append(availableFromSpan);
+  }
+
   renderEmployeeList(): void {
     // Don't render if no employees loaded
     if (this.employees.length === 0) {
@@ -2235,115 +2490,7 @@ class ShiftPlanningSystem {
     console.info('[SHIFTS DEBUG] Full employee data:', this.employees);
 
     this.employees.forEach((employee) => {
-      // Log ALL availability-related fields
-      console.info('[SHIFTS AVAILABILITY DEBUG]', {
-        id: employee.id,
-        name: `${employee.first_name ?? ''} ${employee.last_name ?? ''}`,
-        availability_status: employee.availability_status,
-        availabilityStatus: employee.availabilityStatus,
-        availability_start: employee.availability_start,
-        availability_end: employee.availability_end,
-        fullEmployee: employee,
-      });
-
-      const item = document.createElement('div');
-      item.className = 'employee-item';
-      item.dataset.employeeId = employee.id.toString();
-
-      // Get the week-specific availability status
-      const availabilityStatus = this.getWeekAvailabilityStatus(employee);
-
-      // Admin can drag any employee (availability check happens on drop)
-      const isDraggable = this.isAdmin && (this.currentPlanId === null || this.isEditMode);
-      item.setAttribute('draggable', isDraggable.toString());
-
-      console.info(
-        '[SHIFTS DEBUG] Employee:',
-        employee.username,
-        'Draggable:',
-        isDraggable,
-        'Week-specific status:',
-        availabilityStatus,
-        'Raw status:',
-        employee.availability_status ?? employee.availabilityStatus,
-        'Date range:',
-        employee.availability_start,
-        'to',
-        employee.availability_end,
-      );
-
-      // Add visual indicators for unavailable employees
-      if (availabilityStatus !== 'available') {
-        item.classList.add('unavailable', `status-${availabilityStatus}`);
-      }
-
-      const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
-      const displayName = name !== '' ? name : employee.username;
-
-      // Build DOM structure safely
-      const infoDiv = createElement('div', { className: 'employee-info' });
-      const nameSpan = createElement('span', { className: CSS_CLASSES.EMPLOYEE_NAME }, displayName);
-      infoDiv.append(nameSpan);
-
-      // Add status icon if present (use resolved status)
-      const iconElement = this.createAvailabilityIcon(availabilityStatus);
-      if (iconElement) {
-        infoDiv.append(iconElement);
-      }
-
-      // Add status badge if present (use resolved status)
-      const badgeElement = this.createAvailabilityBadge(availabilityStatus);
-      if (badgeElement) {
-        infoDiv.append(badgeElement);
-      }
-
-      // Add date range if not available
-      if (availabilityStatus !== 'available') {
-        const dateRangeElement = this.createAvailabilityDateRange(employee);
-        if (dateRangeElement) {
-          infoDiv.append(dateRangeElement);
-        }
-      }
-
-      // Add "Verfügbar ab" date ONLY if it's relevant for the current week
-      if (employee.availability_end !== undefined && employee.availability_end !== '') {
-        const endDate = new Date(employee.availability_end);
-        endDate.setDate(endDate.getDate() + 1); // Add one day (this is when employee returns)
-
-        // Get current week boundaries
-        const weekStart = this.getWeekStart(this.currentWeek);
-        const weekEnd = this.getWeekEnd(this.currentWeek);
-
-        // Only show "Verfügbar ab" if the return date is within the current week
-        if (endDate >= weekStart && endDate <= weekEnd) {
-          const day = endDate.getDate().toString().padStart(2, '0');
-          const month = (endDate.getMonth() + 1).toString().padStart(2, '0');
-          const year = endDate.getFullYear();
-          const availableFromDate = `${day}.${month}.${year}`;
-
-          const availableFromSpan = createElement(
-            'div',
-            {
-              className: 'availability-return-date',
-            },
-            `Verfügbar ab ${availableFromDate}`,
-          );
-          availableFromSpan.style.fontSize = '11px';
-          availableFromSpan.style.color = '#4caf50';
-          availableFromSpan.style.marginTop = '2px';
-          infoDiv.append(availableFromSpan);
-        }
-      }
-
-      /* Shift counts temporarily disabled
-      const statsDiv = createElement('div', { className: 'employee-stats' });
-      const countSpan = createElement('span', { className: 'shift-count' }, '0');
-      statsDiv.append(countSpan);
-      item.append(statsDiv);
-      */
-
-      item.append(infoDiv);
-
+      const item = this.createEmployeeListItem(employee);
       container.append(item);
     });
 
@@ -2478,64 +2625,77 @@ class ShiftPlanningSystem {
   /**
    * Calculate availability status for a specific week based on date ranges
    */
-  getWeekAvailabilityStatus(employee: Employee): string {
-    // If no special status, return available
-    const baseStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+  private parseAvailabilityStatus(baseStatus: string): string {
+    if (baseStatus === '') return 'available';
 
-    // Parse the base status (might be "available vacation" format)
-    let actualStatus = 'available';
-    if (baseStatus !== '') {
-      const parts = baseStatus.trim().split(/\s+/);
-      if (parts.length > 1) {
-        actualStatus = parts[1]; // e.g., "available vacation" -> "vacation"
-      } else {
-        actualStatus = parts[0] !== '' ? parts[0] : 'available';
-      }
+    const parts = baseStatus.trim().split(/\s+/);
+    if (parts.length > 1) {
+      return parts[1]; // e.g., "available vacation" -> "vacation"
     }
+    return parts[0] !== '' ? parts[0] : 'available';
+  }
+
+  private getEmployeeName(employee: Employee): string {
+    const firstName = employee.first_name ?? 'Unknown';
+    const lastName = employee.last_name ?? 'Unknown';
+    return `${firstName} ${lastName}`;
+  }
+
+  private logAvailabilityCheck(employee: Employee, actualStatus: string, weekStart: Date, weekEnd: Date): void {
+    console.info(`[SHIFTS DEBUG] Checking week availability for ${this.getEmployeeName(employee)}:`, {
+      actualStatus,
+      weekRange: `${this.formatDate(weekStart)} to ${this.formatDate(weekEnd)}`,
+      availStart: employee.availability_start,
+      availEnd: employee.availability_end,
+    });
+  }
+
+  private checkStatusAppliesThisWeek(employee: Employee, actualStatus: string): boolean {
+    const weekStart = this.getWeekStart(this.currentWeek);
+    const weekEnd = this.getWeekEnd(this.currentWeek);
+
+    this.logAvailabilityCheck(employee, actualStatus, weekStart, weekEnd);
+
+    // If no date ranges, status always applies
+    if (employee.availability_start === undefined && employee.availability_end === undefined) {
+      return true;
+    }
+
+    const availStart = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
+    const availEnd = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
+
+    const overlaps = this.checkDateRangeOverlap(availStart, availEnd, weekStart, weekEnd);
+
+    console.info(`[SHIFTS DEBUG] Overlap check for ${this.getEmployeeName(employee)}:`, {
+      overlaps,
+      availRange: `${availStart ? this.formatDate(availStart) : 'null'} to ${availEnd ? this.formatDate(availEnd) : 'null'}`,
+    });
+
+    if (!overlaps) {
+      console.info(
+        `[SHIFTS] Employee ${this.getEmployeeName(employee)} status "${actualStatus}" doesn't apply to week ${this.formatWeekRange(weekStart)}`,
+      );
+    }
+
+    return overlaps;
+  }
+
+  getWeekAvailabilityStatus(employee: Employee): string {
+    const baseStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+    const actualStatus = this.parseAvailabilityStatus(baseStatus);
 
     // If status is already "available", no need to check dates
     if (actualStatus === 'available') {
       return 'available';
     }
 
-    // Check if the status applies to the current week
-    const weekStart = this.getWeekStart(this.currentWeek);
-    const weekEnd = this.getWeekEnd(this.currentWeek);
-
-    // Add debug logging
-    const firstName = employee.first_name ?? 'Unknown';
-    const lastName = employee.last_name ?? 'Unknown';
-    console.info(`[SHIFTS DEBUG] Checking week availability for ${firstName} ${lastName}:`, {
-      actualStatus,
-      weekRange: `${this.formatDate(weekStart)} to ${this.formatDate(weekEnd)}`,
-      availStart: employee.availability_start,
-      availEnd: employee.availability_end,
-    });
-
-    // If we have date ranges, check if they overlap with current week
-    if (employee.availability_start !== undefined || employee.availability_end !== undefined) {
-      const availStart = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
-      const availEnd = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
-
-      // Check if the availability period overlaps with the current week
-      const overlaps = this.checkDateRangeOverlap(availStart, availEnd, weekStart, weekEnd);
-
-      console.info(`[SHIFTS DEBUG] Overlap check for ${firstName} ${lastName}:`, {
-        overlaps,
-        availRange: `${availStart ? this.formatDate(availStart) : 'null'} to ${availEnd ? this.formatDate(availEnd) : 'null'}`,
-      });
-
-      // If the special status doesn't apply to this week, return available
-      if (!overlaps) {
-        console.info(
-          `[SHIFTS] Employee ${firstName} ${lastName} status "${actualStatus}" doesn't apply to week ${this.formatWeekRange(weekStart)}`,
-        );
-        return 'available';
-      }
+    // Check if the special status applies to this week
+    if (!this.checkStatusAppliesThisWeek(employee, actualStatus)) {
+      return 'available';
     }
 
     // The special status applies to this week
-    console.info(`[SHIFTS DEBUG] ${firstName} ${lastName} status for this week: ${actualStatus}`);
+    console.info(`[SHIFTS DEBUG] ${this.getEmployeeName(employee)} status for this week: ${actualStatus}`);
     return actualStatus;
   }
 
@@ -2555,39 +2715,51 @@ class ShiftPlanningSystem {
   /**
    * Check if employee is available on a specific date
    */
-  isEmployeeAvailableOnDate(employee: Employee, dateString: string): boolean {
-    // Get the employee's availability status
-    const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
-
-    // Parse the status
-    let status = 'available';
-    if (typeof rawStatus === 'string') {
-      const parts = rawStatus.trim().split(/\s+/);
-      if (parts.length > 1) {
-        status = parts[1]; // e.g., "available vacation" -> "vacation"
-      } else {
-        status = parts[0] !== '' ? parts[0] : 'available';
-      }
+  private normalizeDateForAvailability(date: Date, type: 'check' | 'start' | 'end'): void {
+    if (type === 'check') {
+      date.setHours(12, 0, 0, 0); // Noon to avoid timezone issues
+    } else if (type === 'start') {
+      date.setHours(0, 0, 0, 0); // Start of day
+    } else {
+      date.setHours(23, 59, 59, 999); // End of day
     }
+  }
+
+  private getAvailabilityDates(
+    employee: Employee,
+    dateString: string,
+  ): {
+    checkDate: Date;
+    startDate: Date | null;
+    endDate: Date | null;
+  } {
+    const checkDate = new Date(dateString);
+    const startDate = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
+    const endDate = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
+
+    // Normalize dates to avoid timezone issues
+    this.normalizeDateForAvailability(checkDate, 'check');
+    if (startDate !== null) {
+      this.normalizeDateForAvailability(startDate, 'start');
+    }
+    if (endDate !== null) {
+      this.normalizeDateForAvailability(endDate, 'end');
+    }
+
+    return { checkDate, startDate, endDate };
+  }
+
+  isEmployeeAvailableOnDate(employee: Employee, dateString: string): boolean {
+    const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+    const status = this.parseAvailabilityStatus(rawStatus);
 
     // If status is available, no need to check dates
     if (status === 'available') {
       return true;
     }
 
-    // Check if the unavailability applies to this specific date
-    const checkDate = new Date(dateString);
-    const startDate = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
-    const endDate = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
-
-    // Set time to noon to avoid timezone issues
-    checkDate.setHours(12, 0, 0, 0);
-    if (startDate !== null) {
-      startDate.setHours(0, 0, 0, 0);
-    }
-    if (endDate !== null) {
-      endDate.setHours(23, 59, 59, 999);
-    }
+    // Get normalized dates
+    const { checkDate, startDate, endDate } = this.getAvailabilityDates(employee, dateString);
 
     // Check if the date falls within the unavailability period
     const isWithinPeriod = this.checkDateRangeOverlap(startDate, endDate, checkDate, checkDate);
@@ -2738,142 +2910,183 @@ class ShiftPlanningSystem {
     }
   }
 
-  assignShift(shiftCell: HTMLElement, employeeId: number): void {
+  private calculateDateFromDay(day: string): string | null {
+    const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
+    if (dayIndex === -1) return null;
+
+    const weekStart = this.getWeekStart(this.currentWeek);
+    const cellDate = new Date(weekStart);
+    cellDate.setDate(cellDate.getDate() + dayIndex);
+    return this.formatDateKey(cellDate);
+  }
+
+  private getShiftDate(shiftCell: HTMLElement): string | undefined {
     let date = shiftCell.dataset.date;
     const day = shiftCell.dataset.day;
-    const shift = shiftCell.dataset.shift;
 
-    // If no date but day exists, calculate date from current week
     if ((date === undefined || date === '') && day !== undefined && day !== '') {
-      const dayIndex = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].indexOf(day);
-      if (dayIndex !== -1) {
-        const weekStart = this.getWeekStart(this.currentWeek);
-        const cellDate = new Date(weekStart);
-        cellDate.setDate(cellDate.getDate() + dayIndex);
-        date = this.formatDateKey(cellDate);
-        // Also set the data-date attribute for future use
+      const calculatedDate = this.calculateDateFromDay(day);
+      if (calculatedDate !== null) {
+        date = calculatedDate;
         shiftCell.dataset.date = date;
       }
     }
 
-    console.info('[SHIFTS DEBUG] Assigning shift:', { date, day, shift, employeeId });
+    return date;
+  }
 
+  private validateShiftData(date: string | undefined, shift: string | undefined): boolean {
     if (date === undefined || date === '' || shift === undefined || shift === '') {
       console.error('[SHIFTS ERROR] Missing date or shift data on cell');
-      return;
+      return false;
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      console.error('Invalid date format:', date);
+      return false;
+    }
+
+    return true;
+  }
+
+  private findEmployee(employeeId: number): Employee | undefined {
     const employee = this.employees.find((e) => e.id === employeeId);
     if (employee === undefined) {
       console.error('[SHIFTS ERROR] Employee not found:', employeeId);
+    }
+    return employee;
+  }
+
+  private getStatusText(status: string): string {
+    const statusTexts = new Map<string, string>([
+      ['vacation', 'im Urlaub'],
+      ['sick', 'krankgemeldet'],
+      ['unavailable', 'nicht verfügbar'],
+      ['training', 'in Schulung'],
+      ['other', 'anderweitig abwesend'],
+    ]);
+    return statusTexts.get(status) ?? 'nicht verfügbar';
+  }
+
+  private buildUnavailabilityMessage(employee: Employee, date: string): string {
+    const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+    const employeeName = fullName !== '' ? fullName : employee.username;
+
+    const dateObj = new Date(date);
+    const day = dateObj.getDate().toString().padStart(2, '0');
+    const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+    const year = dateObj.getFullYear();
+    const formattedDate = `${day}.${month}.${year}`;
+
+    const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+    const status = this.parseAvailabilityStatus(rawStatus);
+    const statusText = this.getStatusText(status);
+
+    let errorMsg = `${employeeName} ist am ${formattedDate} ${statusText}`;
+
+    const reason = employee.availability_reason;
+    if (reason !== undefined && reason !== '') {
+      errorMsg += `: ${reason}`;
+    }
+
+    return errorMsg;
+  }
+
+  private checkAvailability(employee: Employee, date: string): boolean {
+    if (!this.isEmployeeAvailableOnDate(employee, date)) {
+      const errorMsg = this.buildUnavailabilityMessage(employee, date);
+      showErrorAlert(errorMsg);
+      return false;
+    }
+    return true;
+  }
+
+  private getShiftName(shiftType: string): string {
+    const shiftNames = new Map<string, string>([
+      ['early', 'Frühschicht'],
+      ['late', 'Spätschicht'],
+      ['night', 'Nachtschicht'],
+    ]);
+    return shiftNames.get(shiftType) ?? shiftType;
+  }
+
+  private checkDuplicateShifts(employee: Employee, date: string, targetShift: string): boolean {
+    const shiftTypes = ['early', 'late', 'night'] as const;
+
+    for (const shiftType of shiftTypes) {
+      if (shiftType === targetShift) continue;
+
+      const employees = this.getShiftEmployees(date, shiftType);
+      if (employees.includes(employee.id)) {
+        const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+        const employeeName = fullName !== '' ? fullName : employee.username;
+        const shiftName = this.getShiftName(shiftType);
+
+        showErrorAlert(
+          `Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftName} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`,
+        );
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private toggleShiftAssignment(date: string, shift: string, employeeId: number): void {
+    const currentEmployees = this.getShiftEmployees(date, shift);
+    const index = currentEmployees.indexOf(employeeId);
+
+    let updatedEmployees: number[];
+    if (index !== -1) {
+      updatedEmployees = [...currentEmployees];
+      updatedEmployees.splice(index, 1);
+    } else {
+      updatedEmployees = [...currentEmployees, employeeId];
+    }
+
+    this.setShiftEmployees(date, shift, updatedEmployees);
+  }
+
+  private shouldTriggerAutofill(day: string | undefined): boolean {
+    return this.autofillConfig.enabled && day !== undefined && day !== '' && !this.isAutofilling && !this.isRemoving;
+  }
+
+  assignShift(shiftCell: HTMLElement, employeeId: number): void {
+    const date = this.getShiftDate(shiftCell);
+    const day = shiftCell.dataset.day;
+    const shift = shiftCell.dataset.shift;
+
+    console.info('[SHIFTS DEBUG] Assigning shift:', { date, day, shift, employeeId });
+
+    if (!this.validateShiftData(date, shift)) {
       return;
     }
 
-    // Check employee availability for this specific date
-    if (!this.isEmployeeAvailableOnDate(employee, date)) {
-      // Build error message with details
-      const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
-      const employeeName = fullName !== '' ? fullName : employee.username;
+    // After validation, we know date and shift are defined and non-empty
+    // TypeScript doesn't know this, so we need to check again
+    if (date === undefined || shift === undefined) {
+      return; // This will never happen due to validateShiftData, but satisfies TypeScript
+    }
 
-      // Format the specific date
-      const dateObj = new Date(date);
-      const formattedDate = `${dateObj.getDate().toString().padStart(2, '0')}.${(dateObj.getMonth() + 1).toString().padStart(2, '0')}.${dateObj.getFullYear()}`;
-
-      // Get the status type
-      const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
-      let status = 'available';
-      if (typeof rawStatus === 'string') {
-        const parts = rawStatus.trim().split(/\s+/);
-        if (parts.length > 1) {
-          status = parts[1];
-        } else {
-          status = parts[0] !== '' ? parts[0] : 'available';
-        }
-      }
-
-      // Build status text
-      const statusTexts = new Map<string, string>([
-        ['vacation', 'im Urlaub'],
-        ['sick', 'krankgemeldet'],
-        ['unavailable', 'nicht verfügbar'],
-        ['training', 'in Schulung'],
-        ['other', 'anderweitig abwesend'],
-      ]);
-
-      const statusText = statusTexts.get(status) ?? 'nicht verfügbar';
-      let errorMsg = `${employeeName} ist am ${formattedDate} ${statusText}`;
-
-      // Add reason if available
-      const reason = employee.availability_reason;
-      if (reason !== undefined && reason !== '') {
-        errorMsg += `: ${reason}`;
-      }
-
-      showErrorAlert(errorMsg);
+    const employee = this.findEmployee(employeeId);
+    if (employee === undefined) {
       return;
     }
 
     console.info('[SHIFTS DEBUG] Found employee:', employee);
 
-    // Validate date format to prevent object injection
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      console.error('Invalid date format:', date);
+    if (!this.checkAvailability(employee, date)) {
       return;
     }
 
-    // Check if employee already has a shift on this day
-    const shiftsOnThisDay = new Map<string, number[]>();
-    const shiftTypes = ['early', 'late', 'night'] as const;
-    for (const shiftType of shiftTypes) {
-      const employees = this.getShiftEmployees(date, shiftType);
-      if (employees.length > 0) {
-        shiftsOnThisDay.set(shiftType, employees);
-      }
-    }
-    const name2 = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
-    const employeeName = name2 !== '' ? name2 : employee.username;
-
-    // Check all shifts on this day
-    for (const [shiftType, employeeIds] of shiftsOnThisDay) {
-      if (shiftType !== shift && employeeIds.includes(employeeId)) {
-        // Employee already has another shift on this day
-        const shiftNames = new Map<string, string>([
-          ['early', 'Frühschicht'],
-          ['late', 'Spätschicht'],
-          ['night', 'Nachtschicht'],
-        ]);
-
-        showErrorAlert(
-          `Doppelschicht nicht erlaubt! ${employeeName} ist bereits für die ${shiftNames.get(shiftType) ?? shiftType} eingeteilt. Ein Mitarbeiter kann nur eine Schicht pro Tag übernehmen.`,
-        );
-        return;
-      }
+    if (!this.checkDuplicateShifts(employee, date, shift)) {
+      return;
     }
 
-    // Get current employees for this shift
-    const currentEmployees = this.getShiftEmployees(date, shift);
+    this.toggleShiftAssignment(date, shift, employeeId);
 
-    // Check if employee is already assigned to this shift
-    const index = currentEmployees.indexOf(employeeId);
-    if (index !== -1) {
-      // Remove assignment
-      const updatedEmployees = [...currentEmployees];
-      updatedEmployees.splice(index, 1);
-      this.setShiftEmployees(date, shift, updatedEmployees);
-    } else {
-      // Add assignment
-      const updatedEmployees = [...currentEmployees, employeeId];
-      this.setShiftEmployees(date, shift, updatedEmployees);
-    }
-
-    // Update UI - pass the cell directly
     this.renderShiftAssignments(shiftCell, date, shift);
-    // this.updateEmployeeShiftCounts(); // temporarily disabled
 
-    // Trigger autofill if enabled (for drag & drop operations)
-    // But not if we're already autofilling (to prevent recursion)
-    // And not if we're removing an employee
-    if (this.autofillConfig.enabled && day !== undefined && day !== '' && !this.isAutofilling && !this.isRemoving) {
+    if (this.shouldTriggerAutofill(day) && day !== undefined) {
       console.info('[SHIFTS DEBUG] Triggering autofill for employee:', employeeId, 'day:', day, 'shift:', shift);
       this.performAutofill(employeeId, day, shift);
     }
@@ -2907,6 +3120,310 @@ class ShiftPlanningSystem {
     }
   }
 
+  private async loadRotationShifts(startStr: string, endStr: string): Promise<boolean> {
+    console.info('[SHIFTS ROTATION] Loading from shift_rotation_history');
+
+    const response = await fetch(`/api/v2/shifts/rotation/history?start_date=${startStr}&end_date=${endStr}`, {
+      headers: {
+        Authorization: `Bearer ${getAuthToken() ?? ''}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.error('[SHIFTS ROTATION] Failed to load rotation history');
+      return false;
+    }
+
+    const data = (await response.json()) as {
+      data?: {
+        history?: {
+          shiftDate: string;
+          shiftType: string;
+          userId: number;
+          status: string;
+        }[];
+      };
+    };
+
+    console.info('[SHIFTS ROTATION] History data:', data);
+
+    if (!data.data?.history || data.data.history.length === 0) {
+      console.info('[SHIFTS ROTATION] No rotation history found for this period');
+      return false;
+    }
+
+    const shifts = this.convertRotationToShifts(data.data.history);
+    this.processShiftData(shifts);
+    this.renderWeekView();
+    this.showEditRotationButton(true);
+    this.lockShiftPlan();
+
+    console.info('[SHIFTS ROTATION] Plan locked - rotation mode active');
+    this.updateInfoBar('<span style="color: #4CAF50;">🔄 Automatische Rotation aktiv</span>');
+
+    return true;
+  }
+
+  private convertRotationToShifts(
+    history: { shiftDate: string; shiftType: string; userId: number; status: string }[],
+  ): {
+    date: string;
+    shift_type: string;
+    employee_id: number;
+    first_name: string;
+    last_name: string;
+    username: string;
+  }[] {
+    return history.map((h) => {
+      const employee = this.employees.find((e) => e.id === h.userId);
+      const shiftType = this.convertShiftType(h.shiftType);
+
+      return {
+        date: h.shiftDate,
+        shift_type: shiftType,
+        employee_id: h.userId,
+        first_name: employee?.first_name ?? '',
+        last_name: employee?.last_name ?? '',
+        username: employee?.username ?? '',
+      };
+    });
+  }
+
+  private convertShiftType(dbShiftType: string): string {
+    if (dbShiftType === 'F') {
+      return 'early';
+    }
+    if (dbShiftType === 'S') {
+      return 'late';
+    }
+    if (dbShiftType === 'N') {
+      return 'night';
+    }
+    return dbShiftType;
+  }
+
+  private updateInfoBar(content: string): void {
+    const infoBar = document.querySelector('.shift-info-bar');
+    if (infoBar === null) {
+      return;
+    }
+
+    // Clear existing content
+    while (infoBar.firstChild) {
+      infoBar.firstChild.remove();
+    }
+
+    // Create span element safely
+    const span = document.createElement('span');
+
+    // Determine style and text based on content type
+    if (content.includes('Automatische Rotation aktiv')) {
+      span.style.color = '#4CAF50';
+      span.textContent = '🔄 Automatische Rotation aktiv';
+    } else if (content.includes('Normale Schichten (Fallback-Modus)')) {
+      span.style.color = '#FFC107';
+      span.textContent = '📋 Normale Schichten (Fallback-Modus)';
+    } else if (content === '') {
+      // Empty content - do nothing
+      return;
+    } else {
+      span.textContent = content;
+    }
+
+    infoBar.append(span);
+  }
+
+  private clearShiftData(): void {
+    this.weeklyShifts = new Map();
+    this.shiftDetails = new Map();
+    this.currentPlanId = null;
+    this.clearNotesTextarea();
+  }
+
+  private clearNotesTextarea(): void {
+    const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
+    if (notesTextarea !== null) {
+      notesTextarea.value = '';
+    }
+  }
+
+  private async loadV1Shifts(startStr: string, endStr: string): Promise<void> {
+    const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
+      headers: {
+        Authorization: `Bearer ${getAuthToken() ?? ''}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to load shift data');
+    }
+
+    const data = (await response.json()) as {
+      shifts?: {
+        date: string;
+        shift_type: string;
+        employee_id: number;
+        first_name: string;
+        last_name: string;
+        username: string;
+      }[];
+    };
+
+    console.info('[SHIFTS DEBUG] API Response:', data);
+    console.info('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length ?? 0);
+
+    this.processShiftData(data.shifts ?? []);
+    this.renderWeekView();
+  }
+
+  private async loadV2Shifts(startStr: string, endStr: string): Promise<void> {
+    const params = this.buildV2QueryParams(startStr, endStr);
+
+    console.info('[SHIFTS PLAN DEBUG] Loading plan with params:', params.toString());
+
+    const response = await this.apiClient.request(`/shifts/plan?${params.toString()}`, {
+      method: 'GET',
+    });
+
+    console.info('[SHIFTS PLAN DEBUG] Plan Response received');
+
+    if (response === null || typeof response !== 'object') {
+      this.clearShiftData();
+      this.renderWeekView();
+      return;
+    }
+
+    if ('shifts' in response) {
+      this.processV2Response(response);
+    } else if ('message' in response) {
+      console.info('[SHIFTS PLAN DEBUG] No plan found for this week');
+      this.clearShiftData();
+    }
+
+    this.renderWeekView();
+  }
+
+  private buildV2QueryParams(startStr: string, endStr: string): URLSearchParams {
+    const params = new URLSearchParams({
+      startDate: startStr,
+      endDate: endStr,
+    });
+
+    if (this.selectedContext.departmentId !== null) {
+      params.append('departmentId', String(this.selectedContext.departmentId));
+    }
+    if (this.selectedContext.teamId !== null) {
+      params.append('teamId', String(this.selectedContext.teamId));
+    }
+    if (this.selectedContext.machineId !== null) {
+      params.append('machineId', String(this.selectedContext.machineId));
+    }
+    if (this.selectedContext.areaId !== null) {
+      params.append('areaId', String(this.selectedContext.areaId));
+    }
+
+    return params;
+  }
+
+  private processV2Response(response: unknown): void {
+    const planData = response as {
+      plan?: {
+        id: number;
+        name: string;
+        shiftNotes?: string;
+        startDate: string;
+        endDate: string;
+      };
+      shifts: {
+        id?: number;
+        userId: number;
+        date: string;
+        type: string;
+        startTime?: string;
+        endTime?: string;
+        user?: {
+          id: number;
+          firstName: string;
+          lastName: string;
+          username: string;
+        };
+      }[];
+      notes?: Record<string, { note: string }> | unknown[];
+    };
+
+    this.handlePlanData(planData.plan);
+
+    console.info('[SHIFTS PLAN DEBUG] Number of shifts:', planData.shifts.length);
+
+    const legacyShifts = this.convertV2ShiftsToLegacy(planData.shifts);
+    this.processShiftData(legacyShifts);
+  }
+
+  private handlePlanData(plan?: {
+    id: number;
+    name: string;
+    shiftNotes?: string;
+    startDate: string;
+    endDate: string;
+  }): void {
+    const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
+
+    if (plan !== undefined) {
+      console.info('[SHIFTS PLAN DEBUG] Plan loaded:', plan);
+      this.currentPlanId = plan.id;
+      this.isEditMode = false;
+
+      if (plan.shiftNotes !== undefined && plan.shiftNotes !== '' && notesTextarea !== null) {
+        notesTextarea.value = plan.shiftNotes;
+      } else if (notesTextarea !== null) {
+        notesTextarea.value = '';
+      }
+
+      this.updateButtonVisibility();
+      this.lockShiftPlan();
+    } else {
+      console.info('[SHIFTS PLAN DEBUG] No plan found for this week - clearing notes');
+      this.currentPlanId = null;
+      this.isEditMode = false;
+
+      if (notesTextarea !== null) {
+        notesTextarea.value = '';
+      }
+
+      this.updateButtonVisibility();
+      this.unlockShiftPlan();
+    }
+  }
+
+  private convertV2ShiftsToLegacy(
+    shifts: {
+      userId: number;
+      date: string;
+      type: string;
+      user?: { firstName: string; lastName: string; username: string };
+    }[],
+  ): {
+    date: string;
+    shift_type: string;
+    employee_id: number;
+    first_name: string;
+    last_name: string;
+    username: string;
+  }[] {
+    return shifts.map((shift) => {
+      const employee = this.employees.find((emp) => emp.id === shift.userId);
+
+      return {
+        date: shift.date,
+        shift_type: shift.type,
+        employee_id: shift.userId,
+        first_name: employee?.first_name ?? shift.user?.firstName ?? 'Unknown',
+        last_name: employee?.last_name ?? shift.user?.lastName ?? 'User',
+        username: employee?.email ?? shift.user?.username ?? `user_${String(shift.userId)}`,
+      };
+    });
+  }
+
   async loadCurrentWeekData(): Promise<void> {
     console.info('[SHIFTS RELOAD DEBUG] loadCurrentWeekData called');
     console.info('[SHIFTS RELOAD DEBUG] Current context:', this.selectedContext);
@@ -2916,319 +3433,53 @@ class ShiftPlanningSystem {
     try {
       const weekStart = this.getWeekStart(this.currentWeek);
       const weekEnd = this.getWeekEnd(this.currentWeek);
-
-      // Format dates for API
       const startStr = this.formatDate(weekStart);
       const endStr = this.formatDate(weekEnd);
 
       console.info('[SHIFTS PLAN DEBUG] Loading shifts for range:', startStr, 'to', endStr);
 
-      // Check if rotation is enabled - if yes, load from shift_rotation_history
+      // Handle rotation shifts
       if (this.rotationConfig.enabled) {
-        console.info('[SHIFTS ROTATION] Loading from shift_rotation_history');
+        const rotationLoaded = await this.loadRotationShifts(startStr, endStr);
 
-        const response = await fetch(`/api/v2/shifts/rotation/history?start_date=${startStr}&end_date=${endStr}`, {
-          headers: {
-            Authorization: `Bearer ${getAuthToken() ?? ''}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = (await response.json()) as {
-            data?: {
-              history?: {
-                shiftDate: string; // camelCase from backend dbToApi
-                shiftType: string;
-                userId: number;
-                status: string;
-              }[];
-            };
-          };
-
-          console.info('[SHIFTS ROTATION] History data:', data);
-
-          if (data.data?.history && data.data.history.length > 0) {
-            // Convert rotation history to shift format
-            // Note: Backend uses camelCase due to dbToApi conversion
-            const shifts = data.data.history.map((h) => {
-              const employee = this.employees.find((e) => e.id === h.userId);
-              // Convert shift type from DB format (F/S/N) to frontend format (early/late/night)
-              let shiftType = h.shiftType;
-              if (shiftType === 'F') {
-                shiftType = 'early';
-              } else if (shiftType === 'S') {
-                shiftType = 'late';
-              } else if (shiftType === 'N') {
-                shiftType = 'night';
-              }
-              return {
-                date: h.shiftDate,
-                shift_type: shiftType,
-                employee_id: h.userId,
-                first_name: employee?.first_name ?? '',
-                last_name: employee?.last_name ?? '',
-                username: employee?.username ?? '',
-              };
-            });
-
-            this.processShiftData(shifts);
-            this.renderWeekView();
-
-            // Show edit rotation button since we have rotation data
-            this.showEditRotationButton(true);
-
-            // Lock shift plan when rotation is active - prevent drag & drop
-            this.lockShiftPlan();
-            console.info('[SHIFTS ROTATION] Plan locked - rotation mode active');
-
-            // Show info that rotation mode is active
-            const infoBar = document.querySelector('.shift-info-bar');
-            if (infoBar) {
-              infoBar.innerHTML = '<span style="color: #4CAF50;">🔄 Automatische Rotation aktiv</span>';
-            }
-
-            return; // Exit when we have rotation data
-          } else {
-            console.info('[SHIFTS ROTATION] No rotation history found for this period');
-
-            // Check if fallback is enabled - if yes, load normal shifts
-            if (this.fallbackConfig.enabled) {
-              console.info('[SHIFTS FALLBACK] Loading normal shifts as fallback');
-              // Clear info bar to show normal mode
-              const infoBar = document.querySelector('.shift-info-bar');
-              if (infoBar) {
-                infoBar.innerHTML = '<span style="color: #FFC107;">📋 Normale Schichten (Fallback-Modus)</span>';
-              }
-              // Continue to load normal shifts below (don't return)
-            } else {
-              // No fallback - show empty
-              this.weeklyShifts = new Map();
-              // Hide edit rotation button since no rotation data exists
-              this.showEditRotationButton(false);
-              // Unlock plan when no rotation data exists
-              this.unlockShiftPlan();
-              this.shiftDetails = new Map();
-              this.currentPlanId = null; // Clear plan ID
-
-              // Clear notes textarea when no fallback and no rotation data
-              const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
-              if (notesTextarea) {
-                notesTextarea.value = '';
-                // Clear any info bar message
-                const infoBar = document.querySelector('.shift-info-bar');
-                if (infoBar) {
-                  infoBar.innerHTML = '';
-                }
-              }
-
-              this.renderWeekView();
-              return; // Exit early when no rotation and no fallback
-            }
-          }
-        } else {
-          console.error('[SHIFTS ROTATION] Failed to load rotation history');
-          // Check if fallback is enabled before throwing error
-          if (!this.fallbackConfig.enabled) {
-            throw new Error('Failed to load rotation history');
-          }
-          // Continue with normal shifts if fallback is enabled
-          console.info('[SHIFTS FALLBACK] Rotation API failed, falling back to normal shifts');
+        if (rotationLoaded) {
+          this.finishLoadingData();
+          return;
         }
-        // Otherwise continue to load normal shifts as fallback
+
+        if (!this.fallbackConfig.enabled) {
+          this.clearShiftData();
+          this.showEditRotationButton(false);
+          this.unlockShiftPlan();
+          this.updateInfoBar('');
+          this.renderWeekView();
+          this.finishLoadingData();
+          return;
+        }
+
+        console.info('[SHIFTS FALLBACK] Loading normal shifts as fallback');
+        this.updateInfoBar('<span style="color: #FFC107;">📋 Normale Schichten (Fallback-Modus)</span>');
       }
 
-      // Normal shift loading when rotation is disabled
-      // Hide edit rotation button when rotation is disabled
+      // Load normal shifts
       this.showEditRotationButton(false);
-      // Ensure plan is unlocked when rotation is disabled
-      // (will be locked later if an existing plan is found)
       this.unlockShiftPlan();
 
-      // Check if v2 API is enabled
       if (!this.useV2API) {
-        // Legacy v1 API
-        const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
-          headers: {
-            Authorization: `Bearer ${getAuthToken() ?? ''}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = (await response.json()) as {
-            shifts?: {
-              date: string;
-              shift_type: string;
-              employee_id: number;
-              first_name: string;
-              last_name: string;
-              username: string;
-            }[];
-          };
-          console.info('[SHIFTS DEBUG] API Response:', data);
-          console.info('[SHIFTS DEBUG] Number of shifts:', data.shifts?.length ?? 0);
-          if (data.shifts !== undefined && data.shifts.length > 0) {
-            console.info('[SHIFTS DEBUG] First shift:', data.shifts[0]);
-          }
-          this.processShiftData(data.shifts ?? []);
-          this.renderWeekView();
-        } else {
-          throw new Error('Failed to load shift data');
-        }
+        await this.loadV1Shifts(startStr, endStr);
       } else {
-        // NEW v2 API - Plan-based loading
-        try {
-          // Build query parameters for v2 API
-          const params = new URLSearchParams({
-            startDate: startStr,
-            endDate: endStr,
-          });
-
-          // Add context filters if selected
-          if (this.selectedContext.departmentId !== null) {
-            params.append('departmentId', String(this.selectedContext.departmentId));
-          }
-          if (this.selectedContext.teamId !== null) {
-            params.append('teamId', String(this.selectedContext.teamId));
-          }
-          if (this.selectedContext.machineId !== null) {
-            params.append('machineId', String(this.selectedContext.machineId));
-          }
-          if (this.selectedContext.areaId !== null) {
-            params.append('areaId', String(this.selectedContext.areaId));
-          }
-
-          console.info('[SHIFTS PLAN DEBUG] Loading plan with params:', params.toString());
-          console.info('[SHIFTS PLAN DEBUG] Making GET request to /api/v2/shifts/plan');
-
-          // Use /api/v2/shifts/plan endpoint
-          const response = await this.apiClient.request(`/shifts/plan?${params.toString()}`, {
-            method: 'GET',
-          });
-
-          console.info('[SHIFTS PLAN DEBUG] Plan Response received');
-          console.info('[SHIFTS PLAN DEBUG] Response type:', typeof response);
-          console.info('[SHIFTS PLAN DEBUG] Response:', response);
-
-          // Check if response has shifts array (API v2 format)
-          if (response !== null && typeof response === 'object' && 'shifts' in response) {
-            const planData = response as {
-              plan?: {
-                id: number;
-                name: string;
-                shiftNotes?: string; // API v2 uses camelCase
-                startDate: string;
-                endDate: string;
-              };
-              shifts: {
-                id?: number;
-                userId: number;
-                date: string;
-                type: string;
-                startTime?: string;
-                endTime?: string;
-                user?: {
-                  id: number;
-                  firstName: string;
-                  lastName: string;
-                  username: string;
-                };
-              }[];
-              notes?: Record<string, { note: string }> | unknown[];
-            };
-
-            // Check if we have a plan or just shifts
-            const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
-
-            if (planData.plan) {
-              console.info('[SHIFTS PLAN DEBUG] Plan loaded:', planData.plan);
-              // Store current plan ID for update functionality
-              this.currentPlanId = planData.plan.id;
-
-              // Reset edit mode when loading a plan
-              this.isEditMode = false;
-
-              // Load notes from plan.shiftNotes (camelCase from API v2)
-              const shiftNotes = (planData.plan as { shiftNotes?: string }).shiftNotes;
-              if (shiftNotes !== undefined && shiftNotes !== '' && notesTextarea !== null) {
-                notesTextarea.value = shiftNotes;
-              } else if (notesTextarea !== null) {
-                // Plan exists but no notes - clear textarea
-                notesTextarea.value = '';
-              }
-
-              // Update button visibility and lock the plan
-              this.updateButtonVisibility();
-              this.lockShiftPlan();
-            } else {
-              // No plan for this week - clear everything
-              console.info('[SHIFTS PLAN DEBUG] No plan found for this week - clearing notes');
-              this.currentPlanId = null;
-              this.isEditMode = false;
-
-              if (notesTextarea !== null) {
-                notesTextarea.value = '';
-              }
-
-              // Update button visibility and unlock for new plan creation
-              this.updateButtonVisibility();
-              this.unlockShiftPlan();
-            }
-
-            console.info('[SHIFTS PLAN DEBUG] Number of shifts:', planData.shifts.length);
-
-            // Convert v2 format to legacy format for processShiftData
-            const legacyShifts = planData.shifts.map((shift) => {
-              // Try to find employee in loaded employees array
-              const employee = this.employees.find((emp) => emp.id === shift.userId);
-
-              return {
-                date: shift.date,
-                shift_type: shift.type,
-                employee_id: shift.userId,
-                first_name: employee?.first_name ?? shift.user?.firstName ?? 'Unknown',
-                last_name: employee?.last_name ?? shift.user?.lastName ?? 'User',
-                username: employee?.email ?? shift.user?.username ?? `user_${String(shift.userId)}`,
-              };
-            });
-
-            this.processShiftData(legacyShifts);
-          } else if (response !== null && typeof response === 'object' && 'message' in response) {
-            // No plan found for this week, that's okay
-            console.info('[SHIFTS PLAN DEBUG] No plan found for this week');
-            this.weeklyShifts = new Map();
-            this.shiftDetails = new Map();
-            this.currentPlanId = null;
-
-            // Clear the notes textarea when no plan exists
-            const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
-            if (notesTextarea !== null) {
-              notesTextarea.value = '';
-            }
-          }
-
-          this.renderWeekView();
-        } catch (error) {
-          console.error('[SHIFTS PLAN DEBUG] Error loading plan, falling back:', error);
-          // If plan endpoint fails, clear the data
-          this.weeklyShifts = new Map();
-          this.shiftDetails = new Map();
-          this.currentPlanId = null;
-
-          // Clear the notes textarea on error
-          const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
-          if (notesTextarea !== null) {
-            notesTextarea.value = '';
-          }
-
-          this.renderWeekView();
-        }
+        await this.loadV2Shifts(startStr, endStr);
       }
     } catch (error) {
       console.error('Error loading shift data:', error);
+      this.clearShiftData();
       this.renderWeekView();
     }
 
-    // ALWAYS update counts and re-render employee list after loading data
+    this.finishLoadingData();
+  }
+
+  private finishLoadingData(): void {
     console.info('[SHIFTS RELOAD DEBUG] Updating employee shift counts after load...');
     // this.updateEmployeeShiftCounts(); // temporarily disabled
 
@@ -3249,84 +3500,121 @@ class ShiftPlanningSystem {
     }[],
   ): void {
     this.weeklyShifts = new Map();
-    this.shiftDetails = new Map(); // Store full shift details including names
+    this.shiftDetails = new Map();
     console.info('[SHIFTS DEBUG] Processing shifts:', shifts);
 
-    shifts.forEach((shift) => {
-      // Extract date part only (YYYY-MM-DD) from potentially full datetime string
-      const dateString = shift.date;
-      const date = dateString.split('T')[0]; // Get only YYYY-MM-DD part
-      let shiftType = shift.shift_type;
-
-      // Map database shift types to UI shift types
-      // F = Frühschicht = early, S = Spätschicht = late, N = Nachtschicht = night
-      if (shiftType === 'F') {
-        shiftType = 'early';
-      } else if (shiftType === 'S') {
-        shiftType = 'late';
-      } else if (shiftType === 'N') {
-        shiftType = 'night';
-      }
-
-      // Skip custom shifts or convert them based on time
-      if (shiftType === 'custom') {
-        console.info('[SHIFTS DEBUG] Skipping custom shift type');
-        return; // Skip this shift for now
-      }
-
-      // Fix: Handle undefined/null names - also check employees array
-      const employee = this.employees.find((emp) => emp.id === shift.employee_id);
-      const firstName =
-        employee?.first_name !== undefined && employee.first_name !== ''
-          ? employee.first_name
-          : shift.first_name !== ''
-            ? shift.first_name
-            : '';
-      const lastName =
-        employee?.last_name !== undefined && employee.last_name !== ''
-          ? employee.last_name
-          : shift.last_name !== ''
-            ? shift.last_name
-            : '';
-      const fullName = `${firstName} ${lastName}`.trim();
-      const displayName =
-        fullName !== ''
-          ? fullName
-          : employee?.email !== undefined && employee.email !== ''
-            ? employee.email
-            : shift.username !== ''
-              ? shift.username
-              : `Employee #${shift.employee_id}`;
-
-      console.info('[SHIFTS DEBUG] Processing shift:', {
-        originalDate: dateString,
-        extractedDate: date,
-        shiftType,
-        employee_id: shift.employee_id,
-        employee_name: displayName,
-        raw_first_name: shift.first_name,
-        raw_last_name: shift.last_name,
-        raw_username: shift.username,
-      });
-
-      // Use safe setter method to avoid object injection
-      const currentEmployees = this.getShiftEmployees(date, shiftType);
-      this.setShiftEmployees(date, shiftType, [...currentEmployees, shift.employee_id]);
-
-      // Store the full shift details including names
-      const shiftKey = `${date}_${shiftType}_${String(shift.employee_id)}`;
-      if (!this.shiftDetails.has(shiftKey)) {
-        this.shiftDetails.set(shiftKey, {
-          employee_id: shift.employee_id,
-          first_name: shift.first_name,
-          last_name: shift.last_name,
-          username: shift.username,
-        });
-      }
-    });
+    for (const shift of shifts) {
+      this.processSingleShift(shift);
+    }
 
     console.info('[SHIFTS DEBUG] Final weeklyShifts:', this.weeklyShifts);
     console.info('[SHIFTS DEBUG] Shift details:', this.shiftDetails);
+  }
+
+  private processSingleShift(shift: {
+    date: string;
+    shift_type: string;
+    employee_id: number;
+    first_name: string;
+    last_name: string;
+    username: string;
+  }): void {
+    const date = shift.date.split('T')[0];
+    const shiftType = this.normalizeShiftType(shift.shift_type);
+
+    if (shiftType === 'custom') {
+      console.info('[SHIFTS DEBUG] Skipping custom shift type');
+      return;
+    }
+
+    const displayName = this.getShiftEmployeeDisplayName(shift);
+
+    console.info('[SHIFTS DEBUG] Processing shift:', {
+      originalDate: shift.date,
+      extractedDate: date,
+      shiftType,
+      employee_id: shift.employee_id,
+      employee_name: displayName,
+      raw_first_name: shift.first_name,
+      raw_last_name: shift.last_name,
+      raw_username: shift.username,
+    });
+
+    this.addEmployeeToShift(date, shiftType, shift.employee_id);
+    this.storeShiftDetails(date, shiftType, shift);
+  }
+
+  private normalizeShiftType(shiftType: string): string {
+    if (shiftType === 'F') {
+      return 'early';
+    }
+    if (shiftType === 'S') {
+      return 'late';
+    }
+    if (shiftType === 'N') {
+      return 'night';
+    }
+    return shiftType;
+  }
+
+  private getShiftEmployeeDisplayName(shift: {
+    employee_id: number;
+    first_name: string;
+    last_name: string;
+    username: string;
+  }): string {
+    const employee = this.employees.find((emp) => emp.id === shift.employee_id);
+
+    const firstName = this.getValidName(employee?.first_name, shift.first_name);
+    const lastName = this.getValidName(employee?.last_name, shift.last_name);
+    const fullName = `${firstName} ${lastName}`.trim();
+
+    if (fullName !== '') {
+      return fullName;
+    }
+
+    if (employee?.email !== undefined && employee.email !== '') {
+      return employee.email;
+    }
+
+    if (shift.username !== '') {
+      return shift.username;
+    }
+
+    return `Employee #${shift.employee_id}`;
+  }
+
+  private getValidName(employeeName: string | undefined, shiftName: string): string {
+    if (employeeName !== undefined && employeeName !== '') {
+      return employeeName;
+    }
+    return shiftName !== '' ? shiftName : '';
+  }
+
+  private addEmployeeToShift(date: string, shiftType: string, employeeId: number): void {
+    const currentEmployees = this.getShiftEmployees(date, shiftType);
+    this.setShiftEmployees(date, shiftType, [...currentEmployees, employeeId]);
+  }
+
+  private storeShiftDetails(
+    date: string,
+    shiftType: string,
+    shift: {
+      employee_id: number;
+      first_name: string;
+      last_name: string;
+      username: string;
+    },
+  ): void {
+    const shiftKey = `${date}_${shiftType}_${String(shift.employee_id)}`;
+    if (!this.shiftDetails.has(shiftKey)) {
+      this.shiftDetails.set(shiftKey, {
+        employee_id: shift.employee_id,
+        first_name: shift.first_name,
+        last_name: shift.last_name,
+        username: shift.username,
+      });
+    }
   }
 
   renderWeekView(): void {
@@ -3464,79 +3752,91 @@ class ShiftPlanningSystem {
 
     if (rotationCheckbox) {
       rotationCheckbox.addEventListener('change', (e) => {
-        void (async () => {
-          const newValue = (e.target as HTMLInputElement).checked;
-
-          if (newValue) {
-            // Aktivieren
-            const confirmed = await showConfirm(
-              'Möchten Sie die automatische Rotation aktivieren? Dies erstellt automatisch wechselnde Schichten für die nächsten Wochen.',
-            );
-
-            if (confirmed) {
-              this.rotationConfig.enabled = true;
-              this.editMode = false;
-              this.currentPatternId = null;
-              this.openRotationModal();
-            } else {
-              this.rotationConfig.enabled = false;
-              rotationCheckbox.checked = false;
-            }
-          } else {
-            // Deaktivieren - Warnung zeigen
-            const confirmed = await showConfirm(
-              '⚠️ Rotation deaktivieren?\n\nAlle automatisch generierten Schichten werden gelöscht!\nDie normale manuelle Schichtplanung wird wieder aktiviert.\n\nWirklich fortfahren?',
-            );
-
-            if (confirmed) {
-              this.rotationConfig.enabled = false;
-
-              // Delete all rotation history
-              try {
-                const token = getAuthToken();
-                if (token !== null && token !== '') {
-                  // CRITICAL: Include team_id for multi-tenant isolation
-                  const teamId = this.selectedContext.teamId;
-                  if (teamId === null || teamId === 0) {
-                    showErrorAlert('Kein Team ausgewählt. Bitte wählen Sie zuerst ein Team.');
-                    return;
-                  }
-
-                  const response = await fetch(`/api/v2/shifts/rotation/history?team_id=${teamId}`, {
-                    method: 'DELETE',
-                    headers: {
-                      Authorization: `Bearer ${token}`,
-                    },
-                  });
-
-                  if (response.ok) {
-                    const result = (await response.json()) as { success: boolean; data?: unknown };
-                    console.info('[SHIFTS ROTATION] Deleted rotation data:', result);
-                    showInfo('Rotation deaktiviert. Alle generierten Schichten wurden gelöscht.');
-                  } else {
-                    showErrorAlert('Fehler beim Löschen der Rotation-Historie');
-                  }
-                }
-              } catch (error) {
-                console.error('[SHIFTS ROTATION] Error deleting history:', error);
-                showErrorAlert('Fehler beim Löschen der Rotation-Historie');
-              }
-
-              // Reload to show normal shifts
-              void this.loadCurrentWeekData();
-            } else {
-              // User cancelled - keep rotation enabled
-              this.rotationConfig.enabled = true;
-              rotationCheckbox.checked = true;
-            }
-          }
-
-          // Save preference to database
-          void this.saveUserPreferenceToDatabase('shift_rotation_enabled', this.rotationConfig.enabled);
-        })();
+        void this.handleRotationToggle(e, rotationCheckbox);
       });
     }
 
+    this.setupFallbackCheckbox();
+  }
+
+  private async handleRotationToggle(e: Event, rotationCheckbox: HTMLInputElement): Promise<void> {
+    const newValue = (e.target as HTMLInputElement).checked;
+
+    if (newValue) {
+      await this.enableRotation(rotationCheckbox);
+    } else {
+      await this.disableRotation(rotationCheckbox);
+    }
+
+    void this.saveUserPreferenceToDatabase('shift_rotation_enabled', this.rotationConfig.enabled);
+  }
+
+  private async enableRotation(rotationCheckbox: HTMLInputElement): Promise<void> {
+    const confirmed = await showConfirm(
+      'Möchten Sie die automatische Rotation aktivieren? Dies erstellt automatisch wechselnde Schichten für die nächsten Wochen.',
+    );
+
+    if (confirmed) {
+      this.rotationConfig.enabled = true;
+      this.editMode = false;
+      this.currentPatternId = null;
+      this.openRotationModal();
+    } else {
+      this.rotationConfig.enabled = false;
+      rotationCheckbox.checked = false;
+    }
+  }
+
+  private async disableRotation(rotationCheckbox: HTMLInputElement): Promise<void> {
+    const confirmed = await showConfirm(
+      '⚠️ Rotation deaktivieren?\n\nAlle automatisch generierten Schichten werden gelöscht!\nDie normale manuelle Schichtplanung wird wieder aktiviert.\n\nWirklich fortfahren?',
+    );
+
+    if (!confirmed) {
+      this.rotationConfig.enabled = true;
+      rotationCheckbox.checked = true;
+      return;
+    }
+
+    this.rotationConfig.enabled = false;
+    await this.deleteRotationHistory();
+    void this.loadCurrentWeekData();
+  }
+
+  private async deleteRotationHistory(): Promise<void> {
+    const token = getAuthToken();
+    if (token === null || token === '') {
+      return;
+    }
+
+    const teamId = this.selectedContext.teamId;
+    if (teamId === null || teamId === 0) {
+      showErrorAlert('Kein Team ausgewählt. Bitte wählen Sie zuerst ein Team.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/v2/shifts/rotation/history?team_id=${teamId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const result = (await response.json()) as { success: boolean; data?: unknown };
+        console.info('[SHIFTS ROTATION] Deleted rotation data:', result);
+        showInfo('Rotation deaktiviert. Alle generierten Schichten wurden gelöscht.');
+      } else {
+        showErrorAlert('Fehler beim Löschen der Rotation-Historie');
+      }
+    } catch (error) {
+      console.error('[SHIFTS ROTATION] Error deleting history:', error);
+      showErrorAlert('Fehler beim Löschen der Rotation-Historie');
+    }
+  }
+
+  private setupFallbackCheckbox(): void {
     // Setup fallback checkbox
     const fallbackCheckbox = $$('#shift-fallback') as HTMLInputElement | null;
     if (fallbackCheckbox) {
@@ -3569,43 +3869,45 @@ class ShiftPlanningSystem {
   private isRemoving = false; // Flag to prevent autofill when removing employees
 
   private performAutofill(userId: number, day: string, shiftType: string): void {
-    if (!this.autofillConfig.enabled || !this.isAdmin || this.isAutofilling) return;
+    if (!this.canPerformAutofill()) {
+      return;
+    }
 
-    // Set flag to prevent recursive calls
     this.isAutofilling = true;
 
-    const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    const currentWeekStart = this.getWeekStart(this.currentWeek);
-
-    // Don't autofill the same day that was just assigned
-    const daysToFill = weekDays.filter((weekDay) => weekDay !== day);
-
+    const daysToFill = this.getDaysToFill(day);
     console.info('[SHIFTS AUTOFILL] Filling week for employee:', userId, 'Shift type:', shiftType);
 
     for (const weekDay of daysToFill) {
-      // Calculate the date for this weekday
-      const dayIndex = weekDays.indexOf(weekDay);
-      const shiftDate = new Date(currentWeekStart);
-      shiftDate.setDate(shiftDate.getDate() + dayIndex);
-
-      // Find the shift cell for this day and shift type
-      const shiftCell = $$(`.shift-cell[data-day="${weekDay}"][data-shift="${shiftType}"]`);
-
-      if (shiftCell) {
-        // Check if already has an employee assigned (not just empty-slot)
-        const existingEmployee = shiftCell.querySelector('.employee-card');
-        if (!existingEmployee) {
-          console.info('[SHIFTS AUTOFILL] Assigning', weekDay, 'for employee:', userId);
-          // Use regular assignShift to persist to database
-          this.assignShift(shiftCell, userId);
-        } else {
-          console.info('[SHIFTS AUTOFILL] Skipping', weekDay, '- already has employee');
-        }
-      }
+      this.autofillSingleDay(weekDay, shiftType, userId);
     }
 
-    // Reset flag
     this.isAutofilling = false;
+  }
+
+  private canPerformAutofill(): boolean {
+    return this.autofillConfig.enabled && this.isAdmin && !this.isAutofilling;
+  }
+
+  private getDaysToFill(excludeDay: string): string[] {
+    const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    return weekDays.filter((weekDay) => weekDay !== excludeDay);
+  }
+
+  private autofillSingleDay(weekDay: string, shiftType: string, userId: number): void {
+    const shiftCell = $$(`.shift-cell[data-day="${weekDay}"][data-shift="${shiftType}"]`);
+
+    if (shiftCell === null) {
+      return;
+    }
+
+    const existingEmployee = shiftCell.querySelector('.employee-card');
+    if (existingEmployee === null) {
+      console.info('[SHIFTS AUTOFILL] Assigning', weekDay, 'for employee:', userId);
+      this.assignShift(shiftCell, userId);
+    } else {
+      console.info('[SHIFTS AUTOFILL] Skipping', weekDay, '- already has employee');
+    }
 
     showSuccessAlert(
       `Woche automatisch für Mitarbeiter ausgefüllt (${shiftType === 'early' ? 'Frühschicht' : shiftType === 'late' ? 'Spätschicht' : 'Nachtschicht'})`,
@@ -3871,102 +4173,13 @@ class ShiftPlanningSystem {
 
   private async loadUserPreferencesFromDatabase(): Promise<void> {
     try {
-      const token = getAuthToken();
-      if (token === null || token === '') return;
-
-      // Get current team_id from selected context
-      const teamId = this.selectedContext.teamId;
-      console.info('[SHIFTS DEBUG] Loading preferences for team_id:', teamId);
-
-      const queryParams = new URLSearchParams({ category: 'shifts' });
-      if (teamId !== null) {
-        queryParams.append('team_id', String(teamId));
-      }
-
-      // Use the correct v2 settings API endpoint with team_id
-      const response = await fetch(`/api/v2/settings/user?${queryParams.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        console.warn('Could not load user preferences');
+      const settings = await this.fetchUserSettings();
+      if (settings === null) {
         return;
       }
 
-      const result = (await response.json()) as {
-        data?: {
-          settings?: {
-            settingKey: string;
-            settingValue: boolean | string | number;
-            valueType: string;
-          }[];
-        };
-      };
-      const settings = result.data?.settings ?? [];
-
-      // Process settings
       for (const setting of settings) {
-        switch (setting.settingKey) {
-          case 'shift_autofill_enabled': {
-            // settingValue is already a boolean from API v2
-            this.autofillConfig.enabled = setting.settingValue === true;
-            const autofillCheckbox = $$('#shift-autofill') as HTMLInputElement | null;
-            if (autofillCheckbox) {
-              autofillCheckbox.checked = this.autofillConfig.enabled;
-            }
-            console.info('[SHIFTS DEBUG] Loaded autofill setting from DB:', this.autofillConfig.enabled);
-            break;
-          }
-
-          case 'shift_rotation_enabled': {
-            // settingValue is already a boolean from API v2
-            const dbEnabled = setting.settingValue === true;
-
-            // Check if rotation pattern exists for this team
-            const patternExists = await this.checkRotationPatternExists(this.selectedContext.teamId);
-
-            // Only enable rotation if both DB setting is true AND pattern exists
-            this.rotationConfig.enabled = dbEnabled && patternExists;
-
-            const rotationCheckbox = $$('#shift-rotation') as HTMLInputElement | null;
-            if (rotationCheckbox) {
-              rotationCheckbox.checked = this.rotationConfig.enabled;
-            }
-
-            console.info('[SHIFTS DEBUG] Loaded rotation setting from DB:', dbEnabled);
-            console.info('[SHIFTS DEBUG] Pattern exists for team:', patternExists);
-            console.info('[SHIFTS DEBUG] Final rotation enabled state:', this.rotationConfig.enabled);
-            break;
-          }
-
-          case 'shift_fallback_enabled': {
-            // settingValue is already a boolean from API v2
-            this.fallbackConfig.enabled = setting.settingValue === true;
-            const fallbackCheckbox = $$('#shift-fallback') as HTMLInputElement | null;
-            if (fallbackCheckbox) {
-              fallbackCheckbox.checked = this.fallbackConfig.enabled;
-            }
-            console.info('[SHIFTS DEBUG] Loaded fallback setting from DB:', this.fallbackConfig.enabled);
-            break;
-          }
-
-          case 'shift_autofill_config':
-            try {
-              // If it's already an object, use it directly; otherwise parse
-              if (typeof setting.settingValue === 'object') {
-                Object.assign(this.autofillConfig, setting.settingValue);
-              } else if (typeof setting.settingValue === 'string') {
-                Object.assign(this.autofillConfig, JSON.parse(setting.settingValue));
-              }
-            } catch {
-              // Invalid JSON, ignore
-            }
-            break;
-        }
-
-        // Update cache - convert value to string for consistency
+        await this.processSingleSetting(setting);
         this.userPreferencesCache[setting.settingKey] = String(setting.settingValue);
       }
     } catch (error) {
@@ -3974,17 +4187,160 @@ class ShiftPlanningSystem {
     }
   }
 
-  private openRotationModal(existingPattern?: {
-    id?: number;
-    name: string;
-    description?: string;
-    patternType: string;
-    patternConfig: Record<string, unknown>;
-    startsAt: string;
-    endsAt?: string | null;
-  }): void {
-    // Populate available employees for drag & drop
-    this.setupRotationDragDrop();
+  private async fetchUserSettings(): Promise<
+    { settingKey: string; settingValue: boolean | string | number; valueType: string }[] | null
+  > {
+    const token = getAuthToken();
+    if (token === null || token === '') {
+      return null;
+    }
+
+    const teamId = this.selectedContext.teamId;
+    console.info('[SHIFTS DEBUG] Loading preferences for team_id:', teamId);
+
+    const queryParams = new URLSearchParams({ category: 'shifts' });
+    if (teamId !== null) {
+      queryParams.append('team_id', String(teamId));
+    }
+
+    const response = await fetch(`/api/v2/settings/user?${queryParams.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      console.warn('Could not load user preferences');
+      return null;
+    }
+
+    const result = (await response.json()) as {
+      data?: {
+        settings?: {
+          settingKey: string;
+          settingValue: boolean | string | number;
+          valueType: string;
+        }[];
+      };
+    };
+
+    return result.data?.settings ?? [];
+  }
+
+  private async processSingleSetting(setting: {
+    settingKey: string;
+    settingValue: boolean | string | number;
+    valueType: string;
+  }): Promise<void> {
+    switch (setting.settingKey) {
+      case 'shift_autofill_enabled':
+        this.processAutofillSetting(setting.settingValue);
+        break;
+      case 'shift_rotation_enabled':
+        await this.processRotationSetting(setting.settingValue);
+        break;
+      case 'shift_fallback_enabled':
+        this.processFallbackSetting(setting.settingValue);
+        break;
+      case 'shift_autofill_config':
+        this.processAutofillConfig(setting.settingValue);
+        break;
+    }
+  }
+
+  private processAutofillSetting(value: boolean | string | number): void {
+    this.autofillConfig.enabled = value === true;
+    const autofillCheckbox = $$('#shift-autofill') as HTMLInputElement | null;
+    if (autofillCheckbox !== null) {
+      autofillCheckbox.checked = this.autofillConfig.enabled;
+    }
+    console.info('[SHIFTS DEBUG] Loaded autofill setting from DB:', this.autofillConfig.enabled);
+  }
+
+  private async processRotationSetting(value: boolean | string | number): Promise<void> {
+    const dbEnabled = value === true;
+    const patternExists = await this.checkRotationPatternExists(this.selectedContext.teamId);
+
+    this.rotationConfig.enabled = dbEnabled && patternExists;
+
+    const rotationCheckbox = $$('#shift-rotation') as HTMLInputElement | null;
+    if (rotationCheckbox !== null) {
+      rotationCheckbox.checked = this.rotationConfig.enabled;
+    }
+
+    console.info('[SHIFTS DEBUG] Loaded rotation setting from DB:', dbEnabled);
+    console.info('[SHIFTS DEBUG] Pattern exists for team:', patternExists);
+    console.info('[SHIFTS DEBUG] Final rotation enabled state:', this.rotationConfig.enabled);
+  }
+
+  private processFallbackSetting(value: boolean | string | number): void {
+    this.fallbackConfig.enabled = value === true;
+    const fallbackCheckbox = $$('#shift-fallback') as HTMLInputElement | null;
+    if (fallbackCheckbox !== null) {
+      fallbackCheckbox.checked = this.fallbackConfig.enabled;
+    }
+    console.info('[SHIFTS DEBUG] Loaded fallback setting from DB:', this.fallbackConfig.enabled);
+  }
+
+  private processAutofillConfig(value: boolean | string | number): void {
+    try {
+      if (typeof value === 'object') {
+        Object.assign(this.autofillConfig, value);
+      } else if (typeof value === 'string') {
+        Object.assign(this.autofillConfig, JSON.parse(value));
+      }
+    } catch {
+      // Invalid JSON, ignore
+    }
+  }
+
+  // Helper function to create drag event handlers for an employee element
+  private createEmployeeDragHandlers(element: HTMLDivElement, employeeId: number, employeeName: string): void {
+    element.addEventListener('dragstart', (e) => {
+      console.info('[ROTATION DRAG] Starting drag for employee:', employeeId, employeeName);
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(employeeId));
+        e.dataTransfer.setData('employeeId', String(employeeId));
+        e.dataTransfer.setData('employeeName', employeeName);
+        element.classList.add('dragging');
+        console.info('[ROTATION DRAG] Data set in dataTransfer');
+      }
+    });
+
+    element.addEventListener('dragend', (dragEndEvent) => {
+      console.info('[ROTATION DRAG] Drag ended for employee:', employeeId, employeeName);
+      console.info('[ROTATION DRAG] DragEnd event details:', dragEndEvent.dataTransfer?.dropEffect);
+      element.classList.remove('dragging');
+    });
+  }
+
+  // Helper function to create employee element
+  private createEmployeeElement(
+    employee: { id: number; first_name?: string; last_name?: string; is_active?: boolean },
+    draggable = true,
+  ): HTMLDivElement {
+    const employeeDiv = document.createElement('div');
+    employeeDiv.className = 'employee-item';
+    employeeDiv.draggable = draggable;
+    employeeDiv.dataset.employeeId = String(employee.id);
+    const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+    employeeDiv.dataset.employeeName = fullName;
+    employeeDiv.textContent = fullName;
+
+    if (draggable) {
+      this.createEmployeeDragHandlers(employeeDiv, employee.id, fullName);
+    }
+
+    return employeeDiv;
+  }
+
+  // Helper function to setup available employees
+  private setupAvailableEmployees(container: HTMLDivElement | null): void {
+    if (container === null) {
+      console.error('[ROTATION SETUP] Available employees container not found!');
+      return;
+    }
 
     // Filter employees by selected team (Multi-tenant isolation)
     const teamEmployees = this.employees.filter((e) => {
@@ -4001,133 +4357,92 @@ class ShiftPlanningSystem {
       return true;
     });
 
-    // Populate available employees list
-    const availableContainer = $$id('rotation-available-employees') as HTMLDivElement | null;
-    if (availableContainer) {
-      console.info('[ROTATION SETUP] Found available employees container, adding', teamEmployees.length, 'employees');
-      // Clear existing content
-      while (availableContainer.firstChild) {
-        availableContainer.firstChild.remove();
-      }
+    console.info('[ROTATION SETUP] Found available employees container, adding', teamEmployees.length, 'employees');
 
-      // Create draggable employee items
-      teamEmployees.forEach((employee) => {
-        const employeeDiv = document.createElement('div');
-        employeeDiv.className = 'employee-item';
-        employeeDiv.draggable = true;
-        employeeDiv.dataset.employeeId = String(employee.id);
-        employeeDiv.dataset.employeeName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
-        employeeDiv.textContent = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`;
-
-        // Add drag event listeners
-        employeeDiv.addEventListener('dragstart', (e) => {
-          console.info(
-            '[ROTATION DRAG] Starting drag for employee:',
-            employee.id,
-            employee.first_name,
-            employee.last_name,
-          );
-          if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', String(employee.id)); // Also set text/plain for compatibility
-            e.dataTransfer.setData('employeeId', String(employee.id));
-            e.dataTransfer.setData('employeeName', employeeDiv.dataset.employeeName ?? '');
-            employeeDiv.classList.add('dragging');
-            console.info('[ROTATION DRAG] Data set in dataTransfer');
-          }
-        });
-
-        employeeDiv.addEventListener('dragend', (dragEndEvent) => {
-          console.info(
-            '[ROTATION DRAG] Drag ended for employee:',
-            employee.id,
-            employee.first_name,
-            employee.last_name,
-          );
-          console.info('[ROTATION DRAG] DragEnd event details:', dragEndEvent.dataTransfer?.dropEffect);
-          employeeDiv.classList.remove('dragging');
-        });
-
-        availableContainer.append(employeeDiv);
-      });
-
-      console.info(
-        '[ROTATION SETUP] Added all employees. Container now has',
-        availableContainer.children.length,
-        'children',
-      );
-    } else {
-      console.error('[ROTATION SETUP] Available employees container not found!');
+    // Clear existing content
+    while (container.firstChild) {
+      container.firstChild.remove();
     }
 
-    // Set default start date and end date constraints
+    // Create draggable employee items
+    teamEmployees.forEach((employee) => {
+      const employeeDiv = this.createEmployeeElement(employee);
+      container.append(employeeDiv);
+    });
+
+    console.info('[ROTATION SETUP] Added all employees. Container now has', container.children.length, 'children');
+  }
+
+  // Helper function to get next Monday
+  private getNextMonday(date: Date): Date {
+    const result = new Date(date);
+    const dayOfWeek = result.getDay();
+    // If today is Monday (1), get next Monday (+7 days)
+    // Otherwise calculate days until next Monday
+    const daysUntilMonday = dayOfWeek === 1 ? 7 : dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+    result.setDate(result.getDate() + daysUntilMonday);
+    return result;
+  }
+
+  // Helper function to get second Friday after a given date
+  private getSecondFridayAfter(date: Date): Date {
+    const result = new Date(date);
+    // First, get to the next Friday
+    const dayOfWeek = result.getDay();
+    const daysUntilFriday = dayOfWeek <= 5 ? 5 - dayOfWeek : 12 - dayOfWeek;
+    result.setDate(result.getDate() + daysUntilFriday);
+    // Then add one more week to get the second Friday
+    result.setDate(result.getDate() + 7);
+    return result;
+  }
+
+  // Helper function to configure date inputs
+  // Helper to set date input constraints
+  private setDateInputConstraints(input: HTMLInputElement | null, min: string, max?: string, value?: string): void {
+    if (input === null) return;
+    input.min = min;
+    if (max !== undefined) input.max = max;
+    if (value !== undefined) input.value = value;
+  }
+
+  // Helper to setup auto-adjust handler
+  private setupDateAutoAdjust(startInput: HTMLInputElement, endInput: HTMLInputElement): void {
+    startInput.addEventListener('change', () => {
+      const newStartDate = new Date(startInput.value);
+      const newEndDate = this.getSecondFridayAfter(newStartDate);
+      endInput.value = newEndDate.toISOString().split('T')[0];
+    });
+  }
+
+  private configureDateInputs(editMode: boolean): void {
     const startDateInput = $$id('rotation-start-date') as HTMLInputElement | null;
     const endDateInput = $$id('rotation-end-date') as HTMLInputElement | null;
     const today = new Date();
-    const currentYear = today.getFullYear();
-    const maxDate = `${currentYear}-12-31`;
+    const todayString = today.toISOString().split('T')[0];
+    const maxDate = `${today.getFullYear()}-12-31`;
 
-    // Helper function to get next Monday
-    const getNextMonday = (date: Date): Date => {
-      const result = new Date(date);
-      const dayOfWeek = result.getDay();
-      // If today is Monday (1), get next Monday (+7 days)
-      // Otherwise calculate days until next Monday
-      const daysUntilMonday = dayOfWeek === 1 ? 7 : dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
-      result.setDate(result.getDate() + daysUntilMonday);
-      return result;
-    };
-
-    // Helper function to get second Friday after a given date
-    const getSecondFridayAfter = (date: Date): Date => {
-      const result = new Date(date);
-      // First, get to the next Friday
-      const dayOfWeek = result.getDay();
-      const daysUntilFriday = dayOfWeek <= 5 ? 5 - dayOfWeek : 12 - dayOfWeek;
-      result.setDate(result.getDate() + daysUntilFriday);
-      // Then add one more week to get the second Friday
-      result.setDate(result.getDate() + 7);
-      return result;
-    };
-
-    // Only set default dates in CREATE mode
-    if (!this.editMode) {
-      const nextMonday = getNextMonday(today);
-      const secondFriday = getSecondFridayAfter(nextMonday);
-
-      if (startDateInput) {
-        startDateInput.value = nextMonday.toISOString().split('T')[0];
-        startDateInput.min = today.toISOString().split('T')[0];
-      }
-
-      if (endDateInput) {
-        // Set default end date to second Friday after start date
-        endDateInput.value = secondFriday.toISOString().split('T')[0];
-        endDateInput.min = today.toISOString().split('T')[0];
-        endDateInput.max = maxDate;
-      }
-    } else {
-      // In EDIT mode, just set the constraints
-      if (startDateInput) {
-        startDateInput.min = today.toISOString().split('T')[0];
-      }
-
-      if (endDateInput) {
-        endDateInput.min = today.toISOString().split('T')[0];
-        endDateInput.max = maxDate;
-      }
+    if (editMode) {
+      this.setDateInputConstraints(startDateInput, todayString);
+      this.setDateInputConstraints(endDateInput, todayString, maxDate);
+      return;
     }
 
-    // Auto-adjust end date when start date changes (only in CREATE mode)
-    if (!this.editMode && startDateInput && endDateInput) {
-      startDateInput.addEventListener('change', () => {
-        const newStartDate = new Date(startDateInput.value);
-        const newEndDate = getSecondFridayAfter(newStartDate);
-        endDateInput.value = newEndDate.toISOString().split('T')[0];
-      });
-    }
+    // CREATE mode
+    const nextMonday = this.getNextMonday(today);
+    const secondFriday = this.getSecondFridayAfter(nextMonday);
 
-    // Show/hide custom pattern config and night shift ignore option
+    this.setDateInputConstraints(startDateInput, todayString, undefined, nextMonday.toISOString().split('T')[0]);
+
+    this.setDateInputConstraints(endDateInput, todayString, maxDate, secondFriday.toISOString().split('T')[0]);
+
+    // Auto-adjust end date when start date changes
+    if (startDateInput !== null && endDateInput !== null) {
+      this.setupDateAutoAdjust(startDateInput, endDateInput);
+    }
+  }
+
+  // Helper function to setup pattern select handler
+  private setupPatternSelectHandler(): void {
     const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
     const customConfig = $$id('custom-pattern-config') as HTMLDivElement | null;
     const ignoreNightGroup = $$id('ignore-night-shift-group') as HTMLDivElement | null;
@@ -4146,142 +4461,162 @@ class ShiftPlanningSystem {
         }
       });
     }
+  }
 
-    // Update modal title based on mode
-    const modal = $$id('rotation-setup-modal') as HTMLDivElement | null;
-    if (modal) {
-      const modalHeader = modal.querySelector('.modal-header h2');
-      if (modalHeader) {
-        modalHeader.textContent = this.editMode ? 'Schichtrotation bearbeiten' : 'Schichtrotation einrichten';
-      }
+  // Helper function to load existing pattern data into form
+  private loadExistingPatternData(existingPattern: {
+    id?: number;
+    name: string;
+    description?: string;
+    patternType: string;
+    patternConfig: Record<string, unknown>;
+    startsAt: string;
+    endsAt?: string | null;
+  }): void {
+    const rotationStartInput = $$id('rotation-start-date') as HTMLInputElement | null;
+    const rotationEndInput = $$id('rotation-end-date') as HTMLInputElement | null;
+    const rotationPatternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
+    const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
+    const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
 
-      modal.style.display = 'flex';
-      console.info('[SHIFTS DEBUG] Showing rotation setup modal in', this.editMode ? 'EDIT' : 'CREATE', 'mode');
+    if (rotationPatternSelect) {
+      const selectValue = this.mapPatternTypeToSelectValue(existingPattern);
+      rotationPatternSelect.value = selectValue;
+
+      // Trigger change event to show/hide related options
+      const changeEvent = new Event('change');
+      rotationPatternSelect.dispatchEvent(changeEvent);
     }
 
-    // If editing, populate form with existing data
-    if (this.editMode && existingPattern !== undefined) {
-      const rotationStartInput = $$id('rotation-start-date') as HTMLInputElement | null;
-      const rotationEndInput = $$id('rotation-end-date') as HTMLInputElement | null;
-      const rotationPatternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
-      const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
-      const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
+    if (rotationStartInput) {
+      rotationStartInput.value = existingPattern.startsAt.split('T')[0];
+    }
 
-      if (rotationPatternSelect) {
-        // Map patternType to select value based on pattern_type and pattern_config
-        // Check if it's a weekly rotation based on patternConfig
-        let selectValue = 'weekly'; // default
+    if (rotationEndInput && existingPattern.endsAt !== null && existingPattern.endsAt !== undefined) {
+      rotationEndInput.value = existingPattern.endsAt.split('T')[0];
+    }
 
-        if (existingPattern.patternType === 'alternate_fs') {
-          selectValue = 'weekly';
-        } else if (existingPattern.patternType === 'fixed_n') {
-          selectValue = 'biweekly';
-        } else if (existingPattern.patternType === 'custom') {
-          // Check if it's actually a weekly rotation disguised as custom
-          // If cycleWeeks is 1 and has skipWeekends/ignoreNightShift, it's weekly
-          if ('cycleWeeks' in existingPattern.patternConfig && existingPattern.patternConfig.cycleWeeks === 1) {
-            selectValue = 'weekly';
-          } else {
-            selectValue = 'custom';
-          }
+    // Load checkbox values from patternConfig
+    if (skipWeekendsInput && 'skipWeekends' in existingPattern.patternConfig) {
+      skipWeekendsInput.checked = existingPattern.patternConfig.skipWeekends as boolean;
+    }
+
+    if (ignoreNightInput && 'ignoreNightShift' in existingPattern.patternConfig) {
+      ignoreNightInput.checked = existingPattern.patternConfig.ignoreNightShift as boolean;
+    }
+
+    // Load employee shift assignments if they exist
+    if ('shiftGroups' in existingPattern.patternConfig) {
+      this.loadShiftAssignments(existingPattern.patternConfig.shiftGroups as Record<string, string>);
+    }
+  }
+
+  // Helper function to map pattern type to select value
+  private mapPatternTypeToSelectValue(existingPattern: {
+    patternType: string;
+    patternConfig: Record<string, unknown>;
+  }): string {
+    let selectValue = 'weekly'; // default
+
+    if (existingPattern.patternType === 'alternate_fs') {
+      selectValue = 'weekly';
+    } else if (existingPattern.patternType === 'fixed_n') {
+      selectValue = 'biweekly';
+    } else if (existingPattern.patternType === 'custom') {
+      // Check if it's actually a weekly rotation disguised as custom
+      if ('cycleWeeks' in existingPattern.patternConfig && existingPattern.patternConfig.cycleWeeks === 1) {
+        selectValue = 'weekly';
+      } else {
+        selectValue = 'custom';
+      }
+    }
+
+    return selectValue;
+  }
+
+  // Helper function to load shift assignments into drop zones
+  private loadShiftAssignments(shiftAssignments: Record<string, string>): void {
+    // Clear all drop zones first
+    ['drop-zone-f', 'drop-zone-s', 'drop-zone-n'].forEach((zoneId) => {
+      const zone = $$id(zoneId) as HTMLDivElement | null;
+      if (zone) {
+        while (zone.firstChild) {
+          zone.firstChild.remove();
         }
-
-        rotationPatternSelect.value = selectValue;
-
-        // Trigger change event to show/hide related options
-        const changeEvent = new Event('change');
-        rotationPatternSelect.dispatchEvent(changeEvent);
       }
+    });
 
-      if (rotationStartInput) {
-        rotationStartInput.value = existingPattern.startsAt.split('T')[0];
+    const availableContainer = $$id('rotation-available-employees') as HTMLDivElement | null;
+
+    // Place employees in their assigned shift columns
+    Object.entries(shiftAssignments).forEach(([employeeId, shiftType]) => {
+      const availableEmployee = availableContainer?.querySelector(
+        `[data-employee-id="${employeeId}"]`,
+      ) as HTMLDivElement | null;
+
+      if (availableEmployee === null) return;
+
+      // Determine target drop zone
+      const targetZoneId = this.getDropZoneIdForShiftType(shiftType);
+      const targetZone = $$id(targetZoneId) as HTMLDivElement | null;
+
+      if (targetZone === null) return;
+
+      this.addEmployeeToDropZone(targetZone, employeeId, shiftType, availableEmployee.dataset.employeeName ?? '');
+    });
+  }
+
+  // Helper function to get drop zone ID for shift type
+  private getDropZoneIdForShiftType(shiftType: string): string {
+    if (shiftType === 'S') return 'drop-zone-s';
+    if (shiftType === 'N') return 'drop-zone-n';
+    return 'drop-zone-f';
+  }
+
+  // Helper function to add employee to drop zone
+  private addEmployeeToDropZone(
+    targetZone: HTMLDivElement,
+    employeeId: string,
+    shiftType: string,
+    employeeName: string,
+  ): void {
+    const employeeDiv = document.createElement('div');
+    employeeDiv.className = 'employee-item';
+    employeeDiv.dataset.employeeId = employeeId;
+    employeeDiv.dataset.shiftType = shiftType;
+    employeeDiv.textContent = employeeName;
+    employeeDiv.draggable = true;
+
+    // Add drag handlers
+    employeeDiv.addEventListener('dragstart', (e) => {
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('employeeId', employeeId);
+        e.dataTransfer.setData('employeeName', employeeName);
+        employeeDiv.classList.add('dragging');
       }
+    });
 
-      if (rotationEndInput && existingPattern.endsAt !== null && existingPattern.endsAt !== undefined) {
-        rotationEndInput.value = existingPattern.endsAt.split('T')[0];
+    employeeDiv.addEventListener('dragend', () => {
+      employeeDiv.classList.remove('dragging');
+    });
+
+    // Add click handler for removal
+    employeeDiv.addEventListener('click', (clickEvent) => {
+      const target = clickEvent.target as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      const clickX = clickEvent.clientX - rect.left;
+
+      if (clickX > rect.width - 30) {
+        employeeDiv.remove();
       }
+    });
 
-      // Load checkbox values from patternConfig
-      // Check if skipWeekends exists in patternConfig
-      if (skipWeekendsInput && 'skipWeekends' in existingPattern.patternConfig) {
-        skipWeekendsInput.checked = existingPattern.patternConfig.skipWeekends as boolean;
-      }
+    targetZone.append(employeeDiv);
+  }
 
-      // Check if ignoreNightShift exists in patternConfig
-      if (ignoreNightInput && 'ignoreNightShift' in existingPattern.patternConfig) {
-        ignoreNightInput.checked = existingPattern.patternConfig.ignoreNightShift as boolean;
-      }
-
-      // Load employee shift assignments if they exist
-      if ('shiftGroups' in existingPattern.patternConfig) {
-        const shiftAssignments = existingPattern.patternConfig.shiftGroups as Record<string, string>;
-
-        // Clear all drop zones first
-        ['drop-zone-f', 'drop-zone-s', 'drop-zone-n'].forEach((zoneId) => {
-          const zone = $$id(zoneId) as HTMLDivElement | null;
-          if (zone) {
-            while (zone.firstChild) {
-              zone.firstChild.remove();
-            }
-          }
-        });
-
-        // Place employees in their assigned shift columns
-        Object.entries(shiftAssignments).forEach(([employeeId, shiftType]) => {
-          // Find the employee in available list
-          const availableEmployee = availableContainer?.querySelector(
-            `[data-employee-id="${employeeId}"]`,
-          ) as HTMLDivElement | null;
-          if (availableEmployee !== null) {
-            // Determine target drop zone
-            let targetZoneId = 'drop-zone-f'; // default
-            if (shiftType === 'S') targetZoneId = 'drop-zone-s';
-            else if (shiftType === 'N') targetZoneId = 'drop-zone-n';
-
-            const targetZone = $$id(targetZoneId) as HTMLDivElement | null;
-            if (targetZone !== null) {
-              // Create employee element in drop zone
-              const employeeDiv = document.createElement('div');
-              employeeDiv.className = 'employee-item';
-              employeeDiv.dataset.employeeId = employeeId;
-              employeeDiv.dataset.shiftType = shiftType;
-              const employeeName = availableEmployee.dataset.employeeName ?? '';
-              employeeDiv.textContent = employeeName;
-              employeeDiv.draggable = true;
-
-              // Add drag handlers
-              employeeDiv.addEventListener('dragstart', (e) => {
-                if (e.dataTransfer) {
-                  e.dataTransfer.effectAllowed = 'move';
-                  e.dataTransfer.setData('employeeId', employeeId);
-                  e.dataTransfer.setData('employeeName', employeeName);
-                  employeeDiv.classList.add('dragging');
-                }
-              });
-
-              employeeDiv.addEventListener('dragend', () => {
-                employeeDiv.classList.remove('dragging');
-              });
-
-              // Add click handler for removal
-              employeeDiv.addEventListener('click', (clickEvent) => {
-                const target = clickEvent.target as HTMLElement;
-                const rect = target.getBoundingClientRect();
-                const clickX = clickEvent.clientX - rect.left;
-
-                if (clickX > rect.width - 30) {
-                  employeeDiv.remove();
-                }
-              });
-
-              targetZone.append(employeeDiv);
-            }
-          }
-        });
-      }
-    }
-
-    // Setup event handlers
+  // Helper function to setup modal event handlers
+  private setupModalEventHandlers(): void {
     const saveBtn = $$id('save-rotation-btn') as HTMLButtonElement | null;
     if (saveBtn) {
       // Update button text based on mode
@@ -4308,13 +4643,64 @@ class ShiftPlanningSystem {
         this.closeRotationModal();
       });
     });
+  }
 
-    // Modal styles are now in shifts.css - no need for inline styles
+  // Main function refactored
+  private openRotationModal(existingPattern?: {
+    id?: number;
+    name: string;
+    description?: string;
+    patternType: string;
+    patternConfig: Record<string, unknown>;
+    startsAt: string;
+    endsAt?: string | null;
+  }): void {
+    // Populate available employees for drag & drop
+    this.setupRotationDragDrop();
 
-    // Show the modal (using the modal variable already declared above)
+    // Setup available employees
+    const availableContainer = $$id('rotation-available-employees') as HTMLDivElement | null;
+    this.setupAvailableEmployees(availableContainer);
+
+    // Configure date inputs
+    this.configureDateInputs(this.editMode);
+
+    // Setup pattern select handler
+    this.setupPatternSelectHandler();
+
+    // Update modal title based on mode
+    this.updateModalTitle();
+
+    // If editing, populate form with existing data
+    if (this.editMode && existingPattern !== undefined) {
+      this.loadExistingPatternData(existingPattern);
+    }
+
+    // Setup event handlers
+    this.setupModalEventHandlers();
+
+    // Show the modal
+    this.showRotationModal();
+  }
+
+  // Helper function to update modal title
+  private updateModalTitle(): void {
+    const modal = $$id('rotation-setup-modal') as HTMLDivElement | null;
     if (modal) {
+      const modalHeader = modal.querySelector('.modal-header h2');
+      if (modalHeader) {
+        modalHeader.textContent = this.editMode ? 'Schichtrotation bearbeiten' : 'Schichtrotation einrichten';
+      }
+    }
+  }
+
+  // Helper function to show the rotation modal
+  private showRotationModal(): void {
+    const modal = $$id('rotation-setup-modal') as HTMLDivElement | null;
+    if (modal) {
+      modal.style.display = 'flex';
       modal.classList.add('show');
-      console.info('[SHIFTS DEBUG] Opened rotation setup modal');
+      console.info('[SHIFTS DEBUG] Opened rotation setup modal in', this.editMode ? 'EDIT' : 'CREATE', 'mode');
     } else {
       console.error('[SHIFTS DEBUG] Modal element not found: rotation-setup-modal');
     }
@@ -4401,6 +4787,195 @@ class ShiftPlanningSystem {
     }
   }
 
+  // Helper to validate rotation form input
+  private validateRotationInput(): {
+    valid: boolean;
+    pattern?: string;
+    startDate?: string;
+    endDate?: string;
+    skipWeekends: boolean;
+    ignoreNightShift: boolean;
+  } {
+    const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
+    const startInput = $$id('rotation-start-date') as HTMLInputElement | null;
+    const endInput = $$id('rotation-end-date') as HTMLInputElement | null;
+    const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
+    const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
+
+    const pattern = patternSelect?.value;
+    const startDate = startInput?.value;
+    const endDate = endInput?.value;
+
+    if (pattern === undefined || pattern === '') {
+      showErrorAlert('Bitte wählen Sie ein Rotationsmuster');
+      return { valid: false, skipWeekends: false, ignoreNightShift: false };
+    }
+
+    if (startDate === undefined || startDate === '') {
+      showErrorAlert('Bitte wählen Sie ein Startdatum');
+      return { valid: false, skipWeekends: false, ignoreNightShift: false };
+    }
+
+    if (endDate === undefined || endDate === '') {
+      showErrorAlert('Bitte wählen Sie ein Enddatum');
+      return { valid: false, skipWeekends: false, ignoreNightShift: false };
+    }
+
+    return {
+      valid: true,
+      pattern,
+      startDate,
+      endDate,
+      skipWeekends: skipWeekendsInput?.checked ?? false,
+      ignoreNightShift: ignoreNightInput?.checked ?? false,
+    };
+  }
+
+  // Helper to validate date range
+  private validateDateRange(startDate: string, endDate: string): boolean {
+    const end = new Date(endDate);
+    const start = new Date(startDate);
+
+    if (end <= start) {
+      showErrorAlert('Das Enddatum muss nach dem Startdatum liegen');
+      return false;
+    }
+
+    const currentYear = new Date().getFullYear();
+    const maxEndDate = new Date(currentYear, 11, 31);
+    if (end > maxEndDate) {
+      showErrorAlert(`Das Enddatum darf maximal bis zum 31.12.${currentYear} gehen (Datenbankschutz)`);
+      return false;
+    }
+
+    return true;
+  }
+
+  // Helper to collect employees from drop zones
+  private collectEmployeesFromZones(): { employees: number[]; shiftGroups: Record<number, string> } {
+    const shiftGroups: Record<number, string> = {};
+    const employees: number[] = [];
+
+    const zones = [
+      { id: 'drop-zone-f', shift: 'F' },
+      { id: 'drop-zone-s', shift: 'S' },
+      { id: 'drop-zone-n', shift: 'N' },
+    ];
+
+    zones.forEach(({ id, shift }) => {
+      const zone = $$id(id) as HTMLDivElement | null;
+      if (zone === null) return;
+
+      const items = zone.querySelectorAll<HTMLDivElement>('.employee-item');
+      items.forEach((emp) => {
+        const empId = Number(emp.dataset.employeeId);
+        if (empId !== 0 && !Number.isNaN(empId)) {
+          employees.push(empId);
+          Reflect.set(shiftGroups, empId, shift);
+        }
+      });
+    });
+
+    return { employees, shiftGroups };
+  }
+
+  // Helper to create rotation pattern
+  private async createRotationPattern(
+    token: string,
+    pattern: string,
+    startDate: string,
+    endDate: string,
+    skipWeekends: boolean,
+    ignoreNightShift: boolean,
+    shiftGroups: Record<number, string>,
+  ): Promise<number> {
+    const teamId = this.selectedContext.teamId;
+    const cycleWeeks = pattern === 'weekly' ? 1 : pattern === 'biweekly' ? 2 : 4;
+
+    const requestPayload = {
+      name: `${pattern} Rotation`,
+      description: `Automatische ${pattern} Rotation`,
+      team_id: teamId ?? null,
+      pattern_type: 'custom',
+      pattern_config: {
+        skipWeekends,
+        cycleWeeks,
+        ignoreNightShift,
+        shiftGroups,
+      },
+      cycle_length_weeks: cycleWeeks,
+      starts_at: startDate,
+      ends_at: endDate,
+      is_active: true,
+    };
+
+    const response = await fetch('/api/v2/shifts/rotation/patterns', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(requestPayload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Fehler beim Erstellen des Rotationsmusters: ${errorText}`);
+    }
+
+    const result = (await response.json()) as { data: { pattern: { id: number } } };
+    return result.data.pattern.id;
+  }
+
+  // Helper to assign and generate shifts
+  private async assignAndGenerateShifts(
+    token: string,
+    patternId: number,
+    employees: number[],
+    shiftGroups: Record<number, string>,
+    startDate: string,
+    endDate: string,
+  ): Promise<void> {
+    // Assign employees
+    const assignResponse = await fetch('/api/v2/shifts/rotation/assign', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        pattern_id: patternId,
+        user_ids: employees,
+        team_id: this.selectedContext.teamId ?? null,
+        shift_groups: shiftGroups,
+        starts_at: startDate,
+        ends_at: endDate,
+      }),
+    });
+
+    if (!assignResponse.ok) {
+      throw new Error('Fehler beim Zuweisen der Mitarbeiter');
+    }
+
+    // Generate shifts
+    const generateResponse = await fetch('/api/v2/shifts/rotation/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        pattern_id: patternId,
+        start_date: startDate,
+        end_date: endDate,
+      }),
+    });
+
+    if (!generateResponse.ok) {
+      throw new Error('Fehler beim Generieren der Schichten');
+    }
+  }
+
   private async createRotation(): Promise<void> {
     try {
       const token = getAuthToken();
@@ -4409,200 +4984,38 @@ class ShiftPlanningSystem {
         return;
       }
 
-      // Get form values from new modal structure
-      const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
-      const startInput = $$id('rotation-start-date') as HTMLInputElement | null;
-      const endInput = $$id('rotation-end-date') as HTMLInputElement | null;
-      const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
-      const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
-
-      const pattern = patternSelect?.value;
-      const startDate = startInput?.value;
-      const endDateValue = endInput?.value;
-      const skipWeekends = skipWeekendsInput?.checked ?? false;
-      const ignoreNightShift = ignoreNightInput?.checked ?? false;
-
-      // Validate required fields
-      if (pattern === undefined || pattern === '') {
-        showErrorAlert('Bitte wählen Sie ein Rotationsmuster');
+      // Validate form input
+      const input = this.validateRotationInput();
+      if (!input.valid || input.pattern === undefined || input.startDate === undefined || input.endDate === undefined) {
         return;
       }
 
-      if (startDate === undefined || startDate === '') {
-        showErrorAlert('Bitte wählen Sie ein Startdatum');
+      // Validate date range
+      if (!this.validateDateRange(input.startDate, input.endDate)) {
         return;
       }
 
-      if (endDateValue === undefined || endDateValue === '') {
-        showErrorAlert('Bitte wählen Sie ein Enddatum');
-        return;
-      }
-
-      // Validate end date is after start date
-      const endDate = new Date(endDateValue);
-      if (endDate <= new Date(startDate)) {
-        showErrorAlert('Das Enddatum muss nach dem Startdatum liegen');
-        return;
-      }
-
-      // Schutz: Maximal bis Ende des aktuellen Jahres
-      const currentYear = new Date().getFullYear();
-      const maxEndDate = new Date(currentYear, 11, 31); // 31. Dezember des aktuellen Jahres
-      if (endDate > maxEndDate) {
-        showErrorAlert(`Das Enddatum darf maximal bis zum 31.12.${currentYear} gehen (Datenbankschutz)`);
-        return;
-      }
-
-      // Get selected employees from drop zones
-      const shiftGroups: Record<number, string> = {};
-      const selectedEmployees: number[] = [];
-
-      // Get employees from F column
-      const fZone = $$id('drop-zone-f') as HTMLDivElement | null;
-      if (fZone) {
-        const fEmployees = fZone.querySelectorAll<HTMLDivElement>('.employee-item');
-        fEmployees.forEach((emp) => {
-          const empId = Number(emp.dataset.employeeId);
-          if (empId !== 0 && !Number.isNaN(empId)) {
-            selectedEmployees.push(empId);
-            Reflect.set(shiftGroups, empId, 'F');
-          }
-        });
-      }
-
-      // Get employees from S column
-      const sZone = $$id('drop-zone-s') as HTMLDivElement | null;
-      if (sZone) {
-        const sEmployees = sZone.querySelectorAll<HTMLDivElement>('.employee-item');
-        sEmployees.forEach((emp) => {
-          const empId = Number(emp.dataset.employeeId);
-          if (empId !== 0 && !Number.isNaN(empId)) {
-            selectedEmployees.push(empId);
-            Reflect.set(shiftGroups, empId, 'S');
-          }
-        });
-      }
-
-      // Get employees from N column
-      const nZone = $$id('drop-zone-n') as HTMLDivElement | null;
-      if (nZone) {
-        const nEmployees = nZone.querySelectorAll<HTMLDivElement>('.employee-item');
-        nEmployees.forEach((emp) => {
-          const empId = Number(emp.dataset.employeeId);
-          if (empId !== 0 && !Number.isNaN(empId)) {
-            selectedEmployees.push(empId);
-            Reflect.set(shiftGroups, empId, 'N');
-          }
-        });
-      }
-
-      if (selectedEmployees.length === 0) {
+      // Collect employees from drop zones
+      const { employees, shiftGroups } = this.collectEmployeesFromZones();
+      if (employees.length === 0) {
         showErrorAlert('Bitte ziehen Sie mindestens einen Mitarbeiter in eine Schicht-Spalte');
         return;
       }
 
-      // Map pattern type to API format - always use 'custom' for flexibility
-      const patternType = 'custom';
-
-      // Get selected team from context
-      const teamId = this.selectedContext.teamId;
-      // Step 1: Create rotation pattern
-      const requestPayload = {
-        name: `${pattern} Rotation`,
-        description: `Automatische ${pattern} Rotation`,
-        team_id: teamId ?? null,
-        pattern_type: patternType,
-        pattern_config: {
-          skipWeekends: skipWeekends,
-          cycleWeeks: pattern === 'weekly' ? 1 : pattern === 'biweekly' ? 2 : 4,
-          ignoreNightShift: ignoreNightShift,
-          shiftGroups: shiftGroups, // Include the shift assignments from drag & drop
-        },
-        cycle_length_weeks: pattern === 'weekly' ? 1 : pattern === 'biweekly' ? 2 : 4,
-        starts_at: startDate,
-        ends_at: endDateValue,
-        is_active: true,
-      };
-
-      console.info('[ROTATION DEBUG] Creating pattern with payload:', requestPayload);
-
-      const patternResponse = await fetch('/api/v2/shifts/rotation/patterns', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestPayload),
-      });
-
-      console.info('[ROTATION DEBUG] Pattern response status:', patternResponse.status);
-
-      if (!patternResponse.ok) {
-        const errorText = await patternResponse.text();
-        console.error('[ROTATION ERROR] Response:', errorText);
-        console.error('[ROTATION ERROR] Status:', patternResponse.status);
-        throw new Error(`Fehler beim Erstellen des Rotationsmusters: ${errorText}`);
-      }
-
-      const patternResult = (await patternResponse.json()) as { data: { pattern: { id: number } } };
-      const patternId = patternResult.data.pattern.id;
-
-      // Step 2: Assign employees to pattern
-      // Note: shiftGroups already collected from drag & drop zones above
-
-      const assignResponse = await fetch('/api/v2/shifts/rotation/assign', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          pattern_id: patternId,
-          user_ids: selectedEmployees,
-          team_id: teamId ?? null,
-          shift_groups: shiftGroups,
-          starts_at: startDate,
-          ends_at: endDate.toISOString().split('T')[0],
-        }),
-      });
-
-      if (!assignResponse.ok) {
-        throw new Error('Fehler beim Zuweisen der Mitarbeiter');
-      }
-
-      // Step 3: Generate shifts
-      const generateResponse = await fetch('/api/v2/shifts/rotation/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          pattern_id: patternId,
-          start_date: startDate,
-          end_date: endDate.toISOString().split('T')[0],
-          preview: false,
-        }),
-      });
-
-      if (!generateResponse.ok) {
-        // Check if it's an overlap error
-        const errorData = (await generateResponse.json()) as { error?: { message?: string } };
-        const errorMessage = errorData.error?.message ?? '';
-
-        if (errorMessage.includes('Überlappung') || errorMessage.includes('existiert bereits')) {
-          throw new Error(
-            '⚠️ ÜBERLAPPUNG ERKANNT: Es existieren bereits Schichten für dieses Team in diesem Zeitraum! Bitte löschen Sie zuerst die bestehenden Schichten oder wählen Sie einen anderen Zeitraum.',
-          );
-        }
-        throw new Error('Fehler beim Generieren der Schichten');
-      }
-
-      const generateResult = (await generateResponse.json()) as { data: { generatedShifts: unknown[] } };
-
-      showSuccessAlert(
-        `Rotation erfolgreich erstellt! ${generateResult.data.generatedShifts.length} Schichten wurden generiert.`,
+      // Create pattern, assign employees, and generate shifts
+      const patternId = await this.createRotationPattern(
+        token,
+        input.pattern,
+        input.startDate,
+        input.endDate,
+        input.skipWeekends,
+        input.ignoreNightShift,
+        shiftGroups,
       );
+
+      await this.assignAndGenerateShifts(token, patternId, employees, shiftGroups, input.startDate, input.endDate);
+
+      showSuccessAlert('Rotation erfolgreich erstellt!');
 
       // Close modal
       this.closeRotationModal();
@@ -4887,25 +5300,311 @@ class ShiftPlanningSystem {
     return `${String(year)}-${month}-${day}`;
   }
 
+  // Helper: Validate prerequisites for saving
+  private validateSavePrerequisites(): boolean {
+    if (!this.isAdmin) {
+      console.warn('[SHIFTS SAVE DEBUG] Not admin, returning');
+      return false;
+    }
+
+    if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
+      console.warn('[SHIFTS SAVE DEBUG] No department selected, returning');
+      showErrorAlert('Bitte wählen Sie zuerst eine Abteilung aus');
+      return false;
+    }
+
+    return true;
+  }
+
+  // Helper: Collect assignments for v1 API
+  private collectV1Assignments(
+    weekStart: string,
+    weekEnd: string,
+  ): {
+    employee_id: number;
+    shift_date: string;
+    shift_type: string;
+    week_start: string;
+    week_end: string;
+    department_id?: number;
+    machine_id?: number;
+    team_leader_id?: number;
+  }[] {
+    const assignments: {
+      employee_id: number;
+      shift_date: string;
+      shift_type: string;
+      week_start: string;
+      week_end: string;
+      department_id?: number;
+      machine_id?: number;
+      team_leader_id?: number;
+    }[] = [];
+
+    this.weeklyShifts.forEach((shifts, date) => {
+      shifts.forEach((employeeIds, shiftType) => {
+        employeeIds.forEach((employeeId) => {
+          assignments.push({
+            employee_id: employeeId,
+            shift_date: date,
+            shift_type: shiftType,
+            week_start: weekStart,
+            week_end: weekEnd,
+            department_id: this.selectedContext.departmentId ?? undefined,
+            machine_id: this.selectedContext.machineId ?? undefined,
+          });
+        });
+      });
+    });
+
+    return assignments;
+  }
+
+  // Helper: Save with v1 API
+  private async saveWithV1API(weekStart: string, weekEnd: string, notes: string): Promise<void> {
+    const assignments = this.collectV1Assignments(weekStart, weekEnd);
+
+    const response = await fetch('/api/shifts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getAuthToken() ?? ''}`,
+      },
+      body: JSON.stringify({
+        week_start: weekStart,
+        week_end: weekEnd,
+        assignments,
+        notes,
+      }),
+    });
+
+    if (response.ok) {
+      showSuccessAlert('Schichtplan erfolgreich gespeichert!');
+      await this.loadCurrentWeekData();
+    } else {
+      const error = (await response.json()) as { message?: string };
+      showErrorAlert(error.message ?? 'Fehler beim Speichern des Schichtplans');
+    }
+  }
+
+  // Helper: Collect shifts for v2 API plan
+  private collectShiftsForPlan(): {
+    userId: number;
+    date: string;
+    type: string;
+    startTime: string;
+    endTime: string;
+  }[] {
+    const shiftsForPlan: {
+      userId: number;
+      date: string;
+      type: string;
+      startTime: string;
+      endTime: string;
+    }[] = [];
+
+    this.weeklyShifts.forEach((shifts, date) => {
+      shifts.forEach((employeeIds, shiftType) => {
+        employeeIds.forEach((employeeId) => {
+          shiftsForPlan.push({
+            userId: employeeId,
+            date,
+            type: this.convertShiftTypeForAPI(shiftType),
+            startTime: this.getShiftStartTime(shiftType),
+            endTime: this.getShiftEndTime(shiftType),
+          });
+        });
+      });
+    });
+
+    return shiftsForPlan;
+  }
+
+  // Helper: Get Kontischicht info if active
+  private getKontischichtInfo(): { planName: string; pattern?: string; startDate?: string; endDate?: string } | null {
+    const windowWithKontischicht = window as typeof window & {
+      kontischichtManager: {
+        isKontischichtActive: () => boolean;
+        getSelectedPattern: () => {
+          name: string;
+          patternType: string;
+          startsAt?: string;
+          endsAt?: string;
+        } | null;
+      };
+    };
+
+    const kontischichtManager =
+      'kontischichtManager' in window ? windowWithKontischicht.kontischichtManager : undefined;
+
+    if (kontischichtManager?.isKontischichtActive() !== true) {
+      return null;
+    }
+
+    const pattern = kontischichtManager.getSelectedPattern();
+    if (pattern === null) {
+      return null;
+    }
+
+    const weekNumber = this.getWeekNumber(this.currentWeek);
+    const year = new Date().getFullYear();
+
+    return {
+      planName: `Kontischicht ${pattern.name} KW${String(weekNumber)}/${String(year)}`,
+      pattern: pattern.patternType,
+      startDate: pattern.startsAt,
+      endDate: pattern.endsAt,
+    };
+  }
+
+  // Helper: Build plan request for v2 API
+  private buildPlanRequest(
+    weekStart: string,
+    weekEnd: string,
+    notes: string,
+    shiftsForPlan: { userId: number; date: string; type: string; startTime: string; endTime: string }[],
+  ): Record<string, unknown> {
+    const nullToUndefined = <T>(value: T | null): T | undefined => value ?? undefined;
+    const kontischichtInfo = this.getKontischichtInfo();
+
+    let planName = `Schichtplan KW${String(this.getWeekNumber(this.currentWeek))}/${String(new Date().getFullYear())}`;
+    let overrideStartDate = weekStart;
+    let overrideEndDate = weekEnd;
+    let kontischichtPattern: string | undefined;
+
+    if (kontischichtInfo !== null) {
+      planName = kontischichtInfo.planName;
+      kontischichtPattern = kontischichtInfo.pattern;
+      if (kontischichtInfo.startDate !== undefined && kontischichtInfo.startDate !== '') {
+        overrideStartDate = kontischichtInfo.startDate;
+      }
+      if (kontischichtInfo.endDate !== undefined && kontischichtInfo.endDate !== '') {
+        overrideEndDate = kontischichtInfo.endDate;
+      }
+    }
+
+    return {
+      startDate: overrideStartDate,
+      endDate: overrideEndDate,
+      areaId: nullToUndefined(this.selectedContext.areaId),
+      departmentId: nullToUndefined(this.selectedContext.departmentId),
+      teamId: nullToUndefined(this.selectedContext.teamId),
+      machineId: nullToUndefined(this.selectedContext.machineId),
+      name: planName,
+      shiftNotes: notes !== '' ? notes : undefined,
+      shifts: shiftsForPlan,
+      kontischichtPattern,
+    };
+  }
+
+  // Helper: Handle success after save
+  private handleSaveSuccess(isUpdate: boolean, planId?: number): void {
+    if (planId !== undefined) {
+      this.currentPlanId = planId;
+    }
+
+    showSuccessAlert(isUpdate ? 'Schichtplan wurde aktualisiert' : 'Schichtplan erfolgreich gespeichert!');
+
+    if (isUpdate && this.isEditMode) {
+      this.toggleEditMode(false);
+    }
+
+    // Save context and reload
+    const reloadContext = {
+      areaId: this.selectedContext.areaId,
+      departmentId: this.selectedContext.departmentId,
+      machineId: this.selectedContext.machineId,
+      teamId: this.selectedContext.teamId,
+      currentWeek: this.currentWeek.toISOString(),
+      planId: this.currentPlanId,
+      timestamp: Date.now(),
+    };
+
+    localStorage.setItem('shiftsReloadContext', JSON.stringify(reloadContext));
+    console.info('[SHIFTS RELOAD DEBUG] Saved context to localStorage:', reloadContext);
+
+    setTimeout(() => {
+      console.info('[SHIFTS RELOAD DEBUG] Performing full page reload...');
+      window.location.reload();
+    }, 500);
+  }
+
+  // Helper: Handle save error
+  private handleSaveError(error: unknown): void {
+    console.error('[SHIFTS PLAN DEBUG] Failed to create shift plan:', error);
+
+    if (!(error instanceof Error)) {
+      showErrorAlert('Fehler beim Speichern des Schichtplans');
+      return;
+    }
+
+    const errorMessage = error.message;
+    if (errorMessage.includes('Überlappung') || errorMessage.includes('existiert bereits')) {
+      showErrorAlert(
+        '⚠️ ÜBERLAPPUNG ERKANNT: Es existiert bereits eine Rotation für dieses Team und diesen Zeitraum! Bitte deaktivieren Sie zuerst die Rotation oder wählen Sie einen anderen Zeitraum.',
+      );
+    } else if (errorMessage.includes('404')) {
+      console.warn('[SHIFTS PLAN DEBUG] Plan endpoint not available, falling back to individual creation');
+      showErrorAlert('Plan-basierte Speicherung noch nicht verfügbar. Bitte Backend aktualisieren.');
+    } else {
+      showErrorAlert('Fehler beim Speichern des Schichtplans: ' + errorMessage);
+    }
+  }
+
+  // Helper: Save with v2 API
+  private async saveWithV2API(isUpdate: boolean, weekStart: string, weekEnd: string, notes: string): Promise<void> {
+    const shiftsForPlan = this.collectShiftsForPlan();
+
+    // Check if shift plan is incomplete
+    const expectedMinShifts = 10;
+    if (shiftsForPlan.length < expectedMinShifts) {
+      const confirmed = await showConfirm(
+        `Der Schichtplan ist unvollständig (${String(shiftsForPlan.length)} von mindestens ${String(expectedMinShifts)} Schichten ausgefüllt). Trotzdem speichern?`,
+      );
+      if (!confirmed) {
+        console.info('[SHIFTS PLAN DEBUG] User cancelled save due to incomplete plan');
+        return;
+      }
+    }
+
+    const planRequest = this.buildPlanRequest(weekStart, weekEnd, notes, shiftsForPlan);
+
+    console.info('[SHIFTS PLAN DEBUG] Sending plan to API:', planRequest);
+
+    const endpoint =
+      isUpdate && this.currentPlanId !== null ? `/shifts/plan/${String(this.currentPlanId)}` : '/shifts/plan';
+
+    try {
+      const response = await this.apiClient.request(endpoint, {
+        method: isUpdate && this.currentPlanId !== null ? 'PUT' : 'POST',
+        body: JSON.stringify(planRequest),
+      });
+
+      console.info('[SHIFTS PLAN DEBUG] API Response:', response);
+
+      let planId: number | undefined;
+      if (response !== null && typeof response === 'object' && 'planId' in response) {
+        const result = response as { planId: number; shiftIds: number[]; message?: string };
+        planId = result.planId;
+        console.info('[SHIFTS PLAN DEBUG] Created plan ID:', result.planId);
+        console.info('[SHIFTS PLAN DEBUG] Created shift IDs:', result.shiftIds);
+      }
+
+      this.handleSaveSuccess(isUpdate, planId);
+    } catch (error) {
+      this.handleSaveError(error);
+    }
+  }
+
+  // Main save schedule function (refactored)
   async saveSchedule(isUpdate = false): Promise<void> {
     console.info('[SHIFTS SAVE DEBUG] saveSchedule called, isUpdate:', isUpdate);
     console.info('[SHIFTS SAVE DEBUG] currentPlanId:', this.currentPlanId);
     console.info('[SHIFTS SAVE DEBUG] useV2API:', this.useV2API);
 
-    if (!this.isAdmin) {
-      console.warn('[SHIFTS SAVE DEBUG] Not admin, returning');
+    if (!this.validateSavePrerequisites()) {
       return;
     }
-
-    // Validate department selection
-    if (this.selectedContext.departmentId === null || this.selectedContext.departmentId === 0) {
-      console.warn('[SHIFTS SAVE DEBUG] No department selected, returning');
-      showErrorAlert('Bitte wählen Sie zuerst eine Abteilung aus');
-      return;
-    }
-
-    // Success message constant
-    const SAVE_SUCCESS_MESSAGE = 'Schichtplan erfolgreich gespeichert!';
 
     console.info('[SHIFTS SAVE DEBUG] Starting save process...');
     try {
@@ -4917,238 +5616,9 @@ class ShiftPlanningSystem {
       const notes = notesTextarea !== null ? notesTextarea.value : '';
 
       if (!this.useV2API) {
-        // v1 API - Legacy bulk save
-        const assignments: {
-          employee_id: number;
-          shift_date: string;
-          shift_type: string;
-          week_start: string;
-          week_end: string;
-          department_id?: number;
-          machine_id?: number;
-          team_leader_id?: number;
-        }[] = [];
-
-        this.weeklyShifts.forEach((shifts, date) => {
-          shifts.forEach((employeeIds, shiftType) => {
-            employeeIds.forEach((employeeId) => {
-              assignments.push({
-                employee_id: employeeId,
-                shift_date: date,
-                shift_type: shiftType,
-                week_start: weekStart,
-                week_end: weekEnd,
-                department_id: this.selectedContext.departmentId ?? undefined,
-                machine_id: this.selectedContext.machineId ?? undefined,
-              });
-            });
-          });
-        });
-
-        const response = await fetch('/api/shifts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${getAuthToken() ?? ''}`,
-          },
-          body: JSON.stringify({
-            week_start: weekStart,
-            week_end: weekEnd,
-            assignments,
-            notes,
-          }),
-        });
-
-        if (response.ok) {
-          showSuccessAlert(SAVE_SUCCESS_MESSAGE);
-          await this.loadCurrentWeekData();
-        } else {
-          const error = (await response.json()) as { message?: string };
-          showErrorAlert(error.message ?? 'Fehler beim Speichern des Schichtplans');
-        }
+        await this.saveWithV1API(weekStart, weekEnd, notes);
       } else {
-        // v2 API - Plan-basierte Speicherung (NEU!)
-        // Sammle alle Shifts für den Plan
-        const shiftsForPlan: {
-          userId: number;
-          date: string;
-          type: string;
-          startTime: string;
-          endTime: string;
-        }[] = [];
-
-        // REMOVED: dailyNotes - we use plan.description/shift_notes instead
-        // Daily notes for each day are redundant when we have one note for the whole plan
-
-        this.weeklyShifts.forEach((shifts, date) => {
-          shifts.forEach((employeeIds, shiftType) => {
-            employeeIds.forEach((employeeId) => {
-              shiftsForPlan.push({
-                userId: employeeId,
-                date,
-                type: this.convertShiftTypeForAPI(shiftType),
-                startTime: this.getShiftStartTime(shiftType),
-                endTime: this.getShiftEndTime(shiftType),
-              });
-            });
-          });
-        });
-
-        // Log all shifts that will be created
-        console.info('[SHIFTS PLAN DEBUG] ==========================================');
-        console.info('[SHIFTS PLAN DEBUG] Total shifts in plan:', shiftsForPlan.length);
-        console.info('[SHIFTS PLAN DEBUG] Week start:', weekStart);
-        console.info('[SHIFTS PLAN DEBUG] Week end:', weekEnd);
-        console.info('[SHIFTS PLAN DEBUG] Selected context:', this.selectedContext);
-        console.info('[SHIFTS PLAN DEBUG] Notes:', notes);
-        console.info('[SHIFTS PLAN DEBUG] ==========================================');
-
-        // Check if shift plan is incomplete (less than 10 shifts for Mo-Fr with early+late)
-        const expectedMinShifts = 10; // Mo-Fr je 2 Schichten (früh+spät)
-        if (shiftsForPlan.length < expectedMinShifts) {
-          const confirmed = await showConfirm(
-            `Der Schichtplan ist unvollständig (${String(shiftsForPlan.length)} von mindestens ${String(expectedMinShifts)} Schichten ausgefüllt). Trotzdem speichern?`,
-          );
-          if (!confirmed) {
-            console.info('[SHIFTS PLAN DEBUG] User cancelled save due to incomplete plan');
-            return;
-          }
-        }
-
-        // Helper to convert null to undefined for API
-        const nullToUndefined = <T>(value: T | null): T | undefined => {
-          return value ?? undefined;
-        };
-
-        // Check if Kontischicht is active and get pattern
-        const windowWithKontischicht = window as typeof window & {
-          kontischichtManager: {
-            isKontischichtActive: () => boolean;
-            getSelectedPattern: () => {
-              name: string;
-              patternType: string;
-            } | null;
-          };
-        };
-        const kontischichtManager =
-          'kontischichtManager' in window ? windowWithKontischicht.kontischichtManager : undefined;
-        let planName = `Schichtplan KW${String(this.getWeekNumber(this.currentWeek))}/${String(new Date().getFullYear())}`;
-        let kontischichtPattern: string | undefined;
-
-        // Override dates for Kontischicht with modal dates
-        let overrideStartDate = weekStart;
-        let overrideEndDate = weekEnd;
-
-        if (kontischichtManager?.isKontischichtActive() === true) {
-          const pattern = kontischichtManager.getSelectedPattern();
-          if (pattern !== null) {
-            planName = `Kontischicht ${pattern.name} KW${String(this.getWeekNumber(this.currentWeek))}/${String(new Date().getFullYear())}`;
-            kontischichtPattern = pattern.patternType;
-            console.info('[SHIFTS] Kontischicht active with pattern:', pattern.name, pattern.patternType);
-
-            // Use dates from Kontischicht modal
-            if (pattern.startsAt !== '') {
-              overrideStartDate = pattern.startsAt;
-            }
-            if (pattern.endsAt !== undefined && pattern.endsAt !== '') {
-              overrideEndDate = pattern.endsAt;
-            }
-            console.info('[SHIFTS] Using Kontischicht dates:', overrideStartDate, 'to', overrideEndDate);
-          }
-        }
-
-        // Erstelle Plan-Request für neuen /api/v2/shifts/plan Endpoint
-        const planRequest = {
-          startDate: overrideStartDate,
-          endDate: overrideEndDate,
-          areaId: nullToUndefined(this.selectedContext.areaId),
-          departmentId: nullToUndefined(this.selectedContext.departmentId),
-          teamId: nullToUndefined(this.selectedContext.teamId),
-          machineId: nullToUndefined(this.selectedContext.machineId),
-          name: planName,
-          shiftNotes: notes !== '' ? notes : undefined, // API v2 uses camelCase
-          shifts: shiftsForPlan,
-          kontischichtPattern, // Add pattern type for backend
-          // dailyNotes removed - redundant with shiftNotes
-        };
-
-        try {
-          if (isUpdate && this.currentPlanId !== null) {
-            console.info('[SHIFTS PLAN DEBUG] Updating existing plan:', this.currentPlanId);
-          } else {
-            console.info('[SHIFTS PLAN DEBUG] Creating new plan');
-          }
-          console.info('[SHIFTS PLAN DEBUG] Sending plan to API:', planRequest);
-
-          // NEUER ENDPOINT: /api/v2/shifts/plan
-          const endpoint =
-            isUpdate && this.currentPlanId !== null ? `/shifts/plan/${String(this.currentPlanId)}` : '/shifts/plan';
-
-          const response = await this.apiClient.request(endpoint, {
-            method: isUpdate && this.currentPlanId !== null ? 'PUT' : 'POST',
-            body: JSON.stringify(planRequest),
-          });
-
-          console.info('[SHIFTS PLAN DEBUG] API Response:', response);
-
-          // Response enthält planId und shiftIds
-          if (response !== null && typeof response === 'object' && 'planId' in response) {
-            const result = response as { planId: number; shiftIds: number[]; message?: string };
-            console.info('[SHIFTS PLAN DEBUG] Created plan ID:', result.planId);
-            console.info('[SHIFTS PLAN DEBUG] Created shift IDs:', result.shiftIds);
-            this.currentPlanId = result.planId; // Store plan ID for future updates
-            showSuccessAlert(result.message ?? SAVE_SUCCESS_MESSAGE);
-          } else {
-            showSuccessAlert(isUpdate ? 'Schichtplan wurde aktualisiert' : SAVE_SUCCESS_MESSAGE);
-          }
-
-          // If we were in edit mode, exit it after successful save
-          if (isUpdate && this.isEditMode) {
-            this.toggleEditMode(false);
-          }
-
-          // Save current context and week to localStorage before full page reload
-          console.info('[SHIFTS RELOAD DEBUG] Saving context and doing full page reload...');
-
-          // Save current filters and week to localStorage so they can be restored after reload
-          const reloadContext = {
-            areaId: this.selectedContext.areaId,
-            departmentId: this.selectedContext.departmentId,
-            machineId: this.selectedContext.machineId,
-            teamId: this.selectedContext.teamId,
-            currentWeek: this.currentWeek.toISOString(),
-            planId: this.currentPlanId,
-            timestamp: Date.now(),
-          };
-
-          localStorage.setItem('shiftsReloadContext', JSON.stringify(reloadContext));
-          console.info('[SHIFTS RELOAD DEBUG] Saved context to localStorage:', reloadContext);
-
-          // Perform full page reload after slight delay so user sees success message
-          setTimeout(() => {
-            console.info('[SHIFTS RELOAD DEBUG] Performing full page reload...');
-            window.location.reload();
-          }, 500);
-        } catch (error) {
-          console.error('[SHIFTS PLAN DEBUG] Failed to create shift plan:', error);
-
-          // Check if it's an overlap error from the database trigger
-          if (error instanceof Error) {
-            const errorMessage = error.message;
-            if (errorMessage.includes('Überlappung') || errorMessage.includes('existiert bereits')) {
-              showErrorAlert(
-                '⚠️ ÜBERLAPPUNG ERKANNT: Es existiert bereits eine Rotation für dieses Team und diesen Zeitraum! Bitte deaktivieren Sie zuerst die Rotation oder wählen Sie einen anderen Zeitraum.',
-              );
-            } else if (errorMessage.includes('404')) {
-              console.warn('[SHIFTS PLAN DEBUG] Plan endpoint not available, falling back to individual creation');
-              showErrorAlert('Plan-basierte Speicherung noch nicht verfügbar. Bitte Backend aktualisieren.');
-            } else {
-              showErrorAlert('Fehler beim Speichern des Schichtplans: ' + errorMessage);
-            }
-          } else {
-            showErrorAlert('Fehler beim Speichern des Schichtplans');
-          }
-        }
+        await this.saveWithV2API(isUpdate, weekStart, weekEnd, notes);
       }
     } catch (error) {
       console.error('Error saving schedule:', error);
@@ -5156,10 +5626,63 @@ class ShiftPlanningSystem {
     }
   }
 
+  // Helper: Delete plan from database
+  private async deletePlanFromDatabase(): Promise<void> {
+    if (this.currentPlanId === null) return;
+
+    console.info('[SHIFTS RESET] Deleting plan from database:', this.currentPlanId);
+    const response = await this.apiClient.request(`/shifts/plan/${String(this.currentPlanId)}`, {
+      method: 'DELETE',
+    });
+
+    console.info('[SHIFTS RESET] Delete response:', response);
+    showSuccessAlert('Schichtplan wurde aus der Datenbank gelöscht');
+  }
+
+  // Helper: Delete shifts using v1 API
+  private async deleteShiftsV1API(): Promise<void> {
+    const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
+    const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
+
+    console.info('[SHIFTS RESET] Deleting shifts for week:', weekStart, 'to', weekEnd);
+
+    const response = await fetch('/api/shifts/bulk-delete', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${getAuthToken() ?? ''}`,
+      },
+      body: JSON.stringify({
+        week_start: weekStart,
+        week_end: weekEnd,
+        department_id: this.selectedContext.departmentId,
+        team_id: this.selectedContext.teamId,
+        machine_id: this.selectedContext.machineId,
+      }),
+    });
+
+    if (response.ok) {
+      showSuccessAlert('Schichten wurden aus der Datenbank gelöscht');
+    } else {
+      console.error('[SHIFTS RESET] Failed to delete shifts');
+    }
+  }
+
+  // Helper: Clear UI after reset
+  private clearUIAfterReset(): void {
+    this.weeklyShifts = new Map();
+    this.shiftDetails = new Map();
+    this.currentPlanId = null;
+
+    const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
+    if (notesTextarea !== null) {
+      notesTextarea.value = '';
+    }
+  }
+
   async resetSchedule(): Promise<void> {
     if (!this.isAdmin) return;
 
-    // Use showConfirm from alerts.ts - same pattern as rotation deactivation
     const confirmed = await showConfirm(
       '⚠️ Schichtplan zurücksetzen?\n\nAlle Schichten dieser Woche werden dauerhaft aus der Datenbank gelöscht!\nDer Schichtplan wird komplett geleert.\n\nWirklich fortfahren?',
     );
@@ -5167,56 +5690,14 @@ class ShiftPlanningSystem {
     if (!confirmed) return;
 
     try {
-      // If we have a plan ID, delete it from database
-      if (this.currentPlanId !== null && this.useV2API) {
-        console.info('[SHIFTS RESET] Deleting plan from database:', this.currentPlanId);
-
-        // Delete the plan via API
-        const response = await this.apiClient.request(`/shifts/plan/${String(this.currentPlanId)}`, {
-          method: 'DELETE',
-        });
-
-        console.info('[SHIFTS RESET] Delete response:', response);
-        showSuccessAlert('Schichtplan wurde aus der Datenbank gelöscht');
+      if (this.useV2API && this.currentPlanId !== null) {
+        await this.deletePlanFromDatabase();
       } else if (!this.useV2API) {
-        // Legacy v1 API - delete individual shifts for the week
-        const weekStart = this.formatDate(this.getWeekStart(this.currentWeek));
-        const weekEnd = this.formatDate(this.getWeekEnd(this.currentWeek));
-
-        console.info('[SHIFTS RESET] Deleting shifts for week:', weekStart, 'to', weekEnd);
-
-        const response = await fetch('/api/shifts/bulk-delete', {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${getAuthToken() ?? ''}`,
-          },
-          body: JSON.stringify({
-            week_start: weekStart,
-            week_end: weekEnd,
-            department_id: this.selectedContext.departmentId,
-            team_id: this.selectedContext.teamId,
-            machine_id: this.selectedContext.machineId,
-          }),
-        });
-
-        if (response.ok) {
-          showSuccessAlert('Schichten wurden aus der Datenbank gelöscht');
-        } else {
-          console.error('[SHIFTS RESET] Failed to delete shifts');
-        }
+        await this.deleteShiftsV1API();
       }
 
       // Clear UI
-      this.weeklyShifts = new Map();
-      this.shiftDetails = new Map();
-      this.currentPlanId = null;
-
-      // Clear notes
-      const notesTextarea = $$id('weeklyNotes') as HTMLTextAreaElement | null;
-      if (notesTextarea) {
-        notesTextarea.value = '';
-      }
+      this.clearUIAfterReset();
 
       // Clear info bar
       const infoBar = document.querySelector('.shift-info-bar');
@@ -5257,50 +5738,87 @@ class ShiftPlanningSystem {
   /**
    * Update button visibility based on plan state and edit mode
    */
+  // Helper: Remove existing edit/update buttons
+  private removeExistingButtons(): void {
+    const existingEditBtn = document.querySelector('#editScheduleBtn');
+    const existingUpdateBtn = document.querySelector('#updateScheduleBtn');
+    if (existingEditBtn !== null) existingEditBtn.remove();
+    if (existingUpdateBtn !== null) existingUpdateBtn.remove();
+  }
+
+  // Helper: Create edit button
+  private createEditButton(): HTMLButtonElement {
+    const editBtn = document.createElement('button');
+    editBtn.id = 'editScheduleBtn';
+    editBtn.className = 'admin-btn';
+    editBtn.textContent = 'Bearbeiten';
+    return editBtn;
+  }
+
+  // Helper: Create update button
+  private createUpdateButton(): HTMLButtonElement {
+    const updateBtn = document.createElement('button');
+    updateBtn.id = 'updateScheduleBtn';
+    updateBtn.className = 'admin-btn';
+    updateBtn.textContent = 'Schichtplan aktualisieren';
+    return updateBtn;
+  }
+
+  // Helper: Show buttons for edit mode
+  private showEditModeButtons(
+    saveBtn: HTMLButtonElement | null,
+    resetBtn: HTMLButtonElement | null,
+    adminActions: HTMLElement,
+  ): void {
+    if (saveBtn !== null) saveBtn.style.display = DISPLAY.NONE;
+    if (resetBtn !== null) resetBtn.style.display = DISPLAY.INLINE_BLOCK;
+
+    const updateBtn = this.createUpdateButton();
+    if (resetBtn !== null) {
+      resetBtn.before(updateBtn);
+    } else {
+      adminActions.append(updateBtn);
+    }
+  }
+
+  // Helper: Show buttons for read-only mode
+  private showReadOnlyButtons(
+    saveBtn: HTMLButtonElement | null,
+    resetBtn: HTMLButtonElement | null,
+    adminActions: HTMLElement,
+  ): void {
+    if (saveBtn !== null) saveBtn.style.display = 'none';
+    if (resetBtn !== null) resetBtn.style.display = 'none';
+
+    const editBtn = this.createEditButton();
+    adminActions.insertBefore(editBtn, adminActions.firstChild);
+  }
+
+  // Helper: Show normal save buttons
+  private showNormalButtons(saveBtn: HTMLButtonElement | null, resetBtn: HTMLButtonElement | null): void {
+    if (saveBtn !== null) saveBtn.style.display = DISPLAY.INLINE_BLOCK;
+    if (resetBtn !== null) resetBtn.style.display = DISPLAY.INLINE_BLOCK;
+  }
+
   updateButtonVisibility(): void {
     const saveBtn = $$id('saveScheduleBtn') as HTMLButtonElement | null;
     const resetBtn = $$id('resetScheduleBtn') as HTMLButtonElement | null;
     const adminActions = $$id('adminActions');
 
-    if (!adminActions || !this.isAdmin) return;
+    if (adminActions === null || !this.isAdmin) return;
 
-    // Remove any existing edit/update buttons
-    const existingEditBtn = document.querySelector('#editScheduleBtn');
-    const existingUpdateBtn = document.querySelector('#updateScheduleBtn');
-    if (existingEditBtn) existingEditBtn.remove();
-    if (existingUpdateBtn) existingUpdateBtn.remove();
+    this.removeExistingButtons();
 
-    if (this.currentPlanId !== null) {
-      // Plan exists
-      if (this.isEditMode) {
-        // In edit mode - show update button
-        if (saveBtn) saveBtn.style.display = DISPLAY.NONE;
-        if (resetBtn) resetBtn.style.display = DISPLAY.INLINE_BLOCK;
+    if (this.currentPlanId === null) {
+      this.showNormalButtons(saveBtn, resetBtn);
+      return;
+    }
 
-        const updateBtn = document.createElement('button');
-        updateBtn.id = 'updateScheduleBtn';
-        updateBtn.className = 'admin-btn';
-        updateBtn.textContent = 'Schichtplan aktualisieren';
-        if (resetBtn) {
-          resetBtn.before(updateBtn);
-        } else {
-          adminActions.append(updateBtn);
-        }
-      } else {
-        // Read-only mode - show edit button
-        if (saveBtn) saveBtn.style.display = 'none';
-        if (resetBtn) resetBtn.style.display = 'none';
-
-        const editBtn = document.createElement('button');
-        editBtn.id = 'editScheduleBtn';
-        editBtn.className = 'admin-btn';
-        editBtn.textContent = 'Bearbeiten';
-        adminActions.insertBefore(editBtn, adminActions.firstChild);
-      }
+    // Plan exists
+    if (this.isEditMode) {
+      this.showEditModeButtons(saveBtn, resetBtn, adminActions);
     } else {
-      // No plan exists - show normal save button
-      if (saveBtn) saveBtn.style.display = DISPLAY.INLINE_BLOCK;
-      if (resetBtn) resetBtn.style.display = DISPLAY.INLINE_BLOCK;
+      this.showReadOnlyButtons(saveBtn, resetBtn, adminActions);
     }
   }
 
@@ -5404,9 +5922,80 @@ class ShiftPlanningSystem {
     showInfo('Notizen werden beim Speichern des Schichtplans mitübernommen');
   }
 
+  // Helper: Show/hide elements by class
+  private toggleElementsByClass(selector: string, hide: boolean): void {
+    const elements = document.querySelectorAll(selector);
+    elements.forEach((el) => {
+      if (hide) {
+        el.classList.add('hidden');
+      } else {
+        el.classList.remove('hidden');
+      }
+    });
+  }
+
+  // Helper: Set element display style
+  private setElementDisplay(element: Element | null, display: string): void {
+    if (element !== null) {
+      (element as HTMLElement).style.display = display;
+    }
+  }
+
+  // Helper: Configure admin UI
+  private configureAdminUI(employeeSidebar: Element | null, notesTextarea: Element | null): void {
+    this.toggleElementsByClass('.admin-controls', false);
+    this.toggleElementsByClass('.employee-info-section', true);
+    this.setElementDisplay(employeeSidebar, 'block');
+
+    if (notesTextarea !== null) {
+      notesTextarea.removeAttribute('readonly');
+    }
+  }
+
+  // Helper: Configure employee UI
+  private configureEmployeeUI(
+    adminActions: Element | null,
+    employeeSidebar: Element | null,
+    infoRow: Element | null,
+    mainPlanningArea: Element | null,
+    notesTextarea: Element | null,
+  ): void {
+    this.toggleElementsByClass('.admin-controls', true);
+    this.toggleElementsByClass('.employee-info-section', false);
+    this.setElementDisplay(adminActions, 'none');
+    this.setElementDisplay(employeeSidebar, 'none');
+    this.setElementDisplay(infoRow, 'none');
+
+    if (mainPlanningArea !== null) {
+      mainPlanningArea.classList.add('full-width');
+    }
+
+    if (notesTextarea !== null) {
+      notesTextarea.setAttribute('readonly', 'readonly');
+      notesTextarea.parentElement?.classList.add('readonly');
+    }
+  }
+
+  // Helper: Update instructions text
+  private updateInstructions(): void {
+    const instructions = $$id('instructions');
+    if (instructions === null) return;
+
+    // Clear existing content
+    while (instructions.firstChild) {
+      instructions.firstChild.remove();
+    }
+
+    // Create paragraph element with text content
+    const p = createElement('p');
+    p.textContent = this.isAdmin
+      ? 'Ziehen Sie Mitarbeiter auf die gewünschten Schichten oder klicken Sie erst auf einen Mitarbeiter und dann auf eine Schicht.'
+      : 'Hier sehen Sie Ihren aktuellen Schichtplan. Ihre Schichten sind hervorgehoben.';
+
+    instructions.append(p);
+  }
+
   updateUIForRole(): void {
-    const adminControls = document.querySelectorAll('.admin-controls');
-    const employeeInfo = document.querySelectorAll('.employee-info-section');
     const adminActions = document.querySelector('#adminActions');
     const employeeSidebar = document.querySelector('.employee-sidebar');
     const mainPlanningArea = document.querySelector('.main-planning-area');
@@ -5414,57 +6003,12 @@ class ShiftPlanningSystem {
     const infoRow = document.querySelector('.shift-info-row');
 
     if (this.isAdmin) {
-      // Admin view - show everything (but respect department selection)
-      adminControls.forEach((el) => {
-        el.classList.remove('hidden');
-      });
-      employeeInfo.forEach((el) => {
-        el.classList.add('hidden');
-      });
-      // adminActions visibility is controlled by togglePlanningAreaVisibility
-      if (employeeSidebar) (employeeSidebar as HTMLElement).style.display = 'block';
-      if (notesTextarea !== null) notesTextarea.removeAttribute('readonly');
+      this.configureAdminUI(employeeSidebar, notesTextarea);
     } else {
-      // Employee view - hide admin controls and sidebar
-      adminControls.forEach((el) => {
-        el.classList.add('hidden');
-      });
-      employeeInfo.forEach((el) => {
-        el.classList.remove('hidden');
-      });
-      if (adminActions) (adminActions as HTMLElement).style.display = 'none';
-      if (employeeSidebar) (employeeSidebar as HTMLElement).style.display = 'none';
-
-      // Hide the info row (department, machine, team leader dropdowns) for employees
-      if (infoRow) {
-        (infoRow as HTMLElement).style.display = 'none';
-      }
-
-      // Make the main planning area full width when sidebar is hidden
-      if (mainPlanningArea) {
-        mainPlanningArea.classList.add('full-width');
-      }
-
-      // Make notes textarea readonly for employees
-      if (notesTextarea) {
-        notesTextarea.setAttribute('readonly', 'readonly');
-        notesTextarea.parentElement?.classList.add('readonly');
-      }
+      this.configureEmployeeUI(adminActions, employeeSidebar, infoRow, mainPlanningArea, notesTextarea);
     }
 
-    // Update instructions
-    const instructions = document.querySelector('#instructions');
-    if (instructions) {
-      if (this.isAdmin) {
-        instructions.innerHTML = `
-          <p>Ziehen Sie Mitarbeiter auf die gewünschten Schichten oder klicken Sie erst auf einen Mitarbeiter und dann auf eine Schicht.</p>
-        `;
-      } else {
-        instructions.innerHTML = `
-          <p>Hier sehen Sie Ihren aktuellen Schichtplan. Ihre Schichten sind hervorgehoben.</p>
-        `;
-      }
-    }
+    this.updateInstructions();
   }
 
   highlightEmployeeShifts(): void {
@@ -5638,101 +6182,126 @@ class ShiftPlanningSystem {
   /**
    * Add current context as favorite
    */
-  private async addToFavorites(): Promise<void> {
-    console.info('[FAVORITE ADD] Current context:', this.selectedContext);
+  // Helper: Check if all context fields are selected
+  private isContextComplete(): boolean {
+    return (
+      this.selectedContext.areaId !== null &&
+      this.selectedContext.departmentId !== null &&
+      this.selectedContext.machineId !== null &&
+      this.selectedContext.teamId !== null
+    );
+  }
 
-    // First check if this combination might already be favorited
-    // Check by team since that's usually unique enough
-    if (this.selectedContext.teamId !== null) {
-      const existingFavorite = this.favorites.find((fav) => fav.teamId === this.selectedContext.teamId);
-      if (existingFavorite) {
-        console.info('[FAVORITE ADD] Team already exists as favorite:', existingFavorite);
-        showErrorAlert(`Diese Kombination ist bereits als Favorit "${existingFavorite.name}" gespeichert!`);
-        return;
-      }
-    }
-
-    // Check if all required fields are selected
-    if (
-      this.selectedContext.areaId === null ||
-      this.selectedContext.departmentId === null ||
-      this.selectedContext.machineId === null ||
-      this.selectedContext.teamId === null
-    ) {
-      console.error('[FAVORITE ADD] Missing filters:', {
-        areaId: this.selectedContext.areaId,
-        departmentId: this.selectedContext.departmentId,
-        machineId: this.selectedContext.machineId,
-        teamId: this.selectedContext.teamId,
-      });
-      showErrorAlert('Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)');
-      return;
-    }
-
-    // Double-check if this exact combination is already favorited
-    if (this.isCombinationFavorited()) {
-      console.info('[FAVORITE ADD] Combination already exists as favorite');
-      showErrorAlert('Diese Kombination existiert bereits als Favorit!');
-      return;
-    }
-
-    // Get names for display
+  // Helper: Get context names for favorite
+  private getContextNames(): { area: Area; department: Department; machine: Machine; team: Team } | null {
     const area = this.areas.find((a) => a.id === this.selectedContext.areaId);
     const department = this.departments.find((d) => d.id === this.selectedContext.departmentId);
     const machine = this.machines.find((m) => m.id === this.selectedContext.machineId);
     const team = this.teams.find((t) => t.id === this.selectedContext.teamId);
 
     if (!area || !department || !machine || !team) {
-      showErrorAlert('Fehler beim Speichern des Favoriten');
+      return null;
+    }
+
+    return { area, department, machine, team };
+  }
+
+  // Helper: Check for duplicate favorite by team
+  private checkDuplicateFavoriteByTeam(): boolean {
+    if (this.selectedContext.teamId === null) return false;
+
+    const existingFavorite = this.favorites.find((fav) => fav.teamId === this.selectedContext.teamId);
+    if (existingFavorite !== undefined) {
+      console.info('[FAVORITE ADD] Team already exists as favorite:', existingFavorite);
+      showErrorAlert(`Diese Kombination ist bereits als Favorit "${existingFavorite.name}" gespeichert!`);
+      return true;
+    }
+
+    return false;
+  }
+
+  // Helper: Create favorite via API
+  private async createFavoriteAPI(names: {
+    area: Area;
+    department: Department;
+    machine: Machine;
+    team: Team;
+  }): Promise<boolean> {
+    const token = localStorage.getItem('token');
+    if (token === null || token === '') {
+      showErrorAlert('Nicht authentifiziert');
+      return false;
+    }
+
+    const response = await fetch('/api/v2/shifts/favorites', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        name: names.team.name,
+        areaId: this.selectedContext.areaId,
+        areaName: names.area.name,
+        departmentId: this.selectedContext.departmentId,
+        departmentName: names.department.name,
+        machineId: this.selectedContext.machineId,
+        machineName: names.machine.name,
+        teamId: this.selectedContext.teamId,
+        teamName: names.team.name,
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 409) {
+        showInfo('Ein Favorit mit diesem Namen existiert bereits');
+      } else {
+        const error = (await response.json()) as { error?: { message?: string } };
+        showErrorAlert(error.error?.message ?? 'Fehler beim Speichern des Favoriten');
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  private async addToFavorites(): Promise<void> {
+    console.info('[FAVORITE ADD] Current context:', this.selectedContext);
+
+    // Check for duplicate by team
+    if (this.checkDuplicateFavoriteByTeam()) {
       return;
     }
 
-    // Double-check if this combination already exists (should not happen due to button hiding)
+    // Check if all required fields are selected
+    if (!this.isContextComplete()) {
+      showErrorAlert('Bitte wählen Sie alle Filter aus (Bereich, Abteilung, Maschine und Team)');
+      return;
+    }
+
+    // Double-check if this exact combination is already favorited
     if (this.isCombinationFavorited()) {
-      showInfo('Diese Kombination ist bereits als Favorit gespeichert');
+      showErrorAlert('Diese Kombination existiert bereits als Favorit!');
+      return;
+    }
+
+    // Get names for display
+    const names = this.getContextNames();
+    if (names === null) {
+      showErrorAlert('Fehler beim Speichern des Favoriten');
       return;
     }
 
     // Create new favorite via API
     try {
-      const token = localStorage.getItem('token');
-      if (token === null || token === '') {
-        showErrorAlert('Nicht authentifiziert');
-        return;
-      }
-
-      const response = await fetch('/api/v2/shifts/favorites', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name: team.name,
-          areaId: this.selectedContext.areaId,
-          areaName: area.name,
-          departmentId: this.selectedContext.departmentId,
-          departmentName: department.name,
-          machineId: this.selectedContext.machineId,
-          machineName: machine.name,
-          teamId: this.selectedContext.teamId,
-          teamName: team.name,
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 409) {
-          showInfo('Ein Favorit mit diesem Namen existiert bereits');
-        } else {
-          const error = (await response.json()) as { error?: { message?: string } };
-          showErrorAlert(error.error?.message ?? 'Fehler beim Speichern des Favoriten');
-        }
+      const success = await this.createFavoriteAPI(names);
+      if (!success) {
         return;
       }
 
       // Refresh favorites list
       await this.refreshFavorites();
-      showSuccessAlert(`Favorit "${team.name}" wurde gespeichert`);
+      showSuccessAlert(`Favorit "${names.team.name}" wurde gespeichert`);
 
       // Update button visibility since we added a new favorite
       this.updateAddFavoriteButton();
@@ -5781,6 +6350,71 @@ class ShiftPlanningSystem {
   /**
    * Load favorite and apply its filters
    */
+  // Helper: Update display element with value and text
+  private updateDisplayElement(elementId: string, value: number, text: string): void {
+    const display = $$id(elementId);
+    if (display === null) {
+      console.error(`[LOADFAVORITE] ${elementId} element not found!`);
+      return;
+    }
+
+    display.dataset.value = String(value);
+    const span = display.querySelector('span');
+    if (span !== null) {
+      span.textContent = text;
+      console.info(`[LOADFAVORITE] ${elementId} updated to:`, text);
+    }
+  }
+
+  // Helper: Set area context and display
+  private setAreaContext(favorite: ShiftFavorite): void {
+    console.info('[LOADFAVORITE] Setting area:', favorite.areaId, favorite.areaName);
+    this.selectedContext.areaId = favorite.areaId;
+    this.updateDisplayElement('areaDisplay', favorite.areaId, favorite.areaName);
+
+    // Use the global selectOption to trigger loading departments
+    const shiftsWindow = window as unknown as ShiftsWindow;
+    shiftsWindow.selectOption('area', String(favorite.areaId), favorite.areaName);
+  }
+
+  // Helper: Set department context and display
+  private async setDepartmentContext(favorite: ShiftFavorite): Promise<void> {
+    console.info('[LOADFAVORITE] Setting department:', favorite.departmentId, favorite.departmentName);
+    this.selectedContext.departmentId = favorite.departmentId;
+    this.updateDisplayElement('departmentDisplay', favorite.departmentId, favorite.departmentName);
+
+    // Load machines for this department
+    console.info('[LOADFAVORITE] Loading machines for department');
+    await this.loadMachines();
+  }
+
+  // Helper: Set machine context and display
+  private async setMachineContext(favorite: ShiftFavorite): Promise<void> {
+    this.selectedContext.machineId = favorite.machineId;
+    this.updateDisplayElement('machineDisplay', favorite.machineId, favorite.machineName);
+
+    // Load teams for this machine but WITHOUT resetting teamId
+    const savedTeamId = favorite.teamId;
+    await this.onMachineSelected(favorite.machineId);
+    // Restore team ID after onMachineSelected resets it
+    this.selectedContext.teamId = savedTeamId;
+  }
+
+  // Helper: Set team context and display
+  private async setTeamContext(favorite: ShiftFavorite): Promise<void> {
+    this.updateDisplayElement('teamDisplay', favorite.teamId, favorite.teamName);
+
+    console.info('[LOADFAVORITE] Loading preferences directly for team:', favorite.teamId);
+    await this.loadUserPreferencesFromDatabase();
+
+    try {
+      await this.onTeamSelected(favorite.teamId);
+      console.info('[LOADFAVORITE] onTeamSelected completed successfully');
+    } catch (teamError) {
+      console.error('[LOADFAVORITE] Error in onTeamSelected:', teamError);
+    }
+  }
+
   private async loadFavorite(favorite: ShiftFavorite): Promise<void> {
     console.info('[LOADFAVORITE] Starting to load favorite:', favorite);
     console.info('[LOADFAVORITE] Current favorites list:', this.favorites);
@@ -5788,92 +6422,21 @@ class ShiftPlanningSystem {
 
     try {
       // 1. Set and load Area
-      console.info('[LOADFAVORITE] Setting area:', favorite.areaId, favorite.areaName);
-      this.selectedContext.areaId = favorite.areaId;
-      const areaDisplay = $$id('areaDisplay');
-      if (areaDisplay) {
-        areaDisplay.dataset.value = String(favorite.areaId);
-        const span = areaDisplay.querySelector('span');
-        if (span) {
-          span.textContent = favorite.areaName;
-          console.info('[LOADFAVORITE] Area display updated to:', favorite.areaName);
-        }
-        console.info('[LOADFAVORITE] Area display value set to:', favorite.areaId);
-      } else {
-        console.error('[LOADFAVORITE] Area display element not found!');
-      }
-
-      // Use the global selectOption to trigger loading departments
-      const shiftsWindow = window as unknown as ShiftsWindow;
-      console.info('[LOADFAVORITE] Calling selectOption for area');
-      shiftsWindow.selectOption('area', String(favorite.areaId), favorite.areaName);
+      this.setAreaContext(favorite);
 
       // 2. Set and load Department
-      console.info('[LOADFAVORITE] Setting department:', favorite.departmentId, favorite.departmentName);
-      this.selectedContext.departmentId = favorite.departmentId;
-      const departmentDisplay = $$id('departmentDisplay');
-      if (departmentDisplay) {
-        departmentDisplay.dataset.value = String(favorite.departmentId);
-        const span = departmentDisplay.querySelector('span');
-        if (span) {
-          span.textContent = favorite.departmentName;
-          console.info('[LOADFAVORITE] Department display updated to:', favorite.departmentName);
-        }
-        console.info('[LOADFAVORITE] Department display value set to:', favorite.departmentId);
-      } else {
-        console.error('[LOADFAVORITE] Department display element not found!');
-      }
-
-      // Load machines for this department
-      console.info('[LOADFAVORITE] Loading machines for department');
-      await this.loadMachines();
+      await this.setDepartmentContext(favorite);
 
       // 3. Set and load Machine
-      this.selectedContext.machineId = favorite.machineId;
-      const machineDisplay = $$id('machineDisplay');
-      if (machineDisplay) {
-        machineDisplay.dataset.value = String(favorite.machineId);
-        const span = machineDisplay.querySelector('span');
-        if (span) span.textContent = favorite.machineName;
-      }
+      await this.setMachineContext(favorite);
 
-      // Load teams for this machine but WITHOUT resetting teamId
-      // Store team ID temporarily
-      const savedTeamId = favorite.teamId;
-      await this.onMachineSelected(favorite.machineId);
-      // Restore team ID after onMachineSelected resets it
-      this.selectedContext.teamId = savedTeamId;
-      const teamDisplay = $$id('teamDisplay');
-      if (teamDisplay) {
-        teamDisplay.dataset.value = String(favorite.teamId);
-        const span = teamDisplay.querySelector('span');
-        if (span) span.textContent = favorite.teamName;
-      }
-
-      // Trigger team selection logic (loads shift plan and preferences!)
-      console.info('[LOADFAVORITE] Calling onTeamSelected with teamId:', savedTeamId);
-
-      // WORKAROUND: Load preferences directly here since onTeamSelected seems to not work
-      console.info('[LOADFAVORITE] Loading preferences directly for team:', savedTeamId);
-      await this.loadUserPreferencesFromDatabase();
-
-      try {
-        // Call the method
-        await this.onTeamSelected(savedTeamId);
-        console.info('[LOADFAVORITE] onTeamSelected completed successfully');
-      } catch (teamError) {
-        console.error('[LOADFAVORITE] Error in onTeamSelected:', teamError);
-      }
+      // 4. Set and load Team
+      await this.setTeamContext(favorite);
 
       // Update button visibility (should hide since we loaded a favorited combination)
-      console.info('[LOADFAVORITE] Final context before button update:', {
-        areaId: this.selectedContext.areaId,
-        departmentId: this.selectedContext.departmentId,
-        machineId: this.selectedContext.machineId,
-        teamId: this.selectedContext.teamId,
-        savedTeamId: savedTeamId,
-      });
+      console.info('[LOADFAVORITE] Final context before button update:', this.selectedContext);
       console.info('[LOADFAVORITE] Updating add favorite button visibility');
+
       // Small delay to ensure DOM is updated
       setTimeout(() => {
         console.info('[LOADFAVORITE] In timeout - context:', this.selectedContext);

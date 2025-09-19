@@ -97,6 +97,60 @@ export const deleteNotification = [
 /**
  * Update preferences validation
  */
+// Helper validation constants
+const VALID_NOTIFICATION_TYPES = ['system', 'task', 'message', 'announcement'];
+const VALID_NOTIFICATION_CHANNELS = ['email', 'push', 'sms'];
+
+/**
+ * Validate if a notification type is valid
+ */
+function validateNotificationType(type: string): void {
+  if (!VALID_NOTIFICATION_TYPES.includes(type)) {
+    throw new Error(`Invalid notification type: ${type}`);
+  }
+}
+
+/**
+ * Validate channel settings for a notification type
+ */
+function validateChannelSettings(settings: unknown, typeName: string): void {
+  if (typeof settings !== 'object' || settings === null) {
+    throw new Error(`Settings for ${typeName} must be an object`);
+  }
+
+  const settingsObject = settings as Record<string, unknown>;
+
+  for (const [channel, enabled] of Object.entries(settingsObject)) {
+    validateChannel(channel, enabled);
+  }
+}
+
+/**
+ * Validate individual channel configuration
+ */
+function validateChannel(channel: string, enabled: unknown): void {
+  if (!VALID_NOTIFICATION_CHANNELS.includes(channel)) {
+    throw new Error(`Invalid channel: ${channel}`);
+  }
+  if (typeof enabled !== 'boolean') {
+    throw new Error(`${channel} setting must be a boolean`);
+  }
+}
+
+/**
+ * Main validator for notification types structure
+ */
+function validateNotificationTypes(value: unknown): boolean {
+  const typedValue = value as Record<string, unknown>;
+
+  for (const [type, settings] of Object.entries(typedValue)) {
+    validateNotificationType(type);
+    validateChannelSettings(settings, type);
+  }
+
+  return true;
+}
+
 export const updatePreferences = [
   body('email_notifications')
     .optional()
@@ -114,30 +168,7 @@ export const updatePreferences = [
     .optional()
     .isObject()
     .withMessage('Notification types must be an object')
-    .custom((value: unknown) => {
-      // Validate structure of notification_types
-      const validTypes = ['system', 'task', 'message', 'announcement'];
-      const validChannels = ['email', 'push', 'sms'];
-
-      const typedValue = value as Record<string, unknown>;
-      for (const [type, settings] of Object.entries(typedValue)) {
-        if (!validTypes.includes(type)) {
-          throw new Error(`Invalid notification type: ${type}`);
-        }
-        if (typeof settings !== 'object') {
-          throw new Error(`Settings for ${type} must be an object`);
-        }
-        for (const [channel, enabled] of Object.entries(settings as Record<string, boolean>)) {
-          if (!validChannels.includes(channel)) {
-            throw new Error(`Invalid channel: ${channel}`);
-          }
-          if (typeof enabled !== 'boolean') {
-            throw new Error(`${channel} setting must be a boolean`);
-          }
-        }
-      }
-      return true;
-    }),
+    .custom(validateNotificationTypes),
   handleValidation,
 ];
 

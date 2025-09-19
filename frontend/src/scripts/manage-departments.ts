@@ -221,50 +221,7 @@ function renderDepartments(): void {
         </tr>
       </thead>
       <tbody>
-        ${filteredDepartments
-          .map((dept) => {
-            // Handle description properly
-            let description = '-';
-            if (dept.description !== null && dept.description !== undefined) {
-              if (typeof dept.description === 'string') {
-                description = dept.description;
-              } else if (typeof dept.description === 'object') {
-                // Check if it's a Buffer object
-                const bufferObj = dept.description as unknown as { type?: string; data?: number[] };
-                if (bufferObj.type === 'Buffer' && Array.isArray(bufferObj.data)) {
-                  description = String.fromCharCode(...bufferObj.data);
-                }
-              }
-            }
-
-            return `
-              <tr>
-                <td>${dept.name !== '' ? dept.name : '-'}</td>
-                <td>${description}</td>
-                <td>
-                  <span class="badge ${getStatusBadgeClass(dept.status)}">
-                    ${getStatusLabel(dept.status)}
-                  </span>
-                </td>
-                <td>
-                  <span class="badge ${dept.visibility === 'public' ? 'badge-primary' : 'badge-secondary'}">
-                    ${dept.visibility === 'public' ? 'Öffentlich' : 'Privat'}
-                  </span>
-                </td>
-                <td>${dept.managerName ?? '-'}</td>
-                <td>${dept.employee_count ?? 0}</td>
-                <td>${dept.team_count ?? 0}</td>
-                <td>
-                  <button class="action-btn ${dept.status === 'active' ? 'deactivate' : 'activate'}" data-action="toggle-status" data-dept-id="${dept.id}" data-status="${dept.status}">
-                    ${dept.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
-                  </button>
-                  <button class="action-btn edit" data-action="edit-department" data-dept-id="${dept.id}">Bearbeiten</button>
-                  <button class="action-btn delete" data-action="delete-department" data-dept-id="${dept.id}">Löschen</button>
-                </td>
-              </tr>
-            `;
-          })
-          .join('')}
+        ${filteredDepartments.map((dept) => createDepartmentRow(dept)).join('')}
       </tbody>
     </table>
   `;
@@ -284,6 +241,74 @@ function getStatusBadgeClass(status: string): string {
     default:
       return 'badge-secondary';
   }
+}
+
+// Format department description
+function formatDescription(description: unknown): string {
+  if (description === null || description === undefined) {
+    return '-';
+  }
+
+  if (typeof description === 'string') {
+    return description;
+  }
+
+  if (typeof description === 'object') {
+    const bufferObj = description as { type?: string; data?: number[] };
+    if (bufferObj.type === 'Buffer' && Array.isArray(bufferObj.data)) {
+      return String.fromCharCode(...bufferObj.data);
+    }
+  }
+
+  return '-';
+}
+
+// Get visibility badge classes and label
+function getVisibilityBadge(visibility: string | undefined): { class: string; label: string } {
+  return visibility === 'public'
+    ? { class: 'badge-primary', label: 'Öffentlich' }
+    : { class: 'badge-secondary', label: 'Privat' };
+}
+
+// Get toggle button info
+function getToggleButtonInfo(status: string): { class: string; label: string } {
+  return status === 'active'
+    ? { class: 'deactivate', label: 'Deaktivieren' }
+    : { class: 'activate', label: 'Aktivieren' };
+}
+
+// Create department table row
+function createDepartmentRow(dept: Department): string {
+  const description = formatDescription(dept.description);
+  const visibilityBadge = getVisibilityBadge(dept.visibility);
+  const toggleButton = getToggleButtonInfo(dept.status);
+
+  return `
+    <tr>
+      <td>${dept.name !== '' ? dept.name : '-'}</td>
+      <td>${description}</td>
+      <td>
+        <span class="badge ${getStatusBadgeClass(dept.status)}">
+          ${getStatusLabel(dept.status)}
+        </span>
+      </td>
+      <td>
+        <span class="badge ${visibilityBadge.class}">
+          ${visibilityBadge.label}
+        </span>
+      </td>
+      <td>${dept.managerName ?? '-'}</td>
+      <td>${dept.employee_count ?? 0}</td>
+      <td>${dept.team_count ?? 0}</td>
+      <td>
+        <button class="action-btn ${toggleButton.class}" data-action="toggle-status" data-dept-id="${dept.id}" data-status="${dept.status}">
+          ${toggleButton.label}
+        </button>
+        <button class="action-btn edit" data-action="edit-department" data-dept-id="${dept.id}">Bearbeiten</button>
+        <button class="action-btn delete" data-action="delete-department" data-dept-id="${dept.id}">Löschen</button>
+      </td>
+    </tr>
+  `;
 }
 
 // Get status label

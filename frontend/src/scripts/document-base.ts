@@ -175,51 +175,88 @@ export class DocumentBase {
   }
 
   /**
+   * Handle action button clicks
+   */
+  private handleActionButton(actionBtn: HTMLElement): void {
+    const action = actionBtn.dataset.action;
+
+    switch (action) {
+      case 'toggle-dropdown':
+        this.handleToggleDropdown(actionBtn);
+        break;
+      case 'close-document-modal':
+        window.closeDocumentModal();
+        break;
+      case 'download-document':
+        this.handleDownloadDocument();
+        break;
+    }
+  }
+
+  /**
+   * Handle toggle dropdown action
+   */
+  private handleToggleDropdown(actionBtn: HTMLElement): void {
+    const dropdownType = actionBtn.dataset.dropdown;
+    if (dropdownType !== undefined) {
+      window.toggleDropdown(dropdownType);
+    }
+  }
+
+  /**
+   * Handle download document action
+   */
+  private handleDownloadDocument(): void {
+    const downloadBtn = document.querySelector('#downloadButton');
+    const docId = downloadBtn instanceof HTMLElement ? downloadBtn.dataset.docId : undefined;
+    window.downloadDocument(docId);
+  }
+
+  /**
+   * Handle favorite button clicks
+   */
+  private handleFavoriteButton(favoriteBtn: HTMLElement, event: Event): void {
+    event.stopPropagation();
+    const docId = favoriteBtn.dataset.docId;
+    if (docId !== undefined && docId !== '') {
+      this.toggleFavorite(Number(docId));
+    }
+  }
+
+  /**
+   * Handle view mode button clicks
+   */
+  private handleViewModeButton(target: HTMLElement): void {
+    const mode = target.dataset.mode as ViewMode | undefined;
+    if (mode !== undefined) {
+      this.setViewMode(mode);
+    }
+  }
+
+  /**
    * Set up event delegation for dynamic elements
    */
   protected setupEventDelegation(): void {
-    // Delegate click events for action buttons
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
 
-      // Handle data-action buttons
+      // Check for action buttons
       const actionBtn = target.closest('[data-action]');
       if (actionBtn instanceof HTMLElement) {
-        const action = actionBtn.dataset.action;
-
-        if (action === 'toggle-dropdown') {
-          const dropdownType = actionBtn.dataset.dropdown;
-          if (dropdownType !== undefined) {
-            window.toggleDropdown(dropdownType);
-          }
-        } else if (action === 'close-document-modal') {
-          window.closeDocumentModal();
-        } else if (action === 'download-document') {
-          const downloadBtn = document.querySelector('#downloadButton');
-          const docId = downloadBtn instanceof HTMLElement ? downloadBtn.dataset.docId : undefined;
-          window.downloadDocument(docId);
-        }
+        this.handleActionButton(actionBtn);
+        return;
       }
 
-      // Handle favorite buttons
+      // Check for favorite buttons
       const favoriteBtn = target.closest('.favorite-btn');
       if (favoriteBtn instanceof HTMLElement) {
-        e.stopPropagation();
-        const docId = favoriteBtn.dataset.docId;
-        if (docId !== undefined && docId !== '') {
-          this.toggleFavorite(Number(docId));
-        }
+        this.handleFavoriteButton(favoriteBtn, e);
+        return;
       }
-    });
 
-    // Delegate click events for view mode buttons
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
+      // Check for view mode buttons
       if (target.classList.contains('view-mode-btn')) {
-        const mode = target.dataset.mode as ViewMode | undefined;
-        if (mode !== undefined) {
-          this.setViewMode(mode);
-        }
+        this.handleViewModeButton(target);
       }
     });
   }

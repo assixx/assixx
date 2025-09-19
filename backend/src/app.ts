@@ -342,6 +342,79 @@ app.use('/js', (req: Request, res: Response, next: NextFunction): void => {
   });
 });
 
+// Helper functions for TypeScript file serving
+function sanitizePath(requestPath: string): string {
+  return requestPath.replace(/\.\./g, '').replace(/\/+/g, '/');
+}
+
+function isPathSecure(absolutePath: string, expectedRoot: string): boolean {
+  const normalized = path.normalize(absolutePath);
+  return !normalized.includes('..') && path.resolve(normalized).startsWith(expectedRoot);
+}
+
+function tryServeCompiledJs(jsPath: string, res: Response): boolean {
+  const expectedJsRoot = path.resolve(distPath, 'js');
+
+  if (!isPathSecure(jsPath, expectedJsRoot)) {
+    return false;
+  }
+
+  try {
+    fs.accessSync(jsPath, fs.constants.R_OK);
+    console.info(`[DEBUG] Serving compiled JS instead of TS: ${jsPath}`);
+    res.type(MIME_TYPE_JAVASCRIPT).sendFile(jsPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function mapTypeScriptPath(requestPath: string): string {
+  const mappings = new Map<string, string>([
+    ['components/unified-navigation', 'scripts/components/unified-navigation.ts'],
+  ]);
+
+  const mappedPath = mappings.get(requestPath);
+  if (mappedPath !== undefined) {
+    return path.resolve(srcPath, mappedPath);
+  }
+
+  return path.resolve(srcPath, 'scripts', requestPath);
+}
+
+async function serveTypeScriptFile(tsPath: string, res: Response): Promise<void> {
+  const expectedSrcRoot = path.resolve(srcPath);
+
+  if (!isPathSecure(tsPath, expectedSrcRoot)) {
+    res.status(403).send('Forbidden');
+    return;
+  }
+
+  await fs.promises.access(tsPath, fs.constants.R_OK);
+  console.info(`[DEBUG] Serving TypeScript file: ${tsPath}`);
+
+  // Additional security check
+  if (!tsPath.startsWith(expectedSrcRoot)) {
+    throw new Error('Invalid file path');
+  }
+
+  // eslint-disable-next-line security/detect-non-literal-fs-filename
+  const tsContent = await fs.promises.readFile(tsPath, 'utf8');
+
+  const transformedContent = tsContent
+    // Remove TypeScript-only import type statements
+    .replace(/import\s+type\s+\{[^}]+\}\s+from\s+[""'][^""']+[""'];?\s*/g, '')
+    // Remove declare global blocks - Security: Simplified regex to prevent ReDoS
+    .replace(/declare\s+global\s*\{[^}]*\}/g, '')
+    // Handle nested braces with multiple passes if needed
+    .replace(/declare\s+global\s*\{[^{}]*\{[^}]*\}[^}]*\}/g, '')
+    // Transform regular imports to add .ts extension
+    .replace(/from\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "from '$1.ts'")
+    .replace(/import\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "import '$1.ts'");
+
+  res.type(MIME_TYPE_JAVASCRIPT).send(transformedContent);
+}
+
 // Development mode: Handle TypeScript files
 app.use(
   '/scripts',
@@ -363,112 +436,30 @@ app.use(
         next(err);
         return;
       }
+
       if (!req.path.endsWith('.ts')) {
         next();
         return;
       }
 
-      // Sanitize the path to prevent directory traversal
-      const sanitizedPath = req.path.replace(/\.\./g, '').replace(/\/+/g, '/');
-      const filename = sanitizedPath.slice(1, -3); // Remove leading / and .ts extension
+      const sanitized = sanitizePath(req.path);
+      const filename = sanitized.slice(1, -3);
 
-      // In development, check if compiled JS exists first
+      // Try serving compiled JS first
       const jsPath = path.resolve(distPath, 'js', `${filename}.js`);
-      // Validate that the resolved path is within the expected directory
-      if (!jsPath.startsWith(path.resolve(distPath, 'js'))) {
-        res.status(403).send('Forbidden');
+      const served = tryServeCompiledJs(jsPath, res);
+      if (served) {
         return;
       }
 
-      // Security: Validate path is within expected directory
-      const normalizedJsPath = path.normalize(jsPath);
-      const absoluteJsPath = path.resolve(normalizedJsPath);
-      const expectedJsRoot = path.resolve(distPath, 'js');
+      // Map and serve TypeScript file
+      const requestPath = sanitized.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
+      const tsPath = mapTypeScriptPath(requestPath);
 
-      if (!normalizedJsPath.includes('..') && absoluteJsPath.startsWith(expectedJsRoot)) {
-        // Use try-catch for file existence check to avoid non-literal fs warning
-        try {
-          fs.accessSync(absoluteJsPath, fs.constants.R_OK);
-          console.info(`[DEBUG] Serving compiled JS instead of TS: ${absoluteJsPath}`);
-          res.type(MIME_TYPE_JAVASCRIPT).sendFile(absoluteJsPath);
-          return;
-        } catch {
-          // File doesn't exist, continue
-        }
-      }
-
-      // Serve TypeScript file directly from src
-      const requestPath = sanitizedPath.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
-
-      // Special handling for components subdirectory
-      const mappings: Record<string, string> = {
-        'components/unified-navigation': 'scripts/components/unified-navigation.ts',
-      };
-
-      let actualTsPath: string;
-
-      // Check if we need to map the path - Security: Use Map for safe lookups
-      const mappingsMap = new Map(Object.entries(mappings));
-      const mappedPath = mappingsMap.get(requestPath);
-
-      if (mappedPath !== undefined) {
-        actualTsPath = path.resolve(srcPath, mappedPath);
-      } else {
-        actualTsPath = path.resolve(srcPath, 'scripts', sanitizedPath.replace(/^\/scripts\//, ''));
-      }
-
-      // Validate that the resolved path is within the src directory
-      if (!actualTsPath.startsWith(path.resolve(srcPath))) {
-        res.status(403).send('Forbidden');
-        return;
-      }
-
-      // Security: Validate path is within expected directory
-      const normalizedTsPath = path.normalize(actualTsPath);
-      const absoluteTsPath = path.resolve(normalizedTsPath);
-      const expectedSrcRoot = path.resolve(srcPath);
-
-      if (!normalizedTsPath.includes('..') && absoluteTsPath.startsWith(expectedSrcRoot)) {
-        // Use try-catch for both file existence and reading
-        try {
-          await fs.promises.access(absoluteTsPath, fs.constants.R_OK);
-          console.info(`[DEBUG] Serving TypeScript file: ${absoluteTsPath}`);
-
-          // Read the TypeScript file - path has been fully validated above
-          // The security warning here is a false positive as we've validated:
-          // 1. Path doesn't contain ".."
-          // 2. Path is within srcPath directory
-          // 3. File exists and is readable
-          // 4. Additional validation for security compliance
-          if (!absoluteTsPath.startsWith(expectedSrcRoot)) {
-            throw new Error('Invalid file path');
-          }
-          // Safe: Path has been validated above - no "..", within srcPath, and access checked
-          // eslint-disable-next-line security/detect-non-literal-fs-filename
-          const tsContent = await fs.promises.readFile(absoluteTsPath, 'utf8');
-
-          // Transform TypeScript to JavaScript-compatible code
-          let transformedContent = tsContent
-            // Remove TypeScript-only import type statements
-            .replace(/import\s+type\s+\{[^}]+\}\s+from\s+[""'][^""']+[""'];?\s*/g, '')
-            // Remove declare global blocks - Security: Simplified regex to prevent ReDoS
-            .replace(/declare\s+global\s*\{[^}]*\}/g, '')
-            // Handle nested braces with multiple passes if needed
-            .replace(/declare\s+global\s*\{[^{}]*\{[^}]*\}[^}]*\}/g, '')
-            // Transform regular imports to add .ts extension
-            .replace(/from\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "from '$1.ts'")
-            .replace(/import\s+["'](\.\.?\/[^"']+)(?<!\.ts)["']/g, "import '$1.ts'");
-
-          res.type(MIME_TYPE_JAVASCRIPT).send(transformedContent);
-        } catch {
-          // File doesn't exist or can't be read
-          console.warn(`[DEBUG] TypeScript file not accessible: ${actualTsPath}`);
-        }
-      } else {
-        // For missing files, return empty module to avoid syntax errors
-        console.warn(`[DEBUG] TypeScript file not found: ${actualTsPath}, returning empty module`);
-
-        // Escape filename to prevent XSS
+      try {
+        await serveTypeScriptFile(tsPath, res);
+      } catch {
+        // Return empty module for missing files
         const escapedFilename = filename
           .replace(/\\/g, '\\\\')
           .replace(/'/g, "\\'")
@@ -482,7 +473,7 @@ app.use(
         res
           .type(MIME_TYPE_JAVASCRIPT)
           .send(
-            `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found, loaded empty placeholder');`,
+            `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found');`,
           );
       }
     });

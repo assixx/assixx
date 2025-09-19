@@ -744,52 +744,69 @@ const ResponseAdapterInternal = {
   },
 
   /**
-   * Adapt pagination response format
+   * Calculate total pages
    */
-  adaptPaginationResponse(response: unknown, v2Format = true): unknown {
-    if (v2Format) {
-      // Convert v1 pagination to v2 format
-      const responseObj = response as Record<string, unknown>;
-      if (responseObj.data != null && Array.isArray(responseObj.data)) {
-        return {
-          success: true,
-          data: {
-            items: this.toV2Format(responseObj.data),
-            pagination: {
-              page: responseObj.page ?? 1,
-              pageSize: responseObj.per_page ?? responseObj.limit ?? 20,
-              total: responseObj.total ?? (responseObj.data as unknown[]).length,
-              totalPages:
-                responseObj.total_pages ??
-                Math.ceil(
-                  (responseObj.total != null ? Number(responseObj.total) : (responseObj.data as unknown[]).length) /
-                    (responseObj.per_page != null
-                      ? Number(responseObj.per_page)
-                      : responseObj.limit != null
-                        ? Number(responseObj.limit)
-                        : 20),
-                ),
-            },
-          },
-        };
-      }
+  calculateTotalPages(total: unknown, perPage: unknown, limit: unknown, dataLength: number): number {
+    const totalValue = total != null ? Number(total) : dataLength;
+    const pageSizeValue = perPage != null ? Number(perPage) : limit != null ? Number(limit) : 20;
+    return Math.ceil(totalValue / pageSizeValue);
+  },
 
-      // Handle array responses without pagination info
-      if (Array.isArray(response)) {
-        return {
-          success: true,
-          data: this.toV2Format(response),
-        };
-      }
+  /**
+   * Build v2 pagination object
+   */
+  buildV2Pagination(responseObj: Record<string, unknown>): Record<string, unknown> {
+    const dataArray = responseObj.data as unknown[];
+    return {
+      page: responseObj.page ?? 1,
+      pageSize: responseObj.per_page ?? responseObj.limit ?? 20,
+      total: responseObj.total ?? dataArray.length,
+      totalPages:
+        responseObj.total_pages ??
+        this.calculateTotalPages(responseObj.total, responseObj.per_page, responseObj.limit, dataArray.length),
+    };
+  },
 
-      // Handle object responses
+  /**
+   * Convert v1 response to v2 format
+   */
+  convertToV2Format(response: unknown): unknown {
+    const responseObj = response as Record<string, unknown>;
+
+    // Handle paginated responses
+    if (responseObj.data != null && Array.isArray(responseObj.data)) {
+      return {
+        success: true,
+        data: {
+          items: this.toV2Format(responseObj.data),
+          pagination: this.buildV2Pagination(responseObj),
+        },
+      };
+    }
+
+    // Handle array responses
+    if (Array.isArray(response)) {
       return {
         success: true,
         data: this.toV2Format(response),
       };
-    } else {
-      // Convert v2 pagination to v1 format
-      const respObj = response as Record<string, unknown>;
+    }
+
+    // Handle object responses
+    return {
+      success: true,
+      data: this.toV2Format(response),
+    };
+  },
+
+  /**
+   * Convert v2 response to v1 format
+   */
+  convertToV1Format(response: unknown): unknown {
+    const respObj = response as Record<string, unknown>;
+
+    // Handle paginated responses
+    if (respObj.data != null) {
       const respData = respObj.data as Record<string, unknown>;
       if (respData.items != null && respData.pagination != null) {
         const pagination = respData.pagination as Record<string, unknown>;
@@ -803,12 +820,17 @@ const ResponseAdapterInternal = {
       }
 
       // Handle non-paginated responses
-      if ((response as Record<string, unknown>).data != null) {
-        return this.fromV2Format((response as Record<string, unknown>).data);
-      }
-
-      return response;
+      return this.fromV2Format(respObj.data);
     }
+
+    return response;
+  },
+
+  /**
+   * Adapt pagination response format
+   */
+  adaptPaginationResponse(response: unknown, v2Format = true): unknown {
+    return v2Format ? this.convertToV2Format(response) : this.convertToV1Format(response);
   },
 
   /**

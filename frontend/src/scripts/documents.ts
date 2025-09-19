@@ -485,42 +485,76 @@ function closeDocumentModal(): void {
 }
 
 /**
+ * Get document ID from parameter or button
+ */
+function getDocumentId(docId?: string | number): string | null {
+  if (docId !== undefined) {
+    return String(docId);
+  }
+
+  const downloadBtn = document.querySelector('#downloadButton');
+  if (!(downloadBtn instanceof HTMLElement)) {
+    console.error('Download button not found');
+    return null;
+  }
+
+  const dataId = downloadBtn.dataset.documentId;
+  if (dataId === undefined || dataId === '') {
+    console.error('No document ID found');
+    return null;
+  }
+
+  return dataId;
+}
+
+/**
+ * Validate authentication token
+ */
+function validateAuthToken(): boolean {
+  const token = localStorage.getItem('token');
+  if (token === null || token === '') {
+    showErrorAlert('Nicht angemeldet. Bitte melden Sie sich erneut an.');
+    window.location.href = '/login';
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Trigger file download
+ */
+function triggerFileDownload(blob: Blob, filename: string): void {
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.append(link);
+  link.click();
+
+  setTimeout(() => {
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  }, 100);
+}
+
+/**
  * Download current document
  */
 async function downloadDocument(docId?: string | number): Promise<void> {
-  let documentId: string;
-
-  if (docId !== undefined) {
-    // Called with parameter from employee-dashboard
-    documentId = String(docId);
-  } else {
-    // Called without parameter from documents page
-    const downloadBtn = document.querySelector('#downloadButton');
-    if (!(downloadBtn instanceof HTMLElement)) {
-      console.error('Download button not found');
-      return;
-    }
-
-    const dataId = downloadBtn.dataset.documentId;
-    if (dataId === undefined || dataId === '') {
-      console.error('No document ID found');
-      return;
-    }
-    documentId = dataId;
+  const documentId = getDocumentId(docId);
+  if (documentId === null) {
+    return;
   }
 
   try {
     console.info('Downloading document:', documentId);
 
-    // Check if we have a token
-    const token = localStorage.getItem('token');
-    if (token === null || token === '') {
-      showErrorAlert('Nicht angemeldet. Bitte melden Sie sich erneut an.');
-      window.location.href = '/login';
+    if (!validateAuthToken()) {
       return;
     }
 
-    // Fetch with authentication
     const apiClient = ApiClient.getInstance();
     const response = await apiClient.request<Response>(`/documents/download/${documentId}`, { method: 'GET' });
 
@@ -530,32 +564,14 @@ async function downloadDocument(docId?: string | number): Promise<void> {
       throw new Error(`Download failed: ${response.status}`);
     }
 
-    // Get the blob
     const blob = await response.blob();
 
-    // Check if blob is valid
     if (blob.size === 0) {
       throw new Error('Downloaded file is empty');
     }
 
-    // Create object URL
-    const url = window.URL.createObjectURL(blob);
-
-    // Create download link
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = currentDocument?.file_name ?? 'document.pdf';
-    link.style.display = 'none';
-    document.body.append(link);
-
-    // Trigger download
-    link.click();
-
-    // Cleanup
-    setTimeout(() => {
-      link.remove();
-      window.URL.revokeObjectURL(url);
-    }, 100);
+    const filename = currentDocument?.file_name ?? 'document.pdf';
+    triggerFileDownload(blob, filename);
 
     showSuccessAlert('Dokument wird heruntergeladen');
   } catch (error) {

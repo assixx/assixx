@@ -133,15 +133,11 @@ docker-compose restart backend
 4. TypeScript Standards (MANDATORY for Backend)
 5. Design Standards
 6. README.md
-7. Database Migration Guide
+7. Database Migration Guide.md
 8. Follow BEFORE-STARTING-DEV
 9. Read DAILY-PROGRESS.md
 10. API-V2-MIGRATION-MASTERPLAN.md
-11. API-V2-MASTERPLAN-CHECKLIST.md
-12. API-V2-MIGRATION-EXECUTIVE-SUMMARY.md
-13. API-V2-FRONTEND-MIGRATION-DETAILS.md
-14. workshop-decisions.md
-15. API-DESIGN-WORKSHOP-PLAN.md
+11. workshop-decisions.md
 
 ## 📊 PROGRESS DOCUMENTATION
 
