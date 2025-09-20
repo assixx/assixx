@@ -224,46 +224,51 @@
           }
         });
 
+        function handleTextInputChange(target) {
+          const questionId = parseInt(target.dataset.questionId);
+          const typeMap = {
+            number: 'number',
+            date: 'date',
+          };
+          const type = typeMap[target.type] || 'text';
+          window.updateAnswer(questionId, target.value, type);
+        }
+
+        function handleRadioChange(target) {
+          const name = target.name;
+          if (!name || !name.startsWith('question_')) return;
+
+          const questionId = parseInt(name.replace('question_', ''));
+          if (target.dataset.textValue) {
+            // Yes/No questions
+            window.updateAnswer(questionId, target.dataset.textValue, 'text');
+          } else {
+            // Single choice questions
+            window.updateAnswer(questionId, parseInt(target.value), 'single');
+          }
+        }
+
+        function handleCheckboxChange(target) {
+          const questionId = parseInt(target.dataset.questionId);
+          const optionId = parseInt(target.value);
+          if (!questionId || isNaN(optionId)) return;
+
+          window.updateMultipleChoice(questionId, optionId, target.checked);
+        }
+
         // Handle change events for form inputs (fixes DOMPurify onchange removal)
         document.body.addEventListener('change', (e) => {
           const target = e.target;
 
-          // Handle text inputs and textareas
-          if (
-            target.matches(
-              'textarea[data-question-id], input[type="text"][data-question-id], input[type="number"][data-question-id], input[type="date"][data-question-id]',
-            )
-          ) {
-            const questionId = parseInt(target.dataset.questionId);
-            const type = target.type === 'number' ? 'number' : target.type === 'date' ? 'date' : 'text';
-            window.updateAnswer(questionId, target.value, type);
-            return;
-          }
+          const textInputSelector =
+            'textarea[data-question-id], input[type="text"][data-question-id], input[type="number"][data-question-id], input[type="date"][data-question-id]';
 
-          // Handle radio buttons (single choice and yes/no)
-          if (target.matches('input[type="radio"]')) {
-            const name = target.name;
-            if (name && name.startsWith('question_')) {
-              const questionId = parseInt(name.replace('question_', ''));
-              if (target.dataset.textValue) {
-                // Yes/No questions
-                window.updateAnswer(questionId, target.dataset.textValue, 'text');
-              } else {
-                // Single choice questions
-                window.updateAnswer(questionId, parseInt(target.value), 'single');
-              }
-            }
-            return;
-          }
-
-          // Handle checkboxes (multiple choice)
-          if (target.matches('input[type="checkbox"]')) {
-            const questionId = parseInt(target.dataset.questionId);
-            const optionId = parseInt(target.value);
-            if (questionId && !isNaN(optionId)) {
-              window.updateMultipleChoice(questionId, optionId, target.checked);
-            }
-            return;
+          if (target.matches(textInputSelector)) {
+            handleTextInputChange(target);
+          } else if (target.matches('input[type="radio"]')) {
+            handleRadioChange(target);
+          } else if (target.matches('input[type="checkbox"]')) {
+            handleCheckboxChange(target);
           }
         });
       });
@@ -374,15 +379,42 @@
         return { responded: false };
       }
 
+      function getMandatoryBadge(survey) {
+        const isMandatory = survey.is_mandatory === '1' || survey.is_mandatory === 1 || survey.is_mandatory === true;
+        return isMandatory
+          ? '<span class="survey-badge mandatory">Pflicht</span>'
+          : '<span class="survey-badge optional">Freiwillig</span>';
+      }
+
+      function getAnonymousBadge(survey) {
+        const isAnonymous = survey.is_anonymous === '1' || survey.is_anonymous === 1 || survey.is_anonymous === true;
+        return isAnonymous ? '<span class="survey-badge anonymous">Anonym</span>' : '';
+      }
+
+      function getDeadlineHtml(deadline, completed, daysLeft, isUrgent) {
+        if (!deadline) return '<div></div>';
+
+        return `
+          <div class="survey-deadline ${isUrgent ? 'urgent' : ''}">
+              <i class="fas fa-calendar-alt"></i>
+              ${completed ? 'Frist war:' : 'Frist:'} ${deadline.toLocaleDateString('de-DE')}
+              ${!completed && daysLeft ? ` (${daysLeft} Tage)` : ''}
+          </div>
+        `;
+      }
+
+      function getActionButton(completed) {
+        const className = `survey-action ${completed ? 'completed' : ''}`;
+        const content = completed ? '<i class="fas fa-check"></i> Abgeschlossen' : '<i class="fas fa-arrow-right"></i> Teilnehmen';
+        return `<button class="${className}">${content}</button>`;
+      }
+
       // Create survey card
       function createSurveyCard(survey, completed) {
         const card = document.createElement('div');
         card.className = completed ? 'survey-card completed' : 'survey-card';
-
-        // Store survey ID in data attribute for event delegation
         card.dataset.surveyId = survey.id;
 
-        // Completed cards are clickable (handled by event delegation)
         if (completed) {
           card.style.cursor = 'pointer';
         }
@@ -391,37 +423,23 @@
         const daysLeft = deadline ? Math.ceil((deadline - new Date()) / (1000 * 60 * 60 * 24)) : null;
         const isUrgent = daysLeft && daysLeft <= 7;
 
-        // Use dom-utils setHTML for safe sanitization
-        window.setHTML(
-          card,
-          `
-                <div class="survey-card-header">
-                    <h3 class="survey-card-title">${getQuestionText(survey.title)}</h3>
-                    <div>
-                        ${survey.is_mandatory === '1' || survey.is_mandatory === 1 || survey.is_mandatory === true ? '<span class="survey-badge mandatory">Pflicht</span>' : '<span class="survey-badge optional">Freiwillig</span>'}
-                        ${survey.is_anonymous === '1' || survey.is_anonymous === 1 || survey.is_anonymous === true ? '<span class="survey-badge anonymous">Anonym</span>' : ''}
-                    </div>
-                </div>
-                <p class="survey-card-description">${getQuestionText(survey.description) || 'Keine Beschreibung verfügbar'}</p>
-                <div class="survey-meta">
-                    ${
-                      deadline
-                        ? `
-                        <div class="survey-deadline ${isUrgent ? 'urgent' : ''}">
-                            <i class="fas fa-calendar-alt"></i>
-                            ${completed ? 'Frist war:' : 'Frist:'} ${deadline.toLocaleDateString('de-DE')}
-                            ${!completed && daysLeft ? ` (${daysLeft} Tage)` : ''}
-                        </div>
-                    `
-                        : '<div></div>'
-                    }
-                    <button class="survey-action ${completed ? 'completed' : ''}">
-                        ${completed ? '<i class="fas fa-check"></i> Abgeschlossen' : '<i class="fas fa-arrow-right"></i> Teilnehmen'}
-                    </button>
-                </div>
-            `,
-        );
+        const cardHtml = `
+          <div class="survey-card-header">
+              <h3 class="survey-card-title">${getQuestionText(survey.title)}</h3>
+              <div>
+                  ${getMandatoryBadge(survey)}
+                  ${getAnonymousBadge(survey)}
+              </div>
+          </div>
+          <p class="survey-card-description">${getQuestionText(survey.description) || 'Keine Beschreibung verfügbar'}</p>
+          <div class="survey-meta">
+              ${getDeadlineHtml(deadline, completed, daysLeft, isUrgent)}
+              ${getActionButton(completed)}
+          </div>
+        `;
 
+        // Use dom-utils setHTML for safe sanitization
+        window.setHTML(card, cardHtml);
         return card;
       }
 
@@ -838,56 +856,74 @@
         document.body.append(tempDiv.firstElementChild);
       }
 
+      function parseAnswerOptions(answer_options) {
+        if (typeof answer_options !== 'string') {
+          return Array.isArray(answer_options) ? answer_options : [answer_options];
+        }
+
+        try {
+          const parsed = JSON.parse(answer_options);
+          return Array.isArray(parsed) ? parsed : [parsed];
+        } catch (e) {
+          console.error('Error parsing answer_options:', e);
+          return null;
+        }
+      }
+
+      function formatChoiceAnswer(question, selectedOptions) {
+        return selectedOptions
+          .map((optIndex) => {
+            const option =
+              typeof question.options[0] === 'string'
+                ? // eslint-disable-next-line security/detect-object-injection -- optIndex comes from parsed answer data
+                  question.options[optIndex]
+                : question.options.find((o) => o.id === optIndex)?.option_text;
+            return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;
+          })
+          .join('');
+      }
+
       // Format answer based on question type
       function formatAnswer(question, answer) {
-        if (!answer) return '<em>Keine Antwort</em>';
+        const NO_ANSWER_TEXT = '<em>Keine Antwort</em>';
 
-        switch (question.questionType) {
-          case 'text':
-            return `<p>${answer.answer_text || '<em>Keine Antwort</em>'}</p>`;
+        if (!answer) return NO_ANSWER_TEXT;
 
-          case 'single_choice':
-          case 'multiple_choice':
-            if (answer.answer_options && question.options) {
-              // Parse JSON string if needed
-              let selectedOptions = answer.answer_options;
-              if (typeof selectedOptions === 'string') {
-                try {
-                  selectedOptions = JSON.parse(selectedOptions);
-                } catch (e) {
-                  console.error('Error parsing answer_options:', e);
-                  return '<em>Fehler beim Anzeigen der Antwort</em>';
-                }
-              }
+        const formatters = {
+          text: () => `<p>${answer.answer_text || NO_ANSWER_TEXT}</p>`,
 
-              // Ensure it's an array
-              if (!Array.isArray(selectedOptions)) {
-                selectedOptions = [selectedOptions];
-              }
-
-              return selectedOptions
-                .map((optIndex) => {
-                  const option =
-                    typeof question.options[0] === 'string'
-                      ? // eslint-disable-next-line security/detect-object-injection -- optIndex comes from parsed answer data
-                        question.options[optIndex]
-                      : question.options.find((o) => o.id === optIndex)?.option_text;
-                  return `<p><i class="fas fa-check-square"></i> ${option || 'Option ' + optIndex}</p>`;
-                })
-                .join('');
+          single_choice: () => {
+            if (!answer.answer_options || !question.options) {
+              return NO_ANSWER_TEXT;
             }
-            return '<em>Keine Antwort</em>';
+            const selectedOptions = parseAnswerOptions(answer.answer_options);
+            if (!selectedOptions) {
+              return '<em>Fehler beim Anzeigen der Antwort</em>';
+            }
+            return formatChoiceAnswer(question, selectedOptions);
+          },
 
-          case 'rating':
-          case 'number':
-            return `<p>${answer.answer_number || '<em>Keine Antwort</em>'}</p>`;
+          multiple_choice: () => {
+            if (!answer.answer_options || !question.options) {
+              return NO_ANSWER_TEXT;
+            }
+            const selectedOptions = parseAnswerOptions(answer.answer_options);
+            if (!selectedOptions) {
+              return '<em>Fehler beim Anzeigen der Antwort</em>';
+            }
+            return formatChoiceAnswer(question, selectedOptions);
+          },
 
-          case 'date':
+          rating: () => `<p>${answer.answer_number || NO_ANSWER_TEXT}</p>`,
+          number: () => `<p>${answer.answer_number || NO_ANSWER_TEXT}</p>`,
+
+          date: () => {
             return `<p>${answer.answer_date ? new Date(answer.answer_date).toLocaleDateString('de-DE') : '<em>Kein Datum</em>'}</p>`;
+          },
+        };
 
-          default:
-            return '<em>Unbekannter Antworttyp</em>';
-        }
+        const formatter = formatters[question.questionType];
+        return formatter ? formatter() : '<em>Unbekannter Antworttyp</em>';
       }
 
       // Close response modal

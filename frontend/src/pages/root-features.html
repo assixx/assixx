@@ -479,79 +479,89 @@
         });
       });
 
+      async function loadPlans() {
+        const plansData = await apiClient.request('/plans', {
+          method: 'GET',
+        });
+        console.info('Loaded plans response:', plansData);
+
+        // Extract the data array from the response
+        allPlans = plansData.data || plansData;
+
+        // Check if response is an array
+        if (!Array.isArray(allPlans)) {
+          console.error('Plans response is not an array:', allPlans);
+          throw new Error('Invalid plans response');
+        }
+
+        // Convert to object format for compatibility
+        const loadedPlans = {};
+        allPlans.forEach((plan) => {
+          loadedPlans[plan.code] = {
+            id: plan.id,
+            name: plan.name,
+            price: plan.basePrice,
+            maxEmployees: plan.maxEmployees || Infinity,
+            maxAdmins: plan.maxAdmins || Infinity,
+            features: plan.features ? plan.features.map((f) => f.featureCode) : [],
+          };
+        });
+
+        // Only replace plans if we got valid data
+        if (Object.keys(loadedPlans).length > 0) {
+          plans = loadedPlans;
+        }
+      }
+
+      async function loadCurrentPlan() {
+        try {
+          const currentPlanData = await apiClient.request('/plans/current', {
+            method: 'GET',
+          });
+          console.info('Current plan data:', currentPlanData);
+
+          // Check if we have data.plan or just plan
+          const planInfo = currentPlanData.data?.plan || currentPlanData.plan;
+          const addonsInfo = currentPlanData.data?.addons || currentPlanData.addons || [];
+
+          if (!planInfo || !planInfo.planCode) {
+            console.warn('No plan data found, using fallback');
+            currentPlan = 'basic';
+            tenantAddons = {};
+            return;
+          }
+
+          currentPlan = planInfo.planCode;
+          // Handle trial status by mapping to actual plan
+          if (currentPlan === 'trial' || planInfo.status === 'trial') {
+            const planMap = {
+              1: 'basic',
+              2: 'professional',
+              3: 'enterprise',
+            };
+            currentPlan = planMap[planInfo.planId] || 'basic';
+          }
+
+          tenantAddons = addonsInfo.reduce((acc, addon) => {
+            acc[addon.addonType || addon.addon_type] = addon.quantity;
+            return acc;
+          }, {});
+        } catch (error) {
+          console.error('Failed to load current plan:', error);
+          // Fallback to basic plan if no plan found
+          currentPlan = 'basic';
+          tenantAddons = {};
+        }
+      }
+
       // Load all initial data
       async function loadInitialData() {
         try {
           // Load available plans
-          const plansData = await apiClient.request('/plans', {
-            method: 'GET',
-          });
-          console.info('Loaded plans response:', plansData);
-
-          // Extract the data array from the response
-          allPlans = plansData.data || plansData;
-
-          // Check if response is an array
-          if (!Array.isArray(allPlans)) {
-            console.error('Plans response is not an array:', allPlans);
-            throw new Error('Invalid plans response');
-          }
-
-          // Convert to object format for compatibility, keeping defaults if load fails
-          const loadedPlans = {};
-          allPlans.forEach((plan) => {
-            loadedPlans[plan.code] = {
-              id: plan.id,
-              name: plan.name,
-              price: plan.basePrice,
-              maxEmployees: plan.maxEmployees || Infinity,
-              maxAdmins: plan.maxAdmins || Infinity,
-              features: plan.features ? plan.features.map((f) => f.featureCode) : [],
-            };
-          });
-
-          // Only replace plans if we got valid data
-          if (Object.keys(loadedPlans).length > 0) {
-            plans = loadedPlans;
-          }
+          await loadPlans();
 
           // Load current tenant plan
-          try {
-            const currentPlanData = await apiClient.request('/plans/current', {
-              method: 'GET',
-            });
-            console.info('Current plan data:', currentPlanData);
-
-            // Check if we have data.plan or just plan
-            const planInfo = currentPlanData.data?.plan || currentPlanData.plan;
-            const addonsInfo = currentPlanData.data?.addons || currentPlanData.addons || [];
-
-            if (planInfo && planInfo.planCode) {
-              currentPlan = planInfo.planCode;
-              // Handle trial status by mapping to actual plan
-              if (currentPlan === 'trial' || planInfo.status === 'trial') {
-                // Get actual plan from planId
-                const planId = planInfo.planId;
-                if (planId === 1) currentPlan = 'basic';
-                else if (planId === 2) currentPlan = 'professional';
-                else if (planId === 3) currentPlan = 'enterprise';
-                else currentPlan = 'basic'; // Default fallback
-              }
-              tenantAddons = addonsInfo.reduce((acc, addon) => {
-                acc[addon.addonType || addon.addon_type] = addon.quantity;
-                return acc;
-              }, {});
-            } else {
-              console.warn('No plan data found, using fallback');
-              currentPlan = 'basic';
-              tenantAddons = {};
-            }
-          } catch (error) {
-            console.error('Failed to load current plan:', error);
-            // Fallback to basic plan if no plan found
-            currentPlan = 'basic';
-            tenantAddons = {};
-          }
+          await loadCurrentPlan();
 
           // Update UI with current plan
           updatePlanUI();

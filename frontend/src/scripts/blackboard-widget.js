@@ -177,73 +177,94 @@ class BlackboardWidget {
     }
   }
 
-  createMiniNote(entry) {
+  getNoteColor(entry) {
     const colors = ['yellow', 'blue', 'green', 'red', 'orange', 'pink'];
-    const color = entry.color || colors[Math.floor(Math.random() * colors.length)];
+    return entry.color || colors[Math.floor(Math.random() * colors.length)];
+  }
 
-    // Format date
-    const date = new Date(entry.created_at);
-    const formattedDate = date.toLocaleDateString('de-DE', {
+  getFormattedDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
     });
+  }
 
-    // Handle content that might be an object
-    let contentText = entry.content;
-    if (typeof contentText === 'object' && contentText !== null) {
-      // If it's a Buffer object or similar
-      if (contentText.type === 'Buffer' && Array.isArray(contentText.data)) {
-        contentText = String.fromCharCode.apply(null, contentText.data);
-      } else {
-        contentText = JSON.stringify(contentText);
-      }
+  parseContentText(contentText) {
+    if (typeof contentText !== 'object' || contentText === null) {
+      return contentText;
     }
 
-    // Check if this is a direct attachment entry
-    const isDirectAttachment = contentText && contentText.startsWith('[Attachment:');
-    let contentHtml = '';
+    // If it's a Buffer object or similar
+    if (contentText.type === 'Buffer' && Array.isArray(contentText.data)) {
+      return String.fromCharCode.apply(null, contentText.data);
+    }
 
-    if (isDirectAttachment && entry.attachments && entry.attachments.length > 0) {
-      // Handle direct attachment display
-      const attachment = entry.attachments[0];
-      const isImage = attachment.mime_type.startsWith('image/');
-      const isPDF = attachment.mime_type === 'application/pdf';
+    return JSON.stringify(contentText);
+  }
 
-      if (isImage) {
-        contentHtml = `
-          <div class="mini-note-attachment">
-            <img data-src="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview"
-                 alt="${this.escapeHtml(attachment.original_name)}"
-                 style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
-                 loading="lazy"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 80px; color: #666;">
-              <i class="fas fa-image" style="font-size: 24px; margin-bottom: 5px;"></i>
-              <span style="font-size: 10px;">Bild</span>
-            </div>
+  createImageAttachmentHtml(attachment) {
+    return `
+      <div class="mini-note-attachment">
+        <img data-src="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview"
+             alt="${this.escapeHtml(attachment.original_name)}"
+             style="width: 100%; height: auto; max-height: 120px; object-fit: cover; border-radius: 4px;"
+             loading="lazy"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div style="display: none; flex-direction: column; align-items: center; justify-content: center; height: 80px; color: #666;">
+          <i class="fas fa-image" style="font-size: 24px; margin-bottom: 5px;"></i>
+          <span style="font-size: 10px;">Bild</span>
+        </div>
+      </div>
+    `;
+  }
+
+  createPDFAttachmentHtml(attachment) {
+    return `
+      <div class="mini-note-attachment" style="position: relative; height: 120px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
+        <object data="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview"
+                type="application/pdf"
+                style="width: 100%; height: 100%; pointer-events: none;">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666;">
+            <i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545; margin-bottom: 5px;"></i>
+            <div style="font-size: 10px;">PDF-Dokument</div>
           </div>
-        `;
-      } else if (isPDF) {
-        contentHtml = `
-          <div class="mini-note-attachment" style="position: relative; height: 120px; background: #f5f5f5; border-radius: 4px; overflow: hidden;">
-            <object data="/api/blackboard/attachments/${this.escapeHtml(String(attachment.id))}/preview"
-                    type="application/pdf"
-                    style="width: 100%; height: 100%; pointer-events: none;">
-              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666;">
-                <i class="fas fa-file-pdf" style="font-size: 32px; color: #dc3545; margin-bottom: 5px;"></i>
-                <div style="font-size: 10px;">PDF-Dokument</div>
-              </div>
-            </object>
-          </div>
-        `;
-      }
-    } else {
-      // Regular text content
+        </object>
+      </div>
+    `;
+  }
+
+  getContentHtml(entry, contentText, isDirectAttachment) {
+    if (!isDirectAttachment || !entry.attachments || entry.attachments.length === 0) {
       const maxContentLength = 80;
       const truncatedContent =
         contentText.length > maxContentLength ? `${contentText.substring(0, maxContentLength)}...` : contentText;
-      contentHtml = `<div class="mini-note-content">${this.escapeHtml(truncatedContent)}</div>`;
+      return `<div class="mini-note-content">${this.escapeHtml(truncatedContent)}</div>`;
     }
+
+    const attachment = entry.attachments[0];
+    if (attachment.mime_type.startsWith('image/')) {
+      return this.createImageAttachmentHtml(attachment);
+    }
+    if (attachment.mime_type === 'application/pdf') {
+      return this.createPDFAttachmentHtml(attachment);
+    }
+
+    // Fallback for other attachment types
+    const maxContentLength = 80;
+    const truncatedContent =
+      contentText.length > maxContentLength ? `${contentText.substring(0, maxContentLength)}...` : contentText;
+    return `<div class="mini-note-content">${this.escapeHtml(truncatedContent)}</div>`;
+  }
+
+  createMiniNote(entry) {
+    const color = this.getNoteColor(entry);
+    const formattedDate = this.getFormattedDate(entry.created_at);
+
+    const contentText = this.parseContentText(entry.content);
+    const isDirectAttachment = contentText && contentText.startsWith('[Attachment:');
+
+    const contentHtml = this.getContentHtml(entry, contentText, isDirectAttachment);
 
     // Add attachment indicator if there are attachments but not a direct attachment
     let attachmentIndicator = '';

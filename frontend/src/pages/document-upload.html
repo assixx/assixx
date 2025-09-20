@@ -612,6 +612,52 @@
           }
         });
 
+        function getFileErrorMessage(fileExt) {
+          const imageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+          const wordExtensions = ['doc', 'docx'];
+          const excelExtensions = ['xls', 'xlsx'];
+
+          if (imageExtensions.includes(fileExt)) {
+            return 'Bilddateien sind nicht erlaubt. Bitte konvertieren Sie das Bild in ein PDF-Dokument.';
+          }
+          if (wordExtensions.includes(fileExt)) {
+            return 'Word-Dokumente sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.';
+          }
+          if (excelExtensions.includes(fileExt)) {
+            return 'Excel-Dateien sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.';
+          }
+          if (fileExt === 'txt') {
+            return 'Textdateien sind nicht erlaubt. Bitte konvertieren Sie die Datei in ein PDF-Dokument.';
+          }
+          return `Dateityp "${fileExt}" wird nicht unterstützt. Nur PDF-Dateien sind erlaubt.`;
+        }
+
+        function resetFileInput() {
+          const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
+          if (fileInput) {
+            fileInput.value = '';
+          }
+        }
+
+        function setupPdfPreview(file) {
+          const pdfPreviewContainer = document.querySelector('#pdf-preview-container');
+          const pdfPreview = document.querySelector('#pdf-preview');
+          const previewClose = document.querySelector('#preview-close');
+
+          if (!pdfPreviewContainer || !pdfPreview) return;
+
+          const fileUrl = URL.createObjectURL(file);
+          pdfPreview.src = fileUrl;
+          pdfPreviewContainer.classList.add('active');
+
+          if (previewClose) {
+            previewClose.addEventListener('click', () => {
+              pdfPreviewContainer.classList.remove('active');
+              URL.revokeObjectURL(fileUrl);
+            });
+          }
+        }
+
         // Datei-Informationen aktualisieren und Vorschau anzeigen
         function updateFileInfo(file) {
           if (!file) return;
@@ -619,26 +665,8 @@
           // Überprüfen, ob es eine PDF-Datei ist
           if (!file.type || file.type !== 'application/pdf') {
             const fileExt = file.name.split('.').pop().toLowerCase();
-
-            // Detaillierte Fehlermeldung basierend auf dem Dateityp
-            if (fileExt === 'jpg' || fileExt === 'jpeg' || fileExt === 'png' || fileExt === 'gif') {
-              showError('Bilddateien sind nicht erlaubt. Bitte konvertieren Sie das Bild in ein PDF-Dokument.');
-            } else if (fileExt === 'doc' || fileExt === 'docx') {
-              showError('Word-Dokumente sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.');
-            } else if (fileExt === 'xls' || fileExt === 'xlsx') {
-              showError('Excel-Dateien sind nicht erlaubt. Bitte exportieren Sie die Datei als PDF.');
-            } else if (fileExt === 'txt') {
-              showError('Textdateien sind nicht erlaubt. Bitte konvertieren Sie die Datei in ein PDF-Dokument.');
-            } else {
-              showError(`Dateityp "${fileExt}" wird nicht unterstützt. Nur PDF-Dateien sind erlaubt.`);
-            }
-
-            // Dateiauswahl zurücksetzen
-            const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
-            if (fileInput) {
-              fileInput.value = '';
-            }
-
+            showError(getFileErrorMessage(fileExt));
+            resetFileInput();
             return;
           }
 
@@ -646,13 +674,7 @@
           const maxSize = 5 * 1024 * 1024; // 5 MB in Bytes
           if (file.size > maxSize) {
             showError(`Die Datei ist zu groß (${formatFileSize(file.size)}). Die maximale Dateigröße beträgt 5 MB.`);
-
-            // Dateiauswahl zurücksetzen
-            const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
-            if (fileInput) {
-              fileInput.value = '';
-            }
-
+            resetFileInput();
             return;
           }
 
@@ -664,29 +686,7 @@
           fileInfo.classList.add('active');
 
           // PDF-Vorschau erstellen
-          const pdfPreviewContainer = document.querySelector('#pdf-preview-container');
-          const pdfPreview = document.querySelector('#pdf-preview');
-          const previewClose = document.querySelector('#preview-close');
-
-          if (pdfPreviewContainer && pdfPreview) {
-            // Datei-URL erstellen
-            const fileUrl = URL.createObjectURL(file);
-
-            // iframe-Quelle setzen
-            pdfPreview.src = fileUrl;
-
-            // Container anzeigen
-            pdfPreviewContainer.classList.add('active');
-
-            // Schließen-Button-Funktionalität
-            if (previewClose) {
-              previewClose.addEventListener('click', () => {
-                pdfPreviewContainer.classList.remove('active');
-                // Optional: URL-Objekt freigeben, wenn die Vorschau geschlossen wird
-                URL.revokeObjectURL(fileUrl);
-              });
-            }
-          }
+          setupPdfPreview(file);
         }
 
         // Dateigröße formatieren
@@ -761,6 +761,119 @@
         } catch (error) {
           console.error('Error loading employees:', error);
           showError('Fehler beim Laden der Mitarbeiterliste: ' + error.message);
+        }
+      }
+
+      function setUploadButtonLoading(button, isLoading) {
+        if (!button) return;
+
+        button.disabled = isLoading;
+
+        if (isLoading) {
+          // Clear button content
+          while (button.firstChild) {
+            button.firstChild.remove();
+          }
+
+          // Add spinner SVG
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('width', '20');
+          svg.setAttribute('height', '20');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('fill', 'currentColor');
+          svg.classList.add('loading-spinner');
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('d', 'M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z');
+          svg.append(path);
+
+          button.append(svg);
+          button.append(document.createTextNode(' Wird hochgeladen...'));
+        } else {
+          // Reset button text
+          while (button.firstChild) {
+            button.firstChild.remove();
+          }
+          button.textContent = 'Dokument hochladen';
+        }
+      }
+
+      function resetDropdowns() {
+        const dropdowns = [
+          { id: '#userDisplay', text: 'Bitte Mitarbeiter auswählen' },
+          { id: '#teamDisplay', text: 'Bitte Team auswählen' },
+          { id: '#departmentDisplay', text: 'Bitte Abteilung auswählen' },
+          { id: '#categoryDisplay', text: 'Bitte Kategorie auswählen' },
+          { id: '#monthDisplay', text: 'Monat auswählen (optional)' },
+        ];
+
+        dropdowns.forEach(({ id, text }) => {
+          const display = document.querySelector(id);
+          if (display) {
+            const span = display.querySelector('span');
+            if (span) span.textContent = text;
+            display.classList.add('placeholder');
+          }
+        });
+
+        // Reset recipient type
+        const userRadio = document.querySelector('input[name="recipientType"][value="user"]');
+        if (userRadio) userRadio.checked = true;
+        updateRecipientSelector('user');
+      }
+
+      function resetFilePreview() {
+        const fileInfo = document.querySelector('#file-info');
+        const pdfPreviewContainer = document.querySelector('#pdf-preview-container');
+        const pdfPreview = document.querySelector('#pdf-preview');
+
+        if (fileInfo) {
+          fileInfo.classList.remove('active');
+        }
+
+        if (pdfPreviewContainer) {
+          pdfPreviewContainer.classList.remove('active');
+        }
+
+        if (pdfPreview && pdfPreview.src) {
+          URL.revokeObjectURL(pdfPreview.src);
+          pdfPreview.src = '';
+        }
+      }
+
+      async function performUpload(cleanFormData, form, uploadButton, token) {
+        setUploadButtonLoading(uploadButton, true);
+        hideError();
+        hideSuccess();
+
+        try {
+          const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
+          const endpoint = useV2Documents ? '/api/v2/documents/upload' : '/api/documents/upload';
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: cleanFormData,
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            console.info('Upload successful:', result);
+            form.reset();
+            resetDropdowns();
+            resetFilePreview();
+            showSuccess('Dokument wurde erfolgreich hochgeladen!');
+          } else {
+            console.error('Upload failed:', result);
+            showError('Fehler: ' + (result.message || 'Unbekannter Fehler'));
+          }
+        } catch (error) {
+          console.error('Error uploading document:', error);
+          showError('Fehler: ' + (error.message || 'Unbekannter Fehler'));
+        } finally {
+          setUploadButtonLoading(uploadButton, false);
         }
       }
 
@@ -855,121 +968,7 @@
 
         // Bestätigungsdialog anzeigen
         showConfirmationDialog(cleanFormData, async () => {
-          // Button-Zustand ändern
-          if (uploadButton) {
-            uploadButton.disabled = true;
-            // Clear button content
-            while (uploadButton.firstChild) {
-              uploadButton.firstChild.remove();
-            }
-
-            // Add spinner SVG
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.setAttribute('width', '20');
-            svg.setAttribute('height', '20');
-            svg.setAttribute('viewBox', '0 0 24 24');
-            svg.setAttribute('fill', 'currentColor');
-            svg.classList.add('loading-spinner');
-
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            path.setAttribute('d', 'M12,4V2A10,10 0 0,0 2,12H4A8,8 0 0,1 12,4Z');
-            svg.append(path);
-
-            uploadButton.append(svg);
-            uploadButton.append(document.createTextNode(' Wird hochgeladen...'));
-          }
-
-          // Erfolgs- und Fehlerelemente
-          hideError();
-          hideSuccess();
-
-          try {
-            const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-            const endpoint = useV2Documents ? '/api/v2/documents/upload' : '/api/documents/upload';
-            const response = await fetch(endpoint, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: cleanFormData,
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-              console.info('Upload successful:', result);
-              form.reset();
-
-              // Dropdowns zurücksetzen
-              document.querySelector('#userDisplay').querySelector('span').textContent = 'Bitte Mitarbeiter auswählen';
-              document.querySelector('#userDisplay').classList.add('placeholder');
-              document.querySelector('#teamDisplay').querySelector('span').textContent = 'Bitte Team auswählen';
-              document.querySelector('#teamDisplay').classList.add('placeholder');
-              document.querySelector('#departmentDisplay').querySelector('span').textContent = 'Bitte Abteilung auswählen';
-              document.querySelector('#departmentDisplay').classList.add('placeholder');
-              document.querySelector('#categoryDisplay').querySelector('span').textContent = 'Bitte Kategorie auswählen';
-              document.querySelector('#categoryDisplay').classList.add('placeholder');
-              document.querySelector('#monthDisplay').querySelector('span').textContent = 'Monat auswählen (optional)';
-              document.querySelector('#monthDisplay').classList.add('placeholder');
-
-              // Empfänger-Typ zurück auf 'user' setzen
-              document.querySelector('input[name="recipientType"][value="user"]').checked = true;
-              updateRecipientSelector('user');
-
-              // Datei-Info und Vorschau zurücksetzen
-              const fileInfo = document.querySelector('#file-info');
-              const pdfPreviewContainer = document.querySelector('#pdf-preview-container');
-              const pdfPreview = document.querySelector('#pdf-preview');
-
-              if (fileInfo) {
-                fileInfo.classList.remove('active');
-              }
-
-              if (pdfPreviewContainer) {
-                pdfPreviewContainer.classList.remove('active');
-              }
-
-              if (pdfPreview && pdfPreview.src) {
-                // URL-Objekt freigeben
-                URL.revokeObjectURL(pdfPreview.src);
-                pdfPreview.src = '';
-              }
-
-              showSuccess('Dokument wurde erfolgreich hochgeladen!');
-            } else {
-              console.error('Upload failed:', result);
-              showError('Fehler: ' + (result.message || 'Unbekannter Fehler'));
-            }
-          } catch (error) {
-            console.error('Error uploading document:', error);
-            showError('Fehler: ' + (error.message || 'Unbekannter Fehler'));
-          } finally {
-            // Button-Zustand zurücksetzen
-            if (uploadButton) {
-              uploadButton.disabled = false;
-              // Clear button content
-              while (uploadButton.firstChild) {
-                uploadButton.firstChild.remove();
-              }
-
-              // Add upload SVG
-              const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-              svg.setAttribute('width', '20');
-              svg.setAttribute('height', '20');
-              svg.setAttribute('viewBox', '0 0 24 24');
-              svg.setAttribute('fill', 'currentColor');
-
-              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-              path.setAttribute(
-                'd',
-                'M14,13V17H10V13H7L12,8L17,13M19.35,10.03C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.03C2.34,8.36 0,10.9 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.03Z',
-              );
-              svg.append(path);
-
-              uploadButton.append(svg);
-              uploadButton.append(document.createTextNode(' Dokument hochladen'));
-            }
-          }
+          await performUpload(cleanFormData, form, uploadButton, token);
         });
       }
 

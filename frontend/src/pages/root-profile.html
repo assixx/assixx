@@ -656,34 +656,31 @@
         }
       }
 
+      function getInitialsFromToken(token) {
+        if (!token) return '...';
+
+        try {
+          const userInfo = parseJwt(token);
+          if (!userInfo) return '...';
+
+          const firstName = userInfo.first_name || userInfo.firstName || '';
+          const lastName = userInfo.last_name || userInfo.lastName || '';
+          const firstInitial = firstName.charAt(0).toUpperCase() || '';
+          const lastInitial = lastName.charAt(0).toUpperCase() || '';
+
+          return firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : '...';
+        } catch {
+          return '...';
+        }
+      }
+
       // Set initial placeholder while loading
       function setInitialPlaceholder() {
         const container = document.querySelector('#profile-picture-display');
-        if (container && !container.innerHTML.trim()) {
-          // Get user info from token if available
-          const token = localStorage.getItem('token');
-          if (token) {
-            try {
-              const userInfo = parseJwt(token);
-              if (userInfo) {
-                // Try to get initials from token data
-                const firstName = userInfo.first_name || userInfo.firstName || '';
-                const lastName = userInfo.last_name || userInfo.lastName || '';
-                const firstInitial = firstName.charAt(0).toUpperCase() || '';
-                const lastInitial = lastName.charAt(0).toUpperCase() || '';
-                const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : '...';
-                container.textContent = initials;
-              } else {
-                container.textContent = '...';
-              }
-            } catch {
-              // Error handling - show placeholder on error
-              container.textContent = '...';
-            }
-          } else {
-            container.textContent = '...';
-          }
-        }
+        if (!container || container.innerHTML.trim()) return;
+
+        const token = localStorage.getItem('token');
+        container.textContent = getInitialsFromToken(token);
       }
 
       // Modal functions

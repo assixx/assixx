@@ -287,85 +287,152 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Handle role switch for root with dropdown
-export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee'): Promise<void> {
-  // For custom dropdown, we'll update the display element instead
-  const dropdownDisplay = $$('#roleSwitchDisplay');
+/**
+ * Set dropdown display state
+ */
+function setDropdownState(dropdownDisplay: HTMLElement | null, enabled: boolean): void {
+  if (!dropdownDisplay) return;
+  dropdownDisplay.style.pointerEvents = enabled ? '' : 'none';
+  dropdownDisplay.style.opacity = enabled ? '' : '0.5';
+}
 
-  if (dropdownDisplay) {
-    // Disable dropdown during switch
-    dropdownDisplay.style.pointerEvents = 'none';
-    dropdownDisplay.style.opacity = '0.5';
+/**
+ * Get role display name
+ */
+function getRoleDisplayName(role: string): string {
+  if (role === 'root') return 'Root';
+  if (role === 'admin') return 'Admin';
+  return 'Mitarbeiter';
+}
+
+/**
+ * Determine endpoint for role switching
+ */
+function determineEndpoint(
+  targetRole: string,
+  currentActiveRole: string | null,
+): { endpoint: string; description: string } {
+  if (targetRole === 'root' && currentActiveRole !== 'root') {
+    return {
+      endpoint: '/role-switch/to-original',
+      description: `${currentActiveRole ?? 'unknown'} → Root (to-original)`,
+    };
   }
 
+  if (targetRole === 'admin') {
+    if (currentActiveRole === 'root') {
+      return {
+        endpoint: '/role-switch/root-to-admin',
+        description: 'Root → Admin (root-to-admin)',
+      };
+    }
+    if (currentActiveRole === 'employee') {
+      console.warn('[RoleSwitch] Cannot switch directly from Employee to Admin!');
+      console.info('[RoleSwitch] Need to go: Employee → Root → Admin');
+      return {
+        endpoint: '/role-switch/to-original',
+        description: 'Employee → Root first (to-original)',
+      };
+    }
+  }
+
+  if (targetRole === 'employee' && (currentActiveRole === 'root' || currentActiveRole === 'admin')) {
+    return {
+      endpoint: '/role-switch/to-employee',
+      description: `${currentActiveRole} → Employee (to-employee)`,
+    };
+  }
+
+  return { endpoint: '', description: '' };
+}
+
+/**
+ * Update storage after role switch
+ */
+function updateStorageAfterSwitch(response: { token: string; user: { activeRole: string } }): void {
+  localStorage.setItem('token', response.token);
+  localStorage.setItem('activeRole', response.user.activeRole);
+
+  if (response.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
+    sessionStorage.setItem('roleSwitch', 'employee');
+  } else {
+    sessionStorage.removeItem('roleSwitch');
+  }
+
+  currentView = response.user.activeRole;
+
+  ['root', 'admin', 'employee'].forEach((role) => {
+    localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+  });
+}
+
+/**
+ * Log role switch details
+ */
+function logRoleSwitchDetails(
+  prefix: string,
+  originalRole: string | null,
+  activeRole: string | null,
+  targetRole: string,
+): void {
+  console.info(`[${prefix}] ============ ROLE SWITCH DETAILS ============`);
+  console.info(`[${prefix}] Original Role:`, originalRole);
+  console.info(`[${prefix}] Current Active Role:`, activeRole);
+  console.info(`[${prefix}] Target Role:`, targetRole);
+  console.info(`[${prefix}] Current View before switch:`, activeRole ?? originalRole);
+}
+
+/**
+ * Log switch decision
+ */
+function logSwitchDecision(prefix: string, description: string, endpoint: string): void {
+  console.info(`[${prefix}] Switch decision:`, description);
+  console.info(`[${prefix}] Using endpoint:`, endpoint);
+  console.info(`[${prefix}] ===========================================`);
+}
+
+/**
+ * Redirect to appropriate dashboard
+ */
+function redirectToDashboard(targetRole: string): void {
+  setTimeout(() => {
+    if (targetRole === 'root') {
+      window.location.href = '/root-dashboard';
+    } else if (targetRole === 'admin') {
+      window.location.href = '/admin-dashboard';
+    } else {
+      window.location.href = '/employee-dashboard';
+    }
+  }, 1000);
+}
+
+export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee'): Promise<void> {
+  const dropdownDisplay = $$('#roleSwitchDisplay');
+  setDropdownState(dropdownDisplay, false);
+
   try {
-    // Detailliertes Logging für Debugging
     const originalRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole');
-    console.info('[RoleSwitch] ============ ROLE SWITCH DETAILS ============');
-    console.info('[RoleSwitch] Original Role (userRole):', originalRole);
-    console.info('[RoleSwitch] Current Active Role:', activeRole);
-    console.info('[RoleSwitch] Target Role (selected):', targetRole);
-    console.info('[RoleSwitch] Current View before switch:', activeRole ?? originalRole);
-
-    // Wichtig: Wir müssen activeRole berücksichtigen, nicht nur targetRole!
     const currentActiveRole = activeRole ?? originalRole;
 
-    // Check if already in the target role
+    logRoleSwitchDetails('RoleSwitch', originalRole, activeRole, targetRole);
+
     if (currentActiveRole === targetRole) {
       console.info('[RoleSwitch] Already in target role, showing warning');
-      showToast(
-        `Sie sind bereits als ${targetRole === 'root' ? 'Root' : targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'} aktiv!`,
-        'warning',
-      );
-
-      // Re-enable dropdown
-      if (dropdownDisplay) {
-        dropdownDisplay.style.pointerEvents = '';
-        dropdownDisplay.style.opacity = '';
-      }
+      showToast(`Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`, 'warning');
+      setDropdownState(dropdownDisplay, true);
       return;
     }
 
-    // Determine endpoint based on CURRENT activeRole and TARGET role
-    let endpoint = '';
-    let switchDescription = '';
-
-    // WICHTIG: Keine Prefixe hier! apiClient fügt das automatisch hinzu
-    if (targetRole === 'root' && currentActiveRole !== 'root') {
-      // Zurück zu Root von Admin oder Employee
-      endpoint = '/role-switch/to-original';
-      switchDescription = `${currentActiveRole ?? 'unknown'} → Root (to-original)`;
-    } else if (targetRole === 'admin') {
-      if (currentActiveRole === 'root') {
-        // Root → Admin
-        endpoint = '/role-switch/root-to-admin';
-        switchDescription = 'Root → Admin (root-to-admin)';
-      } else if (currentActiveRole === 'employee') {
-        // Employee → Admin (wenn Original Role = Root)
-        // Müssen erst zu Root zurück, dann zu Admin
-        console.warn('[RoleSwitch] Cannot switch directly from Employee to Admin!');
-        console.info('[RoleSwitch] Need to go: Employee → Root → Admin');
-        // Versuchen wir to-original um zu Root zu kommen
-        endpoint = '/role-switch/to-original';
-        switchDescription = 'Employee → Root first (to-original)';
-        // Nach erfolgreichem Switch müsste User nochmal auf Admin klicken
-      }
-    } else if (targetRole === 'employee') {
-      if (currentActiveRole === 'root' || currentActiveRole === 'admin') {
-        endpoint = '/role-switch/to-employee';
-        switchDescription = `${currentActiveRole} → Employee (to-employee)`;
-      } else {
-        console.warn('[RoleSwitch] Already in employee view!');
-        showToast('Sie sind bereits als Mitarbeiter aktiv!', 'warning');
-        if (dropdownDisplay) {
-          dropdownDisplay.style.pointerEvents = '';
-          dropdownDisplay.style.opacity = '';
-        }
-        return;
-      }
-    }
+    const { endpoint, description } = determineEndpoint(targetRole, currentActiveRole);
 
     if (endpoint === '') {
+      if (targetRole === 'employee' && currentActiveRole === 'employee') {
+        console.warn('[RoleSwitch] Already in employee view!');
+        showToast('Sie sind bereits als Mitarbeiter aktiv!', 'warning');
+        setDropdownState(dropdownDisplay, true);
+        return;
+      }
       console.error('[RoleSwitch] No valid endpoint for switch!', {
         from: currentActiveRole,
         to: targetRole,
@@ -374,120 +441,95 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
       return;
     }
 
-    console.info('[RoleSwitch] Switch decision:', switchDescription);
-    console.info('[RoleSwitch] Using endpoint:', endpoint);
-    console.info('[RoleSwitch] ===========================================');
+    logSwitchDecision('RoleSwitch', description, endpoint);
 
     const response = await apiClient.post<{
       token: string;
-      user: {
-        activeRole: string;
-      };
+      user: { activeRole: string };
       message?: string;
     }>(endpoint, {});
 
-    // Update token and storage
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('activeRole', response.user.activeRole);
-
-    // Also update sessionStorage for KVP page compatibility
-    if (response.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
-      sessionStorage.setItem('roleSwitch', 'employee');
-    } else {
-      sessionStorage.removeItem('roleSwitch');
-    }
-
-    // Update currentView immediately
-    currentView = response.user.activeRole;
-
-    // Clear all role switch banner dismissal states when switching roles
-    ['root', 'admin', 'employee'].forEach((role) => {
-      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
-    });
-
-    // Show success message
-    const message = `Wechsel zur ${targetRole === 'root' ? 'Root' : targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'}-Ansicht...`;
-    showToast(message, 'success');
-
-    // Always redirect to the appropriate dashboard
-    setTimeout(() => {
-      // Direct redirect to dashboard based on target role
-      if (targetRole === 'root') {
-        window.location.href = '/root-dashboard';
-      } else if (targetRole === 'admin') {
-        window.location.href = '/admin-dashboard';
-      } else {
-        window.location.href = '/employee-dashboard';
-      }
-    }, 1000);
+    updateStorageAfterSwitch(response);
+    showToast(`Wechsel zur ${getRoleDisplayName(targetRole)}-Ansicht...`, 'success');
+    redirectToDashboard(targetRole);
   } catch (error) {
     console.error('Role switch error:', error);
     showToast('Fehler beim Rollenwechsel', 'error');
-
-    // Re-enable dropdown
-    if (dropdownDisplay) {
-      dropdownDisplay.style.pointerEvents = 'auto';
-      dropdownDisplay.style.opacity = '1';
-    }
+    setDropdownState(dropdownDisplay, true);
   }
+}
+
+/**
+ * Determine endpoint for admin role switching
+ */
+function determineAdminEndpoint(
+  targetRole: string,
+  currentActiveRole: string | null,
+): { endpoint: string; description: string } {
+  if (targetRole === 'employee' && currentActiveRole === 'admin') {
+    return {
+      endpoint: '/role-switch/to-employee',
+      description: 'Admin → Employee (to-employee)',
+    };
+  }
+  if (targetRole === 'admin' && currentActiveRole === 'employee') {
+    return {
+      endpoint: '/role-switch/to-original',
+      description: 'Employee → Admin (to-original)',
+    };
+  }
+  return { endpoint: '', description: '' };
+}
+
+/**
+ * Handle storage update for admin role switch
+ */
+function updateAdminStorage(response: { token: string; user: { activeRole: string } }): void {
+  localStorage.setItem('token', response.token);
+  localStorage.setItem('activeRole', response.user.activeRole);
+
+  if (response.user.activeRole === 'employee' && userRole === 'admin') {
+    sessionStorage.setItem('roleSwitch', 'employee');
+  } else {
+    sessionStorage.removeItem('roleSwitch');
+  }
+
+  currentView = response.user.activeRole;
+
+  ['admin', 'employee'].forEach((role) => {
+    localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
+  });
 }
 
 // Handle role switch for admin users
 export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Promise<void> {
   const dropdownDisplay = $$('#roleSwitchDisplay');
-
-  if (dropdownDisplay) {
-    dropdownDisplay.style.pointerEvents = 'none';
-    dropdownDisplay.style.opacity = '0.5';
-  }
+  setDropdownState(dropdownDisplay, false);
 
   try {
-    // Detailliertes Logging
     const originalRole = localStorage.getItem('userRole');
     const activeRole = localStorage.getItem('activeRole');
-    console.info('[RoleSwitch-Admin] ============ ADMIN ROLE SWITCH ============');
-    console.info('[RoleSwitch-Admin] Original Role:', originalRole);
-    console.info('[RoleSwitch-Admin] Current Active Role:', activeRole);
-    console.info('[RoleSwitch-Admin] Target Role:', targetRole);
-
     const currentActiveRole = activeRole ?? originalRole;
 
-    // Check if already in the target role
+    logRoleSwitchDetails('RoleSwitch-Admin', originalRole, activeRole, targetRole);
+
     if (currentActiveRole === targetRole) {
       console.info('[RoleSwitch-Admin] Already in target role, showing warning');
-      showToast(`Sie sind bereits als ${targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'} aktiv!`, 'warning');
-
-      // Re-enable dropdown if it exists
-      if (dropdownDisplay) {
-        dropdownDisplay.style.pointerEvents = '';
-        dropdownDisplay.style.opacity = '';
-      }
+      showToast(`Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`, 'warning');
+      setDropdownState(dropdownDisplay, true);
       return;
     }
 
-    // WICHTIG: Keine Prefixe hier! apiClient fügt das automatisch hinzu
-    let endpoint = '';
-    let switchDescription = '';
+    const { endpoint, description } = determineAdminEndpoint(targetRole, currentActiveRole);
 
-    if (targetRole === 'employee' && currentActiveRole === 'admin') {
-      endpoint = '/role-switch/to-employee';
-      switchDescription = 'Admin → Employee (to-employee)';
-    } else if (targetRole === 'admin' && currentActiveRole === 'employee') {
-      endpoint = '/role-switch/to-original';
-      switchDescription = 'Employee → Admin (to-original)';
-    } else {
+    if (endpoint === '') {
       console.warn('[RoleSwitch-Admin] Invalid switch:', currentActiveRole, '→', targetRole);
       showToast('Dieser Rollenwechsel ist nicht möglich', 'error');
-      if (dropdownDisplay) {
-        dropdownDisplay.style.pointerEvents = '';
-        dropdownDisplay.style.opacity = '';
-      }
+      setDropdownState(dropdownDisplay, true);
       return;
     }
 
-    console.info('[RoleSwitch-Admin] Decision:', switchDescription);
-    console.info('[RoleSwitch-Admin] Endpoint:', endpoint);
-    console.info('[RoleSwitch-Admin] =========================================');
+    logSwitchDecision('RoleSwitch-Admin', description, endpoint);
 
     const response = await apiClient.post<{
       token: string;
@@ -495,41 +537,13 @@ export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Prom
       message?: string;
     }>(endpoint.replace('/api', ''), {});
 
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('activeRole', response.user.activeRole);
-
-    if (response.user.activeRole === 'employee' && userRole === 'admin') {
-      sessionStorage.setItem('roleSwitch', 'employee');
-    } else {
-      sessionStorage.removeItem('roleSwitch');
-    }
-
-    currentView = response.user.activeRole;
-
-    ['admin', 'employee'].forEach((role) => {
-      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
-    });
-
-    // Deutsche Toast-Meldung wie bei Root
-    const message = `Wechsel zur ${targetRole === 'admin' ? 'Admin' : 'Mitarbeiter'}-Ansicht...`;
-    showToast(message, 'success');
-
-    // Redirect to appropriate dashboard like Root does
-    setTimeout(() => {
-      if (targetRole === 'admin') {
-        window.location.href = '/admin-dashboard';
-      } else {
-        window.location.href = '/employee-dashboard';
-      }
-    }, 1000);
+    updateAdminStorage(response);
+    showToast(`Wechsel zur ${getRoleDisplayName(targetRole)}-Ansicht...`, 'success');
+    redirectToDashboard(targetRole);
   } catch (error) {
     console.error('[RoleSwitch-Admin] Error:', error);
     showToast('Fehler beim Rollenwechsel', 'error');
-  } finally {
-    if (dropdownDisplay) {
-      dropdownDisplay.style.pointerEvents = '';
-      dropdownDisplay.style.opacity = '';
-    }
+    setDropdownState(dropdownDisplay, true);
   }
 }
 
