@@ -128,16 +128,13 @@ docker-compose restart backend
 ## MANDATORY CHECKLIST (TodoWrite with 10+ items) read
 
 1. Docker Check (with "skip": WITHOUT dev-status.sh)
-2. Follow BEFORE-STARTING-DEV
-3. CLAUDE.md
-4. TypeScript Standards (MANDATORY for Backend, read whole File)
-5. README.md
-6. Database Migration Guide.md
-7. TODO.md (CURRENT PHASE + PROGRESS TRACKING!)
-8. Read DAILY-PROGRESS.md
-9. API-V2-MIGRATION-MASTERPLAN.md
-10. workshop-decisions.md
-11. eslint.config.js for rules (read whole File)
+2. Follow (~/projects/Assixx/docs/BEFORE-STARTING-DEV.md)
+3. Read(~/projects/Assixx/docs/TYPESCRIPT-STANDARDS.md) (MANDATORY for Backend, read whole File)
+4. Read(~/projects/Assixx/README.md)
+5. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
+6. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
+7. API-V2-MIGRATION-MASTERPLAN.md (already done, just for context)
+8. Dont do more than this and than recap fast and than ask user that youre ready.
 
 ## 📊 PROGRESS DOCUMENTATION
 

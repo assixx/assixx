@@ -429,6 +429,34 @@ export async function getAllSurveysByTenantForAdmin(
 /**
  * Get survey by ID with questions and options
  */
+/**
+ * Process survey questions for options and buffer conversion
+ */
+function processSurveyQuestions(questions: DbSurveyQuestion[]): void {
+  for (const question of questions) {
+    // Convert Buffer to string if needed
+    if (question.question_text && Buffer.isBuffer(question.question_text)) {
+      question.question_text = question.question_text.toString();
+    }
+
+    const hasOptions = ['multiple_choice', 'single_choice'].includes(question.question_type);
+    if (!hasOptions || !question.options) {
+      continue;
+    }
+
+    // Options are stored as JSON in the database
+    try {
+      question.options =
+        typeof question.options === 'string' ?
+          (JSON.parse(question.options) as DbSurveyQuestionOption[])
+        : question.options;
+    } catch (error: unknown) {
+      console.error('Error parsing options for question:', question.id, error);
+      question.options = [];
+    }
+  }
+}
+
 export async function getSurveyById(surveyId: number, tenantId: number): Promise<DbSurvey | null> {
   const [surveys] = await typedQuery<DbSurvey[]>(
     `
@@ -449,11 +477,8 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
   const survey = surveys[0];
 
   // Convert Buffer to string if needed
-  if (
-    survey.description != null &&
-    survey.description !== '' &&
-    Buffer.isBuffer(survey.description)
-  ) {
+  const hasDescription = survey.description != null && survey.description !== '';
+  if (hasDescription && Buffer.isBuffer(survey.description)) {
     survey.description = survey.description.toString();
   }
 
@@ -468,26 +493,7 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
   );
 
   // Parse options from JSON and convert Buffer to string for each question
-  for (const question of questions) {
-    // Convert Buffer to string if needed
-    if (question.question_text && Buffer.isBuffer(question.question_text)) {
-      question.question_text = question.question_text.toString();
-    }
-
-    if (['multiple_choice', 'single_choice'].includes(question.question_type) && question.options) {
-      // Options are stored as JSON in the database
-      try {
-        question.options =
-          typeof question.options === 'string' ?
-            (JSON.parse(question.options) as DbSurveyQuestionOption[])
-          : question.options;
-      } catch (error: unknown) {
-        console.error('Error parsing options for question:', question.id, error);
-        question.options = [];
-      }
-    }
-  }
-
+  processSurveyQuestions(questions);
   survey.questions = questions;
 
   // Get assignments
@@ -680,12 +686,125 @@ export async function createSurveyFromTemplate(
 /**
  * Get survey statistics
  */
+interface QuestionStatistic {
+  id: number;
+  question_text: string;
+  question_type: string;
+  responses: {
+    answer_text?: string;
+    selected_option_id?: number;
+    rating?: number;
+  }[];
+  options?: {
+    option_id: number;
+    option_text: string;
+    count: number;
+  }[];
+  statistics?: {
+    average: number | null;
+    min: number | null;
+    max: number | null;
+    total_responses: number;
+  };
+}
+
+async function getChoiceQuestionStats(
+  question: DbSurveyQuestion,
+): Promise<QuestionStatistic['options']> {
+  const options =
+    question.options ?
+      typeof question.options === 'string' ?
+        (JSON.parse(question.options) as unknown[])
+      : (question.options as unknown[])
+    : [];
+
+  const [answers] = await typedQuery<RowDataPacket[]>(
+    `
+      SELECT sa.answer_options
+      FROM survey_answers sa
+      WHERE sa.question_id = ?
+      AND sa.answer_options IS NOT NULL
+    `,
+    [question.id],
+  );
+
+  const optionCounts: Record<number, number> = {};
+  answers.forEach((answer) => {
+    const selectedOptions =
+      typeof answer.answer_options === 'string' ?
+        (JSON.parse(answer.answer_options) as number[])
+      : (answer.answer_options as number[]);
+
+    if (Array.isArray(selectedOptions)) {
+      selectedOptions.forEach((optionIndex: number) => {
+        // eslint-disable-next-line security/detect-object-injection -- optionIndex kommt aus validierten Survey-Daten (numerischer Index aus DB), kein User-Input, 100% sicher
+        optionCounts[optionIndex] = (optionCounts[optionIndex] ?? 0) + 1;
+      });
+    }
+  });
+
+  return options.map((optionText: unknown, index: number) => ({
+    option_id: index,
+    option_text: String(optionText),
+    // eslint-disable-next-line security/detect-object-injection -- index ist Array-Iterator von map(), immer numerisch und sicher, kein User-Input
+    count: optionCounts[index] ?? 0,
+  }));
+}
+
+async function getTextQuestionResponses(
+  questionId: number,
+): Promise<QuestionStatistic['responses']> {
+  const [textResponses] = await typedQuery<RowDataPacket[]>(
+    `
+      SELECT
+        sa.answer_text,
+        sr.user_id,
+        u.first_name,
+        u.last_name
+      FROM survey_answers sa
+      JOIN survey_responses sr ON sa.response_id = sr.id
+      LEFT JOIN users u ON sr.user_id = u.id
+      WHERE sa.question_id = ? AND sa.answer_text IS NOT NULL
+    `,
+    [questionId],
+  );
+  return textResponses.map((row) => ({
+    answer_text: String(row.answer_text ?? ''),
+    user_id: row.user_id as number | null,
+    first_name: row.first_name as string | null,
+    last_name: row.last_name as string | null,
+  }));
+}
+
+async function getRatingQuestionStats(
+  questionId: number,
+): Promise<QuestionStatistic['statistics']> {
+  const [numericStats] = await typedQuery<RowDataPacket[]>(
+    `
+      SELECT
+        AVG(sa.answer_number) as average,
+        MIN(sa.answer_number) as min,
+        MAX(sa.answer_number) as max,
+        COUNT(sa.answer_number) as total_responses
+      FROM survey_answers sa
+      WHERE sa.question_id = ? AND sa.answer_number IS NOT NULL
+    `,
+    [questionId],
+  );
+  const numStats = numericStats[0];
+  return {
+    average: numStats.average as number | null,
+    min: numStats.min as number | null,
+    max: numStats.max as number | null,
+    total_responses: (numStats.total_responses as number) || 0,
+  };
+}
+
 export async function getSurveyStatistics(
   surveyId: number,
   tenantId: number,
 ): Promise<SurveyStatistics> {
   try {
-    // Get basic statistics
     const [stats] = await typedQuery<RowDataPacket[]>(
       `
         SELECT
@@ -700,33 +819,9 @@ export async function getSurveyStatistics(
       [surveyId, tenantId],
     );
 
-    // Get survey details with questions
     const survey = await getSurveyById(surveyId, tenantId);
     if (!survey) {
       throw new Error('Survey not found');
-    }
-
-    // Get question statistics
-    interface QuestionStatistic {
-      id: number;
-      question_text: string;
-      question_type: string;
-      responses: {
-        answer_text?: string;
-        selected_option_id?: number;
-        rating?: number;
-      }[];
-      options?: {
-        option_id: number;
-        option_text: string;
-        count: number;
-      }[];
-      statistics?: {
-        average: number | null;
-        min: number | null;
-        max: number | null;
-        total_responses: number;
-      };
     }
 
     const questionStats: QuestionStatistic[] = [];
@@ -739,95 +834,15 @@ export async function getSurveyStatistics(
         responses: [],
       };
 
-      if (
-        question.question_type === 'single_choice' ||
-        question.question_type === 'multiple_choice'
-      ) {
-        // Get option statistics from JSON stored options
-        const options =
-          question.options ?
-            typeof question.options === 'string' ?
-              (JSON.parse(question.options) as unknown[])
-            : (question.options as unknown[])
-          : [];
+      const isChoiceQuestion =
+        question.question_type === 'single_choice' || question.question_type === 'multiple_choice';
 
-        // Get all answers for this question
-        const [answers] = await typedQuery<RowDataPacket[]>(
-          `
-            SELECT sa.answer_options
-            FROM survey_answers sa
-            WHERE sa.question_id = ?
-            AND sa.answer_options IS NOT NULL
-          `,
-          [question.id],
-        );
-
-        // Count responses per option
-        const optionCounts: Record<number, number> = {};
-        answers.forEach((answer) => {
-          const selectedOptions =
-            typeof answer.answer_options === 'string' ?
-              (JSON.parse(answer.answer_options) as number[])
-            : (answer.answer_options as number[]);
-
-          if (Array.isArray(selectedOptions)) {
-            selectedOptions.forEach((optionIndex: number) => {
-              // eslint-disable-next-line security/detect-object-injection -- optionIndex kommt aus validierten Survey-Daten (numerischer Index aus DB), kein User-Input, 100% sicher
-              optionCounts[optionIndex] = (optionCounts[optionIndex] ?? 0) + 1;
-            });
-          }
-        });
-
-        // Format option statistics
-        questionStat.options = options.map((optionText: unknown, index: number) => ({
-          option_id: index,
-          option_text: String(optionText),
-          // eslint-disable-next-line security/detect-object-injection -- index ist Array-Iterator von map(), immer numerisch und sicher, kein User-Input
-          count: optionCounts[index] ?? 0,
-        }));
+      if (isChoiceQuestion) {
+        questionStat.options = await getChoiceQuestionStats(question);
       } else if (question.question_type === 'text') {
-        // Get text responses
-        const [textResponses] = await typedQuery<RowDataPacket[]>(
-          `
-            SELECT
-              sa.answer_text,
-              sr.user_id,
-              u.first_name,
-              u.last_name
-            FROM survey_answers sa
-            JOIN survey_responses sr ON sa.response_id = sr.id
-            LEFT JOIN users u ON sr.user_id = u.id
-            WHERE sa.question_id = ? AND sa.answer_text IS NOT NULL
-          `,
-          [question.id],
-        );
-        questionStat.responses = textResponses.map((row) => ({
-          answer_text: String(row.answer_text ?? ''),
-          user_id: row.user_id as number | null,
-          first_name: row.first_name as string | null,
-          last_name: row.last_name as string | null,
-        }));
+        questionStat.responses = await getTextQuestionResponses(question.id);
       } else if (question.question_type === 'rating') {
-        // Get numeric statistics
-        const [numericStats] = await typedQuery<RowDataPacket[]>(
-          `
-            SELECT
-              AVG(sa.answer_number) as average,
-              MIN(sa.answer_number) as min,
-              MAX(sa.answer_number) as max,
-              COUNT(sa.answer_number) as total_responses
-            FROM survey_answers sa
-            WHERE sa.question_id = ? AND sa.answer_number IS NOT NULL
-          `,
-          [question.id],
-        );
-        const numStats = numericStats[0];
-        questionStat.statistics = {
-          average: numStats.average as number | null,
-          min: numStats.min as number | null,
-          max: numStats.max as number | null,
-          total_responses: (numStats.total_responses as number) || 0,
-        };
+        questionStat.statistics = await getRatingQuestionStats(question.id);
       }
 
       questionStats.push(questionStat);

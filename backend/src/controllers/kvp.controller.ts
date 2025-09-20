@@ -100,142 +100,17 @@ class KvpController {
         return;
       }
 
-      const { id: userId, role, tenant_id: tenantId } = req.user;
-      const {
-        filter,
-        status,
-        include_archived: includeArchived,
-        page = '1',
-        limit = '20',
-      } = req.query;
-
-      // Build visibility query
-      const { whereClause, queryParams } = await kvpPermissionService.buildVisibilityQuery({
-        userId,
-        role,
-        tenantId,
-        includeArchived: includeArchived === 'true',
-        statusFilter: status,
-        departmentFilter:
-          req.query.department_id != null && req.query.department_id !== '' ?
-            Number.parseInt(req.query.department_id)
-          : undefined,
-      });
-
-      // Apply filter logic
-      let additionalWhere = '';
-      const additionalParams: (string | number)[] = [];
-
-      if (filter === 'mine') {
-        additionalWhere = ' AND s.submitted_by = ?';
-        additionalParams.push(userId);
-      } else if (filter === 'department' && role !== 'root') {
-        const [userInfo] = await executeQuery<RowDataPacket[]>(
-          'SELECT department_id FROM users WHERE id = ?',
-          [userId],
-        );
-        const userDepartmentId = userInfo[0]?.department_id as number | undefined;
-        if (typeof userDepartmentId === 'number') {
-          additionalWhere = ' AND s.department_id = ?';
-          additionalParams.push(userDepartmentId);
-        }
-      } else if (filter === 'company') {
-        additionalWhere = ' AND s.org_level = ?';
-        additionalParams.push('company');
-      } else if (filter === 'archived') {
-        additionalWhere = ' AND s.status = ?';
-        additionalParams.push('archived');
-      }
-
-      // Execute query
-      const pageNum = Number.parseInt(page);
-      const limitNum = Number.parseInt(limit);
-      const offset = (pageNum - 1) * limitNum;
-
-      // Build the full query
-      const query = `
-        SELECT DISTINCT s.*,
-               u.first_name as submitted_by_name,
-               u.last_name as submitted_by_lastname,
-               d.name as department_name,
-               cat.name as category_name,
-               cat.icon as category_icon,
-               cat.color as category_color,
-               su.first_name as shared_by_firstname,
-               su.last_name as shared_by_lastname,
-               (SELECT COUNT(*) FROM kvp_attachments WHERE suggestion_id = s.id) as attachment_count
-        FROM kvp_suggestions s
-        LEFT JOIN users u ON s.submitted_by = u.id
-        LEFT JOIN users su ON s.shared_by = su.id
-        LEFT JOIN departments d ON s.department_id = d.id
-        LEFT JOIN kvp_categories cat ON s.category_id = cat.id
-        WHERE ${whereClause}${additionalWhere}
-        ORDER BY s.created_at DESC
-        LIMIT ? OFFSET ?
-      `;
-
-      const allParams = [...queryParams, ...additionalParams, limitNum, offset];
-
-      // Use query method with proper encoding
-      const connection = await pool.getConnection();
-      await connection.query('SET NAMES utf8mb4');
-      const [suggestions] = (await connection.query(query, allParams)) as [
-        RowDataPacket[],
-        unknown,
-      ];
-      connection.release();
-
-      // Transform the results to include shared_by_name and convert Buffers to strings
-      interface KvpSuggestionRow {
-        description?: Buffer | string;
-        expected_benefit?: Buffer | string;
-        rejection_reason?: Buffer | string;
-        shared_by_firstname?: string;
-        shared_by_lastname?: string;
-        [key: string]: unknown;
-      }
-      const transformedSuggestions = (suggestions as KvpSuggestionRow[]).map((s) => ({
-        ...s,
-        description:
-          Buffer.isBuffer(s.description) ? s.description.toString('utf8') : s.description,
-        expected_benefit:
-          Buffer.isBuffer(s.expected_benefit) ?
-            s.expected_benefit.toString('utf8')
-          : s.expected_benefit,
-        rejection_reason:
-          Buffer.isBuffer(s.rejection_reason) ?
-            s.rejection_reason.toString('utf8')
-          : s.rejection_reason,
-        shared_by_name:
-          (
-            s.shared_by_firstname != null &&
-            s.shared_by_firstname !== '' &&
-            s.shared_by_lastname != null &&
-            s.shared_by_lastname !== ''
-          ) ?
-            `${s.shared_by_firstname} ${s.shared_by_lastname}`
-          : null,
-      }));
-
-      // Get total count
-      const countQuery = `
-        SELECT COUNT(DISTINCT s.id) as total
-        FROM kvp_suggestions s
-        WHERE ${whereClause}${additionalWhere}
-      `;
-
-      const [countResult] = await executeQuery<RowDataPacket[]>(countQuery, [
-        ...queryParams,
-        ...additionalParams,
-      ]);
+      const queryData = await this.buildQueryData(req);
+      const suggestions = await this.fetchSuggestions(queryData);
+      const totalCount = await this.getTotalCount(queryData);
 
       res.json({
-        suggestions: transformedSuggestions,
+        suggestions,
         pagination: {
-          total: countResult[0].total as number,
-          page: pageNum,
-          limit: limitNum,
-          pages: Math.ceil((countResult[0].total as number) / limitNum),
+          total: totalCount,
+          page: queryData.pageNum,
+          limit: queryData.limitNum,
+          pages: Math.ceil(totalCount / queryData.limitNum),
         },
       });
     } catch (error: unknown) {
@@ -245,6 +120,189 @@ class KvpController {
         message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
+  }
+
+  private async buildQueryData(req: KvpQueryRequest): Promise<{
+    whereClause: string;
+    queryParams: (string | number)[];
+    additionalWhere: string;
+    additionalParams: (string | number)[];
+    pageNum: number;
+    limitNum: number;
+    offset: number;
+  }> {
+    if (!req.user) {
+      throw new Error('User not authenticated');
+    }
+    const { id: userId, role, tenant_id: tenantId } = req.user;
+    const {
+      filter,
+      status,
+      include_archived: includeArchived,
+      page = '1',
+      limit = '20',
+    } = req.query;
+
+    const { whereClause, queryParams } = await kvpPermissionService.buildVisibilityQuery({
+      userId,
+      role,
+      tenantId,
+      includeArchived: includeArchived === 'true',
+      statusFilter: status,
+      departmentFilter:
+        req.query.department_id != null && req.query.department_id !== '' ?
+          Number.parseInt(req.query.department_id)
+        : undefined,
+    });
+
+    const { additionalWhere, additionalParams } = await this.applyFilters(filter, userId, role);
+
+    const pageNum = Number.parseInt(page);
+    const limitNum = Number.parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
+
+    return {
+      whereClause,
+      queryParams,
+      additionalWhere,
+      additionalParams,
+      pageNum,
+      limitNum,
+      offset,
+    };
+  }
+
+  private async applyFilters(
+    filter: string | undefined,
+    userId: number,
+    role: string,
+  ): Promise<{ additionalWhere: string; additionalParams: (string | number)[] }> {
+    let additionalWhere = '';
+    const additionalParams: (string | number)[] = [];
+
+    if (filter === 'mine') {
+      additionalWhere = ' AND s.submitted_by = ?';
+      additionalParams.push(userId);
+    } else if (filter === 'department' && role !== 'root') {
+      const userDepartmentId = await this.getUserDepartmentId(userId);
+      if (typeof userDepartmentId === 'number') {
+        additionalWhere = ' AND s.department_id = ?';
+        additionalParams.push(userDepartmentId);
+      }
+    } else if (filter === 'company') {
+      additionalWhere = ' AND s.org_level = ?';
+      additionalParams.push('company');
+    } else if (filter === 'archived') {
+      additionalWhere = ' AND s.status = ?';
+      additionalParams.push('archived');
+    }
+
+    return { additionalWhere, additionalParams };
+  }
+
+  private async getUserDepartmentId(userId: number): Promise<number | undefined> {
+    const [userInfo] = await executeQuery<RowDataPacket[]>(
+      'SELECT department_id FROM users WHERE id = ?',
+      [userId],
+    );
+    return userInfo[0]?.department_id as number | undefined;
+  }
+
+  private async fetchSuggestions(queryData: {
+    whereClause: string;
+    queryParams: (string | number)[];
+    additionalWhere: string;
+    additionalParams: (string | number)[];
+    limitNum: number;
+    offset: number;
+  }): Promise<unknown[]> {
+    const query = `
+      SELECT DISTINCT s.*,
+             u.first_name as submitted_by_name,
+             u.last_name as submitted_by_lastname,
+             d.name as department_name,
+             cat.name as category_name,
+             cat.icon as category_icon,
+             cat.color as category_color,
+             su.first_name as shared_by_firstname,
+             su.last_name as shared_by_lastname,
+             (SELECT COUNT(*) FROM kvp_attachments WHERE suggestion_id = s.id) as attachment_count
+      FROM kvp_suggestions s
+      LEFT JOIN users u ON s.submitted_by = u.id
+      LEFT JOIN users su ON s.shared_by = su.id
+      LEFT JOIN departments d ON s.department_id = d.id
+      LEFT JOIN kvp_categories cat ON s.category_id = cat.id
+      WHERE ${queryData.whereClause}${queryData.additionalWhere}
+      ORDER BY s.created_at DESC
+      LIMIT ? OFFSET ?
+    `;
+
+    const allParams = [
+      ...queryData.queryParams,
+      ...queryData.additionalParams,
+      queryData.limitNum,
+      queryData.offset,
+    ];
+
+    const connection = await pool.getConnection();
+    await connection.query('SET NAMES utf8mb4');
+    const [suggestions] = (await connection.query(query, allParams)) as [RowDataPacket[], unknown];
+    connection.release();
+
+    return this.transformSuggestions(suggestions);
+  }
+
+  private transformSuggestions(suggestions: RowDataPacket[]): unknown[] {
+    interface KvpSuggestionRow {
+      description?: Buffer | string;
+      expected_benefit?: Buffer | string;
+      rejection_reason?: Buffer | string;
+      shared_by_firstname?: string;
+      shared_by_lastname?: string;
+      [key: string]: unknown;
+    }
+
+    return (suggestions as KvpSuggestionRow[]).map((s) => ({
+      ...s,
+      description: Buffer.isBuffer(s.description) ? s.description.toString('utf8') : s.description,
+      expected_benefit:
+        Buffer.isBuffer(s.expected_benefit) ?
+          s.expected_benefit.toString('utf8')
+        : s.expected_benefit,
+      rejection_reason:
+        Buffer.isBuffer(s.rejection_reason) ?
+          s.rejection_reason.toString('utf8')
+        : s.rejection_reason,
+      shared_by_name:
+        (
+          s.shared_by_firstname != null &&
+          s.shared_by_firstname !== '' &&
+          s.shared_by_lastname != null &&
+          s.shared_by_lastname !== ''
+        ) ?
+          `${s.shared_by_firstname} ${s.shared_by_lastname}`
+        : null,
+    }));
+  }
+
+  private async getTotalCount(queryData: {
+    whereClause: string;
+    queryParams: (string | number)[];
+    additionalWhere: string;
+    additionalParams: (string | number)[];
+  }): Promise<number> {
+    const countQuery = `
+      SELECT COUNT(DISTINCT s.id) as total
+      FROM kvp_suggestions s
+      WHERE ${queryData.whereClause}${queryData.additionalWhere}
+    `;
+
+    const [countResult] = await executeQuery<RowDataPacket[]>(countQuery, [
+      ...queryData.queryParams,
+      ...queryData.additionalParams,
+    ]);
+
+    return countResult[0].total as number;
   }
 
   /**
@@ -438,111 +496,24 @@ class KvpController {
         return;
       }
 
-      // Check permission
-      const canEdit = await kvpPermissionService.canEditSuggestion(
-        req.user.id,
-        id,
-        req.user.role,
-        req.user.tenant_id,
-      );
-
-      if (!canEdit) {
+      const hasPermission = await this.validateUpdatePermission(req.user, id);
+      if (!hasPermission) {
         res.status(403).json({ error: 'Keine Berechtigung zum Bearbeiten' });
         return;
       }
 
-      // Build update query dynamically
-      const updateFields: string[] = [];
-      const updateValues: (string | number | null | Date)[] = [];
-
-      if (req.body.title !== undefined) {
-        updateFields.push('title = ?');
-        updateValues.push(req.body.title);
-      }
-      if (req.body.description !== undefined) {
-        updateFields.push('description = ?');
-        updateValues.push(req.body.description);
-      }
-      if (req.body.category_id !== undefined) {
-        updateFields.push('category_id = ?');
-        updateValues.push(req.body.category_id);
-      }
-      if (req.body.priority !== undefined) {
-        updateFields.push('priority = ?');
-        updateValues.push(req.body.priority);
-      }
-      if (req.body.status !== undefined) {
-        updateFields.push('status = ?');
-        updateValues.push(req.body.status);
-
-        // Log status change
-        await kvpPermissionService.logAdminAction(
-          req.user.id,
-          'status_change',
-          id,
-          'kvp_suggestion',
-          req.user.tenant_id,
-          null,
-          { status: req.body.status },
-        );
-      }
-      if (req.body.expected_benefit !== undefined) {
-        updateFields.push('expected_benefit = ?');
-        updateValues.push(req.body.expected_benefit);
-      }
-      if (req.body.estimated_cost !== undefined) {
-        updateFields.push('estimated_cost = ?');
-        updateValues.push(req.body.estimated_cost);
-      }
-      if (req.body.actual_savings !== undefined) {
-        updateFields.push('actual_savings = ?');
-        updateValues.push(req.body.actual_savings);
-      }
-      if (req.body.implementation_date !== undefined) {
-        updateFields.push('implementation_date = ?');
-        updateValues.push(req.body.implementation_date);
-      }
-      if (req.body.assigned_to !== undefined) {
-        updateFields.push('assigned_to = ?');
-        updateValues.push(req.body.assigned_to);
-      }
-      if (req.body.rejection_reason !== undefined) {
-        updateFields.push('rejection_reason = ?');
-        updateValues.push(req.body.rejection_reason);
-      }
-
+      const { updateFields, updateValues } = await this.buildUpdateQuery(req.body, req.user, id);
       if (updateFields.length === 0) {
         res.status(400).json({ error: 'Keine Felder zum Aktualisieren' });
         return;
       }
 
-      updateValues.push(id);
-
-      await executeQuery<ResultSetHeader>(
-        `UPDATE kvp_suggestions SET ${updateFields.join(', ')} WHERE id = ?`,
-        updateValues,
-      );
-
-      // Get updated suggestion
-      const [updated] = await executeQuery<RowDataPacket[]>(
-        `SELECT s.*,
-                u.first_name as submitted_by_name,
-                u.last_name as submitted_by_lastname,
-                d.name as department_name,
-                cat.name as category_name,
-                cat.icon as category_icon,
-                cat.color as category_color
-         FROM kvp_suggestions s
-         LEFT JOIN users u ON s.submitted_by = u.id
-         LEFT JOIN departments d ON s.department_id = d.id
-         LEFT JOIN kvp_categories cat ON s.category_id = cat.id
-         WHERE s.id = ?`,
-        [id],
-      );
+      await this.executeUpdate(updateFields, updateValues, id);
+      const updated = await this.getUpdatedSuggestion(id);
 
       res.json({
         success: true,
-        suggestion: updated[0],
+        suggestion: updated,
       });
     } catch (error: unknown) {
       console.error('Error in KvpController.update:', error);
@@ -551,6 +522,99 @@ class KvpController {
         message: error instanceof Error ? error.message : UNKNOWN_ERROR_MESSAGE,
       });
     }
+  }
+
+  private async validateUpdatePermission(
+    user: { id: number; role: string; tenant_id: number },
+    suggestionId: number,
+  ): Promise<boolean> {
+    return await kvpPermissionService.canEditSuggestion(
+      user.id,
+      suggestionId,
+      user.role as 'root' | 'admin' | 'employee',
+      user.tenant_id,
+    );
+  }
+
+  private async buildUpdateQuery(
+    body: Record<string, unknown>,
+    user: { id: number; tenant_id: number },
+    suggestionId: number,
+  ): Promise<{ updateFields: string[]; updateValues: (string | number | null | Date)[] }> {
+    const updateFields: string[] = [];
+    const updateValues: (string | number | null | Date)[] = [];
+
+    const fieldMappings = [
+      { key: 'title', field: 'title' },
+      { key: 'description', field: 'description' },
+      { key: 'category_id', field: 'category_id' },
+      { key: 'priority', field: 'priority' },
+      { key: 'expected_benefit', field: 'expected_benefit' },
+      { key: 'estimated_cost', field: 'estimated_cost' },
+      { key: 'actual_savings', field: 'actual_savings' },
+      { key: 'implementation_date', field: 'implementation_date' },
+      { key: 'assigned_to', field: 'assigned_to' },
+      { key: 'rejection_reason', field: 'rejection_reason' },
+    ];
+
+    for (const { key, field } of fieldMappings) {
+      // eslint-disable-next-line security/detect-object-injection -- Safe: key is from predefined fieldMappings, not user input
+      if (Object.prototype.hasOwnProperty.call(body, key) && body[key] !== undefined) {
+        updateFields.push(`${field} = ?`);
+        // eslint-disable-next-line security/detect-object-injection -- Safe: key is from predefined fieldMappings, not user input
+        const value = body[key];
+        updateValues.push(value as string | number | null | Date);
+      }
+    }
+
+    if (body.status !== undefined) {
+      updateFields.push('status = ?');
+      updateValues.push(body.status as string);
+
+      await kvpPermissionService.logAdminAction(
+        user.id,
+        'status_change',
+        suggestionId,
+        'kvp_suggestion',
+        user.tenant_id,
+        null,
+        { status: body.status },
+      );
+    }
+
+    return { updateFields, updateValues };
+  }
+
+  private async executeUpdate(
+    updateFields: string[],
+    updateValues: (string | number | null | Date)[],
+    id: number,
+  ): Promise<void> {
+    updateValues.push(id);
+    await executeQuery<ResultSetHeader>(
+      `UPDATE kvp_suggestions SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues,
+    );
+  }
+
+  private async getUpdatedSuggestion(id: number): Promise<unknown> {
+    const [updated] = await executeQuery<RowDataPacket[]>(
+      `SELECT s.*,
+              u.first_name as submitted_by_name,
+              u.last_name as submitted_by_lastname,
+              d.name as department_name,
+              cat.name as category_name,
+              cat.icon as category_icon,
+              cat.color as category_color
+       FROM kvp_suggestions s
+       LEFT JOIN users u ON s.submitted_by = u.id
+       LEFT JOIN departments d ON s.department_id = d.id
+       LEFT JOIN kvp_categories cat ON s.category_id = cat.id
+       WHERE s.id = ?`,
+      [id],
+    );
+
+    return updated[0];
   }
 
   /**

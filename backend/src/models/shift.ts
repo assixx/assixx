@@ -315,6 +315,73 @@ export async function createShiftTemplate(
 }
 
 /**
+ * Apply access control filters to shift plan queries
+ */
+function applyShiftPlanAccessControl(
+  query: string,
+  params: unknown[],
+  role: string | null,
+  departmentId: number | null,
+  teamId: number | null,
+): { query: string; params: unknown[] } {
+  let updatedQuery = query;
+  const updatedParams = [...params];
+
+  if (role !== 'admin' && role !== 'root') {
+    if (role === 'manager') {
+      updatedQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
+      updatedParams.push(departmentId);
+    } else if (role === 'team_lead') {
+      updatedQuery += SQL_FRAGMENTS.TEAM_FILTER;
+      updatedParams.push(teamId);
+    } else {
+      // Regular employees can only see published plans for their department/team
+      updatedQuery += ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
+      updatedParams.push(departmentId ?? 0, teamId ?? 0);
+    }
+  }
+
+  return { query: updatedQuery, params: updatedParams };
+}
+
+/**
+ * Apply filters to shift plan queries
+ */
+function applyShiftPlanFilters(
+  query: string,
+  params: unknown[],
+  options: ShiftPlanFilters,
+): { query: string; params: unknown[] } {
+  let updatedQuery = query;
+  const updatedParams = [...params];
+
+  if (options.department_id != null && options.department_id !== 0) {
+    updatedQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
+    updatedParams.push(options.department_id);
+  }
+
+  if (options.team_id != null && options.team_id !== 0) {
+    updatedQuery += SQL_FRAGMENTS.TEAM_FILTER;
+    updatedParams.push(options.team_id);
+  }
+
+  if (options.start_date != null && options.start_date !== '') {
+    updatedQuery += ' AND sp.end_date >= ?';
+    updatedParams.push(options.start_date);
+  }
+
+  if (options.end_date != null && options.end_date !== '') {
+    updatedQuery += ' AND sp.start_date <= ?';
+    updatedParams.push(options.end_date);
+  }
+
+  updatedQuery += ' AND sp.status = ?';
+  updatedParams.push(options.status ?? 'draft');
+
+  return { query: updatedQuery, params: updatedParams };
+}
+
+/**
  * Get all shift plans for a tenant with optional filters
  */
 export async function getShiftPlans(
@@ -331,20 +398,13 @@ export async function getShiftPlans(
   };
 }> {
   try {
-    const {
-      department_id,
-      team_id,
-      start_date,
-      end_date,
-      status = 'draft',
-      page = 1,
-      limit = 50,
-    } = options;
+    const { page = 1, limit = 50 } = options;
 
     // Get user info for access control
     const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-    let query = `
+    // Build main query
+    const baseQuery = `
       SELECT sp.*, u.username as created_by_name,
              d.name as department_name, t.name as team_name
       FROM shift_plans sp
@@ -354,100 +414,47 @@ export async function getShiftPlans(
       WHERE sp.tenant_id = ?
     `;
 
-    const queryParams: unknown[] = [tenantId];
-
-    // Apply access control for non-admin users
-    if (role !== 'admin' && role !== 'root') {
-      if (role === 'manager') {
-        query += SQL_FRAGMENTS.DEPARTMENT_FILTER;
-        queryParams.push(departmentId);
-      } else if (role === 'team_lead') {
-        query += SQL_FRAGMENTS.TEAM_FILTER;
-        queryParams.push(teamId);
-      } else {
-        // Regular employees can only see published plans for their department/team
-        query += ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
-        queryParams.push(departmentId ?? 0, teamId ?? 0);
-      }
-    }
-
-    // Apply filters
-    if (department_id != null && department_id !== 0) {
-      query += SQL_FRAGMENTS.DEPARTMENT_FILTER;
-      queryParams.push(department_id);
-    }
-
-    if (team_id != null && team_id !== 0) {
-      query += SQL_FRAGMENTS.TEAM_FILTER;
-      queryParams.push(team_id);
-    }
-
-    if (start_date != null && start_date !== '') {
-      query += ' AND sp.end_date >= ?';
-      queryParams.push(start_date);
-    }
-
-    if (end_date != null && end_date !== '') {
-      query += ' AND sp.start_date <= ?';
-      queryParams.push(end_date);
-    }
-
-    query += ' AND sp.status = ?';
-    queryParams.push(status);
-
-    // Apply pagination
-    const offset = (page - 1) * limit;
-    query += ' ORDER BY sp.start_date DESC LIMIT ? OFFSET ?';
-    queryParams.push(Number.parseInt(limit.toString(), 10), offset);
-
-    const [plans] = await executeQuery<DbShiftPlan[]>(query, queryParams);
-
-    // Count total for pagination
-    let countQuery = `
+    // Build count query
+    const countQuery = `
       SELECT COUNT(*) as total FROM shift_plans sp
       WHERE sp.tenant_id = ?
     `;
-    const countParams: unknown[] = [tenantId];
 
-    // Apply same access control for count
-    if (role !== 'admin' && role !== 'root') {
-      if (role === 'manager') {
-        countQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
-        countParams.push(departmentId);
-      } else if (role === 'team_lead') {
-        countQuery += SQL_FRAGMENTS.TEAM_FILTER;
-        countParams.push(teamId);
-      } else {
-        countQuery += ' AND sp.status = "published" AND (sp.department_id = ? OR sp.team_id = ?)';
-        countParams.push(departmentId ?? 0, teamId ?? 0);
-      }
-    }
+    // Apply access control and filters to main query
+    const { query: accessControlledQuery, params: accessControlledParams } =
+      applyShiftPlanAccessControl(baseQuery, [tenantId], role, departmentId, teamId);
 
-    // Apply same filters for count
-    if (department_id != null && department_id !== 0) {
-      countQuery += SQL_FRAGMENTS.DEPARTMENT_FILTER;
-      countParams.push(department_id);
-    }
+    const { query: filteredQuery, params: filteredParams } = applyShiftPlanFilters(
+      accessControlledQuery,
+      accessControlledParams,
+      options,
+    );
 
-    if (team_id != null && team_id !== 0) {
-      countQuery += SQL_FRAGMENTS.TEAM_FILTER;
-      countParams.push(team_id);
-    }
+    // Add pagination
+    const offset = (page - 1) * limit;
+    const paginatedQuery = filteredQuery + ' ORDER BY sp.start_date DESC LIMIT ? OFFSET ?';
+    const paginatedParams = [...filteredParams, Number.parseInt(limit.toString(), 10), offset];
 
-    if (start_date != null && start_date !== '') {
-      countQuery += ' AND sp.end_date >= ?';
-      countParams.push(start_date);
-    }
+    // Execute main query
+    const [plans] = await executeQuery<DbShiftPlan[]>(paginatedQuery, paginatedParams);
 
-    if (end_date != null && end_date !== '') {
-      countQuery += ' AND sp.start_date <= ?';
-      countParams.push(end_date);
-    }
+    // Apply same access control and filters to count query
+    const { query: countAccessQuery, params: countAccessParams } = applyShiftPlanAccessControl(
+      countQuery,
+      [tenantId],
+      role,
+      departmentId,
+      teamId,
+    );
 
-    countQuery += ' AND sp.status = ?';
-    countParams.push(status);
+    const { query: finalCountQuery, params: finalCountParams } = applyShiftPlanFilters(
+      countAccessQuery,
+      countAccessParams,
+      options,
+    );
 
-    const [countResult] = await executeQuery<CountResult[]>(countQuery, countParams);
+    // Execute count query
+    const [countResult] = await executeQuery<CountResult[]>(finalCountQuery, finalCountParams);
     const total = countResult[0].total;
 
     return {
@@ -1164,11 +1171,68 @@ interface V2SwapRequestResult extends RowDataPacket {
 // These methods support the v2 API service layer
 
 /**
+ * Build shift query filters
+ */
+function buildShiftQueryFilters(filters: V2ShiftFilters): {
+  conditions: string[];
+  params: (string | number | null)[];
+} {
+  const conditions: string[] = [];
+  const params: (string | number | null)[] = [];
+
+  // Date filters
+  if (filters.date != null && filters.date !== '') {
+    conditions.push('s.date = ?');
+    params.push(formatDateOnlyForMysql(filters.date));
+  } else if (
+    filters.start_date != null &&
+    filters.start_date !== '' &&
+    filters.end_date != null &&
+    filters.end_date !== ''
+  ) {
+    conditions.push('s.date BETWEEN ? AND ?');
+    params.push(formatDateOnlyForMysql(filters.start_date));
+    params.push(formatDateOnlyForMysql(filters.end_date));
+  }
+
+  // ID-based filters
+  const idFilters = [
+    { field: 's.user_id', value: filters.user_id },
+    { field: 's.department_id', value: filters.department_id },
+    { field: 's.team_id', value: filters.team_id },
+    { field: 's.template_id', value: filters.template_id },
+    { field: 's.plan_id', value: filters.plan_id },
+  ];
+
+  for (const { field, value } of idFilters) {
+    if (value != null && value !== 0) {
+      conditions.push(`${field} = ?`);
+      params.push(value);
+    }
+  }
+
+  // String filters
+  const stringFilters = [
+    { field: 's.status', value: filters.status },
+    { field: 's.type', value: filters.type },
+  ];
+
+  for (const { field, value } of stringFilters) {
+    if (value != null && value !== '') {
+      conditions.push(`${field} = ?`);
+      params.push(value);
+    }
+  }
+
+  return { conditions, params };
+}
+
+/**
  * Find all shifts with filters
  */
 async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
   try {
-    let query = `
+    const baseQuery = `
       SELECT s.*,
         st.name as template_name,
         st.color as template_color,
@@ -1182,61 +1246,18 @@ async function findAll(filters: V2ShiftFilters): Promise<V2ShiftData[]> {
       LEFT JOIN users u ON s.user_id = u.id
       LEFT JOIN departments d ON s.department_id = d.id
       LEFT JOIN teams t ON s.team_id = t.id
-      WHERE s.tenant_id = ?
-    `;
+      WHERE s.tenant_id = ?`;
 
     const queryParams: (string | number | null)[] = [filters.tenant_id];
 
-    if (filters.date != null && filters.date !== '') {
-      query += ' AND s.date = ?';
-      queryParams.push(formatDateOnlyForMysql(filters.date));
-    }
+    // Build and apply filters
+    const { conditions, params } = buildShiftQueryFilters(filters);
+    let query = baseQuery;
 
-    if (
-      filters.start_date != null &&
-      filters.start_date !== '' &&
-      filters.end_date != null &&
-      filters.end_date !== ''
-    ) {
-      query += ' AND s.date BETWEEN ? AND ?';
-      queryParams.push(formatDateOnlyForMysql(filters.start_date));
-      queryParams.push(formatDateOnlyForMysql(filters.end_date));
+    for (const condition of conditions) {
+      query += ` AND ${condition}`;
     }
-
-    if (filters.user_id != null && filters.user_id !== 0) {
-      query += ' AND s.user_id = ?';
-      queryParams.push(filters.user_id);
-    }
-
-    if (filters.department_id != null && filters.department_id !== 0) {
-      query += ' AND s.department_id = ?';
-      queryParams.push(filters.department_id);
-    }
-
-    if (filters.team_id != null && filters.team_id !== 0) {
-      query += ' AND s.team_id = ?';
-      queryParams.push(filters.team_id);
-    }
-
-    if (filters.status != null && filters.status !== '') {
-      query += ' AND s.status = ?';
-      queryParams.push(filters.status);
-    }
-
-    if (filters.type != null && filters.type !== '') {
-      query += ' AND s.type = ?';
-      queryParams.push(filters.type);
-    }
-
-    if (filters.template_id != null && filters.template_id !== 0) {
-      query += ' AND s.template_id = ?';
-      queryParams.push(filters.template_id);
-    }
-
-    if (filters.plan_id != null && filters.plan_id !== 0) {
-      query += ' AND s.plan_id = ?';
-      queryParams.push(filters.plan_id);
-    }
+    queryParams.push(...params);
 
     // Sorting
     const sortBy = filters.sort_by ?? 'date';
@@ -1335,31 +1356,139 @@ async function create(data: Partial<V2ShiftData>): Promise<number> {
 }
 
 /**
+ * Get field value from shift data safely
+ */
+function getShiftFieldValue(field: string, data: Partial<V2ShiftData>): unknown {
+  switch (field) {
+    case 'user_id':
+      return data.user_id;
+    case 'plan_id':
+      return data.plan_id;
+    case 'template_id':
+      return data.template_id;
+    case 'date':
+      return data.date;
+    case 'start_time':
+      return data.start_time;
+    case 'end_time':
+      return data.end_time;
+    case 'actual_start':
+      return data.actual_start;
+    case 'actual_end':
+      return data.actual_end;
+    case 'department_id':
+      return data.department_id;
+    case 'team_id':
+      return data.team_id;
+    case 'title':
+      return data.title;
+    case 'required_employees':
+      return data.required_employees;
+    case 'break_minutes':
+      return data.break_minutes;
+    case 'status':
+      return data.status;
+    case 'type':
+      return data.type;
+    case 'notes':
+      return data.notes;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Helper function to process time fields
+ */
+function processTimeField(fieldValue: unknown, dateToUse: string | Date | undefined): string {
+  if (dateToUse === undefined || dateToUse === '') {
+    return fieldValue as string;
+  }
+
+  const timeValue = convertToTimeString(fieldValue);
+  if (timeValue === '') {
+    return fieldValue as string;
+  }
+
+  const dateString = typeof dateToUse === 'string' ? dateToUse : dateToUse.toISOString();
+  const result = formatDateForMysql(`${dateString} ${timeValue}`);
+  return result ?? (fieldValue as string);
+}
+
+/**
+ * Convert field value to time string
+ */
+function convertToTimeString(fieldValue: unknown): string {
+  if (typeof fieldValue === 'string') {
+    return fieldValue;
+  }
+  if (typeof fieldValue === 'number') {
+    return fieldValue.toString();
+  }
+  return '';
+}
+
+/**
+ * Process field value for database update
+ */
+function processShiftFieldValue(
+  field: string,
+  fieldValue: unknown,
+  data: Partial<V2ShiftData>,
+  currentDate?: string,
+): string | number | Date | null {
+  if (field === 'date' && fieldValue != null) {
+    return formatDateOnlyForMysql(fieldValue as string | Date);
+  }
+
+  const isTimeField = field === 'start_time' || field === 'end_time';
+  if (isTimeField && fieldValue != null && fieldValue !== '') {
+    const dateToUse = data.date ?? currentDate;
+    return processTimeField(fieldValue, dateToUse) as string | number | Date | null;
+  }
+
+  const isActualTimeField = field === 'actual_start' || field === 'actual_end';
+  if (isActualTimeField && fieldValue != null && fieldValue !== '') {
+    return formatDateForMysql(fieldValue as string | Date);
+  }
+
+  return fieldValue as string | number | Date | null;
+}
+
+/**
+ * Get current date for shift if needed
+ */
+async function getCurrentShiftDate(
+  id: number,
+  tenantId: number,
+  data: Partial<V2ShiftData>,
+): Promise<string | undefined> {
+  if (
+    ((data.start_time != null && data.start_time !== '') ||
+      (data.end_time != null && data.end_time !== '')) &&
+    (data.date == null || data.date === '')
+  ) {
+    const [currentShift] = await executeQuery<RowDataPacket[]>(
+      'SELECT date FROM shifts WHERE id = ? AND tenant_id = ?',
+      [id, tenantId],
+    );
+    if (currentShift.length > 0) {
+      const formattedDate = formatDateOnlyForMysql(currentShift[0].date as string | Date);
+      return formattedDate ?? undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
  * Update shift
  */
 async function update(id: number, data: Partial<V2ShiftData>, tenantId: number): Promise<void> {
   try {
-    // Get current shift data if we need date for time conversion
-    let currentDate: string | undefined;
-    if (
-      ((data.start_time != null && data.start_time !== '') ||
-        (data.end_time != null && data.end_time !== '')) &&
-      (data.date == null || data.date === '')
-    ) {
-      const [currentShift] = await executeQuery<RowDataPacket[]>(
-        'SELECT date FROM shifts WHERE id = ? AND tenant_id = ?',
-        [id, tenantId],
-      );
-      if (currentShift.length > 0) {
-        const formattedDate = formatDateOnlyForMysql(currentShift[0].date as string | Date);
-        currentDate = formattedDate ?? undefined;
-      }
-    }
-
+    const currentDate = await getCurrentShiftDate(id, tenantId, data);
     const updateFields: string[] = [];
     const values: (string | number | null | Date)[] = [];
 
-    // Build dynamic update query
     const allowedFields = [
       'user_id',
       'plan_id',
@@ -1380,70 +1509,10 @@ async function update(id: number, data: Partial<V2ShiftData>, tenantId: number):
     ];
 
     for (const field of allowedFields) {
-      // Get value safely using switch to avoid object injection
-      const fieldValue = (() => {
-        switch (field) {
-          case 'user_id':
-            return data.user_id;
-          case 'plan_id':
-            return data.plan_id;
-          case 'template_id':
-            return data.template_id;
-          case 'date':
-            return data.date;
-          case 'start_time':
-            return data.start_time;
-          case 'end_time':
-            return data.end_time;
-          case 'actual_start':
-            return data.actual_start;
-          case 'actual_end':
-            return data.actual_end;
-          case 'department_id':
-            return data.department_id;
-          case 'team_id':
-            return data.team_id;
-          case 'title':
-            return data.title;
-          case 'required_employees':
-            return data.required_employees;
-          case 'break_minutes':
-            return data.break_minutes;
-          case 'status':
-            return data.status;
-          case 'type':
-            return data.type;
-          case 'notes':
-            return data.notes;
-          default:
-            return null;
-        }
-      })();
-
+      const fieldValue = getShiftFieldValue(field, data);
       if (fieldValue !== undefined) {
         updateFields.push(`${field} = ?`);
-        if (field === 'date' && fieldValue != null) {
-          values.push(formatDateOnlyForMysql(fieldValue as string | Date));
-        } else if (
-          (field === 'start_time' || field === 'end_time') &&
-          fieldValue != null &&
-          fieldValue !== ''
-        ) {
-          // Convert time to datetime by combining with date
-          const dateToUse = data.date ?? currentDate;
-          if (dateToUse !== undefined && dateToUse !== '') {
-            values.push(formatDateForMysql(`${dateToUse} ${String(fieldValue)}`));
-          } else {
-            values.push(fieldValue); // Fallback
-          }
-        } else if (field === 'actual_start' && fieldValue != null && fieldValue !== '') {
-          // actual_start/end already includes date and time
-          values.push(formatDateForMysql(fieldValue as string | Date));
-        } else if (field === 'actual_end' && fieldValue != null && fieldValue !== '') {
-          values.push(formatDateForMysql(fieldValue as string | Date));
-        } else {
-          values.push(fieldValue as string | number | Date | null);
-        }
+        values.push(processShiftFieldValue(field, fieldValue, data, currentDate));
       }
     }
 
@@ -1783,67 +1852,19 @@ async function updateSwapRequestStatus(
 /**
  * Get overtime by user
  */
-async function getOvertimeByUser(
+/**
+ * Get overtime summary for a user
+ */
+async function getOvertimeSummary(
   userId: number,
   startDate: string,
   endDate: string,
   tenantId: number,
-): Promise<Record<string, unknown>> {
-  try {
-    const query = `
-      SELECT
-        COUNT(*) as totalShifts,
-        SUM(
-          CASE
-            WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
-              TIMESTAMPDIFF(MINUTE,
-                CONCAT(date, ' ', actual_start),
-                CONCAT(date, ' ', actual_end)
-              ) / 60.0
-            ELSE
-              TIMESTAMPDIFF(MINUTE,
-                CONCAT(date, ' ', start_time),
-                CONCAT(date, ' ', end_time)
-              ) / 60.0
-          END
-        ) as totalHours,
-        SUM(
-          CASE
-            WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
-              GREATEST(0,
-                TIMESTAMPDIFF(MINUTE,
-                  CONCAT(date, ' ', end_time),
-                  CONCAT(date, ' ', actual_end)
-                ) / 60.0
-              )
-            ELSE 0
-          END
-        ) as overtimeHours,
-        SUM(break_minutes) / 60.0 as breakHours
-      FROM shifts
-      WHERE tenant_id = ?
-        AND user_id = ?
-        AND date BETWEEN ? AND ?
-        AND status IN ('completed', 'in_progress')
-    `;
-
-    const [result] = await executeQuery<RowDataPacket[]>(query, [
-      tenantId,
-      userId,
-      formatDateOnlyForMysql(startDate),
-      formatDateOnlyForMysql(endDate),
-    ]);
-
-    // Get shift details
-    const detailQuery = `
-      SELECT
-        date,
-        start_time,
-        end_time,
-        actual_start,
-        actual_end,
-        break_minutes,
-        type,
+): Promise<RowDataPacket[]> {
+  const query = `
+    SELECT
+      COUNT(*) as totalShifts,
+      SUM(
         CASE
           WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
             TIMESTAMPDIFF(MINUTE,
@@ -1855,7 +1876,9 @@ async function getOvertimeByUser(
               CONCAT(date, ' ', start_time),
               CONCAT(date, ' ', end_time)
             ) / 60.0
-        END as workedHours,
+        END
+      ) as totalHours,
+      SUM(
         CASE
           WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
             GREATEST(0,
@@ -1865,21 +1888,91 @@ async function getOvertimeByUser(
               ) / 60.0
             )
           ELSE 0
-        END as overtimeHours
-      FROM shifts
-      WHERE tenant_id = ?
-        AND user_id = ?
-        AND date BETWEEN ? AND ?
-        AND status IN ('completed', 'in_progress')
-      ORDER BY date DESC
-    `;
+        END
+      ) as overtimeHours,
+      SUM(break_minutes) / 60.0 as breakHours
+    FROM shifts
+    WHERE tenant_id = ?
+      AND user_id = ?
+      AND date BETWEEN ? AND ?
+      AND status IN ('completed', 'in_progress')
+  `;
 
-    const [shifts] = await executeQuery<V2ShiftData[]>(detailQuery, [
-      tenantId,
-      userId,
-      formatDateOnlyForMysql(startDate),
-      formatDateOnlyForMysql(endDate),
-    ]);
+  const [result] = await executeQuery<RowDataPacket[]>(query, [
+    tenantId,
+    userId,
+    formatDateOnlyForMysql(startDate),
+    formatDateOnlyForMysql(endDate),
+  ]);
+  return result;
+}
+
+/**
+ * Get shift details for overtime calculation
+ */
+async function getOvertimeShiftDetails(
+  userId: number,
+  startDate: string,
+  endDate: string,
+  tenantId: number,
+): Promise<V2ShiftData[]> {
+  const query = `
+    SELECT
+      date,
+      start_time,
+      end_time,
+      actual_start,
+      actual_end,
+      break_minutes,
+      type,
+      CASE
+        WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
+          TIMESTAMPDIFF(MINUTE,
+            CONCAT(date, ' ', actual_start),
+            CONCAT(date, ' ', actual_end)
+          ) / 60.0
+        ELSE
+          TIMESTAMPDIFF(MINUTE,
+            CONCAT(date, ' ', start_time),
+            CONCAT(date, ' ', end_time)
+          ) / 60.0
+      END as workedHours,
+      CASE
+        WHEN actual_end IS NOT NULL AND actual_start IS NOT NULL THEN
+          GREATEST(0,
+            TIMESTAMPDIFF(MINUTE,
+              CONCAT(date, ' ', end_time),
+              CONCAT(date, ' ', actual_end)
+            ) / 60.0
+          )
+        ELSE 0
+      END as overtimeHours
+    FROM shifts
+    WHERE tenant_id = ?
+      AND user_id = ?
+      AND date BETWEEN ? AND ?
+      AND status IN ('completed', 'in_progress')
+    ORDER BY date DESC
+  `;
+
+  const [shifts] = await executeQuery<V2ShiftData[]>(query, [
+    tenantId,
+    userId,
+    formatDateOnlyForMysql(startDate),
+    formatDateOnlyForMysql(endDate),
+  ]);
+  return shifts;
+}
+
+async function getOvertimeByUser(
+  userId: number,
+  startDate: string,
+  endDate: string,
+  tenantId: number,
+): Promise<Record<string, unknown>> {
+  try {
+    const result = await getOvertimeSummary(userId, startDate, endDate, tenantId);
+    const shifts = await getOvertimeShiftDetails(userId, startDate, endDate, tenantId);
 
     return {
       summary: {

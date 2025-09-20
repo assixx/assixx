@@ -3,9 +3,540 @@ import { showError, showSuccess } from '../scripts/auth';
 import { ApiClient } from '../utils/api-client';
 import { $$, setHTML } from '../utils/dom-utils';
 
+// Type definitions
+interface LogEntry {
+  id: number;
+  userId: number;
+  userName: string;
+  userRole: string;
+  action: string;
+  entityType?: string;
+  entityId?: number;
+  oldValues?: unknown;
+  newValues?: unknown;
+  details?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+interface LogsResponse {
+  logs: LogEntry[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+}
+
+interface LogDetails {
+  title?: string;
+  shared_to?: string;
+  login_method?: string;
+  role?: string;
+  [key: string]: unknown;
+}
+
+type Pagination = LogsResponse['pagination'];
+
+interface Filters {
+  user?: string;
+  action?: string;
+  entity_type?: string;
+  timerange?: string;
+}
+
+interface LogsWindow extends Window {
+  applyFilters: typeof applyFilters;
+  resetFilters: typeof resetFilters;
+  deleteFilteredLogs: typeof deleteFilteredLogs;
+  loadPreviousPage: typeof loadPreviousPage;
+  loadNextPage: typeof loadNextPage;
+  showFullDetails: typeof showFullDetails;
+  confirmDeleteLogs: typeof confirmDeleteLogs;
+}
+
+// Global variables
+const apiClient = ApiClient.getInstance();
+let currentOffset = 0;
+const limit = 50;
+let currentFilters: Filters = {};
+
+// Setup filter listeners
+function setupFilterListeners() {
+  const filterInputs = ['filter-user', 'filter-action', 'filter-entity', 'filter-timerange'];
+
+  filterInputs.forEach((id) => {
+    const element = $$(`#${id}`);
+    if (element) {
+      element.addEventListener('keypress', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          applyFilters();
+        }
+      });
+    }
+  });
+}
+
+// Build query params for API
+function buildQueryParams(): URLSearchParams {
+  const params = new URLSearchParams({
+    limit: limit.toString(),
+    offset: currentOffset.toString(),
+  });
+
+  // Add filters - don't send 'all' to backend
+  if (currentFilters.user !== undefined && currentFilters.user !== '') {
+    params.append('userId', currentFilters.user);
+  }
+  if (currentFilters.action !== undefined && currentFilters.action !== '' && currentFilters.action !== 'all') {
+    params.append('action', currentFilters.action);
+  }
+  if (
+    currentFilters.entity_type !== undefined &&
+    currentFilters.entity_type !== '' &&
+    currentFilters.entity_type !== 'all'
+  ) {
+    params.append('entityType', currentFilters.entity_type);
+  }
+  // v2 API uses startDate/endDate instead of timerange
+  if (currentFilters.timerange !== undefined && currentFilters.timerange !== '' && currentFilters.timerange !== 'all') {
+    const now = new Date();
+    const endDate = now.toISOString();
+    let startDate: string;
+
+    switch (currentFilters.timerange) {
+      case 'today':
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+        break;
+      case 'week': {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        startDate = weekAgo.toISOString();
+        break;
+      }
+      case 'month': {
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        startDate = monthAgo.toISOString();
+        break;
+      }
+      default:
+        startDate = '';
+    }
+
+    if (startDate !== '') {
+      params.append('startDate', startDate);
+      params.append('endDate', endDate);
+    }
+  }
+
+  return params;
+}
+
+// Load logs
+async function loadLogs() {
+  const container = $$('#logs-table-container');
+  if (!container) return;
+
+  setHTML(
+    container,
+    `
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>Logs werden geladen...</p>
+    </div>
+  `,
+  );
+
+  try {
+    const params = buildQueryParams();
+    const response = await apiClient.request<LogsResponse>(`/system/logs?${params.toString()}`, {
+      method: 'GET',
+    });
+
+    displayLogs(response.logs);
+    updatePagination(response.pagination);
+    updateDeleteButtonState();
+  } catch (error) {
+    console.error('Error loading logs:', error);
+    setHTML(
+      container,
+      `
+      <div class="error-state">
+        <p>Fehler beim Laden der Logs</p>
+        <button onclick="location.reload()">Erneut versuchen</button>
+      </div>
+    `,
+    );
+  }
+}
+
+// Helper functions for formatLogEntry
+function parseLogDetails(detailsStr: string | undefined): LogDetails | null {
+  if (detailsStr === undefined || detailsStr === '') {
+    return null;
+  }
+  return JSON.parse(detailsStr) as LogDetails;
+}
+
+function createDetailsButton(detailsStr: string | undefined): string {
+  if (detailsStr === undefined || detailsStr === '') {
+    return '';
+  }
+  const encodedDetails = encodeURIComponent(detailsStr);
+  return `<button class="btn-icon" data-action="show-details" data-details="${encodedDetails}" title="Details anzeigen">
+           <i class="fas fa-info-circle"></i>
+         </button>`;
+}
+
+function formatEntityInfo(entry: LogEntry): string {
+  if (entry.entityType === undefined) {
+    return '';
+  }
+  let entityInfo = `<span class="entity-type">${entry.entityType}</span>`;
+  if (entry.entityId !== undefined) {
+    entityInfo += ` <span class="entity-id">#${entry.entityId}</span>`;
+  }
+  return entityInfo;
+}
+
+function buildDetailsSummary(details: LogDetails | null): string {
+  if (details === null) {
+    return '';
+  }
+
+  let summary = '';
+  if (details.title !== undefined && details.title !== '') {
+    summary = ` - ${details.title}`;
+  }
+  if (details.shared_to !== undefined && details.shared_to !== '') {
+    summary += ` (Geteilt mit: ${details.shared_to})`;
+  }
+  if (details.login_method !== undefined && details.login_method !== '') {
+    summary = ` - ${details.login_method}`;
+  }
+  return summary;
+}
+
+// Format log entry for display
+function formatLogEntry(entry: LogEntry): string {
+  const details = parseLogDetails(entry.details);
+  const detailsButton = createDetailsButton(entry.details);
+  const formattedDate = new Date(entry.createdAt).toLocaleString('de-DE', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+
+  const entityInfo = formatEntityInfo(entry);
+  const roleClass = `role-${entry.userRole.toLowerCase()}`;
+  const roleLabel = getRoleLabel(entry.userRole);
+  const detailsSummary = buildDetailsSummary(details);
+
+  return `
+    <tr>
+      <td class="text-muted">${entry.id}</td>
+      <td>
+        <div class="user-info">
+          <span class="user-name">${entry.userName}</span>
+          <span class="user-role ${roleClass}">${roleLabel}</span>
+        </div>
+      </td>
+      <td>
+        <span class="action-label action-${entry.action.toLowerCase()}">${getActionLabel(entry.action)}</span>
+      </td>
+      <td>${entityInfo}</td>
+      <td class="details-cell">
+        <span class="details-text">${entry.action}${detailsSummary}</span>
+        ${detailsButton}
+      </td>
+      <td class="text-muted ip-cell">${entry.ipAddress ?? '-'}</td>
+      <td class="text-muted">${formattedDate}</td>
+    </tr>
+  `;
+}
+
+// Display logs
+function displayLogs(logs: LogEntry[]) {
+  const container = $$('#logs-table-container');
+  if (!container) return;
+
+  if (logs.length === 0) {
+    setHTML(
+      container,
+      `
+      <div class="no-data">
+        <p>Keine Logs gefunden</p>
+      </div>
+    `,
+    );
+    return;
+  }
+
+  const rows = logs.map((entry) => formatLogEntry(entry)).join('');
+
+  setHTML(
+    container,
+    `
+    <table class="logs-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Benutzer</th>
+          <th>Aktion</th>
+          <th>Objekt</th>
+          <th>Details</th>
+          <th>IP-Adresse</th>
+          <th>Zeitstempel</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  `,
+  );
+}
+
+// Update pagination
+function updatePagination(pagination: Pagination) {
+  const pageInfo = $$('#page-info');
+  const prevBtn = $$('#prev-page');
+  const nextBtn = $$('#next-page');
+
+  if (pageInfo) {
+    const currentPage = Math.floor(currentOffset / limit) + 1;
+    const totalPages = Math.ceil(pagination.total / limit);
+    pageInfo.textContent = `Seite ${currentPage} von ${totalPages} (${pagination.total} Einträge)`;
+  }
+
+  if (prevBtn) {
+    if (currentOffset === 0) {
+      prevBtn.setAttribute('disabled', 'true');
+    } else {
+      prevBtn.removeAttribute('disabled');
+    }
+  }
+
+  if (nextBtn) {
+    if (!pagination.hasMore) {
+      nextBtn.setAttribute('disabled', 'true');
+    } else {
+      nextBtn.removeAttribute('disabled');
+    }
+  }
+}
+
+// Apply filters
+function applyFilters() {
+  const userFilter = ($$('#filter-user') as HTMLInputElement | null)?.value;
+  const actionFilter = ($$('#filter-action') as HTMLSelectElement | null)?.value;
+  const entityFilter = ($$('#filter-entity') as HTMLSelectElement | null)?.value;
+  const timerangeFilter = ($$('#filter-timerange') as HTMLSelectElement | null)?.value;
+
+  currentFilters = {
+    user: userFilter,
+    action: actionFilter,
+    entity_type: entityFilter,
+    timerange: timerangeFilter,
+  };
+
+  currentOffset = 0;
+  void loadLogs();
+}
+
+// Reset filters
+function resetFilters() {
+  const userFilter = $$('#filter-user') as HTMLInputElement | null;
+  const actionFilter = $$('#filter-action') as HTMLSelectElement | null;
+  const entityFilter = $$('#filter-entity') as HTMLSelectElement | null;
+  const timerangeFilter = $$('#filter-timerange') as HTMLSelectElement | null;
+
+  if (userFilter) userFilter.value = '';
+  if (actionFilter) actionFilter.value = 'all';
+  if (entityFilter) entityFilter.value = 'all';
+  if (timerangeFilter) timerangeFilter.value = 'all';
+
+  currentFilters = {};
+  currentOffset = 0;
+  void loadLogs();
+}
+
+// Delete filtered logs
+function deleteFilteredLogs() {
+  const modal = $$('#deleteModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+}
+
+// Confirm delete logs
+async function confirmDeleteLogs() {
+  try {
+    const params = buildQueryParams();
+
+    await apiClient.request(`/system/logs?${params.toString()}`, {
+      method: 'DELETE',
+    });
+
+    showSuccess('Logs erfolgreich gelöscht');
+    currentOffset = 0;
+    void loadLogs();
+
+    // Close modal
+    const modal = $$('#deleteModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  } catch (error) {
+    console.error('Error deleting logs:', error);
+    showError('Fehler beim Löschen der Logs');
+  }
+}
+
+// Load previous page
+function loadPreviousPage() {
+  if (currentOffset >= limit) {
+    currentOffset -= limit;
+    void loadLogs();
+  }
+}
+
+// Load next page
+function loadNextPage() {
+  currentOffset += limit;
+  void loadLogs();
+}
+
+// Get human-readable action label
+function getActionLabel(action: string): string {
+  const actionLabels: Record<string, string> = {
+    CREATE: 'Erstellt',
+    UPDATE: 'Aktualisiert',
+    DELETE: 'Gelöscht',
+    LOGIN: 'Anmeldung',
+    LOGOUT: 'Abmeldung',
+    SHARE: 'Geteilt',
+    ARCHIVE: 'Archiviert',
+    RESTORE: 'Wiederhergestellt',
+    EXPORT: 'Exportiert',
+    IMPORT: 'Importiert',
+    EMAIL_SENT: 'E-Mail',
+    PASSWORD_CHANGE: 'Passwort',
+    ROLE_CHANGE: 'Rolle',
+  };
+
+  // eslint-disable-next-line security/detect-object-injection -- action comes from server API response, not user input
+  return actionLabels[action] ?? action;
+}
+
+// Get role label
+function getRoleLabel(role: string): string {
+  const roleLabels: Record<string, string> = {
+    root: 'Root',
+    admin: 'Admin',
+    employee: 'Mitarbeiter',
+  };
+
+  // eslint-disable-next-line security/detect-object-injection -- role comes from server API response, not user input
+  return roleLabels[role] ?? role;
+}
+
+// Format details for modal display
+function formatDetailsForModal(details: LogDetails): string {
+  const formattedDetails: string[] = [];
+
+  for (const [key, value] of Object.entries(details)) {
+    const formattedKey = key
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (l) => l.toUpperCase())
+      .replace(/Id$/, ' ID');
+
+    let formattedValue = '';
+    if (value === null) {
+      formattedValue = '<span class="null-value">null</span>';
+    } else if (typeof value === 'object') {
+      formattedValue = `<pre>${JSON.stringify(value, null, 2)}</pre>`;
+    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      formattedValue = String(value);
+    } else {
+      formattedValue = JSON.stringify(value);
+    }
+
+    formattedDetails.push(`
+      <div class="detail-row">
+        <span class="detail-key">${formattedKey}:</span>
+        <span class="detail-value">${formattedValue}</span>
+      </div>
+    `);
+  }
+
+  return formattedDetails.join('');
+}
+
+// Show full details in modal
+function showFullDetails(encodedDetails: string) {
+  try {
+    const detailsStr = decodeURIComponent(encodedDetails);
+    const details = JSON.parse(detailsStr) as LogDetails;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal details-modal';
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    };
+
+    const content = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Log-Details</h3>
+          <button onclick="this.closest('.modal').remove()" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          ${formatDetailsForModal(details)}
+        </div>
+      </div>
+    `;
+
+    setHTML(modal, content);
+    document.body.append(modal);
+  } catch (error) {
+    console.error('Error parsing details:', error);
+    showError('Fehler beim Anzeigen der Details');
+  }
+}
+
+// Update delete button state
+function updateDeleteButtonState() {
+  const deleteBtn = $$('#delete-filtered-btn');
+  if (!deleteBtn) return;
+
+  const hasActiveFilters =
+    (currentFilters.user !== undefined && currentFilters.user !== '') ||
+    (currentFilters.action !== undefined && currentFilters.action !== '' && currentFilters.action !== 'all') ||
+    (currentFilters.entity_type !== undefined &&
+      currentFilters.entity_type !== '' &&
+      currentFilters.entity_type !== 'all') ||
+    (currentFilters.timerange !== undefined && currentFilters.timerange !== '' && currentFilters.timerange !== 'all');
+
+  if (hasActiveFilters) {
+    deleteBtn.removeAttribute('disabled');
+    deleteBtn.setAttribute('title', 'Gefilterte Logs löschen');
+  } else {
+    deleteBtn.setAttribute('disabled', 'true');
+    deleteBtn.setAttribute('title', 'Bitte Filter setzen um Logs zu löschen');
+  }
+}
+
+// Initialize on page load
 (() => {
-  // Initialize API client
-  const apiClient = ApiClient.getInstance();
   // Auth check
   const token = localStorage.getItem('token') ?? localStorage.getItem('accessToken');
   const userRole = localStorage.getItem('userRole');
@@ -15,62 +546,7 @@ import { $$, setHTML } from '../utils/dom-utils';
     return;
   }
 
-  interface LogEntry {
-    id: number;
-    userId: number;
-    userName: string;
-    userRole: string;
-    action: string;
-    entityType?: string;
-    entityId?: number;
-    oldValues?: unknown;
-    newValues?: unknown;
-    details?: string;
-    ipAddress?: string;
-    userAgent?: string;
-    createdAt: string;
-  }
-
-  interface LogsResponse {
-    logs: LogEntry[];
-    pagination: {
-      limit: number;
-      offset: number;
-      total: number;
-      hasMore: boolean;
-    };
-  }
-
-  interface LogDetails {
-    title?: string;
-    shared_to?: string;
-    login_method?: string;
-    role?: string;
-    [key: string]: unknown;
-  }
-
-  let currentOffset = 0;
-  const limit = 50;
-  interface Filters {
-    user?: string;
-    action?: string;
-    entity_type?: string;
-    timerange?: string;
-  }
-
-  let currentFilters: Filters = {};
-
   // Make functions available globally
-  interface LogsWindow extends Window {
-    applyFilters: typeof applyFilters;
-    resetFilters: typeof resetFilters;
-    deleteFilteredLogs: typeof deleteFilteredLogs;
-    loadPreviousPage: typeof loadPreviousPage;
-    loadNextPage: typeof loadNextPage;
-    showFullDetails: typeof showFullDetails;
-    confirmDeleteLogs: typeof confirmDeleteLogs;
-  }
-
   (window as unknown as LogsWindow).applyFilters = applyFilters;
   (window as unknown as LogsWindow).resetFilters = resetFilters;
   (window as unknown as LogsWindow).deleteFilteredLogs = deleteFilteredLogs;
@@ -86,755 +562,21 @@ import { $$, setHTML } from '../utils/dom-utils';
     updateDeleteButtonState();
   });
 
-  // Setup filter listeners
-  function setupFilterListeners() {
-    const filterInputs = ['filter-user', 'filter-action', 'filter-entity', 'filter-timerange'];
-
-    filterInputs.forEach((id) => {
-      const element = $$(`#${id}`);
-      if (element) {
-        element.addEventListener('keypress', (e: KeyboardEvent) => {
-          if (e.key === 'Enter') {
-            applyFilters();
-          }
-        });
-      }
-    });
-  }
-
-  // Load logs
-  async function loadLogs() {
-    const container = $$('#logs-table-container');
-    if (!container) return;
-
-    setHTML(
-      container,
-      `
-    <div class="loading">
-      <div class="loading-spinner"></div>
-      <p>Logs werden geladen...</p>
-    </div>
-  `,
-    );
-
-    try {
-      // Build query params
-      const params = new URLSearchParams({
-        limit: limit.toString(),
-        offset: currentOffset.toString(),
-      });
-
-      // Add filters - don't send 'all' to backend
-      if (currentFilters.user !== undefined && currentFilters.user !== '') {
-        params.append('userId', currentFilters.user);
-      }
-      if (currentFilters.action !== undefined && currentFilters.action !== '' && currentFilters.action !== 'all') {
-        params.append('action', currentFilters.action);
-      }
-      if (
-        currentFilters.entity_type !== undefined &&
-        currentFilters.entity_type !== '' &&
-        currentFilters.entity_type !== 'all'
-      ) {
-        params.append('entityType', currentFilters.entity_type);
-      }
-      // v2 API uses startDate/endDate instead of timerange
-      if (
-        currentFilters.timerange !== undefined &&
-        currentFilters.timerange !== '' &&
-        currentFilters.timerange !== 'all'
-      ) {
-        const now = new Date();
-        const endDate = now.toISOString();
-        let startDate: string;
-
-        const HOUR_IN_MS = 60 * 60 * 1000;
-        const DAY_IN_MS = 24 * HOUR_IN_MS;
-        const WEEK_IN_MS = 7 * DAY_IN_MS;
-        const MONTH_IN_MS = 30 * DAY_IN_MS;
-
-        switch (currentFilters.timerange) {
-          case '24h':
-            startDate = new Date(now.getTime() - DAY_IN_MS).toISOString();
-            break;
-          case '7d':
-            startDate = new Date(now.getTime() - WEEK_IN_MS).toISOString();
-            break;
-          case '30d':
-            startDate = new Date(now.getTime() - MONTH_IN_MS).toISOString();
-            break;
-          default:
-            startDate = new Date(now.getTime() - DAY_IN_MS).toISOString();
-        }
-
-        params.append('startDate', startDate);
-        params.append('endDate', endDate);
-      }
-
-      // Use apiClient - it automatically handles v2 endpoints
-      try {
-        const result: LogsResponse = await apiClient.request(`/logs?${params}`);
-
-        displayLogs(result.logs);
-        updatePagination(result.pagination);
-      } catch (error) {
-        console.error('Error loading logs:', error);
-        setHTML(
-          container,
-          `
-        <div class="empty-state">
-          <div class="empty-state-icon">⚠️</div>
-          <div class="empty-state-text">Fehler beim Laden der Logs</div>
-        </div>
-      `,
-        );
-      }
-    } catch (error) {
-      console.error('Error loading logs:', error);
-      setHTML(
-        container,
-        `
-      <div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
-        <div class="empty-state-text">Netzwerkfehler</div>
-        <div class="empty-state-subtext">Bitte versuchen Sie es später erneut</div>
-      </div>
-    `,
-      );
-    }
-  }
-
-  // Display logs in table
-  function displayLogs(logs: LogEntry[]) {
-    const container = $$('#logs-table-container');
-    if (!container) return;
-
-    if (logs.length === 0) {
-      setHTML(
-        container,
-        `
-      <div class="empty-state">
-        <div class="empty-state-icon">📋</div>
-        <div class="empty-state-text">Keine Logs gefunden</div>
-        <div class="empty-state-subtext">Versuchen Sie andere Filtereinstellungen</div>
-      </div>
-    `,
-      );
-      return;
-    }
-
-    setHTML(
-      container,
-      `
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Zeitstempel</th>
-          <th>Benutzer</th>
-          <th>Aktion</th>
-          <th>Typ</th>
-          <th>Details</th>
-          <th>IP-Adresse</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${logs
-          .map((log) => {
-            const date = new Date(log.createdAt);
-            const dateString = date.toLocaleDateString('de-DE', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-            });
-            const timeString = date.toLocaleTimeString('de-DE', {
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-            });
-
-            return `
-            <tr>
-              <td>
-                <div>${dateString}</div>
-                <div style="font-size: 12px; color: var(--text-secondary);">${timeString}</div>
-              </td>
-              <td>
-                <div>${log.userName}</div>
-                <span class="role-badge role-${log.userRole}">${getRoleLabel(log.userRole)}</span>
-              </td>
-              <td>
-                <span class="action-badge action-${log.action}">${getActionLabel(log.action)}</span>
-              </td>
-              <td>${log.entityType ?? '-'}</td>
-              <td>
-                ${
-                  log.newValues !== undefined ||
-                  log.oldValues !== undefined ||
-                  (log.details !== undefined && log.details !== '')
-                    ? (() => {
-                        // For v2 API, use newValues/oldValues
-                        const details =
-                          log.details ??
-                          (log.newValues !== undefined
-                            ? JSON.stringify(log.newValues)
-                            : log.oldValues !== undefined
-                              ? JSON.stringify(log.oldValues)
-                              : '');
-
-                        // Check if details is JSON or plain text
-                        try {
-                          const parsedDetails =
-                            typeof details === 'string' ? (JSON.parse(details) as LogDetails) : (details as LogDetails);
-
-                          // Format KVP details specially
-                          if (log.action === 'kvp_created' || log.action === 'kvp_shared') {
-                            let formatted = '';
-                            if (parsedDetails.title !== undefined && parsedDetails.title !== '') {
-                              formatted = `"${parsedDetails.title}"`;
-                            }
-                            if (parsedDetails.shared_to !== undefined && parsedDetails.shared_to !== '') {
-                              formatted = `Geteilt an: ${parsedDetails.shared_to === 'company' ? 'Firmenweit' : parsedDetails.shared_to}`;
-                            }
-                            return `<span style="color: var(--text-secondary);">${formatted}</span>`;
-                          }
-
-                          // For login/logout show simplified info
-                          if (log.action === 'login' || log.action === 'logout') {
-                            if (parsedDetails.login_method !== undefined && parsedDetails.login_method !== '') {
-                              return `<span style="color: var(--text-secondary);">Method: ${parsedDetails.login_method}</span>`;
-                            }
-                            if (parsedDetails.role !== undefined && parsedDetails.role !== '') {
-                              return `<span style="color: var(--text-secondary);">Role: ${parsedDetails.role}</span>`;
-                            }
-                          }
-
-                          // For other JSON details, show with click handler
-                          const detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
-                          return `<span class="details-preview" data-action="show-details" data-details="${btoa(detailsStr)}" style="cursor: pointer; text-decoration: underline; color: var(--primary-color);">
-                        ${detailsStr.length > 50 ? `${detailsStr.substring(0, 50)}...` : detailsStr}
-                      </span>`;
-                        } catch {
-                          // It's plain text, just show it
-                          const detailsStr = typeof details === 'string' ? details : JSON.stringify(details);
-                          return `<span style="color: var(--text-secondary);">${detailsStr}</span>`;
-                        }
-                      })()
-                    : '-'
-                }
-              </td>
-              <td>
-                <span style="font-size: 12px; color: var(--text-secondary);">
-                  ${log.ipAddress ?? '-'}
-                </span>
-              </td>
-            </tr>
-          `;
-          })
-          .join('')}
-      </tbody>
-    </table>
-  `,
-    );
-  }
-
-  // Update pagination
-  interface Pagination {
-    limit: number;
-    offset: number;
-    total: number;
-    hasMore: boolean;
-  }
-
-  function updatePagination(pagination: Pagination) {
-    const container = $$('#pagination-container');
-    const prevBtn = $$('#prev-btn') as HTMLButtonElement | null;
-    const nextBtn = $$('#next-btn') as HTMLButtonElement | null;
-    const info = $$('#pagination-info');
-
-    if (!container) return;
-
-    container.style.display = 'flex';
-
-    const currentPage = Math.floor(pagination.offset / pagination.limit) + 1;
-    const totalPages = Math.ceil(pagination.total / pagination.limit);
-
-    if (info) {
-      info.textContent = `Seite ${currentPage} von ${totalPages} (${pagination.total} Einträge)`;
-    }
-
-    if (prevBtn !== null) {
-      prevBtn.disabled = pagination.offset === 0;
-    }
-
-    if (nextBtn !== null) {
-      nextBtn.disabled = !pagination.hasMore;
-    }
-  }
-
-  // Apply filters
-  function applyFilters() {
-    const userFilter = ($$('#filter-user') as HTMLInputElement | null)?.value;
-    const actionFilter = ($$('#filter-action') as HTMLSelectElement | null)?.value;
-    const entityFilter = ($$('#filter-entity') as HTMLSelectElement | null)?.value;
-    const timerangeFilter = ($$('#filter-timerange') as HTMLSelectElement | null)?.value;
-
-    console.info('applyFilters called with:', { userFilter, actionFilter, entityFilter, timerangeFilter });
-
-    currentFilters = {};
-
-    // Add filters - 'all' SHOULD be treated as an active filter for delete button!
-    if (userFilter !== undefined && userFilter !== '') currentFilters.user = userFilter;
-    // WICHTIG: Auch 'all' als aktiven Filter speichern, damit der Delete-Button aktiviert wird
-    if (actionFilter !== undefined && actionFilter !== '') currentFilters.action = actionFilter; // Removed check for empty string
-    if (entityFilter !== undefined && entityFilter !== '') currentFilters.entity_type = entityFilter; // Removed check for empty string
-    if (timerangeFilter !== undefined && timerangeFilter !== '') currentFilters.timerange = timerangeFilter; // Removed check for empty string
-
-    console.info('currentFilters after setting:', currentFilters);
-
-    // Update delete button state
-    updateDeleteButtonState();
-
-    currentOffset = 0;
-    void loadLogs();
-  }
-
-  // Reset filters
-  function resetFilters() {
-    const userInput = $$('#filter-user') as HTMLInputElement | null;
-    const actionInput = $$('#filter-action') as HTMLSelectElement | null;
-    const entityInput = $$('#filter-entity') as HTMLSelectElement | null;
-    const timerangeInput = $$('#filter-timerange') as HTMLSelectElement | null;
-
-    if (userInput !== null) userInput.value = '';
-    if (actionInput !== null) actionInput.value = 'all';
-    if (entityInput !== null) entityInput.value = 'all';
-    if (timerangeInput !== null) timerangeInput.value = 'all';
-
-    // Reset dropdown displays
-    const actionDisplay = $$('#actionDisplay');
-    const entityDisplay = $$('#entityDisplay');
-    const timerangeDisplay = $$('#timerangeDisplay');
-
-    if (actionDisplay) {
-      const span = actionDisplay.querySelector('span');
-      if (span) span.textContent = 'Alle Aktionen';
-    }
-    if (entityDisplay) {
-      const span = entityDisplay.querySelector('span');
-      if (span) span.textContent = 'Alle Typen';
-    }
-    if (timerangeDisplay) {
-      const span = timerangeDisplay.querySelector('span');
-      if (span) span.textContent = 'Alle Zeit';
-    }
-
-    // Reset dropdown selections
-    const dropdowns = document.querySelectorAll('.dropdown-option');
-    dropdowns.forEach((option) => {
-      option.classList.remove('selected');
-    });
-
-    currentFilters = {};
-    currentOffset = 0;
-
-    // Update delete button state
-    updateDeleteButtonState();
-
-    void loadLogs();
-  }
-
-  // Delete filtered logs
-  function deleteFilteredLogs() {
-    // Check if any filters are applied
-    if (Object.keys(currentFilters).length === 0) {
-      showError(
-        'Keine Filter aktiv! Bitte wählen Sie mindestens einen spezifischen Filter aus (nicht "Alle"), um Logs zu löschen.',
-      );
-      return;
-    }
-
-    // Show delete confirmation modal
-    const modal = $$('#deleteLogsModal');
-    const activeFiltersDisplay = $$('#activeFiltersDisplay');
-
-    if (modal && activeFiltersDisplay) {
-      // Build filter display
-      let filterHTML = '<ul style="list-style: none; padding: 0; margin: 0; color: var(--text-primary);">';
-
-      if (currentFilters.user !== undefined && currentFilters.user !== '') {
-        filterHTML += `<li>• <strong>Benutzer:</strong> ${currentFilters.user}</li>`;
-      }
-      if (currentFilters.action !== undefined && currentFilters.action !== '') {
-        const actionLabels: Record<string, string> = {
-          all: 'Alle Aktionen',
-          login: 'Anmeldung',
-          logout: 'Abmeldung',
-          create: 'Erstellt',
-          update: 'Aktualisiert',
-          delete: 'Gelöscht',
-          upload: 'Hochgeladen',
-          download: 'Heruntergeladen',
-          view: 'Angesehen',
-          assign: 'Zugewiesen',
-          unassign: 'Entfernt',
-        };
-        filterHTML += `<li>• <strong>Aktion:</strong> ${actionLabels[currentFilters.action] ?? currentFilters.action}</li>`;
-      }
-      if (currentFilters.entity_type !== undefined && currentFilters.entity_type !== '') {
-        const entityLabel = currentFilters.entity_type === 'all' ? 'Alle Typen' : currentFilters.entity_type;
-        filterHTML += `<li>• <strong>Entitätstyp:</strong> ${entityLabel}</li>`;
-      }
-      if (currentFilters.timerange !== undefined && currentFilters.timerange !== '') {
-        const timeLabels: Record<string, string> = {
-          all: 'Alle Zeit',
-          today: 'Heute',
-          yesterday: 'Gestern',
-          week: 'Letzte 7 Tage',
-          month: 'Letzter Monat',
-          '3months': 'Letzte 3 Monate',
-          '6months': 'Letzte 6 Monate',
-          year: 'Letztes Jahr',
-        };
-        filterHTML += `<li>• <strong>Zeitraum:</strong> ${timeLabels[currentFilters.timerange] ?? currentFilters.timerange}</li>`;
-      }
-
-      filterHTML += '</ul>';
-      setHTML(activeFiltersDisplay, filterHTML);
-
-      // Show modal
-      modal.classList.add('active');
-
-      // Reset confirmation input
-      const confirmInput = $$('#deleteLogsConfirmation') as HTMLInputElement | null;
-      const passwordSection = $$('#passwordConfirmSection');
-      const passwordInput = $$('#deleteLogsPassword') as HTMLInputElement | null;
-
-      if (confirmInput !== null) {
-        confirmInput.value = '';
-        confirmInput.focus();
-      }
-
-      // v2 API requires password for ALL delete operations
-      if (passwordSection && passwordInput !== null) {
-        passwordSection.style.display = 'block';
-        passwordInput.value = '';
-        passwordInput.focus();
-      }
-    }
-  }
-
-  // Confirm delete logs (called from modal)
-  async function confirmDeleteLogs() {
-    const confirmBtn = $$('#confirmDeleteLogsBtn') as HTMLButtonElement | null;
-    const passwordInput = $$('#deleteLogsPassword') as HTMLInputElement | null;
-
-    // v2 API requires password for ALL delete operations
-    if (passwordInput === null || passwordInput.value === '') {
-      showError('❌ Bitte geben Sie Ihr Root-Passwort ein!');
-      return;
-    }
-
-    if (confirmBtn !== null) {
-      confirmBtn.disabled = true;
-      setHTML(confirmBtn, '<i class="fas fa-spinner fa-spin"></i> Lösche...');
-    }
-
-    try {
-      // Check if we're deleting ALL logs (all filters are 'all' or empty)
-      const isDeletingAll =
-        (currentFilters.user === undefined || currentFilters.user === '') &&
-        (currentFilters.action === undefined || currentFilters.action === 'all') &&
-        (currentFilters.entity_type === undefined || currentFilters.entity_type === 'all') &&
-        (currentFilters.timerange === undefined || currentFilters.timerange === 'all');
-
-      console.info('confirmDeleteLogs - Current filters:', currentFilters);
-      console.info('confirmDeleteLogs - isDeletingAll:', isDeletingAll);
-
-      // v2 API expects ALL filters in the body, not as query params
-
-      // Prepare request options
-      const requestOptions: RequestInit = {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token ?? ''}`,
-          'Content-Type': 'application/json',
-        },
-      };
-
-      interface DeleteLogsBody {
-        confirmPassword: string;
-        userId?: number;
-        tenantId?: number;
-        action?: string;
-        entityType?: string;
-        olderThanDays?: number;
-      }
-
-      const bodyData: DeleteLogsBody = {
-        confirmPassword: passwordInput.value, // Always use the actual password
-      };
-
-      // Add filters to body based on what's selected
-      // v2 API now supports all filters in body
-      if (currentFilters.user !== undefined && currentFilters.user !== '') {
-        bodyData.userId = Number.parseInt(currentFilters.user, 10);
-      }
-
-      // Now the backend supports action and entityType directly!
-      if (currentFilters.action !== undefined && currentFilters.action !== '' && currentFilters.action !== 'all') {
-        bodyData.action = currentFilters.action;
-        console.info(`Deleting logs with action="${currentFilters.action}"`);
-      }
-
-      if (
-        currentFilters.entity_type !== undefined &&
-        currentFilters.entity_type !== '' &&
-        currentFilters.entity_type !== 'all'
-      ) {
-        bodyData.entityType = currentFilters.entity_type; // Note: camelCase for v2 API
-        console.info(`Deleting logs with entityType="${currentFilters.entity_type}"`);
-      }
-
-      // Handle timerange filter properly - convert to days
-      if (
-        currentFilters.timerange !== undefined &&
-        currentFilters.timerange !== '' &&
-        currentFilters.timerange !== 'all'
-      ) {
-        switch (currentFilters.timerange) {
-          case '24h':
-            bodyData.olderThanDays = 1; // Delete logs older than 1 day
-            break;
-          case '7d':
-            bodyData.olderThanDays = 7; // Delete logs older than 7 days
-            break;
-          case '30d':
-            bodyData.olderThanDays = 30; // Delete logs older than 30 days
-            break;
-          default:
-            // For "today" or other specific ranges, use 0 to delete all matching logs
-            bodyData.olderThanDays = 0;
-        }
-        console.info(`Timerange filter "${currentFilters.timerange}" -> olderThanDays: ${bodyData.olderThanDays}`);
-      }
-
-      // If deleting ALL logs (no specific filters), use olderThanDays=0
-      if (
-        isDeletingAll ||
-        (bodyData.userId === undefined &&
-          bodyData.tenantId === undefined &&
-          bodyData.action === undefined &&
-          bodyData.entityType === undefined &&
-          bodyData.olderThanDays === undefined)
-      ) {
-        bodyData.olderThanDays = 0; // This will delete all logs (no age restriction)
-        console.info('Ensuring at least one filter is provided - using olderThanDays: 0 (delete all)');
-      }
-
-      requestOptions.body = JSON.stringify(bodyData);
-      console.info('confirmDeleteLogs - Final body data:', bodyData);
-
-      // Use apiClient for v2 API
-      // Note: We're not passing query params since v2 expects everything in body
-      try {
-        const result = await apiClient.request<{ deletedCount: number }>('/logs', requestOptions);
-
-        // Close modal
-        const modal = $$('#deleteLogsModal');
-        if (modal) {
-          modal.classList.remove('active');
-        }
-
-        // Show success message
-        showSuccess(`✅ ${result.deletedCount} Logs wurden erfolgreich gelöscht.`);
-
-        // Reload logs to show updated list
-        currentOffset = 0;
-        void loadLogs();
-      } catch (apiError) {
-        console.error('Delete logs error:', apiError);
-        let errorMessage = 'Unbekannter Fehler';
-
-        if (apiError !== null && apiError !== undefined && typeof apiError === 'object' && 'message' in apiError) {
-          errorMessage = String(apiError.message);
-        } else if (apiError instanceof Error) {
-          errorMessage = apiError.message;
-        } else if (typeof apiError === 'string') {
-          errorMessage = apiError;
-        }
-
-        // Special handling for common errors
-        if (errorMessage.includes('Invalid password') || errorMessage.includes('Unauthorized')) {
-          errorMessage = 'Falsches Passwort';
-        } else if (errorMessage.includes('Validation failed')) {
-          errorMessage = 'Validierungsfehler - bitte prüfen Sie Ihre Eingaben';
-        }
-
-        showError(`❌ Fehler beim Löschen der Logs: ${errorMessage}`);
-      }
-    } catch (error) {
-      console.error('Error deleting logs:', error);
-      showError('❌ Netzwerkfehler beim Löschen der Logs.');
-    } finally {
-      // Reset button state
-      if (confirmBtn !== null) {
-        confirmBtn.disabled = false;
-        setHTML(confirmBtn, '<i class="fas fa-trash"></i> Logs löschen');
-      }
-    }
-  }
-
-  // Load previous page
-  function loadPreviousPage() {
-    if (currentOffset >= limit) {
-      currentOffset -= limit;
-      void loadLogs();
-    }
-  }
-
-  // Load next page
-  function loadNextPage() {
-    currentOffset += limit;
-    void loadLogs();
-  }
-
-  // Helper function to get readable action labels
-  function getActionLabel(action: string): string {
-    const actionLabels: Record<string, string> = {
-      login: 'Anmeldung',
-      logout: 'Abmeldung',
-      create: 'Erstellt',
-      update: 'Aktualisiert',
-      delete: 'Gelöscht',
-      upload: 'Hochgeladen',
-      download: 'Heruntergeladen',
-      view: 'Angesehen',
-      assign: 'Zugewiesen',
-      unassign: 'Entfernt',
-      kvp_created: 'KVP Erstellt',
-      kvp_shared: 'KVP Geteilt',
-    };
-    // Validate action is a key in actionLabels to avoid object injection
-    if (Object.prototype.hasOwnProperty.call(actionLabels, action)) {
-      // eslint-disable-next-line security/detect-object-injection -- Safe: finite set of known keys
-      return actionLabels[action];
-    }
-    return action;
-  }
-
-  // Helper function to get readable role labels
-  function getRoleLabel(role: string): string {
-    const roleLabels: Record<string, string> = {
-      root: 'Root',
-      admin: 'Admin',
-      employee: 'Mitarbeiter',
-    };
-    // Validate role is a key in roleLabels to avoid object injection
-    if (Object.prototype.hasOwnProperty.call(roleLabels, role)) {
-      // eslint-disable-next-line security/detect-object-injection -- Safe: finite set of known keys
-      return roleLabels[role];
-    }
-    return role;
-  }
-
-  // Show full details in a modal or alert
-  function showFullDetails(encodedDetails: string) {
-    try {
-      const details = atob(encodedDetails);
-      const parsed = JSON.parse(details) as unknown;
-      const formatted = JSON.stringify(parsed, null, 2);
-
-      // Create a modal to show the full details
-      const modal = document.createElement('div');
-      modal.className = 'modal active';
-      setHTML(
-        modal,
-        `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Log Details</h3>
-          <button class="modal-close" data-action="close-modal">&times;</button>
-        </div>
-        <div class="modal-body" style="padding: 24px;">
-          <pre style="color: var(--text-primary); background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; max-height: 400px;">${formatted}</pre>
-        </div>
-      </div>
-    `,
-      );
-      document.body.append(modal);
-
-      // Close modal on outside click
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          modal.remove();
-        }
-      });
-    } catch {
-      // If it's not JSON, just show the raw text in modal
-      const decodedText = atob(encodedDetails);
-      const modal = document.createElement('div');
-      modal.className = 'modal active';
-      setHTML(
-        modal,
-        `
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Log Details</h3>
-          <button class="modal-close" data-action="close-modal">&times;</button>
-        </div>
-        <div class="modal-body" style="padding: 24px;">
-          <pre style="color: var(--text-primary); background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; max-height: 400px;">${decodedText}</pre>
-        </div>
-      </div>
-    `,
-      );
-      document.body.append(modal);
-    }
-  }
-
-  // Update delete button state based on active filters
-  function updateDeleteButtonState() {
-    const deleteBtn = document.querySelector('.btn-danger[data-action="delete-filtered-logs"]');
-    if (deleteBtn) {
-      const hasActiveFilters = Object.keys(currentFilters).length > 0;
-      (deleteBtn as HTMLButtonElement).disabled = !hasActiveFilters;
-
-      if (hasActiveFilters) {
-        (deleteBtn as HTMLElement).style.opacity = '1';
-        (deleteBtn as HTMLElement).style.cursor = 'pointer';
-        (deleteBtn as HTMLElement).title = 'Löscht alle Logs die den aktuellen Filtern entsprechen';
-      } else {
-        (deleteBtn as HTMLElement).style.opacity = '0.5';
-        (deleteBtn as HTMLElement).style.cursor = 'not-allowed';
-        (deleteBtn as HTMLElement).title = 'Wählen Sie zuerst spezifische Filter aus';
-      }
-    }
-  }
-
-  // Event delegation for dynamic content
+  // Event delegation for dynamically generated content
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
     // Handle show details
     const detailsBtn = target.closest<HTMLElement>('[data-action="show-details"]');
     if (detailsBtn) {
-      const encodedDetails = detailsBtn.dataset.details;
-      if (encodedDetails !== undefined) {
-        (window as unknown as LogsWindow).showFullDetails(encodedDetails);
-      }
-    }
-
-    // Handle close modal
-    const closeBtn = target.closest<HTMLElement>('[data-action="close-modal"]');
-    if (closeBtn) {
-      const modal = closeBtn.closest('.modal');
-      if (modal) {
-        modal.remove();
+      const details = detailsBtn.dataset.details;
+      if (details !== undefined && details !== '') {
+        (window as unknown as LogsWindow).showFullDetails(details);
       }
     }
 
     // Handle delete filtered logs
-    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-filtered-logs"]');
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-filtered"]');
     if (deleteBtn) {
       (window as unknown as LogsWindow).deleteFilteredLogs();
     }

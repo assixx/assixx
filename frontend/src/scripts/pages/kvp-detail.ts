@@ -281,10 +281,9 @@ class KvpDetailPage {
     };
   }
 
-  private renderSuggestion(): void {
+  private renderBasicInfo(): void {
     if (!this.suggestion) return;
 
-    // Basic info
     const titleEl = $$('#suggestionTitle');
     const submittedByEl = $$('#submittedBy');
     const createdAtEl = $$('#createdAt');
@@ -295,66 +294,102 @@ class KvpDetailPage {
       submittedByEl.textContent = `${this.suggestion.submittedByName} ${this.suggestion.submittedByLastname}`;
     if (createdAtEl) createdAtEl.textContent = new Date(this.suggestion.createdAt).toLocaleDateString('de-DE');
     if (departmentEl) departmentEl.textContent = this.suggestion.departmentName;
+  }
 
-    // Status and Priority
+  private updateVisibilityBadgeIcon(icon: Element, orgLevel: string, visibilityText: Element): void {
+    if (orgLevel === 'team') {
+      icon.className = 'fas fa-users';
+      visibilityText.textContent = this.suggestion?.teamName ?? 'Team';
+    } else if (orgLevel === 'department') {
+      icon.className = 'fas fa-building';
+      visibilityText.textContent = this.suggestion?.departmentName ?? '';
+    } else {
+      icon.className = 'fas fa-globe';
+      visibilityText.textContent = 'Firmenweit';
+    }
+  }
+
+  private renderBadges(): void {
+    if (!this.suggestion) return;
+
+    // Status badge
     const statusBadge = $$('#statusBadge');
     if (statusBadge) {
       statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
       statusBadge.textContent = this.getStatusText(this.suggestion.status);
     }
 
+    // Priority badge
     const priorityBadge = $$('#priorityBadge');
     if (priorityBadge) {
       priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
       priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
     }
 
-    // Visibility Badge
+    // Visibility badge
     const visibilityBadge = $$('#visibilityBadge');
     const visibilityText = $$('#visibilityText');
     if (visibilityBadge && visibilityText) {
       const orgLevel = this.suggestion.orgLevel;
       visibilityBadge.className = `visibility-badge ${orgLevel}`;
 
-      // Set icon and text based on org level
       const icon = visibilityBadge.querySelector('i');
       if (icon) {
-        if (orgLevel === 'team') {
-          icon.className = 'fas fa-users';
-          visibilityText.textContent = this.suggestion.teamName ?? 'Team';
-        } else if (orgLevel === 'department') {
-          icon.className = 'fas fa-building';
-          visibilityText.textContent = this.suggestion.departmentName;
-        } else {
-          icon.className = 'fas fa-globe';
-          visibilityText.textContent = 'Firmenweit';
-        }
+        this.updateVisibilityBadgeIcon(icon, orgLevel, visibilityText);
       }
     }
 
     // Visibility info
     const visibilityInfo = $$('#visibilityInfo');
-    if (!visibilityInfo) return;
-    if (this.suggestion.orgLevel === 'company') {
-      setHTML(
-        visibilityInfo,
-        `<div class="visibility-badge company">
-          <i class="fas fa-globe"></i> Firmenweit geteilt
-          ${
-            this.suggestion.sharedByName !== undefined && this.suggestion.sharedByName !== ''
-              ? `<span> von ${this.suggestion.sharedByName} am ${this.suggestion.sharedAt !== undefined && this.suggestion.sharedAt !== '' ? new Date(this.suggestion.sharedAt).toLocaleDateString('de-DE') : ''}</span>`
-              : ''
-          }
-        </div>`,
-      );
-    } // else {
-    // setHTML(
-    // visibilityInfo,
-    //`<div class="visibility-badge department">
-    //<i class="fas fa-building"></i> Abteilung: ${this.suggestion.departmentName}
-    //</div>`,
-    //);
-    //}
+    if (!visibilityInfo || this.suggestion.orgLevel !== 'company') return;
+
+    const sharedByInfo =
+      this.suggestion.sharedByName !== undefined && this.suggestion.sharedByName !== ''
+        ? `<span> von ${this.suggestion.sharedByName} am ${this.suggestion.sharedAt !== undefined && this.suggestion.sharedAt !== '' ? new Date(this.suggestion.sharedAt).toLocaleDateString('de-DE') : ''}</span>`
+        : '';
+
+    setHTML(
+      visibilityInfo,
+      `<div class="visibility-badge company">
+        <i class="fas fa-globe"></i> Firmenweit geteilt
+        ${sharedByInfo}
+      </div>`,
+    );
+  }
+
+  private renderFinancialInfo(): void {
+    if (!this.suggestion) return;
+
+    const hasEstimatedCost = this.suggestion.estimatedCost !== undefined && this.suggestion.estimatedCost !== 0;
+    const hasActualSavings = this.suggestion.actualSavings !== undefined && this.suggestion.actualSavings !== 0;
+
+    if (!hasEstimatedCost && !hasActualSavings) return;
+
+    const financialSection = document.querySelector('#financialSection');
+    if (financialSection instanceof HTMLElement) financialSection.style.display = '';
+
+    const currencyFormatter = new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    });
+
+    if (hasEstimatedCost && this.suggestion.estimatedCost !== undefined) {
+      const estimatedCostEl = document.querySelector('#estimatedCost');
+      if (estimatedCostEl) {
+        estimatedCostEl.textContent = currencyFormatter.format(this.suggestion.estimatedCost);
+      }
+    }
+
+    if (hasActualSavings && this.suggestion.actualSavings !== undefined) {
+      const actualSavingsEl = document.querySelector('#actualSavings');
+      if (actualSavingsEl) {
+        actualSavingsEl.textContent = currencyFormatter.format(this.suggestion.actualSavings);
+      }
+    }
+  }
+
+  private renderContent(): void {
+    if (!this.suggestion) return;
 
     // Description
     const descriptionEl = document.querySelector('#description');
@@ -369,186 +404,259 @@ class KvpDetailPage {
     }
 
     // Financial info
-    if (
-      (this.suggestion.estimatedCost !== undefined && this.suggestion.estimatedCost !== 0) ||
-      (this.suggestion.actualSavings !== undefined && this.suggestion.actualSavings !== 0)
-    ) {
-      const financialSection = document.querySelector('#financialSection');
-      if (financialSection instanceof HTMLElement) financialSection.style.display = '';
+    this.renderFinancialInfo();
+  }
 
-      if (this.suggestion.estimatedCost !== undefined && this.suggestion.estimatedCost !== 0) {
-        const estimatedCostEl = document.querySelector('#estimatedCost');
-        if (estimatedCostEl) {
-          estimatedCostEl.textContent = new Intl.NumberFormat('de-DE', {
-            style: 'currency',
-            currency: 'EUR',
-          }).format(this.suggestion.estimatedCost);
-        }
-      }
+  private renderDetailsAndStatus(): void {
+    if (!this.suggestion) return;
 
-      if (this.suggestion.actualSavings !== undefined && this.suggestion.actualSavings !== 0) {
-        const actualSavingsEl = document.querySelector('#actualSavings');
-        if (actualSavingsEl) {
-          actualSavingsEl.textContent = new Intl.NumberFormat('de-DE', {
-            style: 'currency',
-            currency: 'EUR',
-          }).format(this.suggestion.actualSavings);
-        }
-      }
-    }
+    this.renderCategory();
+    this.renderStatus();
+    this.renderAssignedTo();
+    this.renderImplementationDate();
+    this.renderRejectionReason();
+  }
 
-    // Details sidebar
+  private renderCategory(): void {
+    if (!this.suggestion) return;
+
     const categoryEl = document.querySelector('#category');
-    if (categoryEl instanceof HTMLElement) {
-      setHTML(
-        categoryEl,
-        `<span style="color: ${this.suggestion.categoryColor}">
-          <i class="${this.suggestion.categoryIcon}"></i>
-          ${this.suggestion.categoryName}
-        </span>`,
-      );
-    }
+    if (!(categoryEl instanceof HTMLElement)) return;
 
-    // For non-admins, just show the status text
+    setHTML(
+      categoryEl,
+      `<span style="color: ${this.suggestion.categoryColor}">
+        <i class="${this.suggestion.categoryIcon}"></i>
+        ${this.suggestion.categoryName}
+      </span>`,
+    );
+  }
+
+  private renderStatus(): void {
+    if (!this.suggestion) return;
+
     const statusElement = document.querySelector('#status');
     const statusDropdownContainer = document.querySelector('#statusDropdownContainer');
     const statusDisplay = document.querySelector('#statusDisplay');
 
     if (!statusElement || !statusDropdownContainer || !statusDisplay) return;
 
-    if (this.currentUser && (this.currentUser.role === 'admin' || this.currentUser.role === 'root')) {
-      // Hide the status text and show the dropdown for admins
-      if (statusElement instanceof HTMLElement) statusElement.style.display = 'none';
-      if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = '';
+    const isAdmin = this.isUserAdmin();
 
-      // Update the dropdown display text
-      const statusSpan = statusDisplay.querySelector('span');
-      if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-      const statusValue = document.querySelector('#statusValue');
-      if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
+    if (isAdmin) {
+      this.renderAdminStatus(statusElement, statusDropdownContainer, statusDisplay);
     } else {
-      // Show only the status text for regular users
-      statusElement.textContent = this.getStatusText(this.suggestion.status);
-      if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = 'none';
+      this.renderRegularStatus(statusElement, statusDropdownContainer);
+    }
+  }
+
+  private isUserAdmin(): boolean {
+    return !!(this.currentUser && (this.currentUser.role === 'admin' || this.currentUser.role === 'root'));
+  }
+
+  private renderAdminStatus(statusElement: Element, statusDropdownContainer: Element, statusDisplay: Element): void {
+    if (!this.suggestion) return;
+
+    if (statusElement instanceof HTMLElement) statusElement.style.display = 'none';
+    if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = '';
+
+    const statusSpan = statusDisplay.querySelector('span');
+    if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
+
+    const statusValue = document.querySelector('#statusValue');
+    if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
+  }
+
+  private renderRegularStatus(statusElement: Element, statusDropdownContainer: Element): void {
+    if (!this.suggestion) return;
+
+    statusElement.textContent = this.getStatusText(this.suggestion.status);
+    if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = 'none';
+  }
+
+  private renderAssignedTo(): void {
+    if (!this.suggestion) return;
+    if (this.suggestion.assignedTo === undefined || this.suggestion.assignedTo === 0) return;
+
+    const assignedToItem = document.querySelector('#assignedToItem');
+    if (assignedToItem instanceof HTMLElement) {
+      assignedToItem.style.display = '';
+    }
+    // TODO: Load assigned user name
+  }
+
+  private renderImplementationDate(): void {
+    if (!this.suggestion) return;
+    if (!this.hasImplementationDate()) return;
+
+    const implementationItem = document.querySelector('#implementationItem');
+    const implementationDate = document.querySelector('#implementationDate');
+
+    if (implementationItem instanceof HTMLElement) {
+      implementationItem.style.display = '';
     }
 
-    if (this.suggestion.assignedTo !== undefined && this.suggestion.assignedTo !== 0) {
-      const assignedToItem = document.querySelector('#assignedToItem');
-      if (assignedToItem instanceof HTMLElement) assignedToItem.style.display = '';
-      // TODO: Load assigned user name
-    }
-
-    // Check for valid implementation date (not undefined, null, or empty string)
     if (
+      implementationDate !== null &&
       this.suggestion.implementationDate !== undefined &&
-      this.suggestion.implementationDate !== '' &&
-      // Type assertion needed because API can return null even though type says string | undefined
-      (this.suggestion.implementationDate as string | null) !== null
+      this.suggestion.implementationDate !== ''
     ) {
-      const implementationItem = document.querySelector('#implementationItem');
-      const implementationDate = document.querySelector('#implementationDate');
-      if (implementationItem instanceof HTMLElement) implementationItem.style.display = '';
-      if (implementationDate) {
-        // Store in a const to avoid type issues
-        const dateValue = this.suggestion.implementationDate;
-        implementationDate.textContent = new Date(dateValue).toLocaleDateString('de-DE');
-      }
+      const dateValue = this.suggestion.implementationDate;
+      implementationDate.textContent = new Date(dateValue).toLocaleDateString('de-DE');
+    }
+  }
+
+  private hasImplementationDate(): boolean {
+    return (
+      this.suggestion?.implementationDate !== undefined &&
+      this.suggestion.implementationDate !== '' &&
+      (this.suggestion.implementationDate as string | null) !== null
+    );
+  }
+
+  private renderRejectionReason(): void {
+    if (!this.suggestion) return;
+    if (this.suggestion.rejectionReason === undefined || this.suggestion.rejectionReason === '') return;
+
+    const rejectionItem = document.querySelector('#rejectionItem');
+    const rejectionReason = document.querySelector('#rejectionReason');
+
+    if (rejectionItem instanceof HTMLElement) {
+      rejectionItem.style.display = '';
     }
 
-    if (this.suggestion.rejectionReason !== undefined && this.suggestion.rejectionReason !== '') {
-      const rejectionItem = document.querySelector('#rejectionItem');
-      const rejectionReason = document.querySelector('#rejectionReason');
-      if (rejectionItem instanceof HTMLElement) rejectionItem.style.display = '';
-      if (rejectionReason) rejectionReason.textContent = this.suggestion.rejectionReason;
+    if (rejectionReason) {
+      rejectionReason.textContent = this.suggestion.rejectionReason;
     }
+  }
+
+  private renderSuggestion(): void {
+    if (!this.suggestion) return;
+
+    this.renderBasicInfo();
+    this.renderBadges();
+    this.renderContent();
+    this.renderDetailsAndStatus();
   }
 
   private setupRoleBasedUI(): void {
     if (!this.currentUser || !this.suggestion) return;
 
-    // Check if user is admin/root OR the author of the suggestion
-    const isAdminOrRoot = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
-    const isAuthor = this.currentUser.id === this.suggestion.submittedBy;
+    const isAdminOrRoot = this.isUserAdminOrRoot();
+    const isAuthor = this.isUserAuthor();
     const canComment = isAdminOrRoot || isAuthor;
 
-    // Show/hide comment form based on permissions
-    const commentForm = document.querySelector('#commentForm');
-    if (commentForm instanceof HTMLElement) {
-      if (canComment) {
-        commentForm.classList.remove('hidden');
-        commentForm.style.display = '';
-      } else {
-        commentForm.classList.add('hidden');
-        commentForm.style.display = 'none';
-      }
-    }
+    this.configureCommentForm(canComment);
+    this.configureAdminElements(isAdminOrRoot);
 
-    // Show/hide admin elements (only for admin/root, NOT for employee authors)
+    if (isAdminOrRoot) {
+      this.configureLimitedPermissionsMessage();
+      this.configureShareButtons();
+    }
+  }
+
+  private isUserAdminOrRoot(): boolean {
+    return this.currentUser?.role === 'admin' || this.currentUser?.role === 'root';
+  }
+
+  private isUserAuthor(): boolean {
+    return this.currentUser?.id === this.suggestion?.submittedBy;
+  }
+
+  private configureCommentForm(canComment: boolean): void {
+    const commentForm = document.querySelector('#commentForm');
+    if (!(commentForm instanceof HTMLElement)) return;
+
+    if (canComment) {
+      commentForm.classList.remove('hidden');
+      commentForm.style.display = '';
+    } else {
+      commentForm.classList.add('hidden');
+      commentForm.style.display = 'none';
+    }
+  }
+
+  private configureAdminElements(isAdminOrRoot: boolean): void {
     const adminElements = document.querySelectorAll('.admin-only');
+    const actionsCard = document.querySelector('#actionsCard');
+
     if (isAdminOrRoot) {
       adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
-
-      // Show actions card
-      const actionsCard = document.querySelector('#actionsCard');
       if (actionsCard instanceof HTMLElement) actionsCard.style.display = '';
-
-      // Configure share/unshare buttons
-      const shareBtn = document.querySelector('#shareBtn');
-      const unshareBtn = document.querySelector('#unshareBtn');
-
-      // Add info message for limited permissions
-      if (
-        this.suggestion.orgLevel === 'company' &&
-        this.currentUser.role === 'admin' &&
-        this.suggestion.submittedBy !== this.currentUser.id
-      ) {
-        // Admin but not the author - show info message
-        const statusDropdown = document.querySelector('#statusDropdown');
-        if (statusDropdown) {
-          const infoDiv = document.createElement('div');
-          infoDiv.className = 'alert alert-info mt-2';
-          infoDiv.innerHTML =
-            '<i class="fas fa-info-circle"></i> Nur der Verfasser dieses Vorschlags kann Änderungen vornehmen.';
-          statusDropdown.parentElement?.append(infoDiv);
-        }
-      }
-
-      // Handle share/unshare button visibility based on org level
-      if (this.suggestion.orgLevel === 'team') {
-        // Team level: can share but not unshare (it's already at lowest level)
-        if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
-        if (unshareBtn instanceof HTMLElement) unshareBtn.style.display = 'none';
-      } else if (this.suggestion.orgLevel === 'department') {
-        // Department level: can share to company or unshare to team
-        if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
-        if (
-          (this.currentUser.role === 'root' || this.suggestion.sharedBy === this.currentUser.id) &&
-          unshareBtn instanceof HTMLElement
-        ) {
-          unshareBtn.style.display = '';
-        } else if (unshareBtn instanceof HTMLElement) {
-          unshareBtn.style.display = 'none';
-        }
-      } else {
-        // Company level: can only unshare (already at highest level)
-        if (shareBtn instanceof HTMLElement) shareBtn.style.display = 'none';
-        if (
-          (this.currentUser.role === 'root' || this.suggestion.sharedBy === this.currentUser.id) &&
-          unshareBtn instanceof HTMLElement
-        ) {
-          unshareBtn.style.display = '';
-        } else if (unshareBtn instanceof HTMLElement) {
-          unshareBtn.style.display = 'none';
-        }
-      }
     } else {
-      // For employees (including authors), hide admin-only elements
       adminElements.forEach((el) => ((el as HTMLElement).style.display = 'none'));
-
-      // Hide actions card for employees
-      const actionsCard = document.querySelector('#actionsCard');
       if (actionsCard instanceof HTMLElement) actionsCard.style.display = 'none';
     }
+  }
+
+  private configureLimitedPermissionsMessage(): void {
+    if (!this.currentUser || !this.suggestion) return;
+
+    const shouldShowMessage =
+      this.suggestion.orgLevel === 'company' &&
+      this.currentUser.role === 'admin' &&
+      this.suggestion.submittedBy !== this.currentUser.id;
+
+    if (!shouldShowMessage) return;
+
+    const statusDropdown = document.querySelector('#statusDropdown');
+    if (!statusDropdown) return;
+
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'alert alert-info mt-2';
+    infoDiv.innerHTML =
+      '<i class="fas fa-info-circle"></i> Nur der Verfasser dieses Vorschlags kann Änderungen vornehmen.';
+    statusDropdown.parentElement?.append(infoDiv);
+  }
+
+  private configureShareButtons(): void {
+    if (!this.suggestion) return;
+
+    const shareBtn = document.querySelector('#shareBtn');
+    const unshareBtn = document.querySelector('#unshareBtn');
+
+    switch (this.suggestion.orgLevel) {
+      case 'team':
+        this.configureTeamLevelButtons(shareBtn, unshareBtn);
+        break;
+      case 'department':
+        this.configureDepartmentLevelButtons(shareBtn, unshareBtn);
+        break;
+      default:
+        this.configureCompanyLevelButtons(shareBtn, unshareBtn);
+        break;
+    }
+  }
+
+  private configureTeamLevelButtons(shareBtn: Element | null, unshareBtn: Element | null): void {
+    if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
+    if (unshareBtn instanceof HTMLElement) unshareBtn.style.display = 'none';
+  }
+
+  private configureDepartmentLevelButtons(shareBtn: Element | null, unshareBtn: Element | null): void {
+    if (shareBtn instanceof HTMLElement) shareBtn.style.display = '';
+
+    const canUnshare = this.canUserUnshare();
+    if (unshareBtn instanceof HTMLElement) {
+      unshareBtn.style.display = canUnshare ? '' : 'none';
+    }
+  }
+
+  private configureCompanyLevelButtons(shareBtn: Element | null, unshareBtn: Element | null): void {
+    if (shareBtn instanceof HTMLElement) shareBtn.style.display = 'none';
+
+    const canUnshare = this.canUserUnshare();
+    if (unshareBtn instanceof HTMLElement) {
+      unshareBtn.style.display = canUnshare ? '' : 'none';
+    }
+  }
+
+  private canUserUnshare(): boolean {
+    return !!(
+      this.currentUser &&
+      this.suggestion &&
+      (this.currentUser.role === 'root' || this.suggestion.sharedBy === this.currentUser.id)
+    );
   }
 
   private async loadComments(): Promise<void> {
@@ -814,40 +922,54 @@ class KvpDetailPage {
   }
 
   private openShareModal(): void {
-    // Load organizations first
     void this.loadOrganizations();
+    this.preselectOrganization();
+    this.triggerModalOpen();
+  }
 
-    // Pre-select current organization level
-    if (this.suggestion !== null) {
-      const { orgLevel, departmentId, teamId } = this.suggestion;
+  private preselectOrganization(): void {
+    if (this.suggestion === null) return;
 
-      // Select the radio button
-      const radioBtn = document.querySelector<HTMLInputElement>(
-        `#share${orgLevel.charAt(0).toUpperCase() + orgLevel.slice(1)}`,
-      );
-      if (radioBtn !== null) {
-        radioBtn.checked = true;
+    const { orgLevel, departmentId, teamId } = this.suggestion;
+    const radioBtn = document.querySelector<HTMLInputElement>(
+      `#share${orgLevel.charAt(0).toUpperCase() + orgLevel.slice(1)}`,
+    );
 
-        // Show the appropriate select and pre-select value
-        if (orgLevel === 'team' && teamId !== undefined) {
-          const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
-          if (teamSelect !== null) {
-            teamSelect.style.display = 'block';
-            // Value will be selected after teams are loaded
-            teamSelect.dataset.preselect = String(teamId);
-          }
-        } else if (orgLevel === 'department') {
-          const deptSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
-          if (deptSelect !== null) {
-            deptSelect.style.display = 'block';
-            // Value will be selected after departments are loaded
-            deptSelect.dataset.preselect = String(departmentId);
-          }
-        }
-      }
+    if (radioBtn === null) return;
+
+    radioBtn.checked = true;
+    this.preselectOrgLevel(orgLevel, teamId, departmentId);
+  }
+
+  private preselectOrgLevel(orgLevel: string, teamId?: number, departmentId?: number): void {
+    if (orgLevel === 'team') {
+      this.preselectTeam(teamId);
+    } else if (orgLevel === 'department') {
+      this.preselectDepartment(departmentId);
     }
+  }
 
-    // Open modal using global function
+  private preselectTeam(teamId?: number): void {
+    if (teamId === undefined) return;
+
+    const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
+    if (teamSelect === null) return;
+
+    teamSelect.style.display = 'block';
+    teamSelect.dataset.preselect = String(teamId);
+  }
+
+  private preselectDepartment(departmentId?: number): void {
+    if (departmentId === undefined) return;
+
+    const deptSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
+    if (deptSelect === null) return;
+
+    deptSelect.style.display = 'block';
+    deptSelect.dataset.preselect = String(departmentId);
+  }
+
+  private triggerModalOpen(): void {
     const w = window as Window & { openShareModal?: () => void };
     if (w.openShareModal !== undefined) {
       w.openShareModal();
@@ -985,94 +1107,121 @@ class KvpDetailPage {
 
   private async updateStatus(newStatus: string): Promise<void> {
     try {
-      // Only allow admins and root users to update status
-      if (!this.currentUser || (this.currentUser.role !== 'admin' && this.currentUser.role !== 'root')) {
+      if (!this.hasStatusUpdatePermission()) {
         this.showError('Keine Berechtigung zum Ändern des Status');
         return;
       }
 
-      interface UpdateData {
-        status: string;
-        rejectionReason?: string;
+      const updateData = await this.buildStatusUpdateData(newStatus);
+      if (!updateData) {
+        this.resetStatusDropdown();
+        return;
       }
 
-      const updateData: UpdateData = {
-        status: newStatus,
-      };
-
-      // If status is rejected, ask for rejection reason
-      if (newStatus === 'rejected') {
-        const reason = await this.showPromptDialog('Bitte geben Sie einen Ablehnungsgrund an:');
-        if (reason === null || reason.trim() === '') {
-          this.showError('Ein Ablehnungsgrund ist erforderlich');
-          // Reset dropdown
-          const statusDisplay = document.querySelector('#statusDisplay');
-          if (statusDisplay && this.suggestion) {
-            const statusSpan = statusDisplay.querySelector('span');
-            if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-            const statusValue = document.querySelector('#statusValue');
-            if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
-          }
-          return;
-        }
-        updateData.rejectionReason = reason.trim();
-      }
-
-      try {
-        const data = await this.apiClient.put<{ suggestion: KvpSuggestion }>(`/kvp/${this.suggestionId}`, updateData);
-        this.suggestion = data.suggestion;
-      } catch (error: unknown) {
-        // Handle specific error cases
-        if (error instanceof Error && error.message.includes('403')) {
-          if (
-            this.suggestion !== null &&
-            this.suggestion.orgLevel === 'company' &&
-            this.suggestion.submittedBy !== this.currentUser.id
-          ) {
-            throw new Error('Nur der Verfasser dieses Vorschlags kann den Status ändern');
-          } else {
-            throw new Error('Sie haben keine Berechtigung, diesen Vorschlag zu bearbeiten');
-          }
-        }
-        throw error;
-      }
-
-      // Update the status badge
-      const statusBadge = document.querySelector('#statusBadge');
-      if (!statusBadge) return;
-      statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
-      statusBadge.textContent = this.getStatusText(newStatus);
-
-      // Update rejection reason display
-      const rejectionItem = document.querySelector('#rejectionItem');
-      const rejectionReason = document.querySelector('#rejectionReason');
-
-      if (newStatus === 'rejected' && updateData.rejectionReason !== undefined && updateData.rejectionReason !== '') {
-        if (rejectionItem instanceof HTMLElement) rejectionItem.style.display = '';
-        if (rejectionReason) rejectionReason.textContent = updateData.rejectionReason;
-      } else if (newStatus !== 'rejected' && rejectionItem instanceof HTMLElement) {
-        rejectionItem.style.display = 'none';
-      }
-
+      await this.performStatusUpdate(updateData);
+      this.updateStatusUI(newStatus, updateData.rejectionReason);
       this.showSuccess(`Status geändert zu: ${this.getStatusText(newStatus)}`);
     } catch (error) {
-      console.error('Error updating status:', error);
-      // Show specific error message
-      if (error instanceof Error) {
-        this.showError(error.message);
-      } else {
-        this.showError('Fehler beim Aktualisieren des Status');
-      }
+      this.handleStatusUpdateError(error);
+    }
+  }
 
-      // Reset dropdown to original value on error
-      const statusDisplay = document.querySelector('#statusDisplay');
-      if (statusDisplay && this.suggestion) {
-        const statusSpan = statusDisplay.querySelector('span');
-        if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
-        const statusValue = document.querySelector('#statusValue');
-        if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
+  private hasStatusUpdatePermission(): boolean {
+    return !!(this.currentUser && (this.currentUser.role === 'admin' || this.currentUser.role === 'root'));
+  }
+
+  private async buildStatusUpdateData(newStatus: string): Promise<{ status: string; rejectionReason?: string } | null> {
+    const updateData: { status: string; rejectionReason?: string } = {
+      status: newStatus,
+    };
+
+    if (newStatus === 'rejected') {
+      const rejectionReason = await this.getRejectionReason();
+      if (rejectionReason === null) return null;
+      updateData.rejectionReason = rejectionReason;
+    }
+
+    return updateData;
+  }
+
+  private async getRejectionReason(): Promise<string | null> {
+    const reason = await this.showPromptDialog('Bitte geben Sie einen Ablehnungsgrund an:');
+    if (reason === null || reason.trim() === '') {
+      this.showError('Ein Ablehnungsgrund ist erforderlich');
+      return null;
+    }
+    return reason.trim();
+  }
+
+  private async performStatusUpdate(updateData: { status: string; rejectionReason?: string }): Promise<void> {
+    try {
+      const data = await this.apiClient.put<{ suggestion: KvpSuggestion }>(`/kvp/${this.suggestionId}`, updateData);
+      this.suggestion = data.suggestion;
+    } catch (error: unknown) {
+      this.throwStatusUpdateError(error);
+    }
+  }
+
+  private throwStatusUpdateError(error: unknown): never {
+    if (error instanceof Error && error.message.includes('403')) {
+      const isCompanyLevel = this.suggestion?.orgLevel === 'company';
+      const isNotAuthor = this.suggestion?.submittedBy !== this.currentUser?.id;
+
+      if (isCompanyLevel && isNotAuthor) {
+        throw new Error('Nur der Verfasser dieses Vorschlags kann den Status ändern');
+      } else {
+        throw new Error('Sie haben keine Berechtigung, diesen Vorschlag zu bearbeiten');
       }
     }
+    throw error;
+  }
+
+  private updateStatusUI(newStatus: string, rejectionReason?: string): void {
+    this.updateStatusBadge(newStatus);
+    this.updateRejectionReasonDisplay(newStatus, rejectionReason);
+  }
+
+  private updateStatusBadge(newStatus: string): void {
+    const statusBadge = document.querySelector('#statusBadge');
+    if (!statusBadge) return;
+
+    statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
+    statusBadge.textContent = this.getStatusText(newStatus);
+  }
+
+  private updateRejectionReasonDisplay(newStatus: string, rejectionReason?: string): void {
+    const rejectionItem = document.querySelector('#rejectionItem');
+    const rejectionReasonEl = document.querySelector('#rejectionReason');
+
+    if (newStatus === 'rejected' && rejectionReason !== undefined && rejectionReason !== '') {
+      if (rejectionItem instanceof HTMLElement) rejectionItem.style.display = '';
+      if (rejectionReasonEl) rejectionReasonEl.textContent = rejectionReason;
+    } else if (newStatus !== 'rejected' && rejectionItem instanceof HTMLElement) {
+      rejectionItem.style.display = 'none';
+    }
+  }
+
+  private handleStatusUpdateError(error: unknown): void {
+    console.error('Error updating status:', error);
+
+    if (error instanceof Error) {
+      this.showError(error.message);
+    } else {
+      this.showError('Fehler beim Aktualisieren des Status');
+    }
+
+    this.resetStatusDropdown();
+  }
+
+  private resetStatusDropdown(): void {
+    const statusDisplay = document.querySelector('#statusDisplay');
+    if (!statusDisplay || !this.suggestion) return;
+
+    const statusSpan = statusDisplay.querySelector('span');
+    if (statusSpan) statusSpan.textContent = this.getStatusText(this.suggestion.status);
+
+    const statusValue = document.querySelector('#statusValue');
+    if (statusValue) statusValue.setAttribute('value', this.suggestion.status);
   }
 
   private getStatusText(status: string): string {

@@ -4,509 +4,704 @@ import { mapUsers, type MappedUser, type UserAPIResponse } from '../utils/api-ma
 import { $, $$, $all, setHTML } from '../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
-(() => {
-  // DOM Element Selectors - Constants to avoid duplication
-  const SELECTORS = {
-    ADMIN_MODAL: '#adminModal',
-    MODAL_TITLE: '#modalTitle',
-    ADMIN_PASSWORD: '#adminPassword',
-    ADMIN_PASSWORD_CONFIRM: '#adminPasswordConfirm',
-    ADMIN_EMAIL_CONFIRM: '#adminEmailConfirm',
-    POSITION_DROPDOWN_VALUE: '#positionDropdownValue',
-    DEPARTMENT_SELECT: '#departmentSelect',
-    DEPARTMENT_SELECT_CONTAINER: '#departmentSelectContainer',
-    PERMISSION_TYPE_RADIO: 'input[name="permissionType"]',
-    PERMISSION_TYPE_CHECKED: 'input[name="permissionType"]:checked',
-    EMAIL_ERROR: '#email-error',
-    PASSWORD_ERROR: '#password-error',
-  } as const;
+// DOM Element Selectors - Constants to avoid duplication
+const SELECTORS = {
+  ADMIN_MODAL: '#adminModal',
+  MODAL_TITLE: '#modalTitle',
+  ADMIN_PASSWORD: '#adminPassword',
+  ADMIN_PASSWORD_CONFIRM: '#adminPasswordConfirm',
+  ADMIN_EMAIL_CONFIRM: '#adminEmailConfirm',
+  POSITION_DROPDOWN_VALUE: '#positionDropdownValue',
+  DEPARTMENT_SELECT: '#departmentSelect',
+  DEPARTMENT_SELECT_CONTAINER: '#departmentSelectContainer',
+  PERMISSION_TYPE_RADIO: 'input[name="permissionType"]',
+  PERMISSION_TYPE_CHECKED: 'input[name="permissionType"]:checked',
+  EMAIL_ERROR: '#email-error',
+  PASSWORD_ERROR: '#password-error',
+} as const;
 
-  // API Endpoints
-  const API_ENDPOINTS = {
-    ADMIN_PERMISSIONS: '/api/admin-permissions',
-    ADMIN_PERMISSIONS_GROUPS: '/api/admin-permissions/groups',
-    USERS_ME: '/users/me',
-  } as const;
+// Interfaces
+interface Admin extends MappedUser {
+  tenantName?: string;
+  notes?: string;
+  lastLogin?: string;
+  departments?: Department[];
+  hasAllAccess?: boolean;
+}
 
-  // Initialize API Client
-  const apiClient = ApiClient.getInstance();
+interface Department {
+  id: number;
+  name: string;
+  description?: string;
+  can_read?: boolean;
+  can_write?: boolean;
+  can_delete?: boolean;
+}
 
-  // Check feature flag for v2 API - manage-admins uses ROOT endpoints
-  const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_ROOT?: boolean } };
-  const useV2API = w.FEATURE_FLAGS?.USE_API_V2_ROOT === true;
+interface Tenant {
+  id: number;
+  name?: string;
+  company_name?: string;
+  subdomain: string;
+}
 
-  // Auth check
-  const token = localStorage.getItem('token');
-  const userRole = localStorage.getItem('userRole');
+interface ManageAdminsWindow extends Window {
+  editAdmin: typeof editAdminHandler | null;
+  deleteAdmin: typeof deleteAdminHandler | null;
+  showPermissionsModal: typeof showPermissionsModal | null;
+  showAddAdminModal: (() => void) | null;
+  closeAdminModal: (() => void) | null;
+  closePermissionsModal: (() => void) | null;
+  savePermissionsHandler: (() => Promise<void>) | null;
+}
 
-  if (token === null || token === '' || userRole !== 'root') {
-    window.location.href = '/login';
+interface AdminFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  username: string;
+  password?: string;
+  position: string;
+  notes: string;
+  role: string;
+  isActive?: boolean;
+  employeeNumber?: string;
+}
+
+// Global state
+let currentAdminId: number | null = null;
+let admins: Admin[] = [];
+let tenants: Tenant[] = [];
+
+// Initialize API Client
+const apiClient = ApiClient.getInstance();
+
+// Check feature flag for v2 API - manage-admins uses ROOT endpoints
+const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_ROOT?: boolean } };
+const useV2API = w.FEATURE_FLAGS?.USE_API_V2_ROOT === true;
+
+// Helper function to display position names
+function getPositionDisplay(position: string): string {
+  const positionMap = new Map<string, string>([
+    ['bereichsleiter', 'Bereichsleiter'],
+    ['personalleiter', 'Personalleiter'],
+    ['geschaeftsfuehrer', 'Geschäftsführer'],
+    ['werksleiter', 'Werksleiter'],
+    ['produktionsleiter', 'Produktionsleiter'],
+    ['qualitaetsleiter', 'Qualitätsleiter'],
+    ['it-leiter', 'IT-Leiter'],
+    ['vertriebsleiter', 'Vertriebsleiter'],
+  ]);
+  return positionMap.get(position) ?? position;
+}
+
+// Helper function to display departments badge
+function getDepartmentsBadge(admin: Admin): string {
+  console.info(`Getting badge for admin ${String(admin.id)}:`, {
+    hasAllAccess: admin.hasAllAccess,
+    departments: admin.departments,
+    departmentCount: admin.departments ? admin.departments.length : 0,
+  });
+
+  if (admin.hasAllAccess === true) {
+    return '<span class="badge badge-success">Alle Abteilungen</span>';
+  }
+
+  if (!admin.departments || admin.departments.length === 0) {
+    return '<span class="badge badge-secondary">Keine Abteilungen</span>';
+  }
+
+  const count = admin.departments.length;
+  const label = count === 1 ? 'Abteilung' : 'Abteilungen';
+  return `<span class="badge badge-info">${String(count)} ${label}</span>`;
+}
+
+// Load admin permissions
+async function loadAdminPermissions(adminId: number): Promise<{ departments: Department[]; hasAllAccess: boolean }> {
+  try {
+    const response = await apiClient.request<{
+      permissions?: { departments?: Department[] };
+      departments?: Department[];
+      hasAllAccess?: boolean;
+    }>(`/root/admins/${String(adminId)}/permissions`, { method: 'GET' }, { version: 'v2' });
+
+    // API v2 structure
+    if (response.permissions !== undefined) {
+      const deptArray = response.permissions.departments ?? [];
+      const hasAll = deptArray.length > 0 && deptArray.some((dept) => dept.id === -1);
+      return {
+        departments: deptArray.filter((dept) => dept.id !== -1),
+        hasAllAccess: hasAll,
+      };
+    }
+
+    // API v1 structure (fallback)
+    const depts = response.departments ?? [];
+    const hasAll = response.hasAllAccess ?? false;
+    return { departments: depts, hasAllAccess: hasAll };
+  } catch (error) {
+    console.error('Error loading permissions:', error);
+    return { departments: [], hasAllAccess: false };
+  }
+}
+
+// Load all departments
+async function loadDepartments(): Promise<Department[]> {
+  try {
+    const response = await apiClient.request<Department[] | { success: boolean; data: Department[] }>(
+      '/departments',
+      { method: 'GET' },
+      { version: useV2API ? 'v2' : 'v1' },
+    );
+
+    if (Array.isArray(response)) {
+      return response;
+    } else if ('data' in response && Array.isArray(response.data)) {
+      return response.data;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error loading departments:', error);
+    return [];
+  }
+}
+
+// Load and populate departments in select
+async function loadAndPopulateDepartments() {
+  const departments = await loadDepartments();
+  const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
+
+  if (deptSelect !== null && departments.length > 0) {
+    deptSelect.innerHTML = '';
+    departments.forEach((dept) => {
+      const option = document.createElement('option');
+      option.value = dept.id.toString();
+      option.textContent = dept.name;
+      deptSelect.appendChild(option);
+    });
+  }
+}
+
+// Render admin table
+function renderAdminTable() {
+  console.info('renderAdminTable called');
+  const tbody = $$('#admins-table tbody');
+  if (tbody === null) {
+    console.error('admins-table tbody not found');
     return;
   }
 
-  interface Admin extends MappedUser {
-    tenantName?: string;
-    notes?: string;
-    lastLogin?: string;
-    departments?: Department[];
-    hasAllAccess?: boolean;
+  if (admins.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Keine Administratoren gefunden</td></tr>';
+    return;
   }
 
-  interface Department {
-    id: number;
-    name: string;
-    description?: string;
-    can_read?: boolean;
-    can_write?: boolean;
-    can_delete?: boolean;
-  }
+  console.info('Admins to render:', admins);
 
-  interface DepartmentGroup {
-    id: number;
-    name: string;
-    description?: string;
-    parent_group_id?: number;
-    departments?: Department[];
-    subgroups?: DepartmentGroup[];
-  }
+  const rows = admins
+    .map((admin) => {
+      console.info(`Rendering admin row - ID: ${String(admin.id)}, isActive: ${String(admin.isActive)}`);
 
-  interface Tenant {
-    id: number;
-    name?: string;
-    company_name?: string;
-    subdomain: string;
-  }
+      const lastLogin =
+        admin.lastLogin !== undefined && admin.lastLogin !== ''
+          ? new Date(admin.lastLogin).toLocaleString('de-DE')
+          : 'Noch nie';
+      const deptBadge = getDepartmentsBadge(admin);
 
-  let currentAdminId: number | null = null;
-  let admins: Admin[] = [];
-  let tenants: Tenant[] = [];
+      const statusClass = !admin.isActive ? 'table-warning' : '';
+      const statusBadge = !admin.isActive ? ' <span class="badge badge-warning">Inaktiv</span>' : '';
 
-  // Make functions available globally immediately
-  // These will be properly defined later
-  interface ManageAdminsWindow extends Window {
-    editAdmin: typeof editAdminHandler | null;
-    deleteAdmin: typeof deleteAdminHandler | null;
-    showPermissionsModal: typeof showPermissionsModal | null;
-    showAddAdminModal: (() => void) | null;
-    closeAdminModal: (() => void) | null;
-    closePermissionsModal: (() => void) | null;
-    savePermissionsHandler: (() => Promise<void>) | null;
-  }
+      console.info(`Admin ${admin.username} - statusClass: ${statusClass}, statusBadge: ${statusBadge}`);
 
-  (window as unknown as ManageAdminsWindow).editAdmin = null;
-  (window as unknown as ManageAdminsWindow).deleteAdmin = null;
-  (window as unknown as ManageAdminsWindow).showPermissionsModal = null;
-  (window as unknown as ManageAdminsWindow).showAddAdminModal = null;
-  (window as unknown as ManageAdminsWindow).closeAdminModal = null;
-
-  // Logout wird jetzt durch header-user-info.ts gehandhabt
-
-  // Admins laden
-  async function loadAdmins() {
-    console.info('loadAdmins called');
-    try {
-      const endpoint = '/root/admins';
-
-      const data = await apiClient.request<Admin[]>(
-        endpoint,
-        {
-          method: 'GET',
-        },
-        { version: useV2API ? 'v2' : 'v1' },
-      );
-
-      // Map the API response to ensure consistent field names
-      // API v2 returns { admins: [...] }, v1 returns array directly
-      const adminData =
-        useV2API && typeof data === 'object' && 'admins' in data
-          ? (data as { admins: UserAPIResponse[] }).admins
-          : Array.isArray(data)
-            ? data
-            : [];
-      admins = mapUsers(adminData as UserAPIResponse[]) as Admin[];
-      console.info('Loaded admins:', admins);
-
-      // Load permissions for each admin
-      for (const admin of admins) {
-        try {
-          const perms = await loadAdminPermissions(admin.id);
-          console.info(`Permissions for admin ${String(admin.id)}:`, perms);
-          admin.departments = perms.departments;
-          admin.hasAllAccess = perms.hasAllAccess;
-        } catch (error) {
-          console.error(`Error loading permissions for admin ${String(admin.id)}:`, error);
-          admin.departments = [];
-          admin.hasAllAccess = false;
-        }
-      }
-
-      // Log each admin's isActive status
-      admins.forEach((admin) => {
-        console.info(`Admin ${admin.username} (ID: ${String(admin.id)}) - isActive: ${String(admin.isActive)}`);
-      });
-      renderAdminTable();
-    } catch (error) {
-      console.error('Fehler:', error);
-      showErrorAlert('Netzwerkfehler beim Laden der Admins');
-    }
-  }
-
-  // Tenants laden für Dropdown
-  async function loadTenants() {
-    try {
-      const endpoint = '/root/tenants';
-
-      const response = await apiClient.request<{ success: boolean; data: Tenant[]; timestamp: string }>(
-        endpoint,
-        {
-          method: 'GET',
-        },
-        { version: useV2API ? 'v2' : 'v1' },
-      );
-
-      console.info('Loaded tenants:', response);
-      // The data field is always present in the response type
-      tenants = response.data;
-      updateTenantDropdown();
-    } catch (error) {
-      console.error('Fehler beim Laden der Tenants:', error);
-    }
-  }
-
-  // Helper function to display position names
-  function getPositionDisplay(position: string): string {
-    const positionMap = new Map<string, string>([
-      ['bereichsleiter', 'Bereichsleiter'],
-      ['personalleiter', 'Personalleiter'],
-      ['geschaeftsfuehrer', 'Geschäftsführer'],
-      ['werksleiter', 'Werksleiter'],
-      ['produktionsleiter', 'Produktionsleiter'],
-      ['qualitaetsleiter', 'Qualitätsleiter'],
-      ['it-leiter', 'IT-Leiter'],
-      ['vertriebsleiter', 'Vertriebsleiter'],
-    ]);
-    return positionMap.get(position) ?? position;
-  }
-
-  // Helper function to display departments badge
-  function getDepartmentsBadge(admin: Admin): string {
-    console.info(`Getting badge for admin ${String(admin.id)}:`, {
-      hasAllAccess: admin.hasAllAccess,
-      departments: admin.departments,
-      departmentCount: admin.departments ? admin.departments.length : 0,
-    });
-
-    if (admin.hasAllAccess === true) {
-      return '<span class="status-badge active" style="background: rgba(76, 175, 80, 0.2); color: #4caf50; border-color: rgba(76, 175, 80, 0.3); white-space: nowrap;">Alle Abteilungen</span>';
-    } else if (admin.departments !== undefined && admin.departments.length > 0) {
-      const departmentNames = admin.departments.map((d) => d.name).join(', ');
-      const singularPlural = admin.departments.length === 1 ? 'Abteilung' : 'Abteilungen';
       return `
-      <span class="status-badge department-badge"
-            style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative; white-space: nowrap;"
-            data-departments="${departmentNames.replace(/"/g, '&quot;')}">
-        ${String(admin.departments.length)} ${singularPlural}
-        <span class="department-tooltip" style="
-          display: none;
-          position: absolute;
-          bottom: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          margin-bottom: 8px;
-          padding: 8px 12px;
-          background: rgba(18, 18, 18, 0.95);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
-          white-space: nowrap;
-          max-width: 300px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          color: #fff;
-          font-size: 12px;
-          font-weight: normal;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-          z-index: 1000;
-          pointer-events: none;
-        ">${departmentNames}</span>
-      </span>
-    `;
-    } else {
-      return '<span class="status-badge inactive" style="background: rgba(255, 152, 0, 0.2); color: #ff9800; border-color: rgba(255, 152, 0, 0.3); white-space: nowrap;">Keine Abteilungen</span>';
-    }
-  }
-
-  // Tenant Dropdown aktualisieren
-  function updateTenantDropdown() {
-    const select = $$('#adminTenant') as HTMLSelectElement | null;
-    if (select === null) {
-      console.info('Tenant dropdown not found - skipping update');
-      return;
-    }
-
-    select.innerHTML = '<option value="">Firma auswählen...</option>';
-
-    if (!Array.isArray(tenants)) {
-      console.error('Tenants is not an array:', tenants);
-      return;
-    }
-
-    tenants.forEach((tenant) => {
-      const option = document.createElement('option');
-      option.value = tenant.id.toString();
-      option.textContent = `${tenant.company_name ?? tenant.name ?? 'Unnamed'} (${tenant.subdomain})`;
-      select.append(option);
-    });
-  }
-
-  // Admin-Tabelle rendern
-  function renderAdminTable() {
-    console.info('renderAdminTable called');
-    const container = $$('#adminTableContent');
-
-    if (!container) {
-      console.error('Container adminTableContent not found!');
-      return;
-    }
-
-    console.info('Container found:', container);
-
-    if (admins.length === 0) {
-      container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">👤</div>
-        <div class="empty-state-text">Keine Administratoren gefunden</div>
-        <div class="empty-state-subtext">Fügen Sie Ihren ersten Administrator hinzu</div>
-      </div>
-    `;
-      return;
-    }
-
-    const tableHTML = `
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>E-Mail</th>
-          <th>Position</th>
-          <th>Abteilungen</th>
-          <th>Status</th>
-          <th>Erstellt am</th>
-          <th>Letzter Login</th>
-          <th>Aktionen</th>
+        <tr class="${statusClass}">
+          <td>${String(admin.id)}</td>
+          <td>${admin.firstName} ${admin.lastName}${statusBadge}</td>
+          <td>${admin.email}</td>
+          <td>${getPositionDisplay(admin.position ?? '')}</td>
+          <td>${lastLogin}</td>
+          <td>${deptBadge}</td>
+          <td>
+            <button class="btn btn-sm btn-primary" onclick="window.editAdmin && window.editAdmin(${String(admin.id)})">
+              Bearbeiten
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="window.showPermissionsModal && window.showPermissionsModal(${String(
+              admin.id,
+            )})">
+              Berechtigungen
+            </button>
+            <button class="btn btn-sm btn-danger" onclick="window.deleteAdmin && window.deleteAdmin(${String(admin.id)})">
+              Löschen
+            </button>
+          </td>
         </tr>
-      </thead>
-      <tbody>
-        ${admins
-          .map((admin) => {
-            const fullName = `${admin.firstName} ${admin.lastName}`.trim();
-            const displayName = fullName !== '' ? fullName : '-';
-            return `
+      `;
+    })
+    .join('');
+
+  setHTML(tbody, rows);
+}
+
+// Load admins
+async function loadAdmins() {
+  console.info('loadAdmins called');
+  try {
+    const endpoint = '/root/admins';
+
+    const data = await apiClient.request<Admin[]>(
+      endpoint,
+      {
+        method: 'GET',
+      },
+      { version: useV2API ? 'v2' : 'v1' },
+    );
+
+    // Map the API response to ensure consistent field names
+    // API v2 returns { admins: [...] }, v1 returns array directly
+    const adminData =
+      useV2API && typeof data === 'object' && 'admins' in data
+        ? (data as { admins: UserAPIResponse[] }).admins
+        : Array.isArray(data)
+          ? data
+          : [];
+    admins = mapUsers(adminData as UserAPIResponse[]) as Admin[];
+    console.info('Loaded admins:', admins);
+
+    // Load permissions for each admin
+    for (const admin of admins) {
+      try {
+        const perms = await loadAdminPermissions(admin.id);
+        console.info(`Permissions for admin ${String(admin.id)}:`, perms);
+        admin.departments = perms.departments;
+        admin.hasAllAccess = perms.hasAllAccess;
+      } catch (error) {
+        console.error(`Error loading permissions for admin ${String(admin.id)}:`, error);
+        admin.departments = [];
+        admin.hasAllAccess = false;
+      }
+    }
+
+    // Log each admin's isActive status
+    admins.forEach((admin) => {
+      console.info(`Admin ${admin.username} (ID: ${String(admin.id)}) - isActive: ${String(admin.isActive)}`);
+    });
+    renderAdminTable();
+  } catch (error) {
+    console.error('Fehler:', error);
+    showErrorAlert('Netzwerkfehler beim Laden der Admins');
+  }
+}
+
+// Load tenants for dropdown
+async function loadTenants() {
+  try {
+    const endpoint = '/root/tenants';
+
+    const response = await apiClient.request<{ success: boolean; data: Tenant[]; timestamp: string }>(
+      endpoint,
+      {
+        method: 'GET',
+      },
+      { version: useV2API ? 'v2' : 'v1' },
+    );
+
+    console.info('Loaded tenants:', response);
+    // The data field is always present in the response type
+    tenants = response.data;
+    updateTenantDropdown();
+  } catch (error) {
+    console.error('Fehler beim Laden der Tenants:', error);
+  }
+}
+
+// Update tenant dropdown
+function updateTenantDropdown() {
+  const select = $$('#adminTenant') as HTMLSelectElement | null;
+  if (select !== null) {
+    setHTML(
+      select,
+      tenants
+        .map((t) => `<option value="${String(t.id)}">${t.name ?? t.company_name ?? t.subdomain}</option>`)
+        .join(''),
+    );
+  }
+}
+
+// Show permissions modal
+async function showPermissionsModal(adminId: number) {
+  console.info('showPermissionsModal called with admin ID:', adminId);
+
+  const admin = admins.find((a) => a.id === adminId);
+  if (!admin) {
+    console.error('Admin not found:', adminId);
+    return;
+  }
+
+  console.info('Found admin:', admin);
+
+  // Update modal title
+  const modalTitle = $$('#permissionsModalTitle');
+  if (modalTitle) {
+    modalTitle.textContent = `Berechtigungen für ${admin.firstName} ${admin.lastName}`;
+  }
+
+  // Store admin ID for save handler
+  currentAdminId = adminId;
+
+  // Load current permissions
+  const permissionsResponse = await loadAdminPermissions(adminId);
+  console.info('Current permissions:', permissionsResponse);
+
+  // Load all departments
+  const allDepartments = await loadDepartments();
+  console.info('All departments:', allDepartments);
+
+  // Build permissions table
+  const permissionsBody = $$('#permissions-tbody');
+  if (permissionsBody) {
+    const rows = allDepartments
+      .map((dept) => {
+        const currentPerm = permissionsResponse.departments.find((p) => p.id === dept.id);
+        const canRead = currentPerm?.can_read ?? false;
+        const canWrite = currentPerm?.can_write ?? false;
+        const canDelete = currentPerm?.can_delete ?? false;
+
+        return `
           <tr>
-            <td>${String(admin.id)}</td>
-            <td>${displayName}</td>
-            <td>${admin.email !== '' ? admin.email : '-'}</td>
-            <td>${admin.position !== undefined && admin.position !== '' ? getPositionDisplay(admin.position) : '-'}</td>
-            <td>${getDepartmentsBadge(admin)}</td>
+            <td>${dept.name}</td>
             <td>
-              <span class="status-badge ${admin.isActive ? 'active' : 'inactive'}">
-                ${admin.isActive ? 'Aktiv' : 'Inaktiv'}
-              </span>
+              <input type="checkbox" class="perm-read" data-dept-id="${String(dept.id)}"
+                ${canRead ? 'checked' : ''}>
             </td>
-            <td>${admin.createdAt !== undefined ? new Date(admin.createdAt).toLocaleDateString('de-DE') : '-'}</td>
-            <td>${admin.lastLogin !== undefined && admin.lastLogin !== '' ? new Date(admin.lastLogin).toLocaleDateString('de-DE') : '-'}</td>
             <td>
-              <button class="action-btn edit" data-action="edit-admin" data-admin-id="${String(admin.id)}">Bearbeiten</button>
-              <button class="action-btn permissions" data-action="show-permissions" data-admin-id="${String(admin.id)}" style="border-color: rgba(76, 175, 80, 0.3); background: rgba(76, 175, 80, 0.1);">Berechtigungen</button>
-              <button class="action-btn delete" data-action="delete-admin" data-admin-id="${String(admin.id)}">Löschen</button>
+              <input type="checkbox" class="perm-write" data-dept-id="${String(dept.id)}"
+                ${canWrite ? 'checked' : ''}>
+            </td>
+            <td>
+              <input type="checkbox" class="perm-delete" data-dept-id="${String(dept.id)}"
+                ${canDelete ? 'checked' : ''}>
             </td>
           </tr>
         `;
-          })
-          .join('')}
-      </tbody>
-    </table>
-  `;
-
-    setHTML(container, tableHTML);
-
-    // Add hover event listeners for department badges
-    const departmentBadges = $all('.department-badge');
-    departmentBadges.forEach((badge) => {
-      badge.addEventListener('mouseenter', (e) => {
-        const tooltip = (e.target as HTMLElement).querySelector('.department-tooltip');
-        if (tooltip) {
-          // Ensure tooltip doesn't go off-screen
-          const rect = tooltip.getBoundingClientRect();
-          if (rect.left < 0) {
-            (tooltip as HTMLElement).style.left = '0';
-            (tooltip as HTMLElement).style.transform = 'translateX(0)';
-          } else if (rect.right > window.innerWidth) {
-            (tooltip as HTMLElement).style.left = 'auto';
-            (tooltip as HTMLElement).style.right = '0';
-            (tooltip as HTMLElement).style.transform = 'translateX(0)';
-          }
-        }
-      });
-    });
+      })
+      .join('');
+    setHTML(permissionsBody, rows);
   }
 
-  // Define functions before they're used
-  async function editAdminHandler(adminId: number) {
-    currentAdminId = adminId;
-    // Convert to string for comparison since API returns string IDs
-    const admin = admins.find((a) => String(a.id) === String(adminId));
+  // Show modal
+  const modal = $$('#permissionsModal');
+  if (modal) {
+    modal.classList.add('active');
+  }
+}
 
-    if (!admin) return;
+// Helper functions for form submission
+function validateEmails(): boolean {
+  const emailEl = $$('#adminEmail') as HTMLInputElement | null;
+  const emailConfirmEl = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
+  const email = emailEl !== null ? emailEl.value : '';
+  const emailConfirm = emailConfirmEl !== null ? emailConfirmEl.value : '';
+  const emailError = $$(SELECTORS.EMAIL_ERROR);
 
-    const modal = $$(SELECTORS.ADMIN_MODAL);
-    const title = $$(SELECTORS.MODAL_TITLE);
+  if (email !== emailConfirm) {
+    if (emailError) emailError.style.display = 'block';
+    showErrorAlert('Die E-Mail-Adressen stimmen nicht überein!');
+    return false;
+  }
+  if (emailError) emailError.style.display = 'none';
+  return true;
+}
 
-    if (title) title.textContent = 'Admin bearbeiten';
+function validatePasswords(): boolean {
+  const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
+  const passwordConfirmEl = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
+  const password = passwordEl !== null ? passwordEl.value : '';
+  const passwordConfirm = passwordConfirmEl !== null ? passwordConfirmEl.value : '';
+  const passwordError = $$(SELECTORS.PASSWORD_ERROR);
 
-    // Formular mit Admin-Daten füllen
-    ($('#adminFirstName') as HTMLInputElement).value = admin.firstName;
-    ($('#adminLastName') as HTMLInputElement).value = admin.lastName;
-    ($('#adminEmail') as HTMLInputElement).value = admin.email;
-    ($(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement).value = admin.email;
+  if (password !== '' && password !== passwordConfirm) {
+    if (passwordError) passwordError.style.display = 'block';
+    showErrorAlert('Die Passwörter stimmen nicht überein!');
+    return false;
+  }
+  if (passwordError) passwordError.style.display = 'none';
+  return true;
+}
 
-    // Custom dropdown for position
-    const positionValue = admin.position ?? '';
-    ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = positionValue;
-    const displayText = positionValue !== '' ? getPositionDisplay(positionValue) : 'Position auswählen...';
-    const positionDropdown = $$('#positionDropdownDisplay');
-    if (positionDropdown) {
-      const span = positionDropdown.querySelector('span');
-      if (span) span.textContent = displayText;
-    }
+function getFormData(): AdminFormData {
+  const firstNameEl = $$('#adminFirstName') as HTMLInputElement | null;
+  const lastNameEl = $$('#adminLastName') as HTMLInputElement | null;
+  const emailEl = $$('#adminEmail') as HTMLInputElement | null;
+  const email = emailEl !== null ? emailEl.value : '';
+  const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
+  const positionEl = $$(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement | null;
+  const employeeNumberEl = $$('#adminEmployeeNumber') as HTMLInputElement | null;
 
-    ($('#adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
+  const formData: AdminFormData = {
+    firstName: firstNameEl !== null ? firstNameEl.value : '',
+    lastName: lastNameEl !== null ? lastNameEl.value : '',
+    email,
+    username: email,
+    password: passwordEl !== null ? passwordEl.value : '',
+    position: positionEl !== null ? positionEl.value : '',
+    notes: ($('#adminNotes') as HTMLTextAreaElement).value,
+    role: 'admin',
+    employeeNumber: employeeNumberEl !== null ? employeeNumberEl.value : '',
+  };
 
-    // Show active status checkbox when editing
-    const activeStatusGroup = $$('#activeStatusGroup');
-    if (activeStatusGroup) activeStatusGroup.style.display = 'block';
-
-    const isActiveCheckbox = $('#adminIsActive') as HTMLInputElement;
-    const isActive = admin.isActive;
-    console.info('Setting checkbox for edit - admin.isActive:', admin.isActive, 'checkbox will be:', isActive);
-    isActiveCheckbox.checked = isActive;
-
-    // Hide confirmation fields when editing
-    const emailConfirmGroup = $$('#emailConfirmGroup');
-    if (emailConfirmGroup) emailConfirmGroup.style.display = 'none';
-    const passwordGroup = $$('#passwordGroup');
-    const passwordConfirmGroup = $$('#passwordConfirmGroup');
-    if (passwordGroup) passwordGroup.style.display = 'none';
-    if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'none';
-
-    // Clear error messages
-    const emailError = $$(SELECTORS.EMAIL_ERROR);
-    const passwordError = $$(SELECTORS.PASSWORD_ERROR);
-    if (emailError) emailError.style.display = 'none';
-    if (passwordError) passwordError.style.display = 'none';
-
-    // Load current department assignments
-    console.info('🔵 Loading department assignments for admin:', adminId);
-    console.info('Admin departments:', admin.departments);
-    console.info('Admin hasAllAccess:', admin.hasAllAccess);
-
-    // Reset all permission type radio buttons
-    $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
-      (radio as HTMLInputElement).checked = false;
-    });
-
-    // Hide all containers first
-    const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-    const groupContainer = $$('#groupSelectContainer');
-    if (deptContainer) deptContainer.style.display = 'none';
-    if (groupContainer) groupContainer.style.display = 'none';
-
-    // Set the appropriate permission type based on current assignments
-    if (admin.hasAllAccess === true) {
-      const allRadio = document.querySelector('input[name="permissionType"][value="all"]');
-      if (allRadio) {
-        (allRadio as HTMLInputElement).checked = true;
-        console.info('✅ Set permission type to: all');
-      }
-    } else if (admin.departments !== undefined && admin.departments.length > 0) {
-      const specificRadio = document.querySelector('input[name="permissionType"][value="specific"]');
-      if (specificRadio) {
-        (specificRadio as HTMLInputElement).checked = true;
-        console.info('✅ Set permission type to: specific');
-
-        // Show department container and load departments
-        if (deptContainer) {
-          deptContainer.style.display = 'block';
-          await loadAndPopulateDepartments();
-
-          // Select current departments
-          const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
-          if (deptSelect !== null) {
-            // Clear all selections first
-            [...deptSelect.options].forEach((option) => (option.selected = false));
-
-            // Select assigned departments
-            admin.departments.forEach((dept) => {
-              const option = [...deptSelect.options].find((opt) => opt.value === dept.id.toString());
-              if (option) {
-                option.selected = true;
-                console.info('✅ Selected department:', dept.name);
-              }
-            });
-          }
-        }
-      }
-    } else {
-      const noneRadio = document.querySelector('input[name="permissionType"][value="none"]');
-      if (noneRadio) {
-        (noneRadio as HTMLInputElement).checked = true;
-        console.info('✅ Set permission type to: none');
-      }
-    }
-
-    // Passwort-Felder und E-Mail-Bestätigung als optional setzen beim Bearbeiten
-    const emailConfirmField = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
-    if (emailConfirmField !== null) {
-      emailConfirmField.required = false;
-    }
-
-    const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
-    const passwordConfirmField = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
-    if (passwordField !== null) {
-      passwordField.required = false;
-      passwordField.value = '';
-    }
-    if (passwordConfirmField !== null) {
-      passwordConfirmField.required = false;
-      passwordConfirmField.value = '';
-    }
-
-    modal?.classList.add('active');
+  // Include isActive only when updating
+  if (currentAdminId !== null && currentAdminId !== 0) {
+    const checkbox = $('#adminIsActive') as HTMLInputElement;
+    console.info('Checkbox checked state:', checkbox.checked);
+    formData.isActive = checkbox.checked;
   }
 
-  async function deleteAdminHandler(adminId: number) {
-    console.info('deleteAdminHandler called with ID:', adminId);
-    console.info('Current admins array:', admins);
-    // Convert to string for comparison since API returns string IDs
-    const admin = admins.find((a) => String(a.id) === String(adminId));
+  // Remove empty password for updates
+  if (
+    currentAdminId !== null &&
+    currentAdminId !== 0 &&
+    (formData.password === undefined || formData.password === '')
+  ) {
+    delete formData.password;
+  }
 
-    if (!admin) {
-      console.error('Admin not found for ID:', adminId);
-      console.error(
-        'Available admin IDs:',
-        admins.map((a) => a.id),
-      );
-      return;
+  return formData;
+}
+
+async function saveAdmin(formData: AdminFormData): Promise<number> {
+  const isUpdate = currentAdminId !== null && currentAdminId !== 0;
+  const endpoint = isUpdate ? `/root/admins/${String(currentAdminId)}` : '/root/admins';
+  const method = isUpdate ? 'PUT' : 'POST';
+
+  const result = await apiClient.request<{ adminId?: number; id?: number }>(
+    endpoint,
+    {
+      method,
+      body: JSON.stringify(formData),
+    },
+    { version: 'v2' },
+  );
+
+  return currentAdminId ?? result.adminId ?? result.id ?? 0;
+}
+
+async function updatePermissions(adminId: number): Promise<void> {
+  const permissionTypeInput = document.querySelector(SELECTORS.PERMISSION_TYPE_CHECKED);
+  const permissionType = permissionTypeInput instanceof HTMLInputElement ? permissionTypeInput.value : undefined;
+  console.info('🔵 Permission type selected:', permissionType);
+
+  if (adminId === 0 || permissionType === undefined) return;
+
+  let departmentIds: number[] = [];
+  let groupIds: number[] = [];
+
+  if (permissionType === 'specific') {
+    const select = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
+    if (select !== null) {
+      departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
     }
+  } else if (permissionType === 'groups') {
+    const checkboxes = $all('input[name="groupSelect"]:checked');
+    groupIds = [...checkboxes].map((checkbox) => Number.parseInt((checkbox as HTMLInputElement).value, 10));
+  } else if (permissionType === 'all') {
+    const allDepts = await loadDepartments();
+    departmentIds = allDepts.map((d) => d.id);
+  }
 
-    console.info('Found admin:', admin);
+  console.info('🔵 Setting department permissions for admin:', adminId);
+  console.info('Department IDs:', departmentIds);
 
-    // Create custom confirmation modal instead of using confirm()
-    const confirmDelete = await new Promise<boolean>((resolve) => {
-      const modal = document.createElement('div');
-      modal.className = 'modal active';
-      const modalHTML = `
+  await apiClient.request(
+    '/admin-permissions',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        adminId,
+        departmentIds,
+        permissions: { can_read: true, can_write: false, can_delete: false },
+      }),
+    },
+    { version: useV2API ? 'v2' : 'v1' },
+  );
+
+  if (groupIds.length > 0) {
+    await apiClient.request(
+      '/admin-permissions/groups',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          adminId,
+          groupIds,
+          permissions: { can_read: true, can_write: false, can_delete: false },
+        }),
+      },
+      { version: useV2API ? 'v2' : 'v1' },
+    );
+  }
+
+  console.info('✅ Permissions updated successfully');
+}
+
+// Helper functions to reduce cognitive complexity
+function fillAdminFormFields(admin: Admin): void {
+  ($('#adminFirstName') as HTMLInputElement).value = admin.firstName;
+  ($('#adminLastName') as HTMLInputElement).value = admin.lastName;
+  ($('#adminEmail') as HTMLInputElement).value = admin.email;
+  ($(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement).value = admin.email;
+  ($('#adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
+}
+
+function setPositionDropdown(positionValue: string): void {
+  ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = positionValue;
+  const displayText = positionValue !== '' ? getPositionDisplay(positionValue) : 'Position auswählen...';
+  const positionDropdown = $$('#positionDropdownDisplay');
+  if (!positionDropdown) return;
+
+  const span = positionDropdown.querySelector('span');
+  if (span) span.textContent = displayText;
+}
+
+function setActiveStatus(isActive: boolean): void {
+  const activeStatusGroup = $$('#activeStatusGroup');
+  if (activeStatusGroup) activeStatusGroup.style.display = 'block';
+
+  const isActiveCheckbox = $('#adminIsActive') as HTMLInputElement;
+  console.info('Setting checkbox for edit - isActive:', isActive);
+  isActiveCheckbox.checked = isActive;
+}
+
+function hideEditModeElements(): void {
+  const elements = [
+    { selector: '#emailConfirmGroup', display: 'none' },
+    { selector: '#passwordGroup', display: 'none' },
+    { selector: '#passwordConfirmGroup', display: 'none' },
+    { selector: SELECTORS.EMAIL_ERROR, display: 'none' },
+    { selector: SELECTORS.PASSWORD_ERROR, display: 'none' },
+  ];
+
+  elements.forEach(({ selector, display }) => {
+    const element = $$(selector);
+    if (element) element.style.display = display;
+  });
+}
+
+async function setPermissionType(admin: Admin): Promise<void> {
+  // Reset all permission type radio buttons
+  $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
+    (radio as HTMLInputElement).checked = false;
+  });
+
+  // Hide all containers first
+  const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
+  const groupContainer = $$('#groupSelectContainer');
+  if (deptContainer) deptContainer.style.display = 'none';
+  if (groupContainer) groupContainer.style.display = 'none';
+
+  if (admin.hasAllAccess === true) {
+    setRadioButton('all');
+  } else if (admin.departments !== undefined && admin.departments.length > 0) {
+    setRadioButton('specific');
+    await setupDepartmentSelection(admin, deptContainer);
+  } else {
+    setRadioButton('none');
+  }
+}
+
+function setRadioButton(value: string): void {
+  const radio = document.querySelector(`input[name="permissionType"][value="${value}"]`);
+  if (radio) {
+    (radio as HTMLInputElement).checked = true;
+    console.info(`✅ Set permission type to: ${value}`);
+  }
+}
+
+async function setupDepartmentSelection(admin: Admin, deptContainer: HTMLElement | null): Promise<void> {
+  if (!deptContainer) return;
+
+  deptContainer.style.display = 'block';
+  await loadAndPopulateDepartments();
+
+  const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
+  if (!deptSelect) return;
+
+  // Clear all selections first
+  [...deptSelect.options].forEach((option) => (option.selected = false));
+
+  // Select assigned departments
+  if (admin.departments) {
+    admin.departments.forEach((dept) => {
+      const option = [...deptSelect.options].find((opt) => opt.value === dept.id.toString());
+      if (option) {
+        option.selected = true;
+        console.info('✅ Selected department:', dept.name);
+      }
+    });
+  }
+}
+
+function setOptionalFields(): void {
+  const fields = [
+    { selector: SELECTORS.ADMIN_EMAIL_CONFIRM, type: 'input' },
+    { selector: SELECTORS.ADMIN_PASSWORD, type: 'password' },
+    { selector: SELECTORS.ADMIN_PASSWORD_CONFIRM, type: 'password' },
+  ];
+
+  fields.forEach(({ selector, type }) => {
+    const field = $$(selector) as HTMLInputElement | null;
+    if (!field) return;
+
+    field.required = false;
+    if (type === 'password') field.value = '';
+  });
+}
+
+// Define functions before they're used
+async function editAdminHandler(adminId: number) {
+  currentAdminId = adminId;
+  const admin = admins.find((a) => String(a.id) === String(adminId));
+  if (!admin) return;
+
+  const modal = $$(SELECTORS.ADMIN_MODAL);
+  const title = $$(SELECTORS.MODAL_TITLE);
+  if (title) title.textContent = 'Admin bearbeiten';
+
+  fillAdminFormFields(admin);
+  setPositionDropdown(admin.position ?? '');
+  setActiveStatus(admin.isActive);
+  hideEditModeElements();
+
+  console.info('🔵 Loading department assignments for admin:', adminId);
+  console.info('Admin departments:', admin.departments);
+  console.info('Admin hasAllAccess:', admin.hasAllAccess);
+
+  await setPermissionType(admin);
+  setOptionalFields();
+
+  modal?.classList.add('active');
+}
+
+async function deleteAdminHandler(adminId: number) {
+  console.info('deleteAdminHandler called with ID:', adminId);
+  console.info('Current admins array:', admins);
+  // Convert to string for comparison since API returns string IDs
+  const admin = admins.find((a) => String(a.id) === String(adminId));
+
+  if (!admin) {
+    console.error('Admin not found for ID:', adminId);
+    console.error(
+      'Available admin IDs:',
+      admins.map((a) => a.id),
+    );
+    return;
+  }
+
+  console.info('Found admin:', admin);
+
+  // Create custom confirmation modal instead of using confirm()
+  const confirmDelete = await new Promise<boolean>((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    const modalHTML = `
         <div class="modal-content">
           <div class="modal-header">
             <h3 class="modal-title">Administrator löschen</h3>
@@ -520,652 +715,409 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
           </div>
         </div>
       `;
-      setHTML(modal, modalHTML);
-      document.body.append(modal);
+    setHTML(modal, modalHTML);
+    document.body.appendChild(modal);
 
-      const confirmBtn = modal.querySelector('#confirm-delete');
-      const cancelBtn = modal.querySelector('#cancel-delete');
+    const confirmBtn = modal.querySelector('#confirm-delete');
+    const cancelBtn = modal.querySelector('#cancel-delete');
 
-      confirmBtn?.addEventListener('click', () => {
-        modal.remove();
-        resolve(true);
+    const cleanup = () => {
+      modal.remove();
+    };
+
+    confirmBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(true);
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(false);
+    });
+  });
+
+  if (!confirmDelete) {
+    console.info('Delete cancelled');
+    return;
+  }
+
+  try {
+    const endpoint = `/root/admins/${String(adminId)}`;
+    const result = await apiClient.request(
+      endpoint,
+      {
+        method: 'DELETE',
+      },
+      { version: useV2API ? 'v2' : 'v1' },
+    );
+
+    console.info('Delete response:', result);
+
+    // Admin-Liste neu laden
+    await loadAdmins();
+    showSuccessAlert('Administrator gelöscht');
+  } catch (error) {
+    console.error('Error deleting admin:', error);
+    showErrorAlert('Netzwerkfehler beim Löschen');
+  }
+}
+
+// Helper function to clear form fields
+function clearFormFields() {
+  ($('#adminFirstName') as HTMLInputElement).value = '';
+  ($('#adminLastName') as HTMLInputElement).value = '';
+  ($('#adminEmail') as HTMLInputElement).value = '';
+  ($(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement).value = '';
+  ($(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement).value = '';
+  ($(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement).value = '';
+  ($('#adminNotes') as HTMLTextAreaElement).value = '';
+  ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = '';
+}
+
+// Helper function to reset UI elements
+function resetModalUIElements() {
+  // Reset position dropdown
+  const positionDropdown = $$('#positionDropdownDisplay');
+  if (positionDropdown) {
+    const span = positionDropdown.querySelector('span');
+    if (span) span.textContent = 'Position auswählen...';
+  }
+
+  // Hide active status checkbox for new admins
+  const activeStatusGroup = $$('#activeStatusGroup');
+  if (activeStatusGroup) activeStatusGroup.style.display = 'none';
+
+  // Show confirmation fields for new admins
+  const emailConfirmGroup = $$('#emailConfirmGroup');
+  if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
+
+  const passwordGroup = $$('#passwordGroup');
+  const passwordConfirmGroup = $$('#passwordConfirmGroup');
+  if (passwordGroup) passwordGroup.style.display = 'block';
+  if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
+
+  // Clear error messages
+  const emailError = $$(SELECTORS.EMAIL_ERROR);
+  const passwordError = $$(SELECTORS.PASSWORD_ERROR);
+  if (emailError) emailError.style.display = 'none';
+  if (passwordError) passwordError.style.display = 'none';
+
+  // Reset permission type radios
+  $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
+    (radio as HTMLInputElement).checked = false;
+  });
+
+  // Hide all permission containers
+  const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
+  const groupContainer = $$('#groupSelectContainer');
+  if (deptContainer) deptContainer.style.display = 'none';
+  if (groupContainer) groupContainer.style.display = 'none';
+
+  // Set default to 'none'
+  const noneRadio = document.querySelector('input[name="permissionType"][value="none"]');
+  if (noneRadio) {
+    (noneRadio as HTMLInputElement).checked = true;
+  }
+}
+
+// Modal functions
+function showAddAdminModal() {
+  currentAdminId = null;
+  const modal = $$(SELECTORS.ADMIN_MODAL);
+  const title = $$(SELECTORS.MODAL_TITLE);
+
+  if (title) title.textContent = 'Neuen Administrator hinzufügen';
+
+  clearFormFields();
+  resetModalUIElements();
+
+  // Set fields as required for new admin
+  const emailConfirmField = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
+  if (emailConfirmField !== null) {
+    emailConfirmField.required = true;
+  }
+
+  const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
+  const passwordConfirmField = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
+  if (passwordField !== null) {
+    passwordField.required = true;
+  }
+  if (passwordConfirmField !== null) {
+    passwordConfirmField.required = true;
+  }
+
+  modal?.classList.add('active');
+}
+
+function closeAdminModal() {
+  const modal = $$(SELECTORS.ADMIN_MODAL);
+  modal?.classList.remove('active');
+  currentAdminId = null;
+}
+
+function closePermissionsModal() {
+  const modal = $$('#permissionsModal');
+  if (modal) {
+    modal.classList.remove('active');
+  }
+}
+
+// Save permissions handler
+const savePermissionsHandler = async (): Promise<void> => {
+  if (currentAdminId === null) {
+    console.error('No admin ID set');
+    return;
+  }
+
+  // Collect permissions from table
+  const departments: { id: number; can_read: boolean; can_write: boolean; can_delete: boolean }[] = [];
+
+  const rows = $all('#permissions-tbody tr');
+  rows.forEach((row) => {
+    const readCheckbox = row.querySelector<HTMLInputElement>('.perm-read');
+    const writeCheckbox = row.querySelector<HTMLInputElement>('.perm-write');
+    const deleteCheckbox = row.querySelector<HTMLInputElement>('.perm-delete');
+
+    if (readCheckbox?.dataset.deptId !== undefined && readCheckbox.dataset.deptId !== '') {
+      const deptId = Number.parseInt(readCheckbox.dataset.deptId, 10);
+      departments.push({
+        id: deptId,
+        can_read: readCheckbox.checked,
+        can_write: writeCheckbox !== null ? writeCheckbox.checked : false,
+        can_delete: deleteCheckbox !== null ? deleteCheckbox.checked : false,
       });
+    }
+  });
 
-      cancelBtn?.addEventListener('click', () => {
-        modal.remove();
-        resolve(false);
-      });
+  try {
+    // Save permissions
+    await apiClient.request(
+      '/admin-permissions',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          adminId: currentAdminId,
+          departmentIds: departments.filter((d) => d.can_read).map((d) => d.id),
+          permissions: { can_read: true, can_write: false, can_delete: false },
+        }),
+      },
+      { version: useV2API ? 'v2' : 'v1' },
+    );
 
-      modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-          modal.remove();
-          resolve(false);
+    showSuccessAlert('Berechtigungen aktualisiert');
+    closePermissionsModal();
+
+    // Reload admins to update table
+    await loadAdmins();
+  } catch (error) {
+    console.error('Error saving permissions:', error);
+    showErrorAlert('Netzwerkfehler beim Speichern');
+  }
+};
+
+// Helper function to setup global functions
+function setupGlobalFunctions() {
+  (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
+  (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
+  (window as unknown as ManageAdminsWindow).showPermissionsModal = showPermissionsModal;
+  (window as unknown as ManageAdminsWindow).showAddAdminModal = showAddAdminModal;
+  (window as unknown as ManageAdminsWindow).closeAdminModal = closeAdminModal;
+  (window as unknown as ManageAdminsWindow).closePermissionsModal = closePermissionsModal;
+  (window as unknown as ManageAdminsWindow).savePermissionsHandler = savePermissionsHandler;
+}
+
+// Helper function to initialize tooltip handlers
+function initializeTooltipHandlers() {
+  // Event delegation for admin actions
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle tooltip visibility
+    if (target.classList.contains('info-icon') || target.closest('.info-icon')) {
+      e.stopPropagation();
+      const icon = target.classList.contains('info-icon') ? target : target.closest('.info-icon');
+      const tooltip = icon?.querySelector('.info-tooltip');
+
+      if (tooltip) {
+        tooltip.classList.toggle('show');
+
+        // Ensure tooltip doesn't go off-screen
+        const rect = tooltip.getBoundingClientRect();
+        if (rect.left < 0) {
+          (tooltip as HTMLElement).style.left = '0';
+          (tooltip as HTMLElement).style.transform = 'translateX(0)';
+        } else if (rect.right > window.innerWidth) {
+          (tooltip as HTMLElement).style.left = 'auto';
+          (tooltip as HTMLElement).style.right = '0';
+          (tooltip as HTMLElement).style.transform = 'translateX(0)';
         }
+      }
+    }
+  });
+
+  // Hide tooltips when clicking elsewhere
+  document.addEventListener('click', (e) => {
+    $all('.info-tooltip.show').forEach((tooltip) => {
+      const icon = tooltip.closest('.info-icon');
+      const currentEvent = e;
+      if (icon !== null && !icon.contains(currentEvent.target as Node)) {
+        tooltip.classList.remove('show');
+      }
+    });
+  });
+}
+
+// Helper function to setup password validation
+function setupPasswordValidation() {
+  const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
+  const passwordConfirmField = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
+  const passwordError = $$(SELECTORS.PASSWORD_ERROR);
+
+  if (passwordField !== null && passwordConfirmField !== null) {
+    passwordConfirmField.addEventListener('input', () => {
+      const password = passwordField.value;
+      const passwordConfirm = passwordConfirmField.value;
+
+      if (passwordConfirm !== '' && password !== passwordConfirm) {
+        if (passwordError) passwordError.style.display = 'block';
+      } else {
+        if (passwordError) passwordError.style.display = 'none';
+      }
+    });
+  }
+}
+
+// Helper function to setup position dropdown
+function setupPositionDropdown() {
+  const positionDropdown = $$('#positionDropdownDisplay');
+  const positionDropdownMenu = $$('.position-dropdown-menu');
+
+  if (positionDropdown && positionDropdownMenu) {
+    positionDropdown.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      positionDropdownMenu.classList.toggle('show');
+    });
+
+    // Handle position selection
+    const positionItems = positionDropdownMenu.querySelectorAll('.dropdown-item');
+    positionItems.forEach((item) => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (!(e.target instanceof HTMLElement)) return;
+        const target = e.target;
+        const position = target.dataset.value ?? '';
+        const displayText = target.textContent;
+
+        // Update display
+        const span = positionDropdown.querySelector('span');
+        if (span) span.textContent = displayText;
+
+        // Update hidden input
+        ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = position;
+
+        // Close dropdown
+        positionDropdownMenu.classList.remove('show');
       });
     });
 
-    if (!confirmDelete) {
-      console.info('Delete cancelled by user');
-      return;
-    }
-
-    try {
-      const endpoint = `/root/admins/${String(adminId)}`;
-
-      await apiClient.request(
-        endpoint,
-        {
-          method: 'DELETE',
-        },
-        { version: useV2API ? 'v2' : 'v1' },
-      );
-
-      showSuccessAlert('Administrator erfolgreich gelöscht');
-      await loadAdmins();
-    } catch (error) {
-      console.error('Fehler:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Netzwerkfehler beim Löschen';
-      showErrorAlert(errorMessage);
-    }
-  }
-
-  // Admin hinzufügen Modal anzeigen
-  (window as unknown as ManageAdminsWindow).showAddAdminModal = function () {
-    currentAdminId = null;
-    const modal = $$(SELECTORS.ADMIN_MODAL);
-    const title = $$(SELECTORS.MODAL_TITLE);
-    const form = $$('#adminForm') as HTMLFormElement | null;
-
-    if (title !== null) title.textContent = 'Admin hinzufügen';
-    if (form !== null) form.reset();
-
-    // Reset custom dropdown
-    const positionValue = $$(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement | null;
-    if (positionValue !== null) positionValue.value = '';
-    const positionDropdown = $$('#positionDropdownDisplay');
-    if (positionDropdown) {
-      const span = positionDropdown.querySelector('span');
-      if (span) span.textContent = 'Position auswählen...';
-    }
-
-    // Hide active status checkbox for new admins (they are always active)
-    const activeStatusGroup = $$('#activeStatusGroup');
-    if (activeStatusGroup) activeStatusGroup.style.display = 'none';
-
-    // Passwort-Felder und E-Mail-Bestätigung als required setzen für neue Admins
-    const emailConfirmField = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
-    if (emailConfirmField !== null) emailConfirmField.required = true;
-
-    const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
-    const passwordConfirmField = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
-    if (passwordField !== null) passwordField.required = true;
-    if (passwordConfirmField !== null) passwordConfirmField.required = true;
-
-    // Show confirmation fields for new admin
-    const emailConfirmGroup = $$('#emailConfirmGroup');
-    if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
-    const passwordGroup = $$('#passwordGroup');
-    const passwordConfirmGroup = $$('#passwordConfirmGroup');
-    if (passwordGroup) passwordGroup.style.display = 'block';
-    if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
-
-    // Clear error messages
-    const emailError = $$(SELECTORS.EMAIL_ERROR);
-    const passwordError = $$(SELECTORS.PASSWORD_ERROR);
-    if (emailError) emailError.style.display = 'none';
-    if (passwordError) passwordError.style.display = 'none';
-
-    modal?.classList.add('active');
-  };
-
-  // Modal schließen
-  (window as unknown as ManageAdminsWindow).closeAdminModal = function () {
-    const modal = $$(SELECTORS.ADMIN_MODAL);
-    modal?.classList.remove('active');
-    currentAdminId = null;
-
-    // Clear error messages when closing
-    const emailError = $$(SELECTORS.EMAIL_ERROR);
-    const passwordError = $$(SELECTORS.PASSWORD_ERROR);
-    if (emailError) emailError.style.display = 'none';
-    if (passwordError) passwordError.style.display = 'none';
-  };
-
-  // Permissions Modal schließen
-  (window as unknown as ManageAdminsWindow).closePermissionsModal = function () {
-    console.info('🔵 closePermissionsModal called');
-    const modal = $$('#permissionsModal');
-    if (modal) {
-      modal.classList.remove('active');
-      currentPermissionAdminId = null;
-    }
-  };
-
-  // Department Permission Handling Functions
-  async function loadDepartments(): Promise<Department[]> {
-    try {
-      const endpoint = '/departments';
-      return await apiClient.request<Department[]>(
-        endpoint,
-        {
-          method: 'GET',
-        },
-        { version: useV2API ? 'v2' : 'v1' },
-      );
-    } catch (error) {
-      console.error('Fehler beim Laden der Abteilungen:', error);
-      return [];
-    }
-  }
-
-  async function loadDepartmentGroups(): Promise<DepartmentGroup[]> {
-    try {
-      const endpoint = '/department-groups/hierarchy';
-      const result = await apiClient.request<{ data?: DepartmentGroup[] }>(
-        endpoint,
-        {
-          method: 'GET',
-        },
-        { version: useV2API ? 'v2' : 'v1' },
-      );
-      return result.data ?? [];
-    } catch (error) {
-      console.error('Fehler beim Laden der Abteilungsgruppen:', error);
-      return [];
-    }
-  }
-
-  // Load admin permissions
-  async function loadAdminPermissions(adminId: number): Promise<{ departments: Department[]; hasAllAccess: boolean }> {
-    try {
-      const endpoint = `/admin-permissions/${String(adminId)}`;
-      const result = await apiClient.request<{
-        success?: boolean;
-        data?: { departments: Department[]; hasAllAccess: boolean };
-        departments?: Department[];
-        hasAllAccess?: boolean;
-      }>(
-        endpoint,
-        {
-          method: 'GET',
-        },
-        { version: useV2API ? 'v2' : 'v1' },
-      );
-
-      console.info(`Raw API response for admin ${String(adminId)}:`, result);
-
-      // Handle the wrapped response structure
-      if (result.success === true && result.data !== undefined) {
-        return result.data;
-      } else if (result.departments !== undefined) {
-        // Fallback for direct structure
-        return {
-          departments: result.departments,
-          hasAllAccess: result.hasAllAccess ?? false,
-        };
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!positionDropdown.contains(e.target as Node) && !positionDropdownMenu.contains(e.target as Node)) {
+        positionDropdownMenu.classList.remove('show');
       }
-    } catch (error) {
-      console.error('Fehler beim Laden der Admin-Berechtigungen:', error);
-    }
-    return { departments: [], hasAllAccess: false };
+    });
+  }
+}
+
+// Initialize the admin management
+(() => {
+  // Auth check
+  const token = localStorage.getItem('token');
+  const userRole = localStorage.getItem('userRole');
+
+  if (token === null || token === '' || userRole !== 'root') {
+    window.location.href = '/login';
+    return;
   }
 
-  // Handle permission type radio change
-  function handlePermissionTypeChange() {
-    const radioElement = document.querySelector(SELECTORS.PERMISSION_TYPE_CHECKED);
-    const type = (radioElement as HTMLInputElement | null)?.value;
-    const departmentContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-    const groupContainer = $$('#groupSelectContainer');
+  setupGlobalFunctions();
 
-    if (departmentContainer) departmentContainer.style.display = type === 'specific' ? 'block' : 'none';
-    if (groupContainer) groupContainer.style.display = type === 'groups' ? 'block' : 'none';
+  // Initiale Daten laden
+  void (async () => {
+    await loadAdmins();
+    await loadTenants();
+  })();
 
-    if (type === 'specific') {
-      void loadAndPopulateDepartments();
-    } else if (type === 'groups') {
-      void loadAndPopulateGroups();
-    }
-  }
+  setupPositionDropdown();
 
-  // Load and populate departments
-  async function loadAndPopulateDepartments() {
-    const departments = await loadDepartments();
-    const select = $$(SELECTORS.DEPARTMENT_SELECT);
+  // Permission type radio handlers
+  $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
+    radio.addEventListener('change', (e) => {
+      void (async () => {
+        const permissionType = (e.target as HTMLInputElement).value;
+        const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
+        const groupContainer = $$('#groupSelectContainer');
 
-    if (select !== null) {
-      select.innerHTML = '';
-      departments.forEach((dept) => {
-        const option = document.createElement('option');
-        option.value = dept.id.toString();
-        option.textContent = dept.name;
-        select.append(option);
+        // Hide all containers first
+        if (deptContainer !== null) deptContainer.style.display = 'none';
+        if (groupContainer !== null) groupContainer.style.display = 'none';
+
+        if (permissionType === 'specific' && deptContainer !== null) {
+          deptContainer.style.display = 'block';
+          await loadAndPopulateDepartments();
+        } else if (permissionType === 'groups' && groupContainer !== null) {
+          groupContainer.style.display = 'block';
+          // TODO: Load and populate groups
+        }
+      })();
+    });
+  });
+
+  // Handle "Select All" and "Deselect All" buttons
+  const selectAllBtn = $$('#selectAllDepartments');
+  const deselectAllBtn = $$('#deselectAllDepartments');
+  const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
+
+  selectAllBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (deptSelect !== null) {
+      [...deptSelect.options].forEach((option) => {
+        option.selected = true;
       });
     }
-  }
+  });
 
-  // Load and populate groups
-  async function loadAndPopulateGroups() {
-    const groups = await loadDepartmentGroups();
-    const container = $$('#groupTreeView');
-
-    if (container) {
-      setHTML(container, renderGroupTree(groups));
+  deselectAllBtn?.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (deptSelect !== null) {
+      [...deptSelect.options].forEach((option) => {
+        option.selected = false;
+      });
     }
-  }
-
-  // Render group tree
-  function renderGroupTree(groups: DepartmentGroup[], level = 0): string {
-    return groups
-      .map(
-        (group) => `
-    <div style="margin-left: ${String(level * 20)}px; margin-bottom: 8px;">
-      <label style="display: flex; align-items: center; cursor: pointer;">
-        <input type="checkbox" name="groupSelect" value="${String(group.id)}" style="margin-right: 8px;" />
-        <span>${group.name}</span>
-        ${
-          group.departments && group.departments.length > 0
-            ? `<small style="margin-left: 8px; color: var(--text-secondary);">(${String(group.departments.length)} Abteilungen)</small>`
-            : ''
-        }
-      </label>
-      ${group.subgroups && group.subgroups.length > 0 ? renderGroupTree(group.subgroups, level + 1) : ''}
-    </div>
-  `,
-      )
-      .join('');
-  }
-
-  // Current admin ID for permissions modal
-  let currentPermissionAdminId: number | null = null;
-
-  // Show permissions modal
-  async function showPermissionsModal(adminId: number) {
-    console.info('🔵 showPermissionsModal called for admin ID:', adminId);
-    currentPermissionAdminId = adminId;
-    const admin = admins.find((a) => Number.parseInt(a.id.toString(), 10) === adminId);
-
-    if (!admin) {
-      console.error('Admin not found for ID:', adminId);
-      return;
-    }
-
-    console.info('Found admin:', admin);
-
-    // Set admin info
-    const nameEl = $$('#permAdminName');
-    const emailEl = $$('#permAdminEmail');
-
-    if (nameEl) nameEl.textContent = `${admin.firstName} ${admin.lastName} (${admin.username})`.trim();
-    if (emailEl) emailEl.textContent = admin.email;
-
-    // Load departments and current permissions
-    await loadPermissionsModalData(adminId);
-
-    // Ensure departments tab is active by default
-    const deptTab = document.querySelector('[data-tab="departments"]');
-    const groupTab = document.querySelector('[data-tab="groups"]');
-    const deptContent = $$('#departmentsTab');
-    const groupContent = $$('#groupsTab');
-
-    if (deptTab && groupTab && deptContent && groupContent) {
-      // Reset all tabs
-      deptTab.classList.add('active');
-      (deptTab as HTMLElement).style.borderBottomColor = 'var(--primary-color)';
-      (deptTab as HTMLElement).style.color = 'var(--text-primary)';
-
-      groupTab.classList.remove('active');
-      (groupTab as HTMLElement).style.borderBottomColor = 'transparent';
-      (groupTab as HTMLElement).style.color = 'var(--text-secondary)';
-
-      // Show departments content, hide groups
-      deptContent.style.display = 'block';
-      groupContent.style.display = 'none';
-    }
-
-    // Show modal
-    const modal = $$('#permissionsModal');
-    if (modal) {
-      modal.classList.add('active');
-      console.info('✅ Permissions modal opened with departments tab active');
-    } else {
-      console.error('❌ Permissions modal element not found!');
-    }
-  }
-
-  // Load data for permissions modal
-  async function loadPermissionsModalData(adminId: number) {
-    console.info('🔵 loadPermissionsModalData called for admin:', adminId);
-    try {
-      // Load all departments
-      const departments = await loadDepartments();
-      console.info('Available departments:', departments);
-
-      const groups = await loadDepartmentGroups();
-
-      // Load current permissions
-      const currentPerms = await loadAdminPermissions(adminId);
-      console.info('Current permissions:', currentPerms);
-
-      // Render departments
-      const deptList = $$('#permissionDepartmentList');
-      if (deptList) {
-        const deptContent = departments
-          .map((dept) => {
-            const hasPermission = currentPerms.departments.some((d) => d.id === dept.id);
-            return `
-          <label style="display: flex; align-items: center; padding: 8px; cursor: pointer; border-radius: 4px; /* transition: background 0.2s; */"
-                 onmouseover="this.style.background='rgba(255,255,255,0.02)'"
-                 onmouseout="this.style.background='transparent'">
-            <input type="checkbox" name="deptPermission" value="${String(dept.id)}"
-                   ${hasPermission ? 'checked' : ''}
-                   style="margin-right: 8px;" />
-            <span>${dept.name}</span>
-            ${dept.description !== undefined && dept.description !== '' ? `<small style="margin-left: 8px; color: var(--text-secondary);">${dept.description}</small>` : ''}
-          </label>
-        `;
-          })
-          .join('');
-
-        setHTML(deptList, deptContent);
-      }
-
-      // Render groups
-      const groupList = $$('#permissionGroupList');
-      if (groupList) {
-        setHTML(groupList, renderGroupTree(groups));
-      }
-
-      // Set permission levels
-      if (currentPerms.departments.length > 0) {
-        const firstDept = currentPerms.departments[0];
-        const canWriteEl = $$('#permCanWrite') as HTMLInputElement | null;
-        const canDeleteEl = $$('#permCanDelete') as HTMLInputElement | null;
-        if (canWriteEl !== null) canWriteEl.checked = firstDept.can_write ?? false;
-        if (canDeleteEl !== null) canDeleteEl.checked = firstDept.can_delete ?? false;
-      }
-    } catch (error) {
-      console.error('Error loading permissions modal data:', error);
-    }
-  }
-
-  // Save permissions handler
-  (window as unknown as ManageAdminsWindow).savePermissionsHandler = async function () {
-    console.info('🔵 savePermissionsHandler called');
-    console.info('currentPermissionAdminId:', currentPermissionAdminId);
-
-    if (currentPermissionAdminId === null || currentPermissionAdminId === 0) {
-      console.error('❌ No currentPermissionAdminId set');
-      return;
-    }
-
-    try {
-      const authToken = localStorage.getItem('token');
-      console.info('🔵 Saving permissions for admin:', currentPermissionAdminId);
-
-      // Get selected departments
-      const selectedDepts = [...$all('#permissionDepartmentList input[name="deptPermission"]:checked')].map(
-        (checkbox) => Number.parseInt((checkbox as HTMLInputElement).value, 10),
-      );
-
-      console.info('Selected departments:', selectedDepts);
-
-      // Get selected groups
-      const selectedGroups = [...$all('#permissionGroupList input[name="groupSelect"]:checked')].map((checkbox) =>
-        Number.parseInt((checkbox as HTMLInputElement).value, 10),
-      );
-
-      console.info('Selected groups:', selectedGroups);
-
-      // Get permission levels
-      const canWriteEl = $$('#permCanWrite') as HTMLInputElement | null;
-      const canDeleteEl = $$('#permCanDelete') as HTMLInputElement | null;
-      const permissions = {
-        canRead: true,
-        canWrite: canWriteEl !== null ? canWriteEl.checked : false,
-        canDelete: canDeleteEl !== null ? canDeleteEl.checked : false,
-      };
-
-      console.info('Permissions:', permissions);
-
-      // Update department permissions
-      const requestBody = {
-        adminId: currentPermissionAdminId,
-        departmentIds: selectedDepts,
-        permissions,
-      };
-
-      console.info('Request body:', requestBody);
-      console.info('Token exists:', authToken !== null && authToken !== '');
-      console.info('Making request to:', API_ENDPOINTS.ADMIN_PERMISSIONS);
-
-      const deptResponse = await apiClient.request<{ success?: boolean; message?: string }>(
-        '/admin-permissions',
-        {
-          method: 'POST',
-          body: JSON.stringify(requestBody),
-        },
-        { version: useV2API ? 'v2' : 'v1' },
-      );
-
-      console.info('✅ Department permissions saved successfully:', deptResponse);
-
-      // Update group permissions if any selected
-      if (selectedGroups.length > 0) {
-        await apiClient.request(
-          '/admin-permissions/groups',
-          {
-            method: 'POST',
-            body: JSON.stringify({
-              adminId: currentPermissionAdminId,
-              groupIds: selectedGroups,
-              permissions,
-            }),
-          },
-          { version: useV2API ? 'v2' : 'v1' },
-        );
-
-        console.info('✅ Group permissions saved successfully');
-      }
-
-      // Request succeeded, show success message
-      console.info('✅ Permissions saved successfully');
-      showSuccessAlert('Berechtigungen erfolgreich aktualisiert');
-      const closeModal = (window as unknown as ManageAdminsWindow).closePermissionsModal;
-      if (closeModal) closeModal();
-
-      // Admin-Liste dynamisch neu laden (ohne Seiten-Reload)
-      await loadAdmins();
-    } catch (error) {
-      console.error('Error saving permissions:', error);
-      showErrorAlert('Netzwerkfehler beim Speichern');
-    }
-  };
+  });
 
   // Admin-Formular submit
   $$('#adminForm')?.addEventListener('submit', (e) => {
     void (async () => {
       e.preventDefault();
 
-      // Validate email match
-      const emailEl = $$('#adminEmail') as HTMLInputElement | null;
-      const emailConfirmEl = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
-      const email = emailEl !== null ? emailEl.value : '';
-      const emailConfirm = emailConfirmEl !== null ? emailConfirmEl.value : '';
-      const emailError = $$(SELECTORS.EMAIL_ERROR);
+      // Validate form
+      if (!validateEmails()) return;
+      if (!validatePasswords()) return;
 
-      if (email !== emailConfirm) {
-        if (emailError) emailError.style.display = 'block';
-        showErrorAlert('Die E-Mail-Adressen stimmen nicht überein!');
-        return;
-      } else {
-        if (emailError) emailError.style.display = 'none';
-      }
-
-      // Validate password match (only for new admins or if password is being changed)
-      const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
-      const passwordConfirmEl = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
-      const password = passwordEl !== null ? passwordEl.value : '';
-      const passwordConfirm = passwordConfirmEl !== null ? passwordConfirmEl.value : '';
-      const passwordError = $$(SELECTORS.PASSWORD_ERROR);
-
-      if (password !== '' && password !== passwordConfirm) {
-        if (passwordError) passwordError.style.display = 'block';
-        showErrorAlert('Die Passwörter stimmen nicht überein!');
-        return;
-      } else {
-        if (passwordError) passwordError.style.display = 'none';
-      }
-
-      interface AdminFormData {
-        firstName: string;
-        lastName: string;
-        email: string;
-        username: string;
-        password?: string;
-        position: string;
-        notes: string;
-        role: string;
-        isActive?: boolean;
-        employeeNumber?: string; // camelCase für API!
-      }
-
-      const firstNameEl = $$('#adminFirstName') as HTMLInputElement | null;
-      const lastNameEl = $$('#adminLastName') as HTMLInputElement | null;
-      const positionEl = $$(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement | null;
-
-      const employeeNumberEl = $$('#adminEmployeeNumber') as HTMLInputElement | null;
-      const formData: AdminFormData = {
-        firstName: firstNameEl !== null ? firstNameEl.value : '',
-        lastName: lastNameEl !== null ? lastNameEl.value : '',
-        email,
-        username: email, // Use email as username
-        password,
-        position: positionEl !== null ? positionEl.value : '',
-        notes: ($('#adminNotes') as HTMLTextAreaElement).value,
-        role: 'admin',
-        employeeNumber: employeeNumberEl !== null ? employeeNumberEl.value : '', // camelCase für API!
-      };
-
-      // Include isActive only when updating
-      if (currentAdminId !== null && currentAdminId !== 0) {
-        const checkbox = $('#adminIsActive') as HTMLInputElement;
-        console.info('Checkbox element:', checkbox);
-        console.info('Checkbox checked state:', checkbox.checked);
-        formData.isActive = checkbox.checked;
-      }
-
+      // Get form data
+      const formData = getFormData();
       console.info('Sending form data:', formData);
       console.info('Current admin ID:', currentAdminId);
       console.info('isActive value being sent:', formData.isActive);
 
       try {
-        const isUpdate = currentAdminId !== null && currentAdminId !== 0;
-        const endpoint = isUpdate ? `/root/admins/${String(currentAdminId)}` : '/root/admins';
-        const method = isUpdate ? 'PUT' : 'POST';
+        // Save admin
+        const adminId = await saveAdmin(formData);
 
-        // Bei Update: Passwort nur senden wenn ausgefüllt
-        if (
-          currentAdminId !== null &&
-          currentAdminId !== 0 &&
-          (formData.password === undefined || formData.password === '')
-        ) {
-          delete formData.password;
-        }
-
-        // Use apiClient for consistent v2 API usage
-        const result = await apiClient.request<{ adminId?: number; id?: number }>(
-          endpoint,
-          {
-            method,
-            body: JSON.stringify(formData),
-          },
-          { version: 'v2' },
-        );
-
-        const adminId = currentAdminId ?? result.adminId ?? result.id ?? 0;
-
-        // Set permissions for both new and existing admins
-        const permissionTypeInput = document.querySelector(SELECTORS.PERMISSION_TYPE_CHECKED);
-        const permissionType = permissionTypeInput instanceof HTMLInputElement ? permissionTypeInput.value : undefined;
-        console.info('🔵 Permission type selected:', permissionType);
-
-        if (adminId !== 0 && permissionType !== undefined) {
-          // Always update permissions based on form selection
-          if (permissionType !== 'none') {
-            let departmentIds: number[] = [];
-            let groupIds: number[] = [];
-
-            if (permissionType === 'specific') {
-              const select = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
-              if (select !== null) {
-                departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
-              }
-            } else if (permissionType === 'groups') {
-              const checkboxes = $all('input[name="groupSelect"]:checked');
-              groupIds = [...checkboxes].map((checkbox) => Number.parseInt((checkbox as HTMLInputElement).value, 10));
-            } else if (permissionType === 'all') {
-              // Get all departments
-              const allDepts = await loadDepartments();
-              departmentIds = allDepts.map((d) => d.id);
-            }
-
-            // Set permissions
-            console.info('🔵 Setting department permissions for admin:', adminId);
-            console.info('Department IDs:', departmentIds);
-
-            const permResponse = await apiClient.request(
-              '/admin-permissions',
-              {
-                method: 'POST',
-                body: JSON.stringify({
-                  adminId,
-                  departmentIds,
-                  permissions: { can_read: true, can_write: false, can_delete: false },
-                }),
-              },
-              { version: useV2API ? 'v2' : 'v1' },
-            );
-
-            if (permResponse != null) {
-              console.info('✅ Department permissions updated successfully');
-            }
-
-            if (groupIds.length > 0) {
-              await apiClient.request(
-                '/admin-permissions/groups',
-                {
-                  method: 'POST',
-                  body: JSON.stringify({
-                    adminId,
-                    groupIds,
-                    permissions: { can_read: true, can_write: false, can_delete: false },
-                  }),
-                },
-                { version: useV2API ? 'v2' : 'v1' },
-              );
-            }
-          } else {
-            // Permission type is 'none' - remove all permissions
-            console.info('🔵 Removing all department permissions for admin:', adminId);
-
-            const permResponse = await apiClient.request(
-              '/admin-permissions',
-              {
-                method: 'POST',
-                body: JSON.stringify({
-                  adminId,
-                  departmentIds: [], // Empty array removes all permissions
-                  permissions: { can_read: true, can_write: false, can_delete: false },
-                }),
-              },
-              { version: useV2API ? 'v2' : 'v1' },
-            );
-
-            if (permResponse != null) {
-              console.info('✅ All department permissions removed');
-            }
-          }
-        }
+        // Update permissions
+        await updatePermissions(adminId);
 
         showSuccessAlert(
           currentAdminId !== null && currentAdminId !== 0 ? 'Administrator aktualisiert' : 'Administrator hinzugefügt',
@@ -1182,110 +1134,8 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
     })();
   });
 
-  // Hilfsfunktionen wurden bereits aus auth.ts importiert
-  // showErrorAlert und showSuccessAlert sind bereits oben importiert
-
-  // Event delegation for admin actions
-  document.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-
-    // Handle edit admin
-    const editBtn = target.closest<HTMLElement>('[data-action="edit-admin"]');
-    if (editBtn) {
-      const adminId = editBtn.dataset.adminId;
-      if (adminId !== undefined) {
-        void editAdminHandler(Number.parseInt(adminId, 10));
-      }
-    }
-
-    // Handle show permissions
-    const permissionsBtn = target.closest<HTMLElement>('[data-action="show-permissions"]');
-    if (permissionsBtn) {
-      const adminId = permissionsBtn.dataset.adminId;
-      if (adminId !== undefined) {
-        void showPermissionsModal(Number.parseInt(adminId, 10));
-      }
-    }
-
-    // Handle delete admin
-    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-admin"]');
-    if (deleteBtn) {
-      const adminId = deleteBtn.dataset.adminId;
-      if (adminId !== undefined) {
-        void deleteAdminHandler(Number.parseInt(adminId, 10));
-      }
-    }
-  });
-
-  // Modal schließen bei Klick außerhalb
-  window.addEventListener('click', (e) => {
-    const modal = $$(SELECTORS.ADMIN_MODAL);
-    if (e.target === modal) {
-      const closeModal = (window as unknown as ManageAdminsWindow).closeAdminModal;
-      if (closeModal) closeModal();
-    }
-  });
-
-  // Make functions globally available
-  (window as unknown as ManageAdminsWindow).editAdmin = editAdminHandler;
-  (window as unknown as ManageAdminsWindow).deleteAdmin = deleteAdminHandler;
-  (window as unknown as ManageAdminsWindow).showPermissionsModal = showPermissionsModal;
-
-  // Initialisierung
-  document.addEventListener('DOMContentLoaded', () => {
-    void (async () => {
-      // Load user profile to trigger unified navigation update
-      try {
-        const userProfile = await apiClient.get<MappedUser>(API_ENDPOINTS.USERS_ME);
-        console.info('[manage-admins] User profile loaded:', userProfile);
-      } catch (error) {
-        console.error('[manage-admins] Failed to load user profile:', error);
-      }
-
-      // Daten laden
-      await loadAdmins();
-      await loadTenants();
-
-      // Add event listeners for permission type radio buttons
-      $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
-        radio.addEventListener('change', handlePermissionTypeChange);
-      });
-
-      // Real-time validation for email confirmation
-      const emailConfirmInput = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
-      if (emailConfirmInput) {
-        emailConfirmInput.addEventListener('input', () => {
-          const emailEl = $$('#adminEmail') as HTMLInputElement | null;
-          const email = emailEl !== null ? emailEl.value : '';
-          const emailConfirm = emailConfirmInput.value;
-          const emailError = $$(SELECTORS.EMAIL_ERROR);
-
-          if (emailConfirm !== '' && email !== emailConfirm) {
-            if (emailError) emailError.style.display = 'block';
-          } else {
-            if (emailError) emailError.style.display = 'none';
-          }
-        });
-      }
-
-      // Real-time validation for password confirmation
-      const passwordConfirmInput = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
-      if (passwordConfirmInput) {
-        passwordConfirmInput.addEventListener('input', () => {
-          const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
-          const password = passwordEl !== null ? passwordEl.value : '';
-          const passwordConfirm = passwordConfirmInput.value;
-          const passwordError = $$(SELECTORS.PASSWORD_ERROR);
-
-          if (passwordConfirm !== '' && password !== passwordConfirm) {
-            if (passwordError) passwordError.style.display = 'block';
-          } else {
-            if (passwordError) passwordError.style.display = 'none';
-          }
-        });
-      }
-    })();
-  });
+  initializeTooltipHandlers();
+  setupPasswordValidation();
 })();
 
-// End of IIFE
+// End of file

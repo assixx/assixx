@@ -1,11 +1,11 @@
 # 📚 Database Migration Guide für Assixx
 
-> **Letztes Update:** 02.06.2025  
+> **Letztes Update:** 02.06.2025
 > **Erstellt aus:** Lernerfahrungen der plans-system Migration
 
 ## 🎯 Übersicht
 
-Diese Anleitung dokumentiert den **richtigen Weg** für Datenbank-Migrationen im Assixx-Projekt. Sie basiert auf den Lernpunkten aus der problematischen Migration vom 02.06.2025, die 18 Minuten statt 2-3 Minuten dauerte.
+Diese Anleitung dokumentiert den **richtigen Weg** für Datenbank-Migrationen im Assixx-Projekt.
 
 ## ⚡ Quick Migration (2-3 Minuten)
 

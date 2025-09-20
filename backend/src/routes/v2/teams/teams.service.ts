@@ -8,7 +8,7 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import Department from '../../../models/department.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import Team from '../../../models/team.js';
-import type { TeamCreateData, TeamUpdateData } from '../../../models/team.js';
+import type { DbTeam, TeamCreateData, TeamUpdateData } from '../../../models/team.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import User from '../../../models/user.js';
 import { execute } from '../../../utils/db.js';
@@ -252,67 +252,85 @@ export class TeamsService {
    * @param data - The data object
    * @param tenantId - The tenant ID
    */
+  private async validateTeamExists(id: number, tenantId: number): Promise<DbTeam> {
+    const existingTeam = await Team.findById(id);
+    if (!existingTeam || existingTeam.tenant_id !== tenantId) {
+      throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
+    }
+    return existingTeam;
+  }
+
+  private async validateDepartment(
+    departmentId: number | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    if (departmentId === undefined || !departmentId) return;
+
+    const dept = await Department.findById(departmentId, tenantId);
+    if (!dept) {
+      throw new ServiceError('BAD_REQUEST', 'Invalid department ID', 400);
+    }
+  }
+
+  private async validateLeader(leaderId: number | undefined, tenantId: number): Promise<void> {
+    if (leaderId === undefined || !leaderId) return;
+
+    const leader = await User.findById(leaderId, tenantId);
+    if (!leader) {
+      throw new ServiceError('BAD_REQUEST', 'Invalid leader ID', 400);
+    }
+  }
+
+  private async checkDuplicateName(
+    name: string | undefined,
+    currentName: string,
+    teamId: number,
+    tenantId: number,
+  ): Promise<void> {
+    if (!name || name === currentName) return;
+
+    const teams = await Team.findAll(tenantId);
+    const duplicate = teams.find(
+      (t) => t.id !== teamId && t.name.toLowerCase() === name.toLowerCase(),
+    );
+
+    if (duplicate) {
+      throw new ServiceError('CONFLICT', 'Team with this name already exists', 409);
+    }
+  }
+
+  private buildUpdateData(data: TeamUpdateInput): TeamUpdateData {
+    const updateData: TeamUpdateData = {};
+
+    if (data.name !== undefined) updateData.name = data.name;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.departmentId !== undefined) updateData.department_id = data.departmentId;
+    if (data.leaderId !== undefined) updateData.team_lead_id = data.leaderId;
+    if (data.status !== undefined) {
+      updateData.is_active = data.status === 'active' ? 1 : 0;
+    }
+
+    return updateData;
+  }
+
   async updateTeam(
     id: number,
     data: TeamUpdateInput,
     tenantId: number,
   ): Promise<Record<string, unknown>> {
     try {
-      // Check if team exists and belongs to tenant
-      const existingTeam = await Team.findById(id);
-      if (!existingTeam || existingTeam.tenant_id !== tenantId) {
-        throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
-      }
+      // Validate team exists
+      const existingTeam = await this.validateTeamExists(id, tenantId);
 
-      // Validate department if provided
-      if (data.departmentId !== undefined && data.departmentId) {
-        const dept = await Department.findById(data.departmentId, tenantId);
-        if (!dept) {
-          throw new ServiceError('BAD_REQUEST', 'Invalid department ID', 400);
-        }
-      }
+      // Run validations
+      await this.validateDepartment(data.departmentId, tenantId);
+      await this.validateLeader(data.leaderId, tenantId);
+      await this.checkDuplicateName(data.name, existingTeam.name, id, tenantId);
 
-      // Validate leader if provided
-      if (data.leaderId !== undefined && data.leaderId) {
-        const leader = await User.findById(data.leaderId, tenantId);
-        if (!leader) {
-          throw new ServiceError('BAD_REQUEST', 'Invalid leader ID', 400);
-        }
-      }
-
-      // Check for duplicate name
-      if (data.name && data.name !== existingTeam.name) {
-        const teams = await Team.findAll(tenantId);
-        const duplicate = teams.find(
-          (t) => t.id !== id && t.name.toLowerCase() === (data.name?.toLowerCase() ?? ''),
-        );
-
-        if (duplicate) {
-          throw new ServiceError('CONFLICT', 'Team with this name already exists', 409);
-        }
-      }
+      // Build update data
+      const updateData = this.buildUpdateData(data);
 
       // Update the team
-      const updateData: TeamUpdateData = {};
-
-      // Only include fields that are being updated
-      if (data.name !== undefined) {
-        updateData.name = data.name;
-      }
-      if (data.description !== undefined) {
-        updateData.description = data.description;
-      }
-      if (data.departmentId !== undefined) {
-        updateData.department_id = data.departmentId;
-      }
-      if (data.leaderId !== undefined) {
-        updateData.team_lead_id = data.leaderId;
-      }
-      if (data.status !== undefined) {
-        // Convert status string to is_active boolean
-        updateData.is_active = data.status === 'active' ? 1 : 0;
-      }
-
       const success = await Team.update(id, updateData);
       if (!success) {
         throw new ServiceError('SERVER_ERROR', 'Failed to update team', 500);
@@ -324,7 +342,8 @@ export class TeamsService {
       if (error instanceof ServiceError) {
         throw error;
       }
-      logger.error(`Error updating team ${id}: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Error updating team ${id}: ${errorMessage}`);
       throw new ServiceError('SERVER_ERROR', 'Failed to update team', 500);
     }
   }

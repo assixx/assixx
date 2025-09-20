@@ -599,6 +599,63 @@ async function showUnreadEventsModal(): Promise<void> {
 }
 
 /**
+ * Create and show event tooltip
+ */
+function showEventTooltip(info: FullCalendarEventMouseEnterInfo): void {
+  const tooltip = document.createElement('div');
+  tooltip.className = 'event-tooltip';
+  const description = (info.event.extendedProps?.description as string | undefined) ?? '';
+  const location = info.event.extendedProps?.location as string | undefined;
+
+  // Clear tooltip
+  while (tooltip.firstChild) {
+    tooltip.firstChild.remove();
+  }
+
+  // Add title
+  const strong = document.createElement('strong');
+  strong.textContent = info.event.title;
+  tooltip.append(strong);
+
+  // Add line break
+  tooltip.append(document.createElement('br'));
+
+  // Add description
+  if (description !== '') {
+    tooltip.append(document.createTextNode(description));
+  }
+
+  // Add location if present
+  if (location !== undefined && location !== '') {
+    tooltip.append(document.createElement('br'));
+    const locationIcon = document.createElement('i');
+    locationIcon.className = 'fas fa-map-marker-alt';
+    tooltip.append(locationIcon);
+    tooltip.append(document.createTextNode(' ' + location));
+  }
+  document.body.append(tooltip);
+
+  const rect = info.el.getBoundingClientRect();
+  tooltip.style.position = 'absolute';
+  tooltip.style.left = `${rect.left}px`;
+  tooltip.style.top = `${rect.bottom + 5}px`;
+  tooltip.style.zIndex = '9999';
+
+  (info.el as HTMLElement & { _tooltip?: HTMLElement })._tooltip = tooltip;
+}
+
+/**
+ * Hide event tooltip
+ */
+function hideEventTooltip(info: FullCalendarEventMouseEnterInfo): void {
+  const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
+  if (el._tooltip) {
+    el._tooltip.remove();
+    delete el._tooltip;
+  }
+}
+
+/**
  * Initialize FullCalendar
  */
 let calendarInitialized = false;
@@ -694,55 +751,8 @@ function initializeCalendar(): void {
       eventClick(info: FullCalendarEventClickInfo) {
         void viewEvent(Number.parseInt(info.event.id, 10));
       },
-      eventMouseEnter(info: FullCalendarEventMouseEnterInfo) {
-        // Show tooltip on hover
-        const tooltip = document.createElement('div');
-        tooltip.className = 'event-tooltip';
-        const description = (info.event.extendedProps?.description as string | undefined) ?? '';
-        const location = info.event.extendedProps?.location as string | undefined;
-        // Clear tooltip
-        while (tooltip.firstChild) {
-          tooltip.firstChild.remove();
-        }
-
-        // Add title
-        const strong = document.createElement('strong');
-        strong.textContent = info.event.title;
-        tooltip.append(strong);
-
-        // Add line break
-        tooltip.append(document.createElement('br'));
-
-        // Add description
-        if (description !== '') {
-          tooltip.append(document.createTextNode(description));
-        }
-
-        // Add location if present
-        if (location !== undefined && location !== '') {
-          tooltip.append(document.createElement('br'));
-          const locationIcon = document.createElement('i');
-          locationIcon.className = 'fas fa-map-marker-alt';
-          tooltip.append(locationIcon);
-          tooltip.append(document.createTextNode(' ' + location));
-        }
-        document.body.append(tooltip);
-
-        const rect = info.el.getBoundingClientRect();
-        tooltip.style.position = 'absolute';
-        tooltip.style.left = `${rect.left}px`;
-        tooltip.style.top = `${rect.bottom + 5}px`;
-        tooltip.style.zIndex = '9999';
-
-        (info.el as HTMLElement & { _tooltip?: HTMLElement })._tooltip = tooltip;
-      },
-      eventMouseLeave(info: FullCalendarEventMouseEnterInfo) {
-        const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
-        if (el._tooltip) {
-          el._tooltip.remove();
-          delete el._tooltip;
-        }
-      },
+      eventMouseEnter: showEventTooltip,
+      eventMouseLeave: hideEventTooltip,
     });
 
     calendar.render();
@@ -999,17 +1009,27 @@ function handleDropdownDisplay(e: Event, display: HTMLElement): void {
 
   if (!dropdown) return;
 
-  const dropdownMap: Record<string, () => void> = {
-    orgLevelWrapper: toggleOrgLevelDropdown,
-    reminderWrapper: toggleReminderDropdown,
-    recurrenceWrapper: toggleRecurrenceDropdown,
-    departmentWrapper: toggleDepartmentDropdown,
-    teamWrapper: toggleTeamDropdown,
-  };
-
   const wrapperId = wrapper?.id;
-  if (wrapperId !== undefined && wrapperId !== '' && wrapperId in dropdownMap) {
-    dropdownMap[wrapperId]();
+
+  switch (wrapperId) {
+    case 'orgLevelWrapper':
+      toggleOrgLevelDropdown();
+      break;
+    case 'reminderWrapper':
+      toggleReminderDropdown();
+      break;
+    case 'recurrenceWrapper':
+      toggleRecurrenceDropdown();
+      break;
+    case 'departmentWrapper':
+      toggleDepartmentDropdown();
+      break;
+    case 'teamWrapper':
+      toggleTeamDropdown();
+      break;
+    default:
+      // No action for unknown wrapper IDs
+      break;
   }
 }
 
@@ -1024,15 +1044,21 @@ function handleDropdownOption(e: Event, option: HTMLElement): void {
   const textContent = option.textContent;
   const text = textContent !== '' ? textContent.trim() : '';
 
-  const optionHandlers: Record<string, (value: string, text: string) => void> = {
-    orgLevelDropdown: selectOrgLevel,
-    reminderDropdown: selectReminder,
-    recurrenceDropdown: selectRecurrence,
-  };
-
   const dropdownId = dropdown.id;
-  if (dropdownId !== '' && dropdownId in optionHandlers) {
-    optionHandlers[dropdownId](value, text);
+
+  switch (dropdownId) {
+    case 'orgLevelDropdown':
+      selectOrgLevel(value, text);
+      break;
+    case 'reminderDropdown':
+      selectReminder(value, text);
+      break;
+    case 'recurrenceDropdown':
+      selectRecurrence(value, text);
+      break;
+    default:
+      // No action for unknown dropdown IDs
+      break;
   }
 }
 
@@ -2877,7 +2903,7 @@ async function fetchEventById(eventId: number, token: string): Promise<unknown> 
     throw new Error('Failed to fetch event');
   }
 
-  return response.json();
+  return await response.json();
 }
 
 /**
@@ -3177,71 +3203,6 @@ async function confirmDeleteEvent(): Promise<void> {
 }
 
 /**
- * Search attendees
- */
-function searchAttendees(query: string): void {
-  const searchResults = $$('#attendeeSearchResults');
-  if (!searchResults) return;
-
-  if (query === '' || query.length < 2) {
-    searchResults.innerHTML = '';
-    return;
-  }
-
-  // Filter employees based on query
-  const filteredEmployees = employees.filter((emp) => {
-    // Handle both snake_case (v1) and camelCase (v2) field names
-    const firstName = emp.first_name ?? '';
-    const lastName = emp.last_name ?? '';
-    const fullName = `${firstName} ${lastName}`.toLowerCase();
-    const username = emp.username.toLowerCase();
-    const email = emp.email.toLowerCase();
-    return (
-      fullName.includes(query.toLowerCase()) ||
-      username.includes(query.toLowerCase()) ||
-      email.includes(query.toLowerCase())
-    );
-  });
-
-  searchResults.innerHTML = '';
-
-  filteredEmployees.forEach((emp) => {
-    if (selectedAttendees.includes(emp.id)) return; // Skip already selected
-
-    const item = document.createElement('div');
-    item.className = 'search-result-item';
-    // Handle both snake_case (v1) and camelCase (v2) field names
-    const firstName = emp.first_name ?? '';
-    const lastName = emp.last_name ?? '';
-    const name =
-      `${firstName} ${lastName}`.trim() !== ''
-        ? `${firstName} ${lastName}`.trim()
-        : emp.username !== ''
-          ? emp.username
-          : emp.email;
-    // Clear existing content
-    while (item.firstChild) {
-      item.firstChild.remove();
-    }
-
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = name;
-    item.append(nameSpan);
-
-    const addBtn = document.createElement('button');
-    addBtn.className = 'btn btn-sm btn-primary';
-    addBtn.dataset.action = 'add-attendee';
-    addBtn.dataset.empId = emp.id.toString();
-    addBtn.dataset.empName = name;
-    const plusIcon = document.createElement('i');
-    plusIcon.className = 'fas fa-plus';
-    addBtn.append(plusIcon);
-    item.append(addBtn);
-    searchResults.append(item);
-  });
-}
-
-/**
  * Add attendee
  */
 function addAttendee(userId: number, _name: string): void {
@@ -3306,115 +3267,117 @@ async function fetchUserData(): Promise<UserData> {
 /**
  * Load departments and teams
  */
+/**
+ * Extract array from API response (v1 or v2)
+ */
+function extractArrayFromApiResponse<T>(data: unknown, useV2: boolean): T[] {
+  // Handle v2 API response
+  if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+    const v2Data = data as { data: unknown };
+    if (typeof v2Data.data === 'object' && v2Data.data !== null && 'data' in v2Data.data) {
+      const nestedData = v2Data.data as { data: unknown };
+      if (Array.isArray(nestedData.data)) {
+        return nestedData.data as T[];
+      }
+    }
+    if (Array.isArray(v2Data.data)) {
+      return v2Data.data as T[];
+    }
+  }
+
+  // Handle v1 API response or direct array
+  if (Array.isArray(data)) {
+    return data as T[];
+  }
+
+  return [];
+}
+
+/**
+ * Fetch data from API endpoint
+ */
+async function fetchApiData(endpoint: string, token: string): Promise<unknown> {
+  const response = await fetch(endpoint, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    return null;
+  }
+
+  return await response.json();
+}
+
+/**
+ * Get current user ID from localStorage
+ */
+function getCurrentUserIdFromStorage(): number {
+  const userStr = localStorage.getItem('user');
+  if (userStr === null || userStr === '') {
+    return 0;
+  }
+
+  try {
+    const user = JSON.parse(userStr) as UserData;
+    return user.id;
+  } catch (error) {
+    console.error('Error parsing user from localStorage:', error);
+    return 0;
+  }
+}
+
+/**
+ * Load departments
+ */
+async function loadDepartments(token: string): Promise<void> {
+  const useV2 = featureFlags.isEnabled('USE_API_V2_DEPARTMENTS');
+  const url = useV2 ? '/api/v2/departments' : '/api/departments';
+  const data = await fetchApiData(url, token);
+
+  if (data !== null) {
+    departments = extractArrayFromApiResponse<Department>(data, useV2);
+  }
+}
+
+/**
+ * Load teams
+ */
+async function loadTeams(token: string): Promise<void> {
+  const useV2 = featureFlags.isEnabled('USE_API_V2_TEAMS');
+  const url = useV2 ? '/api/v2/teams' : '/api/teams';
+  const data = await fetchApiData(url, token);
+
+  if (data !== null) {
+    teams = extractArrayFromApiResponse<Team>(data, useV2);
+  }
+}
+
+/**
+ * Load employees
+ */
+async function loadEmployees(token: string): Promise<void> {
+  const useV2 = featureFlags.isEnabled('USE_API_V2_USERS');
+  const url = useV2 ? '/api/v2/users' : '/api/users';
+  const data = await fetchApiData(url, token);
+
+  if (data !== null) {
+    const allEmployees = extractArrayFromApiResponse<User>(data, useV2);
+    const currentUserId = getCurrentUserIdFromStorage();
+    employees = allEmployees.filter((emp) => emp.id !== currentUserId);
+  }
+}
+
+/**
+ * Load departments, teams, and employees
+ */
 async function loadDepartmentsAndTeams(): Promise<void> {
   const token = getAuthToken();
   if (token === null || token === '') return;
 
   try {
-    // Load departments
-    const useV2Departments = featureFlags.isEnabled('USE_API_V2_DEPARTMENTS');
-    const deptUrl = useV2Departments ? '/api/v2/departments' : '/api/departments';
-    const deptResponse = await fetch(deptUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (deptResponse.ok) {
-      const deptData = (await deptResponse.json()) as ApiV2Response<Department> | Department[];
-
-      // Safely extract departments array from response
-      if (useV2Departments && 'data' in deptData) {
-        // v2 API response structure
-        if (Array.isArray(deptData.data.data)) {
-          departments = deptData.data.data;
-        } else if (Array.isArray(deptData.data)) {
-          // Sometimes v2 API returns data directly under data
-          departments = deptData.data as unknown as Department[];
-        } else {
-          departments = [];
-        }
-      } else if (Array.isArray(deptData)) {
-        // v1 API response or direct array
-        departments = deptData;
-      } else {
-        departments = [];
-      }
-    }
-
-    // Load teams
-    const useV2Teams = featureFlags.isEnabled('USE_API_V2_TEAMS');
-    const teamUrl = useV2Teams ? '/api/v2/teams' : '/api/teams';
-    const teamResponse = await fetch(teamUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (teamResponse.ok) {
-      const teamData = (await teamResponse.json()) as ApiV2Response<Team> | Team[];
-
-      // Safely extract teams array from response
-      if (useV2Teams && 'data' in teamData) {
-        // v2 API response structure
-        if (Array.isArray(teamData.data.data)) {
-          teams = teamData.data.data;
-        } else if (Array.isArray(teamData.data)) {
-          // Sometimes v2 API returns data directly under data
-          teams = teamData.data as unknown as Team[];
-        } else {
-          teams = [];
-        }
-      } else if (Array.isArray(teamData)) {
-        // v1 API response or direct array
-        teams = teamData;
-      } else {
-        teams = [];
-      }
-    }
-
-    // Load employees for attendees
-    const useV2Users = featureFlags.isEnabled('USE_API_V2_USERS');
-    const empUrl = useV2Users ? '/api/v2/users' : '/api/users';
-    const empResponse = await fetch(empUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (empResponse.ok) {
-      const empData = (await empResponse.json()) as ApiV2Response<User> | User[];
-      let allEmployees: User[] = [];
-
-      // Safely extract employees array from response
-      if (useV2Users && 'data' in empData) {
-        // v2 API response structure
-        if (Array.isArray(empData.data.data)) {
-          allEmployees = empData.data.data;
-        } else if (Array.isArray(empData.data)) {
-          // Sometimes v2 API returns data directly under data
-          allEmployees = empData.data as unknown as User[];
-        }
-      } else if (Array.isArray(empData)) {
-        // v1 API response or direct array
-        allEmployees = empData;
-      }
-
-      // Get current user ID to exclude from employees list
-      const userStr = localStorage.getItem('user');
-      let currentUserIdLocal = 0;
-      if (userStr !== null && userStr !== '') {
-        try {
-          const user = JSON.parse(userStr) as UserData;
-          currentUserIdLocal = user.id;
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
-        }
-      }
-
-      // Only filter if we have a valid array
-      employees = allEmployees.filter((emp: User) => emp.id !== currentUserIdLocal);
-    }
+    await Promise.all([loadDepartments(token), loadTeams(token), loadEmployees(token)]);
   } catch (error: unknown) {
     console.error('Error loading departments, teams, and employees:', error);
   }
@@ -3714,6 +3677,116 @@ function closeAllDropdowns(): void {
 }
 
 // Load employees for attendees modal
+/**
+ * Setup attendees UI for employees (email input)
+ */
+function setupEmployeeAttendeesUI(): void {
+  const attendeesList = $$('#attendeesList');
+  if (attendeesList) {
+    attendeesList.innerHTML = `
+      <div class="form-group">
+        <label>Teilnehmer per E-Mail einladen:</label>
+        <input type="email" id="attendeeEmailInput" class="form-control" placeholder="email@example.com">
+        <button type="button" class="btn btn-primary mt-2" data-action="add-attendee-by-email">
+          <i class="fas fa-plus"></i> Hinzufügen
+        </button>
+        <div id="selectedAttendeesEmails" class="mt-3"></div>
+      </div>
+    `;
+  }
+
+  // Hide the add selected attendees button for employees
+  const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
+  if (addSelectedAttendeesBtn) {
+    addSelectedAttendeesBtn.style.display = 'none';
+  }
+}
+
+/**
+ * Get user display name
+ */
+function getUserDisplayName(user: User): string {
+  const firstName = user.first_name ?? '';
+  const lastName = user.last_name ?? '';
+  const fullName = `${firstName} ${lastName}`.trim();
+
+  if (fullName !== '') return fullName;
+  if (user.username !== '') return user.username;
+  return user.email;
+}
+
+/**
+ * Create attendee option element
+ */
+function createAttendeeOption(user: User): HTMLDivElement {
+  const displayName = getUserDisplayName(user);
+  const optionDiv = document.createElement('div');
+  optionDiv.className = 'attendee-option';
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.id = `attendee-${user.id}`;
+  checkbox.value = user.id.toString();
+  optionDiv.append(checkbox);
+
+  const label = document.createElement('label');
+  label.htmlFor = `attendee-${user.id}`;
+  label.textContent = `${displayName} (${user.email})`;
+  optionDiv.append(label);
+
+  return optionDiv;
+}
+
+/**
+ * Populate attendees list with users
+ */
+function populateAttendeesList(users: User[]): void {
+  const attendeesList = $$('#attendeesList');
+  if (!attendeesList) return;
+
+  // Clear existing content
+  while (attendeesList.firstChild) {
+    attendeesList.firstChild.remove();
+  }
+
+  // Add user options
+  users.forEach((user) => {
+    const optionDiv = createAttendeeOption(user);
+    attendeesList.append(optionDiv);
+  });
+}
+
+/**
+ * Setup add selected attendees button
+ */
+function setupAddAttendeesButton(): void {
+  const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
+  if (!addSelectedAttendeesBtn) return;
+
+  // Remove any existing listeners by cloning
+  const newButton = addSelectedAttendeesBtn.cloneNode(true) as HTMLButtonElement;
+  addSelectedAttendeesBtn.parentNode?.replaceChild(newButton, addSelectedAttendeesBtn);
+
+  newButton.addEventListener('click', () => {
+    console.info('Add selected attendees button clicked');
+    const checkboxes = $all('#attendeesList input[type="checkbox"]:checked') as NodeListOf<HTMLInputElement>;
+
+    selectedAttendees = [];
+    checkboxes.forEach((checkbox) => {
+      const userId = Number.parseInt(checkbox.value, 10);
+      if (!Number.isNaN(userId)) {
+        selectedAttendees.push(userId);
+      }
+    });
+
+    updateSelectedAttendees();
+    modalManager.hide('attendeesModal');
+  });
+}
+
+/**
+ * Load employees for attendees selection
+ */
 async function loadEmployeesForAttendees(): Promise<void> {
   const token = getAuthToken();
   if (token === null || token === '') return;
@@ -3721,151 +3794,36 @@ async function loadEmployeesForAttendees(): Promise<void> {
   try {
     const userRole = localStorage.getItem('userRole');
 
-    // For employees, show a simple input field instead of user list
+    // For employees, show email input instead of user list
     if (userRole === 'employee') {
-      const attendeesList = $$('#attendeesList');
-      if (attendeesList) {
-        attendeesList.innerHTML = `
-          <div class="form-group">
-            <label>Teilnehmer per E-Mail einladen:</label>
-            <input type="email" id="attendeeEmailInput" class="form-control" placeholder="email@example.com">
-            <button type="button" class="btn btn-primary mt-2" data-action="add-attendee-by-email">
-              <i class="fas fa-plus"></i> Hinzufügen
-            </button>
-            <div id="selectedAttendeesEmails" class="mt-3"></div>
-          </div>
-        `;
-      }
-      // Register event handler for add button
-      const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
-      if (addSelectedAttendeesBtn) {
-        addSelectedAttendeesBtn.style.display = 'none'; // Hide for employees
-      }
+      setupEmployeeAttendeesUI();
       return;
     }
 
-    // For admins, load user list as before
-    const useV2Users = featureFlags.isEnabled('USE_API_V2_USERS');
-    const apiUrl = useV2Users ? '/api/v2/users' : '/api/users';
+    // For admins, load and display user list
+    const useV2 = featureFlags.isEnabled('USE_API_V2_USERS');
+    const url = useV2 ? '/api/v2/users' : '/api/users';
+    const data = await fetchApiData(url, token);
 
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    if (data !== null) {
+      const users = extractArrayFromApiResponse<User>(data, useV2);
+      const currentUserId = getCurrentUserIdFromStorage();
 
-    if (response.ok) {
-      const data = (await response.json()) as ApiV2Response<User> | User[];
-      let users: User[] = [];
+      // Store employees for later use
+      employees = users.filter((user) => user.id !== currentUserId);
 
-      // Safely extract users array from response
-      if (useV2Users && 'data' in data) {
-        // v2 API response structure
-        if (Array.isArray(data.data.data)) {
-          users = data.data.data;
-        } else if (Array.isArray(data.data)) {
-          // Sometimes v2 API returns data directly under data
-          users = data.data as unknown as User[];
-        }
-      } else if (Array.isArray(data)) {
-        // v1 API response or direct array
-        users = data;
-      }
-
-      const attendeesList = $$('#attendeesList');
-
-      // Get current user ID to exclude from list
-      const userStr = localStorage.getItem('user');
-      let currentUserIdLocal = 0;
-      if (userStr !== null && userStr !== '') {
-        try {
-          const user = JSON.parse(userStr) as UserData;
-          currentUserIdLocal = user.id;
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
-        }
-      }
-
-      // Store employees for later use in updateSelectedAttendees
-      employees = users.filter((user: User) => user.id !== currentUserIdLocal);
-
-      if (attendeesList) {
-        // Clear existing content
-        while (attendeesList.firstChild) {
-          attendeesList.firstChild.remove();
-        }
-
-        employees.forEach((user: User) => {
-          // Handle both snake_case (v1) and camelCase (v2) field names
-          const firstName = user.first_name ?? '';
-          const lastName = user.last_name ?? '';
-          const displayName =
-            `${firstName} ${lastName}`.trim() !== ''
-              ? `${firstName} ${lastName}`.trim()
-              : user.username !== ''
-                ? user.username
-                : user.email;
-
-          const optionDiv = document.createElement('div');
-          optionDiv.className = 'attendee-option';
-
-          const checkbox = document.createElement('input');
-          checkbox.type = 'checkbox';
-          checkbox.id = `attendee-${user.id}`;
-          checkbox.value = user.id.toString();
-          optionDiv.append(checkbox);
-
-          const label = document.createElement('label');
-          label.htmlFor = `attendee-${user.id}`;
-          label.textContent = `${displayName} (${user.email})`;
-          optionDiv.append(label);
-
-          attendeesList.append(optionDiv);
-        });
-      }
-
-      // Re-attach event listener for the "Add Selected" button after modal content is loaded
-      const addSelectedAttendeesBtn = $$('#addSelectedAttendeesBtn');
-      if (addSelectedAttendeesBtn) {
-        // Remove any existing listeners by cloning
-        const newButton = addSelectedAttendeesBtn.cloneNode(true) as HTMLButtonElement;
-        addSelectedAttendeesBtn.parentNode?.replaceChild(newButton, addSelectedAttendeesBtn);
-
-        newButton.addEventListener('click', () => {
-          console.info('Add selected attendees button clicked');
-          const checkboxes = $all('#attendeesList input[type="checkbox"]:checked') as NodeListOf<HTMLInputElement>;
-          console.info('Found checked boxes:', checkboxes.length);
-
-          checkboxes.forEach((checkbox) => {
-            const userId = Number.parseInt(checkbox.value, 10);
-            if (!selectedAttendees.includes(userId)) {
-              selectedAttendees.push(userId);
-              console.info('Added attendee:', userId);
-            }
-          });
-
-          updateSelectedAttendees();
-          modalManager.hide('attendeesModal');
-        });
-      }
-
-      // Also re-attach the search functionality
-      const attendeeSearch = $$('#attendeeSearch');
-      if (attendeeSearch !== null) {
-        const newSearch = attendeeSearch.cloneNode(true) as HTMLInputElement;
-        attendeeSearch.parentNode?.replaceChild(newSearch, attendeeSearch);
-
-        newSearch.addEventListener('input', function (this: HTMLInputElement) {
-          searchAttendees(this.value);
-        });
-      }
+      // Populate the UI
+      populateAttendeesList(employees);
+      setupAddAttendeesButton();
     }
   } catch (error: unknown) {
-    console.error('Error loading employees:', error);
+    console.error('Error loading employees for attendees:', error);
   }
 }
 
-// Update selected attendees display
+/**
+ * Update selected attendees display
+ */
 function updateSelectedAttendees(): void {
   const container = $$('#attendeesContainer');
   if (!container) return;
@@ -3946,343 +3904,363 @@ if (typeof window !== 'undefined') {
 }
 
 /**
+ * Get modal header template
+ */
+function getModalHeaderTemplate(): string {
+  return `
+    <div class="modal-header">
+      <h2 class="modal-title">Neuer Termin</h2>
+      <button type="button" class="modal-close" data-action="close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `;
+}
+
+/**
+ * Get title and description fields template
+ */
+function getTitleDescriptionTemplate(): string {
+  return `
+    <input type="hidden" id="eventId" name="event_id" />
+    <!-- Titel und Inhalt -->
+    <div class="form-group">
+      <label for="eventTitle">
+        <i class="fas fa-heading"></i> Titel <span class="required">*</span>
+      </label>
+      <input
+        type="text"
+        class="form-control"
+        id="eventTitle"
+        name="title"
+        placeholder="Titel des Termins eingeben"
+        required
+      />
+    </div>
+    <div class="form-group">
+      <label for="eventDescription">
+        <i class="fas fa-align-left"></i> Beschreibung
+      </label>
+      <textarea
+        class="form-control"
+        id="eventDescription"
+        name="description"
+        rows="4"
+        placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
+      ></textarea>
+      <small class="form-text text-muted">
+        <i class="fas fa-info-circle"></i> Markdown-Formatierung möglich
+      </small>
+    </div>
+  `;
+}
+
+/**
+ * Get date and time fields template
+ */
+function getDateTimeTemplate(): string {
+  return `
+
+    <!-- Datum und Zeit -->
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="eventStartDate">
+          <i class="fas fa-calendar"></i> Startdatum <span class="required">*</span>
+        </label>
+        <input type="date" class="form-control" id="eventStartDate" name="start_date" required />
+      </div>
+      <div class="form-group col-md-6">
+        <label for="eventStartTime">
+          <i class="fas fa-clock"></i> Startzeit <span class="required">*</span>
+        </label>
+        <input type="time" class="form-control time-input" id="eventStartTime" name="start_time" required />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group col-md-6">
+        <label for="eventEndDate">
+          <i class="fas fa-calendar-check"></i> Enddatum <span class="required">*</span>
+        </label>
+        <input type="date" class="form-control" id="eventEndDate" name="end_date" required />
+      </div>
+      <div class="form-group col-md-6">
+        <label for="eventEndTime">
+          <i class="fas fa-clock"></i> Endzeit <span class="required">*</span>
+        </label>
+        <input type="time" class="form-control time-input" id="eventEndTime" name="end_time" required />
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="custom-control custom-checkbox">
+        <input type="checkbox" class="custom-control-input" id="eventAllDay" name="all_day" />
+        <label class="custom-control-label" for="eventAllDay">
+          <i class="fas fa-sun"></i> Ganztägiger Termin
+        </label>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Get location field template
+ */
+function getLocationTemplate(): string {
+  return `
+
+    <!-- Ort -->
+    <div class="form-group">
+      <label for="eventLocation">
+        <i class="fas fa-map-marker-alt"></i> Ort
+      </label>
+      <input
+        type="text"
+        class="form-control"
+        id="eventLocation"
+        name="location"
+        placeholder="z.B. Konferenzraum 1, Online Meeting, etc."
+      />
+    </div>
+  `;
+}
+
+/**
+ * Get organization level template
+ */
+function getOrgLevelTemplate(): string {
+  return `
+
+    <!-- Organisationseinheit -->
+    <div class="form-group">
+      <label>
+        <i class="fas fa-users"></i> Event-Ebene <span class="required">*</span>
+      </label>
+      <div class="custom-dropdown" id="orgLevelWrapper">
+        <div class="custom-select-display dropdown-display">
+          <span id="selectedOrgLevel">Firma</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="orgLevelDropdown">
+          <div class="dropdown-option" data-value="company">
+            <i class="fas fa-building"></i> Firma (Alle Mitarbeiter)
+          </div>
+          <div class="dropdown-option" data-value="department">
+            <i class="fas fa-sitemap"></i> Abteilung
+          </div>
+          <div class="dropdown-option" data-value="team">
+            <i class="fas fa-user-friends"></i> Team
+          </div>
+          <div class="dropdown-option" data-value="personal">
+            <i class="fas fa-user"></i> Persönlich
+          </div>
+        </div>
+      </div>
+      <input type="hidden" id="eventOrgLevel" name="org_level" required value="company" />
+    </div>
+  `;
+}
+
+/**
+ * Get department and team selection template
+ */
+function getDepartmentTeamTemplate(): string {
+  return `
+    <!-- Department Selection (nur bei department oder team Events) -->
+    <div class="form-group" id="departmentGroup" style="display: none;">
+      <label>
+        <i class="fas fa-sitemap"></i> Abteilung auswählen <span class="required">*</span>
+      </label>
+      <div class="custom-dropdown" id="departmentWrapper">
+        <div class="custom-select-display dropdown-display" id="departmentDisplay">
+          <span id="selectedDepartment">-- Abteilung wählen --</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="departmentDropdown">
+          <!-- Wird dynamisch befüllt -->
+        </div>
+      </div>
+      <input type="hidden" id="eventDepartmentId" name="department_id" />
+    </div>
+    <!-- Team Selection (nur bei team Events) -->
+    <div class="form-group" id="teamGroup" style="display: none;">
+      <label>
+        <i class="fas fa-user-friends"></i> Team auswählen <span class="required">*</span>
+      </label>
+      <div class="custom-dropdown" id="teamWrapper">
+        <div class="custom-select-display dropdown-display" id="teamDisplay">
+          <span id="selectedTeam">-- Team wählen --</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="teamDropdown">
+          <!-- Wird dynamisch befüllt basierend auf Department -->
+        </div>
+      </div>
+      <input type="hidden" id="eventTeamId" name="team_id" />
+    </div>
+  `;
+}
+
+/**
+ * Get attendees and response template
+ */
+function getAttendeesResponseTemplate(): string {
+  return `
+    <!-- Teilnehmer -->
+    <div class="form-group" id="attendeesGroup" style="display: block;">
+      <label>
+        <i class="fas fa-users"></i> Teilnehmer
+      </label>
+      <div id="attendeesContainer">
+        <p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>
+      </div>
+      <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn" style="display: none;">
+        <i class="fas fa-plus"></i> Teilnehmer hinzufügen
+      </button>
+    </div>
+    <!-- Statusanfrage -->
+    <div class="form-group" id="requiresResponseGroup">
+      <label>
+        <i class="fas fa-question-circle"></i> Statusanfrage
+      </label>
+      <div class="form-check form-switch">
+        <input type="checkbox" class="form-check-input" id="eventRequiresResponse" name="requires_response" />
+        <label class="form-check-label" for="eventRequiresResponse">
+          Teilnehmer müssen Zusage/Absage geben
+        </label>
+      </div>
+      <small class="form-text text-muted">
+        <i class="fas fa-info-circle"></i> Bei Aktivierung werden Teilnehmer aufgefordert, ihre Teilnahme zu bestätigen
+      </small>
+    </div>
+  `;
+}
+
+/**
+ * Get recurrence template
+ */
+function getRecurrenceTemplate(): string {
+  return `
+
+    <!-- Wiederkehrend -->
+    <div class="form-group">
+      <label>
+        <i class="fas fa-redo"></i> Wiederkehrend
+      </label>
+      <div class="custom-dropdown" id="recurrenceWrapper">
+        <div class="custom-select-display dropdown-display">
+          <span id="selectedRecurrence">Keine Wiederholung</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="recurrenceDropdown">
+          <div class="dropdown-option" data-value="">Keine Wiederholung</div>
+          <div class="dropdown-option" data-value="daily">Täglich</div>
+          <div class="dropdown-option" data-value="weekly">Wöchentlich</div>
+          <div class="dropdown-option" data-value="monthly">Monatlich</div>
+          <div class="dropdown-option" data-value="yearly">Jährlich</div>
+        </div>
+      </div>
+      <input type="hidden" id="eventRecurrence" />
+    </div>
+    <!-- Wiederkehrung Ende -->
+    <div class="form-group" id="recurrenceEndWrapper" style="display: none;">
+      <label>
+        <i class="fas fa-calendar-times"></i> Wiederkehrung endet
+      </label>
+      <div class="custom-dropdown" id="recurrenceEndTypeWrapper">
+        <div class="custom-select-display dropdown-display" data-action="toggle-recurrence-end-dropdown">
+          <span id="selectedRecurrenceEnd">Nie</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="recurrenceEndDropdown">
+          <div class="dropdown-option" data-value="never" data-action="select-recurrence-end" data-end-type="never" data-end-text="Nie">Nie</div>
+          <div class="dropdown-option" data-value="after" data-action="select-recurrence-end" data-end-type="after" data-end-text="Nach Anzahl">Nach Anzahl</div>
+          <div class="dropdown-option" data-value="until" data-action="select-recurrence-end" data-end-type="until" data-end-text="An Datum">An Datum</div>
+        </div>
+      </div>
+      <input type="hidden" id="eventRecurrenceEndType" value="never" />
+      <div class="mt-2" id="recurrenceEndDetails" style="display: none;">
+        <input type="number" class="form-control" id="eventRecurrenceCount" placeholder="Anzahl der Wiederholungen" min="1" style="display: none;" />
+        <input type="date" class="form-control" id="eventRecurrenceUntil" style="display: none;" />
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Get reminder template
+ */
+function getReminderTemplate(): string {
+  return `
+
+    <!-- Erinnerung -->
+    <div class="form-group">
+      <label>
+        <i class="fas fa-bell"></i> Erinnerung
+      </label>
+      <div class="custom-dropdown" id="reminderWrapper">
+        <div class="custom-select-display dropdown-display">
+          <span id="selectedReminder">Keine Erinnerung</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="dropdown-options" id="reminderDropdown">
+          <div class="dropdown-option" data-value="">Keine Erinnerung</div>
+          <div class="dropdown-option" data-value="15">15 Minuten vorher</div>
+          <div class="dropdown-option" data-value="30">30 Minuten vorher</div>
+          <div class="dropdown-option" data-value="60">1 Stunde vorher</div>
+          <div class="dropdown-option" data-value="1440">1 Tag vorher</div>
+        </div>
+      </div>
+      <input type="hidden" id="eventReminderTime" />
+    </div>
+  `;
+}
+
+/**
+ * Get modal footer template
+ */
+function getModalFooterTemplate(): string {
+  return `
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+      <button type="button" class="btn btn-primary" id="saveEventBtn">
+        <i class="fas fa-save"></i> Speichern
+      </button>
+    </div>
+  `;
+}
+
+/**
  * Get Event Form Modal Template
  */
 function getEventFormModalTemplate(): string {
   return `
     <div class="modal-overlay" id="eventFormModal">
       <div class="modal-container modal-lg">
-        <div class="modal-header">
-          <h2 class="modal-title">Neuer Termin</h2>
-          <button type="button" class="modal-close" data-action="close">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+        ${getModalHeaderTemplate()}
         <div class="modal-body">
           <form id="eventForm">
-            <input type="hidden" id="eventId" name="event_id" />
-
-            <!-- Titel und Inhalt -->
-            <div class="form-group">
-              <label for="eventTitle">
-                <i class="fas fa-heading"></i> Titel <span class="required">*</span>
-              </label>
-              <input
-                type="text"
-                class="form-control"
-                id="eventTitle"
-                name="title"
-                placeholder="Titel des Termins eingeben"
-                required
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="eventDescription">
-                <i class="fas fa-align-left"></i> Beschreibung
-              </label>
-              <textarea
-                class="form-control"
-                id="eventDescription"
-                name="description"
-                rows="4"
-                placeholder="Beschreibung des Termins (Markdown-Formatierung möglich)"
-              ></textarea>
-              <small class="form-text text-muted">
-                <i class="fas fa-info-circle"></i> Markdown-Formatierung möglich
-              </small>
-            </div>
-
-            <!-- Datum und Zeit -->
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="eventStartDate">
-                  <i class="fas fa-calendar"></i> Startdatum <span class="required">*</span>
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="eventStartDate"
-                  name="start_date"
-                  required
-                />
-              </div>
-              <div class="form-group col-md-6">
-                <label for="eventStartTime">
-                  <i class="fas fa-clock"></i> Startzeit <span class="required">*</span>
-                </label>
-                <input
-                  type="time"
-                  class="form-control time-input"
-                  id="eventStartTime"
-                  name="start_time"
-                  required
-                />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group col-md-6">
-                <label for="eventEndDate">
-                  <i class="fas fa-calendar-check"></i> Enddatum <span class="required">*</span>
-                </label>
-                <input
-                  type="date"
-                  class="form-control"
-                  id="eventEndDate"
-                  name="end_date"
-                  required
-                />
-              </div>
-              <div class="form-group col-md-6">
-                <label for="eventEndTime">
-                  <i class="fas fa-clock"></i> Endzeit <span class="required">*</span>
-                </label>
-                <input
-                  type="time"
-                  class="form-control time-input"
-                  id="eventEndTime"
-                  name="end_time"
-                  required
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <div class="custom-control custom-checkbox">
-                <input
-                  type="checkbox"
-                  class="custom-control-input"
-                  id="eventAllDay"
-                  name="all_day"
-                />
-                <label class="custom-control-label" for="eventAllDay">
-                  <i class="fas fa-sun"></i> Ganztägiger Termin
-                </label>
-              </div>
-            </div>
-
-            <!-- Ort -->
-            <div class="form-group">
-              <label for="eventLocation">
-                <i class="fas fa-map-marker-alt"></i> Ort
-              </label>
-              <input
-                type="text"
-                class="form-control"
-                id="eventLocation"
-                name="location"
-                placeholder="z.B. Konferenzraum 1, Online Meeting, etc."
-              />
-            </div>
-
-            <!-- Organisationseinheit -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-users"></i> Event-Ebene <span class="required">*</span>
-              </label>
-              <div class="custom-dropdown" id="orgLevelWrapper">
-                <div class="custom-select-display dropdown-display">
-                  <span id="selectedOrgLevel">Firma</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="orgLevelDropdown">
-                  <div class="dropdown-option" data-value="company">
-                    <i class="fas fa-building"></i> Firma (Alle Mitarbeiter)
-                  </div>
-                  <div class="dropdown-option" data-value="department">
-                    <i class="fas fa-sitemap"></i> Abteilung
-                  </div>
-                  <div class="dropdown-option" data-value="team">
-                    <i class="fas fa-user-friends"></i> Team
-                  </div>
-                  <div class="dropdown-option" data-value="personal">
-                    <i class="fas fa-user"></i> Persönlich
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="eventOrgLevel" name="org_level" required value="company" />
-            </div>
-
-            <!-- Department Selection (nur bei department oder team Events) -->
-            <div class="form-group" id="departmentGroup" style="display: none;">
-              <label>
-                <i class="fas fa-sitemap"></i> Abteilung auswählen <span class="required">*</span>
-              </label>
-              <div class="custom-dropdown" id="departmentWrapper">
-                <div class="custom-select-display dropdown-display" id="departmentDisplay">
-                  <span id="selectedDepartment">-- Abteilung wählen --</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="departmentDropdown">
-                  <!-- Wird dynamisch befüllt -->
-                </div>
-              </div>
-              <input type="hidden" id="eventDepartmentId" name="department_id" />
-            </div>
-
-            <!-- Team Selection (nur bei team Events) -->
-            <div class="form-group" id="teamGroup" style="display: none;">
-              <label>
-                <i class="fas fa-user-friends"></i> Team auswählen <span class="required">*</span>
-              </label>
-              <div class="custom-dropdown" id="teamWrapper">
-                <div class="custom-select-display dropdown-display" id="teamDisplay">
-                  <span id="selectedTeam">-- Team wählen --</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="teamDropdown">
-                  <!-- Wird dynamisch befüllt basierend auf Department -->
-                </div>
-              </div>
-              <input type="hidden" id="eventTeamId" name="team_id" />
-            </div>
-
-            <!-- Teilnehmer -->
-            <div class="form-group" id="attendeesGroup" style="display: block;">
-              <label>
-                <i class="fas fa-users"></i> Teilnehmer
-              </label>
-              <div id="attendeesContainer">
-                <p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>
-              </div>
-              <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn" style="display: none;">
-                <i class="fas fa-plus"></i> Teilnehmer hinzufügen
-              </button>
-            </div>
-
-            <!-- Statusanfrage -->
-            <div class="form-group" id="requiresResponseGroup">
-              <label>
-                <i class="fas fa-question-circle"></i> Statusanfrage
-              </label>
-              <div class="form-check form-switch">
-                <input
-                  type="checkbox"
-                  class="form-check-input"
-                  id="eventRequiresResponse"
-                  name="requires_response"
-                />
-                <label class="form-check-label" for="eventRequiresResponse">
-                  Teilnehmer müssen Zusage/Absage geben
-                </label>
-              </div>
-              <small class="form-text text-muted">
-                <i class="fas fa-info-circle"></i> Bei Aktivierung werden Teilnehmer aufgefordert, ihre Teilnahme zu bestätigen
-              </small>
-            </div>
-
-            <!-- Wiederkehrend -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-redo"></i> Wiederkehrend
-              </label>
-              <div class="custom-dropdown" id="recurrenceWrapper">
-                <div class="custom-select-display dropdown-display">
-                  <span id="selectedRecurrence">Keine Wiederholung</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="recurrenceDropdown">
-                  <div class="dropdown-option" data-value="">
-                    Keine Wiederholung
-                  </div>
-                  <div class="dropdown-option" data-value="daily">
-                    Täglich
-                  </div>
-                  <div class="dropdown-option" data-value="weekly">
-                    Wöchentlich
-                  </div>
-                  <div class="dropdown-option" data-value="monthly">
-                    Monatlich
-                  </div>
-                  <div class="dropdown-option" data-value="yearly">
-                    Jährlich
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="eventRecurrence" />
-            </div>
-
-            <!-- Wiederkehrung Ende -->
-            <div class="form-group" id="recurrenceEndWrapper" style="display: none;">
-              <label>
-                <i class="fas fa-calendar-times"></i> Wiederkehrung endet
-              </label>
-              <div class="custom-dropdown" id="recurrenceEndTypeWrapper">
-                <div class="custom-select-display dropdown-display" data-action="toggle-recurrence-end-dropdown">
-                  <span id="selectedRecurrenceEnd">Nie</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="recurrenceEndDropdown">
-                  <div class="dropdown-option" data-value="never" data-action="select-recurrence-end" data-end-type="never" data-end-text="Nie">
-                    Nie
-                  </div>
-                  <div class="dropdown-option" data-value="after" data-action="select-recurrence-end" data-end-type="after" data-end-text="Nach Anzahl">
-                    Nach Anzahl
-                  </div>
-                  <div class="dropdown-option" data-value="until" data-action="select-recurrence-end" data-end-type="until" data-end-text="An Datum">
-                    An Datum
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="eventRecurrenceEndType" value="never" />
-
-              <div class="mt-2" id="recurrenceEndDetails" style="display: none;">
-                <input type="number" class="form-control" id="eventRecurrenceCount" placeholder="Anzahl der Wiederholungen" min="1" style="display: none;" />
-                <input type="date" class="form-control" id="eventRecurrenceUntil" style="display: none;" />
-              </div>
-            </div>
-
-            <!-- Erinnerung -->
-            <div class="form-group">
-              <label>
-                <i class="fas fa-bell"></i> Erinnerung
-              </label>
-              <div class="custom-dropdown" id="reminderWrapper">
-                <div class="custom-select-display dropdown-display">
-                  <span id="selectedReminder">Keine Erinnerung</span>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                  </svg>
-                </div>
-                <div class="dropdown-options" id="reminderDropdown">
-                  <div class="dropdown-option" data-value="">
-                    Keine Erinnerung
-                  </div>
-                  <div class="dropdown-option" data-value="15">
-                    15 Minuten vorher
-                  </div>
-                  <div class="dropdown-option" data-value="30">
-                    30 Minuten vorher
-                  </div>
-                  <div class="dropdown-option" data-value="60">
-                    1 Stunde vorher
-                  </div>
-                  <div class="dropdown-option" data-value="1440">
-                    1 Tag vorher
-                  </div>
-                </div>
-              </div>
-              <input type="hidden" id="eventReminderTime" />
-            </div>
+            ${getTitleDescriptionTemplate()}
+            ${getDateTimeTemplate()}
+            ${getLocationTemplate()}
+            ${getOrgLevelTemplate()}
+            ${getDepartmentTeamTemplate()}
+            ${getAttendeesResponseTemplate()}
+            ${getRecurrenceTemplate()}
+            ${getReminderTemplate()}
           </form>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
-          <button type="button" class="btn btn-primary" id="saveEventBtn">
-            <i class="fas fa-save"></i> Speichern
-          </button>
-        </div>
+        ${getModalFooterTemplate()}
       </div>
     </div>
   `;
@@ -4413,6 +4391,77 @@ function getConfirmationModalTemplate(): string {
 }
 
 /**
+ * Enter fullscreen mode
+ */
+async function enterFullscreen(container: HTMLElement): Promise<void> {
+  document.body.classList.add('calendar-fullscreen-mode');
+
+  if ('requestFullscreen' in container) {
+    await container.requestFullscreen();
+  } else if ((container as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+    const elem = container as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
+    if (elem.webkitRequestFullscreen) {
+      await elem.webkitRequestFullscreen();
+    }
+  } else if ((container as HTMLElement & { msRequestFullscreen?: () => Promise<void> }).msRequestFullscreen) {
+    const elem = container as HTMLElement & { msRequestFullscreen?: () => Promise<void> };
+    if (elem.msRequestFullscreen) {
+      await elem.msRequestFullscreen();
+    }
+  }
+}
+
+/**
+ * Exit fullscreen mode
+ */
+async function exitFullscreen(): Promise<void> {
+  if ('exitFullscreen' in document) {
+    await document.exitFullscreen();
+  } else if ((document as Document & { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
+    const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
+    if (doc.webkitExitFullscreen) {
+      await doc.webkitExitFullscreen();
+    }
+  } else if ((document as Document & { msExitFullscreen?: () => Promise<void> }).msExitFullscreen) {
+    const doc = document as Document & { msExitFullscreen?: () => Promise<void> };
+    if (doc.msExitFullscreen) {
+      await doc.msExitFullscreen();
+    }
+  }
+}
+
+/**
+ * Update fullscreen button icon
+ */
+function updateFullscreenButton(button: HTMLElement, isFullscreen: boolean): void {
+  const icon = button.querySelector('i');
+  if (icon) {
+    icon.className = isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
+  }
+  button.title = isFullscreen ? 'Vollbild beenden' : 'Vollbild';
+}
+
+/**
+ * Toggle fullscreen mode
+ */
+async function toggleFullscreen(container: HTMLElement, button: HTMLElement): Promise<void> {
+  try {
+    const isFullscreen = document.fullscreenElement !== null;
+
+    if (!isFullscreen) {
+      await enterFullscreen(container);
+    } else {
+      await exitFullscreen();
+    }
+
+    updateFullscreenButton(button, !isFullscreen);
+  } catch (error: unknown) {
+    console.error('Calendar: Fullscreen error:', error);
+    showError('Vollbild-Modus konnte nicht aktiviert werden');
+  }
+}
+
+/**
  * Setup fullscreen controls for the calendar
  */
 function setupFullscreenControls(): void {
@@ -4426,82 +4475,18 @@ function setupFullscreenControls(): void {
 
   // Enter fullscreen
   fullscreenBtn.addEventListener('click', () => {
-    void (async () => {
-      try {
-        // Check if already in fullscreen
-        const isFullscreen = document.fullscreenElement !== null;
-
-        if (!isFullscreen) {
-          // Enter fullscreen mode
-          document.body.classList.add('calendar-fullscreen-mode');
-
-          // Request fullscreen
-          if ('requestFullscreen' in calendarContainer) {
-            await calendarContainer.requestFullscreen();
-          } else if (
-            (calendarContainer as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> })
-              .webkitRequestFullscreen
-          ) {
-            const elem = calendarContainer as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> };
-            if (elem.webkitRequestFullscreen) {
-              void elem.webkitRequestFullscreen();
-            }
-          } else if (
-            (calendarContainer as HTMLElement & { msRequestFullscreen?: () => Promise<void> }).msRequestFullscreen
-          ) {
-            const elem = calendarContainer as HTMLElement & { msRequestFullscreen?: () => Promise<void> };
-            if (elem.msRequestFullscreen) {
-              void elem.msRequestFullscreen();
-            }
-          }
-
-          // Update button icon
-          const icon = fullscreenBtn.querySelector('i');
-          if (icon) {
-            icon.className = 'fas fa-compress';
-          }
-          fullscreenBtn.title = 'Vollbild beenden';
-        } else {
-          // Exit fullscreen mode
-          if ('exitFullscreen' in document) {
-            await document.exitFullscreen();
-          } else if ((document as Document & { webkitExitFullscreen?: () => Promise<void> }).webkitExitFullscreen) {
-            const doc = document as Document & { webkitExitFullscreen?: () => Promise<void> };
-            if (doc.webkitExitFullscreen) {
-              await doc.webkitExitFullscreen();
-            }
-          } else if ((document as Document & { msExitFullscreen?: () => Promise<void> }).msExitFullscreen) {
-            const doc = document as Document & { msExitFullscreen?: () => Promise<void> };
-            if (doc.msExitFullscreen) {
-              await doc.msExitFullscreen();
-            }
-          }
-        }
-      } catch (error: unknown) {
-        console.error('Calendar: Fullscreen error:', error);
-        showError('Vollbild-Modus konnte nicht aktiviert werden');
-      }
-    })();
+    void toggleFullscreen(calendarContainer, fullscreenBtn);
   });
 
   // Listen for fullscreen changes
   document.addEventListener('fullscreenchange', () => {
     const isFullscreen = document.fullscreenElement !== null;
-    const icon = fullscreenBtn.querySelector('i');
 
-    if (isFullscreen) {
-      document.body.classList.add('calendar-fullscreen-mode');
-      if (icon) {
-        icon.className = 'fas fa-compress';
-      }
-      fullscreenBtn.title = 'Vollbild beenden';
-    } else {
+    if (!isFullscreen) {
       document.body.classList.remove('calendar-fullscreen-mode');
-      if (icon) {
-        icon.className = 'fas fa-expand';
-      }
-      fullscreenBtn.title = 'Vollbild';
     }
+
+    updateFullscreenButton(fullscreenBtn, isFullscreen);
 
     // Refresh calendar layout after fullscreen change
     if (typeof calendar !== 'undefined') {

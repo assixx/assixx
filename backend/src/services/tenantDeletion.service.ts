@@ -1777,125 +1777,181 @@ export class TenantDeletionService {
    * Process single tenant deletion
    * @param queueId - The queueId parameter
    */
+  private async initializeDeletion(queueId: number): Promise<number> {
+    const [queueInfo] = await query<RowDataPacket[]>(
+      'SELECT * FROM tenant_deletion_queue WHERE id = ?',
+      [queueId],
+    );
+
+    if (queueInfo.length === 0) {
+      throw new Error(`Queue item ${queueId} not found`);
+    }
+
+    const tenantId = queueInfo[0].tenant_id as number;
+
+    await transaction(async (connection) => {
+      // Mark as processing
+      await connection.query(
+        'UPDATE tenant_deletion_queue SET status = ?, started_at = NOW() WHERE id = ?',
+        ['processing', queueId],
+      );
+
+      // Update tenant status to suspended (immediate logout)
+      await connection.query(UPDATE_TENANT_STATUS_QUERY, [TENANT_STATUS_SUSPENDED, tenantId]);
+
+      // Log out all users immediately
+      await connection.query(
+        'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
+        [tenantId],
+      );
+    });
+
+    // Mark as deleting
+    await execute(UPDATE_TENANT_STATUS_QUERY, ['deleting', tenantId]);
+
+    return tenantId;
+  }
+
+  private async processStep(
+    step: DeletionStep,
+    tenantId: number,
+    queueId: number,
+    completedSteps: number,
+  ): Promise<boolean> {
+    const startTime = Date.now();
+
+    // Check for emergency stop
+    interface EmergencyCheckRow extends RowDataPacket {
+      emergency_stop: boolean;
+    }
+    const [emergencyCheckResult] = await query<EmergencyCheckRow[]>(
+      'SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?',
+      [queueId],
+    );
+
+    if (emergencyCheckResult.length > 0 && emergencyCheckResult[0].emergency_stop) {
+      logger.warn(`Emergency stop detected for queue ${queueId}`);
+      await this.handleEmergencyStop(queueId, tenantId);
+      return false;
+    }
+
+    try {
+      logger.info(`Processing deletion step: ${step.name} for tenant ${tenantId}`);
+
+      // Update current step
+      await execute(
+        'UPDATE tenant_deletion_queue SET current_step = ?, progress = ? WHERE id = ?',
+        [step.description, Math.round((completedSteps / this.steps.length) * 100), queueId],
+      );
+
+      // Execute step
+      const recordsDeleted = await transaction(async (stepConnection) => {
+        logger.debug(`Executing step ${step.name} for tenant ${tenantId}`);
+        const connWrapper = wrapConnection(stepConnection);
+        return await step.handler(tenantId, queueId, connWrapper);
+      });
+
+      // Log success
+      await execute(
+        `INSERT INTO tenant_deletion_log
+         (queue_id, step_name, table_name, records_deleted, duration_ms, status)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, 'success'],
+      );
+
+      return true;
+    } catch (error: unknown) {
+      logger.error(`Error in deletion step ${step.name}:`, error);
+
+      // Log failure
+      await execute(
+        `INSERT INTO tenant_deletion_log
+         (queue_id, step_name, table_name, duration_ms, status, error_message)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          queueId,
+          step.name,
+          step.name,
+          Date.now() - startTime,
+          'failed',
+          error instanceof Error ? error.message : String(error),
+        ],
+      );
+
+      if (step.critical) {
+        throw new Error(
+          `Critical step ${step.name} failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+
+      return true; // Continue even if non-critical step fails
+    }
+  }
+
+  private async handleDeletionError(
+    error: unknown,
+    queueId: number,
+    tenantId: number,
+  ): Promise<void> {
+    logger.error('Tenant deletion failed:', error);
+
+    // Mark as failed
+    await execute('UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?', [
+      'failed',
+      error instanceof Error ? error.message : String(error),
+      queueId,
+    ]);
+
+    // Revert tenant status
+    const [queueItemRows] = await query<RowDataPacket[]>(
+      'SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?',
+      [queueId],
+    );
+
+    if (queueItemRows.length > 0) {
+      await execute(UPDATE_TENANT_STATUS_QUERY, [
+        'active',
+        (queueItemRows[0] as unknown as QueueRow).tenant_id,
+      ]);
+    }
+
+    // Send failure alert
+    await this.sendDeletionFailureAlert(
+      queueId,
+      error instanceof Error ? error.message : String(error),
+    );
+
+    // Send critical alert to all channels
+    await alertingService.sendCriticalAlert(
+      '🚨 Tenant Deletion Failed',
+      `Critical failure during tenant deletion process`,
+      {
+        'Queue ID': queueId,
+        'Tenant ID': tenantId,
+        Error: error instanceof Error ? error.message : String(error),
+        Environment: process.env.NODE_ENV ?? 'production',
+      },
+    );
+  }
+
   private async processTenantDeletion(queueId: number): Promise<void> {
     let tenantId = 0;
 
     try {
-      // Get tenant info first
-      const [queueInfo] = await query<RowDataPacket[]>(
-        'SELECT * FROM tenant_deletion_queue WHERE id = ?',
-        [queueId],
-      );
+      // Initialize deletion
+      tenantId = await this.initializeDeletion(queueId);
 
-      if (queueInfo.length === 0) {
-        throw new Error(`Queue item ${queueId} not found`);
-      }
-
-      tenantId = queueInfo[0].tenant_id as number;
-
-      await transaction(async (connection) => {
-        // 1. Mark as processing
-        await connection.query(
-          'UPDATE tenant_deletion_queue SET status = ?, started_at = NOW() WHERE id = ?',
-          ['processing', queueId],
-        );
-
-        // 2. Update tenant status to suspended (immediate logout)
-        await connection.query(UPDATE_TENANT_STATUS_QUERY, [TENANT_STATUS_SUSPENDED, tenantId]);
-
-        // 3. Log out all users immediately
-        await connection.query(
-          'DELETE FROM user_sessions WHERE user_id IN (SELECT id FROM users WHERE tenant_id = ?)',
-          [tenantId],
-        );
-      });
-
-      // 5. Now mark as deleting
-      await execute(UPDATE_TENANT_STATUS_QUERY, ['deleting', tenantId]);
-
-      // 6. Process each step
+      // Process each step
       let completedSteps = 0;
-
       for (const step of this.steps) {
-        const startTime = Date.now();
-
-        // Check for emergency stop before each step
-        interface EmergencyCheckRow extends RowDataPacket {
-          emergency_stop: boolean;
+        const shouldContinue = await this.processStep(step, tenantId, queueId, completedSteps);
+        if (!shouldContinue) {
+          return; // Emergency stop
         }
-        const [emergencyCheckResult] = await query<EmergencyCheckRow[]>(
-          'SELECT emergency_stop FROM tenant_deletion_queue WHERE id = ?',
-          [queueId],
-        );
-
-        if (emergencyCheckResult.length > 0 && emergencyCheckResult[0].emergency_stop) {
-          logger.warn(`Emergency stop detected for queue ${queueId}`);
-          await this.handleEmergencyStop(queueId, tenantId);
-          return;
-        }
-
-        try {
-          logger.info(`Processing deletion step: ${step.name} for tenant ${tenantId}`);
-
-          // Update current step
-          await execute(
-            'UPDATE tenant_deletion_queue SET current_step = ?, progress = ? WHERE id = ?',
-            [step.description, Math.round((completedSteps / this.steps.length) * 100), queueId],
-          );
-
-          // Execute step in new connection to isolate transactions
-          let recordsDeleted = 0;
-
-          try {
-            recordsDeleted = await transaction(async (stepConnection) => {
-              logger.debug(`Executing step ${step.name} for tenant ${tenantId}`);
-
-              // Create a wrapper using the dbWrapper utility
-              const connWrapper = wrapConnection(stepConnection);
-
-              return await step.handler(tenantId, queueId, connWrapper);
-            });
-          } catch (stepError: unknown) {
-            logger.error(`Step ${step.name} failed for tenant ${tenantId}:`, stepError);
-            throw stepError;
-          }
-
-          // Log success
-          await execute(
-            `INSERT INTO tenant_deletion_log
-             (queue_id, step_name, table_name, records_deleted, duration_ms, status)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [queueId, step.name, step.name, recordsDeleted, Date.now() - startTime, 'success'],
-          );
-
-          completedSteps++;
-        } catch (error: unknown) {
-          logger.error(`Error in deletion step ${step.name}:`, error);
-
-          // Log failure
-          await execute(
-            `INSERT INTO tenant_deletion_log
-             (queue_id, step_name, table_name, duration_ms, status, error_message)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-              queueId,
-              step.name,
-              step.name,
-              Date.now() - startTime,
-              'failed',
-              error instanceof Error ? error.message : String(error),
-            ],
-          );
-
-          if (step.critical) {
-            throw new Error(
-              `Critical step ${step.name} failed: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          }
-        }
+        completedSteps++;
       }
 
-      // 7. Mark as completed
+      // Mark as completed
       await execute(
         'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW(), progress = 100 WHERE id = ?',
         ['completed', queueId],
@@ -1903,46 +1959,7 @@ export class TenantDeletionService {
 
       logger.info(`Tenant ${tenantId} deletion completed successfully`);
     } catch (error: unknown) {
-      logger.error('Tenant deletion failed:', error);
-
-      // Mark as failed
-      await execute('UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?', [
-        'failed',
-        error instanceof Error ? error.message : String(error),
-        queueId,
-      ]);
-
-      // Revert tenant status
-      const [queueItemRows] = await query<RowDataPacket[]>(
-        'SELECT tenant_id FROM tenant_deletion_queue WHERE id = ?',
-        [queueId],
-      );
-
-      if (queueItemRows.length > 0) {
-        await execute(UPDATE_TENANT_STATUS_QUERY, [
-          'active',
-          (queueItemRows[0] as unknown as QueueRow).tenant_id,
-        ]);
-      }
-
-      // Send failure alert
-      await this.sendDeletionFailureAlert(
-        queueId,
-        error instanceof Error ? error.message : String(error),
-      );
-
-      // Send critical alert to all channels
-      await alertingService.sendCriticalAlert(
-        '🚨 Tenant Deletion Failed',
-        `Critical failure during tenant deletion process`,
-        {
-          'Queue ID': queueId,
-          'Tenant ID': tenantId,
-          Error: error instanceof Error ? error.message : String(error),
-          Environment: process.env.NODE_ENV ?? 'production',
-        },
-      );
-
+      await this.handleDeletionError(error, queueId, tenantId);
       throw error;
     }
   }

@@ -145,12 +145,36 @@ export class UsersService {
    * @param userData - The userData parameter
    * @param tenantId - The tenant ID
    */
-  async createUser(userData: CreateUserBody, tenantId: number): Promise<unknown> {
-    // Check if email already exists within the same tenant
-    const existingUser = await userModel.findByEmail(userData.email, tenantId);
+  private async validateEmailUnique(email: string, tenantId: number): Promise<void> {
+    const existingUser = await userModel.findByEmail(email, tenantId);
     if (existingUser) {
       throw new ServiceError('CONFLICT', 'Email already exists', 409);
     }
+  }
+
+  private getDuplicateFieldName(errorMessage: string): string {
+    if (errorMessage.includes('email')) return 'Email';
+    if (errorMessage.includes('username')) return 'Username';
+    if (errorMessage.includes('employee_number')) return 'Employee number';
+    if (errorMessage.includes('employee_id')) return 'Employee ID';
+    return 'Field';
+  }
+
+  private handleDuplicateError(error: unknown): never {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      (error as { code: string }).code === 'ER_DUP_ENTRY'
+    ) {
+      const field = this.getDuplicateFieldName(error.message);
+      throw new ServiceError('CONFLICT', `${field} already exists`, 409);
+    }
+    throw error;
+  }
+
+  async createUser(userData: CreateUserBody, tenantId: number): Promise<unknown> {
+    // Check if email already exists
+    await this.validateEmailUnique(userData.email, tenantId);
 
     // Generate employee number if not provided
     const employeeNumber = userData.employeeNumber ?? `EMP${String(Date.now())}`;
@@ -185,23 +209,7 @@ export class UsersService {
 
       return dbToApi(sanitizeUser(createdUser));
     } catch (error: unknown) {
-      // Handle database errors
-      if (
-        error instanceof Error &&
-        'code' in error &&
-        (error as { code: string }).code === 'ER_DUP_ENTRY'
-      ) {
-        const message = error.message;
-        const field =
-          message.includes('email') ? 'Email'
-          : message.includes('username') ? 'Username'
-          : message.includes('employee_number') ? 'Employee number'
-          : message.includes('employee_id') ? 'Employee ID'
-          : 'Field';
-
-        throw new ServiceError('CONFLICT', `${field} already exists`, 409);
-      }
-      throw error;
+      return this.handleDuplicateError(error);
     }
   }
 
@@ -270,6 +278,47 @@ export class UsersService {
    * @param profileData - The profileData parameter
    * @param tenantId - The tenant ID
    */
+  private filterProfileData(dbUpdateData: Record<string, unknown>): Record<string, unknown> {
+    const filteredData: Record<string, unknown> = {};
+    const allowedFields = [
+      'first_name',
+      'last_name',
+      'phone',
+      'address',
+      'emergency_contact',
+      'emergency_phone',
+      'employee_number',
+    ] as const;
+
+    for (const field of allowedFields) {
+      // eslint-disable-next-line security/detect-object-injection -- field is from a const array of known strings, not user input
+      if (dbUpdateData[field] !== undefined) {
+        // eslint-disable-next-line security/detect-object-injection -- field is from a const array of known strings, not user input
+        filteredData[field] = dbUpdateData[field];
+      }
+    }
+
+    return filteredData;
+  }
+
+  private handleProfileDuplicateError(error: unknown): never {
+    if (
+      error instanceof Error &&
+      'code' in error &&
+      (error as { code: string }).code === 'ER_DUP_ENTRY'
+    ) {
+      const errorMessage = error.message;
+      if (errorMessage.includes('email')) {
+        throw new ServiceError('CONFLICT', 'Email already exists', 409);
+      }
+      if (errorMessage.includes('employee_number')) {
+        throw new ServiceError('CONFLICT', 'Employee number already exists', 409);
+      }
+      throw new ServiceError('CONFLICT', 'Duplicate field value', 409);
+    }
+    throw error;
+  }
+
   async updateProfile(
     userId: number,
     profileData: UpdateProfileBody,
@@ -278,31 +327,8 @@ export class UsersService {
     // Convert from camelCase to snake_case
     const dbUpdateData = apiToDb(profileData as Record<string, unknown>);
 
-    // Only allow specific fields to be updated
-    const filteredData: Record<string, unknown> = {};
-
-    // Use explicit property assignment to avoid object injection
-    if (dbUpdateData.first_name !== undefined) {
-      filteredData.first_name = dbUpdateData.first_name;
-    }
-    if (dbUpdateData.last_name !== undefined) {
-      filteredData.last_name = dbUpdateData.last_name;
-    }
-    if (dbUpdateData.phone !== undefined) {
-      filteredData.phone = dbUpdateData.phone;
-    }
-    if (dbUpdateData.address !== undefined) {
-      filteredData.address = dbUpdateData.address;
-    }
-    if (dbUpdateData.emergency_contact !== undefined) {
-      filteredData.emergency_contact = dbUpdateData.emergency_contact;
-    }
-    if (dbUpdateData.emergency_phone !== undefined) {
-      filteredData.emergency_phone = dbUpdateData.emergency_phone;
-    }
-    if (dbUpdateData.employee_number !== undefined) {
-      filteredData.employee_number = dbUpdateData.employee_number;
-    }
+    // Filter allowed fields
+    const filteredData = this.filterProfileData(dbUpdateData);
 
     try {
       // Update user
@@ -317,23 +343,7 @@ export class UsersService {
 
       return dbToApi(sanitizeUser(updatedUser));
     } catch (error: unknown) {
-      // Handle database errors
-      if (
-        error instanceof Error &&
-        'code' in error &&
-        (error as { code: string }).code === 'ER_DUP_ENTRY'
-      ) {
-        // Parse the error message to determine which field is duplicate
-        const errorMessage = (error as { message?: string }).message ?? '';
-        if (errorMessage.includes('email')) {
-          throw new ServiceError('CONFLICT', 'Email already exists', 409);
-        } else if (errorMessage.includes('employee_number')) {
-          throw new ServiceError('CONFLICT', 'Employee number already exists', 409);
-        } else {
-          throw new ServiceError('CONFLICT', 'Duplicate field value', 409);
-        }
-      }
-      throw error;
+      return this.handleProfileDuplicateError(error);
     }
   }
 

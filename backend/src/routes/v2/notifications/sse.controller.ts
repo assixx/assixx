@@ -29,21 +29,18 @@ interface NotificationData {
  * @param req - The request object
  * @param res - The response object
  */
-export function stream(req: AuthenticatedRequest, res: Response): void {
-  const { tenant_id: tenantId, role, id: userId } = req.user;
-
-  logger.info(`[SSE] Establishing connection for user ${userId} (${role}) in tenant ${tenantId}`);
-
-  // Setup SSE headers
+/**
+ * Setup SSE headers and send initial connection
+ */
+function setupSSEConnection(res: Response, userId: number, role: string, tenantId: number): void {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     Connection: 'keep-alive',
-    'X-Accel-Buffering': 'no', // Disable Nginx buffering
+    'X-Accel-Buffering': 'no',
     'Access-Control-Allow-Origin': '*',
   });
 
-  // Send initial connection event
   res.write(
     `data: ${JSON.stringify({
       type: 'CONNECTED',
@@ -51,13 +48,17 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
       user: { id: userId, role, tenantId },
     })}\n\n`,
   );
+}
 
-  // Heartbeat to keep connection alive (every 30 seconds)
-  const heartbeat = setInterval(() => {
-    res.write(': heartbeat\n\n');
-  }, 30000);
-
-  // Event handlers based on role
+/**
+ * Create notification handlers based on user role
+ */
+function createNotificationHandlers(
+  res: Response,
+  tenantId: number,
+  userId: number,
+  role: string,
+): Record<string, (data: NotificationData) => void> {
   const handlers: Record<string, (data: NotificationData) => void> = {};
 
   // Survey notifications for employees
@@ -85,10 +86,7 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
         res.write(
           `data: ${JSON.stringify({
             type: 'SURVEY_UPDATED',
-            survey: {
-              id: data.survey.id,
-              title: data.survey.title,
-            },
+            survey: { id: data.survey.id, title: data.survey.title },
             timestamp: new Date().toISOString(),
           })}\n\n`,
         );
@@ -114,7 +112,7 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
     }
   };
 
-  // KVP notifications for admins
+  // KVP and admin notifications
   if (role === 'admin' || role === 'root') {
     handlers['kvp.submitted'] = (data) => {
       if (data.tenantId === tenantId && data.kvp) {
@@ -133,7 +131,6 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
       }
     };
 
-    // Admins also get notified about new surveys (to see what employees will get)
     handlers['survey.created'] = (data) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending NEW_SURVEY_CREATED to admin ${userId}`);
@@ -152,7 +149,53 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
     };
   }
 
-  // Register all handlers
+  return handlers;
+}
+
+/**
+ * Setup cleanup handlers for connection
+ */
+function setupCleanupHandlers(
+  req: AuthenticatedRequest,
+  heartbeat: ReturnType<typeof setInterval>,
+  handlers: Record<string, (data: NotificationData) => void>,
+  userId: number,
+): void {
+  const cleanup = (): void => {
+    clearInterval(heartbeat);
+    Object.entries(handlers).forEach(([event, handler]) => {
+      eventBus.off(event, handler);
+    });
+  };
+
+  req.on('close', () => {
+    cleanup();
+    logger.info(`[SSE] Connection closed for user ${userId}`);
+  });
+
+  req.on('error', (error: Error) => {
+    logger.error(`[SSE] Connection error for user ${userId}:`, error);
+    cleanup();
+  });
+}
+
+export function stream(req: AuthenticatedRequest, res: Response): void {
+  const { tenant_id: tenantId, role, id: userId } = req.user;
+
+  logger.info(`[SSE] Establishing connection for user ${userId} (${role}) in tenant ${tenantId}`);
+
+  // Setup connection
+  setupSSEConnection(res, userId, role, tenantId);
+
+  // Heartbeat to keep connection alive
+  const heartbeat = setInterval(() => {
+    res.write(': heartbeat\n\n');
+  }, 30000);
+
+  // Create handlers
+  const handlers = createNotificationHandlers(res, tenantId, userId, role);
+
+  // Register handlers
   Object.entries(handlers).forEach(([event, handler]) => {
     eventBus.on(event, handler);
   });
@@ -161,27 +204,8 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
   const activeListeners = Object.keys(handlers).length;
   logger.info(`[SSE] User ${userId} listening to ${activeListeners} event types`);
 
-  // Cleanup on client disconnect
-  req.on('close', () => {
-    clearInterval(heartbeat);
-
-    // Remove all handlers
-    Object.entries(handlers).forEach(([event, handler]) => {
-      eventBus.off(event, handler);
-    });
-
-    logger.info(`[SSE] Connection closed for user ${userId}`);
-  });
-
-  // Handle connection errors
-  req.on('error', (error: Error) => {
-    logger.error(`[SSE] Connection error for user ${userId}:`, error);
-    clearInterval(heartbeat);
-
-    Object.entries(handlers).forEach(([event, handler]) => {
-      eventBus.off(event, handler);
-    });
-  });
+  // Setup cleanup
+  setupCleanupHandlers(req, heartbeat, handlers, userId);
 }
 
 /**

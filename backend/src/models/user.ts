@@ -476,6 +476,89 @@ export async function updateUser(
   }
 }
 
+/**
+ * Build filter conditions for user search query
+ */
+function buildFilterConditions(filters: UserFilter, values: unknown[]): string {
+  let conditions = '';
+
+  // Filter für archivierte Benutzer
+  if (filters.is_archived !== undefined) {
+    conditions += ` AND u.is_archived = ?`;
+    values.push(filters.is_archived);
+  } else {
+    conditions += ` AND u.is_archived = 0`;
+  }
+
+  // Weitere Filter hinzufügen
+  if (filters.role != null && filters.role !== '') {
+    conditions += ` AND u.role = ?`;
+    values.push(filters.role);
+  }
+
+  if (filters.department_id != null && filters.department_id !== 0) {
+    conditions += ` AND u.department_id = ?`;
+    values.push(filters.department_id);
+  }
+
+  if (filters.status != null && filters.status !== '') {
+    conditions += ` AND u.status = ?`;
+    values.push(filters.status);
+  }
+
+  if (filters.search != null && filters.search !== '') {
+    conditions += ` AND (
+          u.username LIKE ? OR
+          u.email LIKE ? OR
+          u.first_name LIKE ? OR
+          u.last_name LIKE ? OR
+          u.employee_id LIKE ?
+        )`;
+    const searchTerm = `%${filters.search}%`;
+    values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+  }
+
+  return conditions;
+}
+
+/**
+ * Build ORDER BY clause for user search query
+ */
+function buildOrderByClause(filters: UserFilter): string {
+  const validColumns = [
+    'username',
+    'email',
+    'first_name',
+    'last_name',
+    'created_at',
+    'employee_id',
+    'position',
+    'status',
+  ];
+
+  if (filters.sort_by != null && filters.sort_by !== '' && validColumns.includes(filters.sort_by)) {
+    const direction = filters.sort_dir === 'desc' ? 'DESC' : 'ASC';
+    return ` ORDER BY u.${filters.sort_by} ${direction}`;
+  }
+
+  return ` ORDER BY u.username ASC`;
+}
+
+/**
+ * Build pagination clause for user search query
+ */
+function buildPaginationClause(filters: UserFilter, values: unknown[]): string {
+  if (filters.limit != null && filters.limit !== 0) {
+    const limit = Number.parseInt(filters.limit.toString()) || 20;
+    const page = Number.parseInt((filters.page ?? 1).toString()) || 1;
+    const offset = (page - 1) * limit;
+
+    values.push(limit, offset);
+    return ` LIMIT ? OFFSET ?`;
+  }
+  return '';
+}
+
 // Neue Methode: Benutzer suchen mit Filtern
 export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
   try {
@@ -484,7 +567,7 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
       await autoResetExpiredAvailability(filters.tenant_id);
     }
 
-    let query = `
+    const baseQuery = `
         SELECT u.id, u.username, u.email, u.role, u.company,
         u.first_name, u.last_name, u.employee_id, u.created_at,
         u.department_id, u.position, u.phone, u.landline, u.employee_number, u.status, u.is_archived,
@@ -502,75 +585,13 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
 
     const values: unknown[] = [filters.tenant_id];
 
-    // Filter für archivierte Benutzer
-    if (filters.is_archived !== undefined) {
-      query += ` AND u.is_archived = ?`;
-      values.push(filters.is_archived);
-    } else {
-      // Standardmäßig nur nicht-archivierte Benutzer anzeigen
-      query += ` AND u.is_archived = 0`;
-    }
+    // Build query parts
+    const filterConditions = buildFilterConditions(filters, values);
+    const orderByClause = buildOrderByClause(filters);
+    const paginationClause = buildPaginationClause(filters, values);
 
-    // Weitere Filter hinzufügen
-    if (filters.role != null && filters.role !== '') {
-      query += ` AND u.role = ?`;
-      values.push(filters.role);
-    }
-
-    if (filters.department_id != null && filters.department_id !== 0) {
-      query += ` AND u.department_id = ?`;
-      values.push(filters.department_id);
-    }
-
-    if (filters.status != null && filters.status !== '') {
-      query += ` AND u.status = ?`;
-      values.push(filters.status);
-    }
-
-    if (filters.search != null && filters.search !== '') {
-      query += ` AND (
-          u.username LIKE ? OR
-          u.email LIKE ? OR
-          u.first_name LIKE ? OR
-          u.last_name LIKE ? OR
-          u.employee_id LIKE ?
-        )`;
-      const searchTerm = `%${filters.search}%`;
-      values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
-    }
-
-    // Sortierung hinzufügen
-    if (filters.sort_by != null && filters.sort_by !== '') {
-      const validColumns = [
-        'username',
-        'email',
-        'first_name',
-        'last_name',
-        'created_at',
-        'employee_id',
-        'position',
-        'status',
-      ];
-
-      if (validColumns.includes(filters.sort_by)) {
-        const direction = filters.sort_dir === 'desc' ? 'DESC' : 'ASC';
-        query += ` ORDER BY u.${filters.sort_by} ${direction}`;
-      } else {
-        query += ` ORDER BY u.username ASC`;
-      }
-    } else {
-      query += ` ORDER BY u.username ASC`;
-    }
-
-    // Pagination hinzufügen
-    if (filters.limit != null && filters.limit !== 0) {
-      const limit = Number.parseInt(filters.limit.toString()) || 20;
-      const page = Number.parseInt((filters.page ?? 1).toString()) || 1;
-      const offset = (page - 1) * limit;
-
-      query += ` LIMIT ? OFFSET ?`;
-      values.push(limit, offset);
-    }
+    // Combine query parts
+    const query = baseQuery + filterConditions + orderByClause + paginationClause;
 
     const [rows] = await executeQuery<DbUser[]>(query, values);
 

@@ -475,6 +475,105 @@ export async function findDocumentsByUser(userId: number): Promise<DbDocument[]>
   return await findDocumentsByUserId(userId);
 }
 
+// Helper: Build access condition SQL for documents
+function buildAccessCondition(): string {
+  return `(
+    -- Personal documents
+    (d.recipient_type = 'user' AND d.user_id = ?)
+    OR
+    -- Team documents (user is member of the team)
+    (d.recipient_type = 'team' AND d.team_id IN (
+      SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
+    ))
+    OR
+    -- Department documents (user is in the department)
+    (d.recipient_type = 'department' AND d.department_id = (
+      SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
+    ))
+    OR
+    -- Company-wide documents
+    d.recipient_type = 'company'
+  )`;
+}
+
+// Helper: Apply filter conditions to query
+function applyDocumentFilters(
+  query: string,
+  params: unknown[],
+  filters?: DocumentFilters,
+): { query: string; params: unknown[] } {
+  let updatedQuery = query;
+  const updatedParams = [...params];
+
+  if (!filters) {
+    return { query: updatedQuery, params: updatedParams };
+  }
+
+  if (filters.category != null && filters.category !== '') {
+    updatedQuery += ' AND d.category = ?';
+    updatedParams.push(filters.category);
+  }
+
+  if (filters.year != null && filters.year !== 0) {
+    updatedQuery += ' AND d.year = ?';
+    updatedParams.push(filters.year);
+  }
+
+  if (filters.month != null && filters.month !== '') {
+    updatedQuery += ' AND d.month = ?';
+    updatedParams.push(filters.month);
+  }
+
+  if (filters.isArchived !== undefined) {
+    updatedQuery += ' AND d.is_archived = ?';
+    updatedParams.push(filters.isArchived);
+  }
+
+  if (filters.searchTerm != null && filters.searchTerm !== '') {
+    updatedQuery += ' AND (d.filename LIKE ? OR d.description LIKE ?)';
+    updatedParams.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
+  }
+
+  if (filters.recipientType != null && filters.recipientType !== '') {
+    updatedQuery += ' AND d.recipient_type = ?';
+    updatedParams.push(filters.recipientType);
+  }
+
+  return { query: updatedQuery, params: updatedParams };
+}
+
+// Helper: Add ordering to query
+function addOrdering(query: string, filters?: DocumentFilters): string {
+  if (filters?.orderBy != null && filters.orderBy !== '') {
+    const validOrderFields = ['uploaded_at', 'filename', 'category', 'year', 'month'];
+    const orderField = validOrderFields.includes(filters.orderBy) ? filters.orderBy : 'uploaded_at';
+    const orderDirection = filters.orderDirection === 'ASC' ? 'ASC' : 'DESC';
+    return query + ` ORDER BY d.${orderField} ${orderDirection}`;
+  }
+  return query + ' ORDER BY d.uploaded_at DESC';
+}
+
+// Helper: Execute count query
+async function getDocumentCount(
+  tenant_id: number,
+  userId: number,
+  filters?: DocumentFilters,
+): Promise<number> {
+  const baseQuery = `
+    SELECT COUNT(DISTINCT d.id) as total
+    FROM documents d
+    LEFT JOIN users u ON d.user_id = u.id
+    LEFT JOIN teams t ON d.team_id = t.id
+    LEFT JOIN departments dept ON d.department_id = dept.id
+    WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
+
+  const baseParams: unknown[] = [tenant_id, userId, userId, tenant_id, userId, tenant_id];
+  const { query, params } = applyDocumentFilters(baseQuery, baseParams, filters);
+
+  const [countResult] = await executeQuery<CountResult[]>(query, params);
+  return countResult[0]?.total ?? 0;
+}
+
 // Find all documents accessible to an employee (personal, team, department, company)
 
 export async function findDocumentsByEmployeeWithAccess(
@@ -484,144 +583,53 @@ export async function findDocumentsByEmployeeWithAccess(
 ): Promise<{ documents: DbDocument[]; total: number }> {
   logger.info(`Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`);
 
-  let query = `
-      SELECT DISTINCT d.*,
-        u.first_name, u.last_name,
-        CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
-        t.name as team_name,
-        dept.name as department_name,
-        CASE
-          WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
-          WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
-          WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
-          WHEN d.recipient_type = 'company' THEN 'Gesamte Firma'
-          ELSE 'Unbekannt'
-        END as recipient_display
-      FROM documents d
-      LEFT JOIN users u ON d.user_id = u.id
-      LEFT JOIN teams t ON d.team_id = t.id
-      LEFT JOIN departments dept ON d.department_id = dept.id
-      WHERE d.tenant_id = ?
-        AND (
-          -- Personal documents
-          (d.recipient_type = 'user' AND d.user_id = ?)
-          OR
-          -- Team documents (user is member of the team)
-          (d.recipient_type = 'team' AND d.team_id IN (
-            SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
-          ))
-          OR
-          -- Department documents (user is in the department)
-          (d.recipient_type = 'department' AND d.department_id = (
-            SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
-          ))
-          OR
-          -- Company-wide documents
-          d.recipient_type = 'company'
-        )
-      `;
+  const baseQuery = `
+    SELECT DISTINCT d.*,
+      u.first_name, u.last_name,
+      CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+      t.name as team_name,
+      dept.name as department_name,
+      CASE
+        WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
+        WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
+        WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
+        WHEN d.recipient_type = 'company' THEN 'Gesamte Firma'
+        ELSE 'Unbekannt'
+      END as recipient_display
+    FROM documents d
+    LEFT JOIN users u ON d.user_id = u.id
+    LEFT JOIN teams t ON d.team_id = t.id
+    LEFT JOIN departments dept ON d.department_id = dept.id
+    WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
 
-  const params: unknown[] = [tenant_id, userId, userId, tenant_id, userId, tenant_id];
-
-  // Apply additional filters if provided
-  if (filters) {
-    if (filters.category != null && filters.category !== '') {
-      query += ' AND d.category = ?';
-      params.push(filters.category);
-    }
-
-    if (filters.year != null && filters.year !== 0) {
-      query += ' AND d.year = ?';
-      params.push(filters.year);
-    }
-
-    if (filters.month != null && filters.month !== '') {
-      query += ' AND d.month = ?';
-      params.push(filters.month);
-    }
-
-    if (filters.isArchived !== undefined) {
-      query += ' AND d.is_archived = ?';
-      params.push(filters.isArchived);
-    }
-
-    if (filters.searchTerm != null && filters.searchTerm !== '') {
-      query += ' AND (d.filename LIKE ? OR d.description LIKE ?)';
-      params.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
-    }
-
-    if (filters.recipientType != null && filters.recipientType !== '') {
-      query += ' AND d.recipient_type = ?';
-      params.push(filters.recipientType);
-    }
-
-    if (filters.orderBy != null && filters.orderBy !== '') {
-      const validOrderFields = ['uploaded_at', 'filename', 'category', 'year', 'month'];
-      const orderField =
-        validOrderFields.includes(filters.orderBy) ? filters.orderBy : 'uploaded_at';
-      const orderDirection = filters.orderDirection === 'ASC' ? 'ASC' : 'DESC';
-      query += ` ORDER BY d.${orderField} ${orderDirection}`;
-    } else {
-      query += ' ORDER BY d.uploaded_at DESC';
-    }
-  } else {
-    query += ' ORDER BY d.uploaded_at DESC';
-  }
+  const baseParams: unknown[] = [tenant_id, userId, userId, tenant_id, userId, tenant_id];
 
   try {
-    // Get total count first
-    let countQuery = `
-        SELECT COUNT(DISTINCT d.id) as total
-        FROM documents d
-        LEFT JOIN users u ON d.user_id = u.id
-        LEFT JOIN teams t ON d.team_id = t.id
-        LEFT JOIN departments dept ON d.department_id = dept.id
-        WHERE d.tenant_id = ?
-          AND (
-            (d.recipient_type = 'user' AND d.user_id = ?)
-            OR
-            (d.recipient_type = 'team' AND d.team_id IN (
-              SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
-            ))
-            OR
-            (d.recipient_type = 'department' AND d.department_id = (
-              SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
-            ))
-            OR
-            d.recipient_type = 'company'
-          )`;
+    // Get total count
+    const total = await getDocumentCount(tenant_id, userId, filters);
 
-    const countParams = [...params];
-
-    // Remove ordering params from count query
-    const countParamsLength = countParams.length;
-
-    const [countResult] = await executeQuery<CountResult[]>(
-      countQuery,
-      countParams.slice(0, countParamsLength),
-    );
-    const total = countResult[0]?.total ?? 0;
+    // Build main query with filters
+    const { query: filteredQuery, params } = applyDocumentFilters(baseQuery, baseParams, filters);
+    let finalQuery = addOrdering(filteredQuery, filters);
 
     // Add pagination if provided
+    const finalParams = [...params];
     if (filters?.limit != null && filters.limit !== 0) {
-      query += ' LIMIT ?';
-      params.push(filters.limit);
+      finalQuery += ' LIMIT ?';
+      finalParams.push(filters.limit);
 
       if (filters.offset != null && filters.offset !== 0) {
-        query += ' OFFSET ?';
-        params.push(filters.offset);
+        finalQuery += ' OFFSET ?';
+        finalParams.push(filters.offset);
       }
     }
 
-    const [rows] = await executeQuery<DbDocument[]>(query, params);
+    const [rows] = await executeQuery<DbDocument[]>(finalQuery, finalParams);
     logger.info(
       `Retrieved ${rows.length} accessible documents (total: ${total}) for employee ${userId}`,
     );
 
-    return {
-      documents: rows,
-      total,
-    };
+    return { documents: rows, total };
   } catch (error: unknown) {
     logger.error(
       `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`,
@@ -662,6 +670,72 @@ export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
   }
 }
 
+// Helper: Apply all document filters including date ranges
+function applyAllDocumentFilters(
+  query: string,
+  params: unknown[],
+  tenantId: number,
+  filters: DocumentFilters,
+): { query: string; params: unknown[] } {
+  let updatedQuery = query;
+  const updatedParams = [...params];
+
+  // Add user filter
+  if (filters.userId != null && filters.userId !== 0) {
+    updatedQuery += ' AND d.user_id = ?';
+    updatedParams.push(filters.userId);
+  }
+
+  // Always filter by tenant_id for security
+  updatedQuery += ' AND d.tenant_id = ?';
+  updatedParams.push(tenantId);
+
+  // Apply standard filters (reuse existing helper)
+  const { query: filteredQuery, params: filteredParams } = applyDocumentFilters(
+    updatedQuery,
+    updatedParams,
+    filters,
+  );
+
+  // Add date range filters
+  let finalQuery = filteredQuery;
+  const finalParams = [...filteredParams];
+
+  if (filters.uploadDateFrom) {
+    finalQuery += ' AND d.uploaded_at >= ?';
+    finalParams.push(filters.uploadDateFrom);
+  }
+
+  if (filters.uploadDateTo) {
+    finalQuery += ' AND d.uploaded_at <= ?';
+    finalParams.push(filters.uploadDateTo);
+  }
+
+  return { query: finalQuery, params: finalParams };
+}
+
+// Helper: Add pagination to query
+function addPagination(
+  query: string,
+  params: unknown[],
+  filters: DocumentFilters,
+): { query: string; params: unknown[] } {
+  let paginatedQuery = query;
+  const paginatedParams = [...params];
+
+  if (filters.limit != null && filters.limit !== 0) {
+    paginatedQuery += ' LIMIT ?';
+    paginatedParams.push(filters.limit);
+
+    if (filters.offset != null && filters.offset !== 0) {
+      paginatedQuery += ' OFFSET ?';
+      paginatedParams.push(filters.offset);
+    }
+  }
+
+  return { query: paginatedQuery, params: paginatedParams };
+}
+
 // Find documents with flexible filters
 
 export async function findDocumentsWithFilters(
@@ -670,151 +744,49 @@ export async function findDocumentsWithFilters(
 ): Promise<{ documents: DbDocument[]; total: number }> {
   logger.info('Finding documents with filters', filters);
 
-  let query = `
+  const baseQuery = `
       SELECT d.*, u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
       LEFT JOIN users u ON d.user_id = u.id
       WHERE 1=1`;
 
-  const params: unknown[] = [];
-
-  // Add filters
-  if (filters.userId != null && filters.userId !== 0) {
-    query += ' AND d.user_id = ?';
-    params.push(filters.userId);
-  }
-
-  // Always filter by tenant_id for security
-  query += ' AND d.tenant_id = ?';
-  params.push(tenantId);
-
-  if (filters.category != null && filters.category !== '') {
-    query += ' AND d.category = ?';
-    params.push(filters.category);
-  }
-
-  if (filters.year != null && filters.year !== 0) {
-    query += ' AND d.year = ?';
-    params.push(filters.year);
-  }
-
-  if (filters.month != null && filters.month !== '') {
-    query += ' AND d.month = ?';
-    params.push(filters.month);
-  }
-
-  if (filters.isArchived !== undefined) {
-    query += ' AND d.is_archived = ?';
-    params.push(filters.isArchived);
-  }
-
-  if (filters.searchTerm != null && filters.searchTerm !== '') {
-    query += ' AND (d.filename LIKE ? OR d.description LIKE ?)';
-    params.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
-  }
-
-  if (filters.recipientType != null && filters.recipientType !== '') {
-    query += ' AND d.recipient_type = ?';
-    params.push(filters.recipientType);
-  }
-
-  // Add date range filters
-  if (filters.uploadDateFrom) {
-    query += ' AND d.uploaded_at >= ?';
-    params.push(filters.uploadDateFrom);
-  }
-
-  if (filters.uploadDateTo) {
-    query += ' AND d.uploaded_at <= ?';
-    params.push(filters.uploadDateTo);
-  }
-
-  // Add ordering
-  if (filters.orderBy != null && filters.orderBy !== '') {
-    const validOrderFields = ['uploaded_at', 'filename', 'category', 'year', 'month'];
-    const orderField = validOrderFields.includes(filters.orderBy) ? filters.orderBy : 'uploaded_at';
-    const orderDirection = filters.orderDirection === 'ASC' ? 'ASC' : 'DESC';
-    query += ` ORDER BY d.${orderField} ${orderDirection}`;
-  } else {
-    query += ' ORDER BY d.uploaded_at DESC';
-  }
-
-  // Add pagination
-  if (filters.limit != null && filters.limit !== 0) {
-    query += ' LIMIT ?';
-    params.push(filters.limit);
-
-    if (filters.offset != null && filters.offset !== 0) {
-      query += ' OFFSET ?';
-      params.push(filters.offset);
-    }
-  }
+  const baseCountQuery = `
+      SELECT COUNT(DISTINCT d.id) as total
+      FROM documents d
+      LEFT JOIN users u ON d.user_id = u.id
+      WHERE 1=1`;
 
   try {
-    // Get total count first (without limit/offset)
-    let countQuery = `
-        SELECT COUNT(DISTINCT d.id) as total
-        FROM documents d
-        LEFT JOIN users u ON d.user_id = u.id
-        WHERE 1=1`;
+    // Apply filters to both queries
+    const { query: filteredQuery, params: queryParams } = applyAllDocumentFilters(
+      baseQuery,
+      [],
+      tenantId,
+      filters,
+    );
 
-    const countParams: unknown[] = [];
+    const { query: filteredCountQuery, params: countParams } = applyAllDocumentFilters(
+      baseCountQuery,
+      [],
+      tenantId,
+      filters,
+    );
 
-    // Add same filters for count query
-    countQuery += ' AND d.tenant_id = ?';
-    countParams.push(tenantId);
-
-    if (filters.userId != null && filters.userId !== 0) {
-      countQuery += ' AND d.user_id = ?';
-      countParams.push(filters.userId);
-    }
-
-    if (filters.category != null && filters.category !== '') {
-      countQuery += ' AND d.category = ?';
-      countParams.push(filters.category);
-    }
-
-    if (filters.year != null && filters.year !== 0) {
-      countQuery += ' AND d.year = ?';
-      countParams.push(filters.year);
-    }
-
-    if (filters.month != null && filters.month !== '') {
-      countQuery += ' AND d.month = ?';
-      countParams.push(filters.month);
-    }
-
-    if (filters.isArchived !== undefined) {
-      countQuery += ' AND d.is_archived = ?';
-      countParams.push(filters.isArchived);
-    }
-
-    if (filters.searchTerm != null && filters.searchTerm !== '') {
-      countQuery += ' AND (d.filename LIKE ? OR d.description LIKE ?)';
-      countParams.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
-    }
-
-    if (filters.recipientType != null && filters.recipientType !== '') {
-      countQuery += ' AND d.recipient_type = ?';
-      countParams.push(filters.recipientType);
-    }
-
-    if (filters.uploadDateFrom) {
-      countQuery += ' AND d.uploaded_at >= ?';
-      countParams.push(filters.uploadDateFrom);
-    }
-
-    if (filters.uploadDateTo) {
-      countQuery += ' AND d.uploaded_at <= ?';
-      countParams.push(filters.uploadDateTo);
-    }
-
-    const [countResult] = await executeQuery<CountResult[]>(countQuery, countParams);
+    // Get total count
+    const [countResult] = await executeQuery<CountResult[]>(filteredCountQuery, countParams);
     const total = countResult[0]?.total ?? 0;
 
-    // Get documents with limit/offset
-    const [rows] = await executeQuery<DbDocument[]>(query, params);
+    // Add ordering and pagination to main query
+    const orderedQuery = addOrdering(filteredQuery, filters);
+    const { query: finalQuery, params: finalParams } = addPagination(
+      orderedQuery,
+      queryParams,
+      filters,
+    );
+
+    // Get documents
+    const [rows] = await executeQuery<DbDocument[]>(finalQuery, finalParams);
     logger.info(`Found ${rows.length} documents (total: ${total}) with filters`);
 
     return {

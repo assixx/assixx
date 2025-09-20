@@ -98,6 +98,7 @@ class ChatClient {
   private emojiCategories: EmojiCategories;
   private isCreatingConversation = false;
   private apiClient: ApiClient;
+  // eslint-disable-next-line max-lines-per-function
   constructor() {
     this.ws = null;
     this.token = getAuthToken();
@@ -821,6 +822,7 @@ class ChatClient {
         '🌙',
         '☀️',
         '🌤️',
+        // eslint-disable-next-line max-lines
         '⛅',
         '🌥️',
         '🌦️',
@@ -1187,7 +1189,13 @@ class ChatClient {
   handleNewMessage(data: { message: Message; conversationId: number }): void {
     const { message, conversationId } = data;
 
-    // Ensure message has proper sender object structure
+    this.ensureMessageHasSender(message);
+    this.updateConversationWithMessage(message, conversationId);
+    this.handleMessageInCurrentConversation(message, conversationId);
+    this.handleNewMessageNotifications(message);
+  }
+
+  private ensureMessageHasSender(message: Message): void {
     interface MessageWithExtra extends Message {
       sender_name?: string;
       username?: string;
@@ -1204,8 +1212,8 @@ class ChatClient {
         first_name: msgWithExtra.first_name,
         last_name: msgWithExtra.last_name,
         profile_picture_url: msgWithExtra.profile_image_url ?? msgWithExtra.profile_picture_url,
-        role: 'employee', // Default role
-        tenant_id: 0, // Will be set by backend
+        role: 'employee',
+        tenant_id: 0,
         email: '',
         created_at: '',
         updated_at: '',
@@ -1213,62 +1221,68 @@ class ChatClient {
         is_archived: false,
       };
     }
+  }
 
-    // Update conversation in list
+  private updateConversationWithMessage(message: Message, conversationId: number): void {
     const conversation = this.conversations.find((c) => c.id === conversationId);
-    if (conversation) {
-      conversation.last_message = message;
-      conversation.updated_at = message.created_at;
-
-      // Increment unread count if not current conversation
-      if (conversationId !== this.currentConversationId) {
-        conversation.unread_count = (conversation.unread_count ?? 0) + 1;
-      }
-
-      // Re-sort conversations
-      this.conversations.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
-
-      this.renderConversationList();
+    if (!conversation) {
+      return;
     }
 
-    // Display message if in current conversation
-    if (conversationId === this.currentConversationId) {
-      if (message.sender_id === this.currentUserId) {
-        // For our own messages, we need to replace the temporary message
-        // Find and remove the temporary message with matching content
-        const messagesContainer = $$('#messagesContainer');
-        if (messagesContainer) {
-          const tempMessages = messagesContainer.querySelectorAll('.message.own');
-          tempMessages.forEach((msg) => {
-            const msgText = msg.querySelector('.message-text')?.textContent;
-            if (msgText === message.content && ((msg as HTMLElement).dataset.messageId?.length ?? 0) > 10) {
-              // Remove temporary message (IDs > 10 chars are timestamps)
-              msg.remove();
-            }
-          });
-        }
-        // Display the real message from server
-        this.displayMessage(message);
-      } else {
-        // Display messages from other users
-        this.displayMessage(message);
-        this.markMessageAsRead(message.id);
+    conversation.last_message = message;
+    conversation.updated_at = message.created_at;
 
-        // Show notification if window is not focused
-        if (!document.hasFocus()) {
-          this.showDesktopNotification(message);
-        }
-      }
+    if (conversationId !== this.currentConversationId) {
+      conversation.unread_count = (conversation.unread_count ?? 0) + 1;
     }
 
-    // Play notification sound if from another user
-    if (message.sender_id !== this.currentUserId) {
-      void this.playNotificationSound();
+    this.conversations.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    this.renderConversationList();
+  }
 
-      // Update the unread messages badge in the sidebar
-      if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
-        void window.unifiedNav.updateUnreadMessages();
+  private handleMessageInCurrentConversation(message: Message, conversationId: number): void {
+    if (conversationId !== this.currentConversationId) {
+      return;
+    }
+
+    if (message.sender_id === this.currentUserId) {
+      this.replaceTemporaryMessage(message);
+    } else {
+      this.displayMessage(message);
+      this.markMessageAsRead(message.id);
+
+      if (!document.hasFocus()) {
+        this.showDesktopNotification(message);
       }
+    }
+  }
+
+  private replaceTemporaryMessage(message: Message): void {
+    const messagesContainer = $$('#messagesContainer');
+    if (!messagesContainer) {
+      this.displayMessage(message);
+      return;
+    }
+
+    const tempMessages = messagesContainer.querySelectorAll('.message.own');
+    tempMessages.forEach((msg) => {
+      const msgText = msg.querySelector('.message-text')?.textContent;
+      if (msgText === message.content && ((msg as HTMLElement).dataset.messageId?.length ?? 0) > 10) {
+        msg.remove();
+      }
+    });
+    this.displayMessage(message);
+  }
+
+  private handleNewMessageNotifications(message: Message): void {
+    if (message.sender_id === this.currentUserId) {
+      return;
+    }
+
+    void this.playNotificationSound();
+
+    if (window.unifiedNav && typeof window.unifiedNav.updateUnreadMessages === 'function') {
+      void window.unifiedNav.updateUnreadMessages();
     }
   }
 
@@ -1526,34 +1540,34 @@ class ChatClient {
     const messagesContainer = $$('#messagesContainer');
     if (!messagesContainer) return;
 
-    // Handle both camelCase and snake_case for created_at/createdAt
+    const messageDate = this.getValidMessageDate(message);
+    if (messageDate === null) return;
+
+    this.handleDateSeparator(messageDate, messagesContainer);
+    this.continueDisplayMessage(message, messageDate);
+  }
+
+  private getValidMessageDate(message: Message): string | null {
     const createdAt = message.createdAt ?? message.created_at;
     if (createdAt === '') {
       console.warn('Message without created date:', message);
-      return;
+      return null;
     }
 
-    // Check if we need to add a date separator
     const parsedDate = new Date(createdAt);
     if (Number.isNaN(parsedDate.getTime())) {
       console.error('Invalid date for message:', createdAt, message);
-      return;
+      return null;
     }
-    const messageDate = parsedDate.toLocaleDateString('de-DE');
+
+    return parsedDate.toLocaleDateString('de-DE');
+  }
+
+  private handleDateSeparator(messageDate: string, messagesContainer: HTMLElement): void {
     const messages = messagesContainer.querySelectorAll('.message');
     const lastMessage = messages[messages.length - 1] as HTMLElement;
 
-    // Check if a date separator for this date already exists
-    const existingSeparators = messagesContainer.querySelectorAll('.date-separator');
-    const separatorExists = [...existingSeparators].some((separator) => {
-      const separatorText = separator.textContent !== '' ? separator.textContent.trim() : '';
-      // Check if separator matches the date or "Heute" or "Gestern"
-      return (
-        separatorText === messageDate ||
-        (separatorText === 'Heute' && this.isToday(messageDate)) ||
-        (separatorText === 'Gestern' && this.isYesterday(messageDate))
-      );
-    });
+    const separatorExists = this.checkDateSeparatorExists(messageDate, messagesContainer);
 
     if (!separatorExists) {
       if (messages.length > 0) {
@@ -1562,10 +1576,26 @@ class ChatClient {
           this.addDateSeparator(messageDate, messagesContainer);
         }
       } else {
-        // First message in conversation
         this.addDateSeparator(messageDate, messagesContainer);
       }
     }
+  }
+
+  private checkDateSeparatorExists(messageDate: string, messagesContainer: HTMLElement): boolean {
+    const existingSeparators = messagesContainer.querySelectorAll('.date-separator');
+    return [...existingSeparators].some((separator) => {
+      const separatorText = separator.textContent !== '' ? separator.textContent.trim() : '';
+      return (
+        separatorText === messageDate ||
+        (separatorText === 'Heute' && this.isToday(messageDate)) ||
+        (separatorText === 'Gestern' && this.isYesterday(messageDate))
+      );
+    });
+  }
+
+  private continueDisplayMessage(message: Message, messageDate: string): void {
+    const messagesContainer = $$('#messagesContainer');
+    if (!messagesContainer) return;
 
     // Handle both snake_case and camelCase for sender_id/senderId
     const senderId = message.senderId ?? message.sender_id;
@@ -1576,6 +1606,7 @@ class ChatClient {
     messageDiv.dataset.date = messageDate;
 
     // Use same createdAt variable that handles both formats
+    const createdAt = message.createdAt ?? message.created_at;
     const time = new Date(createdAt).toLocaleTimeString('de-DE', {
       hour: '2-digit',
       minute: '2-digit',
@@ -2025,118 +2056,170 @@ class ChatClient {
     }
 
     this.conversations.forEach((conversation) => {
-      const item = document.createElement('div');
-      item.className = 'conversation-item';
-      item.dataset.conversationId = conversation.id.toString();
-
-      if (conversation.id === this.currentConversationId) {
-        item.classList.add('active');
-      }
-
-      // Add unread class if conversation has unread messages
-      if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
-        item.classList.add('unread');
-      }
-
-      const displayName = conversation.is_group
-        ? (conversation.name ?? 'Gruppenchat')
-        : this.getConversationDisplayName(conversation);
-
-      let lastMessageText = 'Keine Nachrichten';
-      if (conversation.last_message?.content !== undefined && conversation.last_message.content !== '') {
-        // Truncate message to one line (max ~40 chars)
-        const content = conversation.last_message.content;
-        lastMessageText = content.length > 40 ? `${content.substring(0, 37)}...` : content;
-      }
-
-      const lastMessageTime = conversation.last_message ? this.formatTime(conversation.last_message.created_at) : '';
-
-      // Get avatar HTML
-      let avatarHtml = '';
-      if (!conversation.is_group) {
-        const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
-        if (otherParticipant) {
-          if (
-            (otherParticipant.profile_picture_url !== undefined && otherParticipant.profile_picture_url !== '') ||
-            (otherParticipant.profile_image_url !== undefined && otherParticipant.profile_image_url !== '')
-          ) {
-            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? null;
-            if (imgUrl !== null && imgUrl !== '') {
-              avatarHtml = `<img src="${imgUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-            } else {
-              const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
-              avatarHtml = initials;
-            }
-          } else if (
-            (otherParticipant.first_name !== undefined && otherParticipant.first_name !== '') ||
-            (otherParticipant.last_name !== undefined && otherParticipant.last_name !== '')
-          ) {
-            const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
-            avatarHtml = initials;
-          } else {
-            avatarHtml = '<i class="fas fa-user"></i>';
-          }
-        } else {
-          avatarHtml = '<i class="fas fa-user"></i>';
-        }
-      } else {
-        // Group chat
-        avatarHtml = '<i class="fas fa-users"></i>';
-      }
-
-      // Clear existing content
-      while (item.firstChild) {
-        item.firstChild.remove();
-      }
-
-      // Build conversation item with DOM methods
-      const avatarDiv = document.createElement('div');
-      avatarDiv.className = 'conversation-avatar';
-      // Create icon element instead of using innerHTML
-      const iconElement = document.createElement('i');
-      if (avatarHtml.includes('fa-users')) {
-        iconElement.className = 'fas fa-users';
-      } else {
-        iconElement.className = 'fas fa-user';
-      }
-      avatarDiv.append(iconElement);
-
-      const infoDiv = document.createElement('div');
-      infoDiv.className = 'conversation-info';
-
-      const nameDiv = document.createElement('div');
-      nameDiv.className = 'conversation-name';
-      nameDiv.textContent = displayName;
-
-      const lastMessageDiv = document.createElement('div');
-      lastMessageDiv.className = 'conversation-last-message';
-      lastMessageDiv.textContent = lastMessageText;
-
-      infoDiv.append(nameDiv, lastMessageDiv);
-
-      const metaDiv = document.createElement('div');
-      metaDiv.className = 'conversation-meta';
-
-      const timeDiv = document.createElement('div');
-      timeDiv.className = 'conversation-time';
-      timeDiv.textContent = lastMessageTime;
-
-      metaDiv.append(timeDiv);
-      if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
-        const badgeSpan = document.createElement('span');
-        badgeSpan.className = 'unread-count';
-        badgeSpan.textContent = conversation.unread_count.toString();
-        metaDiv.append(badgeSpan);
-      }
-
-      item.append(avatarDiv, infoDiv, metaDiv);
-
-      item.addEventListener('click', () => {
-        void this.selectConversation(conversation.id);
-      });
-
+      const item = this.createConversationItem(conversation);
       conversationsList.append(item);
     });
+  }
+
+  private createConversationItem(conversation: Conversation): HTMLDivElement {
+    const item = document.createElement('div');
+    item.className = 'conversation-item';
+    item.dataset.conversationId = conversation.id.toString();
+
+    this.applyConversationState(item, conversation);
+
+    const displayName = this.getConversationName(conversation);
+    const lastMessageText = this.getLastMessageText(conversation);
+    const lastMessageTime = this.getLastMessageTime(conversation);
+    const avatarHtml = this.getAvatarHtml(conversation, displayName);
+
+    this.buildConversationItemDOM(item, avatarHtml, displayName, lastMessageText, lastMessageTime, conversation);
+
+    item.addEventListener('click', () => {
+      void this.selectConversation(conversation.id);
+    });
+
+    return item;
+  }
+
+  private applyConversationState(item: HTMLDivElement, conversation: Conversation): void {
+    if (conversation.id === this.currentConversationId) {
+      item.classList.add('active');
+    }
+
+    if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
+      item.classList.add('unread');
+    }
+  }
+
+  private getConversationName(conversation: Conversation): string {
+    return conversation.is_group ? (conversation.name ?? 'Gruppenchat') : this.getConversationDisplayName(conversation);
+  }
+
+  private getLastMessageText(conversation: Conversation): string {
+    if (conversation.last_message?.content !== undefined && conversation.last_message.content !== '') {
+      const content = conversation.last_message.content;
+      return content.length > 40 ? `${content.substring(0, 37)}...` : content;
+    }
+    return 'Keine Nachrichten';
+  }
+
+  private getLastMessageTime(conversation: Conversation): string {
+    return conversation.last_message ? this.formatTime(conversation.last_message.created_at) : '';
+  }
+
+  private getAvatarHtml(conversation: Conversation, displayName: string): string {
+    if (conversation.is_group) {
+      return '<i class="fas fa-users"></i>';
+    }
+
+    const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
+    if (!otherParticipant) {
+      return '<i class="fas fa-user"></i>';
+    }
+
+    return this.getParticipantAvatarHtml(otherParticipant, displayName);
+  }
+
+  private getParticipantAvatarHtml(participant: ChatUser, displayName: string): string {
+    const profileUrl = this.getProfileImageUrl(participant);
+
+    if (profileUrl !== null && profileUrl !== '') {
+      return `<img src="${profileUrl}" alt="${this.escapeHtml(displayName)}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+    }
+
+    if (this.hasName(participant)) {
+      return this.getInitials(participant.first_name, participant.last_name);
+    }
+
+    return '<i class="fas fa-user"></i>';
+  }
+
+  private getProfileImageUrl(participant: ChatUser): string | null {
+    if (participant.profile_picture_url !== undefined && participant.profile_picture_url !== '') {
+      return participant.profile_picture_url;
+    }
+    if (participant.profile_image_url !== undefined && participant.profile_image_url !== '') {
+      return participant.profile_image_url;
+    }
+    return null;
+  }
+
+  private hasName(participant: ChatUser): boolean {
+    return (
+      (participant.first_name !== undefined && participant.first_name !== '') ||
+      (participant.last_name !== undefined && participant.last_name !== '')
+    );
+  }
+
+  private buildConversationItemDOM(
+    item: HTMLDivElement,
+    avatarHtml: string,
+    displayName: string,
+    lastMessageText: string,
+    lastMessageTime: string,
+    conversation: Conversation,
+  ): void {
+    while (item.firstChild) {
+      item.firstChild.remove();
+    }
+
+    const avatarDiv = this.createAvatarElement(avatarHtml);
+    const infoDiv = this.createInfoElement(displayName, lastMessageText);
+    const metaDiv = this.createMetaElement(lastMessageTime, conversation);
+
+    item.append(avatarDiv, infoDiv, metaDiv);
+  }
+
+  private createAvatarElement(avatarHtml: string): HTMLDivElement {
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'conversation-avatar';
+
+    const iconElement = document.createElement('i');
+    if (avatarHtml.includes('fa-users')) {
+      iconElement.className = 'fas fa-users';
+    } else {
+      iconElement.className = 'fas fa-user';
+    }
+    avatarDiv.append(iconElement);
+
+    return avatarDiv;
+  }
+
+  private createInfoElement(displayName: string, lastMessageText: string): HTMLDivElement {
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'conversation-info';
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'conversation-name';
+    nameDiv.textContent = displayName;
+
+    const lastMessageDiv = document.createElement('div');
+    lastMessageDiv.className = 'conversation-last-message';
+    lastMessageDiv.textContent = lastMessageText;
+
+    infoDiv.append(nameDiv, lastMessageDiv);
+    return infoDiv;
+  }
+
+  private createMetaElement(lastMessageTime: string, conversation: Conversation): HTMLDivElement {
+    const metaDiv = document.createElement('div');
+    metaDiv.className = 'conversation-meta';
+
+    const timeDiv = document.createElement('div');
+    timeDiv.className = 'conversation-time';
+    timeDiv.textContent = lastMessageTime;
+
+    metaDiv.append(timeDiv);
+
+    if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
+      const badgeSpan = document.createElement('span');
+      badgeSpan.className = 'unread-count';
+      badgeSpan.textContent = conversation.unread_count.toString();
+      metaDiv.append(badgeSpan);
+    }
+
+    return metaDiv;
   }
 
   renderChatHeader(): void {
@@ -2149,69 +2232,91 @@ class ChatClient {
     const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
     if (!conversation) return;
 
-    const displayName = conversation.is_group
-      ? (conversation.name ?? 'Gruppenchat')
-      : this.getConversationDisplayName(conversation);
+    const displayName = this.getChatDisplayName(conversation);
+    this.updateChatName(chatPartnerName, displayName);
+    this.updateChatAvatarAndStatus(chatAvatar, chatPartnerStatus, conversation, displayName);
+  }
 
-    // Update name
+  private getChatDisplayName(conversation: Conversation): string {
+    return conversation.is_group ? (conversation.name ?? 'Gruppenchat') : this.getConversationDisplayName(conversation);
+  }
+
+  private updateChatName(chatPartnerName: HTMLElement | null, displayName: string): void {
     if (chatPartnerName) {
       chatPartnerName.textContent = displayName;
     }
+  }
 
-    // Update avatar and status
-    if (chatAvatar) {
-      if (!conversation.is_group) {
-        const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
-        if (otherParticipant) {
-          // Show profile picture if available
-          if (
-            (otherParticipant.profile_picture_url !== undefined && otherParticipant.profile_picture_url !== '') ||
-            (otherParticipant.profile_image_url !== undefined && otherParticipant.profile_image_url !== '')
-          ) {
-            const imgUrl = otherParticipant.profile_picture_url ?? otherParticipant.profile_image_url ?? null;
-            if (imgUrl !== null && imgUrl !== '') {
-              // Clear existing content
-              while (chatAvatar.firstChild) {
-                chatAvatar.firstChild.remove();
-              }
-              // Create image element safely
-              const img = document.createElement('img');
-              img.src = imgUrl;
-              img.alt = displayName;
-              img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
-              chatAvatar.append(img);
-            } else {
-              // Show initials as fallback
-              const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
-              chatAvatar.textContent = initials;
-            }
-            chatAvatar.style.display = 'flex';
-          } else if (
-            (otherParticipant.first_name !== undefined && otherParticipant.first_name !== '') ||
-            (otherParticipant.last_name !== undefined && otherParticipant.last_name !== '')
-          ) {
-            // Show initials
-            const initials = this.getInitials(otherParticipant.first_name, otherParticipant.last_name);
-            chatAvatar.textContent = initials;
-            chatAvatar.style.display = 'flex';
-          } else {
-            // Hide avatar if no data
-            chatAvatar.style.display = 'none';
-          }
+  private updateChatAvatarAndStatus(
+    chatAvatar: HTMLElement | null,
+    chatPartnerStatus: HTMLElement | null,
+    conversation: Conversation,
+    displayName: string,
+  ): void {
+    if (!chatAvatar) return;
 
-          // Update status
-          if (chatPartnerStatus) {
-            chatPartnerStatus.textContent = this.getRoleDisplayName(otherParticipant.role);
-          }
-        }
-      } else {
-        // Group chat
-        chatAvatar.innerHTML = '<i class="fas fa-users"></i>';
-        chatAvatar.style.display = 'flex';
-        if (chatPartnerStatus) {
-          chatPartnerStatus.textContent = 'Gruppenchat';
-        }
-      }
+    if (conversation.is_group) {
+      this.setGroupChatAvatar(chatAvatar, chatPartnerStatus);
+    } else {
+      this.setIndividualChatAvatar(chatAvatar, chatPartnerStatus, conversation, displayName);
+    }
+  }
+
+  private setGroupChatAvatar(chatAvatar: HTMLElement, chatPartnerStatus: HTMLElement | null): void {
+    chatAvatar.innerHTML = '<i class="fas fa-users"></i>';
+    chatAvatar.style.display = 'flex';
+    if (chatPartnerStatus) {
+      chatPartnerStatus.textContent = 'Gruppenchat';
+    }
+  }
+
+  private setIndividualChatAvatar(
+    chatAvatar: HTMLElement,
+    chatPartnerStatus: HTMLElement | null,
+    conversation: Conversation,
+    displayName: string,
+  ): void {
+    const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
+    if (!otherParticipant) return;
+
+    this.updateAvatarDisplay(chatAvatar, otherParticipant, displayName);
+    this.updatePartnerStatus(chatPartnerStatus, otherParticipant);
+  }
+
+  private updateAvatarDisplay(chatAvatar: HTMLElement, participant: ChatUser, displayName: string): void {
+    const profileUrl = this.getProfileImageUrl(participant);
+
+    if (profileUrl !== null && profileUrl !== '') {
+      this.displayAvatarImage(chatAvatar, profileUrl, displayName);
+    } else if (this.hasName(participant)) {
+      this.displayAvatarInitials(chatAvatar, participant);
+    } else {
+      chatAvatar.style.display = 'none';
+    }
+  }
+
+  private displayAvatarImage(chatAvatar: HTMLElement, imgUrl: string, displayName: string): void {
+    while (chatAvatar.firstChild) {
+      chatAvatar.firstChild.remove();
+    }
+
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.alt = displayName;
+    img.style.cssText = 'width: 100%; height: 100%; border-radius: 50%; object-fit: cover;';
+    chatAvatar.append(img);
+    chatAvatar.style.display = 'flex';
+  }
+
+  private displayAvatarInitials(chatAvatar: HTMLElement, participant: ChatUser): void {
+    const initials = this.getInitials(participant.first_name, participant.last_name);
+    chatAvatar.textContent = initials;
+    chatAvatar.style.display = 'flex';
+  }
+
+  private updatePartnerStatus(chatPartnerStatus: HTMLElement | null, participant: ChatUser): void {
+    if (chatPartnerStatus) {
+      chatPartnerStatus.textContent = this.getRoleDisplayName(participant.role);
     }
   }
 
@@ -2561,7 +2666,6 @@ class ChatClient {
   }
 
   async createConversation(): Promise<void> {
-    // Prevent duplicate calls
     if (this.isCreatingConversation) {
       console.info('Already creating conversation, ignoring duplicate call');
       return;
@@ -2570,98 +2674,132 @@ class ChatClient {
     this.isCreatingConversation = true;
 
     try {
-      // Get selected recipient based on active tab
-      const activeTab = $$('.chat-type-tab.active');
-      const tabType = activeTab?.dataset.type;
-
-      let selectedUserId: number | null = null;
-
-      if (tabType === 'employee') {
-        const employeeInput = $$('#selectedEmployee') as HTMLInputElement | null;
-        selectedUserId =
-          employeeInput?.value !== undefined && employeeInput.value !== ''
-            ? Number.parseInt(employeeInput.value, 10)
-            : null;
-      } else if (tabType === 'admin') {
-        const adminInput = $$('#selectedAdmin') as HTMLInputElement | null;
-        selectedUserId =
-          adminInput?.value !== undefined && adminInput.value !== '' ? Number.parseInt(adminInput.value, 10) : null;
-      }
-
-      if (selectedUserId === null || selectedUserId === 0) {
+      const selectedUserId = this.getSelectedUserId();
+      if (selectedUserId === null) {
         this.showNotification('Bitte wählen Sie einen Empfänger aus', 'warning');
         this.isCreatingConversation = false;
         return;
       }
 
-      // For now, we only support 1:1 chats
-      const isGroup = false;
-      const groupNameInput = $$('#groupChatName') as HTMLInputElement | null;
-      const groupName = groupNameInput?.value.trim() ?? null;
-      const requestBody: { participantIds: number[]; isGroup: boolean; name?: string } = {
-        participantIds: [selectedUserId],
-        isGroup,
-      };
-
-      // Only add name for group chats
-      if (groupName !== null && groupName !== '') {
-        requestBody.name = groupName;
-      }
-
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
-
-      if (useV2) {
-        // v2 API returns { conversation: { id, ... } } directly (apiClient unwraps success wrapper)
-        const response = await this.apiClient.request<{ conversation: { id: number } }>('/chat/conversations', {
-          method: 'POST',
-          body: JSON.stringify(requestBody),
-        });
-
-        if (response.conversation.id !== 0) {
-          this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
-          this.closeModal('newConversationModal');
-
-          // Reload conversations
-          await this.loadInitialData();
-
-          // Select new conversation
-          void this.selectConversation(response.conversation.id);
-        } else {
-          throw new Error('Failed to create conversation');
-        }
-      } else {
-        // v1 API - legacy code
-        const response = await fetch('/api/chat/conversations', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${this.token ?? ''}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        if (response.ok) {
-          const result = (await response.json()) as { id: number };
-
-          this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
-          this.closeModal('newConversationModal');
-
-          // Reload conversations
-          await this.loadInitialData();
-
-          // Select new conversation
-          void this.selectConversation(result.id);
-        } else {
-          const error = (await response.json()) as { error?: string };
-          throw new Error(error.error ?? `HTTP error! status: ${response.status}`);
-        }
-      }
+      const requestBody = this.buildConversationRequest(selectedUserId);
+      await this.sendConversationRequest(requestBody);
     } catch (error) {
       console.error('❌ Error creating conversation:', error);
       this.showNotification(error instanceof Error ? error.message : 'Fehler beim Erstellen der Unterhaltung', 'error');
     } finally {
       this.isCreatingConversation = false;
     }
+  }
+
+  private getSelectedUserId(): number | null {
+    const activeTab = $$('.chat-type-tab.active');
+    const tabType = activeTab?.dataset.type;
+
+    if (tabType === 'employee') {
+      return this.getEmployeeUserId();
+    } else if (tabType === 'admin') {
+      return this.getAdminUserId();
+    }
+
+    return null;
+  }
+
+  private getEmployeeUserId(): number | null {
+    const employeeInput = $$('#selectedEmployee') as HTMLInputElement | null;
+    if (employeeInput?.value !== undefined && employeeInput.value !== '') {
+      return Number.parseInt(employeeInput.value, 10);
+    }
+    return null;
+  }
+
+  private getAdminUserId(): number | null {
+    const adminInput = $$('#selectedAdmin') as HTMLInputElement | null;
+    if (adminInput?.value !== undefined && adminInput.value !== '') {
+      return Number.parseInt(adminInput.value, 10);
+    }
+    return null;
+  }
+
+  private buildConversationRequest(selectedUserId: number): {
+    participantIds: number[];
+    isGroup: boolean;
+    name?: string;
+  } {
+    const isGroup = false;
+    const groupNameInput = $$('#groupChatName') as HTMLInputElement | null;
+    const groupName = groupNameInput?.value.trim() ?? null;
+
+    const requestBody: { participantIds: number[]; isGroup: boolean; name?: string } = {
+      participantIds: [selectedUserId],
+      isGroup,
+    };
+
+    if (groupName !== null && groupName !== '') {
+      requestBody.name = groupName;
+    }
+
+    return requestBody;
+  }
+
+  private async sendConversationRequest(requestBody: {
+    participantIds: number[];
+    isGroup: boolean;
+    name?: string;
+  }): Promise<void> {
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
+
+    if (useV2) {
+      await this.sendV2ConversationRequest(requestBody);
+    } else {
+      await this.sendV1ConversationRequest(requestBody);
+    }
+  }
+
+  private async sendV2ConversationRequest(requestBody: {
+    participantIds: number[];
+    isGroup: boolean;
+    name?: string;
+  }): Promise<void> {
+    const response = await this.apiClient.request<{ conversation: { id: number } }>('/chat/conversations', {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+    });
+
+    if (response.conversation.id !== 0) {
+      await this.handleConversationCreated(response.conversation.id);
+    } else {
+      throw new Error('Failed to create conversation');
+    }
+  }
+
+  private async sendV1ConversationRequest(requestBody: {
+    participantIds: number[];
+    isGroup: boolean;
+    name?: string;
+  }): Promise<void> {
+    const response = await fetch('/api/chat/conversations', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.token ?? ''}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (response.ok) {
+      const result = (await response.json()) as { id: number };
+      await this.handleConversationCreated(result.id);
+    } else {
+      const error = (await response.json()) as { error?: string };
+      throw new Error(error.error ?? `HTTP error! status: ${response.status}`);
+    }
+  }
+
+  private async handleConversationCreated(conversationId: number): Promise<void> {
+    this.showNotification('Unterhaltung erfolgreich erstellt', 'success');
+    this.closeModal('newConversationModal');
+    await this.loadInitialData();
+    void this.selectConversation(conversationId);
   }
 
   async deleteCurrentConversation(): Promise<void> {
@@ -2729,10 +2867,18 @@ class ChatClient {
   }
 
   initializeEventListeners(): void {
-    // Message input
+    this.setupMessageInput();
+    this.setupButtons();
+    this.setupFileUpload();
+    this.setupEmojiHandlers();
+    this.setupModalButtons();
+    this.setupDeleteButton();
+    this.startPeriodicPing();
+  }
+
+  private setupMessageInput(): void {
     const messageInput = $$('#messageInput') as HTMLTextAreaElement | null;
     if (messageInput) {
-      // Enter key to send
       messageInput.addEventListener('keypress', (e: KeyboardEvent) => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
@@ -2740,14 +2886,14 @@ class ChatClient {
         }
       });
 
-      // Typing indicator
       messageInput.addEventListener('input', () => {
         this.handleTyping();
         this.resizeTextarea();
       });
     }
+  }
 
-    // Send button
+  private setupButtons(): void {
     const sendBtn = $$('#sendButton') as HTMLButtonElement | null;
     if (sendBtn) {
       sendBtn.addEventListener('click', () => {
@@ -2758,7 +2904,22 @@ class ChatClient {
       console.warn('Send button not found');
     }
 
-    // File upload handler
+    const newConvBtn = $$('#newConversationBtn') as HTMLButtonElement | null;
+    if (newConvBtn) {
+      newConvBtn.addEventListener('click', () => {
+        this.showNewConversationModal();
+      });
+    }
+
+    const createConvBtn = $$('#createConversationBtn') as HTMLButtonElement | null;
+    if (createConvBtn) {
+      createConvBtn.addEventListener('click', () => {
+        void this.createConversation();
+      });
+    }
+  }
+
+  private setupFileUpload(): void {
     const fileInput = $$('#fileInput') as HTMLInputElement | null;
     const attachmentBtn = $$('#attachmentBtn') as HTMLButtonElement | null;
 
@@ -2779,8 +2940,9 @@ class ChatClient {
         }
       });
     }
+  }
 
-    // Emoji picker handler
+  private setupEmojiHandlers(): void {
     const emojiBtn = $$('#emojiBtn') as HTMLButtonElement | null;
     if (emojiBtn) {
       emojiBtn.addEventListener('click', (e) => {
@@ -2789,7 +2951,6 @@ class ChatClient {
       });
     }
 
-    // Emoji category handlers
     const emojiCategories = $all('.emoji-category');
     emojiCategories.forEach((category) => {
       category.addEventListener('click', (e) => {
@@ -2798,8 +2959,6 @@ class ChatClient {
         const categoryName = target.dataset.category;
         if (categoryName !== undefined && categoryName !== '') {
           this.showEmojiCategory(categoryName);
-
-          // Update active state
           $all('.emoji-category').forEach((cat) => {
             cat.classList.remove('active');
           });
@@ -2808,7 +2967,6 @@ class ChatClient {
       });
     });
 
-    // Click outside to close emoji picker
     document.addEventListener('click', (e) => {
       const emojiPicker = $$('#emojiPicker');
       const emojiBtnElement = $$('#emojiBtn');
@@ -2821,24 +2979,9 @@ class ChatClient {
         emojiPicker.style.display = 'none';
       }
     });
+  }
 
-    // New conversation button
-    const newConvBtn = $$('#newConversationBtn') as HTMLButtonElement | null;
-    if (newConvBtn) {
-      newConvBtn.addEventListener('click', () => {
-        this.showNewConversationModal();
-      });
-    }
-
-    // Create conversation button
-    const createConvBtn = $$('#createConversationBtn') as HTMLButtonElement | null;
-    if (createConvBtn) {
-      createConvBtn.addEventListener('click', () => {
-        void this.createConversation();
-      });
-    }
-
-    // Modal close buttons
+  private setupModalButtons(): void {
     const closeModalBtn = $$('#closeModalBtn') as HTMLButtonElement | null;
     const cancelModalBtn = $$('#cancelModalBtn') as HTMLButtonElement | null;
 
@@ -2853,8 +2996,9 @@ class ChatClient {
         this.closeModal('newConversationModal');
       });
     }
+  }
 
-    // Delete conversation button (only for admin and root)
+  private setupDeleteButton(): void {
     const canDelete = this.currentUser.role === 'admin' || this.currentUser.role === 'root';
     if (canDelete) {
       const deleteBtn = $$('#deleteConversationBtn') as HTMLButtonElement | null;
@@ -2865,8 +3009,9 @@ class ChatClient {
         });
       }
     }
+  }
 
-    // Periodic connection check
+  private startPeriodicPing(): void {
     setInterval(() => {
       if (this.isConnected && this.ws && this.ws.readyState === WebSocket.OPEN) {
         this.ws.send(
@@ -2876,7 +3021,7 @@ class ChatClient {
           }),
         );
       }
-    }, 30000); // Every 30 seconds
+    }, 30000);
   }
 
   handleTyping(): void {

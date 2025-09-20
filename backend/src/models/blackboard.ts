@@ -108,6 +108,85 @@ interface CountResult extends RowDataPacket {
 }
 
 /**
+ * Build query filters for blackboard entries
+ */
+function buildQueryFilters(
+  query: string,
+  params: unknown[],
+  options: {
+    filter?: string;
+    search?: string;
+    priority?: string;
+    requiresConfirmation?: boolean;
+    role?: string | null;
+    departmentId?: number | null;
+    teamId?: number | null;
+  },
+): { query: string; params: unknown[] } {
+  let updatedQuery = query;
+  const updatedParams = [...params];
+
+  // Apply org level filter
+  if (options.filter !== undefined && options.filter !== 'all') {
+    updatedQuery += ' AND e.org_level = ?';
+    updatedParams.push(options.filter);
+  }
+
+  // Apply access control for non-admin users
+  if (options.role !== 'admin' && options.role !== 'root') {
+    updatedQuery += ` AND (
+          e.org_level = 'company' OR
+          (e.org_level = 'department' AND e.org_id = ?) OR
+          (e.org_level = 'team' AND e.org_id = ?)
+        )`;
+    updatedParams.push(options.departmentId ?? 0, options.teamId ?? 0);
+  }
+
+  // Apply search filter
+  if (options.search !== undefined && options.search !== '') {
+    updatedQuery += ' AND (e.title LIKE ? OR e.content LIKE ?)';
+    const searchTerm = `%${options.search}%`;
+    updatedParams.push(searchTerm, searchTerm);
+  }
+
+  // Apply priority filter
+  if (options.priority !== undefined && options.priority !== '') {
+    updatedQuery += ' AND e.priority = ?';
+    updatedParams.push(options.priority);
+  }
+
+  // Apply requires confirmation filter
+  if (options.requiresConfirmation !== undefined) {
+    updatedQuery += ' AND e.requires_confirmation = ?';
+    updatedParams.push(options.requiresConfirmation ? 1 : 0);
+  }
+
+  return { query: updatedQuery, params: updatedParams };
+}
+
+/**
+ * Process entries to convert content and load attachments
+ */
+async function processEntries(entries: DbBlackboardEntry[]): Promise<void> {
+  for (const entry of entries) {
+    if (Buffer.isBuffer(entry.content)) {
+      entry.content = entry.content.toString('utf8');
+    } else if (
+      typeof entry.content === 'object' &&
+      'type' in entry.content &&
+      Array.isArray(entry.content.data)
+    ) {
+      entry.content = Buffer.from(entry.content.data).toString('utf8');
+    }
+
+    // Load attachments for entries with any attachments
+    if (entry.attachment_count != null && entry.attachment_count > 0) {
+      entry.attachments = await getEntryAttachments(entry.id);
+    }
+  }
+}
+
+/**
  * Get all blackboard entries visible to the user
  */
 export async function getAllEntries(
@@ -132,7 +211,7 @@ export async function getAllEntries(
     const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
     // Build base query
-    let query = `
+    const baseQuery = `
         SELECT e.*,
                u.username as author_name,
                u.first_name as author_first_name,
@@ -146,53 +225,29 @@ export async function getAllEntries(
         WHERE e.tenant_id = ? AND e.status = ?
       `;
 
-    const queryParams: unknown[] = [userId, tenant_id, status];
+    const baseParams: unknown[] = [userId, tenant_id, status];
 
-    // Apply org level filter
-    if (filter !== 'all') {
-      query += ' AND e.org_level = ?';
-      queryParams.push(filter);
-    }
+    // Build query with filters
+    const { query: filteredQuery, params: queryParams } = buildQueryFilters(baseQuery, baseParams, {
+      filter,
+      search,
+      priority,
+      requiresConfirmation,
+      role,
+      departmentId,
+      teamId,
+    });
 
-    // Apply access control for non-admin users
-    if (role !== 'admin' && role !== 'root') {
-      query += ` AND (
-          e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?)
-        )`;
-      queryParams.push(departmentId ?? 0, teamId ?? 0);
-    }
-
-    // Apply search filter
-    if (search !== '') {
-      query += ' AND (e.title LIKE ? OR e.content LIKE ?)';
-      const searchTerm = `%${search}%`;
-      queryParams.push(searchTerm, searchTerm);
-    }
-
-    // Apply priority filter
-    if (priority !== undefined && priority !== '') {
-      query += ' AND e.priority = ?';
-      queryParams.push(priority);
-    }
-
-    // Apply requires confirmation filter
-    if (requiresConfirmation !== undefined) {
-      query += ' AND e.requires_confirmation = ?';
-      queryParams.push(requiresConfirmation ? 1 : 0);
-    }
-
-    // Apply sorting
-    query += ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}`;
-
-    // Apply pagination
+    // Apply sorting and pagination
+    const finalQuery =
+      filteredQuery +
+      ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}` +
+      ' LIMIT ? OFFSET ?';
     const offset = (page - 1) * limit;
-    query += ' LIMIT ? OFFSET ?';
     queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query
-    const [entries] = await executeQuery<DbBlackboardEntry[]>(query, queryParams);
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(finalQuery, queryParams);
 
     // Debug log when no entries found
     if (entries.length === 0 && status === 'active') {
@@ -203,57 +258,32 @@ export async function getAllEntries(
       logger.debug(`User access: departmentId=${String(departmentId)}, teamId=${String(teamId)}`);
     }
 
-    // Konvertiere Buffer-Inhalte zu Strings und load attachments for direct attachment entries
-    for (const entry of entries) {
-      if (Buffer.isBuffer(entry.content)) {
-        entry.content = entry.content.toString('utf8');
-      } else if (
-        typeof entry.content === 'object' &&
-        'type' in entry.content &&
-        Array.isArray(entry.content.data)
-      ) {
-        entry.content = Buffer.from(entry.content.data).toString('utf8');
-      }
-
-      // Load attachments for entries with any attachments
-      if (entry.attachment_count != null && entry.attachment_count > 0) {
-        entry.attachments = await getEntryAttachments(entry.id);
-      }
-    }
+    // Process entries
+    await processEntries(entries);
 
     // Count total entries for pagination
-    let countQuery = `
+    const countQuery = `
         SELECT COUNT(*) as total
         FROM blackboard_entries e
         WHERE e.tenant_id = ? AND e.status = ?
       `;
+    const countBaseParams: unknown[] = [tenant_id, status];
 
-    const countParams: unknown[] = [tenant_id, status];
+    const { query: filteredCountQuery, params: countParams } = buildQueryFilters(
+      countQuery,
+      countBaseParams,
+      {
+        filter,
+        search,
+        priority: undefined,
+        requiresConfirmation: undefined,
+        role,
+        departmentId,
+        teamId,
+      },
+    );
 
-    // Apply org level filter for count
-    if (filter !== 'all') {
-      countQuery += ' AND e.org_level = ?';
-      countParams.push(filter);
-    }
-
-    // Apply access control for non-admin users for count
-    if (role !== 'admin' && role !== 'root') {
-      countQuery += ` AND (
-          e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?)
-        )`;
-      countParams.push(departmentId ?? 0, teamId ?? 0);
-    }
-
-    // Apply search filter for count
-    if (search !== '') {
-      countQuery += ' AND (e.title LIKE ? OR e.content LIKE ?)';
-      const searchTerm = `%${search}%`;
-      countParams.push(searchTerm, searchTerm);
-    }
-
-    const [countResult] = await executeQuery<CountResult[]>(countQuery, countParams);
+    const [countResult] = await executeQuery<CountResult[]>(filteredCountQuery, countParams);
     const totalEntries = countResult[0].total;
 
     return {

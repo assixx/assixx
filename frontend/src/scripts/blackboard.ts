@@ -266,8 +266,83 @@ function handleCloseModal(target: HTMLElement): void {
 }
 
 // Function to initialize blackboard
-function initializeBlackboard() {
-  // Setup Event Delegation for all dynamic content
+// Helper functions moved outside
+function processUserData(userData: UserData): void {
+  currentUserId = userData.id;
+  setAdminStatus(userData.role);
+  console.info('[Blackboard] User data processed:', userData);
+  console.info('[Blackboard] isAdmin:', isAdmin);
+  console.info('[Blackboard] User role:', userData.role);
+}
+
+function updateNewEntryButtonVisibility(): void {
+  const newEntryBtn = $$('#newEntryBtn');
+  if (newEntryBtn) {
+    console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE);
+    newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
+  } else {
+    console.info('[Blackboard] newEntryBtn not found!');
+  }
+}
+
+function loadUserDataFromStorage(): Promise<boolean> {
+  const storedUser = localStorage.getItem('currentUser');
+  if (storedUser === null || storedUser.length === 0) {
+    return Promise.resolve(false);
+  }
+
+  try {
+    const userData = JSON.parse(storedUser) as UserData;
+    processUserData(userData);
+    updateNewEntryButtonVisibility();
+    void loadDepartmentsAndTeams();
+    return Promise.resolve(true);
+  } catch (error) {
+    console.error('[Blackboard] Error parsing stored user data:', error);
+    return Promise.resolve(false);
+  }
+}
+
+async function loadUserDataFromAPI(): Promise<void> {
+  try {
+    const userData = await fetchUserData();
+    processUserData(userData);
+    updateNewEntryButtonVisibility();
+    void loadDepartmentsAndTeams();
+  } catch (error) {
+    console.error('[Blackboard] Error loading user data:', error);
+    showError('Fehler beim Laden der Benutzerdaten');
+    throw error;
+  }
+}
+
+function handleUrlEntryParameter(): void {
+  const urlParams = new URLSearchParams(window.location.search);
+  const entryId = urlParams.get('entry');
+
+  if (entryId === null || entryId.length === 0) return;
+
+  const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
+  if (entryElement === null) return;
+
+  entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  entryElement.classList.add('highlight-entry');
+  setTimeout(() => {
+    entryElement.classList.remove('highlight-entry');
+  }, 3000);
+}
+
+function setupRetryButton(): void {
+  const retryLoadBtn = $$id('retryLoadBtn');
+  if (!retryLoadBtn) return;
+
+  retryLoadBtn.addEventListener('click', () => {
+    setEntriesLoadingEnabled(true);
+    void loadEntries();
+  });
+}
+
+function setupGlobalEventDelegation(): void {
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
@@ -294,25 +369,7 @@ function initializeBlackboard() {
     if (openPdfBtn) {
       const attachmentUrl = openPdfBtn.dataset.attachmentUrl;
       if (attachmentUrl !== undefined) {
-        void (async () => {
-          try {
-            const resp = await fetch(attachmentUrl, {
-              credentials: 'same-origin',
-            });
-            const fileBlob = await resp.blob();
-            const url = URL.createObjectURL(fileBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
-            a.click();
-            setTimeout(() => {
-              URL.revokeObjectURL(url);
-            }, 100);
-          } catch (error) {
-            console.error('Error opening PDF in new tab:', error);
-            showError('Fehler beim Öffnen der PDF');
-          }
-        })();
+        void openPdfInNewTab(attachmentUrl);
       }
     }
 
@@ -323,6 +380,65 @@ function initializeBlackboard() {
       void saveDirectAttachment();
     }
   });
+}
+
+async function openPdfInNewTab(attachmentUrl: string): Promise<void> {
+  try {
+    const resp = await fetch(attachmentUrl, {
+      credentials: 'same-origin',
+    });
+    const fileBlob = await resp.blob();
+    const url = URL.createObjectURL(fileBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 100);
+  } catch (error) {
+    console.error('Error opening PDF in new tab:', error);
+    showError('Fehler beim Öffnen der PDF');
+  }
+}
+
+async function initializeUserAndUI(): Promise<void> {
+  try {
+    await checkLoggedIn();
+
+    // Try localStorage first, fallback to API
+    const loadedFromStorage = await loadUserDataFromStorage();
+    if (!loadedFromStorage) {
+      await loadUserDataFromAPI();
+    }
+
+    // Load entries
+    setEntriesLoadingEnabled(true);
+    await loadEntries();
+
+    // Handle URL parameters
+    handleUrlEntryParameter();
+
+    // Hide load entries button
+    const loadEntriesBtn = $$('#loadEntriesBtn');
+    if (loadEntriesBtn) {
+      loadEntriesBtn.style.display = 'none';
+    }
+
+    // Setup retry button
+    setupRetryButton();
+
+    // Setup event listeners
+    setupEventListeners();
+  } catch (error) {
+    console.error('Error checking login:', error);
+    window.location.href = '/login';
+  }
+}
+
+function initializeBlackboard() {
+  // Setup Event Delegation for all dynamic content
+  setupGlobalEventDelegation();
 
   // Aktiviere das automatische Laden der Einträge
   setEntriesLoadingEnabled(true);
@@ -330,126 +446,8 @@ function initializeBlackboard() {
   // Alle Schließen-Buttons einrichten
   setupCloseButtons();
 
-  // Note: previewAttachment will be available after this module loads completely
-
   // Debug: Log when this script loads
   console.info('[Blackboard] Script loaded at:', new Date().toISOString());
-
-  // Helper function to process user data
-  function processUserData(userData: UserData): void {
-    currentUserId = userData.id;
-    setAdminStatus(userData.role);
-    console.info('[Blackboard] User data processed:', userData);
-    console.info('[Blackboard] isAdmin:', isAdmin);
-    console.info('[Blackboard] User role:', userData.role);
-  }
-
-  // Helper function to update new entry button visibility
-  function updateNewEntryButtonVisibility(): void {
-    const newEntryBtn = $$('#newEntryBtn');
-    if (newEntryBtn) {
-      console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE);
-      newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
-    } else {
-      console.info('[Blackboard] newEntryBtn not found!');
-    }
-  }
-
-  // Helper function to load user data from localStorage
-  function loadUserDataFromStorage(): Promise<boolean> {
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser === null || storedUser.length === 0) {
-      return Promise.resolve(false);
-    }
-
-    try {
-      const userData = JSON.parse(storedUser) as UserData;
-      processUserData(userData);
-      updateNewEntryButtonVisibility();
-      void loadDepartmentsAndTeams();
-      return Promise.resolve(true);
-    } catch (error) {
-      console.error('[Blackboard] Error parsing stored user data:', error);
-      return Promise.resolve(false);
-    }
-  }
-
-  // Helper function to load user data from API
-  async function loadUserDataFromAPI(): Promise<void> {
-    try {
-      const userData = await fetchUserData();
-      processUserData(userData);
-      updateNewEntryButtonVisibility();
-      void loadDepartmentsAndTeams();
-    } catch (error) {
-      console.error('[Blackboard] Error loading user data:', error);
-      showError('Fehler beim Laden der Benutzerdaten');
-      throw error;
-    }
-  }
-
-  // Helper function to handle URL entry parameter
-  function handleUrlEntryParameter(): void {
-    const urlParams = new URLSearchParams(window.location.search);
-    const entryId = urlParams.get('entry');
-
-    if (entryId === null || entryId.length === 0) return;
-
-    const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
-    if (entryElement === null) return;
-
-    entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    entryElement.classList.add('highlight-entry');
-    setTimeout(() => {
-      entryElement.classList.remove('highlight-entry');
-    }, 3000);
-  }
-
-  // Helper function to setup retry button
-  function setupRetryButton(): void {
-    const retryLoadBtn = $$id('retryLoadBtn');
-    if (!retryLoadBtn) return;
-
-    retryLoadBtn.addEventListener('click', () => {
-      setEntriesLoadingEnabled(true);
-      void loadEntries();
-    });
-  }
-
-  // Main initialization function
-  async function initializeUserAndUI(): Promise<void> {
-    try {
-      await checkLoggedIn();
-
-      // Try localStorage first, fallback to API
-      const loadedFromStorage = await loadUserDataFromStorage();
-      if (!loadedFromStorage) {
-        await loadUserDataFromAPI();
-      }
-
-      // Load entries
-      setEntriesLoadingEnabled(true);
-      await loadEntries();
-
-      // Handle URL parameters
-      handleUrlEntryParameter();
-
-      // Hide load entries button
-      const loadEntriesBtn = $$('#loadEntriesBtn');
-      if (loadEntriesBtn) {
-        loadEntriesBtn.style.display = 'none';
-      }
-
-      // Setup retry button
-      setupRetryButton();
-
-      // Setup event listeners
-      setupEventListeners();
-    } catch (error) {
-      console.error('Error checking login:', error);
-      window.location.href = '/login';
-    }
-  }
 
   // Check if user is logged in
   void initializeUserAndUI();
@@ -494,34 +492,27 @@ function setupCloseButtons(): void {
 /**
  * Setup all event listeners
  */
-function setupEventListeners(): void {
-  // Filter by level using pill buttons
+function setupFilterPills(): void {
   document.querySelectorAll<HTMLElement>('.filter-pill[data-value]').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
-      // Remove active class from all pills
       document.querySelectorAll('.filter-pill').forEach((pill) => {
         pill.classList.remove('active');
       });
-      // Add active class to clicked pill
       this.classList.add('active');
-
       currentFilter = this.dataset.value ?? 'all';
       currentPage = 1;
-
-      // Nur laden, wenn es aktiviert wurde
       if (entriesLoadingEnabled) {
         void loadEntries();
       }
     });
   });
+}
 
-  // Sort entries
+function setupSortFilter(): void {
   const sortFilter = $$id('sortFilter') as HTMLSelectElement | null;
   if (sortFilter) {
     sortFilter.addEventListener('change', function (this: HTMLSelectElement) {
       currentSort = this.value;
-
-      // Nur laden, wenn es aktiviert wurde
       if (entriesLoadingEnabled) {
         void loadEntries();
       }
@@ -529,8 +520,9 @@ function setupEventListeners(): void {
   } else {
     console.error('Sort filter not found');
   }
+}
 
-  // Search button
+function setupSearchFunctionality(): void {
   const searchButton = $$id('searchButton');
   const searchInput = $$('#searchInput') as HTMLInputElement | null;
 
@@ -538,8 +530,6 @@ function setupEventListeners(): void {
     searchButton.addEventListener('click', () => {
       currentSearch = searchInput.value.trim();
       currentPage = 1;
-
-      // Nur laden, wenn es aktiviert wurde
       if (entriesLoadingEnabled) {
         void loadEntries();
       }
@@ -549,8 +539,6 @@ function setupEventListeners(): void {
       if (e.key === 'Enter') {
         currentSearch = this.value.trim();
         currentPage = 1;
-
-        // Nur laden, wenn es aktiviert wurde
         if (entriesLoadingEnabled) {
           void loadEntries();
         }
@@ -559,8 +547,9 @@ function setupEventListeners(): void {
   } else {
     console.error('Search elements not found');
   }
+}
 
-  // New entry button
+function setupActionButtons(): void {
   const newEntryBtn = $$id('newEntryBtn');
   if (newEntryBtn) {
     console.log('[Blackboard] Adding click listener to newEntryBtn');
@@ -572,7 +561,6 @@ function setupEventListeners(): void {
     console.error('New entry button not found');
   }
 
-  // Direct attachment button
   const directAttachBtn = $$id('directAttachBtn');
   if (directAttachBtn) {
     directAttachBtn.addEventListener('click', () => {
@@ -582,7 +570,6 @@ function setupEventListeners(): void {
     console.error('Direct attachment button not found');
   }
 
-  // Save entry button
   const saveEntryBtn = $$id('saveEntryBtn');
   if (saveEntryBtn) {
     saveEntryBtn.addEventListener('click', () => {
@@ -591,8 +578,9 @@ function setupEventListeners(): void {
   } else {
     console.error('Save entry button not found');
   }
+}
 
-  // Organization level change
+function setupOrgLevelDropdown(): void {
   const entryOrgLevel = $$id('entryOrgLevel') as HTMLSelectElement | null;
   if (entryOrgLevel) {
     entryOrgLevel.addEventListener('change', function (this: HTMLSelectElement) {
@@ -601,12 +589,12 @@ function setupEventListeners(): void {
   } else {
     console.error('Organization level dropdown not found');
   }
+}
 
-  // Handle custom dropdown for org ID selection
+function setupCustomDropdown(): void {
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
-    // Handle dropdown toggle
     if (target.closest('#orgIdDisplay')) {
       const dropdown = $$id('orgIdDropdown');
       if (dropdown) {
@@ -614,58 +602,56 @@ function setupEventListeners(): void {
       }
     }
 
-    // Handle option selection
     const dropdownOption = target.closest('#orgIdDropdown .dropdown-option');
     if (dropdownOption instanceof HTMLElement) {
       const value = dropdownOption.dataset.value ?? '';
       const text = dropdownOption.textContent;
 
-      // Update display
       const display = $$id('orgIdDisplay');
       if (display) {
         const span = display.querySelector('span');
         if (span) span.textContent = text;
       }
 
-      // Update hidden input
       const hiddenInput = $$id('orgIdValue') as HTMLInputElement | null;
       if (hiddenInput) {
         hiddenInput.value = value;
       }
 
-      // Also update the regular select for fallback
       const select = $$id('entryOrgId') as HTMLSelectElement | null;
       if (select) {
         select.value = value;
       }
 
-      // Hide dropdown
       const dropdown = $$id('orgIdDropdown');
       if (dropdown) {
         dropdown.classList.remove('show');
       }
     }
   });
+}
 
-  // Color selection
+function setupColorSelection(): void {
   document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
-      // Remove active class from all color options
       document.querySelectorAll('.color-option').forEach((option) => {
         option.classList.remove('active');
       });
-      // Add active class to clicked option
       this.classList.add('active');
     });
   });
+}
 
-  // File upload handling
+function setupEventListeners(): void {
+  setupFilterPills();
+  setupSortFilter();
+  setupSearchFunctionality();
+  setupActionButtons();
+  setupOrgLevelDropdown();
+  setupCustomDropdown();
+  setupColorSelection();
   setupFileUploadHandlers();
-
-  // Zoom controls
   setupZoomControls();
-
-  // Fullscreen functionality
   setupFullscreenControls();
 }
 
@@ -1856,7 +1842,7 @@ async function viewEntry(entryId: number): Promise<void> {
     const attachments = await loadAttachments(entryId);
     console.info(`[Blackboard] Attachments loaded:`, attachments);
 
-    const detailContent = document.querySelector('#entryDetailContent');
+    const detailContent = $$('#entryDetailContent');
     if (detailContent !== null) {
       const priorityIcon = getPriorityIcon(entry.priority_level);
       const canEdit = isAdmin || entry.created_by === currentUserId;
@@ -1873,7 +1859,7 @@ async function viewEntry(entryId: number): Promise<void> {
       // Safe: content is sanitized by setHTML from dom-utils
       setHTML(detailContent, contentHtml);
 
-      const footer = document.querySelector('#entryDetailFooter');
+      const footer = $$('#entryDetailFooter');
       if (footer !== null) {
         // Safe: content is sanitized by setHTML from dom-utils
         setHTML(footer, buildFooterButtons(entryId, canEdit));

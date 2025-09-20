@@ -67,6 +67,22 @@ interface KvpWindow extends Window {
   selectedPhotos?: File[];
 }
 
+interface UserMeResponse {
+  id?: number;
+  teamId?: number;
+  team_id?: number;
+  teamName?: string;
+  team?: { id: number };
+  teams?: { id: number; team_id?: number }[];
+}
+
+interface TeamResponse {
+  id: number;
+  team_lead_id?: number;
+  teamLeadId?: number;
+  leaderId?: number;
+}
+
 class KvpPage {
   private apiClient: ApiClient;
   private currentUser: User | null = null;
@@ -172,33 +188,39 @@ class KvpPage {
     if (!this.currentUser) return;
 
     const effectiveRole = this.getEffectiveRole();
+    this.updateBodyClasses(effectiveRole);
+    this.configureUIElementsByRole(effectiveRole);
+  }
 
-    // Add role-based class to body for CSS targeting
+  private updateBodyClasses(effectiveRole: string): void {
     document.body.classList.remove('role-admin', 'role-employee', 'role-root');
     document.body.classList.add(`role-${effectiveRole}`);
+  }
 
-    // Show/hide admin elements
+  private configureUIElementsByRole(effectiveRole: string): void {
+    const isAdminOrRoot = effectiveRole === 'admin' || effectiveRole === 'root';
+    const isEmployee = effectiveRole === 'employee';
+
+    this.toggleAdminElements(isAdminOrRoot);
+    this.toggleCreateButton(isEmployee);
+  }
+
+  private toggleAdminElements(show: boolean): void {
     const adminElements = document.querySelectorAll('.admin-only');
     const adminInfoBox = $$('#adminInfoBox');
     const statsOverview = $$('#statsOverview');
+
+    const displayValue = show ? '' : 'none';
+
+    adminElements.forEach((el) => ((el as HTMLElement).style.display = displayValue));
+    if (adminInfoBox) adminInfoBox.style.display = displayValue;
+    if (statsOverview) statsOverview.style.display = displayValue;
+  }
+
+  private toggleCreateButton(show: boolean): void {
     const createBtn = $$('#createNewBtn');
-
-    // Check effective role instead of actual role
-    if (effectiveRole === 'admin' || effectiveRole === 'root') {
-      adminElements.forEach((el) => ((el as HTMLElement).style.display = ''));
-      if (adminInfoBox) adminInfoBox.style.display = '';
-      if (statsOverview) statsOverview.style.display = '';
-    } else {
-      adminElements.forEach((el) => ((el as HTMLElement).style.display = 'none'));
-      if (adminInfoBox) adminInfoBox.style.display = 'none';
-      if (statsOverview) statsOverview.style.display = 'none';
-    }
-
-    // Show create button for employees (including role-switched admins)
-    if (effectiveRole === 'employee') {
-      if (createBtn) createBtn.style.display = '';
-    } else {
-      if (createBtn) createBtn.style.display = 'none';
+    if (createBtn) {
+      createBtn.style.display = show ? '' : 'none';
     }
   }
 
@@ -303,62 +325,79 @@ class KvpPage {
 
   private async loadSuggestions(): Promise<void> {
     try {
-      const params = new URLSearchParams({
-        filter: this.currentFilter,
-      });
-
-      // Add additional filters
-      const statusFilterEl = document.querySelector('#statusFilterValue');
-      const categoryFilterEl = document.querySelector('#categoryFilterValue');
-      const departmentFilterEl = document.querySelector('#departmentFilterValue');
-      const searchFilterEl = document.querySelector('#searchFilter');
-
-      const statusFilter = statusFilterEl instanceof HTMLInputElement ? statusFilterEl.value : '';
-      const categoryFilter = categoryFilterEl instanceof HTMLInputElement ? categoryFilterEl.value : '';
-      const departmentFilter = departmentFilterEl instanceof HTMLInputElement ? departmentFilterEl.value : '';
-      const searchFilter = searchFilterEl instanceof HTMLInputElement ? searchFilterEl.value : '';
-
-      if (statusFilter !== '') params.append('status', statusFilter);
-      if (categoryFilter !== '') {
-        params.append(this.useV2API ? 'categoryId' : 'category_id', categoryFilter);
-      }
-      if (departmentFilter !== '') {
-        params.append(this.useV2API ? 'departmentId' : 'department_id', departmentFilter);
-      }
-      if (searchFilter !== '') params.append('search', searchFilter);
-      if (this.currentFilter === 'archived') {
-        params.append(this.useV2API ? 'includeArchived' : 'include_archived', 'true');
-      }
-
-      let suggestions: KvpSuggestion[];
-
-      if (this.useV2API) {
-        // v2 API
-        suggestions = await this.apiClient.get<KvpSuggestion[]>(`/kvp?${params}`);
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch(`/api/kvp?${params}`, {
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to load suggestions');
-
-        const data = (await response.json()) as { suggestions?: KvpSuggestion[] };
-        // Convert snake_case to camelCase for v1
-        suggestions = (data.suggestions ?? []).map((s) => this.convertSuggestionToCamelCase(s));
-      }
+      const params = this.buildSuggestionParams();
+      const suggestions = await this.fetchSuggestions(params);
 
       this.suggestions = suggestions;
-
       this.renderSuggestions();
       this.updateBadges();
     } catch (error) {
       console.error('Error loading suggestions:', error);
       this.showError('Fehler beim Laden der Vorschläge');
     }
+  }
+
+  private buildSuggestionParams(): URLSearchParams {
+    const params = new URLSearchParams({
+      filter: this.currentFilter,
+    });
+
+    this.addFilterParams(params);
+
+    if (this.currentFilter === 'archived') {
+      params.append(this.useV2API ? 'includeArchived' : 'include_archived', 'true');
+    }
+
+    return params;
+  }
+
+  private addFilterParams(params: URLSearchParams): void {
+    const filters = this.getFilterValues();
+
+    if (filters.status !== '') params.append('status', filters.status);
+    if (filters.category !== '') {
+      params.append(this.useV2API ? 'categoryId' : 'category_id', filters.category);
+    }
+    if (filters.department !== '') {
+      params.append(this.useV2API ? 'departmentId' : 'department_id', filters.department);
+    }
+    if (filters.search !== '') params.append('search', filters.search);
+  }
+
+  private getFilterValues(): { status: string; category: string; department: string; search: string } {
+    const statusFilterEl = document.querySelector('#statusFilterValue');
+    const categoryFilterEl = document.querySelector('#categoryFilterValue');
+    const departmentFilterEl = document.querySelector('#departmentFilterValue');
+    const searchFilterEl = document.querySelector('#searchFilter');
+
+    return {
+      status: statusFilterEl instanceof HTMLInputElement ? statusFilterEl.value : '',
+      category: categoryFilterEl instanceof HTMLInputElement ? categoryFilterEl.value : '',
+      department: departmentFilterEl instanceof HTMLInputElement ? departmentFilterEl.value : '',
+      search: searchFilterEl instanceof HTMLInputElement ? searchFilterEl.value : '',
+    };
+  }
+
+  private async fetchSuggestions(params: URLSearchParams): Promise<KvpSuggestion[]> {
+    if (this.useV2API) {
+      return await this.apiClient.get<KvpSuggestion[]>(`/kvp?${params}`);
+    }
+
+    return await this.fetchV1Suggestions(params);
+  }
+
+  private async fetchV1Suggestions(params: URLSearchParams): Promise<KvpSuggestion[]> {
+    const token = getAuthToken();
+    const response = await fetch(`/api/kvp?${params}`, {
+      headers: {
+        Authorization: `Bearer ${token ?? ''}`,
+      },
+    });
+
+    if (!response.ok) throw new Error('Failed to load suggestions');
+
+    const data = (await response.json()) as { suggestions?: KvpSuggestion[] };
+    return (data.suggestions ?? []).map((s) => this.convertSuggestionToCamelCase(s));
   }
 
   private convertSuggestionToCamelCase(suggestion: unknown): KvpSuggestion {
@@ -894,102 +933,97 @@ class KvpPage {
   }
 
   private async openCreateModal(): Promise<void> {
-    // Check if employee needs team validation - ALL employees need this check!
     const effectiveRole = this.getEffectiveRole();
 
     if (effectiveRole === 'employee') {
-      // Try to get team info from employee-accessible endpoint
-      try {
-        // Use /api/v2/users/me endpoint which is accessible by employees and returns team info
-        interface UserMeResponse {
-          id?: number;
-          teamId?: number;
-          team_id?: number;
-          teamName?: string;
-          team?: { id: number };
-          teams?: { id: number; team_id?: number }[];
-        }
-
-        const userInfo = await this.apiClient.get<UserMeResponse>('/users/me');
-        console.log('User /me response:', userInfo);
-
-        // Check various possible field names for team ID
-        const teamId =
-          userInfo.teamId ??
-          userInfo.team_id ??
-          userInfo.team?.id ??
-          userInfo.teams?.[0]?.id ??
-          userInfo.teams?.[0]?.team_id;
-
-        if (teamId !== undefined && teamId > 0) {
-          this.currentTeamId = teamId;
-        } else {
-          // No team found - check if user is a team lead
-          // This happens when an admin/root role-switches to employee but is a team_lead_id
-          const originalRole = localStorage.getItem('userRole');
-
-          if (originalRole === 'admin' || originalRole === 'root') {
-            try {
-              // Check if user is a team lead
-              const teamsResponse = await this.apiClient.get<
-                {
-                  id: number;
-                  team_lead_id?: number;
-                  teamLeadId?: number;
-                  leaderId?: number;
-                }[]
-              >('/teams');
-
-              console.log('Checking if user is team lead. User ID:', userInfo.id);
-              console.log('Teams response:', teamsResponse);
-
-              const userTeam = teamsResponse.find(
-                (team) =>
-                  team.team_lead_id === userInfo.id || team.teamLeadId === userInfo.id || team.leaderId === userInfo.id,
-              );
-
-              if (userTeam) {
-                console.log('User is team lead of team:', userTeam.id);
-                this.currentTeamId = userTeam.id;
-              } else {
-                // Not a team lead either
-                notificationService.error(
-                  'Kein Team zugeordnet',
-                  'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
-                  5000,
-                );
-                return;
-              }
-            } catch (error) {
-              console.error('Could not check team lead status:', error);
-              notificationService.error(
-                'Kein Team zugeordnet',
-                'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
-                5000,
-              );
-              return;
-            }
-          } else {
-            // Regular employee without team
-            notificationService.error(
-              'Kein Team zugeordnet',
-              'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
-              5000,
-            );
-            return;
-          }
-        }
-      } catch (error) {
-        console.error('Could not get employee team info:', error);
-        // For now, show error - backend needs to provide team info for employees
-        notificationService.error(
-          'Fehler',
-          'Team-Information konnte nicht abgerufen werden. Bitte versuchen Sie es später erneut.',
-          5000,
-        );
-        return;
-      }
+      const hasTeam = await this.validateEmployeeTeam();
+      if (!hasTeam) return;
     }
+
+    this.showModalAfterValidation();
+  }
+
+  private async validateEmployeeTeam(): Promise<boolean> {
+    try {
+      const userInfo = await this.fetchUserInfo();
+      const teamId = this.extractTeamId(userInfo);
+
+      if (teamId !== undefined && teamId > 0) {
+        this.currentTeamId = teamId;
+        return true;
+      }
+
+      return await this.checkTeamLeadStatus(userInfo);
+    } catch (error) {
+      console.error('Could not get employee team info:', error);
+      this.showNoTeamError();
+      return false;
+    }
+  }
+
+  private async fetchUserInfo(): Promise<UserMeResponse> {
+    return await this.apiClient.get<UserMeResponse>('/users/me');
+  }
+
+  private extractTeamId(userInfo: UserMeResponse): number | undefined {
+    console.log('User /me response:', userInfo);
+
+    return (
+      userInfo.teamId ??
+      userInfo.team_id ??
+      userInfo.team?.id ??
+      userInfo.teams?.[0]?.id ??
+      userInfo.teams?.[0]?.team_id
+    );
+  }
+
+  private async checkTeamLeadStatus(userInfo: UserMeResponse): Promise<boolean> {
+    const originalRole = localStorage.getItem('userRole');
+
+    if (originalRole !== 'admin' && originalRole !== 'root') {
+      this.showNoTeamError();
+      return false;
+    }
+
+    try {
+      const userTeam = await this.findUserTeamAsLead(userInfo.id);
+
+      if (userTeam) {
+        console.log('User is team lead of team:', userTeam.id);
+        this.currentTeamId = userTeam.id;
+        return true;
+      }
+
+      this.showNoTeamError();
+      return false;
+    } catch (error) {
+      console.error('Could not check team lead status:', error);
+      this.showNoTeamError();
+      return false;
+    }
+  }
+
+  private async findUserTeamAsLead(userId?: number): Promise<TeamResponse | undefined> {
+    if (userId === undefined || userId === 0) return undefined;
+
+    const teamsResponse = await this.apiClient.get<TeamResponse[]>('/teams');
+    console.log('Checking if user is team lead. User ID:', userId);
+    console.log('Teams response:', teamsResponse);
+
+    return teamsResponse.find(
+      (team) => team.team_lead_id === userId || team.teamLeadId === userId || team.leaderId === userId,
+    );
+  }
+
+  private showNoTeamError(): void {
+    notificationService.error(
+      'Kein Team zugeordnet',
+      'Sie wurden keinem Team zugeordnet. Bitte wenden Sie sich an Ihren Administrator.',
+      5000,
+    );
+  }
+
+  private showModalAfterValidation(): void {
     // Reset form
     const form = $$('#createKvpForm');
     if (form instanceof HTMLFormElement) form.reset();
@@ -1015,144 +1049,188 @@ class KvpPage {
 
   private async createSuggestion(): Promise<void> {
     try {
-      const form = $$('#createKvpForm');
-      if (!(form instanceof HTMLFormElement)) {
-        this.showError('Form nicht gefunden');
-        return;
-      }
-      const formData = new FormData(form);
+      const formData = this.getFormData();
+      if (!formData) return;
 
-      // Validate required fields
-      const title = formData.get('title');
-      const description = formData.get('description');
-      const categoryId = formData.get('category_id');
+      const validatedData = this.validateFormData(formData);
+      if (!validatedData) return;
 
-      if (title === null || title === '' || description === null || description === '') {
-        this.showError('Bitte füllen Sie Titel und Beschreibung aus');
-        return;
-      }
+      const suggestionData = this.prepareSuggestionData(formData, validatedData);
+      const suggestionId = await this.submitSuggestion(suggestionData);
 
-      // Prepare data - cast to string since we validated they're not null
-      const titleStr = title as string;
-      const descStr = description as string;
-      const catIdStr = categoryId as string | null;
-      const priorityValue = formData.get('priority');
-      const benefitValue = formData.get('expected_benefit');
-      const costValue = formData.get('estimated_cost');
-
-      // Add organization level and ID based on role
-      const effectiveRole = this.getEffectiveRole();
-      let orgLevel = 'team';
-      let orgId = 0;
-
-      if (effectiveRole === 'employee' && this.currentTeamId !== null && this.currentTeamId > 0) {
-        orgLevel = 'team';
-        orgId = this.currentTeamId;
-      } else if (effectiveRole === 'admin' || effectiveRole === 'root') {
-        // For admin/root, default to company level (can be changed later)
-        orgLevel = 'company';
-        orgId = this.currentUser?.tenantId ?? 0;
-      }
-
-      const data = {
-        title: titleStr.trim(),
-        description: descStr.trim(),
-        categoryId: catIdStr !== null && catIdStr !== '' ? Number.parseInt(catIdStr, 10) : null, // API v2 expects camelCase
-        priority: priorityValue !== null && priorityValue !== '' ? (priorityValue as string) : 'normal',
-        expectedBenefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null, // API v2 expects camelCase
-        estimatedCost: costValue !== null && costValue !== '' ? (costValue as string) : null, // API v2 now accepts text with currency symbols
-        orgLevel: orgLevel,
-        orgId: orgId,
-        departmentId: this.currentUser?.departmentId ?? null, // Add department_id from current user
-      };
-
-      // Debug: Log what we're sending
-      console.log('Current user object:', this.currentUser);
-      console.log('Current user departmentId:', this.currentUser?.departmentId);
-      console.log('Sending KVP data to API:', data);
-      console.log('Data.departmentId being sent:', data.departmentId);
-
-      // Submit to API
-      let suggestionId: number;
-
-      if (this.useV2API) {
-        // v2 API
-        const result = await this.apiClient.post<{ id: number }>('/kvp', data);
-        suggestionId = result.id;
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch('/api/kvp', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-          const error = (await response.json()) as { message?: string };
-          throw new Error(error.message ?? 'Fehler beim Erstellen des Vorschlags');
-        }
-
-        const result = (await response.json()) as { suggestion: { id: number } };
-        suggestionId = result.suggestion.id;
-      }
-
-      // Upload photos if any
-      const selectedPhotos = (window as unknown as KvpWindow).selectedPhotos;
-      console.info('Check selectedPhotos:', selectedPhotos);
-      console.info('Window.selectedPhotos type:', typeof (window as unknown as KvpWindow).selectedPhotos);
-      console.info('Photos count:', selectedPhotos ? selectedPhotos.length : 0);
-
-      if (selectedPhotos && selectedPhotos.length > 0) {
-        console.info('Uploading photos for suggestion:', suggestionId);
-        await this.uploadPhotos(suggestionId, selectedPhotos);
-      } else {
-        console.info('No photos to upload');
-      }
-
-      // Success
-      this.showSuccess('Ihr Vorschlag wurde erfolgreich eingereicht');
-      (window as unknown as KvpWindow).hideCreateModal();
-
-      // Clear photo selection
-      (window as unknown as KvpWindow).selectedPhotos = [];
-      const photoPreview = document.querySelector('#photoPreview');
-      if (photoPreview) setHTML(photoPreview as HTMLElement, '');
-
-      // Reload suggestions
-      await this.loadSuggestions();
+      await this.handlePhotoUpload(suggestionId);
+      await this.handleSuggestionSuccess();
     } catch (error) {
-      console.error('Error creating suggestion:', error);
-
-      // Handle validation errors specifically
-      if (error instanceof Error && error.message === 'Validation failed') {
-        interface ValidationError extends Error {
-          details?: {
-            field: string;
-            message: string;
-          }[];
-        }
-        const apiError = error as ValidationError;
-        if (apiError.details !== undefined && Array.isArray(apiError.details)) {
-          const errorMessages = apiError.details.map((detail) => {
-            if (detail.field === 'title') {
-              return 'Titel: Muss zwischen 3 und 255 Zeichen lang sein';
-            } else if (detail.field === 'description') {
-              return 'Beschreibung: Muss zwischen 10 und 5000 Zeichen lang sein';
-            }
-            return detail.message;
-          });
-          this.showError('Bitte korrigieren Sie folgende Eingaben:\n' + errorMessages.join('\n'));
-        } else {
-          this.showError('Validierungsfehler: Bitte überprüfen Sie Ihre Eingaben');
-        }
-      } else {
-        this.showError(error instanceof Error ? error.message : 'Fehler beim Erstellen des Vorschlags');
-      }
+      this.handleSuggestionError(error);
     }
+  }
+
+  private getFormData(): FormData | null {
+    const form = $$('#createKvpForm');
+    if (!(form instanceof HTMLFormElement)) {
+      this.showError('Form nicht gefunden');
+      return null;
+    }
+    return new FormData(form);
+  }
+
+  private validateFormData(formData: FormData): { title: string; description: string } | null {
+    const title = formData.get('title');
+    const description = formData.get('description');
+
+    if (title === null || title === '' || description === null || description === '') {
+      this.showError('Bitte füllen Sie Titel und Beschreibung aus');
+      return null;
+    }
+
+    return { title: title as string, description: description as string };
+  }
+
+  private prepareSuggestionData(
+    formData: FormData,
+    validatedData: { title: string; description: string },
+  ): Record<string, unknown> {
+    const categoryId = formData.get('category_id');
+    const priorityValue = formData.get('priority');
+    const benefitValue = formData.get('expected_benefit');
+    const costValue = formData.get('estimated_cost');
+
+    const { orgLevel, orgId } = this.determineOrgLevel();
+
+    const data = {
+      title: validatedData.title.trim(),
+      description: validatedData.description.trim(),
+      categoryId: categoryId !== null && categoryId !== '' ? Number.parseInt(categoryId as string, 10) : null,
+      priority: priorityValue !== null && priorityValue !== '' ? (priorityValue as string) : 'normal',
+      expectedBenefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null,
+      estimatedCost: costValue !== null && costValue !== '' ? (costValue as string) : null,
+      orgLevel: orgLevel,
+      orgId: orgId,
+      departmentId: this.currentUser?.departmentId ?? null,
+    };
+
+    this.logSuggestionData(data);
+    return data;
+  }
+
+  private determineOrgLevel(): { orgLevel: string; orgId: number } {
+    const effectiveRole = this.getEffectiveRole();
+
+    if (effectiveRole === 'employee' && this.currentTeamId !== null && this.currentTeamId > 0) {
+      return { orgLevel: 'team', orgId: this.currentTeamId };
+    }
+
+    if (effectiveRole === 'admin' || effectiveRole === 'root') {
+      return { orgLevel: 'company', orgId: this.currentUser?.tenantId ?? 0 };
+    }
+
+    return { orgLevel: 'team', orgId: 0 };
+  }
+
+  private logSuggestionData(data: Record<string, unknown>): void {
+    console.log('Current user object:', this.currentUser);
+    console.log('Current user departmentId:', this.currentUser?.departmentId);
+    console.log('Sending KVP data to API:', data);
+    console.log('Data.departmentId being sent:', data.departmentId);
+  }
+
+  private async submitSuggestion(data: Record<string, unknown>): Promise<number> {
+    if (this.useV2API) {
+      return await this.submitV2Suggestion(data);
+    }
+    return await this.submitV1Suggestion(data);
+  }
+
+  private async submitV2Suggestion(data: Record<string, unknown>): Promise<number> {
+    const result = await this.apiClient.post<{ id: number }>('/kvp', data);
+    return result.id;
+  }
+
+  private async submitV1Suggestion(data: Record<string, unknown>): Promise<number> {
+    const token = getAuthToken();
+    const response = await fetch('/api/kvp', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token ?? ''}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = (await response.json()) as { message?: string };
+      throw new Error(error.message ?? 'Fehler beim Erstellen des Vorschlags');
+    }
+
+    const result = (await response.json()) as { suggestion: { id: number } };
+    return result.suggestion.id;
+  }
+
+  private async handlePhotoUpload(suggestionId: number): Promise<void> {
+    const selectedPhotos = (window as unknown as KvpWindow).selectedPhotos;
+
+    console.info('Check selectedPhotos:', selectedPhotos);
+    console.info('Window.selectedPhotos type:', typeof (window as unknown as KvpWindow).selectedPhotos);
+    console.info('Photos count:', selectedPhotos ? selectedPhotos.length : 0);
+
+    if (selectedPhotos && selectedPhotos.length > 0) {
+      console.info('Uploading photos for suggestion:', suggestionId);
+      await this.uploadPhotos(suggestionId, selectedPhotos);
+    } else {
+      console.info('No photos to upload');
+    }
+  }
+
+  private async handleSuggestionSuccess(): Promise<void> {
+    this.showSuccess('Ihr Vorschlag wurde erfolgreich eingereicht');
+    (window as unknown as KvpWindow).hideCreateModal();
+
+    (window as unknown as KvpWindow).selectedPhotos = [];
+    const photoPreview = document.querySelector('#photoPreview');
+    if (photoPreview) setHTML(photoPreview as HTMLElement, '');
+
+    await this.loadSuggestions();
+  }
+
+  private handleSuggestionError(error: unknown): void {
+    console.error('Error creating suggestion:', error);
+
+    if (this.isValidationError(error)) {
+      this.handleValidationError(error as Error);
+    } else {
+      this.showError(error instanceof Error ? error.message : 'Fehler beim Erstellen des Vorschlags');
+    }
+  }
+
+  private isValidationError(error: unknown): boolean {
+    return error instanceof Error && error.message === 'Validation failed';
+  }
+
+  private handleValidationError(error: Error): void {
+    interface ValidationError extends Error {
+      details?: {
+        field: string;
+        message: string;
+      }[];
+    }
+
+    const apiError = error as ValidationError;
+    if (apiError.details !== undefined && Array.isArray(apiError.details)) {
+      const errorMessages = apiError.details.map((detail) => this.formatValidationMessage(detail));
+      this.showError('Bitte korrigieren Sie folgende Eingaben:\n' + errorMessages.join('\n'));
+    } else {
+      this.showError('Validierungsfehler: Bitte überprüfen Sie Ihre Eingaben');
+    }
+  }
+
+  private formatValidationMessage(detail: { field: string; message: string }): string {
+    if (detail.field === 'title') {
+      return 'Titel: Muss zwischen 3 und 255 Zeichen lang sein';
+    }
+    if (detail.field === 'description') {
+      return 'Beschreibung: Muss zwischen 10 und 5000 Zeichen lang sein';
+    }
+    return detail.message;
   }
 
   private async uploadPhotos(suggestionId: number, photos: File[]): Promise<void> {
