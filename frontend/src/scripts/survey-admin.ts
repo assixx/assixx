@@ -140,83 +140,7 @@ export class SurveyAdminManager {
     // Event delegation for all survey admin actions
     document.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-
-      // Handle all data-action clicks
-      const actionElement = target.closest<HTMLElement>('[data-action]');
-      if (actionElement !== null) {
-        const action = actionElement.dataset.action ?? '';
-        const surveyId = actionElement.dataset.surveyId ?? '';
-        const params = actionElement.dataset.params ?? '';
-
-        // Stop propagation for buttons within cards
-        if (actionElement.tagName === 'BUTTON' && actionElement.closest('.survey-card') !== null) {
-          e.stopPropagation();
-        }
-
-        switch (action) {
-          case 'edit-survey':
-            if (surveyId !== '') void this.editSurvey(Number.parseInt(surveyId, 10));
-            break;
-          case 'view-results':
-            if (surveyId !== '') this.viewResults(Number.parseInt(surveyId, 10));
-            break;
-          case 'delete-survey':
-            if (surveyId !== '') void this.deleteSurvey(Number.parseInt(surveyId, 10));
-            break;
-          case 'create-from-template':
-            if (surveyId !== '') this.createFromTemplate(Number.parseInt(surveyId, 10));
-            break;
-          case 'remove-question':
-            if (params !== '') this.removeQuestion(params);
-            break;
-          case 'toggle-dropdown':
-            if (params !== '') this.toggleDropdown(params);
-            break;
-          case 'select-question-type':
-            if (params !== '') {
-              const parts = params.split('|');
-              if (parts.length === 3) {
-                const [questionId, type, label] = parts;
-                this.selectQuestionType(questionId, type, label);
-              }
-            }
-            break;
-          case 'add-option':
-            if (params !== '') this.addOption(params);
-            break;
-          case 'remove-option':
-            this.removeOption(target);
-            break;
-          case 'add-question':
-            this.addQuestion();
-            break;
-          case 'save-survey-draft':
-            void this.saveSurvey('draft');
-            break;
-          case 'save-survey-active':
-            void this.saveSurvey('active');
-            break;
-          case 'select-assignment':
-            if (params !== '') {
-              const parts = params.split('|');
-              if (parts.length === 2) {
-                const [type, label] = parts;
-                void this.selectAssignmentOption(type, label);
-              }
-            }
-            break;
-        }
-      }
-
-      // Close dropdowns when clicking outside
-      if (!target.closest('.custom-dropdown')) {
-        document.querySelectorAll('.dropdown-options.active').forEach((dropdown) => {
-          dropdown.classList.remove('active');
-        });
-        document.querySelectorAll('.dropdown-display.active').forEach((display) => {
-          display.classList.remove('active');
-        });
-      }
+      this.handleDocumentClick(e, target);
     });
   }
 
@@ -225,6 +149,148 @@ export class SurveyAdminManager {
     await this.loadTemplates();
     await this.loadUserDepartments();
     await this.loadUserTeams();
+  }
+
+  private handleDocumentClick(e: MouseEvent, target: HTMLElement): void {
+    const actionElement = target.closest<HTMLElement>('[data-action]');
+    if (actionElement !== null) {
+      this.handleActionClick(e, actionElement);
+    }
+
+    this.handleDropdownClose(target);
+  }
+
+  private handleActionClick(e: MouseEvent, actionElement: HTMLElement): void {
+    const action = actionElement.dataset.action ?? '';
+    const surveyId = actionElement.dataset.surveyId ?? '';
+    const params = actionElement.dataset.params ?? '';
+
+    // Stop propagation for buttons within cards
+    if (actionElement.tagName === 'BUTTON' && actionElement.closest('.survey-card') !== null) {
+      e.stopPropagation();
+    }
+
+    this.executeAction(action, surveyId, params, e.target as HTMLElement);
+  }
+
+  private executeAction(action: string, surveyId: string, params: string, target: HTMLElement): void {
+    switch (action) {
+      case 'edit-survey':
+        this.handleEditSurvey(surveyId);
+        break;
+      case 'view-results':
+        this.handleViewResults(surveyId);
+        break;
+      case 'delete-survey':
+        this.handleDeleteSurvey(surveyId);
+        break;
+      case 'create-from-template':
+        this.handleCreateFromTemplate(surveyId);
+        break;
+      case 'remove-question':
+        this.handleRemoveQuestion(params);
+        break;
+      case 'toggle-dropdown':
+        this.handleToggleDropdown(params);
+        break;
+      case 'select-question-type':
+        this.handleSelectQuestionType(params);
+        break;
+      case 'add-option':
+        this.handleAddOption(params);
+        break;
+      case 'remove-option':
+        this.removeOption(target);
+        break;
+      case 'add-question':
+        this.addQuestion();
+        break;
+      case 'save-survey-draft':
+        void this.saveSurvey('draft');
+        break;
+      case 'save-survey-active':
+        void this.saveSurvey('active');
+        break;
+      case 'select-assignment':
+        this.handleSelectAssignment(params);
+        break;
+      default:
+        // Unknown action, do nothing
+        break;
+    }
+  }
+
+  private handleEditSurvey(surveyId: string): void {
+    if (surveyId !== '') {
+      void this.editSurvey(Number.parseInt(surveyId, 10));
+    }
+  }
+
+  private handleViewResults(surveyId: string): void {
+    if (surveyId !== '') {
+      this.viewResults(Number.parseInt(surveyId, 10));
+    }
+  }
+
+  private handleDeleteSurvey(surveyId: string): void {
+    if (surveyId !== '') {
+      void this.deleteSurvey(Number.parseInt(surveyId, 10));
+    }
+  }
+
+  private handleCreateFromTemplate(surveyId: string): void {
+    if (surveyId !== '') {
+      this.createFromTemplate(Number.parseInt(surveyId, 10));
+    }
+  }
+
+  private handleRemoveQuestion(params: string): void {
+    if (params !== '') {
+      this.removeQuestion(params);
+    }
+  }
+
+  private handleToggleDropdown(params: string): void {
+    if (params !== '') {
+      this.toggleDropdown(params);
+    }
+  }
+
+  private handleSelectQuestionType(params: string): void {
+    if (params !== '') {
+      const parts = params.split('|');
+      if (parts.length === 3) {
+        const [questionId, type, label] = parts;
+        this.selectQuestionType(questionId, type, label);
+      }
+    }
+  }
+
+  private handleAddOption(params: string): void {
+    if (params !== '') {
+      this.addOption(params);
+    }
+  }
+
+  private handleSelectAssignment(params: string): void {
+    if (params !== '') {
+      const parts = params.split('|');
+      if (parts.length === 2) {
+        const [type, label] = parts;
+        void this.selectAssignmentOption(type, label);
+      }
+    }
+  }
+
+  private handleDropdownClose(target: HTMLElement): void {
+    if (!target.closest('.custom-dropdown')) {
+      document.querySelectorAll('.dropdown-options.active').forEach((dropdown) => {
+        dropdown.classList.remove('active');
+      });
+      document.querySelectorAll('.dropdown-display.active').forEach((display) => {
+        display.classList.remove('active');
+      });
+    }
   }
 
   private registerModalTemplate(): void {
@@ -548,6 +614,11 @@ export class SurveyAdminManager {
   }
 
   public async selectAssignmentOption(type: string, text: string): Promise<void> {
+    this.updateAssignmentDropdown(type, text);
+    await this.updateAssignmentSelections(type);
+  }
+
+  private updateAssignmentDropdown(type: string, text: string): void {
     const assignmentType = document.querySelector<HTMLInputElement>('#assignmentType');
     const displaySpan = document.querySelector('#assignmentDropdownDisplay span');
     const dropdown = document.querySelector('#assignmentDropdownDropdown');
@@ -557,22 +628,32 @@ export class SurveyAdminManager {
     if (displaySpan !== null) displaySpan.textContent = text;
     if (dropdown !== null) dropdown.classList.remove('active');
     if (display !== null) display.classList.remove('active');
+  }
 
-    // Show/hide department selection
+  private async updateAssignmentSelections(type: string): Promise<void> {
     const departmentSelection = document.querySelector<HTMLElement>('#departmentSelection');
     const teamSelection = document.querySelector<HTMLElement>('#teamSelection');
 
-    if (type === 'department') {
-      if (departmentSelection) departmentSelection.classList.remove('u-hidden');
-      if (teamSelection) teamSelection.classList.add('u-hidden');
+    const showDepartment = type === 'department';
+    const showTeam = type === 'team';
+
+    this.setElementVisibility(departmentSelection, showDepartment);
+    this.setElementVisibility(teamSelection, showTeam);
+
+    if (showDepartment) {
       await this.loadUserDepartments();
-    } else if (type === 'team') {
-      if (departmentSelection) departmentSelection.classList.add('u-hidden');
-      if (teamSelection) teamSelection.classList.remove('u-hidden');
+    } else if (showTeam) {
       await this.loadUserTeams();
+    }
+  }
+
+  private setElementVisibility(element: HTMLElement | null, show: boolean): void {
+    if (element === null) return;
+
+    if (show) {
+      element.classList.remove('u-hidden');
     } else {
-      if (departmentSelection) departmentSelection.classList.add('u-hidden');
-      if (teamSelection) teamSelection.classList.add('u-hidden');
+      element.classList.add('u-hidden');
     }
   }
 
@@ -821,10 +902,21 @@ export class SurveyAdminManager {
   // ============================================
 
   public async saveSurvey(status: 'draft' | 'active'): Promise<void> {
+    const assignments = this.collectAssignments();
+    if (assignments === null) return;
+
+    const surveyData = this.collectSurveyData(status, assignments);
+    if (surveyData === null) return;
+
+    if (!this.validateSurveyData(surveyData)) return;
+
+    await this.submitSurvey(surveyData);
+  }
+
+  private collectAssignments(): SurveyAssignment[] | null {
     const assignmentType = document.querySelector<HTMLInputElement>('#assignmentType')?.value;
     const assignments: SurveyAssignment[] = [];
 
-    // Handle different assignment types
     if (assignmentType === 'all_users') {
       assignments.push({ type: 'all_users' });
     } else if (assignmentType === 'department') {
@@ -833,7 +925,7 @@ export class SurveyAdminManager {
         const selectedDepts = Array.from(select.selectedOptions).map((opt) => opt.value);
         if (selectedDepts.length === 0) {
           showErrorAlert('Bitte wählen Sie mindestens eine Abteilung aus');
-          return;
+          return null;
         }
         selectedDepts.forEach((deptId) => {
           assignments.push({
@@ -848,7 +940,7 @@ export class SurveyAdminManager {
         const selectedTeams = Array.from(select.selectedOptions).map((opt) => opt.value);
         if (selectedTeams.length === 0) {
           showErrorAlert('Bitte wählen Sie mindestens ein Team aus');
-          return;
+          return null;
         }
         selectedTeams.forEach((teamId) => {
           assignments.push({
@@ -858,7 +950,10 @@ export class SurveyAdminManager {
         });
       }
     }
+    return assignments;
+  }
 
+  private collectSurveyData(status: 'draft' | 'active', assignments: SurveyAssignment[]): Survey | null {
     const titleInput = document.querySelector<HTMLInputElement>('#surveyTitle');
     const descInput = document.querySelector<HTMLTextAreaElement>('#surveyDescription');
     const anonInput = document.querySelector<HTMLInputElement>('#isAnonymous');
@@ -868,10 +963,10 @@ export class SurveyAdminManager {
 
     if (!titleInput || !descInput || !anonInput || !mandInput || !startInput || !endInput) {
       showErrorAlert('Formularfelder konnten nicht gefunden werden');
-      return;
+      return null;
     }
 
-    const surveyData: Survey = {
+    return {
       title: titleInput.value,
       description: descInput.value,
       isAnonymous: anonInput.checked,
@@ -882,27 +977,22 @@ export class SurveyAdminManager {
       questions: this.getQuestionsData(),
       assignments: assignments,
     };
+  }
 
-    // Validation
-    // FIX: Explizite Längen-Prüfung statt impliziter falsy-Check (0 ist falsy!)
+  private validateSurveyData(surveyData: Survey): boolean {
     const titleString = typeof surveyData.title === 'string' ? surveyData.title : '';
     if (titleString === '' || !surveyData.questions || surveyData.questions.length === 0) {
       showErrorAlert('Bitte geben Sie einen Titel ein und fügen Sie mindestens eine Frage hinzu');
-      return;
+      return false;
     }
+    return true;
+  }
 
+  private async submitSurvey(surveyData: Survey): Promise<void> {
     try {
       const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
-      const endpoint =
-        this.currentSurveyId !== null
-          ? useV2
-            ? `/surveys/${this.currentSurveyId}`
-            : `/api/surveys/${this.currentSurveyId}`
-          : useV2
-            ? '/surveys'
-            : '/api/surveys';
-
-      const method = this.currentSurveyId !== null ? 'PUT' : 'POST'; // FIX: Explizite null-Prüfung statt truthy-Check
+      const endpoint = this.getSurveyEndpoint(useV2);
+      const method = this.currentSurveyId !== null ? 'PUT' : 'POST';
 
       interface SurveyApiResponse {
         success?: boolean;
@@ -910,23 +1000,17 @@ export class SurveyAdminManager {
         error?: { message?: string };
       }
 
-      const response: SurveyApiResponse = await (useV2 && method === 'POST'
-        ? this.apiClient.post<SurveyApiResponse>(endpoint, surveyData)
-        : useV2 && method === 'PUT'
-          ? this.apiClient.put<SurveyApiResponse>(endpoint, surveyData)
-          : fetch(endpoint, {
-              method: method,
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(surveyData),
-            }).then((r) => r.json() as Promise<SurveyApiResponse>));
+      const response: SurveyApiResponse = await this.executeSurveyRequest<SurveyApiResponse>(
+        useV2,
+        method,
+        endpoint,
+        surveyData,
+      );
 
       if (response.success === true || response.id !== undefined) {
         showSuccessAlert(
           this.currentSurveyId !== null ? 'Umfrage erfolgreich aktualisiert' : 'Umfrage erfolgreich erstellt',
-        ); // FIX: Explizite null-Prüfung
+        );
         this.closeModal();
         await this.loadSurveys();
       } else {
@@ -936,6 +1020,36 @@ export class SurveyAdminManager {
       console.error('Error saving survey:', error);
       showErrorAlert('Fehler beim Speichern der Umfrage');
     }
+  }
+
+  private getSurveyEndpoint(useV2: boolean): string {
+    if (this.currentSurveyId !== null) {
+      return useV2 ? `/surveys/${this.currentSurveyId}` : `/api/surveys/${this.currentSurveyId}`;
+    }
+    return useV2 ? '/surveys' : '/api/surveys';
+  }
+
+  private async executeSurveyRequest<T>(
+    useV2: boolean,
+    method: string,
+    endpoint: string,
+    surveyData: Survey,
+  ): Promise<T> {
+    if (useV2 && method === 'POST') {
+      return await this.apiClient.post<T>(endpoint, surveyData);
+    }
+    if (useV2 && method === 'PUT') {
+      return await this.apiClient.put<T>(endpoint, surveyData);
+    }
+    const response = await fetch(endpoint, {
+      method: method,
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(surveyData),
+    });
+    return await (response.json() as Promise<T>);
   }
 
   public async editSurvey(surveyId: number): Promise<void> {
@@ -1075,7 +1189,12 @@ export class SurveyAdminManager {
   }
 
   private async populateSurveyForm(survey: Survey): Promise<void> {
-    // Basic fields
+    this.populateBasicFields(survey);
+    await this.populateAssignments(survey);
+    this.populateQuestions(survey);
+  }
+
+  private populateBasicFields(survey: Survey): void {
     const titleInput = document.querySelector<HTMLInputElement>('#surveyTitle');
     const descInput = document.querySelector<HTMLTextAreaElement>('#surveyDescription');
     const anonInput = document.querySelector<HTMLInputElement>('#isAnonymous');
@@ -1093,125 +1212,142 @@ export class SurveyAdminManager {
     if (endInput !== null && survey.endDate !== undefined) {
       endInput.value = new Date(survey.endDate).toISOString().slice(0, 16);
     }
+  }
 
-    // Handle assignments
-    if (survey.assignments !== undefined && survey.assignments.length > 0) {
-      const assignment = survey.assignments[0];
-      const assignType = assignment.assignmentType ?? assignment.assignment_type ?? assignment.type;
-
-      if (assignType === 'all_users') {
-        await this.selectAssignmentOption('all_users', 'Ganze Firma');
-      } else if (assignType === 'department') {
-        await this.selectAssignmentOption('department', 'Abteilung');
-        // Set selected departments
-        const departmentSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
-        if (departmentSelect !== null) {
-          Array.from(departmentSelect.options).forEach((option) => (option.selected = false));
-          survey.assignments.forEach((assign) => {
-            const deptId = assign.departmentId ?? assign.department_id;
-            if (deptId !== undefined) {
-              const option = departmentSelect.querySelector<HTMLOptionElement>(`option[value="${deptId}"]`);
-              if (option !== null) option.selected = true;
-            }
-          });
-        }
-      } else if (assignType === 'team') {
-        await this.selectAssignmentOption('team', 'Team');
-        // Set selected teams
-        const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
-        if (teamSelect !== null) {
-          Array.from(teamSelect.options).forEach((option) => (option.selected = false));
-          survey.assignments.forEach((assign) => {
-            const teamId = assign.teamId ?? assign.team_id;
-            if (teamId !== undefined) {
-              const option = teamSelect.querySelector<HTMLOptionElement>(`option[value="${teamId}"]`);
-              if (option !== null) option.selected = true;
-            }
-          });
-        }
-      }
-    } else {
+  private async populateAssignments(survey: Survey): Promise<void> {
+    if (survey.assignments === undefined || survey.assignments.length === 0) {
       await this.selectAssignmentOption('all_users', 'Ganze Firma');
+      return;
     }
 
-    // Clear and add questions
+    const assignment = survey.assignments[0];
+    const assignType = assignment.assignmentType ?? assignment.assignment_type ?? assignment.type;
+
+    if (assignType === 'all_users') {
+      await this.selectAssignmentOption('all_users', 'Ganze Firma');
+    } else if (assignType === 'department') {
+      await this.populateDepartmentAssignments(survey.assignments);
+    } else if (assignType === 'team') {
+      await this.populateTeamAssignments(survey.assignments);
+    }
+  }
+
+  private async populateDepartmentAssignments(assignments: SurveyAssignment[]): Promise<void> {
+    await this.selectAssignmentOption('department', 'Abteilung');
+    const departmentSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
+    if (departmentSelect === null) return;
+
+    Array.from(departmentSelect.options).forEach((option) => (option.selected = false));
+    assignments.forEach((assign) => {
+      const deptId = assign.departmentId ?? assign.department_id;
+      if (deptId !== undefined) {
+        const option = departmentSelect.querySelector<HTMLOptionElement>(`option[value="${deptId}"]`);
+        if (option !== null) option.selected = true;
+      }
+    });
+  }
+
+  private async populateTeamAssignments(assignments: SurveyAssignment[]): Promise<void> {
+    await this.selectAssignmentOption('team', 'Team');
+    const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
+    if (teamSelect === null) return;
+
+    Array.from(teamSelect.options).forEach((option) => (option.selected = false));
+    assignments.forEach((assign) => {
+      const teamId = assign.teamId ?? assign.team_id;
+      if (teamId !== undefined) {
+        const option = teamSelect.querySelector<HTMLOptionElement>(`option[value="${teamId}"]`);
+        if (option !== null) option.selected = true;
+      }
+    });
+  }
+
+  private populateQuestions(survey: Survey): void {
     const questionsList = $('#questionsList');
     setHTML(questionsList, '');
     this.questionCounter = 0;
 
-    if (survey.questions) {
-      survey.questions.forEach((question) => {
-        this.addQuestion();
-        const questionElement = document.querySelector('.question-item:last-child');
-        if (questionElement === null) return;
+    if (!survey.questions) return;
 
-        // Set question text
-        const textInput = questionElement.querySelector<HTMLInputElement>('input[type="text"]');
-        if (textInput !== null) {
-          textInput.value = this.getTextFromBuffer(question.questionText);
-        }
+    survey.questions.forEach((question) => {
+      this.addQuestion();
+      const questionElement = document.querySelector('.question-item:last-child');
+      if (questionElement === null) return;
 
-        // Set question type
-        const typeInput = questionElement.querySelector<HTMLInputElement>('input[type="hidden"][id$="_typeValue"]');
-        if (typeInput !== null) {
-          const qType = question.questionType;
-          typeInput.value = qType;
-          // Update dropdown display
-          const typeDisplay = questionElement.querySelector('[id$="_typeDisplay"] span');
-          if (typeDisplay) {
-            const typeLabels: Record<string, string> = {
-              text: 'Textantwort',
-              single_choice: 'Einzelauswahl',
-              multiple_choice: 'Mehrfachauswahl',
-              rating: 'Bewertung (1-5)',
-              yes_no: 'Ja/Nein',
-              number: 'Zahl',
-              date: 'Datum',
-            };
-            // Validate qType is one of the known keys to prevent object injection
-            const validTypes = ['text', 'single_choice', 'multiple_choice', 'rating', 'yes_no', 'number', 'date'];
-            // Safe: qType is validated to be in validTypes before accessing typeLabels
-            // eslint-disable-next-line security/detect-object-injection
-            const labelText = validTypes.includes(qType) ? typeLabels[qType] : 'Textantwort';
-            typeDisplay.textContent = labelText;
-          }
-        }
+      this.populateQuestionFields(questionElement, question);
+      this.populateQuestionOptions(questionElement, question);
+    });
+  }
 
-        // Set required checkbox
-        const requiredCheckbox = questionElement.querySelector<HTMLInputElement>('input[type="checkbox"]');
-        if (requiredCheckbox !== null) {
-          requiredCheckbox.checked = this.toBool(question.isRequired);
-        }
-
-        // Handle options
-        if (question.options && question.options.length > 0) {
-          const qType = question.questionType;
-          this.handleQuestionTypeChange(`question_${this.questionCounter}`, qType);
-          const optionsList = questionElement.querySelector(`#question_${this.questionCounter}_option_list`);
-          if (optionsList !== null) {
-            optionsList.innerHTML = '';
-            question.options.forEach((option) => {
-              const optionText = typeof option === 'string' ? option : option.option_text;
-              const optionHtml = `
-                <div class="option-item">
-                  <input type="text" class="option-input" value="${escapeHtml(optionText)}">
-                  <button type="button" class="remove-option" data-action="remove-option">
-                    <i class="fas fa-times"></i>
-                  </button>
-                </div>
-              `;
-              // Use setHTML from dom-utils to sanitize and append
-              const tempDiv = document.createElement('div');
-              setHTML(tempDiv, optionHtml);
-              const optionElement = tempDiv.firstElementChild;
-              if (optionElement !== null) {
-                optionsList.append(optionElement);
-              }
-            });
-          }
-        }
-      });
+  private populateQuestionFields(questionElement: Element, question: SurveyQuestion): void {
+    // Set question text
+    const textInput = questionElement.querySelector<HTMLInputElement>('input[type="text"]');
+    if (textInput !== null) {
+      textInput.value = this.getTextFromBuffer(question.questionText);
     }
+
+    // Set question type
+    const typeInput = questionElement.querySelector<HTMLInputElement>('input[type="hidden"][id$="_typeValue"]');
+    if (typeInput !== null) {
+      const qType = question.questionType;
+      typeInput.value = qType;
+      this.updateQuestionTypeDisplay(questionElement, qType);
+    }
+
+    // Set required checkbox
+    const requiredCheckbox = questionElement.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    if (requiredCheckbox !== null) {
+      requiredCheckbox.checked = this.toBool(question.isRequired);
+    }
+  }
+
+  private updateQuestionTypeDisplay(questionElement: Element, qType: string): void {
+    const typeDisplay = questionElement.querySelector('[id$="_typeDisplay"] span');
+    if (!typeDisplay) return;
+
+    const typeLabels: Record<string, string> = {
+      text: 'Textantwort',
+      single_choice: 'Einzelauswahl',
+      multiple_choice: 'Mehrfachauswahl',
+      rating: 'Bewertung (1-5)',
+      yes_no: 'Ja/Nein',
+      number: 'Zahl',
+      date: 'Datum',
+    };
+
+    const validTypes = ['text', 'single_choice', 'multiple_choice', 'rating', 'yes_no', 'number', 'date'];
+    // eslint-disable-next-line security/detect-object-injection
+    const labelText = validTypes.includes(qType) ? typeLabels[qType] : 'Textantwort';
+    typeDisplay.textContent = labelText;
+  }
+
+  private populateQuestionOptions(questionElement: Element, question: SurveyQuestion): void {
+    if (!question.options || question.options.length === 0) return;
+
+    const qType = question.questionType;
+    this.handleQuestionTypeChange(`question_${this.questionCounter}`, qType);
+    const optionsList = questionElement.querySelector(`#question_${this.questionCounter}_option_list`);
+
+    if (optionsList === null) return;
+
+    optionsList.innerHTML = '';
+    question.options.forEach((option: string | QuestionOption) => {
+      const optionText = typeof option === 'string' ? option : option.option_text;
+      const optionHtml = `
+        <div class="option-item">
+          <input type="text" class="option-input" value="${escapeHtml(optionText)}">
+          <button type="button" class="remove-option" data-action="remove-option">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      const tempDiv = document.createElement('div');
+      setHTML(tempDiv, optionHtml);
+      const optionElement = tempDiv.firstElementChild;
+      if (optionElement !== null) {
+        optionsList.append(optionElement);
+      }
+    });
   }
 
   public viewResults(surveyId: number): void {

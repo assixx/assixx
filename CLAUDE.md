@@ -133,7 +133,7 @@ docker-compose restart backend
 4. Read(~/projects/Assixx/README.md)
 5. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
 6. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
-7. API-V2-MIGRATION-MASTERPLAN.md (already done, just for context)
+7. Read(~/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-MIGRATION-MASTERPLAN.md (already done, just for context)
 8. Dont do more than this and than recap fast and than ask user that youre ready.
 
 ## 📊 PROGRESS DOCUMENTATION

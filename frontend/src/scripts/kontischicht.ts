@@ -240,6 +240,116 @@ class KontischichtManager {
   }
 
   /**
+   * Create modal header HTML
+   */
+  private createModalHeader(): string {
+    return `
+      <div class="modal-header">
+        <h2 class="modal-title">Kontischicht Pattern auswählen</h2>
+        <button type="button" class="modal-close" data-action="close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Create date range selection HTML
+   */
+  private createDateRangeSection(): string {
+    const today = new Date().toISOString().split('T')[0];
+    return `
+      <div class="rotation-box" style="margin-bottom: 20px; background: rgba(66, 153, 225, 0.05); border: 1px solid rgba(66, 153, 225, 0.3);">
+        <h4 style="color: #4299e1; margin-bottom: 15px;">Zeitraum festlegen</h4>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <label style="color: rgba(255, 255, 255, 0.7); display: block; margin-bottom: 5px; font-size: 14px;">
+              <i class="fas fa-calendar"></i> Startdatum
+            </label>
+            <input type="date" id="kontischicht-start-date" name="startDate"
+              class="form-control" required
+              style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff;"
+              min="${today}"
+              value="${today}">
+          </div>
+          <div>
+            <label style="color: rgba(255, 255, 255, 0.7); display: block; margin-bottom: 5px; font-size: 14px;">
+              <i class="fas fa-calendar-check"></i> Enddatum (max. 1.5 Jahre)
+            </label>
+            <input type="date" id="kontischicht-end-date" name="endDate"
+              class="form-control" required
+              style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff;">
+          </div>
+        </div>
+        <p style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-top: 10px; margin-bottom: 0;">
+          <i class="fas fa-info-circle"></i> Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für nahtlosen Übergang.
+        </p>
+      </div>
+    `;
+  }
+
+  /**
+   * Create pattern template card HTML
+   */
+  private createPatternCard(template: PatternTemplate): string {
+    const preview =
+      template.preview !== ''
+        ? `
+      <div style="
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(66, 153, 225, 0.2);
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 10px;
+      ">
+        <code style="color: #10b981; font-size: 12px; white-space: pre-wrap;">
+          ${this.escapeHtml(template.preview)}
+        </code>
+      </div>
+    `
+        : '';
+
+    const badges =
+      template.employeeCount > 0
+        ? `
+      <div style="margin-top: 10px;">
+        <span class="badge" style="
+          background: rgba(66, 153, 225, 0.2);
+          color: #4299e1;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          margin-right: 8px;
+        ">${template.employeeCount} Mitarbeiter</span>
+        <span class="badge" style="
+          background: rgba(16, 185, 129, 0.2);
+          color: #10b981;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+        ">${template.cycleWeeks} Wochen Zyklus</span>
+      </div>
+    `
+        : '';
+
+    return `
+      <div class="rotation-box pattern-template-card" data-pattern-id="${this.escapeHtml(template.id)}" style="
+        margin-bottom: 15px;
+        cursor: pointer;
+      ">
+        <h4 style="color: #4299e1; margin-bottom: 10px;">
+          ${this.escapeHtml(template.name)}
+        </h4>
+        <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; margin-bottom: 10px;">
+          ${this.escapeHtml(template.description)}
+        </p>
+        ${preview}
+        ${badges}
+      </div>
+    `;
+  }
+
+  /**
    * Create the pattern selection modal
    */
   private createPatternModal(): void {
@@ -267,106 +377,20 @@ class KontischichtManager {
       width: 90%;
     `;
 
+    // Build modal content
+    const patternCards = this.PATTERN_TEMPLATES.map((template) => this.createPatternCard(template)).join('');
+
     // eslint-disable-next-line no-unsanitized/property -- Template data is hardcoded and safe
     modalContainer.innerHTML = `
-      <div class="modal-header">
-        <h2 class="modal-title">Kontischicht Pattern auswählen</h2>
-        <button type="button" class="modal-close" data-action="close">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
+      ${this.createModalHeader()}
       <div class="modal-body" style="padding: 20px;">
         <p style="color: rgba(255, 255, 255, 0.8); margin-bottom: 20px;">
           Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes.
           Das gewählte Muster wird automatisch für den gewählten Zeitraum wiederholt.
         </p>
-
-        <!-- Date Range Selection -->
-        <div class="rotation-box" style="margin-bottom: 20px; background: rgba(66, 153, 225, 0.05); border: 1px solid rgba(66, 153, 225, 0.3);">
-          <h4 style="color: #4299e1; margin-bottom: 15px;">Zeitraum festlegen</h4>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-            <div>
-              <label style="color: rgba(255, 255, 255, 0.7); display: block; margin-bottom: 5px; font-size: 14px;">
-                <i class="fas fa-calendar"></i> Startdatum
-              </label>
-              <input type="date" id="kontischicht-start-date" name="startDate"
-                class="form-control" required
-                style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff;"
-                min="${new Date().toISOString().split('T')[0]}"
-                value="${new Date().toISOString().split('T')[0]}">
-            </div>
-            <div>
-              <label style="color: rgba(255, 255, 255, 0.7); display: block; margin-bottom: 5px; font-size: 14px;">
-                <i class="fas fa-calendar-check"></i> Enddatum (max. 1.5 Jahre)
-              </label>
-              <input type="date" id="kontischicht-end-date" name="endDate"
-                class="form-control" required
-                style="background: rgba(0, 0, 0, 0.3); border: 1px solid rgba(255, 255, 255, 0.2); color: #ffffff;">
-            </div>
-          </div>
-          <p style="color: rgba(255, 255, 255, 0.5); font-size: 12px; margin-top: 10px; margin-bottom: 0;">
-            <i class="fas fa-info-circle"></i> Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für nahtlosen Übergang.
-          </p>
-        </div>
-
-        <!-- Pattern Selection Grid -->
+        ${this.createDateRangeSection()}
         <div class="rotation-assignment-container">
-          ${this.PATTERN_TEMPLATES.map(
-            (template) => `
-            <div class="rotation-box pattern-template-card" data-pattern-id="${this.escapeHtml(template.id)}" style="
-              margin-bottom: 15px;
-              cursor: pointer;
-
-            ">
-              <h4 style="color: #4299e1; margin-bottom: 10px;">
-                ${this.escapeHtml(template.name)}
-              </h4>
-              <p style="color: rgba(255, 255, 255, 0.7); font-size: 14px; margin-bottom: 10px;">
-                ${this.escapeHtml(template.description)}
-              </p>
-              ${
-                template.preview !== ''
-                  ? `
-                <div style="
-                  background: rgba(0, 0, 0, 0.2);
-                  border: 1px solid rgba(66, 153, 225, 0.2);
-                  border-radius: 4px;
-                  padding: 10px;
-                  margin-top: 10px;
-                ">
-                  <code style="color: #10b981; font-size: 12px; white-space: pre-wrap;">
-                    ${this.escapeHtml(template.preview)}
-                  </code>
-                </div>
-              `
-                  : ''
-              }
-              ${
-                template.employeeCount > 0
-                  ? `
-                <div style="margin-top: 10px;">
-                  <span class="badge" style="
-                    background: rgba(66, 153, 225, 0.2);
-                    color: #4299e1;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                    margin-right: 8px;
-                  ">${template.employeeCount} Mitarbeiter</span>
-                  <span class="badge" style="
-                    background: rgba(16, 185, 129, 0.2);
-                    color: #10b981;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    font-size: 12px;
-                  ">${template.cycleWeeks} Wochen Zyklus</span>
-                </div>
-              `
-                  : ''
-              }
-            </div>
-          `,
-          ).join('')}
+          ${patternCards}
         </div>
       </div>
       <div class="modal-footer">

@@ -174,8 +174,114 @@ export class ChatWebSocketServer {
     }
   }
 
+  private async verifyConversationAccess(
+    conversationId: number,
+    tenantId: number,
+  ): Promise<number[]> {
+    const participantQuery = `
+      SELECT cp.user_id
+      FROM conversation_participants cp
+      JOIN conversations c ON cp.conversation_id = c.id
+      WHERE cp.conversation_id = ?
+      AND c.tenant_id = ?
+      AND cp.tenant_id = ?
+    `;
+    const [participants] = await query<RowDataPacket[]>(participantQuery, [
+      conversationId,
+      tenantId,
+      tenantId,
+    ]);
+
+    return participants.map((p) => (p as { user_id: number }).user_id);
+  }
+
+  private async saveMessage(
+    conversationId: number,
+    senderId: number,
+    content: string,
+    tenantId: number,
+  ): Promise<number> {
+    const messageQuery = `
+      INSERT INTO messages (conversation_id, sender_id, content, tenant_id)
+      VALUES (?, ?, ?, ?)
+    `;
+    const [result] = await execute<ResultSetHeader>(messageQuery, [
+      conversationId,
+      senderId,
+      content,
+      tenantId,
+    ]);
+    return result.insertId;
+  }
+
+  private async getSenderInfo(userId: number): Promise<
+    | {
+        id: number;
+        username: string;
+        first_name: string | null;
+        last_name: string | null;
+        profile_picture_url: string | null;
+      }
+    | undefined
+  > {
+    const senderQuery = `
+      SELECT id, username, first_name, last_name, profile_picture_url
+      FROM users WHERE id = ?
+    `;
+    const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [userId]);
+    return senderInfo[0] as
+      | {
+          id: number;
+          username: string;
+          first_name: string | null;
+          last_name: string | null;
+          profile_picture_url: string | null;
+        }
+      | undefined;
+  }
+
+  private buildMessageData(
+    messageId: number,
+    conversationId: number,
+    content: string,
+    senderId: number,
+    sender: ReturnType<typeof this.getSenderInfo> extends Promise<infer T> ? T : never,
+    attachments: unknown[],
+  ): unknown {
+    const UNKNOWN_USER = 'Unbekannter Benutzer';
+    return {
+      id: messageId,
+      conversation_id: conversationId,
+      content,
+      sender_id: senderId,
+      sender_name:
+        sender ?
+          [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
+          sender.username ||
+          UNKNOWN_USER
+        : UNKNOWN_USER,
+      first_name: sender?.first_name ?? '',
+      last_name: sender?.last_name ?? '',
+      username: sender?.username ?? '',
+      profile_picture_url: sender?.profile_picture_url ?? null,
+      created_at: new Date().toISOString(),
+      delivery_status: 'sent',
+      is_read: false,
+      attachments,
+    };
+  }
+
   private async handleSendMessage(ws: ExtendedWebSocket, data: SendMessageData): Promise<void> {
     const { conversationId, content, attachments = [] } = data;
+
+    // Check if user is authenticated
+    if (ws.userId === undefined || ws.tenantId === undefined) {
+      this.sendMessage(ws, {
+        type: 'error',
+        data: { message: 'Not authenticated' },
+      });
+      return;
+    }
 
     logger.debug(`Handling send message:`, {
       conversationId,
@@ -186,27 +292,11 @@ export class ChatWebSocketServer {
     });
 
     try {
-      // Berechtigung prüfen
-      const participantQuery = `
-        SELECT cp.user_id
-        FROM conversation_participants cp
-        JOIN conversations c ON cp.conversation_id = c.id
-        WHERE cp.conversation_id = ?
-        AND c.tenant_id = ?
-        AND cp.tenant_id = ?
-      `;
-      const [participants] = await query<RowDataPacket[]>(participantQuery, [
-        conversationId,
-        ws.tenantId,
-        ws.tenantId,
-      ]);
+      // Verify access and get participant IDs
+      const participantIds = await this.verifyConversationAccess(conversationId, ws.tenantId);
 
-      const participantIds = participants.map((p) => (p as { user_id: number }).user_id);
-
-      // Convert IDs to strings for comparison since ws.userId might be a string
       const participantIdsStr = participantIds.map((id: number) => String(id));
 
-      // Debug logging
       logger.error(`[WebSocket Debug] Permission check:`, {
         conversationId,
         wsUserId: ws.userId,
@@ -225,60 +315,23 @@ export class ChatWebSocketServer {
         return;
       }
 
-      // Nachricht in Datenbank speichern
-      const messageQuery = `
-        INSERT INTO messages (conversation_id, sender_id, content, tenant_id)
-        VALUES (?, ?, ?, ?)
-      `;
-      const [result] = await execute<ResultSetHeader>(messageQuery, [
+      // Save message to database
+      const messageId = await this.saveMessage(conversationId, ws.userId, content, ws.tenantId);
+
+      // Get sender information
+      const sender = await this.getSenderInfo(ws.userId);
+
+      // Build message data for broadcast
+      const messageData = this.buildMessageData(
+        messageId,
         conversationId,
+        content,
         ws.userId,
-        content,
-        ws.tenantId,
-      ]);
-
-      const messageId = result.insertId;
-
-      // Sender-Informationen abrufen
-      const senderQuery = `
-        SELECT id, username, first_name, last_name, profile_picture_url
-        FROM users WHERE id = ?
-      `;
-      const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [ws.userId]);
-      const sender = senderInfo[0] as
-        | {
-            id: number;
-            username: string;
-            first_name: string | null;
-            last_name: string | null;
-            profile_picture_url: string | null;
-          }
-        | undefined;
-
-      // Nachricht-Objekt für Broadcast erstellen
-      const UNKNOWN_USER = 'Unbekannter Benutzer';
-      const messageData = {
-        id: messageId,
-        conversation_id: conversationId,
-        content,
-        sender_id: ws.userId,
-        sender_name:
-          sender ?
-            [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
-            sender.username ||
-            UNKNOWN_USER
-          : UNKNOWN_USER,
-        first_name: sender?.first_name ?? '',
-        last_name: sender?.last_name ?? '',
-        username: sender?.username ?? '',
-        profile_picture_url: sender?.profile_picture_url ?? null,
-        created_at: new Date().toISOString(),
-        delivery_status: 'sent',
-        is_read: false,
+        sender,
         attachments,
-      };
+      );
 
-      // Nachricht an alle Teilnehmer senden
+      // Send message to all participants
       for (const participantId of participantIds) {
         const clientWs = this.clients.get(participantId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
@@ -289,7 +342,7 @@ export class ChatWebSocketServer {
         }
       }
 
-      // Bestätigung an Sender
+      // Send confirmation to sender
       this.sendMessage(ws, {
         type: 'message_sent',
         data: { messageId, timestamp: new Date().toISOString() },
@@ -642,9 +695,9 @@ export class ChatWebSocketServer {
   }
 
   /**
-   * Build message data object
+   * Build message data object from database row
    */
-  private buildMessageData(message: RowDataPacket): {
+  private buildMessageDataFromRow(message: RowDataPacket): {
     id: number;
     conversation_id: number;
     content: string;
@@ -692,7 +745,7 @@ export class ChatWebSocketServer {
     );
 
     // Build message data
-    const messageData = this.buildMessageData(message);
+    const messageData = this.buildMessageDataFromRow(message);
 
     // Send to recipient if online
     const recipientId = message.recipient_id as number;

@@ -371,132 +371,134 @@ async function safeDelete(
   }
 }
 
+// Helper: Delete chat-related data
+async function deleteChatData(
+  connection: PoolConnection,
+  tenantId: number,
+  userIds: number[],
+): Promise<void> {
+  const userIdList = userIds.length > 0 ? userIds : [0];
+  await safeDelete(
+    connection,
+    'DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN (?))',
+    [userIdList],
+  );
+  await safeDelete(connection, 'DELETE FROM messages WHERE sender_id IN (?)', [userIdList]);
+  await safeDelete(connection, 'DELETE FROM conversation_participants WHERE user_id IN (?)', [
+    userIdList,
+  ]);
+  await safeDelete(connection, 'DELETE FROM conversations WHERE tenant_id = ?', [tenantId]);
+}
+
+// Helper: Delete survey-related data
+async function deleteSurveyData(connection: PoolConnection, tenantId: number): Promise<void> {
+  const surveySubquery = 'SELECT id FROM surveys WHERE tenant_id = ?';
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_answers WHERE response_id IN (SELECT id FROM survey_responses WHERE survey_id IN (${surveySubquery}))`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_responses WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_question_options WHERE question_id IN (SELECT id FROM survey_questions WHERE survey_id IN (${surveySubquery}))`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_questions WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_assignments WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(
+    connection,
+    `DELETE FROM survey_reminders WHERE survey_id IN (${surveySubquery})`,
+    [tenantId],
+  );
+  await safeDelete(connection, 'DELETE FROM survey_templates WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM surveys WHERE tenant_id = ?', [tenantId]);
+}
+
+// Helper: Delete shift-related data
+async function deleteShiftData(connection: PoolConnection, tenantId: number): Promise<void> {
+  const shiftSubquery = 'SELECT id FROM shifts WHERE tenant_id = ?';
+  await safeDelete(connection, `DELETE FROM shift_trades WHERE shift_id IN (${shiftSubquery})`, [
+    tenantId,
+  ]);
+  await safeDelete(
+    connection,
+    `DELETE FROM shift_assignments WHERE shift_id IN (${shiftSubquery})`,
+    [tenantId],
+  );
+  await safeDelete(connection, `DELETE FROM shift_notes WHERE shift_id IN (${shiftSubquery})`, [
+    tenantId,
+  ]);
+  await safeDelete(connection, 'DELETE FROM shifts WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM shift_templates WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM shift_types WHERE tenant_id = ?', [tenantId]);
+}
+
+// Helper: Delete other tenant data
+async function deleteOtherTenantData(
+  connection: PoolConnection,
+  tenantId: number,
+  userIds: number[],
+): Promise<void> {
+  const userIdList = userIds.length > 0 ? userIds : [0];
+
+  // KVP data
+  await safeDelete(
+    connection,
+    'DELETE FROM kvp_comments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)',
+    [tenantId],
+  );
+  await safeDelete(connection, 'DELETE FROM kvp_suggestions WHERE tenant_id = ?', [tenantId]);
+
+  // Other tenant data
+  await safeDelete(connection, 'DELETE FROM calendar_events WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM documents WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM admin_logs WHERE admin_id IN (?)', [userIdList]);
+  await safeDelete(connection, 'DELETE FROM tenant_features WHERE tenant_id = ?', [tenantId]);
+
+  // User relationships
+  await safeDelete(connection, 'DELETE FROM user_teams WHERE user_id IN (?)', [userIdList]);
+  await safeDelete(connection, 'DELETE FROM user_departments WHERE user_id IN (?)', [userIdList]);
+
+  // Teams and departments
+  await safeDelete(connection, 'DELETE FROM teams WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM departments WHERE tenant_id = ?', [tenantId]);
+  await safeDelete(connection, 'DELETE FROM tenant_admins WHERE tenant_id = ?', [tenantId]);
+}
+
 // Tenant komplett löschen - ACHTUNG: Löscht ALLE Daten unwiderruflich!
 export async function deleteTenant(tenantId: number): Promise<boolean> {
   const connection = await getConnection();
 
   try {
     await connection.beginTransaction();
-
     logger.warn(`Starting complete deletion of tenant ${tenantId}`);
 
-    // 1. Get all user IDs for this tenant (for file cleanup)
+    // Get all user IDs for this tenant (for file cleanup)
     const [users] = await connection.query<RowDataPacket[]>(
       'SELECT id FROM users WHERE tenant_id = ?',
       [tenantId],
     );
     const userIds = users.map((u) => u.id as number);
 
-    // 2. Delete in correct order to respect foreign key constraints
-
-    // Delete chat-related data
-    await safeDelete(
-      connection,
-      'DELETE FROM message_status WHERE message_id IN (SELECT id FROM messages WHERE sender_id IN (?))',
-      [userIds.length > 0 ? userIds : [0]],
-    );
-    await safeDelete(connection, 'DELETE FROM messages WHERE sender_id IN (?)', [
-      userIds.length > 0 ? userIds : [0],
-    ]);
-    await safeDelete(connection, 'DELETE FROM conversation_participants WHERE user_id IN (?)', [
-      userIds.length > 0 ? userIds : [0],
-    ]);
-    await safeDelete(connection, 'DELETE FROM conversations WHERE tenant_id = ?', [tenantId]);
-
-    // Delete survey-related data
-    await safeDelete(
-      connection,
-      'DELETE FROM survey_answers WHERE response_id IN (SELECT id FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))',
-      [tenantId],
-    );
-    await safeDelete(
-      connection,
-      'DELETE FROM survey_responses WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(
-      connection,
-      'DELETE FROM survey_question_options WHERE question_id IN (SELECT id FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?))',
-      [tenantId],
-    );
-    await safeDelete(
-      connection,
-      'DELETE FROM survey_questions WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(
-      connection,
-      'DELETE FROM survey_assignments WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(
-      connection,
-      'DELETE FROM survey_reminders WHERE survey_id IN (SELECT id FROM surveys WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(connection, 'DELETE FROM survey_templates WHERE tenant_id = ?', [tenantId]);
-    await safeDelete(connection, 'DELETE FROM surveys WHERE tenant_id = ?', [tenantId]);
-
-    // Delete KVP-related data
-    await safeDelete(
-      connection,
-      'DELETE FROM kvp_comments WHERE suggestion_id IN (SELECT id FROM kvp_suggestions WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(connection, 'DELETE FROM kvp_suggestions WHERE tenant_id = ?', [tenantId]);
-
-    // Delete shift-related data
-    await safeDelete(
-      connection,
-      'DELETE FROM shift_trades WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(
-      connection,
-      'DELETE FROM shift_assignments WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(
-      connection,
-      'DELETE FROM shift_notes WHERE shift_id IN (SELECT id FROM shifts WHERE tenant_id = ?)',
-      [tenantId],
-    );
-    await safeDelete(connection, 'DELETE FROM shifts WHERE tenant_id = ?', [tenantId]);
-    await safeDelete(connection, 'DELETE FROM shift_templates WHERE tenant_id = ?', [tenantId]);
-    // Delete shift_types
-    await safeDelete(connection, 'DELETE FROM shift_types WHERE tenant_id = ?', [tenantId]);
-
-    // Delete calendar events
-    await safeDelete(connection, 'DELETE FROM calendar_events WHERE tenant_id = ?', [tenantId]);
-
-    // Delete blackboard entries
-    await safeDelete(connection, 'DELETE FROM blackboard_entries WHERE tenant_id = ?', [tenantId]);
-
-    // Delete documents
-    await safeDelete(connection, 'DELETE FROM documents WHERE tenant_id = ?', [tenantId]);
-
-    // Delete admin logs (using admin_id column)
-    await safeDelete(connection, 'DELETE FROM admin_logs WHERE admin_id IN (?)', [
-      userIds.length > 0 ? userIds : [0],
-    ]);
-
-    // Delete feature assignments
-    await safeDelete(connection, 'DELETE FROM tenant_features WHERE tenant_id = ?', [tenantId]);
-
-    // Delete department/team relationships
-    await safeDelete(connection, 'DELETE FROM user_teams WHERE user_id IN (?)', [
-      userIds.length > 0 ? userIds : [0],
-    ]);
-    await safeDelete(connection, 'DELETE FROM user_departments WHERE user_id IN (?)', [
-      userIds.length > 0 ? userIds : [0],
-    ]);
-
-    // Delete teams and departments
-    await safeDelete(connection, 'DELETE FROM teams WHERE tenant_id = ?', [tenantId]);
-    await safeDelete(connection, 'DELETE FROM departments WHERE tenant_id = ?', [tenantId]);
-
-    // Delete tenant admin associations
-    await safeDelete(connection, 'DELETE FROM tenant_admins WHERE tenant_id = ?', [tenantId]);
+    // Delete in correct order to respect foreign key constraints
+    await deleteChatData(connection, tenantId, userIds);
+    await deleteSurveyData(connection, tenantId);
+    await deleteShiftData(connection, tenantId);
+    await deleteOtherTenantData(connection, tenantId, userIds);
 
     // Delete all users
     await safeDelete(connection, 'DELETE FROM users WHERE tenant_id = ?', [tenantId]);
@@ -508,11 +510,10 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
 
     await connection.commit();
 
-    // 3. Clean up file system (after successful DB deletion)
+    // Clean up file system (after successful DB deletion)
     try {
       await cleanupTenantFiles(tenantId, userIds);
     } catch (fileError: unknown) {
-      // Log error but don't fail the deletion
       logger.error(`Error cleaning up files for tenant ${tenantId}:`, fileError);
     }
 

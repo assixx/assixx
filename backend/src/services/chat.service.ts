@@ -128,6 +128,75 @@ interface CountResult extends RowDataPacket {
  */
 class ChatService {
   /**
+   * Build query for fetching users based on role
+   */
+  private buildUsersQuery(
+    userRole: string,
+    userDepartmentId: number | null,
+  ): { query: string; params: number[] } {
+    const selectFields = `
+      u.id,
+      u.username,
+      u.first_name,
+      u.last_name,
+      u.email,
+      u.role,
+      u.department_id,
+      d.name as department,
+      NULL as employee_number,
+      NULL as position,
+      u.profile_picture as profile_image_url,
+      0 AS is_online,
+      NULL as shift_type,
+      NULL as start_time,
+      NULL as end_time,
+      NULL as location
+    `;
+
+    if (userRole === 'root' || userRole === 'admin') {
+      return {
+        query: `
+          SELECT ${selectFields}
+          FROM users u
+          LEFT JOIN departments d ON u.department_id = d.id
+          WHERE u.tenant_id = ?
+            AND u.id != ?
+          ORDER BY u.role DESC, d.name, u.last_name, u.first_name
+        `,
+        params: [],
+      };
+    }
+
+    if (userDepartmentId == null) {
+      return {
+        query: `
+          SELECT ${selectFields}
+          FROM users u
+          LEFT JOIN departments d ON u.department_id = d.id
+          WHERE u.tenant_id = ?
+            AND u.id != ?
+            AND u.role IN ('admin', 'root')
+          ORDER BY u.role DESC, u.last_name, u.first_name
+        `,
+        params: [],
+      };
+    }
+
+    return {
+      query: `
+        SELECT ${selectFields}
+        FROM users u
+        LEFT JOIN departments d ON u.department_id = d.id
+        WHERE u.tenant_id = ?
+          AND u.id != ?
+          AND (u.department_id = ? OR u.role IN ('admin', 'root'))
+        ORDER BY u.role DESC, u.last_name, u.first_name
+      `,
+      params: [userDepartmentId],
+    };
+  }
+
+  /**
    * Holt alle verfügbaren Chat-Benutzer für einen Tenant
    * Berücksichtigt Department-Zugehörigkeit und Chat-Berechtigungen
    * @param tenantId - The tenant ID
@@ -135,7 +204,6 @@ class ChatService {
    */
   async getUsers(tenantId: string | number, userId: string | number): Promise<ChatUser[]> {
     try {
-      // Log input parameters
       console.info('ChatService.getUsers - tenantId:', tenantId, 'type:', typeof tenantId);
       console.info('ChatService.getUsers - userId:', userId, 'type:', typeof userId);
 
@@ -161,98 +229,11 @@ class ChatService {
       const userRole = currentUserInfo[0].role as string;
       const userDepartmentId = currentUserInfo[0].department_id as number | null;
 
-      let query: string;
-      let params: number[] = [];
-
-      if (userRole === 'root' || userRole === 'admin') {
-        // Root und Admins können alle User sehen
-        query = `
-          SELECT
-            u.id,
-            u.username,
-            u.first_name,
-            u.last_name,
-            u.email,
-            u.role,
-            u.department_id,
-            d.name as department,
-            NULL as employee_number,
-            NULL as position,
-            u.profile_picture as profile_image_url,
-            0 AS is_online,
-            NULL as shift_type,
-            NULL as start_time,
-            NULL as end_time,
-            NULL as location
-          FROM users u
-          LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ?
-            AND u.id != ?
-          ORDER BY u.role DESC, d.name, u.last_name, u.first_name
-        `;
-        params = [numericTenantId, numericUserId];
-      } else {
-        // Employees können nur User in ihrer Abteilung + alle Admins sehen
-        // If user has no department, they can only see admins
-        if (userDepartmentId == null) {
-          query = `
-            SELECT
-              u.id,
-              u.username,
-              u.first_name,
-              u.last_name,
-              u.email,
-              u.role,
-              u.department_id,
-              d.name as department,
-              NULL as employee_number,
-              NULL as position,
-              u.profile_picture as profile_image_url,
-              0 AS is_online,
-              NULL as shift_type,
-              NULL as start_time,
-              NULL as end_time,
-              NULL as location
-            FROM users u
-            LEFT JOIN departments d ON u.department_id = d.id
-            WHERE u.tenant_id = ?
-              AND u.id != ?
-              AND u.role IN ('admin', 'root')
-            ORDER BY u.role DESC, u.last_name, u.first_name
-          `;
-          params = [numericTenantId, numericUserId];
-        } else {
-          query = `
-            SELECT
-              u.id,
-              u.username,
-              u.first_name,
-              u.last_name,
-              u.email,
-              u.role,
-              u.department_id,
-              d.name as department,
-              NULL as employee_number,
-              NULL as position,
-              u.profile_picture as profile_image_url,
-              0 AS is_online,
-              NULL as shift_type,
-              NULL as start_time,
-              NULL as end_time,
-              NULL as location
-            FROM users u
-            LEFT JOIN departments d ON u.department_id = d.id
-            WHERE u.tenant_id = ?
-              AND u.id != ?
-              AND (u.department_id = ? OR u.role IN ('admin', 'root'))
-            ORDER BY u.role DESC, u.last_name, u.first_name
-          `;
-          params = [numericTenantId, numericUserId, userDepartmentId];
-        }
-      }
+      // Build query based on user role and department
+      const { query, params: additionalParams } = this.buildUsersQuery(userRole, userDepartmentId);
+      const params = [numericTenantId, numericUserId, ...additionalParams];
 
       console.info('ChatService.getUsers - Executing query with params:', params);
-
       const [users] = await db.promise().query<ChatUser[]>(query, params);
 
       console.info('ChatService.getUsers - Found users:', users.length);
@@ -264,30 +245,10 @@ class ChatService {
   }
 
   /**
-   * Holt alle Konversationen für einen Benutzer
-   * @param tenantId - The tenant ID
-   * @param userId - The user ID
+   * Build the conversations query
    */
-  async getConversations(
-    tenantId: string | number,
-    userId: string | number,
-  ): Promise<Conversation[]> {
-    try {
-      console.info('ChatService.getConversations called with:', {
-        tenantId,
-        userId,
-      });
-      console.info('DB pool status:', 'exists');
-
-      // Ensure parameters are numbers
-      const numericTenantId = Number.parseInt(tenantId.toString());
-      const numericUserId = Number.parseInt(userId.toString());
-
-      if (Number.isNaN(numericTenantId) || Number.isNaN(numericUserId)) {
-        throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
-      }
-
-      const query = `
+  private buildConversationsQuery(): string {
+    return `
       SELECT
         c.id,
         c.name,
@@ -336,53 +297,81 @@ class ChatService {
                m.id, m.content, m.created_at, m.sender_id, sender.username, unread.count
       ORDER BY COALESCE(m.created_at, c.created_at) DESC
     `;
+  }
 
-      const [conversations] = await db
-        .promise()
-        .query<
-          Conversation[]
-        >(query, [numericUserId, numericTenantId, numericTenantId, numericUserId, numericUserId, numericTenantId]);
+  /**
+   * Transform conversation data with participants and last message
+   */
+  private async transformConversation(conv: Conversation, tenantId: number): Promise<Conversation> {
+    const participants = await this.getConversationParticipants(conv.id, tenantId);
+
+    // Transform last_message fields into proper object
+    const lastMessage =
+      conv.last_message_id != null ?
+        {
+          id: conv.last_message_id as number,
+          content: conv.last_message_content as string,
+          created_at: conv.last_message_created_at as Date,
+          sender_id: conv.last_message_sender_id as number,
+          conversation_id: conv.id,
+          is_read: false,
+          sender: {
+            id: conv.last_message_sender_id as number,
+            username: conv.last_message_sender_username as string,
+          },
+        }
+      : null;
+
+    // Create new conversation object that extends RowDataPacket
+    return Object.assign(Object.create(Object.getPrototypeOf(conv) as object) as Conversation, {
+      id: conv.id,
+      name: conv.name,
+      is_group: conv.is_group,
+      created_at: conv.created_at,
+      updated_at: conv.updated_at ?? conv.created_at,
+      display_name: conv.display_name,
+      last_message: lastMessage,
+      unread_count: conv.unread_count,
+      participants: participants,
+    });
+  }
+
+  /**
+   * Holt alle Konversationen für einen Benutzer
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   */
+  async getConversations(
+    tenantId: string | number,
+    userId: string | number,
+  ): Promise<Conversation[]> {
+    try {
+      console.info('ChatService.getConversations called with:', { tenantId, userId });
+      console.info('DB pool status:', 'exists');
+
+      // Ensure parameters are numbers
+      const numericTenantId = Number.parseInt(tenantId.toString());
+      const numericUserId = Number.parseInt(userId.toString());
+
+      if (Number.isNaN(numericTenantId) || Number.isNaN(numericUserId)) {
+        throw new Error(`Invalid parameters: tenantId=${tenantId}, userId=${userId}`);
+      }
+
+      const query = this.buildConversationsQuery();
+      const params = [
+        numericUserId,
+        numericTenantId,
+        numericTenantId,
+        numericUserId,
+        numericUserId,
+        numericTenantId,
+      ];
+
+      const [conversations] = await db.promise().query<Conversation[]>(query, params);
 
       // Transform the results to match the expected format
       return await Promise.all(
-        conversations.map(async (conv) => {
-          const participants = await this.getConversationParticipants(conv.id, numericTenantId);
-
-          // Transform last_message fields into proper object
-          const lastMessage =
-            conv.last_message_id != null ?
-              {
-                id: conv.last_message_id as number,
-                content: conv.last_message_content as string,
-                created_at: conv.last_message_created_at as Date,
-                sender_id: conv.last_message_sender_id as number,
-                conversation_id: conv.id,
-                is_read: false,
-                sender: {
-                  id: conv.last_message_sender_id as number,
-                  username: conv.last_message_sender_username as string,
-                },
-              }
-            : null;
-
-          // Create new conversation object that extends RowDataPacket
-          const transformedConv: Conversation = Object.assign(
-            Object.create(Object.getPrototypeOf(conv) as object) as Conversation,
-            {
-              id: conv.id,
-              name: conv.name,
-              is_group: conv.is_group,
-              created_at: conv.created_at,
-              updated_at: conv.updated_at ?? conv.created_at,
-              display_name: conv.display_name,
-              last_message: lastMessage,
-              unread_count: conv.unread_count,
-              participants: participants,
-            },
-          );
-
-          return transformedConv;
-        }),
+        conversations.map((conv) => this.transformConversation(conv, numericTenantId)),
       );
     } catch (error: unknown) {
       console.error('Error in ChatService.getConversations:', error);
