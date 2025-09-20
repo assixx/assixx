@@ -23,6 +23,105 @@ interface AuthenticatedRequest extends Request {
 }
 
 /**
+ * Extract department ID from request
+ */
+function extractDepartmentId(req: AuthenticatedRequest): number | undefined {
+  // Check snake_case variant in body
+  if (req.body.department_id != null) {
+    return Number.parseInt(String(req.body.department_id));
+  }
+
+  // Check camelCase variant in body
+  if (req.body.departmentId != null) {
+    return Number.parseInt(String(req.body.departmentId));
+  }
+
+  // Check snake_case variant in query
+  if (req.query.department_id != null) {
+    return Number.parseInt(req.query.department_id as string);
+  }
+
+  // Check camelCase variant in query
+  if (req.query.departmentId != null) {
+    return Number.parseInt(req.query.departmentId as string);
+  }
+
+  // Check snake_case variant in params
+  if ('department_id' in req.params && req.params.department_id) {
+    return Number.parseInt(req.params.department_id);
+  }
+
+  // Check camelCase variant in params
+  if ('departmentId' in req.params && req.params.departmentId) {
+    return Number.parseInt(req.params.departmentId);
+  }
+
+  return undefined;
+}
+
+/**
+ * Determine required permission based on HTTP method
+ */
+function getRequiredPermission(method: string): 'read' | 'write' | 'delete' {
+  if (method === 'DELETE') {
+    return 'delete';
+  }
+  if (['POST', 'PUT', 'PATCH'].includes(method)) {
+    return 'write';
+  }
+  return 'read';
+}
+
+/**
+ * Handle unauthorized department access
+ */
+function handleUnauthorizedAccess(
+  res: Response,
+  userId: number,
+  departmentId: number,
+  permission: string,
+): void {
+  logger.warn(
+    `Admin ${userId} attempted to access department ${departmentId} without permission (${permission})`,
+  );
+  res.status(403).json({
+    error: 'Keine Berechtigung für diese Abteilung',
+    details: `Sie benötigen ${permission}-Rechte für diese Abteilung`,
+  });
+}
+
+/**
+ * Validate department access for admin
+ */
+async function validateAdminDepartmentAccess(
+  req: AuthenticatedRequest,
+  res: Response,
+  user: NonNullable<AuthenticatedRequest['user']>,
+): Promise<boolean> {
+  const departmentId = extractDepartmentId(req);
+
+  // If no department ID or invalid, allow through
+  if (departmentId == null || Number.isNaN(departmentId) || departmentId === 0) {
+    return true;
+  }
+
+  const requiredPermission = getRequiredPermission(req.method);
+  const hasAccess = await adminPermissionService.hasAccess(
+    user.id,
+    departmentId,
+    user.tenant_id,
+    requiredPermission,
+  );
+
+  if (!hasAccess) {
+    handleUnauthorizedAccess(res, user.id, departmentId, requiredPermission);
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Middleware to check department access for admin users
  */
 export const checkDepartmentAccess = async (
@@ -30,8 +129,7 @@ export const checkDepartmentAccess = async (
   res: Response,
   next: NextFunction,
 ): Promise<void> => {
-  const authReq = req;
-  const { user } = authReq;
+  const { user } = req;
 
   if (!user) {
     res.status(401).json({ error: 'Nicht authentifiziert' });
@@ -46,62 +144,10 @@ export const checkDepartmentAccess = async (
 
   // For admin users, check department permissions
   if (user.role === 'admin') {
-    // Extract department_id from various sources
-    let departmentId: number | undefined;
-
-    // Check body
-    if (authReq.body.department_id != null) {
-      departmentId = Number.parseInt(String(authReq.body.department_id));
+    const hasAccess = await validateAdminDepartmentAccess(req, res, user);
+    if (!hasAccess) {
+      return;
     }
-    // Check query parameters
-    else if (req.query.department_id != null) {
-      departmentId = Number.parseInt(req.query.department_id as string);
-    }
-    // Check route parameters
-    else if ('department_id' in req.params && req.params.department_id) {
-      departmentId = Number.parseInt(req.params.department_id);
-    }
-    // Check for departmentId variant
-    else if (authReq.body.departmentId != null) {
-      departmentId = Number.parseInt(String(authReq.body.departmentId));
-    } else if (req.query.departmentId != null) {
-      departmentId = Number.parseInt(req.query.departmentId as string);
-    } else if ('departmentId' in req.params && req.params.departmentId) {
-      departmentId = Number.parseInt(req.params.departmentId);
-    }
-
-    // If department_id is found, check access
-    if (departmentId != null && !Number.isNaN(departmentId) && departmentId !== 0) {
-      // Determine required permission level based on HTTP method
-      let requiredPermission: 'read' | 'write' | 'delete' = 'read';
-
-      if (req.method === 'DELETE') {
-        requiredPermission = 'delete';
-      } else if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        requiredPermission = 'write';
-      }
-
-      const hasAccess = await adminPermissionService.hasAccess(
-        user.id,
-        departmentId,
-        user.tenant_id,
-        requiredPermission,
-      );
-
-      if (!hasAccess) {
-        logger.warn(
-          `Admin ${user.id} attempted to access department ${departmentId} without permission (${requiredPermission})`,
-        );
-        res.status(403).json({
-          error: 'Keine Berechtigung für diese Abteilung',
-          details: `Sie benötigen ${requiredPermission}-Rechte für diese Abteilung`,
-        });
-        return;
-      }
-    }
-
-    // For list operations, we'll filter results in the controller
-    // based on the admin's permissions
   }
 
   next();

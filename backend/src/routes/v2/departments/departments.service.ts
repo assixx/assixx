@@ -198,6 +198,78 @@ export class DepartmentService {
   }
 
   /**
+   * Validate parent department for update
+   */
+  private async validateParentDepartment(
+    parentId: number | undefined,
+    departmentId: number,
+    tenantId: number,
+  ): Promise<void> {
+    if (parentId === undefined) return;
+
+    if (parentId === departmentId) {
+      throw new ServiceError(400, 'Department cannot be its own parent');
+    }
+
+    const parent = await Department.findById(parentId, tenantId);
+    if (!parent) {
+      throw new ServiceError(400, 'Parent department not found');
+    }
+  }
+
+  /**
+   * Validate manager for department
+   */
+  private async validateManager(managerId: number | undefined, tenantId: number): Promise<void> {
+    if (managerId === undefined) return;
+
+    const User = (await import('../../../models/user.js')).default;
+    const manager = await User.findById(managerId, tenantId);
+    if (!manager) {
+      throw new ServiceError(400, 'Manager not found');
+    }
+  }
+
+  /**
+   * Build update data object from input data
+   */
+  private buildUpdateData(data: UpdateDepartmentData): Partial<{
+    name: string;
+    description: string;
+    manager_id: number;
+    parent_id: number;
+    area_id: number;
+    status: string;
+    visibility: string;
+  }> {
+    const updateData: ReturnType<typeof this.buildUpdateData> = {};
+
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+    if (data.description !== undefined) {
+      updateData.description = data.description;
+    }
+    if (data.managerId !== undefined) {
+      updateData.manager_id = data.managerId;
+    }
+    if (data.parentId !== undefined) {
+      updateData.parent_id = data.parentId;
+    }
+    if (data.areaId !== undefined) {
+      updateData.area_id = data.areaId;
+    }
+    if (data.status !== undefined) {
+      updateData.status = data.status;
+    }
+    if (data.visibility !== undefined) {
+      updateData.visibility = data.visibility;
+    }
+
+    return updateData;
+  }
+
+  /**
    * Update a department
    * @param id - The resource ID
    * @param data - The data object
@@ -215,44 +287,13 @@ export class DepartmentService {
         throw new ServiceError(404, 'Department not found');
       }
 
-      // Validate parent department if specified
-      if (data.parentId !== undefined) {
-        if (data.parentId === id) {
-          throw new ServiceError(400, 'Department cannot be its own parent');
-        }
+      // Run validations in parallel
+      await Promise.all([
+        this.validateParentDepartment(data.parentId, id, tenantId),
+        this.validateManager(data.managerId, tenantId),
+      ]);
 
-        const parent = await Department.findById(data.parentId, tenantId);
-        if (!parent) {
-          throw new ServiceError(400, 'Parent department not found');
-        }
-      }
-
-      // Validate manager if specified
-      if (data.managerId !== undefined) {
-        const User = (await import('../../../models/user.js')).default;
-        const manager = await User.findById(data.managerId, tenantId);
-        if (!manager) {
-          throw new ServiceError(400, 'Manager not found');
-        }
-      }
-
-      const updateData: Partial<{
-        name: string;
-        description: string;
-        manager_id: number;
-        parent_id: number;
-        area_id: number;
-        status: string;
-        visibility: string;
-      }> = {};
-      if (data.name !== undefined) updateData.name = data.name;
-      if (data.description !== undefined) updateData.description = data.description;
-      if (data.managerId !== undefined) updateData.manager_id = data.managerId;
-      if (data.parentId !== undefined) updateData.parent_id = data.parentId;
-      if (data.areaId !== undefined) updateData.area_id = data.areaId; // Add area_id mapping
-      if (data.status !== undefined) updateData.status = data.status;
-      if (data.visibility !== undefined) updateData.visibility = data.visibility;
-
+      const updateData = this.buildUpdateData(data);
       const success = await Department.update(id, updateData);
 
       if (!success) {

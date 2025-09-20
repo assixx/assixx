@@ -9,6 +9,64 @@ import { errorResponse } from '../types/response.types';
 import { logger } from '../utils/logger';
 
 /**
+ * Extracts tenant ID string from various request sources
+ */
+function extractTenantIdFromRequest(req: AuthenticatedRequest): string | undefined {
+  // Try header first
+  const headerTenantId = req.headers['x-tenant-id'];
+  if (headerTenantId !== undefined) {
+    return Array.isArray(headerTenantId) ? headerTenantId[0] : headerTenantId;
+  }
+
+  // Try route params
+  if (req.params.tenantId) {
+    return req.params.tenantId;
+  }
+
+  // Try query params
+  const queryTenantId = req.query.tenant_id;
+  if (queryTenantId === undefined) {
+    return undefined;
+  }
+
+  if (Array.isArray(queryTenantId)) {
+    return queryTenantId[0] as string;
+  }
+
+  if (typeof queryTenantId === 'string') {
+    return queryTenantId;
+  }
+
+  // ParsedQs object - skip complex objects
+  return undefined;
+}
+
+/**
+ * Checks if the requested tenant matches user's tenant
+ */
+function isValidTenantAccess(
+  requestedTenantStr: string | undefined,
+  userTenantId: number,
+  userId: number,
+): boolean {
+  if (requestedTenantStr === undefined || requestedTenantStr === '') {
+    return true;
+  }
+
+  const requestedId = Number.parseInt(requestedTenantStr, 10);
+
+  if (requestedId !== userTenantId) {
+    logger.warn(
+      `Tenant isolation violation: User ${userId} from tenant ${userTenantId} ` +
+        `attempted to access tenant ${requestedId}`,
+    );
+    return false;
+  }
+
+  return true;
+}
+
+/**
  * Validates that the authenticated user belongs to the requested tenant
  * Prevents cross-tenant access attempts
  */
@@ -25,44 +83,13 @@ export function validateTenantIsolation(
       return;
     }
 
-    // Get the requested tenant ID from various sources
-    const headerTenantId = req.headers['x-tenant-id'];
-    const paramTenantId = req.params.tenantId;
-    const queryTenantId = req.query.tenant_id;
+    // Extract tenant ID from request
+    const requestedTenantId = extractTenantIdFromRequest(req);
 
-    // Check each source and convert to string
-    let tenantIdStr: string | undefined;
-
-    if (headerTenantId !== undefined) {
-      tenantIdStr = Array.isArray(headerTenantId) ? headerTenantId[0] : headerTenantId;
-    } else if (paramTenantId) {
-      tenantIdStr = paramTenantId;
-    } else if (queryTenantId !== undefined) {
-      if (Array.isArray(queryTenantId)) {
-        tenantIdStr = queryTenantId[0] as string;
-      } else if (typeof queryTenantId === 'string') {
-        tenantIdStr = queryTenantId;
-      } else {
-        // ParsedQs object - skip complex objects
-        tenantIdStr = undefined;
-      }
-    }
-
-    // If a specific tenant is requested, validate access
-    if (tenantIdStr !== undefined && tenantIdStr !== '') {
-      const requestedId = Number.parseInt(tenantIdStr, 10);
-      const userTenantId = req.user.tenant_id;
-
-      // Check if user is trying to access a different tenant
-      if (requestedId !== userTenantId) {
-        logger.warn(
-          `Tenant isolation violation: User ${req.user.id} from tenant ${userTenantId} ` +
-            `attempted to access tenant ${requestedId}`,
-        );
-
-        res.status(403).json(errorResponse('Sie haben keinen Zugriff auf diese Ressourcen', 403));
-        return;
-      }
+    // Validate tenant access
+    if (!isValidTenantAccess(requestedTenantId, req.user.tenant_id, req.user.id)) {
+      res.status(403).json(errorResponse('Sie haben keinen Zugriff auf diese Ressourcen', 403));
+      return;
     }
 
     // All checks passed

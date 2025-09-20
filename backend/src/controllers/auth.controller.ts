@@ -9,6 +9,7 @@ import { RowDataPacket } from 'mysql2/promise';
 import { createLog } from '../routes/v1/logs';
 import authService from '../services/auth.service';
 import userService from '../services/user.service';
+import type { AuthResult } from '../types/auth.types';
 import type { AuthenticatedRequest } from '../types/request.types';
 import { errorResponse, successResponse } from '../types/response.types';
 import { query as executeQuery } from '../utils/db';
@@ -123,6 +124,85 @@ class AuthController {
   }
 
   /**
+   * Track login attempt in database
+   */
+  private async trackLoginAttempt(
+    username: string,
+    ipAddress: string,
+    success: boolean,
+  ): Promise<void> {
+    try {
+      await executeQuery(
+        'INSERT INTO login_attempts (username, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())',
+        [username, ipAddress, success],
+      );
+    } catch (error: unknown) {
+      logger.error(`Failed to track ${success ? 'successful' : 'failed'} login attempt:`, error);
+    }
+  }
+
+  /**
+   * Validate login request data
+   */
+  private validateLoginRequest(
+    username: string | undefined,
+    password: string | undefined,
+  ): boolean {
+    return username !== undefined && username !== '' && password !== undefined && password !== '';
+  }
+
+  /**
+   * Process successful login
+   */
+  private async processSuccessfulLogin(
+    result: AuthResult,
+    req: LoginRequest,
+    res: Response,
+  ): Promise<void> {
+    // Set token as httpOnly cookie for HTML pages
+    if (result.token === '') {
+      res.status(500).json(errorResponse('Token-Generierung fehlgeschlagen', 500));
+      return;
+    }
+
+    res.cookie('token', result.token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    });
+
+    // Log successful login
+    if (result.user !== null) {
+      await createLog(
+        result.user.id,
+        result.user.tenant_id,
+        'login',
+        'user',
+        result.user.id,
+        `Erfolgreich angemeldet`,
+        req.ip ?? 'unknown',
+        req.headers['user-agent'] ?? 'unknown',
+      );
+
+      await this.trackLoginAttempt(req.body.username ?? 'unknown', req.ip ?? 'unknown', true);
+    }
+
+    // Return user data and tokens with standardized response format
+    res.json(
+      successResponse(
+        {
+          token: result.token,
+          refreshToken: result.refreshToken,
+          role: result.user?.role,
+          user: result.user,
+        },
+        'Login erfolgreich',
+      ),
+    );
+  }
+
+  /**
    * Login user
    * @param req - The request object
    * @param res - The response object
@@ -135,11 +215,14 @@ class AuthController {
       console.info('[DEBUG] Browser fingerprint provided:', fingerprint !== undefined);
 
       // Validate input
-      if (username === undefined || username === '' || password === undefined || password === '') {
-        console.info('[DEBUG] Missing username or password');
+      if (!this.validateLoginRequest(username, password)) {
         res.status(400).json(errorResponse('Benutzername und Passwort sind erforderlich', 400));
         return;
       }
+
+      // At this point, username and password are guaranteed to be defined and non-empty
+      const validUsername = username as string;
+      const validPassword = password as string;
 
       // Get tenant subdomain from header if provided
       const tenantSubdomainHeader = req.headers['x-tenant-subdomain'];
@@ -148,11 +231,11 @@ class AuthController {
 
       // Authenticate user with fingerprint and tenant validation
       console.info('[DEBUG] Calling authService.authenticateUser');
-      console.info('[DEBUG] Username/Email:', username);
+      console.info('[DEBUG] Username/Email:', validUsername);
       console.info('[DEBUG] Tenant subdomain from header:', tenantSubdomain);
       const result = await authService.authenticateUser(
-        username,
-        password,
+        validUsername,
+        validPassword,
         fingerprint,
         tenantSubdomain,
       );
@@ -160,68 +243,12 @@ class AuthController {
       console.info('[DEBUG] Auth result details:', JSON.stringify(result));
 
       if (!result.success) {
-        // Track failed login attempt
-        try {
-          await executeQuery(
-            'INSERT INTO login_attempts (username, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())',
-            [username, req.ip ?? 'unknown', false],
-          );
-        } catch (trackError: unknown) {
-          logger.error('Failed to track login attempt:', trackError);
-        }
-
+        await this.trackLoginAttempt(validUsername, req.ip ?? 'unknown', false);
         res.status(401).json(errorResponse(result.message ?? 'Ungültige Anmeldedaten', 401));
         return;
       }
 
-      // Set token as httpOnly cookie for HTML pages
-      if (result.token === '') {
-        res.status(500).json(errorResponse('Token-Generierung fehlgeschlagen', 500));
-        return;
-      }
-      res.cookie('token', result.token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      });
-
-      // Log successful login
-      if (result.user !== null) {
-        await createLog(
-          result.user.id,
-          result.user.tenant_id,
-          'login',
-          'user',
-          result.user.id,
-          `Erfolgreich angemeldet`,
-          req.ip ?? 'unknown',
-          req.headers['user-agent'] ?? 'unknown',
-        );
-
-        // Track successful login attempt
-        try {
-          await executeQuery(
-            'INSERT INTO login_attempts (username, ip_address, success, attempted_at) VALUES (?, ?, ?, NOW())',
-            [username, req.ip ?? 'unknown', true],
-          );
-        } catch (trackError: unknown) {
-          logger.error('Failed to track successful login attempt:', trackError);
-        }
-      }
-
-      // Return user data and tokens with standardized response format
-      res.json(
-        successResponse(
-          {
-            token: result.token,
-            refreshToken: result.refreshToken,
-            role: result.user?.role,
-            user: result.user,
-          },
-          'Login erfolgreich',
-        ),
-      );
+      await this.processSuccessfulLogin(result, req, res);
     } catch (error: unknown) {
       logger.error('Login error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -265,55 +292,79 @@ class AuthController {
   }
 
   /**
-   * Logout user
-   * @param req - The request object
-   * @param res - The response object
+   * Invalidate user session in database
    */
-  async logout(req: Request, res: Response): Promise<void> {
-    // Log logout action if user is authenticated
-    if (isAuthenticated(req)) {
-      await createLog(
-        req.user.id,
-        req.user.tenant_id,
-        'logout',
-        'user',
-        req.user.id,
-        'Abgemeldet',
-        req.ip ?? 'unknown',
-        req.headers['user-agent'] ?? 'unknown',
-      );
+  private async invalidateUserSession(token: string, userId: number): Promise<void> {
+    try {
+      const jwt = await import('jsonwebtoken');
+      const jwtSecret = process.env.JWT_SECRET;
 
-      // Invalidate session in database if session validation is enabled
-      const token = req.headers.authorization?.split(' ')[1];
-      if (token !== undefined && token.trim() !== '') {
-        try {
-          const jwt = await import('jsonwebtoken');
-          const jwtSecret = process.env.JWT_SECRET;
-          if (jwtSecret === undefined || jwtSecret === '') {
-            throw new Error('JWT_SECRET not configured');
-          }
-          const decoded = jwt.default.verify(token, jwtSecret) as JwtPayload & {
-            sessionId?: string;
-            id?: number;
-          };
-          if (decoded.sessionId !== undefined && decoded.sessionId !== '') {
-            await executeQuery(
-              'UPDATE user_sessions SET expires_at = NOW() WHERE session_id = ? AND user_id = ?',
-              [decoded.sessionId, req.user.id],
-            );
-          }
-        } catch (error: unknown) {
-          logger.warn('Failed to invalidate session:', error);
-        }
+      if (jwtSecret === undefined || jwtSecret === '') {
+        throw new Error('JWT_SECRET not configured');
       }
-    }
 
-    // Clear the httpOnly cookie
+      const decoded = jwt.default.verify(token, jwtSecret) as JwtPayload & {
+        sessionId?: string;
+        id?: number;
+      };
+
+      if (decoded.sessionId !== undefined && decoded.sessionId !== '') {
+        await executeQuery(
+          'UPDATE user_sessions SET expires_at = NOW() WHERE session_id = ? AND user_id = ?',
+          [decoded.sessionId, userId],
+        );
+      }
+    } catch (error: unknown) {
+      logger.warn('Failed to invalidate session:', error);
+    }
+  }
+
+  /**
+   * Log logout action
+   */
+  private async logLogoutAction(req: AuthenticatedRequest): Promise<void> {
+    await createLog(
+      req.user.id,
+      req.user.tenant_id,
+      'logout',
+      'user',
+      req.user.id,
+      'Abgemeldet',
+      req.ip ?? 'unknown',
+      req.headers['user-agent'] ?? 'unknown',
+    );
+  }
+
+  /**
+   * Clear authentication cookie
+   */
+  private clearAuthCookie(res: Response): void {
     res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
+  }
+
+  /**
+   * Logout user
+   * @param req - The request object
+   * @param res - The response object
+   */
+  async logout(req: Request, res: Response): Promise<void> {
+    // Log logout action and invalidate session if user is authenticated
+    if (isAuthenticated(req)) {
+      await this.logLogoutAction(req);
+
+      // Invalidate session in database if token exists
+      const token = req.headers.authorization?.split(' ')[1];
+      if (token !== undefined && token.trim() !== '') {
+        await this.invalidateUserSession(token, req.user.id);
+      }
+    }
+
+    // Clear the httpOnly cookie
+    this.clearAuthCookie(res);
 
     res.json(successResponse(null, 'Erfolgreich abgemeldet'));
   }

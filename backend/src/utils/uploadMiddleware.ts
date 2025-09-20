@@ -13,28 +13,21 @@ if (!fs.existsSync(uploadDir)) {
 
 // Configure multer storage
 const storage = multer.diskStorage({
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback-based API
   destination(_req, _file, cb) {
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback-based API
     cb(null, uploadDir);
   },
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback-based API
   filename(_req, file, cb) {
     const uniqueSuffix = `${String(Date.now())}-${String(Math.round(Math.random() * 1e9))}`;
     const extension = path.extname(file.originalname);
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback-based API
     cb(null, `profile-${uniqueSuffix}${extension}`);
   },
 });
 
 // File filter to accept only images
-// eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback-based API
 const fileFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback-based API
     cb(null, true);
   } else {
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback-based API
     cb(new Error('Only image files are allowed'));
   }
 };

@@ -199,79 +199,100 @@ export class CalendarService {
    * @param userDepartmentId - The userDepartmentId parameter
    * @param userTeamId - The userTeamId parameter
    */
-  async createEvent(
+  /**
+   * Validate permissions for creating events
+   */
+  private validateCreatePermissions(
     eventData: CalendarEventData,
-    tenantId: number,
-    userId: number,
     userRole: string,
     userDepartmentId?: number | null,
     userTeamId?: number | null,
-  ): Promise<{ eventId: number }> {
-    // Validate event data
-    this.validateEventData(eventData);
-
-    // PERMISSION CHECKS basierend auf org_level
+  ): void {
     switch (eventData.orgLevel) {
       case 'company':
         if (userRole !== 'admin') {
           throw new ServiceError('FORBIDDEN', 'Only admins can create company events', 403);
         }
         break;
-
       case 'department':
-        if (!eventData.departmentId) {
-          throw new ServiceError(
-            'BAD_REQUEST',
-            'departmentId is required for department events',
-            400,
-            [
-              {
-                field: 'departmentId',
-                message: 'Required for department events',
-              },
-            ],
-          );
-        }
-        if (userRole !== 'admin' && userRole !== 'lead') {
-          throw new ServiceError(
-            'FORBIDDEN',
-            'Only admins and leads can create department events',
-            403,
-          );
-        }
-        if (userDepartmentId !== eventData.departmentId && userRole !== 'admin') {
-          throw new ServiceError('FORBIDDEN', 'Cannot create events for other departments', 403);
-        }
+        this.validateDepartmentEvent(eventData, userRole, userDepartmentId);
         break;
-
       case 'team':
-        if (!eventData.teamId || !eventData.departmentId) {
-          throw new ServiceError(
-            'BAD_REQUEST',
-            'Both teamId and departmentId are required for team events',
-            400,
-            [
-              { field: 'teamId', message: 'Required for team events' },
-              { field: 'departmentId', message: 'Required for team events' },
-            ],
-          );
-        }
-        if (userTeamId !== eventData.teamId && userRole !== 'admin') {
-          throw new ServiceError('FORBIDDEN', 'Cannot create events for other teams', 403);
-        }
+        this.validateTeamEvent(eventData, userRole, userTeamId);
         break;
-
       case 'personal':
-        // Jeder kann persönliche Events erstellen
+        // Everyone can create personal events
         break;
-
       default:
+        // This should never happen due to TypeScript, but handle it for runtime safety
         throw new ServiceError('BAD_REQUEST', 'Invalid organization level', 400, [
           { field: 'orgLevel', message: 'Invalid organization level' },
         ]);
     }
+  }
 
-    const createData: EventCreateData = {
+  /**
+   * Validate department event creation
+   */
+  private validateDepartmentEvent(
+    eventData: CalendarEventData,
+    userRole: string,
+    userDepartmentId?: number | null,
+  ): void {
+    if (!eventData.departmentId) {
+      throw new ServiceError('BAD_REQUEST', 'departmentId is required for department events', 400, [
+        { field: 'departmentId', message: 'Required for department events' },
+      ]);
+    }
+
+    if (userRole !== 'admin' && userRole !== 'lead') {
+      throw new ServiceError(
+        'FORBIDDEN',
+        'Only admins and leads can create department events',
+        403,
+      );
+    }
+
+    if (userDepartmentId !== eventData.departmentId && userRole !== 'admin') {
+      throw new ServiceError('FORBIDDEN', 'Cannot create events for other departments', 403);
+    }
+  }
+
+  /**
+   * Validate team event creation
+   */
+  private validateTeamEvent(
+    eventData: CalendarEventData,
+    userRole: string,
+    userTeamId?: number | null,
+  ): void {
+    if (!eventData.teamId || !eventData.departmentId) {
+      throw new ServiceError(
+        'BAD_REQUEST',
+        'Both teamId and departmentId are required for team events',
+        400,
+        [
+          { field: 'teamId', message: 'Required for team events' },
+          { field: 'departmentId', message: 'Required for team events' },
+        ],
+      );
+    }
+
+    if (userTeamId !== eventData.teamId && userRole !== 'admin') {
+      throw new ServiceError('FORBIDDEN', 'Cannot create events for other teams', 403);
+    }
+  }
+
+  /**
+   * Build event create data from input
+   */
+  private buildEventCreateData(
+    eventData: CalendarEventData,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): EventCreateData {
+    return {
       tenant_id: tenantId,
       title: eventData.title,
       description: eventData.description,
@@ -284,33 +305,58 @@ export class CalendarService {
       team_id: eventData.teamId ?? null,
       created_by: userId,
       created_by_role: userRole,
-      allow_attendees: eventData.attendeeIds && eventData.attendeeIds.length > 0 ? true : false,
+      allow_attendees: Boolean(eventData.attendeeIds && eventData.attendeeIds.length > 0),
       reminder_time: eventData.reminderMinutes,
       color: eventData.color,
       recurrence_rule: eventData.recurrenceRule,
       requires_response: eventData.requiresResponse ?? false,
     };
+  }
+
+  /**
+   * Add attendees to event
+   */
+  private async addAttendeesToEvent(
+    eventId: number,
+    attendeeIds: number[] | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    if (!attendeeIds || attendeeIds.length === 0) {
+      return;
+    }
+
+    for (const attendeeId of attendeeIds) {
+      await calendarModel.addEventAttendee(eventId, attendeeId, 'pending', tenantId);
+    }
+  }
+
+  async createEvent(
+    eventData: CalendarEventData,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+    userDepartmentId?: number | null,
+    userTeamId?: number | null,
+  ): Promise<{ eventId: number }> {
+    // Validate event data
+    this.validateEventData(eventData);
+
+    // Validate permissions
+    this.validateCreatePermissions(eventData, userRole, userDepartmentId, userTeamId);
+
+    // Build create data
+    const createData = this.buildEventCreateData(eventData, tenantId, userId, userRole);
 
     try {
       const createdEvent = await calendarModel.createEvent(createData);
-
       if (!createdEvent) {
         throw new ServiceError('SERVER_ERROR', 'Failed to create event', 500);
       }
 
-      // Add attendees if provided (für alle Event-Typen möglich)
-      if (eventData.attendeeIds && eventData.attendeeIds.length > 0) {
-        for (const attendeeId of eventData.attendeeIds) {
-          await calendarModel.addEventAttendee(
-            createdEvent.id,
-            attendeeId,
-            'pending',
-            tenantId, // Pass tenant_id for multi-tenant isolation
-          );
-        }
-      }
+      // Add attendees if provided
+      await this.addAttendeesToEvent(createdEvent.id, eventData.attendeeIds, tenantId);
 
-      // Retrieve and return the created event with attendees
+      // Retrieve and return the created event
       const event = await this.getEventById(createdEvent.id, tenantId, userId);
       return { eventId: event.id };
     } catch (error: unknown) {
@@ -329,6 +375,52 @@ export class CalendarService {
    * @param userId - The user ID
    * @param userRole - The userRole parameter
    */
+  /**
+   * Validate update permissions for events
+   */
+  private async validateUpdatePermissions(
+    eventId: number,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<DbCalendarEvent> {
+    const eventExists = await calendarModel.checkEventExists(eventId, tenantId);
+    if (!eventExists) {
+      throw new ServiceError('NOT_FOUND', 'Event not found', 404);
+    }
+
+    const event = await calendarModel.getEventById(eventId, tenantId, userId);
+    if (!event) {
+      throw new ServiceError('FORBIDDEN', "You don't have permission to access this event", 403);
+    }
+
+    const canUpdate = event.created_by === userId || userRole === 'admin' || userRole === 'manager';
+
+    if (!canUpdate) {
+      throw new ServiceError('FORBIDDEN', 'You can only update your own events', 403);
+    }
+
+    return event;
+  }
+
+  /**
+   * Validate date range for event updates
+   */
+  private validateDateRange(updateData: CalendarEventUpdateData): void {
+    if (!updateData.startTime || !updateData.endTime) {
+      return;
+    }
+
+    const startDate = new Date(updateData.startTime);
+    const endDate = new Date(updateData.endTime);
+
+    if (endDate <= startDate) {
+      throw new ServiceError('BAD_REQUEST', 'End time must be after start time', 400, [
+        { field: 'endTime', message: 'Must be after start time' },
+      ]);
+    }
+  }
+
   async updateEvent(
     eventId: number,
     updateData: CalendarEventUpdateData,
@@ -336,34 +428,11 @@ export class CalendarService {
     userId: number,
     userRole: string,
   ): Promise<{ success: boolean }> {
-    // First check if event exists
-    const eventExists = await calendarModel.checkEventExists(eventId, tenantId);
-    if (!eventExists) {
-      throw new ServiceError('NOT_FOUND', 'Event not found', 404);
-    }
-
-    // Then check if user has permission to view
-    const event = await calendarModel.getEventById(eventId, tenantId, userId);
-    if (!event) {
-      throw new ServiceError('FORBIDDEN', "You don't have permission to access this event", 403);
-    }
-
-    // Check permissions
-    if (event.created_by !== userId && userRole !== 'admin' && userRole !== 'manager') {
-      throw new ServiceError('FORBIDDEN', 'You can only update your own events', 403);
-    }
+    // Validate permissions and get event
+    await this.validateUpdatePermissions(eventId, tenantId, userId, userRole);
 
     // Validate dates if provided
-    if (updateData.startTime && updateData.endTime) {
-      const startDate = new Date(updateData.startTime);
-      const endDate = new Date(updateData.endTime);
-
-      if (endDate <= startDate) {
-        throw new ServiceError('BAD_REQUEST', 'End time must be after start time', 400, [
-          { field: 'endTime', message: 'Must be after start time' },
-        ]);
-      }
-    }
+    this.validateDateRange(updateData);
 
     // Map API fields to DB fields
     const dbUpdateData: EventUpdateData = {
@@ -379,7 +448,6 @@ export class CalendarService {
       reminder_time: updateData.reminderMinutes,
       color: updateData.color,
       recurrence_rule: updateData.recurrenceRule,
-      // status is handled differently in the calendar model
     };
 
     try {
@@ -388,7 +456,6 @@ export class CalendarService {
         throw new ServiceError('SERVER_ERROR', 'Failed to update event', 500);
       }
 
-      // Return success status
       return { success: true };
     } catch (error: unknown) {
       if (error instanceof ServiceError) {

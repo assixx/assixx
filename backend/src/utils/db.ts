@@ -114,14 +114,12 @@ export async function getTransactionConnection(): Promise<{
  */
 
 export async function transaction<T>(
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- See function comment
   callback: (connection: PoolConnection) => Promise<T>,
 ): Promise<T> {
   const connection = await getConnection();
 
   try {
     await connection.beginTransaction();
-    // eslint-disable-next-line promise/prefer-await-to-callbacks -- Executing the transaction callback
     const result = await callback(connection);
     await connection.commit();
     return result;

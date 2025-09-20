@@ -87,14 +87,14 @@ const assixxApp: AssixxApp = {
     switch (page) {
       case 'dashboard':
         void import('./pages/dashboard.js')
-          // eslint-disable-next-line promise/prefer-await-to-then -- Dynamic import in non-async context
+
           .then((module) => {
             if (typeof module.initDashboard === 'function') {
               module.initDashboard();
             }
             return null;
           })
-          // eslint-disable-next-line promise/prefer-await-to-then, promise/prefer-await-to-callbacks -- Dynamic import in non-async context
+
           .catch((error: unknown) => {
             console.error('Failed to load dashboard module:', error);
           });

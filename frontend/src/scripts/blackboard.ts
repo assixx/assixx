@@ -10,10 +10,7 @@ import { showSuccess, showError } from './auth';
 import { escapeHtml } from './common';
 import { closeModal as dashboardCloseModal } from './dashboard-scripts';
 
-// Declare DOMPurify for sanitization
-declare const DOMPurify: {
-  sanitize: (dirty: string) => string;
-};
+// DOMPurify is handled internally by dom-utils.ts - never use it directly!
 
 // Initialize API client
 const apiClient = ApiClient.getInstance();
@@ -133,6 +130,7 @@ function openModal(modalId: string): void {
   // Check if it's the old modal style (class="modal-overlay")
   else if (modal.classList.contains('modal-overlay')) {
     // Use the original dashboard modal behavior
+    modal.classList.remove('u-hidden'); // Remove u-hidden class first
     modal.style.display = 'flex'; // Add display flex for modal-overlay
     modal.style.opacity = '1';
     modal.style.visibility = 'visible';
@@ -145,6 +143,7 @@ function openModal(modalId: string): void {
   }
   // Fallback implementation
   else {
+    modal.classList.remove('u-hidden'); // Remove u-hidden for fallback too
     modal.style.display = 'flex';
     setTimeout(() => {
       modal.classList.add('active');
@@ -166,6 +165,7 @@ function closeModal(modalId: string): void {
     modal.style.opacity = '0';
     modal.style.visibility = 'hidden';
     modal.classList.remove('active');
+    modal.classList.add('u-hidden'); // Re-add u-hidden class
     document.body.style.overflow = '';
   }
   // Try DashboardUI if available
@@ -205,79 +205,79 @@ function setEntriesLoadingEnabled(enabled: boolean): void {
   entriesLoadingEnabled = enabled;
 }
 
+// Helper functions for click handlers
+function handleRemoveAttachment(target: HTMLElement): void {
+  const removeAttachmentBtn = target.closest<HTMLElement>('[data-action="remove-attachment"]');
+  if (removeAttachmentBtn?.dataset.index !== undefined) {
+    removeAttachment(Number.parseInt(removeAttachmentBtn.dataset.index, 10));
+  }
+}
+
+function handlePreviewAttachment(target: HTMLElement, e: Event): void {
+  const previewBtn = target.closest<HTMLElement>('[data-action="preview-attachment"]');
+  if (!previewBtn) return;
+
+  e.stopPropagation();
+  const { attachmentId, mimeType, filename } = previewBtn.dataset;
+  if (attachmentId !== undefined && mimeType !== undefined && filename !== undefined) {
+    void previewAttachment(Number.parseInt(attachmentId, 10), mimeType, filename);
+  }
+}
+
+function handleViewEntry(target: HTMLElement): void {
+  const viewEntryBtn = target.closest<HTMLElement>('[data-action="view-entry"]');
+  if (viewEntryBtn?.dataset.entryId !== undefined) {
+    void viewEntry(Number.parseInt(viewEntryBtn.dataset.entryId, 10));
+  }
+}
+
+function handleEditEntry(target: HTMLElement, e: Event): void {
+  const editEntryBtn = target.closest<HTMLElement>('[data-action="edit-entry"]');
+  if (!editEntryBtn) return;
+
+  e.stopPropagation();
+  if (editEntryBtn.dataset.entryId !== undefined) {
+    openEntryForm(Number.parseInt(editEntryBtn.dataset.entryId, 10));
+  }
+}
+
+function handleDeleteEntry(target: HTMLElement, e: Event): void {
+  const deleteEntryBtn = target.closest<HTMLElement>('[data-action="delete-entry"]');
+  if (!deleteEntryBtn) return;
+
+  e.stopPropagation();
+  if (deleteEntryBtn.dataset.entryId !== undefined) {
+    deleteEntry(Number.parseInt(deleteEntryBtn.dataset.entryId, 10));
+  }
+}
+
+function handlePageNavigation(target: HTMLElement): void {
+  const changePageBtn = target.closest<HTMLElement>('[data-action="change-page"]');
+  if (changePageBtn?.dataset.page !== undefined) {
+    changePage(Number.parseInt(changePageBtn.dataset.page, 10));
+  }
+}
+
+function handleCloseModal(target: HTMLElement): void {
+  const closeModalBtn = target.closest<HTMLElement>('[data-action="close-modal"]');
+  if (closeModalBtn?.dataset.modalId !== undefined) {
+    closeModal(closeModalBtn.dataset.modalId);
+  }
+}
+
 // Function to initialize blackboard
 function initializeBlackboard() {
   // Setup Event Delegation for all dynamic content
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
-    // Handle remove attachment button
-    const removeAttachmentBtn = target.closest<HTMLElement>('[data-action="remove-attachment"]');
-    if (removeAttachmentBtn) {
-      const index = removeAttachmentBtn.dataset.index;
-      if (index !== undefined) {
-        removeAttachment(Number.parseInt(index, 10));
-      }
-    }
-
-    // Handle preview attachment
-    const previewBtn = target.closest<HTMLElement>('[data-action="preview-attachment"]');
-    if (previewBtn) {
-      e.stopPropagation();
-      const attachmentId = previewBtn.dataset.attachmentId;
-      const mimeType = previewBtn.dataset.mimeType;
-      const filename = previewBtn.dataset.filename;
-      if (attachmentId !== undefined && mimeType !== undefined && filename !== undefined) {
-        void previewAttachment(Number.parseInt(attachmentId, 10), mimeType, filename);
-      }
-    }
-
-    // Handle view entry
-    const viewEntryBtn = target.closest<HTMLElement>('[data-action="view-entry"]');
-    if (viewEntryBtn) {
-      const entryId = viewEntryBtn.dataset.entryId;
-      if (entryId !== undefined) {
-        void viewEntry(Number.parseInt(entryId, 10));
-      }
-    }
-
-    // Handle edit entry
-    const editEntryBtn = target.closest<HTMLElement>('[data-action="edit-entry"]');
-    if (editEntryBtn) {
-      e.stopPropagation();
-      const entryId = editEntryBtn.dataset.entryId;
-      if (entryId !== undefined) {
-        openEntryForm(Number.parseInt(entryId, 10));
-      }
-    }
-
-    // Handle delete entry
-    const deleteEntryBtn = target.closest<HTMLElement>('[data-action="delete-entry"]');
-    if (deleteEntryBtn) {
-      e.stopPropagation();
-      const entryId = deleteEntryBtn.dataset.entryId;
-      if (entryId !== undefined) {
-        deleteEntry(Number.parseInt(entryId, 10));
-      }
-    }
-
-    // Handle page navigation
-    const changePageBtn = target.closest<HTMLElement>('[data-action="change-page"]');
-    if (changePageBtn) {
-      const page = changePageBtn.dataset.page;
-      if (page !== undefined) {
-        changePage(Number.parseInt(page, 10));
-      }
-    }
-
-    // Handle close modal
-    const closeModalBtn = target.closest<HTMLElement>('[data-action="close-modal"]');
-    if (closeModalBtn) {
-      const modalId = closeModalBtn.dataset.modalId;
-      if (modalId !== undefined) {
-        closeModal(modalId);
-      }
-    }
+    handleRemoveAttachment(target);
+    handlePreviewAttachment(target, e);
+    handleViewEntry(target);
+    handleEditEntry(target, e);
+    handleDeleteEntry(target, e);
+    handlePageNavigation(target);
+    handleCloseModal(target);
 
     // Handle confirm delete
     const confirmDeleteBtn = target.closest<HTMLElement>('[data-action="confirm-delete"]');
@@ -335,129 +335,113 @@ function initializeBlackboard() {
   // Debug: Log when this script loads
   console.info('[Blackboard] Script loaded at:', new Date().toISOString());
 
-  // Check if user is logged in
-  void (async () => {
+  // Helper function to process user data
+  function processUserData(userData: UserData): void {
+    currentUserId = userData.id;
+    setAdminStatus(userData.role);
+    console.info('[Blackboard] User data processed:', userData);
+    console.info('[Blackboard] isAdmin:', isAdmin);
+    console.info('[Blackboard] User role:', userData.role);
+  }
+
+  // Helper function to update new entry button visibility
+  function updateNewEntryButtonVisibility(): void {
+    const newEntryBtn = $$('#newEntryBtn');
+    if (newEntryBtn) {
+      console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE);
+      newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
+    } else {
+      console.info('[Blackboard] newEntryBtn not found!');
+    }
+  }
+
+  // Helper function to load user data from localStorage
+  function loadUserDataFromStorage(): Promise<boolean> {
+    const storedUser = localStorage.getItem('currentUser');
+    if (storedUser === null || storedUser.length === 0) {
+      return Promise.resolve(false);
+    }
+
+    try {
+      const userData = JSON.parse(storedUser) as UserData;
+      processUserData(userData);
+      updateNewEntryButtonVisibility();
+      void loadDepartmentsAndTeams();
+      return Promise.resolve(true);
+    } catch (error) {
+      console.error('[Blackboard] Error parsing stored user data:', error);
+      return Promise.resolve(false);
+    }
+  }
+
+  // Helper function to load user data from API
+  async function loadUserDataFromAPI(): Promise<void> {
+    try {
+      const userData = await fetchUserData();
+      processUserData(userData);
+      updateNewEntryButtonVisibility();
+      void loadDepartmentsAndTeams();
+    } catch (error) {
+      console.error('[Blackboard] Error loading user data:', error);
+      showError('Fehler beim Laden der Benutzerdaten');
+      throw error;
+    }
+  }
+
+  // Helper function to handle URL entry parameter
+  function handleUrlEntryParameter(): void {
+    const urlParams = new URLSearchParams(window.location.search);
+    const entryId = urlParams.get('entry');
+
+    if (entryId === null || entryId.length === 0) return;
+
+    const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
+    if (entryElement === null) return;
+
+    entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    entryElement.classList.add('highlight-entry');
+    setTimeout(() => {
+      entryElement.classList.remove('highlight-entry');
+    }, 3000);
+  }
+
+  // Helper function to setup retry button
+  function setupRetryButton(): void {
+    const retryLoadBtn = $$id('retryLoadBtn');
+    if (!retryLoadBtn) return;
+
+    retryLoadBtn.addEventListener('click', () => {
+      setEntriesLoadingEnabled(true);
+      void loadEntries();
+    });
+  }
+
+  // Main initialization function
+  async function initializeUserAndUI(): Promise<void> {
     try {
       await checkLoggedIn();
-      // Header user info is now handled by unified navigation
 
-      // Try to get user data from localStorage first (if available)
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser !== null && storedUser.length > 0) {
-        try {
-          const userData = JSON.parse(storedUser) as UserData;
-          currentUserId = userData.id;
-          // Use setter function to avoid race condition
-          setAdminStatus(userData.role);
-
-          console.info('[Blackboard] User data from localStorage:', userData);
-          console.info('[Blackboard] isAdmin:', isAdmin);
-          console.info('[Blackboard] User role:', userData.role);
-
-          // Show/hide "New Entry" button based on permissions
-          const newEntryBtn = $$('#newEntryBtn');
-          if (newEntryBtn) {
-            console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE);
-            newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
-          } else {
-            console.info('[Blackboard] newEntryBtn not found!');
-          }
-
-          // Load departments and teams for form dropdowns
-          void loadDepartmentsAndTeams();
-        } catch (error) {
-          console.error('[Blackboard] Error parsing stored user data:', error);
-          // Fallback: fetch user data if localStorage is corrupted
-          try {
-            const userData = await fetchUserData();
-            currentUserId = userData.id;
-            // Use setter function to avoid race condition
-            setAdminStatus(userData.role);
-
-            console.info('[Blackboard] User data from API:', userData);
-            console.info('[Blackboard] isAdmin after API call:', isAdmin);
-            console.info('[Blackboard] User role from API:', userData.role);
-
-            const newEntryBtn = $$('#newEntryBtn');
-            if (newEntryBtn !== null) {
-              console.info(
-                '[Blackboard] Setting newEntryBtn display after API:',
-                isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE,
-              );
-              newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
-            } else {
-              console.info('[Blackboard] newEntryBtn not found after API call!');
-            }
-            void loadDepartmentsAndTeams();
-          } catch (fetchError) {
-            console.error('[Blackboard] Error loading user data:', fetchError);
-            showError('Fehler beim Laden der Benutzerdaten');
-          }
-        }
-      } else {
-        // No stored user data, fetch it
-        try {
-          const userData = await fetchUserData();
-          const userId = userData.id;
-          const isUserAdmin = userData.role === 'admin' || userData.role === 'root';
-
-          // Set global variables after calculation to avoid race condition
-          currentUserId = userId;
-          isAdmin = isUserAdmin;
-
-          console.info('[Blackboard] User data from API:', userData);
-          console.info('[Blackboard] isAdmin:', isAdmin);
-          console.info('[Blackboard] User role:', userData.role);
-
-          const newEntryBtn = $$('#newEntryBtn');
-          if (newEntryBtn !== null) {
-            console.info('[Blackboard] Setting newEntryBtn display:', isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE);
-            newEntryBtn.style.display = isAdmin ? DISPLAY_INLINE_FLEX : DISPLAY_NONE;
-          } else {
-            console.info('[Blackboard] newEntryBtn not found!');
-          }
-          void loadDepartmentsAndTeams();
-        } catch (error) {
-          console.error('[Blackboard] Error loading user data:', error);
-          showError('Fehler beim Laden der Benutzerdaten');
-        }
+      // Try localStorage first, fallback to API
+      const loadedFromStorage = await loadUserDataFromStorage();
+      if (!loadedFromStorage) {
+        await loadUserDataFromAPI();
       }
 
-      // Always load entries on page load
+      // Load entries
       setEntriesLoadingEnabled(true);
       await loadEntries();
 
-      // Check if we have an entry parameter in the URL
-      const urlParams = new URLSearchParams(window.location.search);
-      const entryId = urlParams.get('entry');
+      // Handle URL parameters
+      handleUrlEntryParameter();
 
-      if (entryId !== null && entryId.length > 0) {
-        // If we have an entry ID, scroll to the specific one
-        const entryElement = document.querySelector(`[data-entry-id="${entryId}"]`);
-        if (entryElement) {
-          entryElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Add a highlight effect
-          entryElement.classList.add('highlight-entry');
-          setTimeout(() => {
-            entryElement.classList.remove('highlight-entry');
-          }, 3000);
-        }
-      }
-
-      // Hide the load entries button since entries are loaded automatically
+      // Hide load entries button
       const loadEntriesBtn = $$('#loadEntriesBtn');
       if (loadEntriesBtn) {
         loadEntriesBtn.style.display = 'none';
       }
 
-      // Retry-Button Ereignisbehandlung
-      const retryLoadBtn = $$id('retryLoadBtn');
-      if (retryLoadBtn) {
-        retryLoadBtn.addEventListener('click', () => {
-          setEntriesLoadingEnabled(true); // Erlaube das Laden nur nach Klick
-          void loadEntries();
-        });
-      }
+      // Setup retry button
+      setupRetryButton();
 
       // Setup event listeners
       setupEventListeners();
@@ -465,7 +449,10 @@ function initializeBlackboard() {
       console.error('Error checking login:', error);
       window.location.href = '/login';
     }
-  })();
+  }
+
+  // Check if user is logged in
+  void initializeUserAndUI();
 }
 
 // Initialize when DOM is ready or immediately if already ready
@@ -614,6 +601,51 @@ function setupEventListeners(): void {
   } else {
     console.error('Organization level dropdown not found');
   }
+
+  // Handle custom dropdown for org ID selection
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle dropdown toggle
+    if (target.closest('#orgIdDisplay')) {
+      const dropdown = $$id('orgIdDropdown');
+      if (dropdown) {
+        dropdown.classList.toggle('show');
+      }
+    }
+
+    // Handle option selection
+    const dropdownOption = target.closest('#orgIdDropdown .dropdown-option');
+    if (dropdownOption instanceof HTMLElement) {
+      const value = dropdownOption.dataset.value ?? '';
+      const text = dropdownOption.textContent;
+
+      // Update display
+      const display = $$id('orgIdDisplay');
+      if (display) {
+        const span = display.querySelector('span');
+        if (span) span.textContent = text;
+      }
+
+      // Update hidden input
+      const hiddenInput = $$id('orgIdValue') as HTMLInputElement | null;
+      if (hiddenInput) {
+        hiddenInput.value = value;
+      }
+
+      // Also update the regular select for fallback
+      const select = $$id('entryOrgId') as HTMLSelectElement | null;
+      if (select) {
+        select.value = value;
+      }
+
+      // Hide dropdown
+      const dropdown = $$id('orgIdDropdown');
+      if (dropdown) {
+        dropdown.classList.remove('show');
+      }
+    }
+  });
 
   // Color selection
   document.querySelectorAll<HTMLElement>('.color-option').forEach((button) => {
@@ -809,108 +841,145 @@ function formatFileSize(bytes: number): string {
   return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
+// Helper to show/hide loading UI
+function showLoadingUI(): void {
+  const loadEntriesCard = $$id('loadEntriesCard');
+  if (loadEntriesCard !== null) loadEntriesCard.classList.add('d-none');
+
+  const loadingIndicator = $$id('loadingIndicator');
+  if (loadingIndicator !== null) loadingIndicator.classList.remove('d-none');
+
+  const blackboardEntries = $$id('blackboardEntries');
+  if (blackboardEntries !== null) blackboardEntries.classList.add('d-none');
+
+  const noEntriesMessage = $$id('noEntriesMessage');
+  if (noEntriesMessage !== null) noEntriesMessage.classList.add('d-none');
+}
+
+// Helper to hide loading UI
+function hideLoadingUI(): void {
+  const loadingIndicator = $$id('loadingIndicator');
+  if (loadingIndicator !== null) loadingIndicator.classList.add('d-none');
+}
+
+// Helper to handle API response
+function processApiResponse(data: BlackboardResponse | BlackboardEntry[]): BlackboardEntry[] {
+  if (Array.isArray(data)) {
+    updatePagination({
+      currentPage: 1,
+      totalPages: 1,
+      totalEntries: data.length,
+      entriesPerPage: data.length > 0 ? data.length : 10,
+    });
+    return data;
+  }
+
+  const entries = data.entries;
+  const pagination = data.pagination ?? {
+    currentPage: 1,
+    totalPages: 1,
+    totalEntries: entries.length,
+    entriesPerPage: 10,
+  };
+
+  updatePagination(pagination);
+  return entries;
+}
+
+// Helper to handle load error
+function handleLoadError(): void {
+  console.error('Error loading entries');
+  showError('Fehler beim Laden der Einträge.');
+
+  const noEntriesMessage = $$id('noEntriesMessage');
+  if (noEntriesMessage !== null) {
+    noEntriesMessage.classList.remove('d-none');
+  }
+
+  const loadEntriesCard = $$id('loadEntriesCard');
+  if (loadEntriesCard !== null) {
+    loadEntriesCard.classList.remove('d-none');
+  }
+}
+
 /**
  * Load blackboard entries
  */
 async function loadEntries(): Promise<void> {
-  // Wenn das Laden nicht aktiviert wurde (durch Klick auf den Button), dann abbrechen
   if (!entriesLoadingEnabled) {
     return;
   }
 
   try {
-    // Verstecke die Lade-Button-Karte
-    const loadEntriesCard = $$id('loadEntriesCard');
-    if (loadEntriesCard) loadEntriesCard.classList.add('d-none');
+    showLoadingUI();
 
-    // Zeige den Ladeindikator
-    const loadingIndicator = $$id('loadingIndicator');
-    if (loadingIndicator) loadingIndicator.classList.remove('d-none');
-
-    // Verstecke vorherige Ergebnisse oder Fehlermeldungen
-    const blackboardEntries = $$id('blackboardEntries');
-    if (blackboardEntries) blackboardEntries.classList.add('d-none');
-
-    const noEntriesMessage = $$id('noEntriesMessage');
-    if (noEntriesMessage) noEntriesMessage.classList.add('d-none');
-
-    // Parse sort option
     const [sortBy, sortDir] = currentSort.split('|');
-
-    // v2 API uses /blackboard/entries instead of /blackboard
     const endpoint = `/blackboard/entries?page=${currentPage}&filter=${currentFilter}&search=${encodeURIComponent(currentSearch)}&sortBy=${sortBy}&sortDir=${sortDir}`;
 
     try {
       const data = await apiClient.get<BlackboardResponse>(endpoint);
-
-      // Log the response to debug
       console.log('[Blackboard] API Response:', data);
 
-      // Handle different response formats
-      let entries: BlackboardEntry[] = [];
+      const entries = processApiResponse(data);
 
-      if (Array.isArray(data)) {
-        // API returns just an array of entries
-        entries = data;
-        // Create default pagination for array response
-        updatePagination({
-          currentPage: 1,
-          totalPages: 1,
-          totalEntries: entries.length,
-          entriesPerPage: entries.length > 0 ? entries.length : 10,
-        });
-      } else {
-        // API returns object with entries and pagination
-        entries = data.entries;
-
-        // Update pagination - check if pagination exists
-        if (data.pagination) {
-          updatePagination(data.pagination);
-        } else {
-          // Create default pagination
-          updatePagination({
-            currentPage: 1,
-            totalPages: 1,
-            totalEntries: entries.length,
-            entriesPerPage: 10,
-          });
-        }
+      // Map v2 API response (camelCase) to UI format (snake_case) if needed
+      interface V2EntryResponse {
+        id: number;
+        title: string;
+        content: string;
+        priority?: string;
+        priority_level?: string;
+        orgLevel?: string;
+        org_level?: string;
+        orgId?: number;
+        org_id?: number;
+        createdBy?: number;
+        created_by?: number;
+        createdAt?: string;
+        created_at?: string;
+        updatedAt?: string;
+        updated_at?: string;
+        color?: string;
+        [key: string]: unknown;
       }
 
-      // Display entries
-      displayEntries(entries);
+      const mappedEntries = entries.map((entry) => {
+        const v2Entry = entry as unknown as V2EntryResponse;
+
+        return {
+          ...entry,
+          priority_level: (v2Entry.priority ?? v2Entry.priority_level ?? entry.priority_level) as
+            | 'low'
+            | 'medium'
+            | 'high'
+            | 'critical',
+          org_level: (v2Entry.orgLevel === 'company'
+            ? 'all'
+            : (v2Entry.orgLevel ?? v2Entry.org_level ?? entry.org_level)) as 'all' | 'department' | 'team',
+          org_id: v2Entry.orgId ?? v2Entry.org_id ?? entry.org_id,
+          created_by: v2Entry.createdBy ?? v2Entry.created_by ?? entry.created_by,
+          created_at: v2Entry.createdAt ?? v2Entry.created_at ?? entry.created_at,
+          updated_at: v2Entry.updatedAt ?? v2Entry.updated_at ?? entry.updated_at,
+        } as BlackboardEntry;
+      });
+
+      displayEntries(mappedEntries);
 
       if (entries.length === 0) {
         const noEntriesMessage = $$id('noEntriesMessage');
-        if (noEntriesMessage) noEntriesMessage.classList.remove('d-none');
+        if (noEntriesMessage !== null) noEntriesMessage.classList.remove('d-none');
       }
 
-      // Erfolgreiche Anfrage - deaktiviere weitere automatische API-Aufrufe
       setEntriesLoadingEnabled(false);
     } catch (error) {
       console.error('Error loading entries:', error);
-      showError('Fehler beim Laden der Einträge.');
-
-      // Bei einem Fehler, zeige die "Keine Einträge" Nachricht mit Wiederholungs-Button
-      const noEntriesMessage = $$id('noEntriesMessage');
-      if (noEntriesMessage) {
-        noEntriesMessage.classList.remove('d-none');
-      }
-
-      // Zeige die Lade-Button-Karte wieder an
-      const loadEntriesCard = $$id('loadEntriesCard');
-      if (loadEntriesCard) loadEntriesCard.classList.remove('d-none');
+      handleLoadError();
     } finally {
-      // Verstecke den Ladeindikator
-      const loadingIndicator = $$id('loadingIndicator');
-      if (loadingIndicator) loadingIndicator.classList.add('d-none');
+      hideLoadingUI();
     }
   } catch (error) {
-    // Catch for outer try block
     console.error('Unexpected error in loadBlackboardEntries:', error);
-    // Hide loading indicator in case of outer error
-    const loadingIndicator = $$id('loadingIndicator');
-    if (loadingIndicator) loadingIndicator.classList.add('d-none');
+    hideLoadingUI();
   }
 }
 
@@ -975,6 +1044,137 @@ function displayEntries(entries: BlackboardEntry[]): void {
   });
 }
 
+// Helper: Get random rotation class
+function getRandomRotation(): string {
+  const rotations = ['rotate-1', 'rotate-2', 'rotate-3', 'rotate-n1', 'rotate-n2', 'rotate-n3'];
+  return rotations[Math.floor(Math.random() * rotations.length)];
+}
+
+// Helper: Get random pushpin style
+function getRandomPushpin(): string {
+  const pushpinStyles = ['pushpin-red', 'pushpin-blue', 'pushpin-yellow', 'pushpin-metal'];
+  return pushpinStyles[Math.floor(Math.random() * pushpinStyles.length)];
+}
+
+// Helper: Determine card styling based on priority and content
+function determineCardStyle(entry: BlackboardEntry): { cardClass: string; cardColor: string } {
+  let cardClass = 'pinboard-sticky';
+  const cardColor = entry.color;
+
+  if (entry.priority_level === 'high' || entry.priority_level === 'critical') {
+    cardClass = 'pinboard-info';
+  } else if (entry.content.length > 200) {
+    cardClass = 'pinboard-note';
+  }
+
+  return { cardClass, cardColor };
+}
+
+// Helper: Get attachment size from content
+function getAttachmentSize(content: string): string {
+  const sizeMatch = /\[Attachment:(small|medium|large)\]/.exec(content);
+  return sizeMatch !== null ? sizeMatch[1] : 'medium';
+}
+
+// Helper: Get size style for attachment
+function getSizeStyle(size: string): string {
+  if (size === 'small') return 'max-width: 200px; max-height: 200px;';
+  if (size === 'medium') return 'max-width: 300px; max-height: 300px;';
+  if (size === 'large') return 'max-width: 400px; max-height: 400px;';
+  return '';
+}
+
+// Helper: Create image attachment HTML
+function createImageAttachment(attachment: BlackboardAttachment, sizeStyle: string): string {
+  return `
+    <div class="pinboard-image" style="${sizeStyle} margin: 0 auto;">
+      <img src="/api/blackboard/attachments/${attachment.id}/preview"
+           alt="${escapeHtml(attachment.original_name)}"
+           style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;"
+           data-action="preview-attachment"
+           data-attachment-id="${attachment.id}"
+           data-mime-type="${escapeHtml(attachment.mime_type)}"
+           data-filename="${escapeHtml(attachment.original_name)}">
+    </div>
+  `;
+}
+
+// Helper: Create PDF attachment HTML
+function createPDFAttachment(attachment: BlackboardAttachment, sizeStyle: string, attachmentSize: string): string {
+  const containerHeight = attachmentSize === 'small' ? 350 : attachmentSize === 'medium' ? 500 : 380;
+  const scale = attachmentSize === 'small' ? 0.3 : attachmentSize === 'medium' ? 0.4 : 0.5;
+
+  return `
+    <div class="pinboard-pdf-preview" style="${sizeStyle} height: ${containerHeight}px; position: relative; overflow: hidden; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden;">
+        <div style="transform: scale(${scale}); transform-origin: top left; width: ${100 / scale}%; height: ${100 / scale}%;">
+          <object
+            data="/api/blackboard/attachments/${attachment.id}/preview#view=FitH&toolbar=0&navpanes=0&scrollbar=0"
+            type="application/pdf"
+            style="width: 100%; height: 100%; border: none;">
+            <div style="padding: 20px; text-align: center;">
+              <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>
+              <p>PDF-Vorschau</p>
+            </div>
+          </object>
+        </div>
+      </div>
+      <div class="pdf-overlay"
+           style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; cursor: pointer; z-index: 10;"
+           data-action="preview-attachment"
+           data-attachment-id="${attachment.id}"
+           data-mime-type="${escapeHtml(attachment.mime_type)}"
+           data-filename="${escapeHtml(attachment.original_name)}"
+           title="Klicken für Vollansicht">
+      </div>
+    </div>
+  `;
+}
+
+// Helper: Create text content HTML
+function createTextContent(content: string): string {
+  const truncated = content.substring(0, 150);
+  const displayText = escapeHtml(truncated).replace(/\n/g, '<br>');
+  const ellipsis = content.length > 150 ? '...' : '';
+
+  return `
+    <div style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
+      ${displayText}${ellipsis}
+    </div>
+  `;
+}
+
+// Helper: Create attachment info HTML
+function createAttachmentInfo(entry: BlackboardEntry, isDirectAttachment: boolean): string {
+  if (isDirectAttachment || entry.attachment_count === undefined || entry.attachment_count === 0) {
+    return '';
+  }
+
+  const plural = entry.attachment_count > 1 ? 'änge' : '';
+  return `
+    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
+      <i class="fas fa-paperclip" style="color: #666;"></i>
+      <span style="color: #666; font-size: 12px;">${entry.attachment_count} Anhang${plural}</span>
+    </div>
+  `;
+}
+
+// Helper: Create entry actions HTML
+function createEntryActions(entryId: number, canEdit: boolean): string {
+  if (!canEdit) return '';
+
+  return `
+    <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0;">
+      <button class="btn btn-sm btn-link p-1" data-action="edit-entry" data-entry-id="${entryId}" title="Bearbeiten">
+        <i class="fas fa-edit"></i>
+      </button>
+      <button class="btn btn-sm btn-link p-1 text-danger" data-action="delete-entry" data-entry-id="${entryId}" title="Löschen">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+}
+
 /**
  * Create entry card element with pinboard style
  */
@@ -982,116 +1182,37 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
   const container = document.createElement('div');
   container.className = 'pinboard-item';
 
-  // Randomly assign rotation class
-  const rotations = ['rotate-1', 'rotate-2', 'rotate-3', 'rotate-n1', 'rotate-n2', 'rotate-n3'];
-  const randomRotation = rotations[Math.floor(Math.random() * rotations.length)];
-
-  // Randomly select pushpin style
-  const pushpinStyles = ['pushpin-red', 'pushpin-blue', 'pushpin-yellow', 'pushpin-metal'];
-  const randomPushpin = pushpinStyles[Math.floor(Math.random() * pushpinStyles.length)];
-
-  // Determine card type based on priority or content
-  let cardClass = 'pinboard-sticky';
-  let cardColor = entry.color;
-
-  // High priority items get info box style
-  if (entry.priority_level === 'high' || entry.priority_level === 'critical') {
-    cardClass = 'pinboard-info';
-  }
-  // Longer content gets note style
-  else if (entry.content.length > 200) {
-    cardClass = 'pinboard-note';
-  }
+  const randomRotation = getRandomRotation();
+  const randomPushpin = getRandomPushpin();
+  let { cardClass, cardColor } = determineCardStyle(entry);
 
   const canEdit = isAdmin || entry.created_by === currentUserId;
   const priorityIcon = getPriorityIcon(entry.priority_level);
-
-  // Check if this is a direct attachment
   const isDirectAttachment = entry.content.startsWith('[Attachment:');
-  let attachmentSize = 'medium';
 
-  if (isDirectAttachment) {
-    const sizeMatch = /\[Attachment:(small|medium|large)\]/.exec(entry.content);
-    if (sizeMatch) {
-      attachmentSize = sizeMatch[1];
-    }
-  }
-
-  // Create different content based on whether it's a direct attachment
   let contentHtml = '';
-  if (isDirectAttachment && entry.attachments && entry.attachments.length > 0) {
+  if (isDirectAttachment && entry.attachments !== undefined && entry.attachments.length > 0) {
     const attachment = entry.attachments[0];
-    const isImage = attachment.mime_type.startsWith('image/');
-    const isPDF = attachment.mime_type === MIME_TYPE_PDF;
+    const attachmentSize = getAttachmentSize(entry.content);
+    const sizeStyle = getSizeStyle(attachmentSize);
 
-    // Set size class
-    let sizeStyle = '';
-    if (attachmentSize === 'small') {
-      sizeStyle = 'max-width: 200px; max-height: 200px;';
-    } else if (attachmentSize === 'medium') {
-      sizeStyle = 'max-width: 300px; max-height: 300px;';
-    } else if (attachmentSize === 'large') {
-      sizeStyle = 'max-width: 400px; max-height: 400px;';
+    if (attachment.mime_type.startsWith('image/')) {
+      contentHtml = createImageAttachment(attachment, sizeStyle);
+    } else if (attachment.mime_type === MIME_TYPE_PDF) {
+      contentHtml = createPDFAttachment(attachment, sizeStyle, attachmentSize);
     }
 
-    if (isImage) {
-      contentHtml = `
-        <div class="pinboard-image" style="${sizeStyle} margin: 0 auto;">
-          <img src="/api/blackboard/attachments/${attachment.id}/preview"
-               alt="${escapeHtml(attachment.original_name)}"
-               style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer;"
-               data-action="preview-attachment"
-               data-attachment-id="${attachment.id}"
-               data-mime-type="${escapeHtml(attachment.mime_type)}"
-               data-filename="${escapeHtml(attachment.original_name)}">
-        </div>
-      `;
-    } else if (isPDF) {
-      // SVG-Wrapper für PDF - verhindert Abschneiden
-      const containerHeight = attachmentSize === 'small' ? 350 : attachmentSize === 'medium' ? 500 : 380;
-      const scale = attachmentSize === 'small' ? 0.3 : attachmentSize === 'medium' ? 0.4 : 0.5;
-
-      contentHtml = `
-        <div class="pinboard-pdf-preview" style="${sizeStyle} height: ${containerHeight}px; position: relative; overflow: hidden; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
-          <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden;">
-            <div style="transform: scale(${scale}); transform-origin: top left; width: ${100 / scale}%; height: ${100 / scale}%;">
-              <object
-                data="/api/blackboard/attachments/${attachment.id}/preview#view=FitH&toolbar=0&navpanes=0&scrollbar=0"
-                type="application/pdf"
-                style="width: 100%; height: 100%; border: none;">
-                <div style="padding: 20px; text-align: center;">
-                  <i class="fas fa-file-pdf" style="font-size: 48px; color: #dc3545;"></i>
-                  <p>PDF-Vorschau</p>
-                </div>
-              </object>
-            </div>
-          </div>
-          <div class="pdf-overlay"
-               style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; cursor: pointer; z-index: 10;"
-               data-action="preview-attachment"
-               data-attachment-id="${attachment.id}"
-               data-mime-type="${escapeHtml(attachment.mime_type)}"
-               data-filename="${escapeHtml(attachment.original_name)}"
-               title="Klicken für Vollansicht">
-          </div>
-        </div>
-      `;
-    }
-
-    // Override card class for attachments
     cardClass = 'pinboard-attachment';
     cardColor = 'white';
   } else {
-    // Regular text content
-    contentHtml = `
-      <div style="color: #333; font-size: 14px; line-height: 1.5; margin-bottom: 15px;">
-        ${escapeHtml(entry.content).substring(0, 150).replace(/\n/g, '<br>')}${entry.content.length > 150 ? '...' : ''}
-      </div>
-    `;
+    contentHtml = createTextContent(entry.content);
   }
 
+  const authorName = escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown');
+  const colorClass = cardClass === 'pinboard-sticky' ? `color-${cardColor}` : '';
+
   const htmlContent = `
-    <div class="${cardClass} ${cardClass === 'pinboard-sticky' ? `color-${cardColor}` : ''} ${randomRotation}" data-entry-id="${entry.id}" data-action="view-entry" style="cursor: pointer;">
+    <div class="${cardClass} ${colorClass} ${randomRotation}" data-entry-id="${entry.id}" data-action="view-entry" style="cursor: pointer;">
       <div class="pushpin ${randomPushpin}"></div>
 
       <h4 style="margin: 0 0 10px 0; font-weight: 600; color:rgb(0, 0, 0);">
@@ -1099,46 +1220,23 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
       </h4>
 
       ${contentHtml}
-
-      ${
-        !isDirectAttachment && entry.attachment_count !== undefined && entry.attachment_count > 0
-          ? `
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);">
-          <i class="fas fa-paperclip" style="color: #666;"></i>
-          <span style="color: #666; font-size: 12px;">${entry.attachment_count} Anhang${entry.attachment_count > 1 ? 'änge' : ''}</span>
-        </div>
-      `
-          : ''
-      }
+      ${createAttachmentInfo(entry, isDirectAttachment)}
 
       <div style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
         <span>
-          <i class="fas fa-user" style="opacity: 0.6;"></i> ${escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown')}
+          <i class="fas fa-user" style="opacity: 0.6;"></i> ${authorName}
         </span>
         <span>
           ${formatDate(entry.created_at)}
         </span>
       </div>
 
-      ${
-        canEdit
-          ? `
-        <div class="entry-actions" style="position: absolute; top: 10px; right: 10px; opacity: 0; /* transition: opacity 0.2s; */">
-          <button class="btn btn-sm btn-link p-1" data-action="edit-entry" data-entry-id="${entry.id}" title="Bearbeiten">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-link p-1 text-danger" data-action="delete-entry" data-entry-id="${entry.id}" title="Löschen">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      `
-          : ''
-      }
+      ${createEntryActions(entry.id, canEdit)}
     </div>
   `;
 
-  // eslint-disable-next-line no-unsanitized/property
-  container.innerHTML = DOMPurify.sanitize(htmlContent); // Safe: content is sanitized with DOMPurify
+  // Safe: content is sanitized by setHTML from dom-utils
+  setHTML(container, htmlContent);
 
   // Show actions on hover
   if (canEdit) {
@@ -1279,6 +1377,65 @@ function openEntryForm(entryId?: number): void {
   openModal('entryFormModal');
 }
 
+// Helper: Hide organization container
+function hideOrgContainer(container: HTMLElement): void {
+  container.classList.add('u-hidden');
+  // Remove inline style to ensure u-hidden class takes effect
+  container.style.removeProperty('display');
+}
+
+// Helper: Show organization container
+function showOrgContainer(container: HTMLElement, labelText: string): void {
+  // First remove the u-hidden class (which has !important)
+  container.classList.remove('u-hidden');
+  // Then set display to ensure visibility
+  container.style.display = 'block';
+
+  const label = container.querySelector('label');
+  if (label) label.textContent = labelText;
+}
+
+// Helper: Update dropdown options
+function updateDropdownOptions(
+  items: { id: number; name: string }[],
+  select: HTMLSelectElement,
+  dropdownOptions: HTMLElement | null,
+  dropdownDisplay: HTMLElement | null,
+): void {
+  // Clear and populate select
+  select.innerHTML = '';
+  items.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.id.toString();
+    option.textContent = item.name;
+    select.append(option);
+  });
+
+  // Update custom dropdown if exists
+  if (!dropdownOptions || !dropdownDisplay) return;
+
+  dropdownOptions.innerHTML = '';
+  items.forEach((item) => {
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'dropdown-option';
+    optionDiv.textContent = item.name;
+    optionDiv.dataset.value = item.id.toString();
+    dropdownOptions.append(optionDiv);
+  });
+
+  const span = dropdownDisplay.querySelector('span');
+  if (span) {
+    span.textContent = items.length > 0 ? items[0].name : 'Bitte wählen';
+  }
+
+  if (items.length > 0) {
+    const hiddenInput = $$id('orgIdValue') as HTMLInputElement | null;
+    if (hiddenInput) {
+      hiddenInput.value = items[0].id.toString();
+    }
+  }
+}
+
 /**
  * Update organization ID dropdown based on level
  */
@@ -1290,31 +1447,41 @@ function updateOrgIdDropdown(level: string): void {
 
   orgIdSelect.innerHTML = ''; // Safe: clearing select options
 
-  if (level === 'all') {
-    orgIdContainer.style.display = 'none';
+  const dropdownOptions = $$id('orgIdDropdown');
+  const dropdownDisplay = $$id('orgIdDisplay');
+
+  if (level === 'all' || level === 'company') {
+    hideOrgContainer(orgIdContainer);
   } else if (level === 'department') {
-    orgIdContainer.style.display = 'block';
-    const label = orgIdContainer.querySelector('label');
-    if (label) label.textContent = 'Abteilung';
-
-    departments.forEach((dept) => {
-      const option = document.createElement('option');
-      option.value = dept.id.toString();
-      option.textContent = dept.name;
-      orgIdSelect.append(option);
-    });
+    showOrgContainer(orgIdContainer, 'Abteilung');
+    updateDropdownOptions(departments, orgIdSelect, dropdownOptions, dropdownDisplay);
   } else if (level === 'team') {
-    orgIdContainer.style.display = 'block';
-    const label = orgIdContainer.querySelector('label');
-    if (label) label.textContent = 'Team';
-
-    teams.forEach((team) => {
-      const option = document.createElement('option');
-      option.value = team.id.toString();
-      option.textContent = team.name;
-      orgIdSelect.append(option);
-    });
+    showOrgContainer(orgIdContainer, 'Team');
+    updateDropdownOptions(teams, orgIdSelect, dropdownOptions, dropdownDisplay);
   }
+}
+
+/**
+ * Helper to get organization ID from form data
+ */
+function getOrgIdValue(orgLevel: string, formData: FormData): number | null {
+  if (orgLevel === 'all' || orgLevel === 'company') {
+    return null;
+  }
+
+  // Try hidden input first (custom dropdown)
+  const hiddenInput = $$id('orgIdValue') as HTMLInputElement | null;
+  if (hiddenInput !== null && hiddenInput.value !== '' && hiddenInput.value.length > 0) {
+    return Number.parseInt(hiddenInput.value, 10);
+  }
+
+  // Fallback to regular select
+  const selectValue = formData.get('org_id');
+  if (typeof selectValue === 'string' && selectValue.length > 0) {
+    return Number.parseInt(selectValue, 10);
+  }
+
+  return null;
 }
 
 /**
@@ -1330,12 +1497,19 @@ async function saveEntry(): Promise<void> {
   const selectedColor = document.querySelector<HTMLElement>('.color-option.active');
   const color = selectedColor?.dataset.color ?? '#f8f9fa';
 
+  // Map org_level value: 'all' -> 'company' for v2 API
+  const orgLevel = formData.get('org_level') as string;
+  const mappedOrgLevel = orgLevel === 'all' ? 'company' : orgLevel;
+
+  // Get org_id from hidden input or select
+  const orgIdValue = getOrgIdValue(orgLevel, formData);
+
   const entryData = {
     title: formData.get('title') as string,
     content: formData.get('content') as string,
-    priority_level: formData.get('priority_level') as string,
-    org_level: formData.get('org_level') as string,
-    org_id: formData.get('org_level') === 'all' ? null : Number.parseInt(formData.get('org_id') as string, 10),
+    priority: formData.get('priority_level') as string, // v2 API uses 'priority'
+    orgLevel: mappedOrgLevel, // v2 API uses camelCase
+    orgId: orgIdValue, // v2 API uses camelCase
     color,
   };
 
@@ -1384,7 +1558,33 @@ async function saveEntry(): Promise<void> {
 async function loadEntryForEdit(entryId: number): Promise<void> {
   try {
     const endpoint = `/blackboard/entries/${entryId}`;
-    const entry = await apiClient.request<BlackboardEntry>(endpoint, { method: 'GET' }, { version: 'v2' });
+    // V2 API returns camelCase fields
+    interface V2EntryDetailResponse {
+      id: number;
+      title: string;
+      content: string;
+      priority?: string;
+      priority_level?: string;
+      orgLevel?: string;
+      org_level?: string;
+      orgId?: number;
+      org_id?: number;
+      color?: string;
+      [key: string]: unknown;
+    }
+
+    const response = await apiClient.request<V2EntryDetailResponse>(endpoint, { method: 'GET' }, { version: 'v2' });
+
+    // Map v2 API response (camelCase) to form fields (snake_case)
+    const entry = {
+      id: response.id,
+      title: response.title,
+      content: response.content,
+      priority_level: response.priority ?? response.priority_level ?? 'medium',
+      org_level: response.orgLevel === 'company' ? 'all' : (response.orgLevel ?? response.org_level ?? 'all'),
+      org_id: response.orgId ?? response.org_id,
+      color: response.color ?? '#f8f9fa',
+    };
 
     // Fill form with entry data
     const form = $$id('entryForm') as HTMLFormElement | null;
@@ -1537,6 +1737,111 @@ function formatDate(dateString: string): string {
   });
 }
 
+// Helper: Build entry detail header HTML
+function buildEntryDetailHeader(entry: BlackboardEntry, priorityIcon: string): string {
+  const authorName = escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown');
+  return `
+    <div class="entry-detail-header">
+      <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
+      <div class="entry-detail-meta">
+        <span><i class="fas fa-user"></i> ${authorName}</span>
+        <span><i class="fas fa-clock"></i> ${formatDate(entry.created_at)}</span>
+      </div>
+    </div>
+  `;
+}
+
+// Helper: Build entry tags HTML
+function buildEntryTags(tags: string[] | undefined): string {
+  if (tags === undefined || tags.length === 0) return '';
+
+  const tagBadges = tags
+    .map((tag: string) => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`)
+    .join(' ');
+
+  return `<div class="entry-tags">${tagBadges}</div>`;
+}
+
+// Helper: Build attachment item HTML
+function buildAttachmentItem(att: BlackboardAttachment): string {
+  const isPDF = att.mime_type === MIME_TYPE_PDF;
+  const iconClass = isPDF ? 'fa-file-pdf' : 'fa-file-image';
+
+  return `
+    <div class="entry-attachment-item"
+         data-attachment-id="${att.id}"
+         data-mime-type="${att.mime_type}"
+         data-filename="${escapeHtml(att.original_name)}"
+         style="cursor: pointer;"
+         title="Vorschau: ${escapeHtml(att.original_name)}"
+         data-action="preview-attachment-link">
+      <i class="fas ${iconClass}"></i>
+      <span>${escapeHtml(att.original_name)}</span>
+      <span class="attachment-size">(${formatFileSize(att.file_size)})</span>
+    </div>
+  `;
+}
+
+// Helper: Build attachments section HTML
+function buildAttachmentsSection(attachments: BlackboardAttachment[], entryId: number): string {
+  if (attachments.length === 0) return '';
+
+  const attachmentItems = attachments.map((att) => buildAttachmentItem(att)).join('');
+
+  return `
+    <div class="entry-attachments">
+      <h4 class="entry-attachments-title">
+        <i class="fas fa-paperclip"></i> Anhänge (${attachments.length})
+      </h4>
+      <div class="entry-attachment-list" id="attachment-list-${entryId}">
+        ${attachmentItems}
+      </div>
+    </div>
+  `;
+}
+
+// Helper: Build footer buttons HTML
+function buildFooterButtons(entryId: number, canEdit: boolean): string {
+  const closeButton = '<button type="button" class="btn btn-secondary" data-action="close">Schließen</button>';
+
+  if (!canEdit) return closeButton;
+
+  return `
+    ${closeButton}
+    <button type="button" class="btn btn-primary" data-action="edit-entry-modal" data-entry-id="${entryId}">
+      <i class="fas fa-edit"></i> Bearbeiten
+    </button>
+    <button type="button" class="btn btn-danger" data-action="delete-entry-modal" data-entry-id="${entryId}">
+      <i class="fas fa-trash"></i> Löschen
+    </button>
+  `;
+}
+
+// Helper: Setup attachment click handlers
+function setupAttachmentHandlers(entryId: number, attachments: BlackboardAttachment[]): void {
+  if (attachments.length === 0) return;
+
+  setTimeout(() => {
+    const attachmentList = document.querySelector(`#attachment-list-${entryId}`);
+    if (attachmentList === null) {
+      console.error('[Blackboard] Attachment list not found!');
+      return;
+    }
+
+    const attachmentItems = attachmentList.querySelectorAll('.entry-attachment-item');
+    console.info(`[Blackboard] Found ${attachmentItems.length} attachment items`);
+
+    attachmentItems.forEach((item) => {
+      const htmlItem = item as HTMLElement;
+      const attachmentId = Number.parseInt(htmlItem.dataset.attachmentId ?? '0', 10);
+
+      htmlItem.dataset.action = 'preview-attachment-item';
+      htmlItem.dataset.attachmentId = attachmentId.toString();
+      htmlItem.style.cursor = 'pointer';
+    });
+  }, 100);
+}
+
 /**
  * View entry details
  */
@@ -1544,215 +1849,47 @@ async function viewEntry(entryId: number): Promise<void> {
   console.info(`[Blackboard] viewEntry called for entry ${entryId}`);
 
   try {
-    console.info(`[Blackboard] Fetching entry ${entryId}...`);
     const endpoint = `/blackboard/entries/${entryId}`;
     const entry = await apiClient.request<BlackboardEntry>(endpoint, { method: 'GET' }, { version: 'v2' });
-    console.info(`[Blackboard] Entry ${entryId} loaded (v2):`, entry);
+    console.info(`[Blackboard] Entry ${entryId} loaded`);
 
-    // Load attachments FIRST
-    console.info(`[Blackboard] Loading attachments for entry ${entryId}...`);
     const attachments = await loadAttachments(entryId);
     console.info(`[Blackboard] Attachments loaded:`, attachments);
 
-    // Show entry detail modal
     const detailContent = document.querySelector('#entryDetailContent');
-    if (detailContent) {
+    if (detailContent !== null) {
       const priorityIcon = getPriorityIcon(entry.priority_level);
       const canEdit = isAdmin || entry.created_by === currentUserId;
 
-      // eslint-disable-next-line no-unsanitized/property
-      detailContent.innerHTML = DOMPurify.sanitize(`
-          <div class="entry-detail-header">
-            <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
-            <div class="entry-detail-meta">
-              <span><i class="fas fa-user"></i> ${escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown')}</span>
-              <span><i class="fas fa-clock"></i> ${formatDate(entry.created_at)}</span>
-            </div>
-          </div>
-          <div class="entry-detail-content">
-            ${escapeHtml(entry.content).replace(/\n/g, '<br>')}
-          </div>
-          ${
-            entry.tags && entry.tags.length > 0
-              ? `
-            <div class="entry-tags">
-              ${entry.tags.map((tag: string) => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`).join(' ')}
-            </div>
-          `
-              : ''
-          }
-          ${
-            attachments.length > 0
-              ? `
-            <div class="entry-attachments">
-              <h4 class="entry-attachments-title">
-                <i class="fas fa-paperclip"></i> Anhänge (${attachments.length})
-              </h4>
-              <div class="entry-attachment-list" id="attachment-list-${entryId}">
-                ${attachments
-                  .map((att) => {
-                    const isPDF = att.mime_type === MIME_TYPE_PDF;
+      const contentHtml = `
+        ${buildEntryDetailHeader(entry, priorityIcon)}
+        <div class="entry-detail-content">
+          ${escapeHtml(entry.content).replace(/\n/g, '<br>')}
+        </div>
+        ${buildEntryTags(entry.tags)}
+        ${buildAttachmentsSection(attachments, entryId)}
+      `;
 
-                    console.info(`[Blackboard] Rendering attachment:`, att);
+      // Safe: content is sanitized by setHTML from dom-utils
+      setHTML(detailContent, contentHtml);
 
-                    return `
-                    <div class="entry-attachment-item"
-                         data-attachment-id="${att.id}"
-                         data-mime-type="${att.mime_type}"
-                         data-filename="${escapeHtml(att.original_name)}"
-                         style="cursor: pointer;"
-                         title="Vorschau: ${escapeHtml(att.original_name)}"
-                         data-action="preview-attachment-link"
-                         data-attachment-id="${att.id}"
-                         data-mime-type="${escapeHtml(att.mime_type)}"
-                         data-filename="${escapeHtml(att.original_name)}">
-                      <i class="fas ${isPDF ? 'fa-file-pdf' : 'fa-file-image'}"></i>
-                      <span>${escapeHtml(att.original_name)}</span>
-                      <span class="attachment-size">(${formatFileSize(att.file_size)})</span>
-                    </div>
-                  `;
-                  })
-                  .join('')}
-              </div>
-            </div>
-          `
-              : ''
-          }
-        `);
-
-      // Update footer buttons BEFORE showing modal
       const footer = document.querySelector('#entryDetailFooter');
-      if (footer && canEdit) {
-        // eslint-disable-next-line no-unsanitized/property
-        footer.innerHTML = DOMPurify.sanitize(`
-            <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-            <button type="button" class="btn btn-primary" data-action="edit-entry-modal" data-entry-id="${entryId}">
-              <i class="fas fa-edit"></i> Bearbeiten
-            </button>
-            <button type="button" class="btn btn-danger" data-action="delete-entry-modal" data-entry-id="${entryId}">
-              <i class="fas fa-trash"></i> Löschen
-            </button>
-          `);
+      if (footer !== null) {
+        // Safe: content is sanitized by setHTML from dom-utils
+        setHTML(footer, buildFooterButtons(entryId, canEdit));
       }
     }
 
-    // Show modal FIRST
-    console.info('[Blackboard] Showing entry detail modal');
+    // Show modal
     const detailModal = document.querySelector('#entryDetailModal');
-    if (!detailModal) {
+    if (detailModal === null) {
       console.error('[Blackboard] Entry detail modal not found!');
       return;
     }
 
-    // Use modal wrapper to show detail modal
-    console.info('[Blackboard] Opening entry detail modal');
     openModal('entryDetailModal');
-
-    console.info('[Blackboard] Entry detail modal displayed');
-
-    // Re-attach close button listeners after modal is shown
     setupCloseButtons();
-
-    // NOW add click handlers for attachments AFTER modal is visible
-    if (attachments.length > 0) {
-      setTimeout(() => {
-        const attachmentList = document.querySelector(`#attachment-list-${entryId}`);
-        console.info(`[Blackboard] Attachment list element:`, attachmentList);
-
-        if (!attachmentList) {
-          console.error('[Blackboard] Attachment list not found!');
-          return;
-        }
-
-        const attachmentItems = attachmentList.querySelectorAll('.entry-attachment-item');
-        console.info(`[Blackboard] Found ${attachmentItems.length} attachment items`);
-
-        // Debug DOM structure
-        console.info('[Blackboard] Attachment list HTML:', attachmentList.innerHTML);
-
-        attachmentItems.forEach((item, index) => {
-          const htmlItem = item as HTMLElement;
-          const attachmentId = Number.parseInt(htmlItem.dataset.attachmentId ?? '0', 10);
-          const mimeType = htmlItem.dataset.mimeType ?? '';
-          const filename = htmlItem.dataset.filename ?? '';
-
-          console.info(`[Blackboard] Setting up attachment ${index}:`, {
-            attachmentId,
-            mimeType,
-            filename,
-            element: htmlItem,
-            parentElement: htmlItem.parentElement,
-          });
-
-          // Set data attributes for event delegation
-          htmlItem.dataset.action = 'preview-attachment-item';
-          htmlItem.dataset.attachmentId = attachmentId.toString();
-          htmlItem.dataset.mimeType = mimeType;
-          htmlItem.dataset.filename = filename;
-          htmlItem.style.cursor = 'pointer';
-
-          // Event handling is done via event delegation
-          // Visual feedback can be added via CSS
-          htmlItem.style.cursor = 'pointer';
-
-          // Log computed styles to check for issues
-          const computedStyle = window.getComputedStyle(htmlItem);
-          console.info(`[Blackboard] Attachment ${index} computed styles:`, {
-            display: computedStyle.display,
-            visibility: computedStyle.visibility,
-            pointerEvents: computedStyle.pointerEvents,
-            zIndex: computedStyle.zIndex,
-            position: computedStyle.position,
-          });
-        });
-
-        // Check if modal is blocking
-        const modal = document.querySelector<HTMLElement>('#entryDetailModal');
-        if (modal) {
-          const modalStyle = window.getComputedStyle(modal);
-          console.info('[Blackboard] Modal computed styles:', {
-            zIndex: modalStyle.zIndex,
-            position: modalStyle.position,
-            pointerEvents: modalStyle.pointerEvents,
-            display: modalStyle.display,
-            visibility: modalStyle.visibility,
-            opacity: modalStyle.opacity,
-          });
-          console.info('[Blackboard] Modal dimensions:', {
-            offsetWidth: modal.offsetWidth,
-            offsetHeight: modal.offsetHeight,
-          });
-        }
-
-        // Check modal content
-        const modalContent = document.querySelector('#entryDetailModal .modal-body');
-        if (modalContent) {
-          const contentStyle = window.getComputedStyle(modalContent);
-          console.info('[Blackboard] Modal content styles:', {
-            display: contentStyle.display,
-            visibility: contentStyle.visibility,
-            overflow: contentStyle.overflow,
-          });
-          console.info('[Blackboard] Modal content dimensions:', {
-            offsetWidth: (modalContent as HTMLElement).offsetWidth,
-            offsetHeight: (modalContent as HTMLElement).offsetHeight,
-          });
-        }
-
-        // Test direct element access
-        console.info('[Blackboard] Testing direct access...');
-        const testAttachment = document.querySelector(`#attachment-list-${entryId} .entry-attachment-item`);
-        if (testAttachment) {
-          console.info('[Blackboard] Test attachment found:', testAttachment);
-          console.info('[Blackboard] Can you see and click this element?', {
-            offsetWidth: (testAttachment as HTMLElement).offsetWidth,
-            offsetHeight: (testAttachment as HTMLElement).offsetHeight,
-            offsetTop: (testAttachment as HTMLElement).offsetTop,
-            offsetLeft: (testAttachment as HTMLElement).offsetLeft,
-          });
-        }
-      }, 300); // Increased timeout to ensure modal is fully rendered
-    }
+    setupAttachmentHandlers(entryId, attachments);
   } catch (error) {
     console.error('Error viewing entry:', error);
     showError('Fehler beim Laden des Eintrags');
@@ -1762,71 +1899,180 @@ async function viewEntry(entryId: number): Promise<void> {
 // Extend window interface for modal and attachment functions
 // Type declarations moved to the bottom of the file
 
+// Helper: Create or get preview modal
+function getOrCreatePreviewModal(): HTMLElement {
+  const existingModal = document.querySelector('#attachmentPreviewModal');
+  if (existingModal !== null) return existingModal as HTMLElement;
+
+  const previewModal = document.createElement('div');
+  previewModal.id = 'attachmentPreviewModal';
+  previewModal.className = 'modal-overlay';
+  previewModal.innerHTML = `
+    <div class="modal-container modal-lg">
+      <div class="modal-header">
+        <h2 id="previewTitle">Vorschau</h2>
+        <button type="button" class="modal-close" data-action="close">&times;</button>
+      </div>
+      <div class="modal-body" id="previewContent" style="overflow: auto; max-height: calc(85vh - 150px); min-height: 400px; padding: 0;">
+        <div class="text-center">
+          <i class="fas fa-spinner fa-spin fa-3x"></i>
+          <p>Lade Vorschau...</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a id="downloadLink" class="btn btn-primary" download>
+          <i class="fas fa-download"></i> Herunterladen
+        </a>
+        <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+      </div>
+    </div>
+  `;
+  document.body.append(previewModal);
+  setupCloseButtons();
+  return previewModal;
+}
+
+// Helper: Setup download link
+function setupDownloadLink(attachmentId: number, fileName: string): void {
+  const downloadLink = $$id('downloadLink') as HTMLAnchorElement | null;
+  if (downloadLink === null) return;
+
+  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
+  const endpoint = `/blackboard/attachments/${attachmentId}?download=true`;
+
+  downloadLink.href = useV2 ? `/api/v2${endpoint}` : `/api${endpoint}`;
+  downloadLink.setAttribute('download', fileName);
+  downloadLink.dataset.action = 'download-attachment';
+  downloadLink.dataset.attachmentId = attachmentId.toString();
+  downloadLink.dataset.filename = fileName;
+  downloadLink.dataset.endpoint = endpoint;
+}
+
+// Helper: Display image preview
+async function displayImagePreview(
+  endpoint: string,
+  fileName: string,
+  previewContent: HTMLElement,
+  previewModal: HTMLElement,
+): Promise<void> {
+  const response = await fetch(`/api/v2${endpoint}`, { credentials: 'same-origin' });
+  if (!response.ok) throw new Error('Failed to load image');
+
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+
+  previewContent.innerHTML = '';
+  const centerDiv = document.createElement('div');
+  centerDiv.className = 'text-center';
+  const img = document.createElement('img');
+  img.src = blobUrl;
+  img.alt = fileName;
+  img.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);';
+  centerDiv.append(img);
+  previewContent.append(centerDiv);
+
+  // Clean up blob URL when modal is closed
+  const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
+  closeButtons.forEach((btn) => {
+    btn.addEventListener(
+      'click',
+      () => {
+        URL.revokeObjectURL(blobUrl);
+      },
+      { once: true },
+    );
+  });
+}
+
+// Helper: Display PDF preview
+async function displayPDFPreview(
+  endpoint: string,
+  attachmentUrl: string,
+  previewContent: HTMLElement,
+  previewModal: HTMLElement,
+): Promise<void> {
+  const response = await fetch(`/api/v2${endpoint}`, { credentials: 'same-origin' });
+  if (!response.ok) throw new Error('Failed to load PDF');
+
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+
+  setHTML(
+    previewContent,
+    `
+      <div style="width: 100%; height: 100%; background: #525659; display: flex; align-items: center; justify-content: center; overflow: hidden;">
+        <iframe src="${blobUrl}#zoom=100"
+                style="width: calc(100% + 40px); height: 100%; border: none; display: block; margin-left: -20px;"
+                allowfullscreen>
+        </iframe>
+      </div>
+    `,
+  );
+
+  setTimeout(() => {
+    const openButton = $$id('openPdfNewTab') as HTMLButtonElement | null;
+    if (openButton !== null) {
+      openButton.dataset.action = 'open-pdf-new-tab';
+      openButton.dataset.attachmentUrl = attachmentUrl;
+    }
+  }, 100);
+
+  const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
+  closeButtons.forEach((btn) => {
+    btn.addEventListener(
+      'click',
+      () => {
+        URL.revokeObjectURL(blobUrl);
+      },
+      { once: true },
+    );
+  });
+}
+
+// Helper: Display unsupported file preview
+function displayUnsupportedPreview(fileName: string, previewContent: HTMLElement): void {
+  previewContent.innerHTML = '';
+  const unsupportedDiv = document.createElement('div');
+  unsupportedDiv.className = 'text-center';
+  unsupportedDiv.style.padding = '40px';
+
+  const icon = document.createElement('i');
+  icon.className = 'fas fa-file fa-5x';
+  icon.style.cssText = 'color: var(--text-secondary); margin-bottom: 20px;';
+
+  const p1 = document.createElement('p');
+  p1.textContent = 'Vorschau für diesen Dateityp nicht verfügbar.';
+
+  const p2 = document.createElement('p');
+  p2.className = 'text-muted';
+  p2.textContent = fileName;
+
+  unsupportedDiv.append(icon, p1, p2);
+  previewContent.append(unsupportedDiv);
+}
+
 /**
  * Preview attachment in modal
  */
 async function previewAttachment(attachmentId: number, mimeType: string, fileName: string): Promise<void> {
   console.info(`[Blackboard] previewAttachment called:`, { attachmentId, mimeType, fileName });
 
-  // Create preview modal if it doesn't exist
-  let previewModal = document.querySelector('#attachmentPreviewModal');
-  if (!previewModal) {
-    previewModal = document.createElement('div');
-    previewModal.id = 'attachmentPreviewModal';
-    previewModal.className = 'modal-overlay';
-    previewModal.innerHTML = `
-      <div class="modal-container modal-lg">
-        <div class="modal-header">
-          <h2 id="previewTitle">Vorschau</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
-        </div>
-        <div class="modal-body" id="previewContent" style="overflow: auto; max-height: calc(85vh - 150px); min-height: 400px; padding: 0;">
-          <div class="text-center">
-            <i class="fas fa-spinner fa-spin fa-3x"></i>
-            <p>Lade Vorschau...</p>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <a id="downloadLink" class="btn btn-primary" download>
-            <i class="fas fa-download"></i> Herunterladen
-          </a>
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-        </div>
-      </div>
-    `;
-    document.body.append(previewModal);
-    setupCloseButtons();
-  }
+  const previewModal = getOrCreatePreviewModal();
 
-  // Show modal using the same approach as other modals
-  console.info('[Blackboard] Showing preview modal');
-  (previewModal as HTMLElement).style.display = 'flex';
+  // Show modal
+  previewModal.style.display = 'flex';
   previewModal.classList.add('active');
-  (previewModal as HTMLElement).style.opacity = '1';
-  (previewModal as HTMLElement).style.visibility = 'visible';
+  previewModal.style.opacity = '1';
+  previewModal.style.visibility = 'visible';
 
   // Update title
   const titleElement = document.querySelector('#previewTitle');
-  if (titleElement) titleElement.textContent = `Vorschau: ${fileName}`;
+  if (titleElement !== null) titleElement.textContent = `Vorschau: ${fileName}`;
 
-  // Update download link
-  const downloadLink = $$id('downloadLink') as HTMLAnchorElement | null;
-  if (downloadLink) {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = `/blackboard/attachments/${attachmentId}?download=true`;
+  setupDownloadLink(attachmentId, fileName);
 
-    downloadLink.href = useV2 ? `/api/v2${endpoint}` : `/api${endpoint}`;
-    downloadLink.setAttribute('download', fileName);
-    // Set data attributes for download handler
-    downloadLink.dataset.action = 'download-attachment';
-    downloadLink.dataset.attachmentId = attachmentId.toString();
-    downloadLink.dataset.filename = fileName;
-    downloadLink.dataset.endpoint = endpoint;
-  }
-
-  // Load preview content
   const previewContent = document.querySelector<HTMLElement>('#previewContent');
-  if (!previewContent) return;
+  if (previewContent === null) return;
 
   try {
     const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
@@ -1834,104 +2080,11 @@ async function previewAttachment(attachmentId: number, mimeType: string, fileNam
     const attachmentUrl = useV2 ? `/api/v2${endpoint}` : `/api${endpoint}`;
 
     if (mimeType.startsWith('image/')) {
-      // Fetch image with authorization header and convert to blob URL
-      const response = await fetch(`/api/v2${endpoint}`, {
-        credentials: 'same-origin',
-      });
-
-      if (!response.ok) throw new Error('Failed to load image');
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      // Display image safely to prevent XSS
-      previewContent.innerHTML = '';
-      const centerDiv = document.createElement('div');
-      centerDiv.className = 'text-center';
-      const img = document.createElement('img');
-      img.src = blobUrl;
-      img.alt = fileName;
-      img.style.cssText = 'max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);';
-      centerDiv.append(img);
-      previewContent.append(centerDiv);
-
-      // Clean up blob URL when modal is closed
-      const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
-      closeButtons.forEach((btn) => {
-        btn.addEventListener(
-          'click',
-          () => {
-            URL.revokeObjectURL(blobUrl);
-          },
-          { once: true },
-        );
-      });
+      await displayImagePreview(endpoint, fileName, previewContent, previewModal);
     } else if (mimeType === MIME_TYPE_PDF) {
-      // For PDFs, use object tag instead of iframe to avoid CSP issues
-      const response = await fetch(`/api/v2${endpoint}`, {
-        credentials: 'same-origin',
-      });
-
-      if (!response.ok) throw new Error('Failed to load PDF');
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      // Display PDF with gray background to hide gaps
-      setHTML(
-        previewContent,
-        DOMPurify.sanitize(`
-          <div style="width: 100%; height: 100%; background: #525659; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-            <iframe src="${blobUrl}#zoom=100"
-                    style="width: calc(100% + 40px); height: 100%; border: none; display: block; margin-left: -20px;"
-                    allowfullscreen>
-            </iframe>
-          </div>
-        `),
-      );
-
-      // Add data attributes for "open in new tab" button
-      setTimeout(() => {
-        const openButton = $$id('openPdfNewTab') as HTMLButtonElement | null;
-        if (openButton) {
-          openButton.dataset.action = 'open-pdf-new-tab';
-          openButton.dataset.attachmentUrl = attachmentUrl;
-        }
-      }, 100);
-
-      // Clean up blob URL when modal is closed
-      const closeButtons = previewModal.querySelectorAll('[data-action="close"]');
-      closeButtons.forEach((btn) => {
-        btn.addEventListener(
-          'click',
-          () => {
-            URL.revokeObjectURL(blobUrl);
-          },
-          { once: true },
-        );
-      });
+      await displayPDFPreview(endpoint, attachmentUrl, previewContent, previewModal);
     } else {
-      // Unsupported file type - create elements safely
-      previewContent.innerHTML = '';
-      const unsupportedDiv = document.createElement('div');
-      unsupportedDiv.className = 'text-center';
-      unsupportedDiv.style.padding = '40px';
-
-      const icon = document.createElement('i');
-      icon.className = 'fas fa-file fa-5x';
-      icon.style.cssText = 'color: var(--text-secondary); margin-bottom: 20px;';
-
-      const p1 = document.createElement('p');
-      p1.textContent = 'Vorschau für diesen Dateityp nicht verfügbar.';
-
-      const p2 = document.createElement('p');
-      p2.className = 'text-muted';
-      p2.textContent = fileName;
-
-      unsupportedDiv.append(icon);
-      unsupportedDiv.append(p1);
-      unsupportedDiv.append(p2);
-      previewContent.append(unsupportedDiv);
+      displayUnsupportedPreview(fileName, previewContent);
     }
   } catch (error) {
     console.error('Error loading preview:', error);

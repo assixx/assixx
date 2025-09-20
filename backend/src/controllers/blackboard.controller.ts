@@ -145,6 +145,26 @@ class BlackboardController {
   }
 
   /**
+   * Parse tags from request body
+   */
+  private parseTags(tags: unknown): string[] | undefined {
+    if (tags === null || tags === undefined) {
+      return undefined;
+    }
+    return typeof tags === 'string' ? tags.split(',') : (tags as string[]);
+  }
+
+  /**
+   * Parse expires_at date from request body
+   */
+  private parseExpiresAt(expiresAt: unknown): Date | undefined {
+    if (expiresAt === null || expiresAt === undefined) {
+      return undefined;
+    }
+    return new Date(expiresAt as string);
+  }
+
+  /**
    * Erstellt einen neuen Blackboard Eintrag
    * POST /api/blackboard
    * @param req - The request object
@@ -152,6 +172,11 @@ class BlackboardController {
    */
   async create(req: BlackboardCreateRequest, res: Response): Promise<void> {
     try {
+      if (!req.tenantDb) {
+        res.status(500).json({ error: DB_CONNECTION_ERROR });
+        return;
+      }
+
       const createData = {
         ...req.body,
         tenant_id: req.user.tenant_id,
@@ -159,22 +184,11 @@ class BlackboardController {
         author_id: req.user.id,
         org_level: (req.body.org_level ?? 'company') as 'company' | 'department' | 'team',
         org_id: req.body.org_id ?? null,
-        expires_at:
-          req.body.expires_at !== null && req.body.expires_at !== undefined ?
-            new Date(req.body.expires_at)
-          : undefined,
-        tags:
-          req.body.tags !== null && req.body.tags !== undefined ?
-            typeof req.body.tags === 'string' ?
-              req.body.tags.split(',')
-            : req.body.tags
-          : undefined,
+        expires_at: this.parseExpiresAt(req.body.expires_at),
+        tags: this.parseTags(req.body.tags),
         color: req.body.color === null ? undefined : req.body.color,
       };
-      if (!req.tenantDb) {
-        res.status(500).json({ error: DB_CONNECTION_ERROR });
-        return;
-      }
+
       const result = await blackboardService.create(req.tenantDb, createData);
       res.status(201).json(result);
     } catch (error: unknown) {
@@ -184,6 +198,13 @@ class BlackboardController {
         message: error instanceof Error ? error.message : UNKNOWN_ERROR,
       });
     }
+  }
+
+  /**
+   * Parse nullable field value
+   */
+  private parseNullableField<T>(value: T | null): T | undefined {
+    return value === null ? undefined : value;
   }
 
   /**
@@ -200,21 +221,18 @@ class BlackboardController {
         return;
       }
 
-      const updateData = {
-        ...req.body,
-        tags:
-          req.body.tags !== null && req.body.tags !== undefined ?
-            typeof req.body.tags === 'string' ?
-              req.body.tags.split(',')
-            : req.body.tags
-          : undefined,
-        color: req.body.color === null ? undefined : req.body.color,
-        category: req.body.category === null ? undefined : req.body.category,
-      };
       if (!req.tenantDb) {
         res.status(500).json({ error: DB_CONNECTION_ERROR });
         return;
       }
+
+      const updateData = {
+        ...req.body,
+        tags: this.parseTags(req.body.tags),
+        color: this.parseNullableField(req.body.color),
+        category: this.parseNullableField(req.body.category),
+      };
+
       const result = await blackboardService.update(
         req.tenantDb,
         id,

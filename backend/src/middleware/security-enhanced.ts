@@ -164,12 +164,10 @@ export const securityHeaders = helmet({
 // CORS with Subdomain Whitelist
 export const corsOptions: cors.CorsOptions = {
   // Safe: Express CORS library requires callback pattern, not async/await
-  // eslint-disable-next-line promise/prefer-await-to-callbacks
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (origin == null || origin === '') {
       // Safe: Express CORS library requires callback pattern, not async/await
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       callback(null, true);
       return;
     }
@@ -186,11 +184,9 @@ export const corsOptions: cors.CorsOptions = {
 
     if (isAllowed) {
       // Safe: Express CORS library requires callback pattern, not async/await
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       callback(null, true);
     } else {
       // Safe: Express CORS library requires callback pattern, not async/await
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -356,7 +352,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
         </head>
         <body>
           <div class="rate-limit-card">
-            <div class="icon">⏱️</div>
+            <div class="icon">⌛</div>
             <h1>Zu viele Anfragen</h1>
             <p class="message">
               Sie haben die maximale Anzahl an Anfragen überschritten.
@@ -510,7 +506,6 @@ export const auditLogger =
       chunk?: string | Buffer | (() => void),
       encoding?: globalThis.BufferEncoding | (() => void),
       // Safe: Node.js response.end() requires callback pattern
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       cb?: () => void,
     ): Response {
       // Handle different argument patterns

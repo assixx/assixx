@@ -150,7 +150,6 @@ class DeletionWorker {
 
 // Start the worker when run directly
 const worker = new DeletionWorker();
-// eslint-disable-next-line promise/prefer-await-to-callbacks -- Top-level error handler for worker startup
 worker.start().catch((error: unknown) => {
   logger.error('Fatal error starting deletion worker:', error);
   process.exit(1);

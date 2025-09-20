@@ -830,7 +830,6 @@ export class SurveyAdminManager {
     } else if (assignmentType === 'department') {
       const select = document.querySelector<HTMLSelectElement>('#departmentSelect');
       if (select) {
-        // eslint-disable-next-line unicorn/prefer-spread
         const selectedDepts = Array.from(select.selectedOptions).map((opt) => opt.value);
         if (selectedDepts.length === 0) {
           showErrorAlert('Bitte wählen Sie mindestens eine Abteilung aus');
@@ -846,7 +845,6 @@ export class SurveyAdminManager {
     } else if (assignmentType === 'team') {
       const select = document.querySelector<HTMLSelectElement>('#teamSelect');
       if (select) {
-        // eslint-disable-next-line unicorn/prefer-spread
         const selectedTeams = Array.from(select.selectedOptions).map((opt) => opt.value);
         if (selectedTeams.length === 0) {
           showErrorAlert('Bitte wählen Sie mindestens ein Team aus');
@@ -1108,7 +1106,6 @@ export class SurveyAdminManager {
         // Set selected departments
         const departmentSelect = document.querySelector<HTMLSelectElement>('#departmentSelect');
         if (departmentSelect !== null) {
-          // eslint-disable-next-line unicorn/prefer-spread
           Array.from(departmentSelect.options).forEach((option) => (option.selected = false));
           survey.assignments.forEach((assign) => {
             const deptId = assign.departmentId ?? assign.department_id;
@@ -1123,7 +1120,6 @@ export class SurveyAdminManager {
         // Set selected teams
         const teamSelect = document.querySelector<HTMLSelectElement>('#teamSelect');
         if (teamSelect !== null) {
-          // eslint-disable-next-line unicorn/prefer-spread
           Array.from(teamSelect.options).forEach((option) => (option.selected = false));
           survey.assignments.forEach((assign) => {
             const teamId = assign.teamId ?? assign.team_id;

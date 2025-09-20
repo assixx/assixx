@@ -83,6 +83,37 @@ interface TenantQueryRequest extends TenantRequest {
  */
 class TenantController {
   /**
+   * Parse number query parameter
+   */
+  private parseNumberParam(value: string | undefined): number | undefined {
+    if (value == null || value === '') {
+      return undefined;
+    }
+    return Number.parseInt(value, 10);
+  }
+
+  /**
+   * Parse boolean query parameter
+   */
+  private parseBooleanParam(value: string | undefined): boolean | undefined {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
+  }
+
+  /**
+   * Parse query filters
+   */
+  private parseQueryFilters(query: TenantQueryRequest['query']): Record<string, unknown> {
+    return {
+      ...query,
+      is_active: this.parseBooleanParam(query.is_active),
+      page: this.parseNumberParam(query.page),
+      limit: this.parseNumberParam(query.limit),
+    };
+  }
+
+  /**
    * Holt alle Tenant Einträge
    * GET /api/tenant
    * @param req - The request object
@@ -95,21 +126,7 @@ class TenantController {
         return;
       }
 
-      const filters = {
-        ...req.query,
-        is_active:
-          req.query.is_active === 'true' ? true
-          : req.query.is_active === 'false' ? false
-          : undefined,
-        page:
-          req.query.page != null && req.query.page !== '' ?
-            Number.parseInt(req.query.page, 10)
-          : undefined,
-        limit:
-          req.query.limit != null && req.query.limit !== '' ?
-            Number.parseInt(req.query.limit, 10)
-          : undefined,
-      };
+      const filters = this.parseQueryFilters(req.query);
       const result = tenantService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error: unknown) {

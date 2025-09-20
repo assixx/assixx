@@ -383,7 +383,6 @@ router.get(
 );
 
 // Configure multer for profile picture uploads
-/* eslint-disable promise/prefer-await-to-callbacks */
 const storage = multer.diskStorage({
   destination(_req, _file, cb) {
     cb(null, 'uploads/profile_pictures/');

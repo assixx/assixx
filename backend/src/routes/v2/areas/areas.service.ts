@@ -26,12 +26,61 @@ interface AreaRow extends RowDataPacket {
 }
 
 /**
- * Get all areas for a tenant
- * @param tenantId - The tenant ID
- * @param filters - The filter criteria
+ * Apply type filter to query
  */
-export async function getAreas(tenantId: number, filters?: AreaFilters): Promise<Area[]> {
-  let query = `
+function applyTypeFilter(
+  query: string,
+  params: (string | number | boolean)[],
+  type: string | undefined,
+): string {
+  if (type && type !== '') {
+    params.push(type);
+    return query + ' AND a.type = ?';
+  }
+  return query;
+}
+
+/**
+ * Apply parent ID filter to query
+ */
+function applyParentFilter(
+  query: string,
+  params: (string | number | boolean)[],
+  parentId: number | null | undefined,
+): string {
+  if (parentId === undefined) return query;
+
+  if (parentId === null) {
+    return query + ' AND a.parent_id IS NULL';
+  }
+
+  params.push(parentId);
+  return query + ' AND a.parent_id = ?';
+}
+
+/**
+ * Apply search filter to query
+ */
+function applySearchFilter(
+  query: string,
+  params: (string | number | boolean)[],
+  search: string | undefined,
+): string {
+  if (search && search !== '') {
+    params.push(`%${search}%`, `%${search}%`);
+    return query + ' AND (a.name LIKE ? OR a.description LIKE ?)';
+  }
+  return query;
+}
+
+/**
+ * Build SQL query and params for area filters
+ */
+function buildAreaQuery(
+  tenantId: number,
+  filters?: AreaFilters,
+): { query: string; params: (string | number | boolean)[] } {
+  const baseQuery = `
     SELECT
       a.*,
       p.name as parent_name,
@@ -44,31 +93,33 @@ export async function getAreas(tenantId: number, filters?: AreaFilters): Promise
 
   const params: (string | number | boolean)[] = [tenantId];
 
-  if (filters?.type !== undefined && filters.type !== '') {
-    query += ' AND a.type = ?';
-    params.push(filters.type);
+  if (!filters) {
+    return { query: baseQuery + ' GROUP BY a.id ORDER BY a.name', params };
   }
 
-  if (filters?.isActive !== undefined) {
+  let query = baseQuery;
+
+  // Apply each filter
+  query = applyTypeFilter(query, params, filters.type);
+
+  if (filters.isActive !== undefined) {
     query += ' AND a.is_active = ?';
     params.push(filters.isActive ? 1 : 0);
   }
 
-  if (filters?.parentId !== undefined) {
-    if (filters.parentId === null) {
-      query += ' AND a.parent_id IS NULL';
-    } else {
-      query += ' AND a.parent_id = ?';
-      params.push(filters.parentId);
-    }
-  }
+  query = applyParentFilter(query, params, filters.parentId);
+  query = applySearchFilter(query, params, filters.search);
 
-  if (filters?.search !== undefined && filters.search !== '') {
-    query += ' AND (a.name LIKE ? OR a.description LIKE ?)';
-    params.push(`%${filters.search}%`, `%${filters.search}%`);
-  }
+  return { query: query + ' GROUP BY a.id ORDER BY a.name', params };
+}
 
-  query += ' GROUP BY a.id ORDER BY a.name';
+/**
+ * Get all areas for a tenant
+ * @param tenantId - The tenant ID
+ * @param filters - The filter criteria
+ */
+export async function getAreas(tenantId: number, filters?: AreaFilters): Promise<Area[]> {
+  const { query, params } = buildAreaQuery(tenantId, filters);
 
   const [rows] = await execute<AreaRow[]>(query, params);
 
@@ -235,33 +286,34 @@ export async function createArea(
 }
 
 /**
- * Update area
- * @param id - The resource ID
- * @param data - The data object
- * @param tenantId - The tenant ID
+ * Validate parent area relationship
  */
-export async function updateArea(
-  id: number,
-  data: UpdateAreaRequest,
+async function validateParentArea(
+  areaId: number,
+  parentId: number | null | undefined,
   tenantId: number,
-): Promise<Area> {
-  // Check if area exists
-  const existing = await getAreaById(id, tenantId);
-  if (!existing) {
-    throw new ServiceError('NOT_FOUND', 'Area not found', 404);
+): Promise<void> {
+  if (parentId === undefined || parentId === null) {
+    return;
   }
 
-  // Validate parent area if provided
-  if (data.parentId !== undefined && data.parentId !== null) {
-    if (data.parentId === id) {
-      throw new ServiceError('INVALID_PARENT', 'Area cannot be its own parent', 400);
-    }
-    const parentExists = await getAreaById(data.parentId, tenantId);
-    if (!parentExists) {
-      throw new ServiceError('PARENT_NOT_FOUND', 'Parent area not found', 404);
-    }
+  if (parentId === areaId) {
+    throw new ServiceError('INVALID_PARENT', 'Area cannot be its own parent', 400);
   }
 
+  const parentExists = await getAreaById(parentId, tenantId);
+  if (!parentExists) {
+    throw new ServiceError('PARENT_NOT_FOUND', 'Parent area not found', 404);
+  }
+}
+
+/**
+ * Build update query from data
+ */
+function buildUpdateQuery(data: UpdateAreaRequest): {
+  updates: string[];
+  values: (string | number | boolean | null)[];
+} {
   const updates: string[] = [];
   const values: (string | number | boolean | null)[] = [];
 
@@ -294,10 +346,37 @@ export async function updateArea(
     values.push(data.isActive ? 1 : 0);
   }
 
+  return { updates, values };
+}
+
+/**
+ * Update area
+ * @param id - The resource ID
+ * @param data - The data object
+ * @param tenantId - The tenant ID
+ */
+export async function updateArea(
+  id: number,
+  data: UpdateAreaRequest,
+  tenantId: number,
+): Promise<Area> {
+  // Check if area exists
+  const existing = await getAreaById(id, tenantId);
+  if (!existing) {
+    throw new ServiceError('NOT_FOUND', 'Area not found', 404);
+  }
+
+  // Validate parent area if provided
+  await validateParentArea(id, data.parentId, tenantId);
+
+  // Build update query
+  const { updates, values } = buildUpdateQuery(data);
+
   if (updates.length === 0) {
     return existing;
   }
 
+  // Execute update
   values.push(id, tenantId);
   const query = `
     UPDATE areas
@@ -307,6 +386,7 @@ export async function updateArea(
 
   await execute(query, values);
 
+  // Return updated area
   const updated = await getAreaById(id, tenantId);
   if (!updated) {
     throw new ServiceError('UPDATE_FAILED', 'Failed to update area', 500);

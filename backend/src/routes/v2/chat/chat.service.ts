@@ -100,6 +100,18 @@ export interface MessageFilters {
   limit?: number;
 }
 
+// Internal interfaces for database rows
+interface ParticipantRow extends RowDataPacket {
+  conversation_id: number;
+  user_id: number;
+  joined_at: Date;
+  is_admin?: boolean;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture: string | null;
+}
+
 export interface CreateConversationData {
   participantIds: number[];
   name?: string;
@@ -282,6 +294,144 @@ export class ChatService {
   }
 
   /**
+   * Build WHERE clause for conversations query
+   */
+  private buildConversationWhereClause(
+    filters: ConversationFilters,
+    tenantId: number,
+    userId: number,
+  ): { whereClause: string; params: unknown[] } {
+    let whereClause = `
+      WHERE c.tenant_id = ?
+      AND cp.user_id = ?
+    `;
+    const params: unknown[] = [tenantId, userId];
+
+    if (filters.search) {
+      whereClause += ` AND (c.name LIKE ? OR m.content LIKE ?)`;
+      params.push(`%${filters.search}%`, `%${filters.search}%`);
+    }
+
+    if (filters.isGroup !== undefined) {
+      whereClause += ` AND c.is_group = ?`;
+      params.push(filters.isGroup ? 1 : 0);
+    }
+
+    return { whereClause, params };
+  }
+
+  /**
+   * Get conversation participants with user details
+   */
+  private async getConversationParticipants(conversationIds: number[]): Promise<ParticipantRow[]> {
+    if (conversationIds.length === 0) {
+      return [];
+    }
+
+    const query = `
+      SELECT
+        cp.conversation_id,
+        cp.user_id,
+        cp.joined_at,
+        cp.is_admin,
+        u.username,
+        u.first_name,
+        u.last_name,
+        u.profile_picture
+      FROM conversation_participants cp
+      INNER JOIN users u ON cp.user_id = u.id
+      WHERE cp.conversation_id IN (${conversationIds.map(() => '?').join(',')})
+    `;
+
+    const [rows] = await execute<ParticipantRow[]>(query, conversationIds);
+    return rows;
+  }
+
+  /**
+   * Get unread message counts for conversations
+   */
+  private async getUnreadCounts(
+    conversationIds: number[],
+    userId: number,
+  ): Promise<Map<number, number>> {
+    const unreadCounts = new Map<number, number>();
+
+    if (conversationIds.length === 0) {
+      return unreadCounts;
+    }
+
+    const query = `
+      SELECT
+        m.conversation_id,
+        COUNT(*) as unread_count
+      FROM messages m
+      LEFT JOIN conversation_participants cp
+        ON cp.conversation_id = m.conversation_id
+        AND cp.user_id = ${userId}
+      WHERE m.conversation_id IN (${conversationIds.map(() => '?').join(',')})
+        AND m.sender_id != ${userId}
+        AND m.id > COALESCE(cp.last_read_message_id, 0)
+      GROUP BY m.conversation_id
+    `;
+
+    interface UnreadCountRow extends RowDataPacket {
+      conversation_id: number;
+      unread_count: number;
+    }
+
+    const [rows] = await execute<UnreadCountRow[]>(query, conversationIds);
+
+    for (const row of rows) {
+      unreadCounts.set(row.conversation_id, row.unread_count);
+    }
+
+    return unreadCounts;
+  }
+
+  /**
+   * Transform conversation data to API format
+   */
+  private transformConversation(
+    conv: ConversationRow,
+    participants: ParticipantRow[],
+    unreadCount: number,
+  ): Conversation {
+    const convParticipants = participants
+      .filter((p) => p.conversation_id === conv.id)
+      .map((p) => ({
+        id: p.user_id,
+        userId: p.user_id,
+        username: p.username,
+        first_name: p.first_name ?? '',
+        last_name: p.last_name ?? '',
+        profile_picture_url: p.profile_picture,
+        joinedAt: new Date(p.joined_at),
+        isActive: true,
+      }));
+
+    let lastMessage = null;
+    if (conv.last_message_content && conv.last_message_time) {
+      lastMessage = {
+        content: conv.last_message_content,
+        created_at: new Date(conv.last_message_time),
+      };
+    }
+
+    return {
+      id: conv.id,
+      name: conv.name,
+      isGroup: conv.is_group === 1,
+      createdAt: new Date(conv.created_at),
+      updatedAt: new Date(conv.updated_at),
+      lastMessage,
+      unreadCount,
+      participants: convParticipants,
+      // Frontend compatibility fields (will be removed in future)
+      ...({} as { last_message?: unknown; is_group?: boolean; unread_count?: number }),
+    };
+  }
+
+  /**
    * Get user's conversations with pagination
    * @param tenantId - The tenant ID
    * @param userId - The user ID
@@ -293,11 +443,9 @@ export class ChatService {
     filters: ConversationFilters = {},
   ): Promise<{ data: Conversation[]; pagination: PaginationMeta }> {
     try {
-      log('[Chat Service] getConversations called with:', {
-        tenantId,
-        userId,
-        filters,
-      });
+      log('[Chat Service] getConversations called with:', { tenantId, userId, filters });
+
+      // Calculate pagination
       const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
       const limit = Math.min(
         100,
@@ -305,24 +453,10 @@ export class ChatService {
       );
       const offset = (page - 1) * limit;
 
-      // Build query with filters
-      let whereClause = `
-        WHERE c.tenant_id = ?
-        AND cp.user_id = ?
-      `;
-      const params: unknown[] = [tenantId, userId];
+      // Build WHERE clause
+      const { whereClause, params } = this.buildConversationWhereClause(filters, tenantId, userId);
 
-      if (filters.search) {
-        whereClause += ` AND (c.name LIKE ? OR m.content LIKE ?)`;
-        params.push(`%${filters.search}%`, `%${filters.search}%`);
-      }
-
-      if (filters.isGroup !== undefined) {
-        whereClause += ` AND c.is_group = ?`;
-        params.push(filters.isGroup ? 1 : 0);
-      }
-
-      // Get total count for pagination
+      // Get total count
       const countQuery = `
         SELECT COUNT(DISTINCT c.id) as total
         FROM conversations c
@@ -330,11 +464,10 @@ export class ChatService {
         LEFT JOIN messages m ON c.id = m.conversation_id
         ${whereClause}
       `;
-
       const [countResult] = await execute<CountResult[]>(countQuery, params);
       const totalItems = countResult[0]?.total ?? 0;
 
-      // Get conversations with last message info
+      // Get conversations
       const query = `
         SELECT DISTINCT
           c.id,
@@ -342,139 +475,33 @@ export class ChatService {
           c.is_group,
           c.created_at,
           c.updated_at,
-          (SELECT m.content
-           FROM messages m
-           WHERE m.conversation_id = c.id
-           ORDER BY m.created_at DESC
-           LIMIT 1) as last_message_content,
-          (SELECT m.created_at
-           FROM messages m
-           WHERE m.conversation_id = c.id
-           ORDER BY m.created_at DESC
-           LIMIT 1) as last_message_time
+          (SELECT m.content FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_content,
+          (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_time
         FROM conversations c
         INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-        WHERE c.tenant_id = ${tenantId}
-        AND cp.user_id = ${userId}
+        WHERE c.tenant_id = ${tenantId} AND cp.user_id = ${userId}
         ORDER BY c.updated_at DESC
         LIMIT ${limit} OFFSET ${offset}
       `;
 
-      // No parameters needed - using string interpolation
       log('[Chat Service] Full query:', query);
-
       const [conversations] = await execute<ConversationRow[]>(query);
-
-      // Get participants for each conversation
       const conversationIds = conversations.map((c) => c.id);
 
-      interface ParticipantRow extends RowDataPacket {
-        conversation_id: number;
-        user_id: number;
-        joined_at: Date;
-        username: string;
-        first_name: string | null;
-        last_name: string | null;
-        profile_picture: string | null;
-      }
+      // Get participants and unread counts in parallel
+      const [participants, unreadCounts] = await Promise.all([
+        this.getConversationParticipants(conversationIds),
+        this.getUnreadCounts(conversationIds, userId),
+      ]);
 
-      let participants: ParticipantRow[] = [];
-      let unreadCounts = new Map<number, number>();
-
-      if (conversationIds.length > 0) {
-        const participantsQuery = `
-          SELECT
-            cp.conversation_id,
-            cp.user_id,
-            cp.joined_at,
-            cp.is_admin,
-            u.username,
-            u.first_name,
-            u.last_name,
-            u.profile_picture
-          FROM conversation_participants cp
-          INNER JOIN users u ON cp.user_id = u.id
-          WHERE cp.conversation_id IN (${conversationIds.map(() => '?').join(',')})
-        `;
-
-        const [participantRows] = await execute<ParticipantRow[]>(
-          participantsQuery,
-          conversationIds,
-        );
-        participants = participantRows;
-
-        // Get unread counts for each conversation
-        const unreadQuery = `
-          SELECT
-            m.conversation_id,
-            COUNT(*) as unread_count
-          FROM messages m
-          LEFT JOIN conversation_participants cp
-            ON cp.conversation_id = m.conversation_id
-            AND cp.user_id = ${userId}
-          WHERE m.conversation_id IN (${conversationIds.map(() => '?').join(',')})
-            AND m.sender_id != ${userId}
-            AND m.id > COALESCE(cp.last_read_message_id, 0)
-          GROUP BY m.conversation_id
-        `;
-
-        interface UnreadCountRow extends RowDataPacket {
-          conversation_id: number;
-          unread_count: number;
-        }
-        const [unreadRows] = await execute<UnreadCountRow[]>(unreadQuery, conversationIds);
-
-        // Map unread counts
-        for (const row of unreadRows) {
-          unreadCounts.set(row.conversation_id, row.unread_count);
-        }
-      }
+      // Transform conversations
+      const transformedConversations = conversations.map((conv) => {
+        const unreadCount = unreadCounts.get(conv.id) ?? 0;
+        return this.transformConversation(conv, participants, unreadCount);
+      });
 
       // Calculate pagination
       const totalPages = Math.ceil(totalItems / limit);
-
-      // Transform to v2 format
-      const transformedConversations: Conversation[] = conversations.map((conv) => {
-        const convParticipants = participants
-          .filter((p) => p.conversation_id === conv.id)
-          .map((p) => ({
-            id: p.user_id, // Add id field for frontend
-            userId: p.user_id,
-            username: p.username,
-            first_name: p.first_name ?? '', // Use snake_case to match frontend
-            last_name: p.last_name ?? '', // Use snake_case to match frontend
-            profile_picture_url: p.profile_picture, // Use snake_case to match frontend
-            joinedAt: new Date(p.joined_at),
-            isActive: true,
-          }));
-
-        // Build last message object if available
-        let lastMessage = null;
-        if (conv.last_message_content && conv.last_message_time) {
-          lastMessage = {
-            content: conv.last_message_content,
-            created_at: new Date(conv.last_message_time), // Ensure it's a Date object
-          };
-        }
-
-        // Get the unread count for this conversation
-        const unreadCount = unreadCounts.get(conv.id) ?? 0;
-
-        return {
-          id: conv.id,
-          name: conv.name,
-          isGroup: conv.is_group === 1,
-          createdAt: new Date(conv.created_at),
-          updatedAt: new Date(conv.updated_at),
-          lastMessage, // Now includes actual last message
-          unreadCount, // Real unread count from database
-          participants: convParticipants,
-          // Also add snake_case versions for frontend compatibility
-          last_message: lastMessage,
-          is_group: conv.is_group === 1,
-          unread_count: unreadCount, // Real unread count from database
-        };
-      });
 
       return {
         data: transformedConversations,
@@ -607,6 +634,91 @@ export class ChatService {
   }
 
   /**
+   * Verify user is participant of conversation
+   */
+  private async verifyConversationAccess(
+    conversationId: number,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    const [participant] = await execute<RowDataPacket[]>(
+      `SELECT 1 FROM conversation_participants
+       WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
+      [conversationId, userId, tenantId],
+    );
+
+    if (!participant.length) {
+      throw new ServiceError(
+        'CONVERSATION_ACCESS_DENIED',
+        'You are not a participant of this conversation',
+        403,
+      );
+    }
+  }
+
+  /**
+   * Build WHERE clause for messages query
+   */
+  private buildMessagesWhereClause(
+    filters: MessageFilters,
+    conversationId: number,
+    tenantId: number,
+  ): { whereClause: string; params: unknown[] } {
+    let whereClause = 'WHERE m.conversation_id = ? AND m.tenant_id = ?';
+    const params: unknown[] = [conversationId, tenantId];
+
+    if (filters.search) {
+      whereClause += ' AND m.content LIKE ?';
+      params.push(`%${filters.search}%`);
+    }
+
+    if (filters.startDate) {
+      whereClause += ' AND m.created_at >= ?';
+      params.push(filters.startDate);
+    }
+
+    if (filters.endDate) {
+      whereClause += ' AND m.created_at <= ?';
+      params.push(filters.endDate);
+    }
+
+    if (filters.hasAttachment) {
+      whereClause += ' AND m.attachment_path IS NOT NULL';
+    }
+
+    return { whereClause, params };
+  }
+
+  /**
+   * Transform message row to API format
+   */
+  private transformMessage(msg: MessageRow): Message {
+    return {
+      id: msg.id,
+      conversationId: msg.conversation_id,
+      senderId: msg.sender_id,
+      senderName:
+        `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim() || 'Unknown',
+      senderUsername: msg.sender_username || 'unknown',
+      senderProfilePicture: msg.sender_profile_picture,
+      content: msg.content,
+      attachment:
+        msg.attachment_path ?
+          {
+            url: msg.attachment_path,
+            filename: msg.attachment_name ?? 'attachment',
+            mimeType: msg.attachment_type ?? 'application/octet-stream',
+            size: 0, // TODO: Add file size to DB
+          }
+        : null,
+      isRead: !!msg.is_read,
+      readAt: msg.read_at ? new Date(msg.read_at) : null,
+      createdAt: new Date(msg.created_at),
+      updatedAt: new Date(msg.created_at), // Messages don't have updated_at
+    };
+  }
+
+  /**
    * Get messages from a conversation with pagination
    * @param tenantId - The tenant ID
    * @param conversationId - The conversationId parameter
@@ -620,6 +732,7 @@ export class ChatService {
     filters: MessageFilters = {},
   ): Promise<{ data: Message[]; pagination: PaginationMeta }> {
     try {
+      // Calculate pagination
       const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
       const limit = Math.min(
         100,
@@ -627,56 +740,22 @@ export class ChatService {
       );
       const offset = (page - 1) * limit;
 
-      // First check if user is participant of the conversation
-      const [participant] = await execute<RowDataPacket[]>(
-        `SELECT 1 FROM conversation_participants
-         WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
-        [conversationId, userId, tenantId],
+      // Verify access
+      await this.verifyConversationAccess(conversationId, userId, tenantId);
+
+      // Build WHERE clause
+      const { whereClause, params } = this.buildMessagesWhereClause(
+        filters,
+        conversationId,
+        tenantId,
       );
 
-      if (!participant.length) {
-        throw new ServiceError(
-          'CONVERSATION_ACCESS_DENIED',
-          'You are not a participant of this conversation',
-          403,
-        );
-      }
-
-      // Build query with filters
-      let whereClause = 'WHERE m.conversation_id = ? AND m.tenant_id = ?';
-      const params: unknown[] = [conversationId, tenantId];
-
-      if (filters.search) {
-        whereClause += ' AND m.content LIKE ?';
-        params.push(`%${filters.search}%`);
-      }
-
-      if (filters.startDate) {
-        whereClause += ' AND m.created_at >= ?';
-        params.push(filters.startDate);
-      }
-
-      if (filters.endDate) {
-        whereClause += ' AND m.created_at <= ?';
-        params.push(filters.endDate);
-      }
-
-      if (filters.hasAttachment) {
-        whereClause += ' AND m.attachment_path IS NOT NULL';
-      }
-
       // Get total count
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM messages m
-        ${whereClause}
-      `;
-
+      const countQuery = `SELECT COUNT(*) as total FROM messages m ${whereClause}`;
       const [countResult] = await execute<CountResult[]>(countQuery, params);
       const totalItems = countResult[0]?.total ?? 0;
-      const totalPages = Math.ceil(totalItems / limit);
 
-      // Get messages with sender info - using string interpolation
+      // Get messages
       const messagesQuery = `
         SELECT
           m.id,
@@ -704,7 +783,8 @@ export class ChatService {
           END as read_at
         FROM messages m
         INNER JOIN users u ON m.sender_id = u.id
-        LEFT JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
+        LEFT JOIN conversation_participants cp
+          ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
         WHERE m.conversation_id = ${conversationId} AND m.tenant_id = ${tenantId}
         ORDER BY m.created_at ASC
         LIMIT ${limit} OFFSET ${offset}
@@ -712,31 +792,11 @@ export class ChatService {
 
       const [messages] = await execute<MessageRow[]>(messagesQuery);
 
-      // Transform messages to v2 format
-      const transformedMessages: Message[] = messages.map((msg) => ({
-        id: msg.id,
-        conversationId: msg.conversation_id,
-        senderId: msg.sender_id,
-        senderName:
-          `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim() || 'Unknown',
-        senderUsername: msg.sender_username || 'unknown',
-        senderProfilePicture: msg.sender_profile_picture,
-        content: msg.content,
-        attachment:
-          msg.attachment_path ?
-            {
-              url: msg.attachment_path,
-              filename: msg.attachment_name ?? 'attachment',
-              mimeType: msg.attachment_type ?? 'application/octet-stream',
-              size: 0, // TODO: Add file size to DB
-            }
-          : null,
-        isRead: !!msg.is_read,
-        readAt: msg.read_at ? new Date(msg.read_at) : null,
-        createdAt: new Date(msg.created_at),
-        updatedAt: new Date(msg.created_at), // Messages don't have updated_at
-      }));
+      // Transform messages
+      const transformedMessages = messages.map((msg) => this.transformMessage(msg));
 
+      // Return with pagination
+      const totalPages = Math.ceil(totalItems / limit);
       return {
         data: transformedMessages,
         pagination: {

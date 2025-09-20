@@ -332,7 +332,7 @@ import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
         name: groupNameInput.value,
         description: groupDescInput.value,
         parentGroupId: parentGroupSelect.value !== '' ? parentGroupSelect.value : null,
-        // eslint-disable-next-line promise/prefer-await-to-callbacks -- map is synchronous, not async callback
+
         departmentIds: [...document.querySelectorAll('input[name="department"]:checked')].map((cb) =>
           Number.parseInt((cb as HTMLInputElement).value, 10),
         ),

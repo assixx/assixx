@@ -83,6 +83,42 @@ interface DepartmentQueryRequest extends TenantRequest {
  */
 class DepartmentController {
   /**
+   * Parse number query parameter
+   */
+  private parseNumberParam(value: string | undefined): number | undefined {
+    if (value === undefined || value === '') {
+      return undefined;
+    }
+    return Number.parseInt(value);
+  }
+
+  /**
+   * Parse boolean query parameter
+   */
+  private parseBooleanParam(value: string | undefined): boolean | undefined {
+    if (value === undefined || value === '') {
+      return undefined;
+    }
+    return value === 'true';
+  }
+
+  /**
+   * Parse query filters
+   */
+  private parseQueryFilters(query: DepartmentQueryRequest['query']): Record<string, unknown> {
+    return {
+      search: query.search,
+      parent_id: this.parseNumberParam(query.parent_id),
+      manager_id: this.parseNumberParam(query.manager_id),
+      active: this.parseBooleanParam(query.active),
+      page: this.parseNumberParam(query.page),
+      limit: this.parseNumberParam(query.limit),
+      sortBy: query.sortBy,
+      sortDir: query.sortDir,
+    };
+  }
+
+  /**
    * Holt alle Department Einträge
    * GET /api/department
    * @param req - The request object
@@ -102,33 +138,7 @@ class DepartmentController {
         return;
       }
 
-      // Parse query parameters to appropriate types
-      const filters = {
-        search: req.query.search,
-        parent_id:
-          req.query.parent_id !== undefined && req.query.parent_id !== '' ?
-            Number.parseInt(req.query.parent_id)
-          : undefined,
-        manager_id:
-          req.query.manager_id !== undefined && req.query.manager_id !== '' ?
-            Number.parseInt(req.query.manager_id)
-          : undefined,
-        active:
-          req.query.active !== undefined && req.query.active !== '' ?
-            req.query.active === 'true'
-          : undefined,
-        page:
-          req.query.page !== undefined && req.query.page !== '' ?
-            Number.parseInt(req.query.page)
-          : undefined,
-        limit:
-          req.query.limit !== undefined && req.query.limit !== '' ?
-            Number.parseInt(req.query.limit)
-          : undefined,
-        sortBy: req.query.sortBy,
-        sortDir: req.query.sortDir,
-      };
-
+      const filters = this.parseQueryFilters(req.query);
       const result = await departmentService.getAll(req.tenantDb, tenantId, filters);
       res.json(result);
     } catch (error: unknown) {

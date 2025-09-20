@@ -231,7 +231,6 @@ function initializeTransporter(config: EmailConfig | null = null): Transporter {
   transporter = nodemailer.createTransport(transportConfig);
 
   // Test SMTP-Verbindung
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- nodemailer.verify only supports callback API
   transporter.verify((error: Error | null): void => {
     if (error) {
       logger.error(`E-Mail-Konfiguration fehlgeschlagen: ${error.message}`);

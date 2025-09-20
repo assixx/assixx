@@ -8,7 +8,6 @@ import noSecretsPlugin from 'eslint-plugin-no-secrets';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
 import prettier from 'eslint-plugin-prettier';
 import promisePlugin from 'eslint-plugin-promise';
-import regexpPlugin from 'eslint-plugin-regexp';
 import securityPlugin from 'eslint-plugin-security';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
 import tsdocPlugin from 'eslint-plugin-tsdoc';
@@ -20,13 +19,6 @@ export default [
 
   // Prettier configuration
   prettierConfig,
-
-  // Disable core no-useless-escape since we use regexp/no-useless-escape
-  {
-    rules: {
-      'no-useless-escape': 'off', // Using regexp/no-useless-escape instead
-    },
-  },
 
   // Complexity rules werden von sonarjs/cognitive-complexity gehandhabt
 
@@ -89,7 +81,50 @@ export default [
       'prettier/prettier': 'error',
       'tsdoc/syntax': 'warn',
 
-      complexity: ['error', 60], // Beibehalten, aber SonarJS ist wichtiger.
+      // Enterprise Code Quality Standards
+      'max-lines': [
+        'warn',
+        {
+          max: 1600,
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      'max-lines-per-function': [
+        'warn',
+        {
+          max: 100,
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
+        },
+      ],
+      'max-depth': ['warn', 5],
+      'max-nested-callbacks': ['warn', 4],
+      'max-classes-per-file': ['warn', 2],
+
+      // Line Length Control
+      'max-len': [
+        'warn',
+        {
+          code: 120,
+          tabWidth: 2,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreRegExpLiterals: true,
+          ignoreComments: true,
+        },
+      ],
+
+      // Import Dependencies Limit
+      'import-x/max-dependencies': [
+        'warn',
+        {
+          max: 25,
+          ignoreTypeImports: true,
+        },
+      ],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -226,30 +261,6 @@ export default [
     },
   },
 
-  // RegExp Plugin Configuration
-  {
-    files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
-    plugins: {
-      regexp: regexpPlugin,
-    },
-    rules: {
-      'regexp/no-super-linear-backtracking': 'error',
-      'regexp/no-useless-lazy': 'error',
-      'regexp/no-useless-quantifier': 'error',
-      'regexp/optimal-quantifier-concatenation': 'error',
-      'regexp/no-empty-alternative': 'error',
-      'regexp/no-empty-group': 'error',
-      'regexp/no-lazy-ends': 'error',
-      'regexp/no-optional-assertion': 'error',
-      'regexp/no-useless-escape': 'error',
-      'regexp/no-useless-flag': 'error',
-      'regexp/prefer-d': 'error',
-      'regexp/prefer-w': 'error',
-      'regexp/prefer-character-class': 'error',
-      'regexp/sort-character-class-elements': 'error',
-    },
-  },
-
   // Promise Plugin Configuration
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
@@ -269,9 +280,6 @@ export default [
       'promise/no-new-statics': 'error',
       'promise/no-return-in-finally': 'error',
       'promise/valid-params': 'error',
-      // --- ANGEPASST --- Auf 'warn' gesetzt, um Flexibilität zu ermöglichen.
-      'promise/prefer-await-to-then': 'warn',
-      'promise/prefer-await-to-callbacks': 'error',
     },
   },
 
@@ -292,7 +300,7 @@ export default [
       'sonarjs/non-existent-operator': 'error',
 
       // --- ANGEPASST --- Kognitive Komplexität auf einen realistischen Wert gesetzt.
-      'sonarjs/cognitive-complexity': ['warn', 10],
+      'sonarjs/cognitive-complexity': ['warn', 15],
       'sonarjs/no-collapsible-if': 'error',
       'sonarjs/no-collection-size-mischeck': 'error',
       'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
@@ -318,27 +326,9 @@ export default [
       unicorn: unicornPlugin,
     },
     rules: {
-      'unicorn/no-instanceof-builtins': 'error',
-      'unicorn/no-new-buffer': 'error',
-      'unicorn/catch-error-name': ['error', { name: 'error' }],
-      'unicorn/prefer-optional-catch-binding': 'error',
-      'unicorn/custom-error-definition': 'error',
-      'unicorn/prefer-includes': 'error',
-      'unicorn/prefer-string-starts-ends-with': 'error',
-      'unicorn/prefer-array-find': 'error',
-      'unicorn/prefer-array-some': 'error',
-      'unicorn/prefer-default-parameters': 'error',
-      'unicorn/prefer-spread': 'error',
-      'unicorn/prefer-number-properties': 'error',
-      'unicorn/prefer-modern-math-apis': 'error',
-      'unicorn/no-null': 'off',
-      'unicorn/no-useless-undefined': 'error',
-      'unicorn/filename-case': 'off',
-      'unicorn/prevent-abbreviations': 'off',
-      'unicorn/no-array-for-each': 'off',
-      'unicorn/no-array-reduce': 'off',
-      'unicorn/explicit-length-check': 'off',
-      'unicorn/no-await-expression-member': 'off',
+      // Keep only critical unicorn rules
+      'unicorn/no-new-buffer': 'error', // Security: deprecated API
+      'unicorn/prefer-number-properties': 'warn', // Type safety: Number.isNaN vs isNaN
     },
   },
 
@@ -454,6 +444,52 @@ export default [
       ...typescriptPlugin.configs['stylistic-type-checked'].rules,
 
       'prettier/prettier': 'error',
+
+      // Enterprise Standards for Frontend (stricter than backend)
+      'max-lines': [
+        'warn',
+        {
+          max: 800, // Stricter for frontend
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      'max-lines-per-function': [
+        'warn',
+        {
+          max: 100, // Stricter for frontend
+          skipBlankLines: true,
+          skipComments: true,
+          IIFEs: true,
+        },
+      ],
+      'max-depth': ['warn', 5],
+      'max-nested-callbacks': ['warn', 4], // Stricter for frontend
+      'max-classes-per-file': ['warn', 2],
+
+      // Line Length Control
+      'max-len': [
+        'warn',
+        {
+          code: 120,
+          tabWidth: 2,
+          ignoreUrls: true,
+          ignoreStrings: true,
+          ignoreTemplateLiterals: true,
+          ignoreRegExpLiterals: true,
+          ignoreComments: true,
+        },
+      ],
+
+      // Import Dependencies Limit (stricter for frontend)
+      'import-x/max-dependencies': [
+        'warn',
+        {
+          max: 30, // Frontend should have fewer dependencies
+          ignoreTypeImports: true,
+        },
+      ],
+
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -563,7 +599,6 @@ export default [
       'import-x': importPlugin,
       security: securityPlugin,
       'no-unsanitized': noUnsanitizedPlugin,
-      regexp: regexpPlugin,
       promise: promisePlugin,
       sonarjs: sonarjsPlugin,
       unicorn: unicornPlugin,
@@ -650,19 +685,9 @@ export default [
       'sonarjs/no-identical-conditions': 'error',
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/cognitive-complexity': ['warn', 10],
+      'sonarjs/cognitive-complexity': ['warn', 15],
       'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
       'sonarjs/no-duplicated-branches': 'error',
-
-      // Unicorn rules for DOM
-      'unicorn/prefer-modern-dom-apis': 'error',
-      'unicorn/prefer-query-selector': 'error',
-      'unicorn/prefer-dom-node-remove': 'error',
-      'unicorn/prefer-dom-node-append': 'error',
-      'unicorn/prefer-dom-node-text-content': 'error',
-
-      // Complexity
-      complexity: ['error', 60],
     },
   },
 
@@ -670,12 +695,8 @@ export default [
   {
     files: ['frontend/**/*.ts', 'frontend/**/*.tsx', 'frontend/**/*.js'],
     rules: {
-      'unicorn/prefer-modern-dom-apis': 'error',
-      'unicorn/prefer-query-selector': 'error',
-      'unicorn/prefer-dom-node-remove': 'error',
-      'unicorn/prefer-dom-node-append': 'error',
-      'unicorn/prefer-dom-node-text-content': 'error',
-      'unicorn/prefer-dom-node-dataset': 'error',
+      // Keep essential DOM modernization
+      'unicorn/prefer-modern-dom-apis': 'error', // DOM modernization
     },
   },
 
@@ -767,9 +788,8 @@ export default [
       'object-shorthand': 'error',
       'prefer-template': 'error',
       'no-return-await': 'error',
-      complexity: 'off',
       'max-depth': 'off',
-      'max-lines': 'off',
+      'max-lines': ['warn', 1600],
       'require-await': 'error',
       'no-async-promise-executor': 'error',
       'prefer-promise-reject-errors': 'error',

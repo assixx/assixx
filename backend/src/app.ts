@@ -181,7 +181,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   // Apply rate limiter only for non-static routes
   // Using callback pattern as required by express-rate-limit library
-  // eslint-disable-next-line promise/prefer-await-to-callbacks
   rateLimiter.public(req, res, (err?: unknown) => {
     if (err) {
       next(err);
@@ -266,7 +265,6 @@ app.use('/js', (req: Request, res: Response, next: NextFunction): void => {
   }
 
   // Using callback pattern as required by express-rate-limit library
-  // eslint-disable-next-line promise/prefer-await-to-callbacks
   rateLimiter.public(req, res, (err?: unknown) => {
     if (err) {
       next(err);
@@ -430,8 +428,7 @@ app.use(
 
     // Apply rate limiter
     // Using callback pattern as required by express-rate-limit library
-    // eslint-disable-next-line promise/prefer-await-to-callbacks, @typescript-eslint/no-misused-promises
-    rateLimiter.public(req, res, async (err?: unknown) => {
+    rateLimiter.public(req, res, (err?: unknown) => {
       if (err) {
         next(err);
         return;
@@ -456,26 +453,29 @@ app.use(
       const requestPath = sanitized.replace(/^\/scripts\//, '').replace(/\.ts$/, '');
       const tsPath = mapTypeScriptPath(requestPath);
 
-      try {
-        await serveTypeScriptFile(tsPath, res);
-      } catch {
-        // Return empty module for missing files
-        const escapedFilename = filename
-          .replace(/\\/g, '\\\\')
-          .replace(/'/g, "\\'")
-          .replace(/"/g, '\\"')
-          .replace(/\n/g, '\\n')
-          .replace(/\r/g, '\\r')
-          .replace(/\t/g, '\\t')
-          .replace(/</g, '\\x3C')
-          .replace(/>/g, '\\x3E');
+      // Use IIFE to handle async operations without returning a promise from the callback
+      void (async () => {
+        try {
+          await serveTypeScriptFile(tsPath, res);
+        } catch {
+          // Return empty module for missing files
+          const escapedFilename = filename
+            .replace(/\\/g, '\\\\')
+            .replace(/'/g, "\\'")
+            .replace(/"/g, '\\"')
+            .replace(/\n/g, '\\n')
+            .replace(/\r/g, '\\r')
+            .replace(/\t/g, '\\t')
+            .replace(/</g, '\\x3C')
+            .replace(/>/g, '\\x3E');
 
-        res
-          .type(MIME_TYPE_JAVASCRIPT)
-          .send(
-            `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found');`,
-          );
-      }
+          res
+            .type(MIME_TYPE_JAVASCRIPT)
+            .send(
+              `// Empty module for ${escapedFilename}\nconsole.warn('Module ${escapedFilename} not found');`,
+            );
+        }
+      })();
     });
   },
 );
@@ -789,7 +789,6 @@ app.use(htmlRoutes);
 // Root and dashboard redirect - send users to appropriate dashboard or landing page
 // HTML Routes - Serve pages (AFTER root redirect)
 // Error handling middleware
-// eslint-disable-next-line promise/prefer-await-to-callbacks
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
   // Check if it's a ServiceError
   if (err.name === 'ServiceError' && 'statusCode' in err) {
@@ -833,7 +832,6 @@ app.use((req: Request, res: Response): void => {
 });
 
 // Error handler
-// eslint-disable-next-line promise/prefer-await-to-callbacks
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction): void => {
   console.error('[ERROR]', err.stack ?? (err.message !== '' ? err.message : String(err)));
 

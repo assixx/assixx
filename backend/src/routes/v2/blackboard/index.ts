@@ -23,7 +23,6 @@ const router = Router();
 // Configure multer for blackboard attachments
 // Note: multer requires callback-based API, cannot use async/await
 const storage = multer.diskStorage({
-  // eslint-disable-next-line promise/prefer-await-to-callbacks
   destination: (req, _file, cb) => {
     const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id;
@@ -35,23 +34,25 @@ const storage = multer.diskStorage({
     // 1. Multer's diskStorage.destination expects a callback, not a Promise
     // 2. Using fs/promises would create a "promise-in-callback" anti-pattern
     // 3. The callback version is the only way to properly integrate with multer
-    // eslint-disable-next-line security/detect-non-literal-fs-filename, promise/prefer-await-to-callbacks
+
+    // SECURITY JUSTIFICATION: Dynamic path is required for multi-tenant isolation.
+    // Path components are from trusted sources only:
+    // - baseUploadDir: from getUploadDirectory() with hardcoded paths
+    // - tenantId: from authenticated user object, not user input
+    // - path.join() prevents directory traversal attacks
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     fsCallback.mkdir(uploadDir, { recursive: true }, (error) => {
       if (error) {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks
         cb(error, '');
       } else {
-        // eslint-disable-next-line promise/prefer-await-to-callbacks
         cb(null, uploadDir);
       }
     });
   },
-  // eslint-disable-next-line promise/prefer-await-to-callbacks
   filename: (_req, file, cb) => {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    // eslint-disable-next-line promise/prefer-await-to-callbacks
     cb(null, uniqueSuffix + ext);
   },
 });
@@ -59,15 +60,12 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  // eslint-disable-next-line promise/prefer-await-to-callbacks
   fileFilter: (_req, file, cb) => {
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
     if (allowedTypes.includes(file.mimetype)) {
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       cb(null, true);
     } else {
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       cb(new Error('Only PDF and images (JPEG, PNG, GIF) are allowed'));
     }
   },

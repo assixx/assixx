@@ -57,32 +57,34 @@ export class ApiClient {
     this.version = version;
   }
 
-  async request<T = unknown>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
-    // Check feature flags to determine version
+  private checkFeatureFlag(endpoint: string): boolean {
     const featureKey = `USE_API_V2_${this.extractApiName(endpoint).toUpperCase()}`;
-    // Use a safe method to check feature flag
-    let useV2 = false;
-    if (window.FEATURE_FLAGS !== undefined && typeof window.FEATURE_FLAGS === 'object') {
-      const flags = window.FEATURE_FLAGS as Record<string, unknown>;
-      // Use Object.entries to safely iterate
-      for (const [key, value] of Object.entries(flags)) {
-        if (key === featureKey && value === true) {
-          useV2 = true;
-          break;
-        }
+
+    if (window.FEATURE_FLAGS === undefined || typeof window.FEATURE_FLAGS !== 'object') {
+      return false;
+    }
+
+    const flags = window.FEATURE_FLAGS as Record<string, unknown>;
+    for (const [key, value] of Object.entries(flags)) {
+      if (key === featureKey && value === true) {
+        return true;
       }
     }
-    const version = useV2 ? 'v2' : (config.version ?? this.version);
 
-    const baseApiPath = version === 'v2' ? '/api/v2' : '/api';
-    const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
+    return false;
+  }
 
+  private determineVersion(endpoint: string, config: ApiConfig): 'v1' | 'v2' {
+    const useV2 = this.checkFeatureFlag(endpoint);
+    return useV2 ? 'v2' : (config.version ?? this.version);
+  }
+
+  private buildHeaders(options: RequestInit, config: ApiConfig, version: 'v1' | 'v2'): Record<string, string> {
     const headers: Record<string, string> = {};
 
     // Copy existing headers if they exist
     if (options.headers !== undefined) {
       const h = options.headers as Record<string, string>;
-      // Use Object.entries to safely copy headers
       for (const [key, value] of Object.entries(h)) {
         // eslint-disable-next-line security/detect-object-injection
         headers[key] = value; // Safe: key comes from Object.entries()
@@ -101,6 +103,48 @@ export class ApiClient {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
+    return headers;
+  }
+
+  private async handleTokenExpiredRetry<T>(
+    url: string,
+    options: RequestInit,
+    headers: Record<string, string>,
+    version: 'v1' | 'v2',
+    config: ApiConfig,
+  ): Promise<T | null> {
+    if (version !== 'v2' || config.useAuth === false || this.refreshToken === null || this.refreshToken === '') {
+      return null;
+    }
+
+    console.info('[API v2] Token expired, attempting refresh...');
+    const refreshed = await this.refreshAccessToken();
+
+    if (!refreshed) {
+      return null;
+    }
+
+    // Retry request with new token
+    headers.Authorization = `Bearer ${this.token ?? ''}`;
+    const retryResponse = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'omit',
+    });
+    return await this.handleResponse<T>(retryResponse, version);
+  }
+
+  private shouldFallbackToV1(error: unknown, version: 'v1' | 'v2', config: ApiConfig): boolean {
+    const isClientError = error instanceof ApiError && error.status >= 400 && error.status < 500;
+    return version === 'v2' && config.version === undefined && this.version !== 'v1' && !isClientError;
+  }
+
+  async request<T = unknown>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
+    const version = this.determineVersion(endpoint, config);
+    const baseApiPath = version === 'v2' ? '/api/v2' : '/api';
+    const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
+    const headers = this.buildHeaders(options, config, version);
+
     try {
       console.info(`[API ${version}] ${options.method ?? 'GET'} ${url}`);
 
@@ -111,24 +155,10 @@ export class ApiClient {
       });
 
       // Handle token refresh for v2
-      if (
-        version === 'v2' &&
-        response.status === 401 &&
-        this.refreshToken !== null &&
-        this.refreshToken !== '' &&
-        config.useAuth !== false
-      ) {
-        console.info('[API v2] Token expired, attempting refresh...');
-        const refreshed = await this.refreshAccessToken();
-        if (refreshed) {
-          // Retry request with new token
-          headers.Authorization = `Bearer ${this.token ?? ''}`;
-          const retryResponse = await fetch(url, {
-            ...options,
-            headers,
-            credentials: 'omit',
-          });
-          return await this.handleResponse<T>(retryResponse, version);
+      if (response.status === 401) {
+        const retryResult = await this.handleTokenExpiredRetry<T>(url, options, headers, version, config);
+        if (retryResult !== null) {
+          return retryResult;
         }
       }
 
@@ -136,12 +166,8 @@ export class ApiClient {
     } catch (error) {
       console.error(`[API ${version}] Request failed:`, error);
 
-      // Only attempt fallback for server errors, not client errors
-      // Client errors (400-499) are legitimate business errors
-      const isClientError = error instanceof ApiError && error.status >= 400 && error.status < 500;
-
-      // If v2 fails with server error and we're not explicitly using v2, try v1 as fallback
-      if (version === 'v2' && config.version === undefined && this.version !== 'v1' && !isClientError) {
+      // Attempt fallback to v1 if applicable
+      if (this.shouldFallbackToV1(error, version, config)) {
         console.info('[API] v2 failed with server error, falling back to v1...');
         return await this.request<T>(endpoint, options, { ...config, version: 'v1' });
       }
@@ -156,127 +182,143 @@ export class ApiClient {
     return part ?? '';
   }
 
+  private handleRateLimit(): void {
+    console.error('[API] Rate limit exceeded');
+    this.clearTokens();
+
+    if (!this.isRedirectingToRateLimit) {
+      this.isRedirectingToRateLimit = true;
+      console.log('[API] Redirecting to rate limit page...');
+      window.location.href = '/rate-limit';
+    }
+
+    throw new ApiError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED', 429);
+  }
+
+  private handleNonJsonResponse(response: Response): unknown {
+    if (response.status === 429) {
+      this.handleRateLimit();
+    }
+
+    if (!response.ok) {
+      throw new ApiError(`Request failed with status ${response.status}`, 'NON_JSON_ERROR', response.status);
+    }
+
+    return response as unknown;
+  }
+
+  private extractErrorMessage(data: Record<string, unknown>): { message: string; details: string } {
+    const error = data.error as { message?: string; details?: string } | undefined;
+
+    const message =
+      typeof error?.message === 'string'
+        ? error.message
+        : typeof data.error === 'string'
+          ? data.error
+          : typeof data.message === 'string'
+            ? data.message
+            : '';
+
+    const details =
+      typeof data.details === 'string' ? data.details : typeof error?.details === 'string' ? error.details : '';
+
+    return { message, details };
+  }
+
+  private handleAuthenticationError(data: Record<string, unknown>): void {
+    const { message, details } = this.extractErrorMessage(data);
+
+    if (
+      message.toLowerCase().includes('expired') ||
+      message.toLowerCase().includes('invalid token') ||
+      (details !== '' && details.toLowerCase().includes('expired'))
+    ) {
+      console.info('[API] Token expired, redirecting to login with session expired message');
+      this.clearTokens();
+      window.location.href = '/login?session=expired';
+      throw new ApiError('Session expired', 'SESSION_EXPIRED', 401);
+    }
+  }
+
+  private createApiError(response: Response, data: Record<string, unknown>): ApiError {
+    const error = data.error as { message?: string; code?: string; details?: unknown } | undefined;
+
+    const message =
+      typeof error?.message === 'string'
+        ? error.message
+        : typeof data.message === 'string'
+          ? data.message
+          : `Request failed with status ${response.status}`;
+
+    const code = typeof error?.code === 'string' ? error.code : 'API_ERROR';
+
+    return new ApiError(message, code, response.status, error?.details);
+  }
+
+  private handleV2Response(response: Response, data: Record<string, unknown>): unknown {
+    // Check if response has the standard v2 format with success flag
+    if ('success' in data && typeof data.success === 'boolean') {
+      const apiResponse = data as unknown as ApiResponse;
+
+      if (!apiResponse.success) {
+        throw new ApiError(
+          apiResponse.error?.message ?? 'Unknown error',
+          apiResponse.error?.code ?? 'UNKNOWN_ERROR',
+          response.status,
+          apiResponse.error?.details,
+        );
+      }
+
+      return apiResponse.data;
+    }
+
+    // Some v2 endpoints return data directly without wrapper
+    if (!response.ok) {
+      throw this.createApiError(response, data);
+    }
+
+    return data;
+  }
+
+  private handleV1Response(response: Response, data: Record<string, unknown>): unknown {
+    if (!response.ok) {
+      throw new ApiError(
+        typeof data.message === 'string'
+          ? data.message
+          : typeof data.error === 'string'
+            ? data.error
+            : 'Request failed',
+        'API_ERROR',
+        response.status,
+        data as unknown,
+      );
+    }
+
+    return data;
+  }
+
   private async handleResponse<T>(response: Response, version: 'v1' | 'v2'): Promise<T> {
     const contentType = response.headers.get('content-type');
 
-    // Handle non-JSON responses (e.g., file downloads or HTML error pages)
+    // Handle non-JSON responses
     if (contentType?.includes('application/json') !== true) {
-      // Check for rate limit error even on non-JSON responses
-      if (response.status === 429) {
-        console.error('[API] Rate limit exceeded (non-JSON response)');
-        this.clearTokens();
-        // Only redirect once to prevent multiple redirects
-        if (!this.isRedirectingToRateLimit) {
-          this.isRedirectingToRateLimit = true;
-          console.log('[API] Redirecting to rate limit page...');
-          window.location.href = '/rate-limit';
-        }
-        throw new ApiError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED', 429);
-      }
-
-      if (!response.ok) {
-        throw new ApiError(`Request failed with status ${response.status}`, 'NON_JSON_ERROR', response.status);
-      }
-      return response as unknown as T;
+      return this.handleNonJsonResponse(response) as T;
     }
 
     const data = (await response.json()) as Record<string, unknown>;
 
-    // Check for rate limit error
+    // Check for rate limit
     if (response.status === 429) {
-      console.error('[API] Rate limit exceeded');
-      // Clear tokens to prevent further requests
-      this.clearTokens();
-      // Only redirect once to prevent multiple redirects
-      if (!this.isRedirectingToRateLimit) {
-        this.isRedirectingToRateLimit = true;
-        console.log('[API] Redirecting to rate limit page...');
-        window.location.href = '/rate-limit';
-      }
-      throw new ApiError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED', 429);
+      this.handleRateLimit();
     }
 
-    // Check for expired token error
+    // Check for authentication errors
     if (response.status === 401 || response.status === 403) {
-      // Handle v2 API error structure: data.error.message or data.message
-      const error = data.error as { message?: string; details?: string } | undefined;
-      const errorMessage =
-        typeof error?.message === 'string'
-          ? error.message
-          : typeof data.error === 'string'
-            ? data.error
-            : typeof data.message === 'string'
-              ? data.message
-              : '';
-      const errorDetails =
-        typeof data.details === 'string' ? data.details : typeof error?.details === 'string' ? error.details : '';
-
-      // Check if token is expired
-      if (
-        errorMessage.toLowerCase().includes('expired') ||
-        errorMessage.toLowerCase().includes('invalid token') ||
-        (errorDetails !== '' && errorDetails.toLowerCase().includes('expired'))
-      ) {
-        console.info('[API] Token expired, redirecting to login with session expired message');
-        this.clearTokens();
-        // Redirect to login with session expired parameter
-        window.location.href = '/login?session=expired';
-        throw new ApiError('Session expired', 'SESSION_EXPIRED', 401);
-      }
+      this.handleAuthenticationError(data);
     }
 
-    if (version === 'v2') {
-      // Check if response has the standard v2 format with success flag
-      if ('success' in data && typeof data.success === 'boolean') {
-        const apiResponse = data as unknown as ApiResponse<T>;
-
-        if (!apiResponse.success) {
-          throw new ApiError(
-            apiResponse.error?.message ?? 'Unknown error',
-            apiResponse.error?.code ?? 'UNKNOWN_ERROR',
-            response.status,
-            apiResponse.error?.details,
-          );
-        }
-
-        return apiResponse.data as T;
-      } else {
-        // Some v2 endpoints (like /root/*) return data directly without wrapper
-        // Check if response is ok based on status code
-        if (!response.ok) {
-          const error = data.error as { message?: string; code?: string; details?: unknown } | undefined;
-          throw new ApiError(
-            typeof error?.message === 'string'
-              ? error.message
-              : typeof data.message === 'string'
-                ? data.message
-                : `Request failed with status ${response.status}`,
-            typeof error?.code === 'string' ? error.code : 'API_ERROR',
-            response.status,
-            error?.details,
-          );
-        }
-
-        // Return the data directly
-        return data as T;
-      }
-    } else {
-      // v1 response handling
-      if (!response.ok) {
-        throw new ApiError(
-          typeof data.message === 'string'
-            ? data.message
-            : typeof data.error === 'string'
-              ? data.error
-              : 'Request failed',
-          'API_ERROR',
-          response.status,
-          data as unknown,
-        );
-      }
-
-      return data as T;
-    }
+    // Handle version-specific response formats
+    return (version === 'v2' ? this.handleV2Response(response, data) : this.handleV1Response(response, data)) as T;
   }
 
   private async refreshAccessToken(): Promise<boolean> {

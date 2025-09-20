@@ -199,6 +199,86 @@ export async function createKvpSuggestion(
   }
 }
 
+// Helper function to get user team and department info
+async function getUserOrgInfo(
+  connection: Connection,
+  userId: number,
+  tenantId: number,
+): Promise<{ teamId: number | null; departmentId: number | null }> {
+  const [userInfo] = await connection.execute<RowDataPacket[]>(
+    `SELECT ut.team_id, u.department_id
+     FROM users u
+     LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+     WHERE u.id = ? AND u.tenant_id = ?`,
+    [userId, tenantId],
+  );
+
+  if (userInfo.length > 0) {
+    return {
+      teamId: userInfo[0].team_id as number | null,
+      departmentId: userInfo[0].department_id as number | null,
+    };
+  }
+
+  return { teamId: null, departmentId: null };
+}
+
+// Build visibility conditions for employee role
+function buildEmployeeVisibilityConditions(
+  userId: number,
+  userTeamId: number | null,
+  userDepartmentId: number | null,
+): { conditions: string; params: unknown[] } {
+  let conditions = '(s.submitted_by = ? OR s.status = "implemented"';
+  const params: unknown[] = [userId];
+
+  if (userTeamId !== null) {
+    conditions += ' OR (s.org_level = "team" AND s.org_id = ?)';
+    params.push(userTeamId);
+  }
+
+  if (userDepartmentId !== null) {
+    conditions += ' OR (s.org_level = "department" AND s.org_id = ?)';
+    params.push(userDepartmentId);
+  }
+
+  conditions += ' OR s.org_level = "company")';
+
+  return { conditions, params };
+}
+
+// Apply search filters to query
+function applyFiltersToQuery(
+  query: string,
+  params: unknown[],
+  filters: SuggestionFilters,
+): { query: string; params: unknown[] } {
+  let filteredQuery = query;
+  const filteredParams = [...params];
+
+  if (filters.status && filters.status !== '') {
+    filteredQuery += ' AND s.status = ?';
+    filteredParams.push(filters.status);
+  }
+
+  if (filters.category_id && filters.category_id !== 0) {
+    filteredQuery += ' AND s.category_id = ?';
+    filteredParams.push(filters.category_id);
+  }
+
+  if (filters.priority && filters.priority !== '') {
+    filteredQuery += ' AND s.priority = ?';
+    filteredParams.push(filters.priority);
+  }
+
+  if (filters.org_level && filters.org_level !== '') {
+    filteredQuery += ' AND s.org_level = ?';
+    filteredParams.push(filters.org_level);
+  }
+
+  return { query: filteredQuery, params: filteredParams };
+}
+
 // Get suggestions with filters
 export async function getKvpSuggestions(
   tenantId: number,
@@ -208,25 +288,6 @@ export async function getKvpSuggestions(
 ): Promise<DbSuggestion[]> {
   const connection = await getConnection();
   try {
-    // Get user's team membership first if employee
-    let userTeamId: number | null = null;
-    let userDepartmentId: number | null = null;
-
-    if (userRole === 'employee') {
-      const [userInfo] = await connection.execute<RowDataPacket[]>(
-        `SELECT ut.team_id, u.department_id
-         FROM users u
-         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
-         WHERE u.id = ? AND u.tenant_id = ?`,
-        [userId, tenantId],
-      );
-
-      if (userInfo.length > 0) {
-        userTeamId = userInfo[0].team_id as number | null;
-        userDepartmentId = userInfo[0].department_id as number | null;
-      }
-    }
-
     let query = `
         SELECT
           s.*,
@@ -251,56 +312,21 @@ export async function getKvpSuggestions(
         WHERE s.tenant_id = ?
       `;
 
-    const params: unknown[] = [tenantId];
+    let params: unknown[] = [tenantId];
 
-    // If employee, show their own suggestions, implemented ones, and team/department shared ones
+    // Handle employee visibility restrictions
     if (userRole === 'employee') {
-      let visibilityConditions = '(s.submitted_by = ? OR s.status = "implemented"';
-      params.push(userId);
-
-      // Add team visibility
-      if (userTeamId !== null) {
-        visibilityConditions += ' OR (s.org_level = "team" AND s.org_id = ?)';
-        params.push(userTeamId);
-      }
-
-      // Add department visibility
-      if (userDepartmentId !== null) {
-        visibilityConditions += ' OR (s.org_level = "department" AND s.org_id = ?)';
-        params.push(userDepartmentId);
-      }
-
-      // Add company-wide visibility
-      visibilityConditions += ' OR s.org_level = "company"';
-
-      visibilityConditions += ')';
-      query += ' AND ' + visibilityConditions;
+      const { teamId, departmentId } = await getUserOrgInfo(connection, userId, tenantId);
+      const visibility = buildEmployeeVisibilityConditions(userId, teamId, departmentId);
+      query += ' AND ' + visibility.conditions;
+      params = [...params, ...visibility.params];
     }
 
     // Apply filters
-    if (filters.status != null && filters.status !== '') {
-      query += ' AND s.status = ?';
-      params.push(filters.status);
-    }
+    const filtered = applyFiltersToQuery(query, params, filters);
+    filtered.query += ' ORDER BY s.created_at DESC';
 
-    if (filters.category_id != null && filters.category_id !== 0) {
-      query += ' AND s.category_id = ?';
-      params.push(filters.category_id);
-    }
-
-    if (filters.priority != null && filters.priority !== '') {
-      query += ' AND s.priority = ?';
-      params.push(filters.priority);
-    }
-
-    if (filters.org_level != null && filters.org_level !== '') {
-      query += ' AND s.org_level = ?';
-      params.push(filters.org_level);
-    }
-
-    query += ' ORDER BY s.created_at DESC';
-
-    const [rows] = await connection.execute<DbSuggestion[]>(query, params);
+    const [rows] = await connection.execute<DbSuggestion[]>(filtered.query, filtered.params);
     return rows;
   } finally {
     await connection.end();
@@ -731,6 +757,48 @@ export async function deleteKvpSuggestion(
   }
 }
 
+// Helper to check if employee can access attachment
+async function canEmployeeAccessAttachment(
+  connection: Connection,
+  attachment: DbAttachment & {
+    status?: string;
+    org_level?: string;
+    org_id?: number;
+  },
+  userId: number,
+  tenantId: number,
+): Promise<boolean> {
+  // Can access their own suggestions
+  if (attachment.submitted_by === userId) {
+    return true;
+  }
+
+  // Can access implemented suggestions
+  if (attachment.status === 'implemented') {
+    return true;
+  }
+
+  // Company-wide suggestions are visible to all
+  if (attachment.org_level === 'company') {
+    return true;
+  }
+
+  // Need to check team/department membership
+  if (attachment.org_level === 'team' || attachment.org_level === 'department') {
+    const { teamId, departmentId } = await getUserOrgInfo(connection, userId, tenantId);
+
+    if (attachment.org_level === 'team' && teamId === attachment.org_id) {
+      return true;
+    }
+
+    if (attachment.org_level === 'department' && departmentId === attachment.org_id) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // Get single attachment with access verification
 export async function getKvpAttachment(
   attachmentId: number,
@@ -740,7 +808,7 @@ export async function getKvpAttachment(
 ): Promise<DbAttachment | null> {
   const connection = await getConnection();
   try {
-    // Get attachment with full suggestion details including org_level and org_id
+    // Get attachment with full suggestion details
     const [attachments] = await connection.execute<DbAttachment[]>(
       `
         SELECT a.*, s.submitted_by, s.tenant_id, s.org_level, s.org_id, s.status
@@ -756,71 +824,28 @@ export async function getKvpAttachment(
     }
 
     const attachment = attachments[0];
-    // Cast to extended type with suggestion fields
-    const attachmentWithSuggestion = attachment as DbAttachment & {
-      status?: string;
-      org_level?: string;
-      org_id?: number;
-    };
 
     // Admins and root users can access all attachments
     if (userRole === 'admin' || userRole === 'root') {
       return attachment;
     }
 
-    // For employees, check various access conditions
+    // For employees, check access permissions
     if (userRole === 'employee') {
-      // Can access their own suggestions
-      if (attachment.submitted_by === userId) {
-        return attachment;
-      }
+      const attachmentExt = attachment as DbAttachment & {
+        status?: string;
+        org_level?: string;
+        org_id?: number;
+      };
 
-      // Can access implemented suggestions
-      if (attachmentWithSuggestion.status === 'implemented') {
-        return attachment;
-      }
-
-      // Check team/department visibility
-      const orgLevel = attachmentWithSuggestion.org_level;
-      const orgId = attachmentWithSuggestion.org_id;
-
-      // Company-wide suggestions are visible to all
-      if (orgLevel === 'company') {
-        return attachment;
-      }
-
-      // Get user's team and department membership
-      const [userInfo] = await connection.execute<RowDataPacket[]>(
-        `SELECT ut.team_id, u.department_id
-         FROM users u
-         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
-         WHERE u.id = ? AND u.tenant_id = ?`,
-        [userId, tenantId],
+      const hasAccess = await canEmployeeAccessAttachment(
+        connection,
+        attachmentExt,
+        userId,
+        tenantId,
       );
-
-      if (userInfo.length > 0) {
-        const userTeamId = userInfo[0].team_id as number | null;
-        const userDepartmentId = userInfo[0].department_id as number | null;
-
-        // Check team visibility
-        if (
-          orgLevel === 'team' &&
-          userTeamId !== null &&
-          orgId !== undefined &&
-          orgId === userTeamId
-        ) {
-          return attachment;
-        }
-
-        // Check department visibility
-        if (
-          orgLevel === 'department' &&
-          userDepartmentId !== null &&
-          orgId !== undefined &&
-          orgId === userDepartmentId
-        ) {
-          return attachment;
-        }
+      if (hasAccess) {
+        return attachment;
       }
     }
 

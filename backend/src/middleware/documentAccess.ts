@@ -3,7 +3,7 @@
  */
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
-import documentModel from '../models/document.js';
+import documentModel, { type DbDocument } from '../models/document.js';
 import userModel from '../models/user.js';
 import type { DocumentRequest } from '../types/request.types.js';
 import { logger } from '../utils/logger.js';
@@ -13,6 +13,89 @@ export interface DocumentAccessOptions {
   allowDepartmentHeads?: boolean;
   requireOwnership?: boolean;
 }
+
+interface AccessCheckResult {
+  hasAccess: boolean;
+  reason?: string;
+}
+
+interface ExtendedDocument extends DbDocument {
+  recipient_type?: 'user' | 'team' | 'department' | 'company';
+}
+
+// Helper function to attach document to request
+const attachDocumentToRequest = (
+  docReq: DocumentRequest,
+  document: ExtendedDocument,
+  userId: number,
+  documentId: string,
+  reason: string,
+  next: NextFunction,
+): void => {
+  logger.info(`${reason} for user ${userId} to document ${documentId}`);
+  docReq.document = {
+    id: document.id,
+    filename: document.file_name,
+    category: document.category,
+    tenant_id: document.tenant_id,
+  };
+  next();
+};
+
+// Check recipient-based access
+const checkRecipientAccess = (
+  document: ExtendedDocument,
+  userId: number,
+  tenantId: number,
+): AccessCheckResult => {
+  const recipientType = document.recipient_type ?? 'user';
+
+  if (recipientType === 'user' && document.user_id === userId) {
+    return { hasAccess: true, reason: 'User access granted' };
+  }
+
+  if (recipientType === 'company' && document.tenant_id === tenantId) {
+    return { hasAccess: true, reason: 'Company-wide access granted' };
+  }
+
+  // Log TODO items for future implementation
+  if (recipientType === 'team') {
+    logger.info(`Team document access check not yet implemented for document ${document.id}`);
+  }
+
+  if (recipientType === 'department') {
+    logger.info(`Department document access check not yet implemented for document ${document.id}`);
+  }
+
+  return { hasAccess: false };
+};
+
+// Check department head access
+const checkDepartmentHeadAccess = async (
+  options: DocumentAccessOptions,
+  userRole: string,
+  userId: number,
+  tenantId: number,
+  document: ExtendedDocument,
+): Promise<AccessCheckResult> => {
+  if (
+    options.allowDepartmentHeads !== true ||
+    userRole !== 'department_head' ||
+    document.recipient_type !== 'user' ||
+    !document.user_id
+  ) {
+    return { hasAccess: false };
+  }
+
+  const user = await userModel.findById(userId, tenantId);
+  const documentOwner = await userModel.findById(document.user_id, tenantId);
+
+  if (user && documentOwner && user.department === documentOwner.department) {
+    return { hasAccess: true, reason: 'Department head access granted' };
+  }
+
+  return { hasAccess: false };
+};
 
 /**
  * Prüft, ob der Benutzer Zugriff auf ein Dokument hat
@@ -26,7 +109,6 @@ export const checkDocumentAccess = (
   },
 ): RequestHandler => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    // Type assertion - we know auth middleware has run
     const docReq = req as DocumentRequest;
     try {
       const userId = docReq.user.id;
@@ -34,6 +116,7 @@ export const checkDocumentAccess = (
       const tenantId = docReq.user.tenant_id;
       const { documentId } = docReq.params;
 
+      // Validate authentication
       if (!userId || !userRole) {
         res.status(401).json({ error: 'Nicht authentifiziert' });
         return;
@@ -48,119 +131,83 @@ export const checkDocumentAccess = (
         `Checking document access for user ${userId} (role: ${userRole}) to document ${documentId}`,
       );
 
-      // Prüfe, ob das Dokument existiert
+      // Check document existence
       const document = await documentModel.findById(Number.parseInt(documentId, 10));
       if (!document) {
         logger.warn(`Document ${documentId} not found`);
-        res.status(404).json({
-          error: 'Dokument nicht gefunden',
-        });
+        res.status(404).json({ error: 'Dokument nicht gefunden' });
         return;
       }
 
-      // Admin-Zugriff prüfen
+      // Type the document correctly
+      const extDocument = document as ExtendedDocument;
+
+      // Admin bypass
       if (options.allowAdmin === true && userRole === 'admin') {
-        logger.info(`Admin access granted for user ${userId} to document ${documentId}`);
-        docReq.document = {
-          ...document,
-          filename: document.file_name,
-        };
-        next();
-        return;
-      }
-
-      // Zugriff basierend auf Empfängertyp prüfen
-      switch (document.recipient_type ?? 'user') {
-        case 'user':
-          // Einzelner Benutzer - nur der Empfänger hat Zugriff
-          if (document.user_id === userId) {
-            logger.info(`User access granted for user ${userId} to document ${documentId}`);
-            docReq.document = {
-              ...document,
-              filename: document.file_name,
-            };
-            next();
-            return;
-          }
-          break;
-
-        case 'team':
-          // TODO: Prüfen ob Benutzer im Team ist
-          logger.info(`Team document access check not yet implemented for document ${documentId}`);
-          break;
-
-        case 'department':
-          // TODO: Prüfen ob Benutzer in der Abteilung ist
-          logger.info(
-            `Department document access check not yet implemented for document ${documentId}`,
-          );
-          break;
-
-        case 'company':
-          // Alle Benutzer des Tenants haben Zugriff
-          if (document.tenant_id === tenantId) {
-            logger.info(`Company-wide access granted for user ${userId} to document ${documentId}`);
-            docReq.document = {
-              ...document,
-              filename: document.file_name,
-            };
-            next();
-            return;
-          }
-          break;
-
-        default:
-          break;
-      }
-
-      // Abteilungsleiter-Zugriff prüfen (nur für user-spezifische Dokumente)
-      if (
-        options.allowDepartmentHeads === true &&
-        userRole === 'department_head' &&
-        document.recipient_type === 'user' &&
-        document.user_id
-      ) {
-        const user = await userModel.findById(userId, tenantId);
-        const documentOwner = await userModel.findById(document.user_id, tenantId);
-
-        if (user && documentOwner && user.department === documentOwner.department) {
-          logger.info(
-            `Department head access granted for user ${userId} to document ${documentId}`,
-          );
-          docReq.document = {
-            ...document,
-            filename: document.file_name,
-          };
-          next();
-          return;
-        }
-      }
-
-      // Wenn requireOwnership false ist und keine anderen Bedingungen zutreffen
-      if (options.requireOwnership !== true) {
-        logger.info(
-          `General access granted for user ${userId} to document ${documentId} (ownership not required)`,
+        attachDocumentToRequest(
+          docReq,
+          extDocument,
+          userId,
+          documentId,
+          'Admin access granted',
+          next,
         );
-        docReq.document = {
-          ...document,
-          filename: document.file_name,
-        };
-        next();
         return;
       }
 
-      // Zugriff verweigert
+      // Check recipient-based access
+      const recipientCheck = checkRecipientAccess(extDocument, userId, tenantId);
+      if (recipientCheck.hasAccess) {
+        attachDocumentToRequest(
+          docReq,
+          extDocument,
+          userId,
+          documentId,
+          recipientCheck.reason ?? '',
+          next,
+        );
+        return;
+      }
+
+      // Check department head access
+      const deptHeadCheck = await checkDepartmentHeadAccess(
+        options,
+        userRole,
+        userId,
+        tenantId,
+        extDocument,
+      );
+      if (deptHeadCheck.hasAccess) {
+        attachDocumentToRequest(
+          docReq,
+          extDocument,
+          userId,
+          documentId,
+          deptHeadCheck.reason ?? '',
+          next,
+        );
+        return;
+      }
+
+      // Check if ownership is not required
+      if (options.requireOwnership !== true) {
+        attachDocumentToRequest(
+          docReq,
+          extDocument,
+          userId,
+          documentId,
+          'General access granted (ownership not required)',
+          next,
+        );
+        return;
+      }
+
+      // Access denied
       logger.warn(`Access denied for user ${userId} (role: ${userRole}) to document ${documentId}`);
-      res.status(403).json({
-        error: 'Keine Berechtigung für dieses Dokument',
-      });
-      return;
+      res.status(403).json({ error: 'Keine Berechtigung für dieses Dokument' });
     } catch (error: unknown) {
       logger.error('Error in checkDocumentAccess middleware:', error);
-      res.status(500).json({
-        error: 'Fehler bei der Überprüfung der Dokumentenberechtigung',
-      });
-      return;
+      res.status(500).json({ error: 'Fehler bei der Überprüfung der Dokumentenberechtigung' });
     }
   };
 };

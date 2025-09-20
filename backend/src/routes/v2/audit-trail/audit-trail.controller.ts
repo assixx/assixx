@@ -11,6 +11,64 @@ import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { auditTrailService } from './audit-trail.service.js';
 import { AuditEntry, AuditFilter } from './types.js';
 
+/**
+ * Build audit filter from request query
+ */
+function buildAuditFilter(req: AuthenticatedRequest): AuditFilter {
+  return {
+    tenantId: req.user.tenant_id,
+    userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
+    action: req.query.action as string,
+    resourceType: req.query.resourceType as string,
+    resourceId: req.query.resourceId ? Number.parseInt(req.query.resourceId as string) : undefined,
+    status: req.query.status as 'success' | 'failure',
+    dateFrom: req.query.dateFrom as string,
+    dateTo: req.query.dateTo as string,
+    search: req.query.search as string,
+    page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
+    limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 50,
+    sortBy: req.query.sortBy as 'created_at' | 'action' | 'user_id' | 'resource_type' | undefined,
+    sortOrder: req.query.sortOrder as 'asc' | 'desc',
+  };
+}
+
+/**
+ * Validate audit access permissions
+ */
+function validateAuditAccess(
+  user: AuthenticatedRequest['user'],
+  filter: AuditFilter,
+): ReturnType<typeof errorResponse> | null {
+  if (user.role !== 'root') {
+    if (filter.userId && filter.userId !== user.id) {
+      return errorResponse('FORBIDDEN', "Cannot view other users' audit entries");
+    }
+    filter.userId = user.id;
+  }
+  return null;
+}
+
+/**
+ * Build pagination response
+ */
+function buildPagination(
+  total: number,
+  filter: AuditFilter,
+): {
+  currentPage: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+} {
+  const pageSize = filter.limit ?? 50;
+  return {
+    currentPage: filter.page ?? 1,
+    pageSize,
+    totalItems: total,
+    totalPages: Math.ceil(total / pageSize),
+  };
+}
+
 export const auditTrailController = {
   /**
    * Get audit entries with filters
@@ -21,39 +79,13 @@ export const auditTrailController = {
     try {
       log('[Audit Trail v2] getEntries called with user:', req.user.id);
 
-      const filter: AuditFilter = {
-        tenantId: req.user.tenant_id,
-        userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
-        action: req.query.action as string,
-        resourceType: req.query.resourceType as string,
-        resourceId:
-          req.query.resourceId ? Number.parseInt(req.query.resourceId as string) : undefined,
-        status: req.query.status as 'success' | 'failure',
-        dateFrom: req.query.dateFrom as string,
-        dateTo: req.query.dateTo as string,
-        search: req.query.search as string,
-        page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 50,
-        sortBy: req.query.sortBy as
-          | 'created_at'
-          | 'action'
-          | 'user_id'
-          | 'resource_type'
-          | undefined,
-        sortOrder: req.query.sortOrder as 'asc' | 'desc',
-      };
+      const filter = buildAuditFilter(req);
 
-      // Only root users can see entries from other users
-      if (req.user.role !== 'root') {
-        // Non-root users can only see their own entries
-        if (filter.userId && filter.userId !== req.user.id) {
-          res
-            .status(403)
-            .json(errorResponse('FORBIDDEN', "Cannot view other users' audit entries"));
-          return;
-        }
-        // Force filter to only show their own entries
-        filter.userId = req.user.id;
+      // Apply access control
+      const accessError = validateAuditAccess(req.user, filter);
+      if (accessError) {
+        res.status(403).json(accessError);
+        return;
       }
 
       const result = await auditTrailService.getEntries(filter);
@@ -62,12 +94,7 @@ export const auditTrailController = {
         successResponse(
           {
             entries: result.entries,
-            pagination: {
-              currentPage: filter.page ?? 1,
-              pageSize: filter.limit ?? 50,
-              totalItems: result.total,
-              totalPages: Math.ceil(result.total / (filter.limit ?? 50)),
-            },
+            pagination: buildPagination(result.total, filter),
           },
           'Audit entries retrieved successfully',
         ),

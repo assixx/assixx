@@ -689,7 +689,6 @@ function initializeCalendar(): void {
         successCallback: (events: FullCalendarEventInput[]) => void,
         failureCallback: (error: Error) => void,
       ) {
-        // eslint-disable-next-line promise/prefer-await-to-then -- FullCalendar expects callback-based API
         void loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
       },
       eventClick(info: FullCalendarEventClickInfo) {
@@ -756,54 +755,59 @@ function initializeCalendar(): void {
   }
 }
 
-/**
- * Setup all event listeners
- */
-function setupEventListeners(): void {
-  // Filter by level using tab buttons (Gesamt/Firma/Abteilung/Team/Meine)
+// Helper: Update filter button active state
+function updateFilterButtonState(buttons: NodeListOf<Element>, activeButton: Element): void {
+  buttons.forEach((btn) => {
+    btn.classList.remove('active');
+  });
+  activeButton.classList.add('active');
+}
+
+// Helper: Handle filter change
+function handleFilterChange(value: string): void {
+  currentFilter = value;
+  localStorage.setItem('calendarFilter', currentFilter);
+  console.info('[CALENDAR] Filter changed to:', currentFilter);
+  calendar.refetchEvents();
+}
+
+// Helper: Setup level filter buttons
+function setupLevelFilterButtons(): void {
   const levelFilterButtons = $all('#levelFilter button.tab-btn') as NodeListOf<HTMLButtonElement>;
   levelFilterButtons.forEach((button) => {
     // Set initial active state based on saved filter
-    if (button.dataset.value === currentFilter) {
-      button.classList.add('active');
-    } else {
-      button.classList.remove('active');
-    }
+    button.classList.toggle('active', button.dataset.value === currentFilter);
 
     button.addEventListener('click', function (this: HTMLButtonElement) {
-      // Remove active class from all buttons
-      levelFilterButtons.forEach((btn) => {
-        btn.classList.remove('active');
-      });
-      // Add active class to clicked button
-      this.classList.add('active');
-
-      currentFilter = this.dataset.value ?? 'all';
-      // Save filter to localStorage
-      localStorage.setItem('calendarFilter', currentFilter);
-      console.info('[CALENDAR] Filter changed to:', currentFilter);
-      calendar.refetchEvents();
+      updateFilterButtonState(levelFilterButtons, this);
+      handleFilterChange(this.dataset.value ?? 'all');
     });
   });
+}
 
-  // Legacy: Filter by level using pill buttons (if any exist)
-  $all('.filter-pill[data-value]').forEach((button) => {
+// Helper: Setup legacy filter pills
+function setupLegacyFilterPills(): void {
+  const filterPills = $all('.filter-pill[data-value]');
+  filterPills.forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
-      // Remove active class from all pills
-      $all('.filter-pill').forEach((pill) => {
-        pill.classList.remove('active');
-      });
-      // Add active class to clicked pill
-      this.classList.add('active');
-
-      currentFilter = this.dataset.value ?? 'all';
-      // Save filter to localStorage
-      localStorage.setItem('calendarFilter', currentFilter);
-      calendar.refetchEvents();
+      updateFilterButtonState(filterPills, this);
+      handleFilterChange(this.dataset.value ?? 'all');
     });
   });
+}
 
-  // View buttons - Support both class-based and ID-based selectors
+// Helper: Update view button states
+function updateViewButtonStates(activeButton: HTMLElement): void {
+  $all('.view-selector button').forEach((btn) => {
+    btn.classList.remove('active', 'btn-primary');
+    btn.classList.add('btn-outline-primary');
+  });
+  activeButton.classList.add('active', 'btn-primary');
+  activeButton.classList.remove('btn-outline-primary');
+}
+
+// Helper: Setup view buttons
+function setupViewButtons(): void {
   const viewButtons = [
     { id: 'monthView', view: 'dayGridMonth' },
     { id: 'weekView', view: 'timeGridWeek' },
@@ -813,133 +817,365 @@ function setupEventListeners(): void {
 
   viewButtons.forEach(({ id, view }) => {
     const button = $$id(id);
-    if (button) {
-      button.addEventListener('click', () => {
-        console.info('[CALENDAR] Changing view to:', view);
-        calendarView = view;
-        calendar.changeView(view);
+    if (button === null) return;
 
-        // Update active state
-        $all('.view-selector button').forEach((btn) => {
-          btn.classList.remove('active');
-          btn.classList.remove('btn-primary');
-          btn.classList.add('btn-outline-primary');
-        });
-        button.classList.add('active');
-        button.classList.remove('btn-outline-primary');
-        button.classList.add('btn-primary');
-      });
-    }
+    button.addEventListener('click', () => {
+      console.info('[CALENDAR] Changing view to:', view);
+      calendarView = view;
+      calendar.changeView(view);
+      updateViewButtonStates(button);
+    });
   });
+}
 
-  // Also support legacy view-btn class approach
+// Helper: Setup legacy view buttons
+function setupLegacyViewButtons(): void {
   $all('.view-btn').forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       const view = this.dataset.view;
-      if (view !== undefined && view !== '') {
-        calendarView = view;
-        calendar.changeView(view);
+      if (view === undefined || view === '') return;
 
-        // Update active state
-        $all('.view-btn').forEach((btn) => {
-          btn.classList.remove('active');
-        });
-        this.classList.add('active');
-      }
+      calendarView = view;
+      calendar.changeView(view);
+      updateFilterButtonState($all('.view-btn'), this);
     });
   });
+}
 
-  // Search button
+// Helper: Setup search functionality
+function setupSearchFunctionality(): void {
   const searchButton = $$('#searchButton');
   const searchInput = $$('#searchInput') as HTMLInputElement | null;
 
-  if (searchButton !== null && searchInput !== null) {
-    searchButton.addEventListener('click', () => {
-      currentSearch = searchInput.value.trim();
-      calendar.refetchEvents();
-    });
+  if (searchButton === null || searchInput === null) return;
 
-    searchInput.addEventListener('keypress', function (this: HTMLInputElement, e: KeyboardEvent) {
-      if (e.key === 'Enter') {
-        currentSearch = this.value.trim();
-        calendar.refetchEvents();
-      }
-    });
+  searchButton.addEventListener('click', () => {
+    currentSearch = searchInput.value.trim();
+    calendar.refetchEvents();
+  });
+
+  searchInput.addEventListener('keypress', function (this: HTMLInputElement, e: KeyboardEvent) {
+    if (e.key !== 'Enter') return;
+    currentSearch = this.value.trim();
+    calendar.refetchEvents();
+  });
+}
+
+// Helper: Setup new event button
+function setupNewEventButton(buttonId: string, logContext: string): void {
+  const button = $$(buttonId);
+  if (button === null) {
+    console.info(`Calendar: ${buttonId} not found - ${logContext}`);
+    return;
   }
 
-  // New event button (in filter bar) - only for admins and root
-  const newEventBtn = $$('#newEventBtn');
-  console.info('Calendar: Looking for newEventBtn:', newEventBtn);
-
-  // Get user role
-  const currentUserRole = localStorage.getItem('userRole');
-  const canCreate = currentUserRole === 'admin' || currentUserRole === 'root';
-
-  if (newEventBtn !== null) {
-    if (!canCreate) {
-      // Hide button for employees
-      console.info('Calendar: Hiding new event button for employee');
-      newEventBtn.style.display = 'none';
-    } else {
-      console.info('Calendar: Adding click listener to newEventBtn');
-      // Remove any existing listeners
-      const newButton = newEventBtn.cloneNode(true) as HTMLButtonElement;
-      newEventBtn.parentNode?.replaceChild(newButton, newEventBtn);
-
-      newButton.addEventListener('click', (e) => {
-        console.info('Calendar: New Event button clicked');
-        e.preventDefault();
-        e.stopPropagation();
-
-        // Debug check
-        console.info('Calendar: About to call openEventForm...');
-        try {
-          openEventForm();
-          console.info('Calendar: openEventForm() call completed');
-        } catch (error: unknown) {
-          console.error('Calendar: Error calling openEventForm:', error);
-        }
-      });
-    }
-  } else {
-    console.error('Calendar: newEventBtn not found!');
-  }
-
-  // New event button in calendar card header - only for admins and root
-  const newCalendarEventBtn = $$('#newCalendarEventBtn');
-  console.info('Calendar: Looking for newCalendarEventBtn:', newCalendarEventBtn);
-
-  // Check user role
   const userRole = localStorage.getItem('userRole');
-  const canCreateEvents = userRole === 'admin' || userRole === 'root';
+  const canCreate = userRole === 'admin' || userRole === 'root';
 
-  if (newCalendarEventBtn !== null) {
-    if (!canCreateEvents) {
-      // Hide button for employees
-      console.info('Calendar: Hiding new event button for employee');
-      newCalendarEventBtn.style.display = 'none';
-    } else {
-      console.info('Calendar: Adding click listener to newCalendarEventBtn');
-      // Remove any existing listeners
-      const newButton = newCalendarEventBtn.cloneNode(true) as HTMLButtonElement;
-      newCalendarEventBtn.parentNode?.replaceChild(newButton, newCalendarEventBtn);
-
-      newButton.addEventListener('click', (e) => {
-        console.info('Calendar: New Calendar Event button clicked');
-        e.preventDefault();
-        e.stopPropagation();
-
-        try {
-          openEventForm();
-          console.info('Calendar: openEventForm() call completed from calendar header');
-        } catch (error: unknown) {
-          console.error('Calendar: Error calling openEventForm:', error);
-        }
-      });
-    }
-  } else {
-    console.info('Calendar: newCalendarEventBtn not found - this is ok if not on calendar page');
+  if (!canCreate) {
+    console.info(`Calendar: Hiding ${buttonId} for employee`);
+    button.style.display = 'none';
+    return;
   }
+
+  // Clone to remove existing listeners
+  const newButton = button.cloneNode(true) as HTMLButtonElement;
+  button.parentNode?.replaceChild(newButton, button);
+
+  newButton.addEventListener('click', (e) => {
+    console.info(`Calendar: ${buttonId} clicked`);
+    e.preventDefault();
+    e.stopPropagation();
+
+    try {
+      openEventForm();
+      console.info(`Calendar: openEventForm() called from ${buttonId}`);
+    } catch (error: unknown) {
+      console.error(`Calendar: Error calling openEventForm from ${buttonId}:`, error);
+    }
+  });
+}
+
+// Handler Types
+interface ClickHandler {
+  selector: string;
+  handler: (e: Event, element: HTMLElement) => void;
+}
+
+// Create click handler registry
+function createClickHandlerRegistry(): ClickHandler[] {
+  return [
+    // Dropdown display handlers
+    {
+      selector: '.dropdown-display',
+      handler: handleDropdownDisplay,
+    },
+    // Dropdown option handlers
+    {
+      selector: '.dropdown-option',
+      handler: handleDropdownOption,
+    },
+    // Event action handlers
+    {
+      selector: '[data-action="respond-event"]',
+      handler: handleRespondEvent,
+    },
+    {
+      selector: '[data-action="show-event-details"]',
+      handler: handleShowEventDetails,
+    },
+    {
+      selector: '[data-action="respond-modal"]',
+      handler: handleRespondModal,
+    },
+    {
+      selector: '[data-action="edit-event"]',
+      handler: handleEditEvent,
+    },
+    {
+      selector: '[data-action="delete-event"]',
+      handler: handleDeleteEvent,
+    },
+    {
+      selector: '[data-action="confirm-delete-event"]',
+      handler: handleConfirmDeleteEvent,
+    },
+    // Attendee handlers
+    {
+      selector: '[data-action="add-attendee"]',
+      handler: handleAddAttendee,
+    },
+    {
+      selector: '[data-action="add-attendee-by-email"]',
+      handler: handleAddAttendeeByEmail,
+    },
+    {
+      selector: '[data-action="remove-attendee"]',
+      handler: handleRemoveAttendee,
+    },
+    // Department/Team handlers
+    {
+      selector: '[data-action="select-department"]',
+      handler: handleSelectDepartment,
+    },
+    {
+      selector: '[data-action="select-department-with-teams"]',
+      handler: handleSelectDepartmentWithTeams,
+    },
+    {
+      selector: '[data-action="select-team"]',
+      handler: handleSelectTeam,
+    },
+    // Recurrence handlers
+    {
+      selector: '[data-action="toggle-recurrence-end-dropdown"]',
+      handler: handleToggleRecurrenceEnd,
+    },
+    {
+      selector: '[data-action="select-recurrence-end"]',
+      handler: handleSelectRecurrenceEnd,
+    },
+  ];
+}
+
+// Process click handlers
+function processClickHandlers(e: Event, target: HTMLElement, handlers: ClickHandler[]): void {
+  for (const handler of handlers) {
+    const element = target.closest<HTMLElement>(handler.selector);
+    if (element) {
+      handler.handler(e, element);
+      return;
+    }
+  }
+}
+
+// Individual handler functions
+function handleDropdownDisplay(e: Event, display: HTMLElement): void {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const wrapper = display.closest('.custom-dropdown');
+  const dropdown = wrapper?.querySelector('.dropdown-options');
+
+  if (!dropdown) return;
+
+  const dropdownMap: Record<string, () => void> = {
+    orgLevelWrapper: toggleOrgLevelDropdown,
+    reminderWrapper: toggleReminderDropdown,
+    recurrenceWrapper: toggleRecurrenceDropdown,
+    departmentWrapper: toggleDepartmentDropdown,
+    teamWrapper: toggleTeamDropdown,
+  };
+
+  const wrapperId = wrapper?.id;
+  if (wrapperId !== undefined && wrapperId !== '' && wrapperId in dropdownMap) {
+    dropdownMap[wrapperId]();
+  }
+}
+
+function handleDropdownOption(e: Event, option: HTMLElement): void {
+  e.preventDefault();
+  e.stopPropagation();
+
+  const dropdown = option.closest('.dropdown-options');
+  if (!dropdown) return;
+
+  const value = option.dataset.value ?? '';
+  const textContent = option.textContent;
+  const text = textContent !== '' ? textContent.trim() : '';
+
+  const optionHandlers: Record<string, (value: string, text: string) => void> = {
+    orgLevelDropdown: selectOrgLevel,
+    reminderDropdown: selectReminder,
+    recurrenceDropdown: selectRecurrence,
+  };
+
+  const dropdownId = dropdown.id;
+  if (dropdownId !== '' && dropdownId in optionHandlers) {
+    optionHandlers[dropdownId](value, text);
+  }
+}
+
+function handleRespondEvent(_e: Event, btn: HTMLElement): void {
+  const eventId = btn.dataset.eventId;
+  const response = btn.dataset.response;
+  if (eventId !== undefined && response !== undefined) {
+    void window.respondToEvent(Number.parseInt(eventId, 10), response as 'accepted' | 'declined');
+  }
+}
+
+function handleShowEventDetails(_e: Event, btn: HTMLElement): void {
+  const eventId = btn.dataset.eventId;
+  if (eventId !== undefined) {
+    void window.showEventDetails(Number.parseInt(eventId, 10));
+  }
+}
+
+function handleRespondModal(_e: Event, btn: HTMLElement): void {
+  const eventId = btn.dataset.eventId;
+  const response = btn.dataset.response;
+  if (eventId !== undefined && response !== undefined) {
+    void window.respondToEvent(Number.parseInt(eventId, 10), response as 'accepted' | 'tentative' | 'declined');
+  }
+}
+
+function handleEditEvent(_e: Event, btn: HTMLElement): void {
+  const eventId = btn.dataset.eventId;
+  if (eventId !== undefined) {
+    window.editEvent(Number.parseInt(eventId, 10));
+  }
+}
+
+function handleDeleteEvent(_e: Event, btn: HTMLElement): void {
+  const eventId = btn.dataset.eventId;
+  if (eventId !== undefined) {
+    window.deleteEvent(Number.parseInt(eventId, 10));
+  }
+}
+
+function handleConfirmDeleteEvent(_e: Event, _btn: HTMLElement): void {
+  console.info('[CALENDAR] Confirm delete button clicked');
+  void confirmDeleteEvent();
+}
+
+function handleAddAttendee(_e: Event, btn: HTMLElement): void {
+  const empId = btn.dataset.empId;
+  const empName = btn.dataset.empName;
+  if (empId !== undefined && empName !== undefined) {
+    addAttendee(Number.parseInt(empId, 10), empName);
+  }
+}
+
+function handleAddAttendeeByEmail(_e: Event, _btn: HTMLElement): void {
+  const emailInput = $$('#attendeeEmailInput') as HTMLInputElement | null;
+  if (emailInput === null || emailInput.value === '') return;
+
+  const email = emailInput.value.trim();
+  if (!validateAndAddEmail(email)) {
+    showError('Bitte geben Sie eine gültige E-Mail-Adresse ein');
+  } else {
+    emailInput.value = '';
+  }
+}
+
+function validateAndAddEmail(email: string): boolean {
+  const emailRegex = /^\S[^\s@]*@\S[^\s.]*\.\S{2,}$/;
+  if (email === '' || !emailRegex.test(email)) return false;
+
+  const emailsList = $$('#selectedAttendeesEmails');
+  if (!emailsList) return false;
+
+  const emailDiv = document.createElement('div');
+  emailDiv.className = 'badge badge-secondary mr-2 mb-2';
+  emailDiv.textContent = email;
+  emailsList.append(emailDiv);
+  return true;
+}
+
+function handleRemoveAttendee(_e: Event, btn: HTMLElement): void {
+  const userId = btn.dataset.userId;
+  if (userId !== undefined) {
+    window.removeAttendee(Number.parseInt(userId, 10));
+  }
+}
+
+function handleSelectDepartment(e: Event, option: HTMLElement): void {
+  e.preventDefault();
+  const deptId = option.dataset.deptId;
+  const deptName = option.dataset.deptName;
+  if (deptId !== undefined && deptName !== undefined) {
+    selectDepartment(Number.parseInt(deptId, 10), deptName);
+    closeAllDropdowns();
+  }
+}
+
+function handleSelectDepartmentWithTeams(e: Event, option: HTMLElement): void {
+  e.preventDefault();
+  const deptId = option.dataset.deptId;
+  const deptName = option.dataset.deptName;
+  if (deptId !== undefined && deptName !== undefined) {
+    const deptIdNum = Number.parseInt(deptId, 10);
+    selectDepartment(deptIdNum, deptName);
+    loadTeamsForDepartment(deptIdNum);
+    closeAllDropdowns();
+  }
+}
+
+function handleSelectTeam(e: Event, option: HTMLElement): void {
+  e.preventDefault();
+  const teamId = option.dataset.teamId;
+  const teamName = option.dataset.teamName;
+  if (teamId !== undefined && teamName !== undefined) {
+    selectTeam(Number.parseInt(teamId, 10), teamName);
+    closeAllDropdowns();
+  }
+}
+
+function handleToggleRecurrenceEnd(_e: Event, _btn: HTMLElement): void {
+  window.toggleRecurrenceEndDropdown();
+}
+
+function handleSelectRecurrenceEnd(_e: Event, option: HTMLElement): void {
+  const endType = option.dataset.endType;
+  const endText = option.dataset.endText;
+  if (endType !== undefined && endText !== undefined) {
+    window.selectRecurrenceEnd(endType, endText);
+  }
+}
+
+/**
+ * Setup all event listeners
+ */
+function setupEventListeners(): void {
+  setupLevelFilterButtons();
+  setupLegacyFilterPills();
+  setupViewButtons();
+  setupLegacyViewButtons();
+  setupSearchFunctionality();
+
+  // Setup new event buttons
+  setupNewEventButton('#newEventBtn', 'filter bar button');
+  setupNewEventButton('#newCalendarEventBtn', 'calendar header - ok if not on calendar page');
 
   // Save event button
   const saveEventBtn = $$('#saveEventBtn');
@@ -992,212 +1228,15 @@ function setupEventListeners(): void {
   // are now added dynamically in loadEmployeesForAttendees() function
   // because the modal content is created dynamically
 
+  // Handler registry for click actions
+  const clickHandlers = createClickHandlerRegistry();
+
   // Setup custom dropdown event delegation
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
-    // Handle dropdown toggles
-    if (target.closest('.dropdown-display')) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const display = target.closest('.dropdown-display');
-      if (!display) return;
-      const wrapper = display.closest('.custom-dropdown');
-      const dropdown = wrapper?.querySelector('.dropdown-options');
-
-      if (dropdown) {
-        // Check which dropdown was clicked
-        if (wrapper?.id === 'orgLevelWrapper') {
-          toggleOrgLevelDropdown();
-        } else if (wrapper?.id === 'reminderWrapper') {
-          toggleReminderDropdown();
-        } else if (wrapper?.id === 'recurrenceWrapper') {
-          toggleRecurrenceDropdown();
-        } else if (wrapper?.id === 'departmentWrapper') {
-          toggleDepartmentDropdown();
-        } else if (wrapper?.id === 'teamWrapper') {
-          toggleTeamDropdown();
-        }
-      }
-    }
-
-    // Handle dropdown option clicks
-    if (target.closest('.dropdown-option')) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      const option = target.closest('.dropdown-option');
-      if (!option) return;
-      const dropdown = option.closest('.dropdown-options');
-
-      if (dropdown?.id === 'orgLevelDropdown') {
-        // Extract value and text from the option
-        const value = (option as HTMLElement).dataset.value ?? '';
-        const text = option.textContent.trim();
-        selectOrgLevel(value, text);
-      } else if (dropdown?.id === 'reminderDropdown') {
-        const value = (option as HTMLElement).dataset.value ?? '';
-        const text = option.textContent.trim();
-        selectReminder(value, text);
-      } else if (dropdown?.id === 'recurrenceDropdown') {
-        const value = (option as HTMLElement).dataset.value ?? '';
-        const text = option.textContent.trim();
-        selectRecurrence(value, text);
-      }
-    }
-
-    // Handle event response buttons (Zusagen/Absagen)
-    const respondEventBtn = target.closest<HTMLElement>('[data-action="respond-event"]');
-    if (respondEventBtn) {
-      const eventId = respondEventBtn.dataset.eventId;
-      const response = respondEventBtn.dataset.response;
-      if (eventId !== undefined && response !== undefined) {
-        void window.respondToEvent(Number.parseInt(eventId, 10), response as 'accepted' | 'declined');
-      }
-    }
-
-    // Handle show event details button
-    const showDetailsBtn = target.closest<HTMLElement>('[data-action="show-event-details"]');
-    if (showDetailsBtn) {
-      const eventId = showDetailsBtn.dataset.eventId;
-      if (eventId !== undefined) {
-        void window.showEventDetails(Number.parseInt(eventId, 10));
-      }
-    }
-
-    // Handle modal response buttons
-    const respondModalBtn = target.closest<HTMLElement>('[data-action="respond-modal"]');
-    if (respondModalBtn) {
-      const eventId = respondModalBtn.dataset.eventId;
-      const response = respondModalBtn.dataset.response;
-      if (eventId !== undefined && response !== undefined) {
-        void window.respondToEvent(Number.parseInt(eventId, 10), response as 'accepted' | 'tentative' | 'declined');
-      }
-    }
-
-    // Handle edit event button
-    const editEventBtn = target.closest<HTMLElement>('[data-action="edit-event"]');
-    if (editEventBtn) {
-      const eventId = editEventBtn.dataset.eventId;
-      if (eventId !== undefined) {
-        window.editEvent(Number.parseInt(eventId, 10));
-      }
-    }
-
-    // Handle delete event button
-    const deleteEventBtn = target.closest<HTMLElement>('[data-action="delete-event"]');
-    if (deleteEventBtn) {
-      const eventId = deleteEventBtn.dataset.eventId;
-      if (eventId !== undefined) {
-        window.deleteEvent(Number.parseInt(eventId, 10));
-      }
-    }
-
-    // Handle confirm delete event button
-    const confirmDeleteBtn = target.closest<HTMLElement>('[data-action="confirm-delete-event"]');
-    if (confirmDeleteBtn) {
-      console.info('[CALENDAR] Confirm delete button clicked');
-      void confirmDeleteEvent();
-    }
-
-    // Handle add attendee button
-    const addAttendeeBtn = target.closest<HTMLElement>('[data-action="add-attendee"]');
-    if (addAttendeeBtn) {
-      const empId = addAttendeeBtn.dataset.empId;
-      const empName = addAttendeeBtn.dataset.empName;
-      if (empId !== undefined && empName !== undefined) {
-        addAttendee(Number.parseInt(empId, 10), empName);
-      }
-    }
-
-    // Handle select department option
-    const selectDeptOption = target.closest<HTMLElement>('[data-action="select-department"]');
-    if (selectDeptOption) {
-      e.preventDefault();
-      const deptId = selectDeptOption.dataset.deptId;
-      const deptName = selectDeptOption.dataset.deptName;
-      if (deptId !== undefined && deptName !== undefined) {
-        selectDepartment(Number.parseInt(deptId, 10), deptName);
-        closeAllDropdowns();
-      }
-    }
-
-    // Handle select department with teams option
-    const selectDeptWithTeamsOption = target.closest<HTMLElement>('[data-action="select-department-with-teams"]');
-    if (selectDeptWithTeamsOption) {
-      e.preventDefault();
-      const deptId = selectDeptWithTeamsOption.dataset.deptId;
-      const deptName = selectDeptWithTeamsOption.dataset.deptName;
-      if (deptId !== undefined && deptName !== undefined) {
-        selectDepartment(Number.parseInt(deptId, 10), deptName);
-        loadTeamsForDepartment(Number.parseInt(deptId, 10));
-        closeAllDropdowns();
-      }
-    }
-
-    // Handle select team option
-    const selectTeamOption = target.closest<HTMLElement>('[data-action="select-team"]');
-    if (selectTeamOption) {
-      e.preventDefault();
-      const teamId = selectTeamOption.dataset.teamId;
-      const teamName = selectTeamOption.dataset.teamName;
-      if (teamId !== undefined && teamName !== undefined) {
-        selectTeam(Number.parseInt(teamId, 10), teamName);
-        closeAllDropdowns();
-      }
-    }
-
-    // Handle add attendee by email button
-    const addByEmailBtn = target.closest<HTMLElement>('[data-action="add-attendee-by-email"]');
-    if (addByEmailBtn) {
-      // Implementation for adding attendee by email
-      const emailInput = $$('#attendeeEmailInput') as HTMLInputElement | null;
-      if (emailInput !== null && emailInput.value !== '') {
-        const email = emailInput.value.trim();
-        // Basic email validation - using simple pattern
-        // Using \S (non-whitespace) to avoid complex character classes
-        const emailRegex = /^\S[^\s@]*@\S[^\s.]*\.\S{2,}$/;
-        if (email !== '' && emailRegex.test(email)) {
-          // For now, just show the email in the list
-          const emailsList = $$('#selectedAttendeesEmails');
-          if (emailsList) {
-            const emailDiv = document.createElement('div');
-            emailDiv.className = 'badge badge-secondary mr-2 mb-2';
-            emailDiv.textContent = email;
-            emailsList.append(emailDiv);
-            emailInput.value = '';
-          }
-        } else {
-          showError('Bitte geben Sie eine gültige E-Mail-Adresse ein');
-        }
-      }
-    }
-
-    // Handle remove attendee button
-    const removeAttendeeBtn = target.closest<HTMLElement>('[data-action="remove-attendee"]');
-    if (removeAttendeeBtn) {
-      const userId = removeAttendeeBtn.dataset.userId;
-      if (userId !== undefined) {
-        window.removeAttendee(Number.parseInt(userId, 10));
-      }
-    }
-
-    // Handle toggle recurrence end dropdown
-    const toggleRecurrenceBtn = target.closest<HTMLElement>('[data-action="toggle-recurrence-end-dropdown"]');
-    if (toggleRecurrenceBtn) {
-      window.toggleRecurrenceEndDropdown();
-    }
-
-    // Handle select recurrence end option
-    const selectRecurrenceOption = target.closest<HTMLElement>('[data-action="select-recurrence-end"]');
-    if (selectRecurrenceOption) {
-      const endType = selectRecurrenceOption.dataset.endType;
-      const endText = selectRecurrenceOption.dataset.endText;
-      if (endType !== undefined && endText !== undefined) {
-        window.selectRecurrenceEnd(endType, endText);
-      }
-    }
+    // Process click handlers
+    processClickHandlers(e, target, clickHandlers);
 
     // Close dropdowns when clicking outside
     if (!target.closest('.custom-dropdown')) {
@@ -1206,40 +1245,108 @@ function setupEventListeners(): void {
   });
 }
 
+// Helper: Build event query parameters
+function buildEventQueryParams(fetchInfo: FullCalendarFetchInfo): URLSearchParams {
+  const params = new URLSearchParams({
+    start: fetchInfo.startStr,
+    end: fetchInfo.endStr,
+    filter: currentFilter,
+  });
+
+  if (currentSearch !== '' && currentSearch.trim() !== '') {
+    params.append('search', currentSearch);
+  }
+
+  return params;
+}
+
+// Helper: Handle 403 permission error
+async function handlePermissionError(fetchInfo: FullCalendarFetchInfo): Promise<FullCalendarEventInput[]> {
+  console.error('[CALENDAR] Permission denied for filter:', currentFilter);
+  currentFilter = 'personal';
+  localStorage.setItem('calendarFilter', currentFilter);
+
+  // Update UI to reflect filter change
+  const filterButtons = $all('#levelFilter button.tab-btn') as NodeListOf<HTMLButtonElement>;
+  filterButtons.forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.value === 'personal');
+  });
+
+  // Retry with personal filter
+  return await loadCalendarEvents(fetchInfo);
+}
+
+// Helper: Extract events from API response
+function extractEventsFromResponse(
+  data: ApiResponse<CalendarEvent> | LegacyApiResponse<CalendarEvent> | CalendarEvent[],
+): CalendarEvent[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if ('success' in data && 'data' in data && typeof data.data === 'object') {
+    if ('data' in data.data && Array.isArray(data.data.data)) {
+      console.info('[CALENDAR] v2 events found:', data.data.data.length);
+      return data.data.data;
+    }
+    if ('events' in data.data && Array.isArray(data.data.events)) {
+      console.info('[CALENDAR] v2 events (from data.events) found:', data.data.events.length);
+      return data.data.events as CalendarEvent[];
+    }
+  }
+
+  if ('events' in data && Array.isArray(data.events)) {
+    return data.events;
+  }
+
+  if ('data' in data && Array.isArray(data.data)) {
+    return data.data;
+  }
+
+  console.error('Calendar API returned unexpected response format:', data);
+  showError('Kalenderdaten konnten nicht geladen werden. API-Fehler.');
+  return [];
+}
+
+// Helper: Map v2 API response fields
+function mapV2EventFields(event: CalendarEvent): CalendarEvent {
+  return {
+    ...event,
+    start_time: event.startTime ?? event.start_time,
+    end_time: event.endTime ?? event.end_time,
+    all_day: event.allDay ?? event.all_day,
+    org_level: event.orgLevel ?? event.org_level,
+    org_id: event.orgId ?? event.org_id,
+    created_by: event.createdBy ?? event.created_by,
+    created_at: event.createdAt ?? event.created_at,
+    updated_at: event.updatedAt ?? event.updated_at,
+    reminder_time: event.reminderMinutes ?? event.reminderTime ?? event.reminder_time,
+    creator_name: event.creatorName ?? event.creator_name,
+    department_name: event.departmentName ?? event.department_name,
+    team_name: event.teamName ?? event.team_name,
+    user_response: event.userResponse ?? event.user_response,
+  };
+}
+
 /**
  * Load calendar events
  */
 async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<FullCalendarEventInput[]> {
   try {
-    // Get token from localStorage
     const token = getAuthToken();
     if (token === null || token === '') {
       window.location.href = '/login';
       throw new Error('No token found');
     }
 
-    // Build query parameters
-    const params = new URLSearchParams({
-      start: fetchInfo.startStr,
-      end: fetchInfo.endStr,
-      filter: currentFilter,
-    });
-
-    if (currentSearch !== '' && currentSearch.trim() !== '') {
-      params.append('search', currentSearch);
-    }
-
-    // Determine API endpoint based on feature flag
+    const params = buildEventQueryParams(fetchInfo);
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
     const apiUrl = useV2 ? `/api/v2/calendar/events?${params}` : `/api/calendar?${params}`;
 
     console.info('[CALENDAR] Loading events - v2:', useV2, 'URL:', apiUrl);
 
-    // Fetch events with authentication
     const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (!response.ok) {
@@ -1247,23 +1354,8 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
         window.location.href = '/login';
         throw new Error('Unauthorized');
       }
-      // Handle permission errors for specific filters
       if (response.status === 403 && currentFilter !== 'personal') {
-        console.error('[CALENDAR] Permission denied for filter:', currentFilter);
-        // Fallback to personal filter
-        currentFilter = 'personal';
-        localStorage.setItem('calendarFilter', currentFilter);
-        // Update UI to reflect filter change
-        const filterButtons = $all('#levelFilter button.tab-btn') as NodeListOf<HTMLButtonElement>;
-        filterButtons.forEach((btn) => {
-          if (btn.dataset.value === 'personal') {
-            btn.classList.add('active');
-          } else {
-            btn.classList.remove('active');
-          }
-        });
-        // Retry with personal filter
-        return await loadCalendarEvents(fetchInfo);
+        return await handlePermissionError(fetchInfo);
       }
       throw new Error('Failed to load events');
     }
@@ -1272,64 +1364,14 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
       | ApiResponse<CalendarEvent>
       | LegacyApiResponse<CalendarEvent>
       | CalendarEvent[];
+
     console.info('[CALENDAR] API Response:', data);
 
-    // Handle different response formats
-    let events: CalendarEvent[] = [];
-
-    if (Array.isArray(data)) {
-      // Direct array response (v1)
-      events = data;
-    } else if (
-      'success' in data &&
-      'data' in data &&
-      typeof data.data === 'object' &&
-      'data' in data.data &&
-      Array.isArray(data.data.data)
-    ) {
-      // v2 API response: {success, data: {data: [...], pagination: {...}}}
-      events = data.data.data;
-      console.info('[CALENDAR] v2 events found:', events.length);
-    } else if (
-      'success' in data &&
-      'data' in data &&
-      typeof data.data === 'object' &&
-      'events' in data.data &&
-      Array.isArray(data.data.events)
-    ) {
-      // v2 API response: {success, data: {events: [...], pagination: {...}}}
-      events = data.data.events as CalendarEvent[];
-      console.info('[CALENDAR] v2 events (from data.events) found:', events.length);
-    } else if ('events' in data && Array.isArray(data.events)) {
-      // Paginated response with events array
-      events = data.events;
-    } else if ('data' in data && Array.isArray(data.data)) {
-      // Standard API response format with data wrapper
-      events = data.data;
-    } else {
-      console.error('Calendar API returned unexpected response format:', data);
-      showError('Kalenderdaten konnten nicht geladen werden. API-Fehler.');
-      return [];
-    }
+    let events = extractEventsFromResponse(data);
 
     // Map v2 API response fields if needed
     if (useV2) {
-      events = events.map((event) => ({
-        ...event,
-        start_time: event.startTime ?? event.start_time,
-        end_time: event.endTime ?? event.end_time,
-        all_day: event.allDay ?? event.all_day,
-        org_level: event.orgLevel ?? event.org_level,
-        org_id: event.orgId ?? event.org_id,
-        created_by: event.createdBy ?? event.created_by,
-        created_at: event.createdAt ?? event.created_at,
-        updated_at: event.updatedAt ?? event.updated_at,
-        reminder_time: event.reminderMinutes ?? event.reminderTime ?? event.reminder_time,
-        creator_name: event.creatorName ?? event.creator_name,
-        department_name: event.departmentName ?? event.department_name,
-        team_name: event.teamName ?? event.team_name,
-        user_response: event.userResponse ?? event.user_response,
-      })) as CalendarEvent[];
+      events = events.map(mapV2EventFields);
     }
 
     console.info('[CALENDAR] Formatted events for display:', events);
@@ -1598,6 +1640,338 @@ function getResponseText(response: string): string {
 /**
  * View a specific event
  */
+// Helper: Ensure user data is loaded
+function ensureUserDataLoaded(): void {
+  if (currentUserId === null || currentUserId === 0) {
+    const userStr = localStorage.getItem('user');
+    if (userStr !== null && userStr !== '') {
+      try {
+        const user = JSON.parse(userStr) as UserData;
+        currentUserId = user.id;
+        isAdmin = user.role === 'admin' || user.role === 'root';
+        console.info('[CALENDAR] Set from localStorage - currentUserId:', currentUserId, 'isAdmin:', isAdmin);
+      } catch (error) {
+        console.error('Error parsing user from localStorage:', error);
+      }
+    }
+  }
+}
+
+// Helper: Fetch event data from API
+async function fetchEventData(eventId: number, token: string): Promise<CalendarEvent> {
+  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+  const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+    throw new Error('Failed to load event details');
+  }
+
+  const data = (await response.json()) as unknown;
+  return normalizeEventData(data, useV2);
+}
+
+// Helper: Normalize event data from API response
+function normalizeEventData(data: unknown, useV2: boolean): CalendarEvent {
+  let eventData: CalendarEvent;
+
+  if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+    const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
+    if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
+      eventData = v2Data.data.event;
+    } else {
+      eventData = v2Data.data as CalendarEvent;
+    }
+  } else if (typeof data === 'object' && data !== null && 'data' in data) {
+    const v1Data = data as { data: CalendarEvent };
+    eventData = v1Data.data;
+  } else {
+    eventData = data as CalendarEvent;
+  }
+
+  if (useV2) {
+    return mapV2EventToV1Format(eventData);
+  }
+  return eventData;
+}
+
+// Helper: Map V2 API fields to V1 format
+function mapV2EventToV1Format(eventData: CalendarEvent): CalendarEvent {
+  return {
+    ...eventData,
+    start_time: eventData.startTime ?? eventData.start_time,
+    end_time: eventData.endTime ?? eventData.end_time,
+    all_day: eventData.allDay ?? eventData.all_day,
+    org_level: eventData.orgLevel ?? eventData.org_level,
+    org_id: eventData.orgId ?? eventData.org_id,
+    created_by: eventData.createdBy ?? eventData.created_by,
+    created_at: eventData.createdAt ?? eventData.created_at,
+    updated_at: eventData.updatedAt ?? eventData.updated_at,
+    reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
+    creator_name: eventData.creatorName ?? eventData.creator_name,
+    department_name: eventData.departmentName ?? eventData.department_name,
+    team_name: eventData.teamName ?? eventData.team_name,
+    user_response: eventData.userResponse ?? eventData.user_response,
+  };
+}
+
+// Helper: Format event dates
+interface FormattedDates {
+  formattedStartDate: string;
+  formattedEndDate: string;
+  formattedStartTime: string;
+  formattedEndTime: string;
+}
+
+function formatEventDates(event: CalendarEvent): FormattedDates {
+  const startDate = new Date(event.start_time);
+  const endDate = new Date(event.end_time);
+
+  const dateOptions: Intl.DateTimeFormatOptions = {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  };
+
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: '2-digit',
+    minute: '2-digit',
+  };
+
+  return {
+    formattedStartDate: startDate.toLocaleDateString('de-DE', dateOptions),
+    formattedEndDate: endDate.toLocaleDateString('de-DE', dateOptions),
+    formattedStartTime: startDate.toLocaleTimeString('de-DE', timeOptions),
+    formattedEndTime: endDate.toLocaleTimeString('de-DE', timeOptions),
+  };
+}
+
+// Helper: Get event level text
+function getEventLevelText(event: CalendarEvent): string {
+  if (event.org_level === 'company') {
+    return 'Firmentermin';
+  }
+  if (event.org_level === 'department') {
+    return `Abteilungstermin${event.department_name !== undefined && event.department_name !== '' ? `: ${event.department_name}` : ''}`;
+  }
+  if (event.org_level === 'team') {
+    return `Teamtermin${event.team_name !== undefined && event.team_name !== '' ? `: ${event.team_name}` : ''}`;
+  }
+  return 'Persönlicher Termin';
+}
+
+// Helper: Check if event is all day
+function isAllDayEvent(event: CalendarEvent): boolean {
+  return event.all_day === true || event.all_day === 1 || event.all_day === '1';
+}
+
+// Helper: Build event details section
+function buildEventDetailsSection(event: CalendarEvent, dates: FormattedDates, levelText: string): string {
+  const isAllDay = isAllDayEvent(event);
+  const icon = isAllDay ? 'calendar-day' : 'clock';
+  const title = event.title !== '' ? event.title : 'Unbenannter Termin';
+  const description =
+    event.description !== undefined && event.description !== '' ? `<p>${escapeHtml(event.description)}</p>` : '';
+
+  const startTime = isAllDay ? dates.formattedStartDate : `${dates.formattedStartDate} um ${dates.formattedStartTime}`;
+  const endTime = isAllDay ? dates.formattedEndDate : `${dates.formattedEndDate} um ${dates.formattedEndTime}`;
+
+  const locationSection =
+    event.location !== undefined && event.location !== ''
+      ? `
+      <div class="detail-item">
+        <i class="fas fa-map-marker-alt"></i>
+        <span><strong>Ort:</strong> ${escapeHtml(event.location)}</span>
+      </div>`
+      : '';
+
+  return `
+    <h3>
+      <i class="fas fa-${icon}"></i>
+      ${escapeHtml(title)}
+    </h3>
+    ${description}
+
+    <div class="event-details-grid">
+      <div class="detail-item">
+        <i class="fas fa-calendar"></i>
+        <span><strong>Beginn:</strong> ${startTime}</span>
+      </div>
+      <div class="detail-item">
+        <i class="fas fa-calendar-check"></i>
+        <span><strong>Ende:</strong> ${endTime}</span>
+      </div>
+      ${locationSection}
+      <div class="detail-item">
+        <i class="fas fa-layer-group"></i>
+        <span><strong>Ebene:</strong> ${levelText}</span>
+      </div>
+      <div class="detail-item">
+        <i class="fas fa-user"></i>
+        <span><strong>Erstellt von:</strong> ${escapeHtml(event.creator_name ?? 'Unknown')}</span>
+      </div>
+    </div>
+  `;
+}
+
+// Helper: Build attendee list section
+function buildAttendeeListSection(
+  attendees: {
+    userId?: number;
+    user_id?: number;
+    firstName?: string;
+    first_name?: string;
+    lastName?: string;
+    last_name?: string;
+    username?: string;
+    responseStatus?: string;
+    response?: string;
+  }[],
+): string {
+  if (attendees.length === 0) {
+    return '';
+  }
+
+  const attendeeItems = attendees
+    .map((attendee) => {
+      const firstName = attendee.firstName ?? attendee.first_name ?? '';
+      const lastName = attendee.lastName ?? attendee.last_name ?? '';
+      const username = attendee.username ?? '';
+      const responseStatus = attendee.responseStatus ?? attendee.response ?? 'pending';
+
+      const name =
+        `${firstName} ${lastName}`.trim() !== ''
+          ? `${firstName} ${lastName}`.trim()
+          : username !== ''
+            ? username
+            : 'Unknown';
+
+      const statusIcon = getAttendeeStatusIcon(responseStatus);
+
+      return `
+        <div class="attendee-item">
+          <span>${escapeHtml(name)}</span>
+          <span class="attendee-status status-${responseStatus}" title="${getResponseText(responseStatus)}">
+            ${statusIcon}
+          </span>
+        </div>
+      `;
+    })
+    .join('');
+
+  return `
+    <h4>Teilnehmer (${attendees.length})</h4>
+    <div class="attendee-list">
+      ${attendeeItems}
+    </div>
+  `;
+}
+
+// Helper: Build user response buttons
+function buildUserResponseButtons(event: CalendarEvent): string {
+  if (!event.attendees) return '';
+
+  const userAttendee = event.attendees.find((a) => {
+    const userId = a.userId ?? a.user_id;
+    return userId === currentUserId;
+  });
+
+  if (!userAttendee) return '';
+
+  const currentResponse = userAttendee.responseStatus ?? userAttendee.response ?? 'pending';
+
+  return `
+    <div class="response-buttons">
+      <h4>Ihre Antwort</h4>
+      <div class="btn-group">
+        <button class="btn ${currentResponse === 'accepted' ? 'btn-success' : 'btn-outline-success'}" data-action="respond-modal" data-event-id="${event.id}" data-response="accepted">
+          <i class="fas fa-check"></i> Zusagen
+        </button>
+        <button class="btn ${currentResponse === 'tentative' ? 'btn-warning' : 'btn-outline-warning'}" data-action="respond-modal" data-event-id="${event.id}" data-response="tentative">
+          <i class="fas fa-question"></i> Vielleicht
+        </button>
+        <button class="btn ${currentResponse === 'declined' ? 'btn-danger' : 'btn-outline-danger'}" data-action="respond-modal" data-event-id="${event.id}" data-response="declined">
+          <i class="fas fa-times"></i> Absagen
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Helper: Build action buttons
+function buildActionButtons(event: CalendarEvent): string {
+  const canEdit = event.created_by === currentUserId;
+  const canDelete = event.created_by === currentUserId || isAdmin;
+
+  if (canEdit) {
+    return `
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-action="edit-event" data-event-id="${event.id}">
+          <i class="fas fa-edit"></i> Bearbeiten
+        </button>
+        <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
+          <i class="fas fa-trash"></i> Löschen
+        </button>
+        <button class="btn btn-secondary" data-action="close">
+          <i class="fas fa-times"></i> Schließen
+        </button>
+      </div>
+    `;
+  }
+
+  if (canDelete) {
+    return `
+      <div class="modal-actions">
+        <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
+          <i class="fas fa-trash"></i> Löschen
+        </button>
+        <button class="btn btn-secondary" data-action="close">
+          <i class="fas fa-times"></i> Schließen
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="modal-actions">
+      <button class="btn btn-secondary" data-action="close">
+        <i class="fas fa-times"></i> Schließen
+      </button>
+    </div>
+  `;
+}
+
+// Helper: Build complete event modal content
+function buildEventModalContent(event: CalendarEvent, dates: FormattedDates): string {
+  const levelText = getEventLevelText(event);
+
+  console.info(
+    '[CALENDAR] viewEvent - created_by:',
+    event.created_by,
+    'currentUserId:',
+    currentUserId,
+    'isAdmin:',
+    isAdmin,
+  );
+
+  const detailsSection = buildEventDetailsSection(event, dates, levelText);
+  const attendeeSection = buildAttendeeListSection(event.attendees ?? []);
+  const responseButtons = buildUserResponseButtons(event);
+  const actionButtons = buildActionButtons(event);
+
+  return detailsSection + attendeeSection + responseButtons + actionButtons;
+}
+
 async function viewEvent(eventId: number): Promise<void> {
   try {
     // Get token from localStorage
@@ -1608,267 +1982,16 @@ async function viewEvent(eventId: number): Promise<void> {
     }
 
     // Ensure currentUserId and isAdmin are set
-    if (currentUserId === null || currentUserId === 0) {
-      const userStr = localStorage.getItem('user');
-      if (userStr !== null && userStr !== '') {
-        try {
-          const user = JSON.parse(userStr) as UserData;
-          currentUserId = user.id;
-          isAdmin = user.role === 'admin' || user.role === 'root';
-          console.info('[CALENDAR] Set from localStorage - currentUserId:', currentUserId, 'isAdmin:', isAdmin);
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
-        }
-      }
-    }
+    ensureUserDataLoaded();
 
-    // Determine API endpoint based on feature flag
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
-
-    // Fetch event details with authentication
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        window.location.href = '/login';
-        throw new Error('Unauthorized');
-      }
-      throw new Error('Failed to load event details');
-    }
-
-    const data = (await response.json()) as unknown;
-    // v2 API returns data.data.event, v1 API returns data directly
-    let eventData: CalendarEvent;
-    if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
-      const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
-      if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
-        eventData = v2Data.data.event;
-      } else {
-        eventData = v2Data.data as CalendarEvent;
-      }
-    } else if (typeof data === 'object' && data !== null && 'data' in data) {
-      const v1Data = data as { data: CalendarEvent };
-      eventData = v1Data.data;
-    } else {
-      eventData = data as CalendarEvent;
-    }
-
-    // Map v2 API camelCase to snake_case for consistency
-    let event: CalendarEvent;
-    if (useV2) {
-      event = {
-        ...eventData,
-        start_time: eventData.startTime ?? eventData.start_time,
-        end_time: eventData.endTime ?? eventData.end_time,
-        all_day: eventData.allDay ?? eventData.all_day,
-        org_level: eventData.orgLevel ?? eventData.org_level,
-        org_id: eventData.orgId ?? eventData.org_id,
-        created_by: eventData.createdBy ?? eventData.created_by,
-        created_at: eventData.createdAt ?? eventData.created_at,
-        updated_at: eventData.updatedAt ?? eventData.updated_at,
-        reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
-        creator_name: eventData.creatorName ?? eventData.creator_name,
-        department_name: eventData.departmentName ?? eventData.department_name,
-        team_name: eventData.teamName ?? eventData.team_name,
-        user_response: eventData.userResponse ?? eventData.user_response,
-      };
-    } else {
-      event = eventData;
-    }
+    // Fetch and normalize event data
+    const event = await fetchEventData(eventId, token);
 
     // Format dates
-    const startDate = new Date(event.start_time);
-    const endDate = new Date(event.end_time);
-
-    const formattedStartDate = startDate.toLocaleDateString('de-DE', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    const formattedEndDate = endDate.toLocaleDateString('de-DE', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-
-    const formattedStartTime = startDate.toLocaleTimeString('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-    const formattedEndTime = endDate.toLocaleTimeString('de-DE', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-    // Determine level text
-    let levelText = 'Persönlicher Termin';
-    if (event.org_level === 'company') {
-      levelText = 'Firmentermin';
-    } else if (event.org_level === 'department') {
-      levelText = `Abteilungstermin${event.department_name !== undefined && event.department_name !== '' ? `: ${event.department_name}` : ''}`;
-    } else if (event.org_level === 'team') {
-      levelText = `Teamtermin${event.team_name !== undefined && event.team_name !== '' ? `: ${event.team_name}` : ''}`;
-    }
+    const dates = formatEventDates(event);
 
     // Build modal content
-    let modalContent = `
-      <h3>
-        <i class="fas fa-${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? 'calendar-day' : 'clock'}"></i>
-        ${escapeHtml(event.title !== '' ? event.title : 'Unbenannter Termin')}
-      </h3>
-      ${event.description !== undefined && event.description !== '' ? `<p>${escapeHtml(event.description)}</p>` : ''}
-
-      <div class="event-details-grid">
-        <div class="detail-item">
-          <i class="fas fa-calendar"></i>
-          <span><strong>Beginn:</strong> ${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? formattedStartDate : `${formattedStartDate} um ${formattedStartTime}`}</span>
-        </div>
-        <div class="detail-item">
-          <i class="fas fa-calendar-check"></i>
-          <span><strong>Ende:</strong> ${event.all_day === true || event.all_day === 1 || event.all_day === '1' ? formattedEndDate : `${formattedEndDate} um ${formattedEndTime}`}</span>
-        </div>
-        ${
-          event.location !== undefined && event.location !== ''
-            ? `
-        <div class="detail-item">
-          <i class="fas fa-map-marker-alt"></i>
-          <span><strong>Ort:</strong> ${escapeHtml(event.location)}</span>
-        </div>`
-            : ''
-        }
-        <div class="detail-item">
-          <i class="fas fa-layer-group"></i>
-          <span><strong>Ebene:</strong> ${levelText}</span>
-        </div>
-        <div class="detail-item">
-          <i class="fas fa-user"></i>
-          <span><strong>Erstellt von:</strong> ${escapeHtml(event.creator_name ?? 'Unknown')}</span>
-        </div>
-      </div>
-    `;
-
-    // Add attendee list if available
-    if (event.attendees && event.attendees.length > 0) {
-      modalContent += `
-        <h4>Teilnehmer (${event.attendees.length})</h4>
-        <div class="attendee-list">
-      `;
-
-      event.attendees.forEach((attendee) => {
-        // Handle both v1 and v2 API field names
-        const firstName = attendee.firstName ?? attendee.first_name ?? '';
-        const lastName = attendee.lastName ?? attendee.last_name ?? '';
-        const username = attendee.username ?? '';
-        // userId variable removed - not used
-        const responseStatus = attendee.responseStatus ?? attendee.response ?? 'pending';
-
-        const name =
-          `${firstName} ${lastName}`.trim() !== ''
-            ? `${firstName} ${lastName}`.trim()
-            : username !== ''
-              ? username
-              : 'Unknown';
-        const statusIcon = getAttendeeStatusIcon(responseStatus);
-        modalContent += `
-          <div class="attendee-item">
-            <span>${escapeHtml(name)}</span>
-            <span class="attendee-status status-${responseStatus}" title="${getResponseText(responseStatus)}">
-              ${statusIcon}
-            </span>
-          </div>
-        `;
-      });
-
-      modalContent += '</div>';
-    }
-
-    // Add user response buttons
-    if (
-      event.attendees?.some((a) => {
-        const userId = a.userId ?? a.user_id;
-        return userId === currentUserId;
-      }) === true
-    ) {
-      const currentAttendee = event.attendees.find((a) => {
-        const userId = a.userId ?? a.user_id;
-        return userId === currentUserId;
-      });
-      const currentResponse = currentAttendee?.responseStatus ?? currentAttendee?.response ?? 'pending';
-
-      modalContent += `
-        <div class="response-buttons">
-          <h4>Ihre Antwort</h4>
-          <div class="btn-group">
-            <button class="btn ${currentResponse === 'accepted' ? 'btn-success' : 'btn-outline-success'}" data-action="respond-modal" data-event-id="${event.id}" data-response="accepted">
-              <i class="fas fa-check"></i> Zusagen
-            </button>
-            <button class="btn ${currentResponse === 'tentative' ? 'btn-warning' : 'btn-outline-warning'}" data-action="respond-modal" data-event-id="${event.id}" data-response="tentative">
-              <i class="fas fa-question"></i> Vielleicht
-            </button>
-            <button class="btn ${currentResponse === 'declined' ? 'btn-danger' : 'btn-outline-danger'}" data-action="respond-modal" data-event-id="${event.id}" data-response="declined">
-              <i class="fas fa-times"></i> Absagen
-            </button>
-          </div>
-        </div>
-      `;
-    }
-
-    // Debug output to check values
-    console.info(
-      '[CALENDAR] viewEvent - created_by:',
-      event.created_by,
-      'currentUserId:',
-      currentUserId,
-      'isAdmin:',
-      isAdmin,
-    );
-
-    // Add action buttons based on permissions
-    // Only creator can edit, but creator or admin can delete
-    if (event.created_by === currentUserId) {
-      modalContent += `
-        <div class="modal-actions">
-          <button class="btn btn-primary" data-action="edit-event" data-event-id="${event.id}">
-            <i class="fas fa-edit"></i> Bearbeiten
-          </button>
-          <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
-            <i class="fas fa-trash"></i> Löschen
-          </button>
-          <button class="btn btn-secondary" data-action="close">
-            <i class="fas fa-times"></i> Schließen
-          </button>
-        </div>
-      `;
-    } else if (isAdmin) {
-      // Admin can delete but not edit
-      modalContent += `
-        <div class="modal-actions">
-          <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
-            <i class="fas fa-trash"></i> Löschen
-          </button>
-          <button class="btn btn-secondary" data-action="close">
-            <i class="fas fa-times"></i> Schließen
-          </button>
-        </div>
-      `;
-    } else {
-      modalContent += `
-        <div class="modal-actions">
-          <button class="btn btn-secondary" data-action="close">
-            <i class="fas fa-times"></i> Schließen
-          </button>
-        </div>
-      `;
-    }
+    const modalContent = buildEventModalContent(event, dates);
 
     // Show modal with content
     modalManager.show('eventDetailModal', {
@@ -1963,20 +2086,22 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
 }
 
 /**
- * Open event form for creating/editing
+ * Check if user has permission to create events
  */
-function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date, allDay?: boolean): void {
-  console.info('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
-
-  // Check user role - only admins and root can create events
+function checkEventPermission(): boolean {
   const userRole = localStorage.getItem('userRole');
   if (userRole !== 'admin' && userRole !== 'root') {
     console.warn('Calendar: Employees cannot create events');
     showError('Sie haben keine Berechtigung, Termine zu erstellen.');
-    return;
+    return false;
   }
+  return true;
+}
 
-  // Check if modalManager exists
+/**
+ * Show event form modal
+ */
+function showEventModal(): HTMLElement | null {
   console.info('Calendar: modalManager exists:', typeof modalManager !== 'undefined');
   console.info('Calendar: modalManager.show exists:', typeof modalManager.show === 'function');
 
@@ -1991,6 +2116,116 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
 
   if (!modal) {
     console.error('Calendar: Failed to show eventFormModal!');
+    return null;
+  }
+
+  return modal;
+}
+
+/**
+ * Initialize form for new event
+ */
+function initializeNewEventForm(modal: HTMLElement, startDate?: Date, endDate?: Date, allDay?: boolean): void {
+  // Update modal title
+  const modalTitle = modal.querySelector('.modal-title');
+  if (modalTitle) {
+    modalTitle.textContent = 'Neuer Termin';
+  }
+
+  // Set default org level
+  const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
+  const selectedOrgLevelSpan = $$('#selectedOrgLevel');
+  if (orgLevelInput) orgLevelInput.value = 'company';
+  if (selectedOrgLevelSpan) selectedOrgLevelSpan.textContent = 'Firma';
+
+  // Setup company attendees UI
+  setTimeout(() => {
+    setupCompanyAttendeesUI();
+  }, 50);
+
+  // Set dates if provided
+  if (startDate) {
+    setEventDateTime('#eventStartDate', '#eventStartTime', startDate, allDay);
+  }
+  if (endDate) {
+    setEventDateTime('#eventEndDate', '#eventEndTime', endDate, allDay);
+  }
+
+  // Setup all-day checkbox
+  const allDayCheckbox = $$('#eventAllDay') as HTMLInputElement | null;
+  if (allDayCheckbox && allDay !== undefined) {
+    allDayCheckbox.checked = allDay;
+    const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
+    timeInputs.forEach((input) => {
+      input.disabled = allDay;
+    });
+  }
+
+  updateOrgIdDropdown('personal');
+}
+
+/**
+ * Setup company attendees UI
+ */
+function setupCompanyAttendeesUI(): void {
+  const attendeesGroup = $$('#attendeesGroup');
+  const attendeesContainer = $$('#attendeesContainer');
+  const addAttendeeBtn = $$('#addAttendeeBtn');
+
+  if (attendeesGroup) attendeesGroup.style.display = 'block';
+  if (addAttendeeBtn) addAttendeeBtn.style.display = 'none';
+  if (attendeesContainer) {
+    attendeesContainer.innerHTML =
+      '<p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>';
+  }
+
+  const departmentGroup = $$('#departmentGroup');
+  const teamGroup = $$('#teamGroup');
+  if (departmentGroup) departmentGroup.style.display = 'none';
+  if (teamGroup) teamGroup.style.display = 'none';
+}
+
+/**
+ * Set event date and time inputs
+ */
+function setEventDateTime(dateSelector: string, timeSelector: string, date: Date, allDay?: boolean): void {
+  const dateInput = $$(dateSelector) as HTMLInputElement | null;
+  const timeInput = $$(timeSelector) as HTMLInputElement | null;
+
+  if (dateInput) {
+    dateInput.value = formatDateForInput(date);
+  }
+  if (allDay !== true && timeInput) {
+    timeInput.value = formatTimeForInput(date);
+  }
+}
+
+/**
+ * Initialize form for editing event
+ */
+function initializeEditEventForm(modal: HTMLElement, eventId: number): void {
+  const modalTitle = modal.querySelector('.modal-title');
+  if (modalTitle) {
+    modalTitle.textContent = 'Termin bearbeiten';
+  }
+  updateSelectedAttendees();
+  void loadEventForEdit(eventId);
+}
+
+/**
+ * Open event form for creating/editing
+ */
+function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date, allDay?: boolean): void {
+  console.info('Calendar: openEventForm called with:', { eventId, startDate, endDate, allDay });
+
+  // Check permissions
+  if (!checkEventPermission()) {
+    return;
+  }
+
+  // Show modal
+  const modal = showEventModal();
+  if (!modal) {
     return;
   }
 
@@ -2000,104 +2235,18 @@ function openEventForm(eventId?: number | null, startDate?: Date, endDate?: Date
     form.reset();
   }
 
-  // No color selection needed anymore - color is determined by org_level
-
-  // Setup event listeners for modal buttons
+  // Setup event listeners
   setupModalEventListeners();
 
   // Clear attendees
   selectedAttendees = [];
 
-  // Set default org level and show info message
-  const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
-  const selectedOrgLevelSpan = $$('#selectedOrgLevel');
-
-  if (eventId === undefined || eventId === null) {
-    // For new events, set default to company and show appropriate UI
-    if (orgLevelInput) orgLevelInput.value = 'company';
-    if (selectedOrgLevelSpan) selectedOrgLevelSpan.textContent = 'Firma';
-
-    // Use setTimeout to ensure DOM is fully rendered before updating
-    setTimeout(() => {
-      // Show attendees section with company info by default
-      const attendeesGroup = $$('#attendeesGroup');
-      const attendeesContainer = $$('#attendeesContainer');
-      const addAttendeeBtn = $$('#addAttendeeBtn');
-
-      if (attendeesGroup) attendeesGroup.style.display = 'block';
-      if (addAttendeeBtn) addAttendeeBtn.style.display = 'none'; // Hide for company events
-      if (attendeesContainer) {
-        attendeesContainer.innerHTML =
-          '<p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>';
-      }
-
-      // Also update the department/team groups visibility for company events
-      const departmentGroup = $$('#departmentGroup');
-      const teamGroup = $$('#teamGroup');
-      if (departmentGroup) departmentGroup.style.display = 'none';
-      if (teamGroup) teamGroup.style.display = 'none';
-    }, 50);
-
-    // Don't call updateSelectedAttendees for company events as it would overwrite the info text
-  } else {
-    // Only update attendees display for edit mode
-    updateSelectedAttendees();
-  }
-
+  // Initialize form based on mode (new or edit)
   if (eventId !== undefined && eventId !== null) {
-    // Update modal title for editing
-    const modalTitle = modal.querySelector('.modal-title');
-    if (modalTitle) {
-      modalTitle.textContent = 'Termin bearbeiten';
-    }
-    // Load event data for editing
-    void loadEventForEdit(eventId);
+    initializeEditEventForm(modal, eventId);
   } else {
-    // Update modal title for new event
-    const modalTitle = modal.querySelector('.modal-title');
-    if (modalTitle) {
-      modalTitle.textContent = 'Neuer Termin';
-    }
-    // New event
-    if (startDate) {
-      const startInput = $$('#eventStartDate') as HTMLInputElement | null;
-      const startTimeInput = $$('#eventStartTime') as HTMLInputElement | null;
-
-      if (startInput) {
-        startInput.value = formatDateForInput(startDate);
-      }
-
-      if (allDay !== true && startTimeInput) {
-        startTimeInput.value = formatTimeForInput(startDate);
-      }
-    }
-
-    if (endDate) {
-      const endInput = $$('#eventEndDate') as HTMLInputElement | null;
-      const endTimeInput = $$('#eventEndTime') as HTMLInputElement | null;
-
-      if (endInput) {
-        endInput.value = formatDateForInput(endDate);
-      }
-
-      if (allDay !== true && endTimeInput) {
-        endTimeInput.value = formatTimeForInput(endDate);
-      }
-    }
-
-    const allDayCheckbox = $$('#eventAllDay') as HTMLInputElement | null;
-    if (allDayCheckbox && allDay !== undefined) {
-      allDayCheckbox.checked = allDay;
-      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
-      timeInputs.forEach((input) => {
-        input.disabled = allDay;
-      });
-    }
-
-    updateOrgIdDropdown('personal');
+    initializeNewEventForm(modal, startDate, endDate, allDay);
   }
-
-  // Modal is already shown above, no need to show again
 }
 
 /**
@@ -2120,119 +2269,137 @@ function formatTimeForInput(date: Date): string {
 }
 
 /**
+ * Clear container content
+ */
+function clearContainer(container: HTMLElement): void {
+  while (container.firstChild) {
+    container.firstChild.remove();
+  }
+}
+
+/**
+ * Create department dropdown option
+ */
+function createDepartmentOption(dept: { id: number; name: string }, action: string): HTMLDivElement {
+  const option = document.createElement('div');
+  option.className = 'dropdown-option';
+  option.dataset.value = dept.id.toString();
+  option.textContent = dept.name;
+  option.dataset.action = action;
+  option.dataset.deptId = dept.id.toString();
+  option.dataset.deptName = dept.name;
+  return option;
+}
+
+/**
+ * Get attendee info message based on level
+ */
+function getAttendeeInfoMessage(level: string): string {
+  switch (level) {
+    case 'company':
+      return ' Alle Mitarbeiter der Firma werden automatisch eingeladen';
+    case 'department':
+      return ' Alle Mitarbeiter der ausgewählten Abteilung werden automatisch eingeladen';
+    case 'team':
+      return ' Alle Mitglieder des ausgewählten Teams werden automatisch eingeladen';
+    default:
+      return '';
+  }
+}
+
+/**
+ * Setup personal attendees UI
+ */
+function setupPersonalAttendeesUI(
+  attendeesGroup: HTMLElement,
+  addAttendeeBtn: HTMLElement | null,
+  attendeesContainer: HTMLElement | null,
+): void {
+  attendeesGroup.style.display = 'block';
+  if (addAttendeeBtn) addAttendeeBtn.style.display = 'inline-flex';
+
+  if (attendeesContainer && selectedAttendees.length === 0) {
+    clearContainer(attendeesContainer);
+    const noPara = document.createElement('p');
+    noPara.className = 'text-muted';
+    noPara.textContent = 'Keine Teilnehmer ausgewählt';
+    attendeesContainer.append(noPara);
+  }
+}
+
+/**
+ * Setup automatic attendees UI
+ */
+function setupAutomaticAttendeesUI(
+  level: string,
+  attendeesGroup: HTMLElement,
+  addAttendeeBtn: HTMLElement | null,
+  attendeesContainer: HTMLElement | null,
+): void {
+  attendeesGroup.style.display = 'block';
+  if (addAttendeeBtn) addAttendeeBtn.style.display = 'none';
+
+  if (attendeesContainer) {
+    clearContainer(attendeesContainer);
+    const infoPara = document.createElement('p');
+    infoPara.className = 'text-info';
+    const infoIcon = document.createElement('i');
+    infoIcon.className = 'fas fa-info-circle';
+    infoPara.append(infoIcon);
+    infoPara.append(document.createTextNode(getAttendeeInfoMessage(level)));
+    attendeesContainer.append(infoPara);
+  }
+
+  selectedAttendees = [];
+}
+
+/**
+ * Populate department dropdown
+ */
+function populateDepartmentDropdown(dropdown: HTMLElement | null, action: string): void {
+  if (!dropdown) return;
+
+  departments.forEach((dept) => {
+    const option = createDepartmentOption(dept, action);
+    dropdown.append(option);
+  });
+}
+
+/**
  * Update organization ID dropdown based on level
  */
 function updateOrgIdDropdown(level: string): void {
-  // Handle department dropdown
   const departmentGroup = $$('#departmentGroup');
   const departmentDropdown = $$('#departmentDropdown');
-
-  // Handle team dropdown
   const teamGroup = $$('#teamGroup');
   const teamDropdown = $$('#teamDropdown');
-
-  // Handle attendees section
   const attendeesGroup = $$('#attendeesGroup');
   const addAttendeeBtn = $$('#addAttendeeBtn');
   const attendeesContainer = $$('#attendeesContainer');
 
-  // Clear dropdowns
+  // Clear and hide dropdowns
   if (departmentDropdown) departmentDropdown.innerHTML = '';
   if (teamDropdown) teamDropdown.innerHTML = '';
-
-  // Hide all by default
   if (departmentGroup) departmentGroup.style.display = 'none';
   if (teamGroup) teamGroup.style.display = 'none';
 
-  // Handle attendees visibility based on org_level
+  // Handle attendees section
   if (attendeesGroup) {
     if (level === 'personal') {
-      // Show attendees section for personal events
-      attendeesGroup.style.display = 'block';
-      if (addAttendeeBtn) addAttendeeBtn.style.display = 'inline-flex';
-      if (attendeesContainer && selectedAttendees.length === 0) {
-        // Clear existing content
-        while (attendeesContainer.firstChild) {
-          attendeesContainer.firstChild.remove();
-        }
-        const noPara = document.createElement('p');
-        noPara.className = 'text-muted';
-        noPara.textContent = 'Keine Teilnehmer ausgewählt';
-        attendeesContainer.append(noPara);
-      }
+      setupPersonalAttendeesUI(attendeesGroup, addAttendeeBtn, attendeesContainer);
     } else {
-      // Hide attendees section for other event types
-      attendeesGroup.style.display = 'block'; // Keep container visible for info text
-      if (addAttendeeBtn) addAttendeeBtn.style.display = 'none';
-
-      // Show info text about automatic attendees
-      if (attendeesContainer) {
-        // Clear existing content
-        while (attendeesContainer.firstChild) {
-          attendeesContainer.firstChild.remove();
-        }
-        // Create info paragraph
-        const infoPara = document.createElement('p');
-        infoPara.className = 'text-info';
-        const infoIcon = document.createElement('i');
-        infoIcon.className = 'fas fa-info-circle';
-        infoPara.append(infoIcon);
-        let infoMessage = '';
-        switch (level) {
-          case 'company':
-            infoMessage = ' Alle Mitarbeiter der Firma werden automatisch eingeladen';
-            break;
-          case 'department':
-            infoMessage = ' Alle Mitarbeiter der ausgewählten Abteilung werden automatisch eingeladen';
-            break;
-          case 'team':
-            infoMessage = ' Alle Mitglieder des ausgewählten Teams werden automatisch eingeladen';
-            break;
-        }
-        infoPara.append(document.createTextNode(infoMessage));
-        attendeesContainer.append(infoPara);
-      }
-
-      // Clear selected attendees for non-personal events
-      selectedAttendees = [];
+      setupAutomaticAttendeesUI(level, attendeesGroup, addAttendeeBtn, attendeesContainer);
     }
   }
 
-  if (level === 'personal' || level === 'company') {
-    // No additional selection needed
-  } else if (level === 'department') {
-    // Show only department selection
-    if (departmentGroup) {
-      departmentGroup.style.display = 'block';
-
-      // Populate dropdown with departments
-      departments.forEach((dept) => {
-        const option = document.createElement('div');
-        option.className = 'dropdown-option';
-        option.dataset.value = dept.id.toString();
-        option.textContent = dept.name;
-        option.dataset.action = 'select-department';
-        option.dataset.deptId = dept.id.toString();
-        option.dataset.deptName = dept.name;
-        departmentDropdown?.append(option);
-      });
-    }
+  // Show appropriate dropdowns
+  if (level === 'department' && departmentGroup) {
+    departmentGroup.style.display = 'block';
+    populateDepartmentDropdown(departmentDropdown, 'select-department');
   } else if (level === 'team' && departmentGroup && teamGroup) {
-    // Show both department and team selection
     departmentGroup.style.display = 'block';
     teamGroup.style.display = 'block';
-
-    // Populate department dropdown
-    departments.forEach((dept) => {
-      const option = document.createElement('div');
-      option.className = 'dropdown-option';
-      option.dataset.value = dept.id.toString();
-      option.textContent = dept.name;
-      option.dataset.action = 'select-department-with-teams';
-      option.dataset.deptId = dept.id.toString();
-      option.dataset.deptName = dept.name;
-      departmentDropdown?.append(option);
-    });
+    populateDepartmentDropdown(departmentDropdown, 'select-department-with-teams');
   }
 }
 
@@ -2293,148 +2460,366 @@ function loadTeamsForDepartment(departmentId: number): void {
 }
 
 /**
- * Save event
+ * Validate form and authentication
  */
-async function saveEvent(): Promise<void> {
-  console.info('saveEvent called');
-
+function validateFormAndAuth(): { form: HTMLElement; token: string } | null {
   const form = $$('#eventForm');
   if (form === null) {
     console.error('Form not found');
-    return;
+    return null;
   }
 
   const token = getAuthToken();
   if (token === null || token === '') {
     console.error('No token found');
-    return;
+    return null;
   }
 
-  // Get form values directly from elements
-  const titleInput = $$('#eventTitle') as HTMLInputElement | null;
-  const descriptionInput = $$('#eventDescription') as HTMLTextAreaElement | null;
-  const startDateInput = $$('#eventStartDate') as HTMLInputElement | null;
-  const startTimeInput = $$('#eventStartTime') as HTMLInputElement | null;
-  const endDateInput = $$('#eventEndDate') as HTMLInputElement | null;
-  const endTimeInput = $$('#eventEndTime') as HTMLInputElement | null;
-  const allDayInput = $$('#eventAllDay') as HTMLInputElement | null;
-  const locationInput = $$('#eventLocation') as HTMLInputElement | null;
-  const orgLevelInput = $$('#eventOrgLevel') as HTMLInputElement | null;
-  const departmentIdInput = $$('#eventDepartmentId') as HTMLInputElement | null;
-  const teamIdInput = $$('#eventTeamId') as HTMLInputElement | null;
-  const reminderTimeInput = $$('#eventReminderTime') as HTMLInputElement | null;
-  const eventIdInput = $$('#eventId') as HTMLInputElement | null;
+  return { form, token };
+}
 
-  // Validate required fields
+/**
+ * Get all form input values
+ */
+function getFormInputValues(): Record<string, HTMLInputElement | HTMLTextAreaElement | null> {
+  return {
+    titleInput: $$('#eventTitle') as HTMLInputElement | null,
+    descriptionInput: $$('#eventDescription') as HTMLTextAreaElement | null,
+    startDateInput: $$('#eventStartDate') as HTMLInputElement | null,
+    startTimeInput: $$('#eventStartTime') as HTMLInputElement | null,
+    endDateInput: $$('#eventEndDate') as HTMLInputElement | null,
+    endTimeInput: $$('#eventEndTime') as HTMLInputElement | null,
+    allDayInput: $$('#eventAllDay') as HTMLInputElement | null,
+    locationInput: $$('#eventLocation') as HTMLInputElement | null,
+    orgLevelInput: $$('#eventOrgLevel') as HTMLInputElement | null,
+    departmentIdInput: $$('#eventDepartmentId') as HTMLInputElement | null,
+    teamIdInput: $$('#eventTeamId') as HTMLInputElement | null,
+    reminderTimeInput: $$('#eventReminderTime') as HTMLInputElement | null,
+    eventIdInput: $$('#eventId') as HTMLInputElement | null,
+    requiresResponseInput: $$('#eventRequiresResponse') as HTMLInputElement | null,
+  };
+}
+
+/**
+ * Validate required form fields
+ */
+function validateRequiredFields(inputs: Record<string, HTMLInputElement | HTMLTextAreaElement | null>): boolean {
+  const { titleInput, startDateInput, endDateInput, orgLevelInput } = inputs;
+
   if (titleInput?.value === undefined || titleInput.value === '') {
     showError('Bitte geben Sie einen Titel ein');
-    return;
+    return false;
   }
 
   if (startDateInput?.value === undefined || startDateInput.value === '') {
     showError('Bitte wählen Sie ein Startdatum');
-    return;
+    return false;
   }
 
   if (endDateInput?.value === undefined || endDateInput.value === '') {
     showError('Bitte wählen Sie ein Enddatum');
-    return;
+    return false;
   }
 
   if (orgLevelInput?.value === undefined || orgLevelInput.value === '') {
     showError('Bitte wählen Sie aus, wer den Termin sehen soll');
-    return;
+    return false;
   }
 
-  // Set color automatically based on org_level
-  let color = '#3498db'; // Default blue
-  const orgLevel = orgLevelInput.value !== '' ? orgLevelInput.value : 'personal';
+  return true;
+}
+
+/**
+ * Get event color based on org level
+ */
+function getEventColor(orgLevel: string): string {
   switch (orgLevel) {
     case 'company':
-      color = '#3498db'; // Blue for company
-      break;
+      return '#3498db';
     case 'department':
-      color = '#e67e22'; // Orange for department
-      break;
+      return '#e67e22';
     case 'team':
-      color = '#2ecc71'; // Green for team
-      break;
+      return '#2ecc71';
     case 'personal':
-      color = '#9b59b6'; // Purple for personal
-      break;
+      return '#9b59b6';
+    default:
+      return '#3498db';
   }
+}
 
-  // Parse dates and times
-  const startDate = startDateInput.value !== '' ? startDateInput.value : '';
-  const startTime = startTimeInput?.value ?? '';
-  const endDate = endDateInput.value !== '' ? endDateInput.value : '';
-  const endTime = endTimeInput?.value ?? '';
-  const allDay = allDayInput?.checked ?? false;
-
-  // Validate time fields for non-all-day events
+/**
+ * Build date time strings
+ */
+function buildDateTimeStrings(
+  startDate: string,
+  startTime: string,
+  endDate: string,
+  endTime: string,
+  allDay: boolean,
+): { startDateTime: string; endDateTime: string } | null {
   if (!allDay) {
     if (startTime === '') {
       showError('Bitte wählen Sie eine Startzeit');
-      return;
+      return null;
     }
     if (endTime === '') {
       showError('Bitte wählen Sie eine Endzeit');
-      return;
+      return null;
     }
   }
 
-  let startDateTime: string;
-  let endDateTime: string;
+  const startDateTime = allDay ? `${startDate}T00:00:00` : `${startDate}T${startTime}:00`;
+  const endDateTime = allDay ? `${endDate}T23:59:59` : `${endDate}T${endTime}:00`;
 
-  if (allDay) {
-    startDateTime = `${startDate}T00:00:00`;
-    endDateTime = `${endDate}T23:59:59`;
-  } else {
-    startDateTime = `${startDate}T${startTime}:00`;
-    endDateTime = `${endDate}T${endTime}:00`;
-  }
+  return { startDateTime, endDateTime };
+}
 
-  // Get recurrence data
+/**
+ * Build recurrence rule
+ */
+function buildRecurrenceRule(): string {
   const recurrenceTypeElement = $$('#eventRecurrence') as HTMLInputElement | null;
   const recurrenceType = recurrenceTypeElement?.value;
-  let recurrenceRule = '';
 
-  if (recurrenceType !== undefined && recurrenceType !== '') {
-    // Build recurrence rule based on selection
-    const recurrenceEnd = $$('#selectedRecurrenceEnd')?.textContent;
-    const recurrenceCountElement = $$('#recurrenceCount') as HTMLInputElement | null;
-    const recurrenceCount = recurrenceCountElement?.value;
-    const recurrenceEndDateElement = $$('#recurrenceEndDate') as HTMLInputElement | null;
-    const recurrenceEndDate = recurrenceEndDateElement?.value;
-
-    // Build simplified recurrence rule
-    recurrenceRule = recurrenceType;
-
-    if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount !== undefined && recurrenceCount !== '') {
-      recurrenceRule += `;COUNT=${recurrenceCount}`;
-    } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate !== undefined && recurrenceEndDate !== '') {
-      recurrenceRule += `;UNTIL=${recurrenceEndDate}`;
-    }
+  if (recurrenceType === undefined || recurrenceType === '') {
+    return '';
   }
 
-  // Determine department_id and team_id based on org_level
+  let recurrenceRule = recurrenceType;
+  const recurrenceEnd = $$('#selectedRecurrenceEnd')?.textContent;
+  const recurrenceCountElement = $$('#recurrenceCount') as HTMLInputElement | null;
+  const recurrenceCount = recurrenceCountElement?.value;
+  const recurrenceEndDateElement = $$('#recurrenceEndDate') as HTMLInputElement | null;
+  const recurrenceEndDate = recurrenceEndDateElement?.value;
+
+  if (recurrenceEnd === 'Nach ... Wiederholungen' && recurrenceCount !== undefined && recurrenceCount !== '') {
+    recurrenceRule += `;COUNT=${recurrenceCount}`;
+  } else if (recurrenceEnd === 'Am bestimmten Datum' && recurrenceEndDate !== undefined && recurrenceEndDate !== '') {
+    recurrenceRule += `;UNTIL=${recurrenceEndDate}`;
+  }
+
+  return recurrenceRule;
+}
+
+/**
+ * Get department and team IDs
+ */
+function getDepartmentAndTeamIds(
+  orgLevel: string,
+  departmentIdInput: HTMLInputElement | null,
+  teamIdInput: HTMLInputElement | null,
+): { departmentId: number | null; teamId: number | null } {
   let departmentId = null;
   let teamId = null;
 
-  if (orgLevelInput.value === 'department') {
+  if (orgLevel === 'department') {
     departmentId =
-      departmentIdInput !== null && departmentIdInput.value !== ''
+      departmentIdInput?.value !== undefined && departmentIdInput.value !== ''
         ? Number.parseInt(departmentIdInput.value, 10)
         : null;
-  } else if (orgLevelInput.value === 'team') {
+  } else if (orgLevel === 'team') {
     departmentId =
-      departmentIdInput !== null && departmentIdInput.value !== ''
+      departmentIdInput?.value !== undefined && departmentIdInput.value !== ''
         ? Number.parseInt(departmentIdInput.value, 10)
         : null;
-    teamId = teamIdInput !== null && teamIdInput.value !== '' ? Number.parseInt(teamIdInput.value, 10) : null;
+    teamId =
+      teamIdInput?.value !== undefined && teamIdInput.value !== '' ? Number.parseInt(teamIdInput.value, 10) : null;
   }
 
-  // Handle reminder_time properly - check if value is valid number
+  return { departmentId, teamId };
+}
+
+/**
+ * Build event data for v2 API
+ */
+function buildEventDataV2(params: {
+  title: string;
+  description: string;
+  startDateTime: string;
+  endDateTime: string;
+  allDay: boolean;
+  location: string;
+  orgLevel: string;
+  color: string;
+  requiresResponse: boolean;
+  departmentId: number | null;
+  teamId: number | null;
+  reminderTime: number | undefined;
+  recurrenceRule: string;
+}): Record<string, unknown> {
+  const eventData: Record<string, unknown> = {
+    title: params.title,
+    description: params.description,
+    startTime: params.startDateTime,
+    endTime: params.endDateTime,
+    allDay: params.allDay,
+    location: params.location,
+    orgLevel: params.orgLevel,
+    color: params.color,
+    requiresResponse: params.requiresResponse,
+  };
+
+  if (params.departmentId !== null) eventData.departmentId = params.departmentId;
+  if (params.teamId !== null) eventData.teamId = params.teamId;
+  if (params.reminderTime !== undefined) eventData.reminderMinutes = params.reminderTime;
+  if (selectedAttendees.length > 0) eventData.attendeeIds = selectedAttendees;
+  if (params.recurrenceRule !== '') eventData.recurrenceRule = params.recurrenceRule;
+
+  return eventData;
+}
+
+/**
+ * Build event data for v1 API
+ */
+function buildEventDataV1(params: {
+  title: string;
+  description: string;
+  startDateTime: string;
+  endDateTime: string;
+  allDay: boolean;
+  location: string;
+  orgLevel: string;
+  color: string;
+  requiresResponse: boolean;
+  departmentId: number | null;
+  teamId: number | null;
+  reminderTime: number | undefined;
+  recurrenceRule: string;
+}): Record<string, unknown> {
+  const eventData: Record<string, unknown> = {
+    title: params.title,
+    description: params.description,
+    start_time: params.startDateTime,
+    end_time: params.endDateTime,
+    all_day: params.allDay,
+    location: params.location,
+    org_level: params.orgLevel,
+    color: params.color,
+    requires_response: params.requiresResponse,
+  };
+
+  if (params.departmentId !== null) eventData.department_id = params.departmentId;
+  if (params.teamId !== null) eventData.team_id = params.teamId;
+  if (params.reminderTime !== undefined) eventData.reminder_time = params.reminderTime;
+  if (selectedAttendees.length > 0) eventData.attendee_ids = selectedAttendees;
+  if (params.recurrenceRule !== '') eventData.recurrence_rule = params.recurrenceRule;
+
+  // For API v1 compatibility, add org_id
+  if (params.orgLevel === 'department' && params.departmentId !== null) {
+    eventData.org_id = params.departmentId;
+  } else if (params.orgLevel === 'team' && params.teamId !== null) {
+    eventData.org_id = params.teamId;
+  }
+
+  return eventData;
+}
+
+/**
+ * Send save event request
+ */
+async function sendSaveEventRequest(
+  eventData: Record<string, unknown>,
+  eventId: string | undefined,
+  token: string,
+  useV2: boolean,
+): Promise<void> {
+  const url =
+    eventId !== undefined && eventId !== ''
+      ? useV2
+        ? `/api/v2/calendar/events/${eventId}`
+        : `/api/calendar/${eventId}`
+      : useV2
+        ? '/api/v2/calendar/events'
+        : '/api/calendar';
+  const method = eventId !== undefined && eventId !== '' ? 'PUT' : 'POST';
+
+  const response = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(eventData),
+  });
+
+  if (response.ok) {
+    const result = (await response.json()) as { id?: number; message?: string };
+    console.info('[CALENDAR] Save successful:', result);
+    showSuccess(
+      eventId !== undefined && eventId !== '' ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!',
+    );
+    modalManager.hide('eventFormModal');
+    calendar.refetchEvents();
+    void loadUpcomingEvents();
+  } else {
+    const error = (await response.json()) as { message?: string };
+    console.error('[CALENDAR] Save error:', error);
+    showError(error.message ?? 'Fehler beim Speichern des Termins');
+  }
+}
+
+/**
+ * Save event
+ */
+async function saveEvent(): Promise<void> {
+  console.info('saveEvent called');
+
+  // Validate form and auth
+  const authData = validateFormAndAuth();
+  if (!authData) return;
+
+  // Get all form input values
+  const inputs = getFormInputValues();
+
+  // Validate required fields
+  if (!validateRequiredFields(inputs)) return;
+
+  // Extract input values
+  const {
+    titleInput,
+    descriptionInput,
+    startDateInput,
+    startTimeInput,
+    endDateInput,
+    endTimeInput,
+    allDayInput,
+    locationInput,
+    orgLevelInput,
+    departmentIdInput,
+    teamIdInput,
+    reminderTimeInput,
+    eventIdInput,
+    requiresResponseInput,
+  } = inputs;
+
+  // Get form values
+  const orgLevel = orgLevelInput?.value ?? 'personal';
+  const color = getEventColor(orgLevel);
+  const allDay = allDayInput instanceof HTMLInputElement ? allDayInput.checked : false;
+
+  // Build date/time strings
+  const dateTimeResult = buildDateTimeStrings(
+    startDateInput?.value ?? '',
+    startTimeInput?.value ?? '',
+    endDateInput?.value ?? '',
+    endTimeInput?.value ?? '',
+    allDay,
+  );
+  if (!dateTimeResult) return;
+
+  const { startDateTime, endDateTime } = dateTimeResult;
+
+  // Build recurrence rule
+  const recurrenceRule = buildRecurrenceRule();
+
+  // Get department and team IDs
+  const { departmentId, teamId } = getDepartmentAndTeamIds(
+    orgLevel,
+    departmentIdInput instanceof HTMLInputElement ? departmentIdInput : null,
+    teamIdInput instanceof HTMLInputElement ? teamIdInput : null,
+  );
+
+  // Handle reminder time
   let reminderTime = undefined;
   if (reminderTimeInput?.value !== undefined && reminderTimeInput.value !== '') {
     const parsed = Number.parseInt(reminderTimeInput.value, 10);
@@ -2443,107 +2828,174 @@ async function saveEvent(): Promise<void> {
     }
   }
 
-  // Get requires response checkbox
-  const requiresResponseInput = $$('#eventRequiresResponse') as HTMLInputElement | null;
-  const requiresResponse = requiresResponseInput?.checked ?? false;
-
-  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+  // Prepare event data params
+  const eventParams = {
+    title: titleInput?.value ?? '',
+    description: descriptionInput?.value ?? '',
+    startDateTime,
+    endDateTime,
+    allDay,
+    location: locationInput?.value ?? '',
+    orgLevel,
+    color,
+    requiresResponse: requiresResponseInput instanceof HTMLInputElement ? requiresResponseInput.checked : false,
+    departmentId,
+    teamId,
+    reminderTime,
+    recurrenceRule,
+  };
 
   // Build event data based on API version
-  let eventData: Record<string, unknown>;
+  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+  const eventData = useV2 ? buildEventDataV2(eventParams) : buildEventDataV1(eventParams);
 
-  if (useV2) {
-    // v2 API uses camelCase
-    eventData = {
-      title: titleInput.value !== '' ? titleInput.value : '',
-      description: descriptionInput !== null && descriptionInput.value !== '' ? descriptionInput.value : '',
-      startTime: startDateTime, // camelCase for v2
-      endTime: endDateTime, // camelCase for v2
-      allDay, // camelCase for v2
-      location: locationInput !== null && locationInput.value !== '' ? locationInput.value : '',
-      orgLevel: orgLevelInput.value !== '' ? orgLevelInput.value : 'personal', // camelCase for v2
-      color,
-      requiresResponse, // New field for status requests
-    };
+  console.info('Saving event data:', eventData);
 
-    // Only add optional fields if they have values (camelCase)
-    if (departmentId !== null && departmentId !== 0) eventData.departmentId = departmentId;
-    if (teamId !== null && teamId !== 0) eventData.teamId = teamId;
-    if (reminderTime !== undefined) eventData.reminderMinutes = reminderTime; // v2 uses reminderMinutes
-    if (selectedAttendees.length > 0) eventData.attendeeIds = selectedAttendees;
-    if (recurrenceRule !== '') eventData.recurrenceRule = recurrenceRule;
-  } else {
-    // v1 API uses snake_case
-    eventData = {
-      title: titleInput.value !== '' ? titleInput.value : '',
-      description: descriptionInput !== null && descriptionInput.value !== '' ? descriptionInput.value : '',
-      start_time: startDateTime,
-      end_time: endDateTime,
-      all_day: allDay,
-      location: locationInput !== null && locationInput.value !== '' ? locationInput.value : '',
-      org_level: orgLevelInput.value !== '' ? orgLevelInput.value : 'personal',
-      color,
-      requires_response: requiresResponse, // New field for status requests
-    };
-
-    // Only add optional fields if they have values (snake_case)
-    if (departmentId !== null && departmentId !== 0) eventData.department_id = departmentId;
-    if (teamId !== null && teamId !== 0) eventData.team_id = teamId;
-    if (reminderTime !== undefined) eventData.reminder_time = reminderTime;
-    if (selectedAttendees.length > 0) eventData.attendee_ids = selectedAttendees;
-    if (recurrenceRule !== '') eventData.recurrence_rule = recurrenceRule;
-
-    // For API v1 compatibility, add org_id based on org_level
-    if (orgLevelInput.value === 'department' && departmentId !== null && departmentId !== 0) {
-      eventData.org_id = departmentId;
-    } else if (orgLevelInput.value === 'team' && teamId !== null && teamId !== 0) {
-      eventData.org_id = teamId;
-    }
-  }
-
-  console.info('Saving event data:', eventData); // Debug log
-
+  // Send the save request
   try {
-    const eventId = eventIdInput?.value;
-    const url =
-      eventId !== undefined && eventId !== ''
-        ? useV2
-          ? `/api/v2/calendar/events/${eventId}`
-          : `/api/calendar/${eventId}`
-        : useV2
-          ? '/api/v2/calendar/events'
-          : '/api/calendar';
-    const method = eventId !== undefined && eventId !== '' ? 'PUT' : 'POST';
-
-    const response = await fetch(url, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(eventData),
-    });
-
-    if (response.ok) {
-      const result = (await response.json()) as { id?: number; message?: string };
-      console.info('[CALENDAR] Save successful:', result);
-      showSuccess(
-        eventId !== undefined && eventId !== '' ? 'Termin erfolgreich aktualisiert!' : 'Termin erfolgreich erstellt!',
-      );
-      modalManager.hide('eventFormModal');
-
-      // Refresh calendar
-      calendar.refetchEvents();
-      void loadUpcomingEvents();
-    } else {
-      const error = (await response.json()) as { message?: string };
-      console.error('[CALENDAR] Save error:', error);
-      showError(error.message ?? 'Fehler beim Speichern des Termins');
-    }
+    await sendSaveEventRequest(eventData, eventIdInput?.value, authData.token, useV2);
   } catch (error: unknown) {
     console.error('Error saving event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
   }
+}
+
+/**
+ * Fetch event data from API
+ */
+async function fetchEventById(eventId: number, token: string): Promise<unknown> {
+  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
+  const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+
+  const response = await fetch(apiUrl, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch event');
+  }
+
+  return response.json();
+}
+
+/**
+ * Parse event API response and normalize data
+ */
+function parseEventApiResponse(data: unknown, useV2: boolean): CalendarEvent {
+  let eventData: CalendarEvent;
+
+  if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+    const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
+    if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
+      eventData = v2Data.data.event;
+    } else {
+      eventData = v2Data.data as CalendarEvent;
+    }
+  } else if (typeof data === 'object' && data !== null && 'data' in data) {
+    const v1Data = data as { data: CalendarEvent };
+    eventData = v1Data.data;
+  } else {
+    eventData = data as CalendarEvent;
+  }
+
+  // Map v2 API camelCase to snake_case for consistency
+  if (useV2) {
+    return {
+      ...eventData,
+      start_time: eventData.startTime ?? eventData.start_time,
+      end_time: eventData.endTime ?? eventData.end_time,
+      all_day: eventData.allDay ?? eventData.all_day,
+      org_level: eventData.orgLevel ?? eventData.org_level,
+      org_id: eventData.orgId ?? eventData.org_id,
+      created_by: eventData.createdBy ?? eventData.created_by,
+      created_at: eventData.createdAt ?? eventData.created_at,
+      updated_at: eventData.updatedAt ?? eventData.updated_at,
+      reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
+      creator_name: eventData.creatorName ?? eventData.creator_name,
+      department_name: eventData.departmentName ?? eventData.department_name,
+      team_name: eventData.teamName ?? eventData.team_name,
+      user_response: eventData.userResponse ?? eventData.user_response,
+    };
+  }
+
+  return eventData;
+}
+
+/**
+ * Check if current user can edit the event
+ */
+function canUserEditEvent(event: CalendarEvent): boolean {
+  if (currentUserId === null || currentUserId === 0) {
+    const userStr = localStorage.getItem('user');
+    if (userStr !== null && userStr !== '') {
+      try {
+        const user = JSON.parse(userStr) as UserData;
+        currentUserId = user.id;
+      } catch (error) {
+        console.error('Error parsing user from localStorage:', error);
+      }
+    }
+  }
+
+  const createdBy = event.createdBy ?? event.created_by;
+  return createdBy === currentUserId;
+}
+
+/**
+ * Fill event form with basic fields
+ */
+function fillEventFormBasicFields(form: HTMLFormElement, event: CalendarEvent): void {
+  // Set event ID
+  const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement | null;
+  if (eventIdInput !== null && event.id !== 0) {
+    eventIdInput.value = event.id.toString();
+  }
+
+  // Set basic fields
+  const titleInput = form.elements.namedItem('title') as HTMLInputElement;
+  titleInput.value = event.title;
+
+  const descInput = form.elements.namedItem('description') as HTMLTextAreaElement;
+  descInput.value = event.description ?? '';
+
+  const locationInput = form.elements.namedItem('location') as HTMLInputElement;
+  locationInput.value = event.location ?? '';
+}
+
+/**
+ * Fill event form date and time fields
+ */
+function fillEventFormDateTimeFields(form: HTMLFormElement, event: CalendarEvent): void {
+  const startDate = new Date(event.start_time);
+  const endDate = new Date(event.end_time);
+
+  // Set date fields
+  const startDateInput = form.elements.namedItem('start_date') as HTMLInputElement;
+  startDateInput.value = formatDateForInput(startDate);
+
+  const endDateInput = form.elements.namedItem('end_date') as HTMLInputElement;
+  endDateInput.value = formatDateForInput(endDate);
+
+  // Set all day checkbox
+  const allDayCheckbox = form.elements.namedItem('all_day') as HTMLInputElement;
+  allDayCheckbox.checked = Boolean(event.all_day);
+
+  // Set time fields
+  if (event.all_day !== true) {
+    const startTimeInput = form.elements.namedItem('start_time') as HTMLInputElement;
+    startTimeInput.value = formatTimeForInput(startDate);
+
+    const endTimeInput = form.elements.namedItem('end_time') as HTMLInputElement;
+    endTimeInput.value = formatTimeForInput(endDate);
+  }
+
+  // Update time inputs disabled state
+  const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
+  timeInputs.forEach((input) => {
+    input.disabled = Boolean(event.all_day);
+  });
 }
 
 /**
@@ -2555,185 +3007,96 @@ async function loadEventForEdit(eventId: number): Promise<void> {
 
   try {
     const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+    const data = await fetchEventById(eventId, token);
+    const event = parseEventApiResponse(data, useV2);
 
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (response.ok) {
-      const data = (await response.json()) as unknown;
-      // v2 API returns data.data.event, v1 API returns data directly
-      let eventData: CalendarEvent;
-      if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
-        const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
-        if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
-          eventData = v2Data.data.event;
-        } else {
-          eventData = v2Data.data as CalendarEvent;
-        }
-      } else if (typeof data === 'object' && data !== null && 'data' in data) {
-        const v1Data = data as { data: CalendarEvent };
-        eventData = v1Data.data;
-      } else {
-        eventData = data as CalendarEvent;
-      }
-
-      // Check if user is the creator
-      if (currentUserId === null || currentUserId === 0) {
-        const userStr = localStorage.getItem('user');
-        if (userStr !== null && userStr !== '') {
-          try {
-            const user = JSON.parse(userStr) as UserData;
-            currentUserId = user.id;
-          } catch (error) {
-            console.error('Error parsing user from localStorage:', error);
-          }
-        }
-      }
-
-      const createdBy = eventData.createdBy ?? eventData.created_by;
-      if (createdBy !== currentUserId) {
-        modalManager.hide('eventDetailModal');
-        modalManager.hide('eventFormModal');
-        showError(
-          'Sie haben keine Berechtigung, diesen Termin zu bearbeiten. Nur der Ersteller kann Termine bearbeiten. Bitte wenden Sie sich an den Ersteller des Termins.',
-        );
-        return;
-      }
-
-      // Map v2 API camelCase to snake_case for consistency
-      let event: CalendarEvent;
-      if (useV2) {
-        event = {
-          ...eventData,
-          start_time: eventData.startTime ?? eventData.start_time,
-          end_time: eventData.endTime ?? eventData.end_time,
-          all_day: eventData.allDay ?? eventData.all_day,
-          org_level: eventData.orgLevel ?? eventData.org_level,
-          org_id: eventData.orgId ?? eventData.org_id,
-          created_by: eventData.createdBy ?? eventData.created_by,
-          created_at: eventData.createdAt ?? eventData.created_at,
-          updated_at: eventData.updatedAt ?? eventData.updated_at,
-          reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
-          creator_name: eventData.creatorName ?? eventData.creator_name,
-          department_name: eventData.departmentName ?? eventData.department_name,
-          team_name: eventData.teamName ?? eventData.team_name,
-          user_response: eventData.userResponse ?? eventData.user_response,
-        };
-      } else {
-        event = eventData;
-      }
-
-      // Fill form with event data
-      const form = $$('#eventForm') as HTMLFormElement | null;
-      if (form === null) return;
-
-      // Set event ID
-      const eventIdInput = form.elements.namedItem('event_id') as HTMLInputElement | null;
-      if (eventIdInput !== null && event.id !== 0) {
-        eventIdInput.value = event.id.toString();
-      } else {
-        console.error('[CALENDAR] loadEventForEdit - event.id is missing:', event);
-      }
-
-      // Set basic fields
-      const titleInput = form.elements.namedItem('title') as HTMLInputElement;
-      titleInput.value = event.title;
-
-      const descInput = form.elements.namedItem('description') as HTMLTextAreaElement;
-      descInput.value = event.description ?? '';
-
-      const locationInput = form.elements.namedItem('location') as HTMLInputElement;
-      locationInput.value = event.location ?? '';
-
-      // Set org level using custom dropdown
-      const selectedOrgLevelSpan = $$('#selectedOrgLevel');
-      if (selectedOrgLevelSpan) {
-        const orgLevelText =
-          event.org_level === 'company'
-            ? 'Alle Mitarbeiter'
-            : event.org_level === 'department'
-              ? 'Bestimmte Abteilung'
-              : event.org_level === 'team'
-                ? 'Bestimmtes Team'
-                : 'Persönlicher Termin';
-        selectedOrgLevelSpan.textContent = orgLevelText;
-        selectedOrgLevelSpan.dataset.value = event.org_level;
-      }
-
-      // Parse dates
-      const startDate = new Date(event.start_time);
-      const endDate = new Date(event.end_time);
-
-      // Set date fields
-      const startDateInput = form.elements.namedItem('start_date') as HTMLInputElement;
-      startDateInput.value = formatDateForInput(startDate);
-
-      const endDateInput = form.elements.namedItem('end_date') as HTMLInputElement;
-      endDateInput.value = formatDateForInput(endDate);
-
-      // Set all day checkbox
-      const allDayCheckbox = form.elements.namedItem('all_day') as HTMLInputElement;
-      allDayCheckbox.checked = Boolean(event.all_day);
-
-      // Set time fields
-      if (event.all_day !== true) {
-        const startTimeInput = form.elements.namedItem('start_time') as HTMLInputElement;
-        startTimeInput.value = formatTimeForInput(startDate);
-
-        const endTimeInput = form.elements.namedItem('end_time') as HTMLInputElement;
-        endTimeInput.value = formatTimeForInput(endDate);
-      }
-
-      // Update time inputs disabled state
-      const timeInputs = $all('.time-input') as NodeListOf<HTMLInputElement>;
-      timeInputs.forEach((input) => {
-        input.disabled = Boolean(event.all_day);
-      });
-
-      // Update org dropdown
-      updateOrgIdDropdown(event.org_level);
-      if (event.org_id !== undefined && event.org_id !== 0) {
-        const orgName = event.department_name ?? event.team_name ?? '';
-        selectOrgId(event.org_id, orgName);
-      }
-
-      // No color selection needed - color is determined by org_level
-
-      // Set reminder if field exists
-      const reminderSelect = $$('#eventReminderTime') as HTMLSelectElement | null;
-      if (reminderSelect !== null && event.reminder_time !== undefined) {
-        reminderSelect.value = event.reminder_time.toString();
-      }
-
-      // Set requires response checkbox
-      const requiresResponseInput = $$('#eventRequiresResponse') as HTMLInputElement | null;
-      if (requiresResponseInput !== null) {
-        // Check both camelCase and snake_case fields
-        const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
-        requiresResponseInput.checked = requiresResponse;
-      }
-
-      // Load attendees only for personal events
-      if (event.org_level === 'personal' && event.attendees) {
-        selectedAttendees = event.attendees
-          .map((a) => a.user_id ?? a.userId)
-          .filter((id): id is number => id !== undefined);
-        updateSelectedAttendees();
-      } else {
-        selectedAttendees = [];
-      }
-    } else {
-      showError('Fehler beim Laden des Termins');
+    // Check if user is the creator
+    if (!canUserEditEvent(event)) {
+      modalManager.hide('eventDetailModal');
       modalManager.hide('eventFormModal');
+      showError(
+        'Sie haben keine Berechtigung, diesen Termin zu bearbeiten. Nur der Ersteller kann Termine bearbeiten. Bitte wenden Sie sich an den Ersteller des Termins.',
+      );
+      return;
     }
+
+    // Fill form with event data
+    const form = $$('#eventForm') as HTMLFormElement | null;
+    if (form === null) return;
+
+    fillEventFormBasicFields(form, event);
+    fillEventFormDateTimeFields(form, event);
+
+    // Set org level dropdown
+    fillEventFormOrgLevel(event);
+
+    // Set additional fields
+    fillEventFormAdditionalFields(form, event);
+
+    // Load attendees
+    loadEventAttendees(event);
   } catch (error: unknown) {
     console.error('Error loading event:', error);
     showError('Ein Fehler ist aufgetreten');
     modalManager.hide('eventFormModal');
+  }
+}
+
+/**
+ * Fill org level dropdown in event form
+ */
+function fillEventFormOrgLevel(event: CalendarEvent): void {
+  const selectedOrgLevelSpan = $$('#selectedOrgLevel');
+  if (selectedOrgLevelSpan) {
+    const orgLevelText =
+      event.org_level === 'company'
+        ? 'Alle Mitarbeiter'
+        : event.org_level === 'department'
+          ? 'Bestimmte Abteilung'
+          : event.org_level === 'team'
+            ? 'Bestimmtes Team'
+            : 'Persönlicher Termin';
+    selectedOrgLevelSpan.textContent = orgLevelText;
+    selectedOrgLevelSpan.dataset.value = event.org_level;
+  }
+
+  // Update org dropdown
+  updateOrgIdDropdown(event.org_level);
+  if (event.org_id !== undefined && event.org_id !== 0) {
+    const orgName = event.department_name ?? event.team_name ?? '';
+    selectOrgId(event.org_id, orgName);
+  }
+}
+
+/**
+ * Fill additional form fields (reminder, response required)
+ */
+function fillEventFormAdditionalFields(_form: HTMLFormElement, event: CalendarEvent): void {
+  // Set reminder if field exists
+  const reminderSelect = $$('#eventReminderTime') as HTMLSelectElement | null;
+  if (reminderSelect !== null && event.reminder_time !== undefined) {
+    reminderSelect.value = event.reminder_time.toString();
+  }
+
+  // Set requires response checkbox
+  const requiresResponseInput = $$('#eventRequiresResponse') as HTMLInputElement | null;
+  if (requiresResponseInput !== null) {
+    const requiresResponse = event.requiresResponse ?? event.requires_response ?? false;
+    requiresResponseInput.checked = requiresResponse;
+  }
+}
+
+/**
+ * Load event attendees
+ */
+function loadEventAttendees(event: CalendarEvent): void {
+  if (event.org_level === 'personal' && event.attendees) {
+    selectedAttendees = event.attendees
+      .map((a) => a.user_id ?? a.userId)
+      .filter((id): id is number => id !== undefined);
+    updateSelectedAttendees();
+  } else {
+    selectedAttendees = [];
   }
 }
 

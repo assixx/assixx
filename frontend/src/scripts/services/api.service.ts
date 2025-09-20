@@ -107,6 +107,105 @@ export class ApiService {
   }
 
   /**
+   * Check if should use v2 API based on feature flags
+   */
+  private shouldUseV2Api(endpoint: string): boolean {
+    const featureKey = `USE_API_V2_${endpoint.split('/')[1]?.toUpperCase()}`;
+    // Safe: featureKey is constructed from endpoint string, not user input
+    // eslint-disable-next-line security/detect-object-injection
+    return window.FEATURE_FLAGS?.[featureKey] ?? this.useV2;
+  }
+
+  /**
+   * Handle v2 API request
+   */
+  private async handleV2Request<T>(
+    method: HttpMethod,
+    endpoint: string,
+    data?: unknown,
+    params?: Record<string, string | number | boolean>,
+  ): Promise<T> {
+    const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
+    const fullEndpoint = endpoint + queryString;
+
+    switch (method) {
+      case 'GET':
+        return (await apiClient.get(fullEndpoint)) as T;
+      case 'POST':
+        if (data instanceof FormData) {
+          return (await apiClient.upload(endpoint, data)) as T;
+        }
+        return (await apiClient.post(endpoint, data)) as T;
+      case 'PUT':
+        return (await apiClient.put(endpoint, data)) as T;
+      case 'PATCH':
+        return (await apiClient.patch(endpoint, data)) as T;
+      case 'DELETE':
+        return (await apiClient.delete(endpoint)) as T;
+      default:
+        throw new Error(`Unsupported HTTP method: ${method as string}`);
+    }
+  }
+
+  /**
+   * Prepare request options for v1 API
+   */
+  private prepareV1RequestOptions(
+    method: HttpMethod,
+    data: unknown,
+    fetchOptions: Omit<RequestOptions, 'params'>,
+  ): RequestInit {
+    const requestOptions: RequestInit = {
+      method,
+      headers: this.getHeaders(fetchOptions.headers),
+      ...fetchOptions,
+    };
+
+    if (data === undefined || data === null || !['POST', 'PUT', 'PATCH'].includes(method)) {
+      return requestOptions;
+    }
+
+    if (data instanceof FormData) {
+      // Remove Content-Type header for FormData
+      requestOptions.headers = new Headers(requestOptions.headers);
+      requestOptions.headers.delete('Content-Type');
+      requestOptions.body = data;
+    } else {
+      requestOptions.body = JSON.stringify(data);
+    }
+
+    return requestOptions;
+  }
+
+  /**
+   * Handle v1 API response
+   */
+  private async handleV1Response<T>(response: Response): Promise<T> {
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+      this.setToken(null);
+      // Safe: window.location is a global property, no race condition possible
+
+      window.location.href = '/login';
+      throw new Error('Unauthorized');
+    }
+
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return {} as T;
+    }
+
+    // Parse JSON response
+    const responseData = (await response.json()) as { error?: string; message?: string } & T;
+
+    if (!response.ok) {
+      throw new Error(responseData.error ?? responseData.message ?? `HTTP error! status: ${response.status}`);
+    }
+
+    return responseData as T;
+  }
+
+  /**
    * Make API request
    * @param method
    * @param endpoint
@@ -121,98 +220,19 @@ export class ApiService {
   ): Promise<T> {
     const { params, ...fetchOptions } = options ?? {};
 
-    // Check if we should use v2 API
-    const featureKey = `USE_API_V2_${endpoint.split('/')[1]?.toUpperCase()}`;
-    // Safe: featureKey is constructed from endpoint string, not user input
-    // eslint-disable-next-line security/detect-object-injection
-    const useV2ForThisEndpoint = window.FEATURE_FLAGS?.[featureKey] ?? this.useV2;
-
-    if (useV2ForThisEndpoint) {
-      // Use new API client for v2
-      try {
-        let response: unknown;
-
-        // Build query string for GET requests
-        const queryString = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
-        const fullEndpoint = endpoint + queryString;
-
-        switch (method) {
-          case 'GET':
-            response = await apiClient.get(fullEndpoint);
-            break;
-          case 'POST':
-            if (data instanceof FormData) {
-              response = await apiClient.upload(endpoint, data);
-            } else {
-              response = await apiClient.post(endpoint, data);
-            }
-            break;
-          case 'PUT':
-            response = await apiClient.put(endpoint, data);
-            break;
-          case 'PATCH':
-            response = await apiClient.patch(endpoint, data);
-            break;
-          case 'DELETE':
-            response = await apiClient.delete(endpoint);
-            break;
-        }
-
-        return response as T;
-      } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
+    try {
+      if (this.shouldUseV2Api(endpoint)) {
+        return await this.handleV2Request<T>(method, endpoint, data, params);
       }
-    } else {
+
       // Use original v1 implementation
       const url = this.buildUrl(endpoint, params);
-
-      const requestOptions: RequestInit = {
-        method,
-        headers: this.getHeaders(fetchOptions.headers),
-        ...fetchOptions,
-      };
-
-      if (data !== undefined && data !== null && ['POST', 'PUT', 'PATCH'].includes(method)) {
-        if (data instanceof FormData) {
-          // Remove Content-Type header for FormData
-          requestOptions.headers = new Headers(requestOptions.headers);
-          requestOptions.headers.delete('Content-Type');
-          requestOptions.body = data;
-        } else {
-          requestOptions.body = JSON.stringify(data);
-        }
-      }
-
-      try {
-        const response = await fetch(url, requestOptions);
-
-        // Handle 401 Unauthorized
-        if (response.status === 401) {
-          this.setToken(null);
-          // Safe: window.location is a global property, no race condition possible
-          // eslint-disable-next-line require-atomic-updates
-          window.location.href = '/login';
-          throw new Error('Unauthorized');
-        }
-
-        // Handle 204 No Content
-        if (response.status === 204) {
-          return {} as T;
-        }
-
-        // Parse JSON response
-        const responseData = (await response.json()) as { error?: string; message?: string } & T;
-
-        if (!response.ok) {
-          throw new Error(responseData.error ?? responseData.message ?? `HTTP error! status: ${response.status}`);
-        }
-
-        return responseData as T;
-      } catch (error) {
-        console.error('API request failed:', error);
-        throw error;
-      }
+      const requestOptions = this.prepareV1RequestOptions(method, data, fetchOptions);
+      const response = await fetch(url, requestOptions);
+      return await this.handleV1Response<T>(response);
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
     }
   }
 

@@ -75,6 +75,39 @@ interface TeamQueryRequest extends TenantRequest {
  */
 class TeamController {
   /**
+   * Parse number query parameter
+   */
+  private parseNumberParam(value: string | undefined): number | undefined {
+    if (value == null || value === '') {
+      return undefined;
+    }
+    return Number.parseInt(value, 10);
+  }
+
+  /**
+   * Parse boolean query parameter
+   */
+  private parseBooleanParam(value: string | undefined): boolean | undefined {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
+  }
+
+  /**
+   * Parse query filters
+   */
+  private parseQueryFilters(query: TeamQueryRequest['query']): Record<string, unknown> {
+    return {
+      ...query,
+      department_id: this.parseNumberParam(query.department_id),
+      team_lead_id: this.parseNumberParam(query.team_lead_id),
+      is_active: this.parseBooleanParam(query.is_active),
+      page: this.parseNumberParam(query.page),
+      limit: this.parseNumberParam(query.limit),
+    };
+  }
+
+  /**
    * Holt alle Team Einträge
    * GET /api/team
    * @param req - The request object
@@ -87,29 +120,7 @@ class TeamController {
         return;
       }
 
-      const filters = {
-        ...req.query,
-        department_id:
-          req.query.department_id != null && req.query.department_id !== '' ?
-            Number.parseInt(req.query.department_id, 10)
-          : undefined,
-        team_lead_id:
-          req.query.team_lead_id != null && req.query.team_lead_id !== '' ?
-            Number.parseInt(req.query.team_lead_id, 10)
-          : undefined,
-        is_active:
-          req.query.is_active === 'true' ? true
-          : req.query.is_active === 'false' ? false
-          : undefined,
-        page:
-          req.query.page != null && req.query.page !== '' ?
-            Number.parseInt(req.query.page, 10)
-          : undefined,
-        limit:
-          req.query.limit != null && req.query.limit !== '' ?
-            Number.parseInt(req.query.limit, 10)
-          : undefined,
-      };
+      const filters = this.parseQueryFilters(req.query);
       const result = await teamService.getAll(req.tenantDb, filters);
       res.json(result);
     } catch (error: unknown) {

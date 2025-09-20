@@ -98,7 +98,6 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
   },
-  // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback pattern
   fileFilter: (_req, file, cb) => {
     const allowedTypes = [
       'image/jpeg',
@@ -114,10 +113,8 @@ const upload = multer({
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback pattern
       cb(null, true);
     } else {
-      // eslint-disable-next-line promise/prefer-await-to-callbacks -- Multer requires callback pattern
       cb(new Error('File type not allowed'));
     }
   },

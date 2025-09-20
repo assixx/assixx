@@ -130,23 +130,35 @@ export class MachinesService {
    * @param dbData - The DB data object to populate
    */
   private mapSimpleFields(data: MachineUpdateRequest, dbData: Partial<Machine>): void {
-    if (data.name !== undefined) dbData.name = data.name;
-    if (data.model !== undefined) dbData.model = data.model;
-    if (data.manufacturer !== undefined) dbData.manufacturer = data.manufacturer;
-    if (data.serialNumber !== undefined) dbData.serial_number = data.serialNumber;
-    if (data.assetNumber !== undefined) dbData.asset_number = data.assetNumber;
-    if (data.departmentId !== undefined) dbData.department_id = data.departmentId;
-    if (data.areaId !== undefined) dbData.area_id = data.areaId;
-    if (data.location !== undefined) dbData.location = data.location;
-    if (data.machineType !== undefined) dbData.machine_type = data.machineType;
-    if (data.status !== undefined) dbData.status = data.status;
-    if (data.operatingHours !== undefined) dbData.operating_hours = data.operatingHours;
-    if (data.productionCapacity !== undefined) dbData.production_capacity = data.productionCapacity;
-    if (data.energyConsumption !== undefined) dbData.energy_consumption = data.energyConsumption;
-    if (data.manualUrl !== undefined) dbData.manual_url = data.manualUrl;
-    if (data.qrCode !== undefined) dbData.qr_code = data.qrCode;
-    if (data.notes !== undefined) dbData.notes = data.notes;
-    if (data.isActive !== undefined) dbData.is_active = data.isActive;
+    const fieldMappings: [keyof MachineUpdateRequest, keyof Machine][] = [
+      ['name', 'name'],
+      ['model', 'model'],
+      ['manufacturer', 'manufacturer'],
+      ['serialNumber', 'serial_number'],
+      ['assetNumber', 'asset_number'],
+      ['departmentId', 'department_id'],
+      ['areaId', 'area_id'],
+      ['location', 'location'],
+      ['machineType', 'machine_type'],
+      ['status', 'status'],
+      ['operatingHours', 'operating_hours'],
+      ['productionCapacity', 'production_capacity'],
+      ['energyConsumption', 'energy_consumption'],
+      ['manualUrl', 'manual_url'],
+      ['qrCode', 'qr_code'],
+      ['notes', 'notes'],
+      ['isActive', 'is_active'],
+    ];
+
+    for (const [apiField, dbField] of fieldMappings) {
+      // Safe: apiField comes from hardcoded fieldMappings array, not user input
+      // eslint-disable-next-line security/detect-object-injection
+      if (Object.prototype.hasOwnProperty.call(data, apiField) && data[apiField] !== undefined) {
+        // Safe: apiField and dbField from hardcoded array, data[apiField] validated above
+        // eslint-disable-next-line security/detect-object-injection
+        Object.assign(dbData, { [dbField]: data[apiField] });
+      }
+    }
   }
 
   /**

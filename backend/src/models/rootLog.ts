@@ -124,6 +124,50 @@ export async function getLastRootLogin(userId: number): Promise<DbRootLog | null
 }
 
 /**
+ * Build WHERE clause conditions for log filtering
+ */
+function buildLogFilterConditions(options: {
+  userId?: number;
+  action?: string;
+  entityType?: string;
+  tenantId?: number;
+  startDate?: Date;
+  endDate?: Date;
+}): { whereClause: string; params: unknown[] } {
+  const whereConditions: string[] = ['1=1'];
+  const params: unknown[] = [];
+
+  const filters = [
+    { field: 'user_id', value: options.userId, condition: 'user_id = ?', checkZero: true },
+    { field: 'action', value: options.action, condition: 'action = ?', checkEmpty: true },
+    {
+      field: 'entity_type',
+      value: options.entityType,
+      condition: 'entity_type = ?',
+      checkEmpty: true,
+    },
+    { field: 'tenant_id', value: options.tenantId, condition: 'tenant_id = ?', checkZero: true },
+    { field: 'created_at', value: options.startDate, condition: 'created_at >= ?' },
+    { field: 'created_at', value: options.endDate, condition: 'created_at <= ?' },
+  ];
+
+  for (const filter of filters) {
+    if (filter.value === undefined) continue;
+
+    if (filter.checkZero && filter.value === 0) continue;
+    if (filter.checkEmpty && filter.value === '') continue;
+
+    whereConditions.push(filter.condition);
+    params.push(filter.value);
+  }
+
+  return {
+    whereClause: whereConditions.join(' AND '),
+    params,
+  };
+}
+
+/**
  * Get all logs with pagination and filters
  * For root user to see all system logs
  */
@@ -137,51 +181,8 @@ export async function getAllRootLogs(options: {
   startDate?: Date;
   endDate?: Date;
 }): Promise<{ logs: DbRootLog[]; total: number }> {
-  const {
-    limit = 50,
-    offset = 0,
-    userId,
-    action,
-    entityType,
-    tenantId,
-    startDate,
-    endDate,
-  } = options;
-
-  let whereConditions: string[] = ['1=1'];
-  const params: unknown[] = [];
-
-  if (userId != null && userId !== 0) {
-    whereConditions.push('user_id = ?');
-    params.push(userId);
-  }
-
-  if (action != null && action !== '') {
-    whereConditions.push('action = ?');
-    params.push(action);
-  }
-
-  if (entityType != null && entityType !== '') {
-    whereConditions.push('entity_type = ?');
-    params.push(entityType);
-  }
-
-  if (tenantId != null && tenantId !== 0) {
-    whereConditions.push('tenant_id = ?');
-    params.push(tenantId);
-  }
-
-  if (startDate) {
-    whereConditions.push('created_at >= ?');
-    params.push(startDate);
-  }
-
-  if (endDate) {
-    whereConditions.push('created_at <= ?');
-    params.push(endDate);
-  }
-
-  const whereClause = whereConditions.join(' AND ');
+  const { limit = 50, offset = 0, ...filterOptions } = options;
+  const { whereClause, params } = buildLogFilterConditions(filterOptions);
 
   try {
     // Get total count

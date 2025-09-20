@@ -602,7 +602,7 @@ function addSectionBreadcrumb(items, section) {
     });
   } else {
     items.push({
-      label: section.charAt(0).toUpperCase() + section.slice(1).replace(/[^\s\w\-]/g, ''),
+      label: section.charAt(0).toUpperCase() + section.slice(1).replace(/[^\s\w-]/g, ''),
       current: true,
     });
   }

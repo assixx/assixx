@@ -32,15 +32,12 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  // eslint-disable-next-line promise/prefer-await-to-callbacks
   fileFilter: (_req, file, cb) => {
     // Only allow PDF files
     if (file.mimetype === 'application/pdf') {
       // Multer requires callback-style, cannot use async/await
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       cb(null, true);
     } else {
-      // eslint-disable-next-line promise/prefer-await-to-callbacks
       cb(new Error('Only PDF files are allowed'));
     }
   },

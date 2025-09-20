@@ -159,9 +159,12 @@ window.selectOrgLevel = function (value, text) {
   // Show/Hide org ID container
   const orgIdContainer = document.querySelector('#orgIdContainer');
   if (value === 'department' || value === 'team') {
+    // Remove u-hidden class first (has !important so must be removed)
+    orgIdContainer.classList.remove('u-hidden');
     orgIdContainer.style.display = 'block';
     loadOrgOptions(value);
   } else {
+    orgIdContainer.classList.add('u-hidden');
     orgIdContainer.style.display = 'none';
   }
 };
