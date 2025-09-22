@@ -1178,15 +1178,10 @@ class KontischichtManager {
   }
 
   /**
-   * Extract schedule data from current DOM state
+   * Get day mapping for schedule data
    */
-  private extractCurrentScheduleData(): WeekData {
-    const data: WeekData = {};
-
-    console.info('[KONTISCHICHT] Extracting schedule data from DOM...');
-
-    // Map day names to WeekData keys
-    const dayMapping: Record<string, keyof WeekData | undefined> = {
+  private getDayMapping(): Record<string, keyof WeekData | undefined> {
+    return {
       monday: 'monday',
       tuesday: 'tuesday',
       wednesday: 'wednesday',
@@ -1195,79 +1190,73 @@ class KontischichtManager {
       saturday: 'saturday',
       sunday: 'sunday',
     };
+  }
 
-    // Map shift types
-    const shiftMapping: Record<string, keyof DaySchedule | undefined> = {
+  /**
+   * Get shift type mapping
+   */
+  private getShiftMapping(): Record<string, keyof DaySchedule | undefined> {
+    return {
       early: 'early',
       late: 'late',
       night: 'night',
     };
+  }
 
-    // Find all shift cells
-    const shiftCells = document.querySelectorAll('.shift-cell');
-    console.info(`[KONTISCHICHT] Found ${shiftCells.length} shift cells`);
+  /**
+   * Process a single shift cell and add assignments to data
+   */
+  private processShiftCell(
+    cell: HTMLElement,
+    data: WeekData,
+    dayMapping: Record<string, keyof WeekData | undefined>,
+    shiftMapping: Record<string, keyof DaySchedule | undefined>,
+  ): void {
+    const day = cell.dataset.day;
+    const shiftType = cell.dataset.shift;
 
-    shiftCells.forEach((cell) => {
-      if (!(cell instanceof HTMLElement)) return;
+    if (day === undefined || day === '' || shiftType === undefined || shiftType === '') {
+      console.warn('[KONTISCHICHT] Shift cell missing data attributes:', cell);
+      return;
+    }
 
-      // Get day and shift type from data attributes
-      const day = cell.dataset.day;
-      const shiftType = cell.dataset.shift;
+    const dayKey = dayMapping[day.toLowerCase()];
+    const shiftKey = shiftMapping[shiftType.toLowerCase()];
 
-      if (day === undefined || day === '' || shiftType === undefined || shiftType === '') {
-        console.warn('[KONTISCHICHT] Shift cell missing data attributes:', cell);
-        return;
-      }
+    if (dayKey === undefined || shiftKey === undefined) {
+      console.warn(`[KONTISCHICHT] Unknown day or shift: ${day}, ${shiftType}`);
+      return;
+    }
 
-      // Convert to our keys
-      const dayKey = dayMapping[day.toLowerCase()];
-      const shiftKey = shiftMapping[shiftType.toLowerCase()];
+    // eslint-disable-next-line security/detect-object-injection -- dayKey is validated from predefined mapping
+    data[dayKey] ??= { early: [], late: [], night: [], free: [] };
 
-      // Check if mappings exist (they could be undefined for unknown values)
-      if (dayKey === undefined || shiftKey === undefined) {
-        console.warn(`[KONTISCHICHT] Unknown day or shift: ${day}, ${shiftType}`);
-        return;
-      }
-
-      // Initialize day schedule if not exists
-      // eslint-disable-next-line security/detect-object-injection -- dayKey is validated from predefined mapping
-      data[dayKey] ??= {
-        early: [],
-        late: [],
-        night: [],
-        free: [],
-      };
-
-      // Find all employee assignments in this cell
-      const assignments = cell.querySelectorAll('.employee-assignment');
-      assignments.forEach((assignment) => {
-        // Look for employee badge with data-employee-id
-        const badge = assignment.querySelector('.employee-badge[data-employee-id]');
-        if (badge instanceof HTMLElement && badge.dataset.employeeId !== undefined && badge.dataset.employeeId !== '') {
-          const employeeId = Number.parseInt(badge.dataset.employeeId, 10);
-          if (!Number.isNaN(employeeId)) {
-            // Add to the appropriate shift
-            // eslint-disable-next-line security/detect-object-injection -- dayKey is validated from predefined mapping
-            const daySchedule = data[dayKey];
+    const assignments = cell.querySelectorAll('.employee-assignment');
+    assignments.forEach((assignment) => {
+      const badge = assignment.querySelector('.employee-badge[data-employee-id]');
+      if (badge instanceof HTMLElement && badge.dataset.employeeId !== undefined && badge.dataset.employeeId !== '') {
+        const employeeId = Number.parseInt(badge.dataset.employeeId, 10);
+        if (!Number.isNaN(employeeId)) {
+          // eslint-disable-next-line security/detect-object-injection -- dayKey is validated from predefined mapping
+          const daySchedule = data[dayKey];
+          // eslint-disable-next-line security/detect-object-injection -- shiftKey is validated from predefined mapping
+          if (daySchedule && !daySchedule[shiftKey].includes(employeeId)) {
             // eslint-disable-next-line security/detect-object-injection -- shiftKey is validated from predefined mapping
-            if (daySchedule && !daySchedule[shiftKey].includes(employeeId)) {
-              // eslint-disable-next-line security/detect-object-injection -- shiftKey is validated from predefined mapping
-              daySchedule[shiftKey].push(employeeId);
-              console.info(`[KONTISCHICHT] Added employee ${employeeId} to ${dayKey} ${shiftKey}`);
-            }
+            daySchedule[shiftKey].push(employeeId);
+            console.info(`[KONTISCHICHT] Added employee ${employeeId} to ${dayKey} ${shiftKey}`);
           }
         }
-      });
+      }
     });
+  }
 
-    // Log the extracted data
-    console.info('[KONTISCHICHT] Extracted week data:', data);
-
-    // Find employees who are free (not assigned to any shift)
+  /**
+   * Collect all employee IDs from the employee list
+   */
+  private collectAllEmployeeIds(): Set<number> {
     const allEmployeeIds = new Set<number>();
-
-    // Collect all available employees from employee list
     const employeeItems = document.querySelectorAll('.employee-item[data-employee-id]');
+
     employeeItems.forEach((item) => {
       if (item instanceof HTMLElement && item.dataset.employeeId !== undefined && item.dataset.employeeId !== '') {
         const id = Number.parseInt(item.dataset.employeeId, 10);
@@ -1277,7 +1266,13 @@ class KontischichtManager {
       }
     });
 
-    // Collect assigned employees for each day
+    return allEmployeeIds;
+  }
+
+  /**
+   * Mark employees as free who are not assigned to any shift
+   */
+  private markFreeEmployees(data: WeekData, allEmployeeIds: Set<number>): void {
     Object.keys(data).forEach((dayKey) => {
       const day = data[dayKey as keyof WeekData];
       if (day) {
@@ -1286,7 +1281,6 @@ class KontischichtManager {
         day.late.forEach((id) => dayAssigned.add(id));
         day.night.forEach((id) => dayAssigned.add(id));
 
-        // Mark free employees for this day
         allEmployeeIds.forEach((id) => {
           if (!dayAssigned.has(id) && !day.free.includes(id)) {
             day.free.push(id);
@@ -1295,6 +1289,30 @@ class KontischichtManager {
         });
       }
     });
+  }
+
+  /**
+   * Extract schedule data from current DOM state
+   */
+  private extractCurrentScheduleData(): WeekData {
+    const data: WeekData = {};
+    console.info('[KONTISCHICHT] Extracting schedule data from DOM...');
+
+    const dayMapping = this.getDayMapping();
+    const shiftMapping = this.getShiftMapping();
+
+    const shiftCells = document.querySelectorAll('.shift-cell');
+    console.info(`[KONTISCHICHT] Found ${shiftCells.length} shift cells`);
+
+    shiftCells.forEach((cell) => {
+      if (!(cell instanceof HTMLElement)) return;
+      this.processShiftCell(cell, data, dayMapping, shiftMapping);
+    });
+
+    console.info('[KONTISCHICHT] Extracted week data:', data);
+
+    const allEmployeeIds = this.collectAllEmployeeIds();
+    this.markFreeEmployees(data, allEmployeeIds);
 
     return data;
   }

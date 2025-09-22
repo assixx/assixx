@@ -67,6 +67,83 @@ interface KvpWindow extends Window {
   selectedPhotos?: File[];
 }
 
+// Type for v1 API response with snake_case fields
+interface V1Suggestion {
+  id: number;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  org_level?: string;
+  orgLevel?: string;
+  org_id?: number;
+  orgId?: number;
+  department_id?: number;
+  departmentId?: number;
+  department_name?: string;
+  departmentName?: string;
+  submitted_by?: number;
+  submittedBy?: number;
+  submitted_by_name?: string;
+  submittedByName?: string;
+  submitted_by_lastname?: string;
+  submittedByLastname?: string;
+  category_id?: number;
+  categoryId?: number;
+  category_name?: string;
+  categoryName?: string;
+  category_icon?: string;
+  categoryIcon?: string;
+  category_color?: string;
+  categoryColor?: string;
+  shared_by?: number;
+  sharedBy?: number;
+  shared_by_name?: string;
+  sharedByName?: string;
+  shared_at?: string;
+  sharedAt?: string;
+  created_at?: string;
+  createdAt?: string;
+  expected_benefit?: string;
+  expectedBenefit?: string;
+  estimated_cost?: number;
+  estimatedCost?: number;
+  actual_savings?: number;
+  actualSavings?: number;
+  attachment_count?: number;
+  attachmentCount?: number;
+  roi?: number;
+}
+
+interface V1Status {
+  new?: number;
+  in_review?: number;
+  implemented?: number;
+  approved?: number;
+  rejected?: number;
+  archived?: number;
+}
+
+interface V2Status {
+  new?: number;
+  inReview?: number;
+  approved?: number;
+  implemented?: number;
+  rejected?: number;
+  archived?: number;
+}
+
+interface StatsResponse {
+  company?: {
+    total: number;
+    byStatus: V1Status | V2Status;
+    totalSavings: number;
+  };
+  total?: number;
+  byStatus?: V2Status;
+  totalSavings?: number;
+}
+
 interface UserMeResponse {
   id?: number;
   teamId?: number;
@@ -401,76 +478,35 @@ class KvpPage {
   }
 
   private convertSuggestionToCamelCase(suggestion: unknown): KvpSuggestion {
-    // Type guard for v1 API response with snake_case fields
-    interface V1Suggestion {
-      id: number;
-      title: string;
-      description: string;
-      status: string;
-      priority: string;
-      org_level?: string;
-      orgLevel?: string;
-      org_id?: number;
-      orgId?: number;
-      department_id?: number;
-      departmentId?: number;
-      department_name?: string;
-      departmentName?: string;
-      submitted_by?: number;
-      submittedBy?: number;
-      submitted_by_name?: string;
-      submittedByName?: string;
-      submitted_by_lastname?: string;
-      submittedByLastname?: string;
-      category_id?: number;
-      categoryId?: number;
-      category_name?: string;
-      categoryName?: string;
-      category_icon?: string;
-      categoryIcon?: string;
-      category_color?: string;
-      categoryColor?: string;
-      shared_by?: number;
-      sharedBy?: number;
-      shared_by_name?: string;
-      sharedByName?: string;
-      shared_at?: string;
-      sharedAt?: string;
-      created_at?: string;
-      createdAt?: string;
-      expected_benefit?: string;
-      expectedBenefit?: string;
-      estimated_cost?: number;
-      estimatedCost?: number;
-      actual_savings?: number;
-      actualSavings?: number;
-      attachment_count?: number;
-      attachmentCount?: number;
-      roi?: number;
-    }
-
     const s = suggestion as V1Suggestion;
+    return this.mapV1ToKvpSuggestion(s);
+  }
+
+  private mapV1ToKvpSuggestion(s: V1Suggestion): KvpSuggestion {
+    // Helper to get value from snake_case or camelCase
+    const getVal = <T>(snake: T | undefined, camel: T | undefined, def: T): T => snake ?? camel ?? def;
+
     return {
       id: s.id,
       title: s.title,
       description: s.description,
       status: s.status as KvpSuggestion['status'],
       priority: s.priority as KvpSuggestion['priority'],
-      orgLevel: (s.org_level ?? s.orgLevel ?? 'department') as KvpSuggestion['orgLevel'],
-      orgId: s.org_id ?? s.orgId ?? 0,
-      departmentId: s.department_id ?? s.departmentId ?? 0,
-      departmentName: s.department_name ?? s.departmentName ?? '',
-      submittedBy: s.submitted_by ?? s.submittedBy ?? 0,
-      submittedByName: s.submitted_by_name ?? s.submittedByName ?? '',
-      submittedByLastname: s.submitted_by_lastname ?? s.submittedByLastname ?? '',
-      categoryId: s.category_id ?? s.categoryId ?? 0,
-      categoryName: s.category_name ?? s.categoryName ?? '',
-      categoryIcon: s.category_icon ?? s.categoryIcon ?? '',
-      categoryColor: s.category_color ?? s.categoryColor ?? '',
+      orgLevel: getVal(s.org_level, s.orgLevel, 'department') as KvpSuggestion['orgLevel'],
+      orgId: getVal(s.org_id, s.orgId, 0),
+      departmentId: getVal(s.department_id, s.departmentId, 0),
+      departmentName: getVal(s.department_name, s.departmentName, ''),
+      submittedBy: getVal(s.submitted_by, s.submittedBy, 0),
+      submittedByName: getVal(s.submitted_by_name, s.submittedByName, ''),
+      submittedByLastname: getVal(s.submitted_by_lastname, s.submittedByLastname, ''),
+      categoryId: getVal(s.category_id, s.categoryId, 0),
+      categoryName: getVal(s.category_name, s.categoryName, ''),
+      categoryIcon: getVal(s.category_icon, s.categoryIcon, ''),
+      categoryColor: getVal(s.category_color, s.categoryColor, ''),
       sharedBy: s.shared_by ?? s.sharedBy,
       sharedByName: s.shared_by_name ?? s.sharedByName,
       sharedAt: s.shared_at ?? s.sharedAt,
-      createdAt: s.created_at ?? s.createdAt ?? '',
+      createdAt: getVal(s.created_at, s.createdAt, ''),
       expectedBenefit: s.expected_benefit ?? s.expectedBenefit,
       estimatedCost: s.estimated_cost ?? s.estimatedCost,
       actualSavings: s.actual_savings ?? s.actualSavings,
@@ -493,62 +529,63 @@ class KvpPage {
 
     emptyState.style.display = 'none';
 
-    const suggestionsHTML = this.suggestions
-      .map((suggestion) => {
-        const statusClass = suggestion.status.replace('_', '');
-        const visibilityIcon = suggestion.orgLevel === 'company' ? 'fa-globe' : 'fa-users';
-        const visibilityText =
-          suggestion.orgLevel === 'company'
-            ? 'Firmenweit'
-            : suggestion.orgLevel === 'department' && suggestion.departmentName !== ''
-              ? suggestion.departmentName
-              : suggestion.teamName !== undefined && suggestion.teamName !== ''
-                ? suggestion.teamName
-                : 'Team';
+    const suggestionsHTML = this.suggestions.map((s) => this.renderSuggestionCard(s)).join('');
+    setHTML(container, suggestionsHTML);
+    this.attachSuggestionEventHandlers(container);
+  }
 
-        return `
-        <div class="glass-card kvp-card" data-id="${suggestion.id}">
-          <div class="status-badge ${statusClass}">${this.getStatusText(suggestion.status)}</div>
+  private getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
+    const icon = suggestion.orgLevel === 'company' ? 'fa-globe' : 'fa-users';
+    const text =
+      suggestion.orgLevel === 'company'
+        ? 'Firmenweit'
+        : suggestion.orgLevel === 'department' && suggestion.departmentName !== ''
+          ? suggestion.departmentName
+          : suggestion.teamName !== undefined && suggestion.teamName !== ''
+            ? suggestion.teamName
+            : 'Team';
+    return { icon, text };
+  }
 
-          <div class="suggestion-header">
-            <h3 class="suggestion-title">${this.escapeHtml(suggestion.title)}</h3>
-            <div class="suggestion-meta">
-              <span><i class="fas fa-user"></i> ${suggestion.submittedByName} ${suggestion.submittedByLastname}</span>
-              <span><i class="fas fa-calendar"></i> ${new Date(suggestion.createdAt).toLocaleDateString('de-DE')}</span>
-              ${
-                suggestion.attachmentCount !== undefined && suggestion.attachmentCount > 0
-                  ? `<span><i class="fas fa-camera"></i> ${suggestion.attachmentCount} Foto${suggestion.attachmentCount > 1 ? 's' : ''}</span>`
-                  : ''
-              }
-            </div>
-            <div class="visibility-badge ${suggestion.orgLevel}">
-              <i class="fas ${visibilityIcon}"></i> ${visibilityText}
-              ${suggestion.sharedByName !== undefined && suggestion.sharedByName !== '' ? `<span> - Geteilt von ${suggestion.sharedByName}</span>` : ''}
-            </div>
+  private renderSuggestionCard(suggestion: KvpSuggestion): string {
+    const statusClass = suggestion.status.replace('_', '');
+    const { icon: visibilityIcon, text: visibilityText } = this.getVisibilityInfo(suggestion);
+    const attachmentSpan =
+      suggestion.attachmentCount !== undefined && suggestion.attachmentCount > 0
+        ? `<span><i class="fas fa-camera"></i> ${suggestion.attachmentCount} Foto${suggestion.attachmentCount > 1 ? 's' : ''}</span>`
+        : '';
+    const sharedSpan =
+      suggestion.sharedByName !== undefined && suggestion.sharedByName !== ''
+        ? `<span> - Geteilt von ${suggestion.sharedByName}</span>`
+        : '';
+
+    return `
+      <div class="glass-card kvp-card" data-id="${suggestion.id}">
+        <div class="status-badge ${statusClass}">${this.getStatusText(suggestion.status)}</div>
+        <div class="suggestion-header">
+          <h3 class="suggestion-title">${this.escapeHtml(suggestion.title)}</h3>
+          <div class="suggestion-meta">
+            <span><i class="fas fa-user"></i> ${suggestion.submittedByName} ${suggestion.submittedByLastname}</span>
+            <span><i class="fas fa-calendar"></i> ${new Date(suggestion.createdAt).toLocaleDateString('de-DE')}</span>
+            ${attachmentSpan}
           </div>
-
-          <div class="suggestion-description">
-            ${this.escapeHtml(suggestion.description)}
-          </div>
-
-          <div class="suggestion-footer">
-            <div class="category-tag" style="background: ${suggestion.categoryColor}20; color: ${suggestion.categoryColor}; border: 1px solid ${suggestion.categoryColor};">
-              ${suggestion.categoryIcon}
-              ${suggestion.categoryName}
-            </div>
-
-            <div class="action-buttons">
-              ${this.renderActionButtons(suggestion)}
-            </div>
+          <div class="visibility-badge ${suggestion.orgLevel}">
+            <i class="fas ${visibilityIcon}"></i> ${visibilityText}${sharedSpan}
           </div>
         </div>
-      `;
-      })
-      .join('');
+        <div class="suggestion-description">${this.escapeHtml(suggestion.description)}</div>
+        <div class="suggestion-footer">
+          <div class="category-tag" style="background: ${suggestion.categoryColor}20; color: ${suggestion.categoryColor}; border: 1px solid ${suggestion.categoryColor};">
+            ${suggestion.categoryIcon}
+            ${suggestion.categoryName}
+          </div>
+          <div class="action-buttons">${this.renderActionButtons(suggestion)}</div>
+        </div>
+      </div>
+    `;
+  }
 
-    setHTML(container, suggestionsHTML);
-
-    // Add click handlers
+  private attachSuggestionEventHandlers(container: HTMLElement): void {
     container.querySelectorAll('.kvp-card').forEach((card) => {
       card.addEventListener('click', (e) => {
         const target = e.target as HTMLElement;
@@ -560,7 +597,6 @@ class KvpPage {
       });
     });
 
-    // Add action button handlers
     container.querySelectorAll('.action-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -695,90 +731,63 @@ class KvpPage {
 
   private async loadStatistics(): Promise<void> {
     try {
-      let statsData: unknown;
-      if (this.useV2API) {
-        // v2 API wraps response in data property
-        const response = await this.apiClient.get('/kvp/dashboard/stats');
-        statsData = response;
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch('/api/kvp/stats', {
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to load statistics');
-        statsData = await response.json();
-      }
-
-      interface V1Status {
-        new?: number;
-        in_review?: number;
-        implemented?: number;
-        approved?: number;
-        rejected?: number;
-        archived?: number;
-      }
-
-      interface V2Status {
-        new?: number;
-        inReview?: number;
-        approved?: number;
-        implemented?: number;
-        rejected?: number;
-        archived?: number;
-      }
-
-      interface StatsResponse {
-        company?: {
-          total: number;
-          byStatus: V1Status | V2Status;
-          totalSavings: number;
-        };
-        total?: number; // v2 might have flat structure
-        byStatus?: V2Status;
-        totalSavings?: number;
-      }
-
-      const rawData = statsData as StatsResponse;
-
-      // Normalize the data structure - v2 may have flat structure
-      const data = rawData.company
-        ? rawData
-        : {
-            company: {
-              total: rawData.total ?? 0,
-              byStatus: rawData.byStatus ?? {},
-              totalSavings: rawData.totalSavings ?? 0,
-            },
-          };
-
-      // Update statistics display
-      const totalEl = $$('#totalSuggestions');
-      const openEl = $$('#openSuggestions');
-      const implementedEl = $$('#implementedSuggestions');
-      const savingsEl = $$('#totalSavings');
-
-      if (totalEl instanceof HTMLElement && data.company) totalEl.textContent = data.company.total.toString();
-      if (openEl instanceof HTMLElement && data.company) {
-        const byStatus = data.company.byStatus as V1Status & V2Status;
-        const newCount = byStatus.new ?? 0;
-        // Handle both v1 (in_review) and v2 (inReview) formats
-        const inReviewCount = byStatus.inReview ?? byStatus.in_review ?? 0;
-        openEl.textContent = (newCount + inReviewCount).toString();
-      }
-      if (implementedEl instanceof HTMLElement && data.company) {
-        implementedEl.textContent = (data.company.byStatus.implemented ?? 0).toString();
-      }
-      if (savingsEl instanceof HTMLElement && data.company)
-        savingsEl.textContent = new Intl.NumberFormat('de-DE', {
-          style: 'currency',
-          currency: 'EUR',
-        }).format(data.company.totalSavings);
+      const statsData = await this.fetchStatistics();
+      const data = this.normalizeStatsData(statsData);
+      this.updateStatisticsDisplay(data);
     } catch (error) {
       console.error('Error loading statistics:', error);
+    }
+  }
+
+  private async fetchStatistics(): Promise<unknown> {
+    if (this.useV2API) {
+      return await this.apiClient.get('/kvp/dashboard/stats');
+    }
+
+    const token = getAuthToken();
+    const response = await fetch('/api/kvp/stats', {
+      headers: { Authorization: `Bearer ${token ?? ''}` },
+    });
+    if (!response.ok) throw new Error('Failed to load statistics');
+    return await response.json();
+  }
+
+  private normalizeStatsData(statsData: unknown): StatsResponse {
+    const rawData = statsData as StatsResponse;
+    return rawData.company
+      ? rawData
+      : {
+          company: {
+            total: rawData.total ?? 0,
+            byStatus: rawData.byStatus ?? {},
+            totalSavings: rawData.totalSavings ?? 0,
+          },
+        };
+  }
+
+  private updateStatisticsDisplay(data: StatsResponse): void {
+    const totalEl = $$('#totalSuggestions');
+    const openEl = $$('#openSuggestions');
+    const implementedEl = $$('#implementedSuggestions');
+    const savingsEl = $$('#totalSavings');
+
+    if (totalEl instanceof HTMLElement && data.company) {
+      totalEl.textContent = data.company.total.toString();
+    }
+    if (openEl instanceof HTMLElement && data.company) {
+      const byStatus = data.company.byStatus as V1Status & V2Status;
+      const newCount = byStatus.new ?? 0;
+      const inReviewCount = byStatus.inReview ?? byStatus.in_review ?? 0;
+      openEl.textContent = (newCount + inReviewCount).toString();
+    }
+    if (implementedEl instanceof HTMLElement && data.company) {
+      implementedEl.textContent = (data.company.byStatus.implemented ?? 0).toString();
+    }
+    if (savingsEl instanceof HTMLElement && data.company) {
+      savingsEl.textContent = new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+      }).format(data.company.totalSavings);
     }
   }
 
@@ -807,7 +816,14 @@ class KvpPage {
   }
 
   private setupEventListeners(): void {
-    // Filter buttons
+    this.setupFilterButtons();
+    this.setupSecondaryFilters();
+    this.setupSearchFilter();
+    this.setupKvpCategorySelection();
+    this.setupCreateButtons();
+  }
+
+  private setupFilterButtons(): void {
     document.querySelectorAll('.filter-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.filter-btn').forEach((b) => {
@@ -820,30 +836,29 @@ class KvpPage {
         void this.loadSuggestions();
       });
     });
+  }
 
-    // Secondary filters - Listen to the hidden input value changes
+  private setupSecondaryFilters(): void {
     ['statusFilterValue', 'categoryFilterValue', 'departmentFilterValue'].forEach((id) => {
       const element = $$(`#${id}`);
       if (element) {
-        element.addEventListener('change', () => {
-          void this.loadSuggestions();
-        });
+        element.addEventListener('change', () => void this.loadSuggestions());
       }
     });
+  }
 
-    // Search filter with debounce
+  private setupSearchFilter(): void {
     let searchTimeout: number;
     const searchInput = $$('#searchFilter');
     if (searchInput) {
       searchInput.addEventListener('input', () => {
         clearTimeout(searchTimeout);
-        searchTimeout = window.setTimeout(() => {
-          void this.loadSuggestions();
-        }, 300);
+        searchTimeout = window.setTimeout(() => void this.loadSuggestions(), 300);
       });
     }
+  }
 
-    // Event Delegation for dynamic KVP category selection in modal
+  private setupKvpCategorySelection(): void {
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const kvpCategoryOption = target.closest('[data-action="select-kvp-category"]');
@@ -852,29 +867,23 @@ class KvpPage {
         const text = kvpCategoryOption.dataset.text;
         if (value !== undefined && value !== '' && text !== undefined && text !== '') {
           const kvpWindow = window as unknown as KvpWindow;
-          if (kvpWindow.selectKvpCategory) {
-            kvpWindow.selectKvpCategory(value, text);
-          }
+          if (kvpWindow.selectKvpCategory) kvpWindow.selectKvpCategory(value, text);
         }
       }
     });
+  }
 
-    // Create new buttons (both header and floating)
+  private setupCreateButtons(): void {
     const createBtn = document.querySelector('#createNewBtn');
     if (createBtn) {
-      createBtn.addEventListener('click', () => {
-        void this.openCreateModal();
-      });
+      createBtn.addEventListener('click', () => void this.openCreateModal());
     }
 
     const createBtnHeader = document.querySelector('#createNewBtnHeader');
     if (createBtnHeader) {
-      createBtnHeader.addEventListener('click', () => {
-        void this.openCreateModal();
-      });
+      createBtnHeader.addEventListener('click', () => void this.openCreateModal());
     }
 
-    // Create form submission
     const createForm = document.querySelector('#createKvpForm');
     if (createForm !== null) {
       createForm.addEventListener('submit', (e) => {

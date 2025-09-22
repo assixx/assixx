@@ -1693,3 +1693,47 @@ body::after {
 .btn-inline-flex {
   display: inline-flex;
 }
+
+/* ========================================
+   Shift Indicators for Calendar
+   Restored from backup after CSS extraction
+   ======================================== */
+
+/* Shift Indicators */
+.shift-indicator {
+  position: absolute;
+  z-index: 10;
+  right: 20px;
+  bottom: 5px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  background: #ffffff0d;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+}
+
+.shift-indicator.shift-F {
+  color: #fff; /* White for Frühschicht */
+}
+
+.shift-indicator.shift-S {
+  color: #ff9800; /* Orange for Spätschicht */
+}
+
+.shift-indicator.shift-N {
+  color: #3498db; /* Blue for Nachtschicht */
+}
+
+/* Make day cell position relative for absolute positioning */
+.fc-daygrid-day-top {
+  position: relative !important;
+}

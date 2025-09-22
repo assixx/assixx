@@ -599,42 +599,50 @@ function setupOrgLevelDropdown(): void {
   }
 }
 
+function toggleDropdown(): void {
+  const dropdown = $$id('orgIdDropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('show');
+  }
+}
+
+function updateDropdownSelection(value: string, text: string | null): void {
+  const display = $$id('orgIdDisplay');
+  if (display) {
+    const span = display.querySelector('span');
+    if (span) span.textContent = text;
+  }
+
+  const hiddenInput = $$id('orgIdValue') as HTMLInputElement | null;
+  if (hiddenInput) {
+    hiddenInput.value = value;
+  }
+
+  const select = $$id('entryOrgId') as HTMLSelectElement | null;
+  if (select) {
+    select.value = value;
+  }
+
+  const dropdown = $$id('orgIdDropdown');
+  if (dropdown) {
+    dropdown.classList.remove('show');
+  }
+}
+
 function setupCustomDropdown(): void {
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
     if (target.closest('#orgIdDisplay')) {
-      const dropdown = $$id('orgIdDropdown');
-      if (dropdown) {
-        dropdown.classList.toggle('show');
-      }
+      toggleDropdown();
+      return;
     }
 
     const dropdownOption = target.closest('#orgIdDropdown .dropdown-option');
     if (dropdownOption instanceof HTMLElement) {
       const value = dropdownOption.dataset.value ?? '';
       const text = dropdownOption.textContent;
-
-      const display = $$id('orgIdDisplay');
-      if (display) {
-        const span = display.querySelector('span');
-        if (span) span.textContent = text;
-      }
-
-      const hiddenInput = $$id('orgIdValue') as HTMLInputElement | null;
-      if (hiddenInput) {
-        hiddenInput.value = value;
-      }
-
-      const select = $$id('entryOrgId') as HTMLSelectElement | null;
-      if (select) {
-        select.value = value;
-      }
-
-      const dropdown = $$id('orgIdDropdown');
-      if (dropdown) {
-        dropdown.classList.remove('show');
-      }
+      updateDropdownSelection(value, text);
     }
   });
 }
@@ -896,6 +904,53 @@ function handleLoadError(): void {
   }
 }
 
+// Map v2 API response (camelCase) to UI format (snake_case) if needed
+interface V2EntryResponse {
+  id: number;
+  title: string;
+  content: string;
+  priority?: string;
+  priority_level?: string;
+  orgLevel?: string;
+  org_level?: string;
+  orgId?: number;
+  org_id?: number;
+  createdBy?: number;
+  created_by?: number;
+  createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
+  color?: string;
+  // Author fields from API v2
+  authorName?: string;
+  authorFirstName?: string;
+  authorLastName?: string;
+  authorFullName?: string;
+  [key: string]: unknown;
+}
+
+function mapV2EntryToUI(entry: BlackboardEntry): BlackboardEntry {
+  const v2Entry = entry as unknown as V2EntryResponse;
+
+  return {
+    ...entry,
+    priority_level: (v2Entry.priority ?? v2Entry.priority_level ?? entry.priority_level) as
+      | 'low'
+      | 'medium'
+      | 'high'
+      | 'critical',
+    org_level: (v2Entry.orgLevel === 'company' ? 'all' : (v2Entry.orgLevel ?? v2Entry.org_level ?? entry.org_level)) as
+      | 'all'
+      | 'department'
+      | 'team',
+    org_id: v2Entry.orgId ?? v2Entry.org_id ?? entry.org_id,
+    created_by: v2Entry.createdBy ?? v2Entry.created_by ?? entry.created_by,
+    created_at: v2Entry.createdAt ?? v2Entry.created_at ?? entry.created_at,
+    updated_at: v2Entry.updatedAt ?? v2Entry.updated_at ?? entry.updated_at,
+  } as BlackboardEntry;
+}
+
 /**
  * Load blackboard entries
  */
@@ -915,52 +970,7 @@ async function loadEntries(): Promise<void> {
       console.log('[Blackboard] API Response:', data);
 
       const entries = processApiResponse(data);
-
-      // Map v2 API response (camelCase) to UI format (snake_case) if needed
-      interface V2EntryResponse {
-        id: number;
-        title: string;
-        content: string;
-        priority?: string;
-        priority_level?: string;
-        orgLevel?: string;
-        org_level?: string;
-        orgId?: number;
-        org_id?: number;
-        createdBy?: number;
-        created_by?: number;
-        createdAt?: string;
-        created_at?: string;
-        updatedAt?: string;
-        updated_at?: string;
-        color?: string;
-        // Author fields from API v2
-        authorName?: string;
-        authorFirstName?: string;
-        authorLastName?: string;
-        authorFullName?: string;
-        [key: string]: unknown;
-      }
-
-      const mappedEntries = entries.map((entry) => {
-        const v2Entry = entry as unknown as V2EntryResponse;
-
-        return {
-          ...entry,
-          priority_level: (v2Entry.priority ?? v2Entry.priority_level ?? entry.priority_level) as
-            | 'low'
-            | 'medium'
-            | 'high'
-            | 'critical',
-          org_level: (v2Entry.orgLevel === 'company'
-            ? 'all'
-            : (v2Entry.orgLevel ?? v2Entry.org_level ?? entry.org_level)) as 'all' | 'department' | 'team',
-          org_id: v2Entry.orgId ?? v2Entry.org_id ?? entry.org_id,
-          created_by: v2Entry.createdBy ?? v2Entry.created_by ?? entry.created_by,
-          created_at: v2Entry.createdAt ?? v2Entry.created_at ?? entry.created_at,
-          updated_at: v2Entry.updatedAt ?? v2Entry.updated_at ?? entry.updated_at,
-        } as BlackboardEntry;
-      });
+      const mappedEntries = entries.map(mapV2EntryToUI);
 
       displayEntries(mappedEntries);
 
@@ -1174,6 +1184,44 @@ function createEntryActions(entryId: number, canEdit: boolean): string {
   `;
 }
 
+function buildEntryCardHtml(
+  entry: BlackboardEntry,
+  cardClass: string,
+  colorClass: string,
+  randomRotation: string,
+  randomPushpin: string,
+  priorityIcon: string,
+  contentHtml: string,
+  isDirectAttachment: boolean,
+  canEdit: boolean,
+): string {
+  const authorName = escapeHtml(entry.authorFullName ?? entry.author_full_name ?? entry.author_name ?? 'Unknown');
+
+  return `
+    <div class="${cardClass} ${colorClass} ${randomRotation}" data-entry-id="${entry.id}" data-action="view-entry" style="cursor: pointer;">
+      <div class="pushpin ${randomPushpin}"></div>
+
+      <h4 style="margin: 0 0 10px 0; font-weight: 600; color:rgb(0, 0, 0);">
+        ${priorityIcon} ${escapeHtml(entry.title)}
+      </h4>
+
+      ${contentHtml}
+      ${createAttachmentInfo(entry, isDirectAttachment)}
+
+      <div style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
+        <span>
+          <i class="fas fa-user" style="opacity: 0.6;"></i> ${authorName}
+        </span>
+        <span>
+          ${formatDate(entry.createdAt ?? entry.created_at)}
+        </span>
+      </div>
+
+      ${createEntryActions(entry.id, canEdit)}
+    </div>
+  `;
+}
+
 /**
  * Create entry card element with pinboard style
  */
@@ -1207,33 +1255,18 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     contentHtml = createTextContent(entry.content);
   }
 
-  // API v2 uses authorFullName (camelCase), v1 uses author_full_name (snake_case)
-  const authorName = escapeHtml(entry.authorFullName ?? entry.author_full_name ?? entry.author_name ?? 'Unknown');
   const colorClass = cardClass === 'pinboard-sticky' ? `color-${cardColor}` : '';
-
-  const htmlContent = `
-    <div class="${cardClass} ${colorClass} ${randomRotation}" data-entry-id="${entry.id}" data-action="view-entry" style="cursor: pointer;">
-      <div class="pushpin ${randomPushpin}"></div>
-
-      <h4 style="margin: 0 0 10px 0; font-weight: 600; color:rgb(0, 0, 0);">
-        ${priorityIcon} ${escapeHtml(entry.title)}
-      </h4>
-
-      ${contentHtml}
-      ${createAttachmentInfo(entry, isDirectAttachment)}
-
-      <div style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
-        <span>
-          <i class="fas fa-user" style="opacity: 0.6;"></i> ${authorName}
-        </span>
-        <span>
-          ${formatDate(entry.createdAt ?? entry.created_at)}
-        </span>
-      </div>
-
-      ${createEntryActions(entry.id, canEdit)}
-    </div>
-  `;
+  const htmlContent = buildEntryCardHtml(
+    entry,
+    cardClass,
+    colorClass,
+    randomRotation,
+    randomPushpin,
+    priorityIcon,
+    contentHtml,
+    isDirectAttachment,
+    canEdit,
+  );
 
   // Safe: content is sanitized by setHTML from dom-utils
   setHTML(container, htmlContent);
@@ -1270,6 +1303,66 @@ function getPriorityIcon(priority: string): string {
   return icons[priority] ?? icons.medium;
 }
 
+function createPaginationButton(text: string, page: number, className = 'btn-secondary'): HTMLButtonElement {
+  const btn = document.createElement('button');
+  btn.className = `btn btn-sm ${className}`;
+
+  // Check if text is HTML (contains tags) or plain text
+  if (text.includes('<')) {
+    // For icon HTML, create the element safely
+    const icon = document.createElement('i');
+    if (text.includes('fa-chevron-left')) {
+      icon.className = 'fas fa-chevron-left';
+    } else if (text.includes('fa-chevron-right')) {
+      icon.className = 'fas fa-chevron-right';
+    }
+    btn.appendChild(icon);
+  } else {
+    // Plain text is safe to use
+    btn.textContent = text;
+  }
+
+  btn.dataset.action = 'change-page';
+  btn.dataset.page = page.toString();
+  return btn;
+}
+
+function shouldShowPageButton(pageNum: number, currentPage: number, totalPages: number): boolean {
+  return pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 2 && pageNum <= currentPage + 2);
+}
+
+function shouldShowEllipsis(pageNum: number, currentPage: number): boolean {
+  return pageNum === currentPage - 3 || pageNum === currentPage + 3;
+}
+
+function appendPaginationElements(container: Element, pagination: PaginationInfo): void {
+  // Previous button
+  if (currentPage > 1) {
+    const prevBtn = createPaginationButton('<i class="fas fa-chevron-left"></i>', currentPage - 1);
+    container.append(prevBtn);
+  }
+
+  // Page numbers
+  for (let i = 1; i <= pagination.totalPages; i++) {
+    if (shouldShowPageButton(i, currentPage, pagination.totalPages)) {
+      const className = i === currentPage ? 'btn-primary' : 'btn-secondary';
+      const pageBtn = createPaginationButton(i.toString(), i, className);
+      container.append(pageBtn);
+    } else if (shouldShowEllipsis(i, currentPage)) {
+      const dots = document.createElement('span');
+      dots.textContent = '...';
+      dots.className = 'pagination-dots';
+      container.append(dots);
+    }
+  }
+
+  // Next button
+  if (currentPage < pagination.totalPages) {
+    const nextBtn = createPaginationButton('<i class="fas fa-chevron-right"></i>', currentPage + 1);
+    container.append(nextBtn);
+  }
+}
+
 /**
  * Update pagination UI
  */
@@ -1281,42 +1374,7 @@ function updatePagination(pagination: PaginationInfo): void {
 
   if (pagination.totalPages <= 1) return;
 
-  // Previous button
-  if (currentPage > 1) {
-    const prevBtn = document.createElement('button');
-    prevBtn.className = 'btn btn-sm btn-secondary';
-    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
-    prevBtn.dataset.action = 'change-page';
-    prevBtn.dataset.page = (currentPage - 1).toString();
-    paginationContainer.append(prevBtn);
-  }
-
-  // Page numbers
-  for (let i = 1; i <= pagination.totalPages; i++) {
-    if (i === 1 || i === pagination.totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
-      const pageBtn = document.createElement('button');
-      pageBtn.className = `btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-secondary'}`;
-      pageBtn.textContent = i.toString();
-      pageBtn.dataset.action = 'change-page';
-      pageBtn.dataset.page = i.toString();
-      paginationContainer.append(pageBtn);
-    } else if (i === currentPage - 3 || i === currentPage + 3) {
-      const dots = document.createElement('span');
-      dots.textContent = '...';
-      dots.className = 'pagination-dots';
-      paginationContainer.append(dots);
-    }
-  }
-
-  // Next button
-  if (currentPage < pagination.totalPages) {
-    const nextBtn = document.createElement('button');
-    nextBtn.className = 'btn btn-sm btn-secondary';
-    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
-    nextBtn.dataset.action = 'change-page';
-    nextBtn.dataset.page = (currentPage + 1).toString();
-    paginationContainer.append(nextBtn);
-  }
+  appendPaginationElements(paginationContainer, pagination);
 }
 
 /**
@@ -2187,21 +2245,7 @@ function openDirectAttachModal(): void {
   }, 100);
 }
 
-/**
- * Setup direct attachment handlers
- */
-function setupDirectAttachHandlers(): void {
-  console.info('[DirectAttach] Setting up handlers');
-  const dropZone = $$id('directAttachDropZone');
-  const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
-  const saveBtn = $$id('saveDirectAttachBtn') as HTMLButtonElement | null;
-
-  if (!dropZone || !fileInput) {
-    console.error('[DirectAttach] Missing required elements');
-    return;
-  }
-
-  // Remove old handlers if they exist
+function removeOldDirectAttachHandlers(dropZone: HTMLElement, fileInput: HTMLInputElement): void {
   if (directAttachHandlers.dropZoneClick) {
     dropZone.removeEventListener('click', directAttachHandlers.dropZoneClick);
   }
@@ -2217,8 +2261,9 @@ function setupDirectAttachHandlers(): void {
   if (directAttachHandlers.drop) {
     dropZone.removeEventListener('drop', directAttachHandlers.drop);
   }
+}
 
-  // Create new handlers
+function createDirectAttachHandlers(dropZone: HTMLElement, fileInput: HTMLInputElement): void {
   directAttachHandlers.dropZoneClick = () => {
     console.info('[DirectAttach] Drop zone clicked');
     fileInput.click();
@@ -2253,15 +2298,27 @@ function setupDirectAttachHandlers(): void {
       handleDirectAttachFile(event.dataTransfer.files[0]);
     }
   };
+}
 
-  // Add new listeners
+function attachDirectAttachListeners(dropZone: HTMLElement, fileInput: HTMLInputElement): void {
+  if (
+    !directAttachHandlers.dropZoneClick ||
+    !directAttachHandlers.fileInputChange ||
+    !directAttachHandlers.dragOver ||
+    !directAttachHandlers.dragLeave ||
+    !directAttachHandlers.drop
+  ) {
+    return;
+  }
+
   dropZone.addEventListener('click', directAttachHandlers.dropZoneClick);
   fileInput.addEventListener('change', directAttachHandlers.fileInputChange);
   dropZone.addEventListener('dragover', directAttachHandlers.dragOver);
   dropZone.addEventListener('dragleave', directAttachHandlers.dragLeave);
   dropZone.addEventListener('drop', directAttachHandlers.drop);
+}
 
-  // Size selection buttons - use event delegation
+function setupSizeSelectionHandlers(): void {
   document.querySelectorAll('.size-option').forEach((btn) => {
     btn.addEventListener('click', function (this: HTMLElement) {
       console.info('[DirectAttach] Size button clicked:', this.dataset.size);
@@ -2271,6 +2328,26 @@ function setupDirectAttachHandlers(): void {
       this.classList.add('active');
     });
   });
+}
+
+/**
+ * Setup direct attachment handlers
+ */
+function setupDirectAttachHandlers(): void {
+  console.info('[DirectAttach] Setting up handlers');
+  const dropZone = $$id('directAttachDropZone');
+  const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
+  const saveBtn = $$id('saveDirectAttachBtn') as HTMLButtonElement | null;
+
+  if (!dropZone || !fileInput) {
+    console.error('[DirectAttach] Missing required elements');
+    return;
+  }
+
+  removeOldDirectAttachHandlers(dropZone, fileInput);
+  createDirectAttachHandlers(dropZone, fileInput);
+  attachDirectAttachListeners(dropZone, fileInput);
+  setupSizeSelectionHandlers();
 
   // Save button handler
   if (saveBtn) {
@@ -2352,6 +2429,76 @@ function clearDirectAttachment(): void {
   directAttachmentFile = null;
 }
 
+function buildDirectAttachFormData(
+  file: File,
+  title: string,
+  size: string,
+  orgLevelSelect: HTMLSelectElement | null,
+  prioritySelect: HTMLSelectElement | null,
+): FormData {
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('content', `[Attachment:${size}]`); // Special content format
+  formData.append('org_level', orgLevelSelect?.value ?? 'company');
+  formData.append('org_id', '1'); // TODO: Get actual org_id based on level
+  formData.append('priority_level', prioritySelect?.value ?? 'normal');
+  formData.append('color', 'white'); // White background for images
+  formData.append('tags', 'attachment,image');
+  formData.append('attachment', file);
+  return formData;
+}
+
+async function submitDirectAttachment(formData: FormData): Promise<void> {
+  const token = localStorage.getItem('token');
+  if (token === null || token.length === 0) {
+    showError('Keine Authentifizierung gefunden');
+    return;
+  }
+
+  const apiClient = ApiClient.getInstance();
+  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
+  const endpoint = useV2 ? '/blackboard/entries' : '/blackboard';
+
+  if (useV2) {
+    try {
+      await apiClient.request(
+        endpoint,
+        {
+          method: 'POST',
+          body: formData,
+        },
+        { version: 'v2', contentType: '' },
+      );
+    } catch (error) {
+      throw new Error((error as { message?: string }).message ?? 'Fehler beim Speichern');
+    }
+  } else {
+    const response = await fetch(`/api${endpoint}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = (await response.json()) as { message?: string };
+      throw new Error(error.message ?? 'Fehler beim Speichern');
+    }
+  }
+}
+
+function resetDirectAttachForm(): void {
+  const form = $$id('directAttachForm') as HTMLFormElement | null;
+  if (form) form.reset();
+
+  const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
+  if (fileInput) fileInput.value = '';
+
+  const preview = $$id('directAttachPreview');
+  if (preview) preview.classList.add('d-none');
+}
+
 /**
  * Save direct attachment
  */
@@ -2382,71 +2529,17 @@ async function saveDirectAttachment(): Promise<void> {
   const title = titleInput?.value ?? file.name.replace(/\.[^./]+$/, '');
   const size = sizeOption?.dataset.size ?? 'medium';
 
-  // Create FormData
-  const formData = new FormData();
-  formData.append('title', title);
-  formData.append('content', `[Attachment:${size}]`); // Special content format
-  formData.append('org_level', orgLevelSelect?.value ?? 'company');
-  formData.append('org_id', '1'); // TODO: Get actual org_id based on level
-  formData.append('priority_level', prioritySelect?.value ?? 'normal');
-  formData.append('color', 'white'); // White background for images
-  formData.append('tags', 'attachment,image');
-  formData.append('attachment', file);
+  const formData = buildDirectAttachFormData(file, title, size, orgLevelSelect, prioritySelect);
 
   // Clear before async operation to avoid race condition
   directAttachmentFile = null;
 
   try {
-    const token = localStorage.getItem('token');
-    if (token === null || token.length === 0) {
-      showError('Keine Authentifizierung gefunden');
-      return;
-    }
-
-    const apiClient = ApiClient.getInstance();
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-    const endpoint = useV2 ? '/blackboard/entries' : '/blackboard';
-
-    if (useV2) {
-      try {
-        await apiClient.request(
-          endpoint,
-          {
-            method: 'POST',
-            body: formData,
-          },
-          { version: 'v2', contentType: '' },
-        );
-      } catch (error) {
-        throw new Error((error as { message?: string }).message ?? 'Fehler beim Speichern');
-      }
-    } else {
-      const response = await fetch(`/api${endpoint}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const error = (await response.json()) as { message?: string };
-        throw new Error(error.message ?? 'Fehler beim Speichern');
-      }
-    }
+    await submitDirectAttachment(formData);
 
     showSuccess('Datei erfolgreich angeheftet!');
     closeModal('directAttachModal');
-
-    // Reset the form and file input for next use
-    const form = $$id('directAttachForm') as HTMLFormElement | null;
-    if (form) form.reset();
-
-    const fileInput = $$id('directAttachInput') as HTMLInputElement | null;
-    if (fileInput) fileInput.value = '';
-
-    const preview = $$id('directAttachPreview');
-    if (preview) preview.classList.add('d-none');
+    resetDirectAttachForm();
 
     // Reload entries
     setEntriesLoadingEnabled(true);

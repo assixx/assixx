@@ -19,6 +19,13 @@ import { getAuthToken, showInfo } from './auth';
 import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 import { openModal } from './utils/modal-manager';
 
+interface ShiftDetailData {
+  employee_id: number;
+  first_name: string;
+  last_name: string;
+  username: string;
+}
+
 interface Employee extends User {
   department_id?: number;
   team_id?: number;
@@ -184,15 +191,7 @@ class ShiftPlanningSystem {
   private selectedEmployee: Employee | null;
   private employees: Employee[];
   private weeklyShifts: Map<string, Map<string, number[]>>;
-  private shiftDetails: Map<
-    string,
-    {
-      employee_id: number;
-      first_name: string;
-      last_name: string;
-      username: string;
-    }
-  >;
+  private shiftDetails: Map<string, ShiftDetailData>;
   private isAdmin: boolean;
   private userRole: string;
   private currentUserId: number | null;
@@ -750,7 +749,19 @@ class ShiftPlanningSystem {
   setupEventListeners(): void {
     console.info('[SHIFTS DEBUG] Setting up event listeners');
 
-    // Week navigation
+    // Setup all event listeners
+    this.setupWeekNavigation();
+    this.setupDragDetection();
+    this.setupClickHandlers();
+    this.setupDragAndDrop();
+    this.setupContextEvents();
+    this.setupNotesEvents();
+    this.setupAdminActions();
+    this.setupGlobalClickHandler();
+    this.setupShiftControls();
+  }
+
+  private setupWeekNavigation(): void {
     const prevBtn = document.querySelector('#prevWeekBtn');
     const nextBtn = document.querySelector('#nextWeekBtn');
 
@@ -774,39 +785,16 @@ class ShiftPlanningSystem {
     } else {
       console.error('[SHIFTS ERROR] Next week button not found!');
     }
+  }
 
-    // Detect drag attempt on non-draggable items
+  private setupDragDetection(): void {
     let mouseDownTime = 0;
     document.addEventListener('mousedown', (e) => {
       const target = e.target as HTMLElement;
       const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
       if (employeeItem && employeeItem.getAttribute('draggable') === 'false') {
         mouseDownTime = Date.now();
-
-        // Set up temporary mousemove listener to detect drag attempt
-        const handleMouseMove = (moveEvent: MouseEvent) => {
-          // If mouse moved more than 5px, it's a drag attempt
-          const distance = Math.sqrt(
-            Math.pow(moveEvent.clientX - e.clientX, 2) + Math.pow(moveEvent.clientY - e.clientY, 2),
-          );
-
-          if (distance > 5) {
-            // User is trying to drag a locked item
-            if (this.currentPlanId !== null && !this.isEditMode) {
-              showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
-            }
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-          }
-        };
-
-        const handleMouseUp = () => {
-          document.removeEventListener('mousemove', handleMouseMove);
-          document.removeEventListener('mouseup', handleMouseUp);
-        };
-
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
+        this.setupDragAttemptListeners(e, employeeItem);
       }
     });
 
@@ -815,11 +803,36 @@ class ShiftPlanningSystem {
       const target = e.target as HTMLElement;
       const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
       if (employeeItem && !this.isDragging && Date.now() - mouseDownTime < 200) {
-        // Only process click if it wasn't a drag attempt (quick click < 200ms)
         this.selectEmployee(employeeItem as HTMLElement);
       }
     });
+  }
 
+  private setupDragAttemptListeners(e: MouseEvent, _employeeItem: Element): void {
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const distance = Math.sqrt(
+        Math.pow(moveEvent.clientX - e.clientX, 2) + Math.pow(moveEvent.clientY - e.clientY, 2),
+      );
+
+      if (distance > 5) {
+        if (this.currentPlanId !== null && !this.isEditMode) {
+          showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
+        }
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      }
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }
+
+  private setupClickHandlers(): void {
     // Shift cell assignment (fallback for non-drag interaction)
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
@@ -827,43 +840,29 @@ class ShiftPlanningSystem {
       if (shiftCell && this.isAdmin && !this.isDragging) {
         this.assignEmployeeToShift(shiftCell as HTMLElement);
       } else if (shiftCell && !this.isAdmin && !this.isDragging) {
-        // Show shift details modal for employees
         this.showShiftDetailsModal(shiftCell as HTMLElement);
       }
     });
+  }
 
-    // Drag & Drop Events
-    this.setupDragAndDrop();
-
-    // Context selection events
-    this.setupContextEvents();
-
-    // Weekly notes functionality
-    this.setupNotesEvents();
-
-    // Admin actions
+  private setupAdminActions(): void {
     document.querySelector('#saveScheduleBtn')?.addEventListener('click', () => {
       void this.saveSchedule();
     });
     document.querySelector('#resetScheduleBtn')?.addEventListener('click', () => {
       void this.resetSchedule();
     });
+  }
 
-    // Edit mode button (will be created dynamically)
+  private setupGlobalClickHandler(): void {
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-
       this.handleScheduleButtons(target);
       this.handleRemoveShiftAction(e, target);
       this.handleCloseModalAction(target);
       this.handleAddToFavoritesAction(target);
       this.handleDropdownOption(target);
     });
-
-    // Setup shift control checkboxes (preferences will be loaded after team selection)
-    this.setupShiftControls();
-
-    // Remove logout functionality - handled by unified navigation
   }
 
   setupDragAndDrop(): void {
@@ -873,7 +872,14 @@ class ShiftPlanningSystem {
       return;
     }
 
-    // Drag start on employee items
+    this.setupDragStartHandler();
+    this.setupDragEndHandler();
+    this.setupDragOverHandler();
+    this.setupDragLeaveHandler();
+    this.setupDropHandlers();
+  }
+
+  private setupDragStartHandler(): void {
     document.addEventListener('dragstart', (e) => {
       const target = e.target as HTMLElement;
       const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
@@ -881,12 +887,10 @@ class ShiftPlanningSystem {
       if (employeeItem) {
         console.info('[SHIFTS DEBUG] Drag start on employee:', (employeeItem as HTMLElement).dataset.employeeId);
 
-        // Check if employee is available for dragging
         if (employeeItem.getAttribute('draggable') === 'false') {
           console.info('[SHIFTS DEBUG] Employee not draggable, preventing drag');
           e.preventDefault();
 
-          // Show alert if trying to drag in read-only mode
           if (this.currentPlanId !== null && !this.isEditMode) {
             showErrorAlert('Bitte erst auf "Bearbeiten" klicken, um Änderungen vorzunehmen');
           }
@@ -904,8 +908,9 @@ class ShiftPlanningSystem {
         }
       }
     });
+  }
 
-    // Drag end
+  private setupDragEndHandler(): void {
     document.addEventListener('dragend', (e) => {
       const target = e.target as HTMLElement;
       const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
@@ -915,32 +920,28 @@ class ShiftPlanningSystem {
         employeeItem.classList.remove('dragging');
       }
     });
+  }
 
-    // Drag over for shift cells and to enable drops everywhere
+  private setupDragOverHandler(): void {
     document.addEventListener('dragover', (e) => {
       const target = e.target as HTMLElement;
 
-      // Check if we're in rotation modal FIRST
       const rotationModal = target.closest('#rotation-setup-modal');
       if (rotationModal) {
-        // For rotation modal, ONLY preventDefault and let local handlers manage the rest
         e.preventDefault();
         return;
       }
 
-      // Always preventDefault to enable drop events
       e.preventDefault();
 
-      // For rotation drop zones, let their specific handlers add visual effects
       if (target.classList.contains('drop-zone') || target.closest('.drop-zone')) {
         console.info('[GLOBAL DRAGOVER] Over drop zone, preventDefault called');
         if (e.dataTransfer) {
-          e.dataTransfer.dropEffect = 'move'; // Ensure dropEffect is set
+          e.dataTransfer.dropEffect = 'move';
         }
-        return; // Specific handlers will manage visual feedback
+        return;
       }
 
-      // For shift cells, add visual feedback
       const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
       if (shiftCell) {
         if (e.dataTransfer) {
@@ -949,8 +950,9 @@ class ShiftPlanningSystem {
         shiftCell.classList.add('drag-over');
       }
     });
+  }
 
-    // Drag leave
+  private setupDragLeaveHandler(): void {
     document.addEventListener('dragleave', (e) => {
       const target = e.target as HTMLElement;
       const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
@@ -959,60 +961,66 @@ class ShiftPlanningSystem {
         shiftCell.classList.remove('drag-over');
       }
     });
+  }
 
-    // Drop on shift cells - Listen in BOTH capture and bubble phase for debugging
+  private setupDropHandlers(): void {
+    // Drop on shift cells - Listen in bubble phase
     document.addEventListener(
       'drop',
       (e) => {
-        const target = e.target as HTMLElement;
-
-        console.info('[GLOBAL DROP CAPTURE] !!!!! Drop event in CAPTURE phase on:', target.className, target.id);
-        console.info('[GLOBAL DROP] Event details:', e.dataTransfer?.types, e.dataTransfer?.effectAllowed);
-
-        // Check if this is a rotation modal drop zone - if so, let it handle the event
-        if (target.classList.contains('drop-zone') || target.closest('.drop-zone')) {
-          console.info('[SHIFTS DEBUG] Drop on rotation zone, letting specific handler manage it');
-          // Don't prevent default or stop propagation - let the event continue
-          return; // Let the specific drop zone handler handle this
-        }
-
-        const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
-
-        console.info('[SHIFTS DEBUG] Drop event on:', target);
-
-        if (shiftCell) {
-          e.preventDefault();
-          shiftCell.classList.remove('drag-over');
-
-          const employeeId = e.dataTransfer?.getData('text/plain');
-          console.info('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
-
-          if (employeeId !== undefined && employeeId !== '') {
-            this.assignShift(shiftCell as HTMLElement, Number.parseInt(employeeId, 10));
-          } else {
-            console.error('[SHIFTS ERROR] No employee ID in drop data');
-          }
-        }
+        this.handleDropOnShiftCell(e);
       },
       false,
-    ); // Explicitly use bubbling phase
+    );
 
     // Add another listener in capture phase for debugging
     document.addEventListener(
       'drop',
       (e) => {
-        const target = e.target as HTMLElement;
-        console.info('[GLOBAL DROP DEBUG] Drop detected anywhere! Target:', target.className);
-
-        // If this is within the rotation modal, prevent default to avoid page reload
-        const rotationModal = target.closest('#rotation-setup-modal');
-        if (rotationModal) {
-          console.info('[GLOBAL DROP DEBUG] Drop within rotation modal - preventing default');
-          e.preventDefault(); // Prevent default action (important for modal drops)
-        }
+        this.handleDropInCapturePhase(e);
       },
-      true, // Use capture phase
+      true,
     );
+  }
+
+  private handleDropOnShiftCell(e: DragEvent): void {
+    const target = e.target as HTMLElement;
+
+    console.info('[GLOBAL DROP CAPTURE] !!!!! Drop event in CAPTURE phase on:', target.className, target.id);
+    console.info('[GLOBAL DROP] Event details:', e.dataTransfer?.types, e.dataTransfer?.effectAllowed);
+
+    if (target.classList.contains('drop-zone') || target.closest('.drop-zone')) {
+      console.info('[SHIFTS DEBUG] Drop on rotation zone, letting specific handler manage it');
+      return;
+    }
+
+    const shiftCell = target.closest(CSS_SELECTORS.SHIFT_CELL);
+    console.info('[SHIFTS DEBUG] Drop event on:', target);
+
+    if (shiftCell) {
+      e.preventDefault();
+      shiftCell.classList.remove('drag-over');
+
+      const employeeId = e.dataTransfer?.getData('text/plain');
+      console.info('[SHIFTS DEBUG] Dropped employee ID:', employeeId);
+
+      if (employeeId !== undefined && employeeId !== '') {
+        this.assignShift(shiftCell as HTMLElement, Number.parseInt(employeeId, 10));
+      } else {
+        console.error('[SHIFTS ERROR] No employee ID in drop data');
+      }
+    }
+  }
+
+  private handleDropInCapturePhase(e: DragEvent): void {
+    const target = e.target as HTMLElement;
+    console.info('[GLOBAL DROP DEBUG] Drop detected anywhere! Target:', target.className);
+
+    const rotationModal = target.closest('#rotation-setup-modal');
+    if (rotationModal) {
+      console.info('[GLOBAL DROP DEBUG] Drop within rotation modal - preventing default');
+      e.preventDefault();
+    }
   }
 
   setupContextEvents(): void {
@@ -2224,94 +2232,97 @@ class ShiftPlanningSystem {
     }
 
     try {
-      // Use v2 API for employees with availability data
-      const apiClientInstance = ApiClient.getInstance();
-
-      // ALWAYS load all users via v2 API to get availability data
-      console.info('[SHIFTS DEBUG] Loading all users via v2 API for availability data');
-      let allUsers = await apiClientInstance.get<UserAPIResponse[]>('/users');
-
-      let users: UserAPIResponse[] = [];
-
-      if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
-        // Filter by team ID
-        console.info('[SHIFTS DEBUG] Filtering users by team ID:', this.selectedContext.teamId);
-        // For now, load team members separately to get the correct list
-        const teamMembers = await apiClientInstance.get<UserAPIResponse[]>(
-          `/teams/${String(this.selectedContext.teamId)}/members`,
-        );
-        const teamMemberIds = teamMembers.map((m) => m.id);
-        // Use the full user data with availability from /users endpoint
-        users = allUsers.filter((u) => teamMemberIds.includes(u.id));
-      } else {
-        users = allUsers;
-        // Filter by department if selected
-        if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
-          users = users.filter((u) => {
-            const deptId = u.department_id ?? u.departmentId;
-            return deptId === this.selectedContext.departmentId;
-          });
-        }
-      }
-
-      // Map the users to ensure we have availability data
-      const mappedUsers = mapUsers(users);
-
-      // Convert mapped users to Employee type with all required fields
-      this.employees = mappedUsers.map(
-        (u) =>
-          ({
-            id: u.id,
-            username: u.username,
-            email: u.email,
-            first_name: u.firstName,
-            last_name: u.lastName,
-            firstName: u.firstName,
-            lastName: u.lastName,
-            role: u.role,
-            tenant_id: u.tenantId,
-            department_id: u.departmentId ?? undefined,
-            team_id: u.teamId ?? undefined,
-            position: u.position,
-            employee_number: u.employeeNumber,
-            is_active: u.isActive,
-            is_archived: false,
-            created_at: u.createdAt ?? new Date().toISOString(),
-            updated_at: u.updatedAt ?? new Date().toISOString(),
-            availability_status: u.availabilityStatus ?? undefined,
-            availabilityStatus: u.availabilityStatus ?? undefined,
-            availability_start: u.availabilityStart ?? undefined,
-            availability_end: u.availabilityEnd ?? undefined,
-            availability_notes: u.availabilityNotes ?? undefined,
-          }) as Employee,
-      );
-
-      console.info('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
-      console.info('[SHIFTS DEBUG] Employee data:', this.employees);
-      console.info(
-        '[SHIFTS DEBUG] Employee IDs:',
-        this.employees.map((e) => e.id),
-      );
-
-      // Log availability status for debugging
-      this.employees.forEach((emp) => {
-        console.info('[SHIFTS DEBUG] Employee availability:', {
-          email: emp.email,
-          availability_status: emp.availability_status,
-          availabilityStatus: emp.availabilityStatus,
-        });
-      });
-
-      // No need to load availability separately - v2 API provides it
-      console.info('[SHIFTS] Using availability data from v2 API');
-
+      const users = await this.fetchAndFilterUsers();
+      this.employees = this.mapUsersToEmployees(users);
+      this.logLoadedEmployeesInfo();
       this.renderEmployeeList();
     } catch (error) {
       console.error('Error loading employees:', error);
-      // Fallback data
       this.employees = [];
       this.renderEmployeeList();
     }
+  }
+
+  private async fetchAndFilterUsers(): Promise<UserAPIResponse[]> {
+    const apiClientInstance = ApiClient.getInstance();
+    console.info('[SHIFTS DEBUG] Loading all users via v2 API for availability data');
+    const allUsers = await apiClientInstance.get<UserAPIResponse[]>('/users');
+
+    if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+      return await this.filterUsersByTeam(allUsers);
+    }
+
+    return this.filterUsersByDepartment(allUsers);
+  }
+
+  private async filterUsersByTeam(allUsers: UserAPIResponse[]): Promise<UserAPIResponse[]> {
+    console.info('[SHIFTS DEBUG] Filtering users by team ID:', this.selectedContext.teamId);
+    const apiClientInstance = ApiClient.getInstance();
+    const teamMembers = await apiClientInstance.get<UserAPIResponse[]>(
+      `/teams/${String(this.selectedContext.teamId)}/members`,
+    );
+    const teamMemberIds = teamMembers.map((m) => m.id);
+    return allUsers.filter((u) => teamMemberIds.includes(u.id));
+  }
+
+  private filterUsersByDepartment(users: UserAPIResponse[]): UserAPIResponse[] {
+    if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+      return users.filter((u) => {
+        const deptId = u.department_id ?? u.departmentId;
+        return deptId === this.selectedContext.departmentId;
+      });
+    }
+    return users;
+  }
+
+  private mapUsersToEmployees(users: UserAPIResponse[]): Employee[] {
+    const mappedUsers = mapUsers(users);
+    return mappedUsers.map(
+      (u) =>
+        ({
+          id: u.id,
+          username: u.username,
+          email: u.email,
+          first_name: u.firstName,
+          last_name: u.lastName,
+          firstName: u.firstName,
+          lastName: u.lastName,
+          role: u.role,
+          tenant_id: u.tenantId,
+          department_id: u.departmentId ?? undefined,
+          team_id: u.teamId ?? undefined,
+          position: u.position,
+          employee_number: u.employeeNumber,
+          is_active: u.isActive,
+          is_archived: false,
+          created_at: u.createdAt ?? new Date().toISOString(),
+          updated_at: u.updatedAt ?? new Date().toISOString(),
+          availability_status: u.availabilityStatus ?? undefined,
+          availabilityStatus: u.availabilityStatus ?? undefined,
+          availability_start: u.availabilityStart ?? undefined,
+          availability_end: u.availabilityEnd ?? undefined,
+          availability_notes: u.availabilityNotes ?? undefined,
+        }) as Employee,
+    );
+  }
+
+  private logLoadedEmployeesInfo(): void {
+    console.info('[SHIFTS DEBUG] Employees loaded:', this.employees.length, 'employees');
+    console.info('[SHIFTS DEBUG] Employee data:', this.employees);
+    console.info(
+      '[SHIFTS DEBUG] Employee IDs:',
+      this.employees.map((e) => e.id),
+    );
+
+    this.employees.forEach((emp) => {
+      console.info('[SHIFTS DEBUG] Employee availability:', {
+        email: emp.email,
+        availability_status: emp.availability_status,
+        availabilityStatus: emp.availabilityStatus,
+      });
+    });
+
+    console.info('[SHIFTS] Using availability data from v2 API');
   }
 
   loadEmployeeAvailability(): void {
@@ -2374,7 +2385,7 @@ class ShiftPlanningSystem {
     const isDraggable = this.isAdmin && (this.currentPlanId === null || this.isEditMode);
     item.setAttribute('draggable', isDraggable.toString());
 
-    this.logEmployeeDebugInfo(employee, isDraggable, availabilityStatus);
+    this.logEmployeeItemInfo(employee, isDraggable, availabilityStatus);
 
     // Add visual indicators for unavailable employees
     if (availabilityStatus !== 'available') {
@@ -2387,7 +2398,7 @@ class ShiftPlanningSystem {
     return item;
   }
 
-  private logEmployeeDebugInfo(employee: Employee, isDraggable: boolean, availabilityStatus?: string): void {
+  private logEmployeeItemInfo(employee: Employee, isDraggable: boolean, availabilityStatus?: string): void {
     console.info(
       '[SHIFTS DEBUG] Employee:',
       employee.username,
@@ -3990,185 +4001,229 @@ class ShiftPlanningSystem {
 
   private setupRotationDragDrop(): void {
     console.info('[ROTATION SETUP] Setting up drag & drop zones');
-    // Setup drop zones for each shift type
     const dropZones = ['drop-zone-f', 'drop-zone-s', 'drop-zone-n'];
-
     dropZones.forEach((zoneId) => {
-      const dropZone = $$id(zoneId) as HTMLDivElement | null;
-      if (!dropZone) {
-        console.error('[ROTATION SETUP] Drop zone not found:', zoneId);
-        return;
-      }
-      console.info('[ROTATION SETUP] Setting up drop zone:', zoneId);
-
-      // Set inline handlers to ensure drop is allowed (belt and suspenders approach)
-      dropZone.ondragover = (e) => {
-        e.preventDefault();
-        return false;
-      };
-      dropZone.ondrop = (e) => {
-        e.preventDefault();
-        return false;
-      };
-
-      // Remove old handlers if they exist
-      const existingHandlers = this.rotationDropHandlers.get(zoneId);
-      if (existingHandlers) {
-        if ('dragenter' in existingHandlers && typeof existingHandlers.dragenter === 'function') {
-          dropZone.removeEventListener('dragenter', existingHandlers.dragenter);
-        }
-        dropZone.removeEventListener('dragover', existingHandlers.dragover);
-        dropZone.removeEventListener('dragleave', existingHandlers.dragleave);
-        dropZone.removeEventListener('drop', existingHandlers.drop);
-      }
-
-      // Create new handlers
-      const dragenterHandler = (e: Event) => {
-        const dragEvent = e as DragEvent;
-        dragEvent.preventDefault(); // Critical for allowing drop
-        dragEvent.stopPropagation();
-        dragEvent.stopImmediatePropagation();
-
-        if (dragEvent.dataTransfer) {
-          dragEvent.dataTransfer.dropEffect = 'move';
-        }
-
-        console.info('[ROTATION DRAGENTER] Entering zone:', zoneId);
-        dropZone.classList.add('drag-over'); // Also add visual feedback here
-      };
-
-      const dragoverHandler = (e: Event) => {
-        const dragEvent = e as DragEvent;
-        // MUST prevent default to allow drop!
-        dragEvent.preventDefault();
-        dragEvent.stopPropagation(); // Stop bubbling
-        dragEvent.stopImmediatePropagation(); // Stop all other handlers
-
-        // Always set dropEffect to signal drop is allowed
-        if (dragEvent.dataTransfer) {
-          dragEvent.dataTransfer.dropEffect = 'move';
-          dragEvent.dataTransfer.effectAllowed = 'move';
-        }
-
-        if (!dropZone.classList.contains('drag-over')) {
-          console.info('[ROTATION DRAGOVER] Drag over zone:', zoneId);
-          dropZone.classList.add('drag-over');
-        }
-      };
-
-      const dragleaveHandler = (e: Event) => {
-        const dragEvent = e as DragEvent;
-        // Check if we're really leaving the drop zone or just hovering over a child
-        const relatedTarget = (dragEvent as DragEvent & { relatedTarget?: EventTarget }).relatedTarget as
-          | HTMLElement
-          | null
-          | undefined;
-
-        // Only remove drag-over if we're truly leaving the zone
-        if (!relatedTarget || !dropZone.contains(relatedTarget)) {
-          console.info('[ROTATION DRAGLEAVE] Actually leaving zone:', zoneId);
-          dropZone.classList.remove('drag-over');
-        } else {
-          console.info('[ROTATION DRAGLEAVE] False leave (still in zone):', zoneId);
-        }
-      };
-
-      // Handle drop
-      const dropHandler = (e: Event) => {
-        console.info('[ROTATION DROP] DROP EVENT FIRED! Zone:', zoneId);
-        const dragEvent = e as DragEvent;
-        dragEvent.preventDefault();
-        dragEvent.stopPropagation(); // Prevent bubbling to document handler
-        dragEvent.stopImmediatePropagation(); // Stop ALL other handlers
-        dropZone.classList.remove('drag-over');
-
-        console.info('[ROTATION DROP] Drop event triggered on zone:', zoneId, 'Event:', dragEvent);
-
-        if (!dragEvent.dataTransfer) {
-          console.error('[ROTATION DROP] No dataTransfer object!');
-          return;
-        }
-
-        // Try to get data from different keys for compatibility
-        let employeeId = dragEvent.dataTransfer.getData('employeeId');
-        if (employeeId === '') {
-          employeeId = dragEvent.dataTransfer.getData('text/plain');
-        }
-        const employeeName = dragEvent.dataTransfer.getData('employeeName');
-
-        console.info('[ROTATION DROP] Received data - ID:', employeeId, 'Name:', employeeName);
-
-        if (employeeId === '') {
-          console.error('[ROTATION DROP] No employee ID received!');
-          return;
-        }
-
-        // Check if employee already exists in any drop zone and remove it
-        const existingElement = document.querySelector(`.drop-zone [data-employee-id="${employeeId}"]`);
-        if (existingElement !== null) {
-          existingElement.remove();
-        }
-
-        // Create employee element in drop zone
-        const employeeDiv = document.createElement('div');
-        employeeDiv.className = 'employee-item';
-        employeeDiv.dataset.employeeId = employeeId;
-        employeeDiv.dataset.shiftType = dropZone.dataset.shift ?? '';
-        employeeDiv.textContent = employeeName;
-
-        // Make it draggable again
-        employeeDiv.draggable = true;
-
-        // Add drag handlers for re-ordering
-        employeeDiv.addEventListener('dragstart', (dragEvent) => {
-          if (dragEvent.dataTransfer) {
-            dragEvent.dataTransfer.effectAllowed = 'move';
-            dragEvent.dataTransfer.setData('employeeId', employeeId);
-            dragEvent.dataTransfer.setData('employeeName', employeeName);
-            employeeDiv.classList.add('dragging');
-          }
-        });
-
-        employeeDiv.addEventListener('dragend', () => {
-          employeeDiv.classList.remove('dragging');
-        });
-
-        // Add click handler to remove (the × button)
-        employeeDiv.addEventListener('click', (clickEvent) => {
-          const target = clickEvent.target as HTMLElement;
-          const rect = target.getBoundingClientRect();
-          const clickX = clickEvent.clientX - rect.left;
-
-          // Check if click is on the right side (× button area)
-          if (clickX > rect.width - 30) {
-            employeeDiv.remove();
-          }
-        });
-
-        dropZone.append(employeeDiv);
-        console.info('[ROTATION DROP] Employee added to zone:', zoneId, 'ID:', employeeId);
-      };
-
-      // Register ALL handlers in CAPTURE phase to intercept before document handlers!
-      console.info('[ROTATION SETUP] Registering event handlers for zone:', zoneId);
-      dropZone.addEventListener('dragenter', dragenterHandler, true);
-      dropZone.addEventListener('dragover', dragoverHandler, true);
-      dropZone.addEventListener('dragleave', dragleaveHandler, true);
-      // CRITICAL: Use capture phase (true) for drop to intercept before any bubbling handlers!
-      dropZone.addEventListener('drop', dropHandler, true);
-
-      console.info('[ROTATION SETUP] Drop handler registered for zone:', zoneId, dropZone);
-
-      // Store handlers for cleanup later
-      this.rotationDropHandlers.set(zoneId, {
-        dragenter: dragenterHandler,
-        dragover: dragoverHandler,
-        dragleave: dragleaveHandler,
-        drop: dropHandler,
-      });
-
-      console.info('[ROTATION SETUP] Handlers stored for zone:', zoneId);
+      this.setupDropZone(zoneId);
     });
+  }
+
+  private setupDropZone(zoneId: string): void {
+    const dropZone = $$id(zoneId) as HTMLDivElement | null;
+    if (!dropZone) {
+      console.error('[ROTATION SETUP] Drop zone not found:', zoneId);
+      return;
+    }
+    console.info('[ROTATION SETUP] Setting up drop zone:', zoneId);
+
+    this.setInlineHandlers(dropZone);
+    this.removeExistingHandlers(dropZone, zoneId);
+
+    const handlers = this.createDropZoneHandlers(dropZone, zoneId);
+    this.registerHandlers(dropZone, zoneId, handlers);
+  }
+
+  private setInlineHandlers(dropZone: HTMLDivElement): void {
+    dropZone.ondragover = (e) => {
+      e.preventDefault();
+      return false;
+    };
+    dropZone.ondrop = (e) => {
+      e.preventDefault();
+      return false;
+    };
+  }
+
+  private removeExistingHandlers(dropZone: HTMLDivElement, zoneId: string): void {
+    const existingHandlers = this.rotationDropHandlers.get(zoneId);
+    if (existingHandlers) {
+      if ('dragenter' in existingHandlers && typeof existingHandlers.dragenter === 'function') {
+        dropZone.removeEventListener('dragenter', existingHandlers.dragenter);
+      }
+      dropZone.removeEventListener('dragover', existingHandlers.dragover);
+      dropZone.removeEventListener('dragleave', existingHandlers.dragleave);
+      dropZone.removeEventListener('drop', existingHandlers.drop);
+    }
+  }
+
+  private createDropZoneHandlers(
+    dropZone: HTMLDivElement,
+    zoneId: string,
+  ): {
+    dragenter: (e: Event) => void;
+    dragover: (e: Event) => void;
+    dragleave: (e: Event) => void;
+    drop: (e: Event) => void;
+  } {
+    return {
+      dragenter: this.createDragEnterHandler(dropZone, zoneId),
+      dragover: this.createDragOverHandler(dropZone, zoneId),
+      dragleave: this.createDragLeaveHandler(dropZone, zoneId),
+      drop: this.createDropHandler(dropZone, zoneId),
+    };
+  }
+
+  private createDragEnterHandler(dropZone: HTMLDivElement, zoneId: string): (e: Event) => void {
+    return (e: Event) => {
+      const dragEvent = e as DragEvent;
+      dragEvent.preventDefault();
+      dragEvent.stopPropagation();
+      dragEvent.stopImmediatePropagation();
+
+      if (dragEvent.dataTransfer) {
+        dragEvent.dataTransfer.dropEffect = 'move';
+      }
+
+      console.info('[ROTATION DRAGENTER] Entering zone:', zoneId);
+      dropZone.classList.add('drag-over');
+    };
+  }
+
+  private createDragOverHandler(dropZone: HTMLDivElement, zoneId: string): (e: Event) => void {
+    return (e: Event) => {
+      const dragEvent = e as DragEvent;
+      dragEvent.preventDefault();
+      dragEvent.stopPropagation();
+      dragEvent.stopImmediatePropagation();
+
+      if (dragEvent.dataTransfer) {
+        dragEvent.dataTransfer.dropEffect = 'move';
+        dragEvent.dataTransfer.effectAllowed = 'move';
+      }
+
+      if (!dropZone.classList.contains('drag-over')) {
+        console.info('[ROTATION DRAGOVER] Drag over zone:', zoneId);
+        dropZone.classList.add('drag-over');
+      }
+    };
+  }
+
+  private createDragLeaveHandler(dropZone: HTMLDivElement, zoneId: string): (e: Event) => void {
+    return (e: Event) => {
+      const dragEvent = e as DragEvent;
+      const relatedTarget = (dragEvent as DragEvent & { relatedTarget?: EventTarget }).relatedTarget as
+        | HTMLElement
+        | null
+        | undefined;
+
+      if (!relatedTarget || !dropZone.contains(relatedTarget)) {
+        console.info('[ROTATION DRAGLEAVE] Actually leaving zone:', zoneId);
+        dropZone.classList.remove('drag-over');
+      } else {
+        console.info('[ROTATION DRAGLEAVE] False leave (still in zone):', zoneId);
+      }
+    };
+  }
+
+  private createDropHandler(dropZone: HTMLDivElement, zoneId: string): (e: Event) => void {
+    return (e: Event) => {
+      console.info('[ROTATION DROP] DROP EVENT FIRED! Zone:', zoneId);
+      const dragEvent = e as DragEvent;
+      dragEvent.preventDefault();
+      dragEvent.stopPropagation();
+      dragEvent.stopImmediatePropagation();
+      dropZone.classList.remove('drag-over');
+
+      const employeeData = this.extractEmployeeData(dragEvent, zoneId);
+      if (!employeeData) return;
+
+      this.removeExistingEmployee(employeeData.id);
+      const employeeDiv = this.createRotationEmployeeElement(employeeData, dropZone);
+      this.addEmployeeHandlers(employeeDiv, employeeData);
+
+      dropZone.append(employeeDiv);
+      console.info('[ROTATION DROP] Employee added to zone:', zoneId, 'ID:', employeeData.id);
+    };
+  }
+
+  private extractEmployeeData(dragEvent: DragEvent, zoneId: string): { id: string; name: string } | null {
+    console.info('[ROTATION DROP] Drop event triggered on zone:', zoneId, 'Event:', dragEvent);
+
+    if (!dragEvent.dataTransfer) {
+      console.error('[ROTATION DROP] No dataTransfer object!');
+      return null;
+    }
+
+    let employeeId = dragEvent.dataTransfer.getData('employeeId');
+    if (employeeId === '') {
+      employeeId = dragEvent.dataTransfer.getData('text/plain');
+    }
+    const employeeName = dragEvent.dataTransfer.getData('employeeName');
+
+    console.info('[ROTATION DROP] Received data - ID:', employeeId, 'Name:', employeeName);
+
+    if (employeeId === '') {
+      console.error('[ROTATION DROP] No employee ID received!');
+      return null;
+    }
+
+    return { id: employeeId, name: employeeName };
+  }
+
+  private removeExistingEmployee(employeeId: string): void {
+    const existingElement = document.querySelector(`.drop-zone [data-employee-id="${employeeId}"]`);
+    if (existingElement !== null) {
+      existingElement.remove();
+    }
+  }
+
+  private createRotationEmployeeElement(
+    employeeData: { id: string; name: string },
+    dropZone: HTMLDivElement,
+  ): HTMLDivElement {
+    const employeeDiv = document.createElement('div');
+    employeeDiv.className = 'employee-item';
+    employeeDiv.dataset.employeeId = employeeData.id;
+    employeeDiv.dataset.shiftType = dropZone.dataset.shift ?? '';
+    employeeDiv.textContent = employeeData.name;
+    employeeDiv.draggable = true;
+    return employeeDiv;
+  }
+
+  private addEmployeeHandlers(employeeDiv: HTMLDivElement, employeeData: { id: string; name: string }): void {
+    employeeDiv.addEventListener('dragstart', (dragEvent) => {
+      if (dragEvent.dataTransfer) {
+        dragEvent.dataTransfer.effectAllowed = 'move';
+        dragEvent.dataTransfer.setData('employeeId', employeeData.id);
+        dragEvent.dataTransfer.setData('employeeName', employeeData.name);
+        employeeDiv.classList.add('dragging');
+      }
+    });
+
+    employeeDiv.addEventListener('dragend', () => {
+      employeeDiv.classList.remove('dragging');
+    });
+
+    employeeDiv.addEventListener('click', (clickEvent) => {
+      const target = clickEvent.target as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      const clickX = clickEvent.clientX - rect.left;
+
+      if (clickX > rect.width - 30) {
+        employeeDiv.remove();
+      }
+    });
+  }
+
+  private registerHandlers(
+    dropZone: HTMLDivElement,
+    zoneId: string,
+    handlers: {
+      dragenter: (e: Event) => void;
+      dragover: (e: Event) => void;
+      dragleave: (e: Event) => void;
+      drop: (e: Event) => void;
+    },
+  ): void {
+    console.info('[ROTATION SETUP] Registering event handlers for zone:', zoneId);
+    dropZone.addEventListener('dragenter', handlers.dragenter, true);
+    dropZone.addEventListener('dragover', handlers.dragover, true);
+    dropZone.addEventListener('dragleave', handlers.dragleave, true);
+    dropZone.addEventListener('drop', handlers.drop, true);
+
+    console.info('[ROTATION SETUP] Drop handler registered for zone:', zoneId, dropZone);
+
+    this.rotationDropHandlers.set(zoneId, handlers);
+    console.info('[ROTATION SETUP] Handlers stored for zone:', zoneId);
   }
 
   private async loadUserPreferencesFromDatabase(): Promise<void> {
@@ -5049,94 +5104,17 @@ class ShiftPlanningSystem {
 
   private async updateRotation(): Promise<void> {
     try {
-      const token = getAuthToken();
-      if (token === null || token === '') {
-        showErrorAlert('Nicht angemeldet');
-        return;
-      }
+      const token = this.validateAuthAndPattern();
+      // eslint-disable-next-line security/detect-possible-timing-attacks
+      if (token === null) return;
 
-      if (this.currentPatternId === null) {
-        showErrorAlert('Kein Muster zum Bearbeiten ausgewählt');
-        return;
-      }
+      const formValues = this.getRotationFormValues();
+      if (!this.validateRotationFormValues(formValues)) return;
 
-      // Get form values
-      const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
-      const startInput = $$id('rotation-start-date') as HTMLInputElement | null;
-      const endInput = $$id('rotation-end-date') as HTMLInputElement | null;
-      const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
-      const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
+      const requestPayload = this.buildRotationPayload(formValues);
+      await this.sendRotationUpdate(requestPayload, token);
 
-      const pattern = patternSelect?.value;
-      const startDate = startInput?.value;
-      const endDateValue = endInput?.value;
-      const skipWeekends = skipWeekendsInput?.checked ?? false;
-      const ignoreNightShift = ignoreNightInput?.checked ?? false;
-
-      // Validate required fields
-      if (pattern === undefined || pattern === '') {
-        showErrorAlert('Bitte wählen Sie ein Rotationsmuster');
-        return;
-      }
-
-      if (startDate === undefined || startDate === '') {
-        showErrorAlert('Bitte wählen Sie ein Startdatum');
-        return;
-      }
-
-      // Map select value to pattern type
-      const patternTypeMap: Record<string, string> = {
-        weekly: 'alternate_fs',
-        biweekly: 'fixed_n',
-        custom: 'custom',
-      };
-
-      const requestPayload = {
-        name: `Team-Rotation ${this.selectedContext.teamId ?? 'Unknown'}`,
-        description: 'Automatisch generierte Schichtrotation',
-        team_id: this.selectedContext.teamId ?? null,
-        // eslint-disable-next-line security/detect-object-injection
-        pattern_type: patternTypeMap[pattern] ?? 'alternate_fs',
-        pattern_config: {
-          skipWeekends,
-          ignoreNightShift,
-        },
-        starts_at: startDate,
-        ends_at: endDateValue ?? startDate,
-        is_active: true,
-      };
-
-      // Update pattern
-      const response = await fetch(`/api/v2/shifts/rotation/patterns/${this.currentPatternId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestPayload),
-      });
-
-      if (!response.ok) {
-        const errorResponse = (await response.json()) as {
-          error?: {
-            code?: string;
-            message?: string;
-          };
-        };
-        const errorMessage = errorResponse.error?.message ?? 'Fehler beim Aktualisieren des Musters';
-        throw new Error(errorMessage);
-      }
-
-      showSuccessAlert('Rotation erfolgreich aktualisiert');
-
-      // Close modal
-      this.closeRotationModal();
-
-      // Reset edit mode
-      this.editMode = false;
-      this.currentPatternId = null;
-
-      // Reload shift plan
+      this.handleRotationUpdateSuccess();
       await this.loadCurrentWeekData();
     } catch (error) {
       console.error('Error updating rotation:', error);
@@ -5144,14 +5122,128 @@ class ShiftPlanningSystem {
     }
   }
 
+  private validateAuthAndPattern(): string | null {
+    const token = getAuthToken();
+    if (token === null || token === '') {
+      showErrorAlert('Nicht angemeldet');
+      return null;
+    }
+
+    if (this.currentPatternId === null) {
+      showErrorAlert('Kein Muster zum Bearbeiten ausgewählt');
+      return null;
+    }
+
+    return token;
+  }
+
+  private getRotationFormValues(): {
+    pattern: string | undefined;
+    startDate: string | undefined;
+    endDateValue: string | undefined;
+    skipWeekends: boolean;
+    ignoreNightShift: boolean;
+  } {
+    const patternSelect = $$id('rotation-pattern') as HTMLSelectElement | null;
+    const startInput = $$id('rotation-start-date') as HTMLInputElement | null;
+    const endInput = $$id('rotation-end-date') as HTMLInputElement | null;
+    const skipWeekendsInput = $$id('rotation-skip-weekends') as HTMLInputElement | null;
+    const ignoreNightInput = $$id('rotation-ignore-night') as HTMLInputElement | null;
+
+    return {
+      pattern: patternSelect?.value,
+      startDate: startInput?.value,
+      endDateValue: endInput?.value,
+      skipWeekends: skipWeekendsInput?.checked ?? false,
+      ignoreNightShift: ignoreNightInput?.checked ?? false,
+    };
+  }
+
+  private validateRotationFormValues(formValues: {
+    pattern: string | undefined;
+    startDate: string | undefined;
+  }): boolean {
+    if (formValues.pattern === undefined || formValues.pattern === '') {
+      showErrorAlert('Bitte wählen Sie ein Rotationsmuster');
+      return false;
+    }
+
+    if (formValues.startDate === undefined || formValues.startDate === '') {
+      showErrorAlert('Bitte wählen Sie ein Startdatum');
+      return false;
+    }
+
+    return true;
+  }
+
+  private buildRotationPayload(formValues: {
+    pattern: string | undefined;
+    startDate: string | undefined;
+    endDateValue: string | undefined;
+    skipWeekends: boolean;
+    ignoreNightShift: boolean;
+  }): Record<string, unknown> {
+    const patternTypeMap: Record<string, string> = {
+      weekly: 'alternate_fs',
+      biweekly: 'fixed_n',
+      custom: 'custom',
+    };
+
+    return {
+      name: `Team-Rotation ${String(this.selectedContext.teamId ?? 'Unknown')}`,
+      description: 'Automatisch generierte Schichtrotation',
+      team_id: this.selectedContext.teamId ?? null,
+      pattern_type: patternTypeMap[formValues.pattern ?? ''] ?? 'alternate_fs',
+      pattern_config: {
+        skipWeekends: formValues.skipWeekends,
+        ignoreNightShift: formValues.ignoreNightShift,
+      },
+      starts_at: formValues.startDate,
+      ends_at: formValues.endDateValue ?? formValues.startDate,
+      is_active: true,
+    };
+  }
+
+  private async sendRotationUpdate(requestPayload: Record<string, unknown>, token: string): Promise<void> {
+    const response = await fetch(`/api/v2/shifts/rotation/patterns/${String(this.currentPatternId)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(requestPayload),
+    });
+
+    if (!response.ok) {
+      const errorResponse = (await response.json()) as {
+        error?: {
+          code?: string;
+          message?: string;
+        };
+      };
+      const errorMessage = errorResponse.error?.message ?? 'Fehler beim Aktualisieren des Musters';
+      throw new Error(errorMessage);
+    }
+  }
+
+  private handleRotationUpdateSuccess(): void {
+    showSuccessAlert('Rotation erfolgreich aktualisiert');
+    this.closeRotationModal();
+    this.editMode = false;
+    this.currentPatternId = null;
+  }
+
   updateShiftCells(weekStart: Date): void {
     console.info('[SHIFTS DEBUG] Updating shift cells for week starting:', weekStart);
 
-    // Update day headers with dates
+    this.updateDayHeaders(weekStart);
+    this.updateAllShiftAssignments(weekStart);
+  }
+
+  private updateDayHeaders(weekStart: Date): void {
     const dayHeaders = document.querySelectorAll('.day-header');
     dayHeaders.forEach((header, index) => {
-      // Skip the first header which is "Schicht"
-      if (index === 0) return;
+      if (index === 0) return; // Skip the first header which is "Schicht"
 
       const date = new Date(weekStart);
       date.setDate(date.getDate() + (index - 1));
@@ -5161,102 +5253,111 @@ class ShiftPlanningSystem {
         dateSpan.textContent = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}`;
       }
     });
+  }
 
-    // Update shift cells with assignments
+  private updateAllShiftAssignments(weekStart: Date): void {
     const shiftTypes = ['early', 'late', 'night'];
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
     shiftTypes.forEach((shiftType) => {
       days.forEach((day, dayIndex) => {
-        const cell = document.querySelector(`.shift-cell[data-day="${day}"][data-shift="${shiftType}"]`);
-        if (!cell) {
-          console.warn(`[SHIFTS WARN] Cell not found for ${day} ${shiftType}`);
-          return;
-        }
-
-        const date = new Date(weekStart);
-        date.setDate(date.getDate() + dayIndex);
-        const dateKey = this.formatDateKey(date);
-
-        // Clear existing assignments
-        const assignmentDiv = cell.querySelector(CSS_SELECTORS.EMPLOYEE_ASSIGNMENT);
-        if (assignmentDiv) {
-          assignmentDiv.innerHTML = '';
-
-          // Get assignments for this shift
-          const assignments = this.getShiftEmployees(dateKey, shiftType);
-
-          console.info('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
-
-          if (assignments.length > 0) {
-            // Add employee cards
-            assignments.forEach((employeeId) => {
-              // First try to find in loaded employees (for admins)
-              const employee = this.employees.find((e) => e.id === employeeId);
-
-              // If not found, try shift details (for employees who can't load all users)
-              const shiftDetailKey = `${dateKey}_${shiftType}_${String(employeeId)}`;
-              const shiftDetail = this.shiftDetails.get(shiftDetailKey);
-
-              console.info(
-                '[SHIFTS DEBUG] Looking for employee:',
-                employeeId,
-                'Found in employees:',
-                !!employee,
-                'Found in shiftDetails:',
-                shiftDetail !== undefined,
-              );
-
-              if (employee) {
-                const employeeCard = this.createEmployeeCard(employee);
-                assignmentDiv.append(employeeCard);
-              } else if (shiftDetail !== undefined) {
-                // Create a temporary employee object from shift details
-                // FIX: Ensure names are not empty strings
-                const firstName = shiftDetail.first_name !== '' ? shiftDetail.first_name : undefined;
-                const lastName = shiftDetail.last_name !== '' ? shiftDetail.last_name : undefined;
-                const username =
-                  shiftDetail.username !== '' ? shiftDetail.username : `Employee #${shiftDetail.employee_id}`;
-
-                const tempEmployee: Employee = {
-                  id: shiftDetail.employee_id,
-                  first_name: firstName,
-                  last_name: lastName,
-                  username: username,
-                  position: 'Mitarbeiter',
-                  email: '',
-                  role: 'employee' as const,
-                  tenant_id: 0,
-                  created_at: '',
-                  updated_at: '',
-                  is_active: true,
-                  is_archived: false,
-                };
-                const employeeCard = this.createEmployeeCard(tempEmployee);
-                assignmentDiv.append(employeeCard);
-              } else {
-                console.error('[SHIFTS ERROR] Employee not found:', employeeId);
-                // Show at least the ID if employee data not found
-                const tempCard = document.createElement('div');
-                tempCard.className = 'employee-card';
-                const nameDiv = document.createElement('div');
-                nameDiv.className = CSS_CLASSES.EMPLOYEE_NAME;
-                nameDiv.textContent = `Mitarbeiter #${String(employeeId)}`;
-                tempCard.append(nameDiv);
-                assignmentDiv.append(tempCard);
-              }
-            });
-          } else {
-            // Show empty slot - different text for employees vs admins
-            if (this.isAdmin) {
-              assignmentDiv.innerHTML = '<div class="empty-slot">+</div>';
-            } else {
-              assignmentDiv.innerHTML = '<div class="empty-slot">-</div>';
-            }
-          }
-        }
+        this.updateSingleShiftCell(weekStart, day, dayIndex, shiftType);
       });
     });
+  }
+
+  private updateSingleShiftCell(weekStart: Date, day: string, dayIndex: number, shiftType: string): void {
+    const cell = document.querySelector(`.shift-cell[data-day="${day}"][data-shift="${shiftType}"]`);
+    if (!cell) {
+      console.warn(`[SHIFTS WARN] Cell not found for ${day} ${shiftType}`);
+      return;
+    }
+
+    const date = new Date(weekStart);
+    date.setDate(date.getDate() + dayIndex);
+    const dateKey = this.formatDateKey(date);
+
+    const assignmentDiv = cell.querySelector(CSS_SELECTORS.EMPLOYEE_ASSIGNMENT);
+    if (!assignmentDiv) return;
+
+    assignmentDiv.innerHTML = '';
+    const assignments = this.getShiftEmployees(dateKey, shiftType);
+
+    console.info('[SHIFTS DEBUG] Updating cell:', { day, shiftType, dateKey, assignments });
+
+    if (assignments.length > 0) {
+      assignments.forEach((employeeId) => {
+        this.renderEmployeeAssignment(assignmentDiv, employeeId, dateKey, shiftType);
+      });
+    } else {
+      const emptySlot = document.createElement('div');
+      emptySlot.className = 'empty-slot';
+      emptySlot.textContent = this.isAdmin ? '+' : '-';
+      assignmentDiv.append(emptySlot);
+    }
+  }
+
+  private renderEmployeeAssignment(
+    assignmentDiv: Element,
+    employeeId: number,
+    dateKey: string,
+    shiftType: string,
+  ): void {
+    const employee = this.employees.find((e) => e.id === employeeId);
+    const shiftDetailKey = `${dateKey}_${shiftType}_${String(employeeId)}`;
+    const shiftDetail = this.shiftDetails.get(shiftDetailKey);
+
+    console.info(
+      '[SHIFTS DEBUG] Looking for employee:',
+      employeeId,
+      'Found in employees:',
+      !!employee,
+      'Found in shiftDetails:',
+      shiftDetail !== undefined,
+    );
+
+    if (employee) {
+      const employeeCard = this.createEmployeeCard(employee);
+      assignmentDiv.append(employeeCard);
+    } else if (shiftDetail !== undefined) {
+      const tempEmployee = this.createTempEmployeeFromShiftDetail(shiftDetail);
+      const employeeCard = this.createEmployeeCard(tempEmployee);
+      assignmentDiv.append(employeeCard);
+    } else {
+      console.error('[SHIFTS ERROR] Employee not found:', employeeId);
+      this.renderFallbackEmployeeCard(assignmentDiv, employeeId);
+    }
+  }
+
+  private createTempEmployeeFromShiftDetail(shiftDetail: ShiftDetailData): Employee {
+    const firstName = shiftDetail.first_name !== '' ? shiftDetail.first_name : undefined;
+    const lastName = shiftDetail.last_name !== '' ? shiftDetail.last_name : undefined;
+    const username = shiftDetail.username !== '' ? shiftDetail.username : `Employee #${shiftDetail.employee_id}`;
+
+    return {
+      id: shiftDetail.employee_id,
+      first_name: firstName,
+      last_name: lastName,
+      username: username,
+      position: 'Mitarbeiter',
+      email: '',
+      role: 'employee' as const,
+      tenant_id: 0,
+      created_at: '',
+      updated_at: '',
+      is_active: true,
+      is_archived: false,
+    };
+  }
+
+  private renderFallbackEmployeeCard(assignmentDiv: Element, employeeId: number): void {
+    const tempCard = document.createElement('div');
+    tempCard.className = 'employee-card';
+    const nameDiv = document.createElement('div');
+    nameDiv.className = CSS_CLASSES.EMPLOYEE_NAME;
+    nameDiv.textContent = `Mitarbeiter #${String(employeeId)}`;
+    tempCard.append(nameDiv);
+    assignmentDiv.append(tempCard);
   }
 
   createEmployeeCard(employee: Employee): HTMLElement {
@@ -6041,33 +6142,40 @@ class ShiftPlanningSystem {
     return text.replace(/["&'<>]/g, (m) => map.get(m) ?? m);
   }
 
+  private readonly shiftTimes = new Map<string, string>([
+    ['early', '06:00 - 14:00'],
+    ['late', '14:00 - 22:00'],
+    ['night', '22:00 - 06:00'],
+  ]);
+
+  private readonly shiftNames = new Map<string, string>([
+    ['early', 'Frühschicht'],
+    ['late', 'Spätschicht'],
+    ['night', 'Nachtschicht'],
+  ]);
+
   private showShiftDetailsModal(shiftCell: HTMLElement): void {
     const date = shiftCell.dataset.date;
     const shift = shiftCell.dataset.shift;
 
     if (date === undefined || date === '' || shift === undefined || shift === '') return;
 
-    // Find shift details
     const shiftDate = new Date(date);
     const dayName = shiftDate.toLocaleDateString('de-DE', { weekday: 'long' });
     const dateStr = shiftDate.toLocaleDateString('de-DE');
 
-    // Get shift time based on type
-    const shiftTimes = new Map<string, string>([
-      ['early', '06:00 - 14:00'],
-      ['late', '14:00 - 22:00'],
-      ['night', '22:00 - 06:00'],
-    ]);
+    const assignedEmployees = this.getAssignedEmployeeNames(date, shift);
+    const modalContent = this.buildShiftModalContent(shift, dayName, dateStr, assignedEmployees);
 
-    const shiftNames = new Map<string, string>([
-      ['early', 'Frühschicht'],
-      ['late', 'Spätschicht'],
-      ['night', 'Nachtschicht'],
-    ]);
+    openModal(modalContent, {
+      title: 'Schichtdetails',
+      size: 'md',
+    });
+  }
 
-    // Get assigned employees for this shift
+  private getAssignedEmployeeNames(date: string, shift: string): string {
     const employeeIds = this.getShiftEmployees(date, shift);
-    const assignedEmployees = employeeIds
+    return employeeIds
       .map((id) => {
         const employee = this.employees.find((e) => e.id === id);
         if (employee) {
@@ -6079,10 +6187,15 @@ class ShiftPlanningSystem {
       })
       .filter((name) => name !== '')
       .join(', ');
+  }
 
-    const modalContent = `
+  private buildShiftModalContent(shift: string, dayName: string, dateStr: string, assignedEmployees: string): string {
+    const departmentRow = this.buildDepartmentRow();
+    const machineRow = this.buildMachineRow();
+
+    return `
       <div class="shift-detail-modal">
-        <h3>${shiftNames.get(shift) ?? shift} - ${dayName}</h3>
+        <h3>${this.shiftNames.get(shift) ?? shift} - ${dayName}</h3>
         <div class="shift-detail-info">
           <div class="detail-row">
             <span class="detail-label">Datum:</span>
@@ -6090,41 +6203,44 @@ class ShiftPlanningSystem {
           </div>
           <div class="detail-row">
             <span class="detail-label">Zeit:</span>
-            <span class="detail-value">${shiftTimes.get(shift) ?? ''}</span>
+            <span class="detail-value">${this.shiftTimes.get(shift) ?? ''}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">Zugewiesene Mitarbeiter:</span>
             <span class="detail-value">${assignedEmployees !== '' ? assignedEmployees : 'Keine Mitarbeiter zugewiesen'}</span>
           </div>
-          ${
-            this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0
-              ? `
-          <div class="detail-row">
-            <span class="detail-label">Abteilung:</span>
-            <span class="detail-value">${this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name ?? '-'}</span>
-          </div>`
-              : ''
-          }
-          ${
-            this.selectedContext.machineId !== null && this.selectedContext.machineId !== 0
-              ? `
-          <div class="detail-row">
-            <span class="detail-label">Maschine:</span>
-            <span class="detail-value">${this.machines.find((m) => m.id === this.selectedContext.machineId)?.name ?? '-'}</span>
-          </div>`
-              : ''
-          }
+          ${departmentRow}
+          ${machineRow}
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" data-action="close-modal">Schließen</button>
         </div>
       </div>
     `;
+  }
 
-    openModal(modalContent, {
-      title: 'Schichtdetails',
-      size: 'md',
-    });
+  private buildDepartmentRow(): string {
+    if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
+      const deptName = this.departments.find((d) => d.id === this.selectedContext.departmentId)?.name ?? '-';
+      return `
+          <div class="detail-row">
+            <span class="detail-label">Abteilung:</span>
+            <span class="detail-value">${deptName}</span>
+          </div>`;
+    }
+    return '';
+  }
+
+  private buildMachineRow(): string {
+    if (this.selectedContext.machineId !== null && this.selectedContext.machineId !== 0) {
+      const machineName = this.machines.find((m) => m.id === this.selectedContext.machineId)?.name ?? '-';
+      return `
+          <div class="detail-row">
+            <span class="detail-label">Maschine:</span>
+            <span class="detail-value">${machineName}</span>
+          </div>`;
+    }
+    return '';
   }
 
   // Helper method to get ISO week number
@@ -6458,28 +6574,8 @@ class ShiftPlanningSystem {
    * Render favorites UI
    */
   private renderFavorites(): void {
-    // Check if favorites container exists, if not create it
-    let favoritesContainer = document.querySelector('#favoritesContainer');
+    this.ensureFavoritesContainer();
 
-    if (!favoritesContainer) {
-      // Create favorites container above the filter row
-      const filterRow = document.querySelector('.shift-info-row');
-      if (!filterRow) return;
-
-      const container = document.createElement('div');
-      container.id = 'favoritesContainer';
-      container.className = 'favorites-container';
-      container.innerHTML = `
-        <div class="favorites-header">
-          <span class="favorites-label">⭐ Favoriten:</span>
-          <div class="favorites-list" id="favoritesList"></div>
-        </div>
-      `;
-      filterRow.parentElement?.insertBefore(container, filterRow);
-      favoritesContainer = container;
-    }
-
-    // Render favorite buttons
     const favoritesList = document.querySelector('#favoritesList');
     if (!favoritesList) return;
 
@@ -6495,70 +6591,89 @@ class ShiftPlanningSystem {
 
     // Create buttons using DOM methods (safe approach)
     this.favorites.forEach((fav) => {
-      // Skip invalid favorites
       if (fav.id === '' || fav.teamName === '') {
         console.warn('Skipping invalid favorite:', fav);
         return;
       }
 
-      const button = document.createElement('button');
-      button.className = 'favorite-btn';
-      button.dataset.favoriteId = String(fav.id);
-
-      // Build title with values
-      const areaName = fav.areaName;
-      const departmentName = fav.departmentName;
-      const machineName = fav.machineName;
-      const teamName = fav.teamName;
-
-      button.title = `${areaName} → ${departmentName} → ${machineName} → ${teamName}`;
-
-      // Add team name text
-      const textNode = document.createTextNode(teamName);
-      button.append(textNode);
-
-      // Add remove button
-      const removeBtn = document.createElement('span');
-      removeBtn.className = 'remove-favorite';
-      removeBtn.dataset.favoriteId = String(fav.id);
-      removeBtn.textContent = '×';
-      button.append(removeBtn);
-
-      // Add click event listener
-      button.addEventListener('click', (e) => {
-        console.info('[FAVORITE DEBUG] Button clicked!', e.target);
-        const target = e.target as HTMLElement;
-        // Check if remove button was clicked
-        if (target.classList.contains('remove-favorite')) {
-          console.info('[FAVORITE DEBUG] Remove button clicked, favId:', target.dataset.favoriteId);
-          e.stopPropagation();
-          const favId = target.dataset.favoriteId;
-          if (favId !== undefined && favId !== '') void this.removeFavorite(favId);
-        } else {
-          // Load the favorite
-          const favId = button.dataset.favoriteId;
-          console.info('[FAVORITE DEBUG] Loading favorite with ID:', favId, 'Type:', typeof favId);
-          console.info('[FAVORITE DEBUG] All favorites:', this.favorites);
-          console.info(
-            '[FAVORITE DEBUG] Favorite IDs in list:',
-            this.favorites.map((f) => ({ id: f.id, stringId: String(f.id), type: typeof f.id })),
-          );
-          const favorite = this.favorites.find((f) => String(f.id) === favId);
-          console.info('[FAVORITE DEBUG] Found favorite:', favorite);
-          if (favorite) {
-            console.info('[FAVORITE DEBUG] Calling loadFavorite with:', favorite);
-            void this.loadFavorite(favorite);
-          } else {
-            console.error('[FAVORITE DEBUG] Favorite not found!');
-          }
-        }
-      });
-
+      const button = this.createFavoriteButton(fav);
       favoritesList.append(button);
     });
 
     // Show/hide add to favorites button based on team selection
     this.updateAddFavoriteButton();
+  }
+
+  private ensureFavoritesContainer(): void {
+    const existing = document.querySelector('#favoritesContainer');
+    if (existing) return;
+
+    const filterRow = document.querySelector('.shift-info-row');
+    if (!filterRow) return;
+
+    const container = document.createElement('div');
+    container.id = 'favoritesContainer';
+    container.className = 'favorites-container';
+    container.innerHTML = `
+      <div class="favorites-header">
+        <span class="favorites-label">⭐ Favoriten:</span>
+        <div class="favorites-list" id="favoritesList"></div>
+      </div>
+    `;
+    filterRow.parentElement?.insertBefore(container, filterRow);
+  }
+
+  private createFavoriteButton(fav: ShiftFavorite): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.className = 'favorite-btn';
+    button.dataset.favoriteId = String(fav.id);
+    button.title = `${fav.areaName} → ${fav.departmentName} → ${fav.machineName} → ${fav.teamName}`;
+
+    // Add team name text
+    button.append(document.createTextNode(fav.teamName));
+
+    // Add remove button
+    const removeBtn = document.createElement('span');
+    removeBtn.className = 'remove-favorite';
+    removeBtn.dataset.favoriteId = String(fav.id);
+    removeBtn.textContent = '×';
+    button.append(removeBtn);
+
+    // Add click event listener
+    button.addEventListener('click', (e) => {
+      this.handleFavoriteClick(e, button);
+    });
+
+    return button;
+  }
+
+  private handleFavoriteClick(e: Event, button: HTMLButtonElement): void {
+    console.info('[FAVORITE DEBUG] Button clicked!', e.target);
+    const target = e.target as HTMLElement;
+
+    if (target.classList.contains('remove-favorite')) {
+      console.info('[FAVORITE DEBUG] Remove button clicked, favId:', target.dataset.favoriteId);
+      e.stopPropagation();
+      const favId = target.dataset.favoriteId;
+      if (favId !== undefined && favId !== '') void this.removeFavorite(favId);
+    } else {
+      // Load the favorite
+      const favId = button.dataset.favoriteId;
+      console.info('[FAVORITE DEBUG] Loading favorite with ID:', favId, 'Type:', typeof favId);
+      console.info('[FAVORITE DEBUG] All favorites:', this.favorites);
+      console.info(
+        '[FAVORITE DEBUG] Favorite IDs in list:',
+        this.favorites.map((f) => ({ id: f.id, stringId: String(f.id), type: typeof f.id })),
+      );
+      const favorite = this.favorites.find((f) => String(f.id) === favId);
+      console.info('[FAVORITE DEBUG] Found favorite:', favorite);
+      if (favorite) {
+        console.info('[FAVORITE DEBUG] Calling loadFavorite with:', favorite);
+        void this.loadFavorite(favorite);
+      } else {
+        console.error('[FAVORITE DEBUG] Favorite not found!');
+      }
+    }
   }
 
   /**

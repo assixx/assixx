@@ -21,6 +21,61 @@ interface User {
   tenantId: number;
 }
 
+interface KvpAPIResponse {
+  id?: number;
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  org_level?: string;
+  orgLevel?: string;
+  org_id?: number;
+  orgId?: number;
+  department_id?: number;
+  departmentId?: number;
+  department_name?: string;
+  departmentName?: string;
+  team_id?: number;
+  teamId?: number;
+  team_name?: string;
+  teamName?: string;
+  submitted_by?: number;
+  submittedBy?: number;
+  submitted_by_name?: string;
+  submittedByName?: string;
+  submitted_by_lastname?: string;
+  submittedByLastname?: string;
+  category_id?: number;
+  categoryId?: number;
+  category_name?: string;
+  categoryName?: string;
+  category_icon?: string;
+  categoryIcon?: string;
+  category_color?: string;
+  categoryColor?: string;
+  shared_by?: number;
+  sharedBy?: number;
+  shared_by_name?: string;
+  sharedByName?: string;
+  shared_at?: string;
+  sharedAt?: string;
+  created_at?: string;
+  createdAt?: string;
+  expected_benefit?: string;
+  expectedBenefit?: string;
+  estimated_cost?: number;
+  estimatedCost?: number;
+  actual_savings?: number;
+  actualSavings?: number;
+  implementation_date?: string;
+  implementationDate?: string;
+  assigned_to?: number;
+  assignedTo?: number;
+  rejection_reason?: string;
+  rejectionReason?: string;
+  roi?: number;
+}
+
 interface KvpSuggestion {
   id: number;
   title: string;
@@ -189,88 +244,72 @@ class KvpDetailPage {
     }
   }
 
-  private convertSuggestionToCamelCase(suggestion: Record<string, unknown>): KvpSuggestion {
-    // Following the pattern from api-mappers.ts for safe type conversion
-    interface KvpAPIResponse {
-      id?: number;
-      title?: string;
-      description?: string;
-      status?: string;
-      priority?: string;
-      org_level?: string;
-      orgLevel?: string;
-      org_id?: number;
-      orgId?: number;
-      department_id?: number;
-      departmentId?: number;
-      department_name?: string;
-      departmentName?: string;
-      team_id?: number;
-      teamId?: number;
-      team_name?: string;
-      teamName?: string;
-      submitted_by?: number;
-      submittedBy?: number;
-      submitted_by_name?: string;
-      submittedByName?: string;
-      submitted_by_lastname?: string;
-      submittedByLastname?: string;
-      category_id?: number;
-      categoryId?: number;
-      category_name?: string;
-      categoryName?: string;
-      category_icon?: string;
-      categoryIcon?: string;
-      category_color?: string;
-      categoryColor?: string;
-      shared_by?: number;
-      sharedBy?: number;
-      shared_by_name?: string;
-      sharedByName?: string;
-      shared_at?: string;
-      sharedAt?: string;
-      created_at?: string;
-      createdAt?: string;
-      expected_benefit?: string;
-      expectedBenefit?: string;
-      estimated_cost?: number;
-      estimatedCost?: number;
-      actual_savings?: number;
-      actualSavings?: number;
-      implementation_date?: string;
-      implementationDate?: string;
-      assigned_to?: number;
-      assignedTo?: number;
-      rejection_reason?: string;
-      rejectionReason?: string;
-      roi?: number;
-    }
-
-    const s = suggestion as KvpAPIResponse;
-
+  private convertBasicFields(
+    s: KvpAPIResponse,
+  ): Pick<KvpSuggestion, 'id' | 'title' | 'description' | 'status' | 'priority' | 'createdAt'> {
     return {
       id: s.id ?? 0,
       title: s.title ?? '',
       description: s.description ?? '',
       status: (s.status ?? 'new') as KvpSuggestion['status'],
       priority: (s.priority ?? 'normal') as KvpSuggestion['priority'],
+      createdAt: s.created_at ?? s.createdAt ?? '',
+    };
+  }
+
+  private convertOrgFields(
+    s: KvpAPIResponse,
+  ): Pick<KvpSuggestion, 'orgLevel' | 'orgId' | 'departmentId' | 'departmentName' | 'teamId' | 'teamName'> {
+    return {
       orgLevel: (s.org_level ?? s.orgLevel ?? 'company') as KvpSuggestion['orgLevel'],
       orgId: s.org_id ?? s.orgId ?? 0,
       departmentId: s.department_id ?? s.departmentId ?? 0,
       departmentName: s.department_name ?? s.departmentName ?? '',
       teamId: s.team_id ?? s.teamId,
       teamName: s.team_name ?? s.teamName,
+    };
+  }
+
+  private convertUserFields(
+    s: KvpAPIResponse,
+  ): Pick<
+    KvpSuggestion,
+    'submittedBy' | 'submittedByName' | 'submittedByLastname' | 'sharedBy' | 'sharedByName' | 'sharedAt'
+  > {
+    return {
       submittedBy: s.submitted_by ?? s.submittedBy ?? 0,
       submittedByName: s.submitted_by_name ?? s.submittedByName ?? '',
       submittedByLastname: s.submitted_by_lastname ?? s.submittedByLastname ?? '',
+      sharedBy: s.shared_by ?? s.sharedBy,
+      sharedByName: s.shared_by_name ?? s.sharedByName,
+      sharedAt: s.shared_at ?? s.sharedAt,
+    };
+  }
+
+  private convertCategoryFields(
+    s: KvpAPIResponse,
+  ): Pick<KvpSuggestion, 'categoryId' | 'categoryName' | 'categoryIcon' | 'categoryColor'> {
+    return {
       categoryId: s.category_id ?? s.categoryId ?? 0,
       categoryName: s.category_name ?? s.categoryName ?? '',
       categoryIcon: s.category_icon ?? s.categoryIcon ?? '',
       categoryColor: s.category_color ?? s.categoryColor ?? '',
-      sharedBy: s.shared_by ?? s.sharedBy,
-      sharedByName: s.shared_by_name ?? s.sharedByName,
-      sharedAt: s.shared_at ?? s.sharedAt,
-      createdAt: s.created_at ?? s.createdAt ?? '',
+    };
+  }
+
+  private convertFinancialFields(
+    s: KvpAPIResponse,
+  ): Pick<
+    KvpSuggestion,
+    | 'expectedBenefit'
+    | 'estimatedCost'
+    | 'actualSavings'
+    | 'implementationDate'
+    | 'assignedTo'
+    | 'rejectionReason'
+    | 'roi'
+  > {
+    return {
       expectedBenefit: s.expected_benefit ?? s.expectedBenefit,
       estimatedCost: s.estimated_cost ?? s.estimatedCost,
       actualSavings: s.actual_savings ?? s.actualSavings,
@@ -278,6 +317,18 @@ class KvpDetailPage {
       assignedTo: s.assigned_to ?? s.assignedTo,
       rejectionReason: s.rejection_reason ?? s.rejectionReason,
       roi: s.roi,
+    };
+  }
+
+  private convertSuggestionToCamelCase(suggestion: Record<string, unknown>): KvpSuggestion {
+    const s = suggestion as KvpAPIResponse;
+
+    return {
+      ...this.convertBasicFields(s),
+      ...this.convertOrgFields(s),
+      ...this.convertUserFields(s),
+      ...this.convertCategoryFields(s),
+      ...this.convertFinancialFields(s),
     };
   }
 
@@ -309,24 +360,26 @@ class KvpDetailPage {
     }
   }
 
-  private renderBadges(): void {
+  private renderStatusBadge(): void {
     if (!this.suggestion) return;
-
-    // Status badge
     const statusBadge = $$('#statusBadge');
     if (statusBadge) {
       statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
       statusBadge.textContent = this.getStatusText(this.suggestion.status);
     }
+  }
 
-    // Priority badge
+  private renderPriorityBadge(): void {
+    if (!this.suggestion) return;
     const priorityBadge = $$('#priorityBadge');
     if (priorityBadge) {
       priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
       priorityBadge.textContent = this.getPriorityText(this.suggestion.priority);
     }
+  }
 
-    // Visibility badge
+  private renderVisibilityBadge(): void {
+    if (!this.suggestion) return;
     const visibilityBadge = $$('#visibilityBadge');
     const visibilityText = $$('#visibilityText');
     if (visibilityBadge && visibilityText) {
@@ -338,8 +391,10 @@ class KvpDetailPage {
         this.updateVisibilityBadgeIcon(icon, orgLevel, visibilityText);
       }
     }
+  }
 
-    // Visibility info
+  private renderVisibilityInfo(): void {
+    if (!this.suggestion) return;
     const visibilityInfo = $$('#visibilityInfo');
     if (!visibilityInfo || this.suggestion.orgLevel !== 'company') return;
 
@@ -357,6 +412,41 @@ class KvpDetailPage {
     );
   }
 
+  private renderBadges(): void {
+    this.renderStatusBadge();
+    this.renderPriorityBadge();
+    this.renderVisibilityBadge();
+    this.renderVisibilityInfo();
+  }
+
+  private showFinancialSection(): void {
+    const financialSection = document.querySelector('#financialSection');
+    if (financialSection instanceof HTMLElement) {
+      financialSection.style.display = '';
+    }
+  }
+
+  private formatCurrency(amount: number): string {
+    return new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+    }).format(amount);
+  }
+
+  private renderEstimatedCost(cost: number): void {
+    const estimatedCostEl = document.querySelector('#estimatedCost');
+    if (estimatedCostEl) {
+      estimatedCostEl.textContent = this.formatCurrency(cost);
+    }
+  }
+
+  private renderActualSavings(savings: number): void {
+    const actualSavingsEl = document.querySelector('#actualSavings');
+    if (actualSavingsEl) {
+      actualSavingsEl.textContent = this.formatCurrency(savings);
+    }
+  }
+
   private renderFinancialInfo(): void {
     if (!this.suggestion) return;
 
@@ -365,26 +455,14 @@ class KvpDetailPage {
 
     if (!hasEstimatedCost && !hasActualSavings) return;
 
-    const financialSection = document.querySelector('#financialSection');
-    if (financialSection instanceof HTMLElement) financialSection.style.display = '';
-
-    const currencyFormatter = new Intl.NumberFormat('de-DE', {
-      style: 'currency',
-      currency: 'EUR',
-    });
+    this.showFinancialSection();
 
     if (hasEstimatedCost && this.suggestion.estimatedCost !== undefined) {
-      const estimatedCostEl = document.querySelector('#estimatedCost');
-      if (estimatedCostEl) {
-        estimatedCostEl.textContent = currencyFormatter.format(this.suggestion.estimatedCost);
-      }
+      this.renderEstimatedCost(this.suggestion.estimatedCost);
     }
 
     if (hasActualSavings && this.suggestion.actualSavings !== undefined) {
-      const actualSavingsEl = document.querySelector('#actualSavings');
-      if (actualSavingsEl) {
-        actualSavingsEl.textContent = currencyFormatter.format(this.suggestion.actualSavings);
-      }
+      this.renderActualSavings(this.suggestion.actualSavings);
     }
   }
 
@@ -723,29 +801,21 @@ class KvpDetailPage {
     }
   }
 
-  private renderAttachments(attachments: Attachment[]): void {
-    if (attachments.length === 0) return;
+  private renderPhotoGallery(photos: Attachment[]): void {
+    const photoSection = document.querySelector('#photoSection');
+    const photoGallery = document.querySelector('#photoGallery');
 
-    // Filter photo attachments
-    const photoTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-    const photos = attachments.filter((att) => photoTypes.includes(att.fileType));
-    const otherFiles = attachments.filter((att) => !photoTypes.includes(att.fileType));
+    if (photoSection instanceof HTMLElement) photoSection.style.display = '';
+    if (!photoGallery) return;
 
-    // Render photo gallery
-    if (photos.length > 0) {
-      const photoSection = document.querySelector('#photoSection');
-      const photoGallery = document.querySelector('#photoGallery');
+    const token = getAuthToken();
+    const tokenParam = token !== null && token !== '' ? token : '';
 
-      if (photoSection instanceof HTMLElement) photoSection.style.display = '';
-      if (!photoGallery) return;
-
-      const token = getAuthToken();
-      const tokenParam = token !== null && token !== '' ? token : '';
-      setHTML(
-        photoGallery as HTMLElement,
-        photos
-          .map(
-            (photo, index) => `
+    setHTML(
+      photoGallery as HTMLElement,
+      photos
+        .map(
+          (photo, index) => `
         <div class="photo-thumbnail" data-action="open-lightbox" data-url="/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}">
           <img src="/api/v2/kvp/attachments/${photo.id}/download?token=${encodeURIComponent(tokenParam)}"
                alt="${this.escapeHtml(photo.fileName)}"
@@ -753,27 +823,26 @@ class KvpDetailPage {
           ${index === 0 && photos.length > 1 ? `<span class="photo-count">${photos.length} Fotos</span>` : ''}
         </div>
       `,
-          )
-          .join(''),
-      );
-    }
+        )
+        .join(''),
+    );
+  }
 
-    // Render other attachments
-    if (otherFiles.length > 0) {
-      const attachmentsCard = document.querySelector('#attachmentsCard');
-      const container = document.querySelector('#attachmentList');
+  private renderOtherAttachments(otherFiles: Attachment[]): void {
+    const attachmentsCard = document.querySelector('#attachmentsCard');
+    const container = document.querySelector('#attachmentList');
 
-      if (attachmentsCard instanceof HTMLElement) attachmentsCard.style.display = '';
-      if (!container) return;
+    if (attachmentsCard instanceof HTMLElement) attachmentsCard.style.display = '';
+    if (!container) return;
 
-      setHTML(
-        container as HTMLElement,
-        otherFiles
-          .map((attachment) => {
-            const fileIcon = this.getFileIcon(attachment.fileType);
-            const fileSize = this.formatFileSize(attachment.fileSize);
+    setHTML(
+      container as HTMLElement,
+      otherFiles
+        .map((attachment) => {
+          const fileIcon = this.getFileIcon(attachment.fileType);
+          const fileSize = this.formatFileSize(attachment.fileSize);
 
-            return `
+          return `
           <div class="attachment-item" data-id="${attachment.id}">
             <i class="${fileIcon}"></i>
             <div class="attachment-info">
@@ -785,19 +854,37 @@ class KvpDetailPage {
             <i class="fas fa-download"></i>
           </div>
         `;
-          })
-          .join(''),
-      );
+        })
+        .join(''),
+    );
 
-      // Add click handlers
-      container.querySelectorAll('.attachment-item').forEach((item) => {
-        item.addEventListener('click', () => {
-          const id = getData(item as HTMLElement, 'id');
-          if (id !== undefined && id !== '') {
-            this.downloadAttachment(Number.parseInt(id, 10));
-          }
-        });
+    // Add click handlers
+    container.querySelectorAll('.attachment-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        const id = getData(item as HTMLElement, 'id');
+        if (id !== undefined && id !== '') {
+          this.downloadAttachment(Number.parseInt(id, 10));
+        }
       });
+    });
+  }
+
+  private renderAttachments(attachments: Attachment[]): void {
+    if (attachments.length === 0) return;
+
+    // Filter photo attachments
+    const photoTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    const photos = attachments.filter((att) => photoTypes.includes(att.fileType));
+    const otherFiles = attachments.filter((att) => !photoTypes.includes(att.fileType));
+
+    // Render photo gallery
+    if (photos.length > 0) {
+      this.renderPhotoGallery(photos);
+    }
+
+    // Render other attachments
+    if (otherFiles.length > 0) {
+      this.renderOtherAttachments(otherFiles);
     }
   }
 
@@ -816,8 +903,7 @@ class KvpDetailPage {
     }
   }
 
-  private setupEventListeners(): void {
-    // Comment form
+  private setupCommentFormListener(): void {
     const commentForm = document.querySelector('#commentForm');
     if (commentForm) {
       commentForm.addEventListener('submit', (e) => {
@@ -827,8 +913,9 @@ class KvpDetailPage {
         })();
       });
     }
+  }
 
-    // Event delegation for photo lightbox
+  private setupLightboxListener(): void {
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const thumbnail = target.closest('[data-action="open-lightbox"]');
@@ -840,8 +927,9 @@ class KvpDetailPage {
         }
       }
     });
+  }
 
-    // Action buttons
+  private setupActionButtons(): void {
     document.querySelector('#editBtn')?.addEventListener('click', () => {
       // TODO: Navigate to edit page
       console.warn('Bearbeiten-Funktion noch nicht implementiert');
@@ -852,6 +940,20 @@ class KvpDetailPage {
       this.openShareModal();
     });
 
+    document.querySelector('#unshareBtn')?.addEventListener('click', () => {
+      void (async () => {
+        await this.unshareSuggestion();
+      })();
+    });
+
+    document.querySelector('#archiveBtn')?.addEventListener('click', () => {
+      void (async () => {
+        await this.archiveSuggestion();
+      })();
+    });
+  }
+
+  private setupCustomEventListeners(): void {
     // Listen for share event from modal
     window.addEventListener('shareKvp', (event: Event) => {
       const customEvent = event as CustomEvent;
@@ -868,18 +970,6 @@ class KvpDetailPage {
       void this.loadOrganizations();
     });
 
-    document.querySelector('#unshareBtn')?.addEventListener('click', () => {
-      void (async () => {
-        await this.unshareSuggestion();
-      })();
-    });
-
-    document.querySelector('#archiveBtn')?.addEventListener('click', () => {
-      void (async () => {
-        await this.archiveSuggestion();
-      })();
-    });
-
     // Status change listener for custom dropdown
     document.addEventListener('statusChange', (e: Event) => {
       void (async () => {
@@ -894,6 +984,13 @@ class KvpDetailPage {
         }
       })();
     });
+  }
+
+  private setupEventListeners(): void {
+    this.setupCommentFormListener();
+    this.setupLightboxListener();
+    this.setupActionButtons();
+    this.setupCustomEventListeners();
   }
 
   private async addComment(): Promise<void> {
@@ -1022,13 +1119,22 @@ class KvpDetailPage {
     }
   }
 
+  private determineFinalOrgId(orgLevel: string, orgId: number | null): number | null {
+    if (orgLevel === 'company' && this.currentUser !== null) {
+      return this.currentUser.tenantId;
+    }
+    return orgId;
+  }
+
+  private getShareLevelText(orgLevel: string): string {
+    if (orgLevel === 'company') return 'Firmenebene';
+    if (orgLevel === 'department') return 'Abteilungsebene';
+    return 'Teamebene';
+  }
+
   private async shareSuggestion(orgLevel: 'company' | 'department' | 'team', orgId: number | null): Promise<void> {
     try {
-      // Determine the correct orgId based on level
-      let finalOrgId = orgId;
-      if (orgLevel === 'company' && this.currentUser !== null) {
-        finalOrgId = this.currentUser.tenantId;
-      }
+      const finalOrgId = this.determineFinalOrgId(orgLevel, orgId);
 
       if (finalOrgId === null) {
         this.showError('Ungültige Organisation ausgewählt');
@@ -1042,9 +1148,7 @@ class KvpDetailPage {
       });
 
       if (result !== null && result !== undefined) {
-        this.showSuccess(
-          `Vorschlag wurde auf ${orgLevel === 'company' ? 'Firmenebene' : orgLevel === 'department' ? 'Abteilungsebene' : 'Teamebene'} geteilt`,
-        );
+        this.showSuccess(`Vorschlag wurde auf ${this.getShareLevelText(orgLevel)} geteilt`);
         // Reload page to update UI
         await this.loadSuggestion();
         this.setupRoleBasedUI();

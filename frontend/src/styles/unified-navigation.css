@@ -151,6 +151,8 @@
   /* border-right: 1px solid rgba(255, 255, 255, 0.1); */
   height: auto;
   min-height: calc(100vh - 60px);
+  margin-top: 60px;
+  margin-left: 10px;
 
   background: rgb(255 255 255 / 0%);
   backdrop-filter: blur(20px);
@@ -188,7 +190,6 @@
   display: flex;
   flex-direction: column;
 
-  min-height: 100%;
   padding: var(--spacing-md);
 }
 
@@ -202,15 +203,14 @@
   align-items: center;
   justify-content: center;
 
-  width: 98%;
+  width: 90%;
   margin-top: 23px;
   margin-right: 1%;
-  margin-left: 1%;
+  margin-left: 15px;
   padding: var(--spacing-sm);
   border: 1px solid rgb(255 255 255 / 100%);
   border-radius: 10px;
 
-  font-size: 0.825rem;
   font-weight: 600;
   color: #ffff;
   text-align: center;
@@ -417,6 +417,7 @@
 
   /* 72px bei 16px base - durch 8 teilbar! */
   min-width: 4.5rem !important;
+  margin-left: 10px;
 }
 
 /* Logo size adjustment when sidebar is collapsed */
@@ -480,13 +481,13 @@ body:has(.sidebar.collapsed) .header .logo {
   align-items: center;
 
   min-height: auto;
-  margin-top: 5rem;
 
   /* 80px in rem */
   margin-bottom: 1.25rem;
+  margin-left: 4px;
 
   /* 20px in rem */
-  padding: 1.063rem;
+  padding: 1rem;
 
   /* 17px in rem */
 }
@@ -576,11 +577,6 @@ body:has(.sidebar.collapsed) .header .logo {
 
 /* Moved to after base styles - see lines 954+ and 1029+ */
 
-.sidebar.collapsed .sidebar-menu {
-  /* margin-top: 72px;  Ganze Zahl statt 71.9px - vermeidet Sub-pixel Rounding */
-  margin-top: 4.44rem;
-}
-
 /* Main content adjustment for collapsed sidebar - not needed with flex layout */
 .main-content.sidebar-collapsed {
   margin-left: 0;
@@ -643,14 +639,14 @@ body:has(.sidebar.collapsed) .header .logo {
   /* display: flex; */
   align-items: center;
 
+  width: 90%;
   min-height: 100px;
 
   /* animation: fadeInUp 0.6s ease-out; */
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin: 20px 15px;
 
   /* ap: 15px; */
-  padding: 14px 10px 15px 40px;
+  padding: 14px 10px 15px 20px;
 
   /* border: 1px solid rgba(115, 115, 115, 0.36); */
   border-radius: var(--radius-md);
@@ -740,11 +736,6 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 /* Avatar margin adjustment when sidebar is collapsed */
-.sidebar.collapsed [id="sidebar-user-avatar"],
-.sidebar.collapsed .user-avatar,
-.sidebar.collapsed .user-info-card .user-avatar {
-  margin-left: -13px !important;
-}
 
 .user-details {
   display: flex;
@@ -1090,7 +1081,7 @@ body:has(.sidebar.collapsed) .header .logo {
 .main-content {
   flex: 1;
   min-height: calc(100vh - 60px);
-  padding: var(--spacing-xl);
+  padding: 1rem;
   background: var(--background-primary);
 }
 

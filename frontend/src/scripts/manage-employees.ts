@@ -224,6 +224,29 @@ class EmployeesManager {
     });
   }
 
+  private filterByStatus(employees: Employee[]): Employee[] {
+    if (this.currentFilter === 'active') {
+      return employees.filter((emp) => emp.is_active);
+    } else if (this.currentFilter === 'inactive') {
+      return employees.filter((emp) => !emp.is_active);
+    }
+    return employees;
+  }
+
+  private filterBySearch(employees: Employee[]): Employee[] {
+    if (this.searchTerm.length === 0) return employees;
+
+    const search = this.searchTerm.toLowerCase();
+    return employees.filter(
+      (emp) =>
+        (emp.first_name?.toLowerCase().includes(search) ?? false) ||
+        (emp.last_name?.toLowerCase().includes(search) ?? false) ||
+        emp.email.toLowerCase().includes(search) ||
+        (emp.position?.toLowerCase().includes(search) ?? false) ||
+        (emp.employeeId?.toLowerCase().includes(search) ?? false),
+    );
+  }
+
   async loadEmployees(): Promise<void> {
     try {
       const params: Record<string, string> = {};
@@ -256,24 +279,9 @@ class EmployeesManager {
       // Admins cannot manage other admins or see root users
       this.employees = mappedUsers.filter((user) => user.role === 'employee') as Employee[];
 
-      // Apply status filter based on is_active field
-      if (this.currentFilter === 'active') {
-        this.employees = this.employees.filter((emp) => emp.is_active);
-      } else if (this.currentFilter === 'inactive') {
-        this.employees = this.employees.filter((emp) => !emp.is_active);
-      }
-
-      if (this.searchTerm.length > 0) {
-        const search = this.searchTerm.toLowerCase();
-        this.employees = this.employees.filter(
-          (emp) =>
-            (emp.first_name?.toLowerCase().includes(search) ?? false) ||
-            (emp.last_name?.toLowerCase().includes(search) ?? false) ||
-            emp.email.toLowerCase().includes(search) ||
-            (emp.position?.toLowerCase().includes(search) ?? false) ||
-            (emp.employeeId?.toLowerCase().includes(search) ?? false),
-        );
-      }
+      // Apply filters
+      this.employees = this.filterByStatus(this.employees);
+      this.employees = this.filterBySearch(this.employees);
 
       // V2 API already provides availability data in the user objects
       // The availabilityStatus field is now included directly in the user response
@@ -295,8 +303,75 @@ class EmployeesManager {
     }
   }
 
+  private renderEmptyState(container: HTMLElement): void {
+    setHTML(
+      container,
+      `
+        <div class="empty-state">
+          <div class="empty-state-icon">👥</div>
+          <div class="empty-state-text">Keine Mitarbeiter gefunden</div>
+          <div class="empty-state-subtext">Fügen Sie Ihren ersten Mitarbeiter hinzu</div>
+        </div>
+      `,
+    );
+  }
+
+  private getEmployeeDisplayName(employee: Employee): string {
+    const firstName = employee.first_name ?? employee.firstName ?? '';
+    const lastName = employee.last_name ?? employee.lastName ?? '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    return fullName !== '' ? fullName : employee.username;
+  }
+
+  private getEmployeeActiveStatus(employee: Employee): boolean {
+    // Check both snake_case and camelCase fields (API v1 vs v2)
+    // Priority: Check isActive first (API v2), then is_active (API v1/DB)
+    if ('isActive' in employee && employee.isActive !== undefined) {
+      // isActive can be boolean or number (0/1)
+      return employee.isActive === true || employee.isActive === 1;
+    } else if ('is_active' in employee) {
+      // is_active is always boolean
+      return employee.is_active;
+    }
+    return true; // Default to active
+  }
+
+  private renderEmployeeRow(employee: Employee): string {
+    const displayName = this.getEmployeeDisplayName(employee);
+    const isActive = this.getEmployeeActiveStatus(employee);
+    const notes = employee.availability_notes ?? employee.availabilityNotes ?? '-';
+
+    return `
+      <tr>
+        <td>${displayName}</td>
+        <td>${employee.email}</td>
+        <td>${employee.position ?? '-'}</td>
+        <td>${employee.employee_number ?? employee.employeeNumber ?? employee.employee_id ?? employee.employeeId ?? '-'}</td>
+        <td>${employee.department_name ?? employee.departmentName ?? '-'}</td>
+        <td>${employee.team_name ?? employee.teamName ?? '-'}</td>
+        <td>
+          <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
+            ${isActive ? 'Aktiv' : 'Inaktiv'}
+          </span>
+        </td>
+        <td>
+          ${this.getAvailabilityBadge(employee)}
+        </td>
+        <td>
+          ${this.getPlannedAvailability(employee)}
+        </td>
+        <td title="${notes}">
+          ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
+        </td>
+        <td>
+          <button class="action-btn edit" data-action="edit-employee" data-employee-id="${employee.id}">Bearbeiten</button>
+          <button class="action-btn delete" data-action="delete-employee" data-employee-id="${employee.id}">Löschen</button>
+        </td>
+      </tr>
+    `;
+  }
+
   private renderEmployeesTable(): void {
-    // Use the same container as the HTML file uses
     const container = $$id('employeeTableContent');
     if (container === null) {
       console.error('[renderEmployeesTable] Container #employeeTableContent not found!');
@@ -305,20 +380,10 @@ class EmployeesManager {
     console.info('[renderEmployeesTable] Rendering table with', this.employees.length, 'employees');
 
     if (this.employees.length === 0) {
-      setHTML(
-        container,
-        `
-        <div class="empty-state">
-          <div class="empty-state-icon">👥</div>
-          <div class="empty-state-text">Keine Mitarbeiter gefunden</div>
-          <div class="empty-state-subtext">Fügen Sie Ihren ersten Mitarbeiter hinzu</div>
-        </div>
-      `,
-      );
+      this.renderEmptyState(container);
       return;
     }
 
-    // Render full table structure (same as HTML version)
     const tableHTML = `
       <table class="employee-table">
         <thead>
@@ -337,57 +402,7 @@ class EmployeesManager {
           </tr>
         </thead>
         <tbody>
-          ${this.employees
-            .map((employee) => {
-              const firstName = employee.first_name ?? employee.firstName ?? '';
-              const lastName = employee.last_name ?? employee.lastName ?? '';
-              const fullName = `${firstName} ${lastName}`.trim();
-              const displayName = fullName !== '' ? fullName : employee.username;
-
-              // Check both snake_case and camelCase fields (API v1 vs v2)
-              // Priority: Check isActive first (API v2), then is_active (API v1/DB)
-              let isActive = true; // Default to active
-              if ('isActive' in employee && employee.isActive !== undefined) {
-                // isActive can be boolean or number (0/1)
-                isActive = employee.isActive === true || employee.isActive === 1;
-              } else if ('is_active' in employee) {
-                // is_active is always boolean
-                isActive = employee.is_active;
-              }
-
-              // Get availability notes
-              const notes = employee.availability_notes ?? employee.availabilityNotes ?? '-';
-
-              return `
-            <tr>
-              <td>${displayName}</td>
-              <td>${employee.email}</td>
-              <td>${employee.position ?? '-'}</td>
-              <td>${employee.employee_number ?? employee.employeeNumber ?? employee.employee_id ?? employee.employeeId ?? '-'}</td>
-              <td>${employee.department_name ?? employee.departmentName ?? '-'}</td>
-              <td>${employee.team_name ?? employee.teamName ?? '-'}</td>
-              <td>
-                <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
-                  ${isActive ? 'Aktiv' : 'Inaktiv'}
-                </span>
-              </td>
-              <td>
-                ${this.getAvailabilityBadge(employee)}
-              </td>
-              <td>
-                ${this.getPlannedAvailability(employee)}
-              </td>
-              <td title="${notes}">
-                ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
-              </td>
-              <td>
-                <button class="action-btn edit" data-action="edit-employee" data-employee-id="${employee.id}">Bearbeiten</button>
-                <button class="action-btn delete" data-action="delete-employee" data-employee-id="${employee.id}">Löschen</button>
-              </td>
-            </tr>
-          `;
-            })
-            .join('')}
+          ${this.employees.map((employee) => this.renderEmployeeRow(employee)).join('')}
         </tbody>
       </table>
     `;
@@ -736,6 +751,53 @@ class EmployeesManager {
     return mappedUsers[0] as unknown as Employee;
   }
 
+  private async handleTeamAssignmentChange(
+    userId: number,
+    newTeamIdRaw: number | undefined,
+    currentTeamId: number | undefined,
+  ): Promise<void> {
+    const newTeamIdNum = newTeamIdRaw ?? null;
+    const currentTeamIdNum = currentTeamId ?? null;
+
+    console.info('[updateEmployee] Team comparison:', {
+      newTeamId: newTeamIdNum,
+      currentTeamId: currentTeamIdNum,
+      willUpdate: newTeamIdNum !== currentTeamIdNum,
+    });
+
+    if (newTeamIdNum === currentTeamIdNum) {
+      console.info('[updateEmployee] Team unchanged, skipping team assignment');
+      return;
+    }
+
+    // Remove from old team if exists
+    if (currentTeamIdNum !== null) {
+      try {
+        console.info('[updateEmployee] Removing user from old team:', currentTeamIdNum);
+        await this.apiClient.request(`/teams/${currentTeamIdNum}/members/${userId}`, {
+          method: 'DELETE',
+        });
+      } catch (error) {
+        console.error('[updateEmployee] Error removing from old team:', error);
+      }
+    }
+
+    // Add to new team if specified
+    if (newTeamIdNum !== null) {
+      try {
+        console.info('[updateEmployee] Assigning user to new team:', newTeamIdNum);
+        await this.apiClient.request(`/teams/${newTeamIdNum}/members`, {
+          method: 'POST',
+          body: JSON.stringify({ userId }),
+        });
+        console.info('[updateEmployee] User successfully assigned to new team');
+      } catch (error) {
+        console.error('[updateEmployee] Error assigning to new team:', error);
+        showErrorAlert('Team-Zuweisung konnte nicht aktualisiert werden');
+      }
+    }
+  }
+
   async updateEmployee(id: number, data: Partial<Employee>): Promise<Employee> {
     // SECURITY: First check if user is actually an employee
     const user = await this.getEmployeeDetails(id);
@@ -752,7 +814,6 @@ class EmployeesManager {
     }
 
     // Store teamId separately for later assignment
-    // data.teamId comes from form (could be string), user.teamId from API (number)
     const newTeamIdRaw = data.teamId;
     const currentTeamId = user.teamId;
     delete data.teamId; // Remove from user update data
@@ -764,48 +825,7 @@ class EmployeesManager {
       });
 
       // Handle team assignment changes
-      // Both should be numbers at this point (form values are converted in saveEmployee)
-      const newTeamIdNum = newTeamIdRaw ?? null;
-      const currentTeamIdNum = currentTeamId ?? null;
-
-      console.info('[updateEmployee] Team comparison:', {
-        newTeamId: newTeamIdNum,
-        currentTeamId: currentTeamIdNum,
-        willUpdate: newTeamIdNum !== currentTeamIdNum,
-      });
-
-      if (newTeamIdNum !== currentTeamIdNum) {
-        // Remove from old team if exists
-        if (currentTeamIdNum !== null) {
-          try {
-            console.info('[updateEmployee] Removing user from old team:', currentTeamIdNum);
-            // Use the same endpoint as manage-teams
-            await this.apiClient.request(`/teams/${currentTeamIdNum}/members/${id}`, {
-              method: 'DELETE',
-            });
-          } catch (error) {
-            console.error('[updateEmployee] Error removing from old team:', error);
-          }
-        }
-
-        // Add to new team if specified
-        if (newTeamIdNum !== null) {
-          try {
-            console.info('[updateEmployee] Assigning user to new team:', newTeamIdNum);
-            // Use the same endpoint as manage-teams
-            await this.apiClient.request(`/teams/${newTeamIdNum}/members`, {
-              method: 'POST',
-              body: JSON.stringify({ userId: id }),
-            });
-            console.info('[updateEmployee] User successfully assigned to new team');
-          } catch (error) {
-            console.error('[updateEmployee] Error assigning to new team:', error);
-            showErrorAlert('Team-Zuweisung konnte nicht aktualisiert werden');
-          }
-        }
-      } else {
-        console.info('[updateEmployee] Team unchanged, skipping team assignment');
-      }
+      await this.handleTeamAssignmentChange(id, newTeamIdRaw, currentTeamId);
 
       showSuccessAlert('Mitarbeiter erfolgreich aktualisiert');
       await this.loadEmployees();
@@ -1193,14 +1213,7 @@ async function handleLoadTeams(): Promise<void> {
 }
 
 // Setup window handlers
-function setupWindowHandlers(): void {
-  const w = window as WindowWithEmployeeHandlers;
-
-  w.loadEmployeesTable = async () => {
-    console.info('[EmployeesManager] loadEmployeesTable called');
-    await employeesManager?.loadEmployees();
-  };
-
+function setupEditEmployeeHandler(w: WindowWithEmployeeHandlers): void {
   w.editEmployee = async (id: number) => {
     const employee = await employeesManager?.getEmployeeDetails(id);
     if (employee === null || employee === undefined) return;
@@ -1237,26 +1250,9 @@ function setupWindowHandlers(): void {
     // Show modal in edit mode and pass department/team IDs for restoration
     employeesManager?.showEmployeeModal(true, departmentId, teamId);
   };
+}
 
-  w.viewEmployeeDetails = async (id: number) => {
-    const employee = await employeesManager?.getEmployeeDetails(id);
-    if (employee !== null) {
-      console.info('View employee:', employee);
-      // TODO: Show employee details modal
-      showErrorAlert('Detailansicht noch nicht implementiert');
-    }
-  };
-
-  w.deleteEmployee = async (id: number) => {
-    await employeesManager?.deleteEmployee(id);
-  };
-
-  w.viewEmployeeDetails = async (id: number) => {
-    // Vorerst zur Bearbeiten-Funktion weiterleiten
-    // TODO: Implementiere separate Detail-Ansicht
-    await w.editEmployee?.(id);
-  };
-
+function setupEmployeeModalHandlers(w: WindowWithEmployeeHandlers): void {
   w.showEmployeeModal = () => {
     // Reset form for new employee
     if (employeesManager) {
@@ -1286,6 +1282,38 @@ function setupWindowHandlers(): void {
   w.closeEmployeeModal = () => {
     employeesManager?.hideEmployeeModal();
   };
+}
+
+function setupWindowHandlers(): void {
+  const w = window as WindowWithEmployeeHandlers;
+
+  w.loadEmployeesTable = async () => {
+    console.info('[EmployeesManager] loadEmployeesTable called');
+    await employeesManager?.loadEmployees();
+  };
+
+  setupEditEmployeeHandler(w);
+
+  w.viewEmployeeDetails = async (id: number) => {
+    const employee = await employeesManager?.getEmployeeDetails(id);
+    if (employee !== null) {
+      console.info('View employee:', employee);
+      // TODO: Show employee details modal
+      showErrorAlert('Detailansicht noch nicht implementiert');
+    }
+  };
+
+  w.deleteEmployee = async (id: number) => {
+    await employeesManager?.deleteEmployee(id);
+  };
+
+  w.viewEmployeeDetails = async (id: number) => {
+    // Vorerst zur Bearbeiten-Funktion weiterleiten
+    // TODO: Implementiere separate Detail-Ansicht
+    await w.editEmployee?.(id);
+  };
+
+  setupEmployeeModalHandlers(w);
 
   w.saveEmployee = handleSaveEmployee;
   w.loadDepartmentsForEmployeeSelect = handleLoadDepartments;

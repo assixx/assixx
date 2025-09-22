@@ -254,6 +254,15 @@ class UnifiedNavigation {
   }
 
   private init(): void {
+    this.setupInitialState();
+    this.setupEventHandlers();
+    this.initializeSSE();
+    this.setupBadgeUpdates();
+    this.setupRoleSwitchListener();
+    this.setupStorageListener();
+  }
+
+  private setupInitialState(): void {
     // Inject CSS styles first
     this.injectCSS();
 
@@ -268,11 +277,11 @@ class UnifiedNavigation {
 
     // Enforce page access based on current role
     this.enforcePageAccess();
-
     this.loadUserInfo();
     this.injectNavigationHTML();
-    // Don't attach event listeners here - they will be attached after navigation is injected
+  }
 
+  private setupEventHandlers(): void {
     // Initialize event delegation for all navigation actions
     this.initializeEventDelegation();
 
@@ -283,10 +292,9 @@ class UnifiedNavigation {
       this.initializeRoleSwitch();
       this.initializeRoleSwitchForAdmin();
     }, 100);
+  }
 
-    // Initialize SSE for real-time notifications
-    this.initializeSSE();
-
+  private setupBadgeUpdates(): void {
     // Initial badge updates (once after 1 second)
     setTimeout(() => {
       void this.updateUnreadMessages();
@@ -304,7 +312,9 @@ class UnifiedNavigation {
       void this.updateNewKvpSuggestions(); // Keep for now (not yet in SSE)
       void this.updateUnreadCalendarEvents(); // Keep for now (not yet in SSE)
     }, 600000);
+  }
 
+  private setupRoleSwitchListener(): void {
     // Listen for BroadcastChannel messages to update navigation
     const roleChannel = new BroadcastChannel('role_switch_channel');
     roleChannel.onmessage = (event: MessageEvent<RoleSwitchMessage>) => {
@@ -323,7 +333,9 @@ class UnifiedNavigation {
         this.refresh();
       }
     };
+  }
 
+  private setupStorageListener(): void {
     // Debounce timer for redirects to prevent loops
     let redirectTimeout: ReturnType<typeof setTimeout> | null = null;
     let isRedirecting = false;
@@ -340,54 +352,55 @@ class UnifiedNavigation {
 
         // Debounce the redirect to prevent rapid fire changes
         redirectTimeout = setTimeout(() => {
-          // Prevent multiple redirects
-          if (isRedirecting) {
-            console.info('[UnifiedNav] Redirect already in progress, skipping...');
-            return;
-          }
-
-          // Check if we need to redirect based on current page
-          const currentPagePath = window.location.pathname;
-          const userRole = localStorage.getItem('userRole');
-          const newActiveRole = event.newValue;
-
-          // Helper function to get dashboard path for role
-          const getDashboardPath = (role: string | null): string => {
-            switch (role) {
-              case 'root':
-                return ROOT_DASHBOARD_URL;
-              case 'admin':
-                return ADMIN_DASHBOARD_URL;
-              case 'employee':
-                return EMPLOYEE_DASHBOARD_URL;
-              default:
-                return '/';
-            }
-          };
-
-          const targetPath = getDashboardPath(newActiveRole);
-
-          // Only redirect if we're not already on the correct dashboard
-          if (targetPath !== '' && !currentPagePath.includes(targetPath)) {
-            // Check if user has permission for the target role
-            if (newActiveRole === 'root' && userRole !== 'root') {
-              console.info('[UnifiedNav] User does not have root permission, skipping redirect');
-              return;
-            }
-
-            console.info(`[UnifiedNav] Redirecting to ${targetPath} due to role change`);
-            isRedirecting = true;
-
-            // Use replace to avoid adding to browser history
-            window.location.replace(targetPath);
-          } else {
-            console.info('[UnifiedNav] Already on correct dashboard, refreshing navigation only');
-            // Just refresh navigation if we're already on the right page
-            this.refresh();
-          }
+          this.handleRoleChangeRedirect(event.newValue, isRedirecting);
         }, 300); // 300ms delay to batch rapid changes
       }
     });
+  }
+
+  private handleRoleChangeRedirect(newActiveRole: string | null, isRedirecting: boolean): void {
+    // Prevent multiple redirects
+    if (isRedirecting) {
+      console.info('[UnifiedNav] Redirect already in progress, skipping...');
+      return;
+    }
+
+    // Check if we need to redirect based on current page
+    const currentPagePath = window.location.pathname;
+    const userRole = localStorage.getItem('userRole');
+
+    // Helper function to get dashboard path for role
+    const getDashboardPath = (role: string | null): string => {
+      switch (role) {
+        case 'root':
+          return ROOT_DASHBOARD_URL;
+        case 'admin':
+          return ADMIN_DASHBOARD_URL;
+        case 'employee':
+          return EMPLOYEE_DASHBOARD_URL;
+        default:
+          return '/';
+      }
+    };
+
+    const targetPath = getDashboardPath(newActiveRole);
+
+    // Only redirect if we're not already on the correct dashboard
+    if (targetPath !== '' && !currentPagePath.includes(targetPath)) {
+      // Check if user has permission for the target role
+      if (newActiveRole === 'root' && userRole !== 'root') {
+        console.info('[UnifiedNav] User does not have root permission, skipping redirect');
+        return;
+      }
+
+      console.info(`[UnifiedNav] Redirecting to ${targetPath} due to role change`);
+      // Use replace to avoid adding to browser history
+      window.location.replace(targetPath);
+    } else {
+      console.info('[UnifiedNav] Already on correct dashboard, refreshing navigation only');
+      // Just refresh navigation if we're already on the right page
+      this.refresh();
+    }
   }
 
   private parseTokenPayload():
@@ -643,460 +656,426 @@ class UnifiedNavigation {
 
   private getNavigationItems(): NavigationItems {
     return {
-      // Admin Navigation (14 Items)
-      admin: [
-        {
-          id: 'dashboard',
-          icon: this.getSVGIcon('home'),
-          label: 'Übersicht',
-          url: this.getSectionUrl('dashboard'),
-          section: 'dashboard',
-        },
-        {
-          id: 'employees',
-          icon: this.getSVGIcon('users'),
-          label: 'Mitarbeiter',
-          url: this.getSectionUrl('employees'),
-          section: 'employees',
-          children: [
-            {
-              id: 'employees-list',
-              label: 'Mitarbeiterliste',
-              url: '/manage-employees',
-              section: 'employees',
-            },
-          ],
-        },
-        {
-          id: 'areas',
-          icon: this.getSVGIcon('sitemap'),
-          label: 'Bereiche',
-          url: '/manage-areas',
-          section: 'areas',
-        },
-        {
-          id: 'departments',
-          icon: this.getSVGIcon('building'),
-          label: 'Abteilungen',
-          url: '/manage-departments',
-          children: [
-            {
-              id: 'departments-all',
-              label: 'Alle Abteilungen',
-              url: '/manage-departments',
-            },
-          ],
-        },
-        {
-          id: 'teams',
-          icon: this.getSVGIcon('team'),
-          label: 'Teams',
-          url: '/manage-teams',
-          section: 'teams',
-        },
-        {
-          id: 'machines',
-          icon: this.getSVGIcon('generator'),
-          label: 'Maschinen',
-          url: '/manage-machines',
-          section: 'machines',
-        },
-        {
-          id: 'documents',
-          icon: this.getSVGIcon('document'),
-          label: 'Dokumente',
-          hasSubmenu: true,
-          submenu: [
-            {
-              id: 'documents-search',
-              icon: this.getSVGIcon('search'),
-              label: 'Dokumente suchen',
-              url: '/documents-search',
-            },
-            {
-              id: 'documents-company',
-              icon: this.getSVGIcon('building'),
-              label: 'Firmendokumente',
-              url: '/documents-company',
-              badgeId: 'badge-docs-company',
-            },
-            {
-              id: 'documents-department',
-              icon: this.getSVGIcon('sitemap'),
-              label: 'Abteilungsdokumente',
-              url: '/documents-department',
-              badgeId: 'badge-docs-department',
-            },
-            {
-              id: 'documents-team',
-              icon: this.getSVGIcon('team'),
-              label: 'Teamdokumente',
-              url: '/documents-team',
-              badgeId: 'badge-docs-team',
-            },
-            {
-              id: 'documents-personal',
-              icon: this.getSVGIcon('user'),
-              label: 'Persönliche Dokumente',
-              url: '/documents-personal',
-              badgeId: 'badge-docs-personal',
-            },
-            {
-              id: 'documents-payroll',
-              icon: this.getSVGIcon('money'),
-              label: 'Gehaltsabrechnungen',
-              url: '/documents-payroll',
-              badgeId: 'badge-docs-payroll',
-            },
-          ],
-        },
-        {
-          id: 'calendar',
-          icon: this.getSVGIcon('calendar'),
-          label: 'Kalender',
-          url: '/calendar',
-          badge: 'unread-calendar-events',
-        },
-        {
-          id: 'lean-management',
-          icon: this.getSVGIcon('lean'),
-          label: 'LEAN-Management',
-          hasSubmenu: true,
-          badge: 'lean-management-parent',
-          submenu: [
-            {
-              id: 'kvp',
-              icon: this.getSVGIcon('lightbulb'),
-              label: 'KVP System',
-              url: '/kvp',
-              badge: 'new-kvp-suggestions',
-            },
-            {
-              id: 'surveys',
-              icon: this.getSVGIcon('poll'),
-              label: 'Umfragen',
-              url: '/survey-admin',
-            },
-            {
-              id: 'tpm',
-              icon: this.getSVGIcon('wrench'),
-              label: 'TPM',
-              url: this.getSectionUrl('tpm'),
-              section: 'tpm',
-            },
-            {
-              id: '5s',
-              icon: this.getSVGIcon('star'),
-              label: '5S',
-              url: this.getSectionUrl('5s'),
-              section: '5s',
-            },
-            {
-              id: 'standards',
-              icon: this.getSVGIcon('checklist'),
-              label: 'Standards',
-              url: this.getSectionUrl('standards'),
-              section: 'standards',
-            },
-          ],
-        },
-        {
-          id: 'shifts',
-          icon: this.getSVGIcon('clock'),
-          label: 'Schichtplanung',
-          url: '/shifts',
-        },
-        {
-          id: 'chat',
-          icon: this.getSVGIcon('chat'),
-          label: 'Chat',
-          url: '/chat',
-          badge: 'unread-messages',
-        },
-        {
-          id: 'settings',
-          icon: this.getSVGIcon('settings'),
-          label: 'Einstellungen',
-          url: '#settings',
-          section: 'settings',
-        },
-        /*
-        {
-          id: 'features',
-          icon: this.getSVGIcon('feature'),
-          label: 'Feature Management',
-          url: '/feature-management',
-        },
-        */
-        {
-          id: 'profile',
-          icon: this.getSVGIcon('user'),
-          label: 'Mein Profil',
-          url: '/admin-profile',
-        },
-      ],
-
-      // Employee Navigation (7 Items with LEAN submenu)
-      employee: [
-        {
-          id: 'dashboard',
-          icon: this.getSVGIcon('home'),
-          label: 'Dashboard',
-          url: EMPLOYEE_DASHBOARD_URL,
-        },
-        {
-          id: 'documents',
-          icon: this.getSVGIcon('document'),
-          label: 'Dokumente',
-          hasSubmenu: true,
-          badge: 'unread-documents',
-          submenu: [
-            {
-              id: 'documents-search',
-              icon: this.getSVGIcon('search'),
-              label: 'Dokumente suchen',
-              url: '/documents-search',
-            },
-            {
-              id: 'documents-company',
-              icon: this.getSVGIcon('building'),
-              label: 'Firmendokumente',
-              url: '/documents-company',
-              badgeId: 'badge-docs-company',
-            },
-            {
-              id: 'documents-department',
-              icon: this.getSVGIcon('sitemap'),
-              label: 'Abteilungsdokumente',
-              url: '/documents-department',
-              badgeId: 'badge-docs-department',
-            },
-            {
-              id: 'documents-team',
-              icon: this.getSVGIcon('team'),
-              label: 'Teamdokumente',
-              url: '/documents-team',
-              badgeId: 'badge-docs-team',
-            },
-            {
-              id: 'documents-personal',
-              icon: this.getSVGIcon('user'),
-              label: 'Persönliche Dokumente',
-              url: '/documents-personal',
-              badgeId: 'badge-docs-personal',
-            },
-            {
-              id: 'documents-payroll',
-              icon: this.getSVGIcon('money'),
-              label: 'Gehaltsabrechnungen',
-              url: '/documents-payroll',
-              badgeId: 'badge-docs-payroll',
-            },
-          ],
-        },
-        {
-          id: 'calendar',
-          icon: this.getSVGIcon('calendar'),
-          label: 'Kalender',
-          url: '/calendar',
-          badge: 'unread-calendar-events',
-        },
-        {
-          id: 'lean-management',
-          icon: this.getSVGIcon('lean'),
-          label: 'LEAN-Management',
-          hasSubmenu: true,
-          badge: 'lean-management-parent',
-          submenu: [
-            {
-              id: 'kvp',
-              icon: this.getSVGIcon('lightbulb'),
-              label: 'KVP System',
-              url: '/kvp',
-              badge: 'new-kvp-suggestions',
-            },
-            {
-              id: 'surveys',
-              icon: this.getSVGIcon('poll'),
-              label: 'Umfragen',
-              url: '/survey-employee',
-              badge: 'pending-surveys',
-            },
-            {
-              id: 'tpm',
-              icon: this.getSVGIcon('wrench'),
-              label: 'TPM',
-              url: this.getSectionUrl('tpm'),
-              section: 'tpm',
-            },
-            {
-              id: '5s',
-              icon: this.getSVGIcon('star'),
-              label: '5S',
-              url: this.getSectionUrl('5s'),
-              section: '5s',
-            },
-            {
-              id: 'standards',
-              icon: this.getSVGIcon('checklist'),
-              label: 'Standards',
-              url: this.getSectionUrl('standards'),
-              section: 'standards',
-            },
-          ],
-        },
-        {
-          id: 'chat',
-          icon: this.getSVGIcon('chat'),
-          label: 'Chat',
-          url: '/chat',
-          badge: 'unread-messages',
-        },
-        {
-          id: 'shifts',
-          icon: this.getSVGIcon('clock'),
-          label: 'Schichtplanung',
-          url: '/shifts',
-        },
-        {
-          id: 'profile',
-          icon: this.getSVGIcon('user'),
-          label: 'Mein Profil',
-          url: '/profile',
-        },
-      ],
-
-      // Root Navigation (erweitert)
-      root: [
-        {
-          id: 'dashboard',
-          icon: this.getSVGIcon('home'),
-          label: 'Root Dashboard',
-          url: ROOT_DASHBOARD_URL,
-        },
-        {
-          id: 'root-users',
-          icon: this.getSVGIcon('user-shield'),
-          label: 'Root User',
-          url: '/manage-root-users',
-        },
-        {
-          id: 'admins',
-          icon: this.getSVGIcon('admin'),
-          label: 'Administratoren',
-          url: '/manage-admins',
-        },
-        {
-          id: 'areas',
-          icon: this.getSVGIcon('sitemap'),
-          label: 'Bereiche',
-          url: '/manage-areas',
-          section: 'areas',
-        },
-        {
-          id: 'departments',
-          icon: this.getSVGIcon('building'),
-          label: 'Abteilungen',
-          url: '/manage-departments',
-        },
-        {
-          id: 'department-groups',
-          icon: this.getSVGIcon('folder-tree'),
-          label: 'Abteilungsgruppen',
-          url: '/manage-department-groups',
-        },
-        {
-          id: 'chat',
-          icon: this.getSVGIcon('chat'),
-          label: 'Chat',
-          url: '/chat',
-          badge: 'unread-messages',
-        },
-        {
-          id: 'features',
-          icon: this.getSVGIcon('feature'),
-          label: 'Features',
-          url: '/root-features',
-        },
-        {
-          id: 'logs',
-          icon: this.getSVGIcon('logs'),
-          label: 'System-Logs',
-          url: '/logs',
-        },
-        {
-          id: 'profile',
-          icon: this.getSVGIcon('user'),
-          label: 'Mein Profil',
-          url: '/root-profile',
-        },
-        {
-          id: 'system',
-          icon: this.getSVGIcon('settings'),
-          label: 'System',
-          hasSubmenu: true,
-          submenu: [
-            {
-              id: 'account-settings',
-              icon: this.getSVGIcon('user-shield'),
-              label: 'Kontoeinstellungen',
-              url: '/account-settings',
-            },
-          ],
-        },
-      ],
+      admin: this.getAdminNavigationItems(),
+      employee: this.getEmployeeNavigationItems(),
+      root: this.getRootNavigationItems(),
     };
+  }
+
+  private getAdminNavigationItems(): NavItem[] {
+    return [...this.getAdminCoreItems(), ...this.getAdminContentItems(), ...this.getAdminCommunicationItems()];
+  }
+
+  private getAdminCoreItems(): NavItem[] {
+    return [
+      {
+        id: 'dashboard',
+        icon: this.getSVGIcon('home'),
+        label: 'Übersicht',
+        url: this.getSectionUrl('dashboard'),
+        section: 'dashboard',
+      },
+      {
+        id: 'employees',
+        icon: this.getSVGIcon('users'),
+        label: 'Mitarbeiter',
+        url: this.getSectionUrl('employees'),
+        section: 'employees',
+        children: [
+          {
+            id: 'employees-list',
+            label: 'Mitarbeiterliste',
+            url: '/manage-employees',
+            section: 'employees',
+          },
+        ],
+      },
+      {
+        id: 'areas',
+        icon: this.getSVGIcon('sitemap'),
+        label: 'Bereiche',
+        url: '/manage-areas',
+        section: 'areas',
+      },
+      {
+        id: 'departments',
+        icon: this.getSVGIcon('building'),
+        label: 'Abteilungen',
+        url: '/manage-departments',
+        children: [
+          {
+            id: 'departments-all',
+            label: 'Alle Abteilungen',
+            url: '/manage-departments',
+          },
+        ],
+      },
+      {
+        id: 'teams',
+        icon: this.getSVGIcon('team'),
+        label: 'Teams',
+        url: '/manage-teams',
+        section: 'teams',
+      },
+      {
+        id: 'machines',
+        icon: this.getSVGIcon('generator'),
+        label: 'Maschinen',
+        url: '/manage-machines',
+        section: 'machines',
+      },
+    ];
+  }
+
+  private getAdminContentItems(): NavItem[] {
+    return [
+      {
+        id: 'documents',
+        icon: this.getSVGIcon('document'),
+        label: 'Dokumente',
+        hasSubmenu: true,
+        submenu: this.getDocumentSubmenu(),
+      },
+      {
+        id: 'calendar',
+        icon: this.getSVGIcon('calendar'),
+        label: 'Kalender',
+        url: '/calendar',
+        badge: 'unread-calendar-events',
+      },
+      {
+        id: 'lean-management',
+        icon: this.getSVGIcon('lean'),
+        label: 'LEAN-Management',
+        hasSubmenu: true,
+        badge: 'lean-management-parent',
+        submenu: this.getLeanManagementSubmenu(true),
+      },
+      {
+        id: 'shifts',
+        icon: this.getSVGIcon('clock'),
+        label: 'Schichtplanung',
+        url: '/shifts',
+      },
+    ];
+  }
+
+  private getAdminCommunicationItems(): NavItem[] {
+    return [
+      {
+        id: 'chat',
+        icon: this.getSVGIcon('chat'),
+        label: 'Chat',
+        url: '/chat',
+        badge: 'unread-messages',
+      },
+      {
+        id: 'settings',
+        icon: this.getSVGIcon('settings'),
+        label: 'Einstellungen',
+        url: '#settings',
+        section: 'settings',
+      },
+      /*
+      {
+        id: 'features',
+        icon: this.getSVGIcon('feature'),
+        label: 'Feature Management',
+        url: '/feature-management',
+      },
+      */
+      {
+        id: 'profile',
+        icon: this.getSVGIcon('user'),
+        label: 'Mein Profil',
+        url: '/admin-profile',
+      },
+    ];
+  }
+
+  private getEmployeeNavigationItems(): NavItem[] {
+    return [
+      {
+        id: 'dashboard',
+        icon: this.getSVGIcon('home'),
+        label: 'Dashboard',
+        url: EMPLOYEE_DASHBOARD_URL,
+      },
+      {
+        id: 'documents',
+        icon: this.getSVGIcon('document'),
+        label: 'Dokumente',
+        hasSubmenu: true,
+        badge: 'unread-documents',
+        submenu: this.getDocumentSubmenu(),
+      },
+      {
+        id: 'calendar',
+        icon: this.getSVGIcon('calendar'),
+        label: 'Kalender',
+        url: '/calendar',
+        badge: 'unread-calendar-events',
+      },
+      {
+        id: 'lean-management',
+        icon: this.getSVGIcon('lean'),
+        label: 'LEAN-Management',
+        hasSubmenu: true,
+        badge: 'lean-management-parent',
+        submenu: this.getLeanManagementSubmenu(false),
+      },
+      {
+        id: 'chat',
+        icon: this.getSVGIcon('chat'),
+        label: 'Chat',
+        url: '/chat',
+        badge: 'unread-messages',
+      },
+      {
+        id: 'shifts',
+        icon: this.getSVGIcon('clock'),
+        label: 'Schichtplanung',
+        url: '/shifts',
+      },
+      {
+        id: 'profile',
+        icon: this.getSVGIcon('user'),
+        label: 'Mein Profil',
+        url: '/profile',
+      },
+    ];
+  }
+
+  private getRootNavigationItems(): NavItem[] {
+    return [...this.getRootUserManagementItems(), ...this.getRootOrganizationItems(), ...this.getRootSystemItems()];
+  }
+
+  private getRootUserManagementItems(): NavItem[] {
+    return [
+      {
+        id: 'dashboard',
+        icon: this.getSVGIcon('home'),
+        label: 'Root Dashboard',
+        url: ROOT_DASHBOARD_URL,
+      },
+      {
+        id: 'root-users',
+        icon: this.getSVGIcon('user-shield'),
+        label: 'Root User',
+        url: '/manage-root-users',
+      },
+      {
+        id: 'admins',
+        icon: this.getSVGIcon('admin'),
+        label: 'Administratoren',
+        url: '/manage-admins',
+      },
+    ];
+  }
+
+  private getRootOrganizationItems(): NavItem[] {
+    return [
+      {
+        id: 'areas',
+        icon: this.getSVGIcon('sitemap'),
+        label: 'Bereiche',
+        url: '/manage-areas',
+        section: 'areas',
+      },
+      {
+        id: 'departments',
+        icon: this.getSVGIcon('building'),
+        label: 'Abteilungen',
+        url: '/manage-departments',
+      },
+      {
+        id: 'department-groups',
+        icon: this.getSVGIcon('folder-tree'),
+        label: 'Abteilungsgruppen',
+        url: '/manage-department-groups',
+      },
+      {
+        id: 'chat',
+        icon: this.getSVGIcon('chat'),
+        label: 'Chat',
+        url: '/chat',
+        badge: 'unread-messages',
+      },
+    ];
+  }
+
+  private getRootSystemItems(): NavItem[] {
+    return [
+      {
+        id: 'features',
+        icon: this.getSVGIcon('feature'),
+        label: 'Features',
+        url: '/root-features',
+      },
+      {
+        id: 'logs',
+        icon: this.getSVGIcon('logs'),
+        label: 'System-Logs',
+        url: '/logs',
+      },
+      {
+        id: 'profile',
+        icon: this.getSVGIcon('user'),
+        label: 'Mein Profil',
+        url: '/root-profile',
+      },
+      {
+        id: 'system',
+        icon: this.getSVGIcon('settings'),
+        label: 'System',
+        hasSubmenu: true,
+        submenu: [
+          {
+            id: 'account-settings',
+            icon: this.getSVGIcon('user-shield'),
+            label: 'Kontoeinstellungen',
+            url: '/account-settings',
+          },
+        ],
+      },
+    ];
+  }
+
+  private getDocumentSubmenu(): NavItem[] {
+    return [
+      {
+        id: 'documents-search',
+        icon: this.getSVGIcon('search'),
+        label: 'Dokumente suchen',
+        url: '/documents-search',
+      },
+      {
+        id: 'documents-company',
+        icon: this.getSVGIcon('building'),
+        label: 'Firmendokumente',
+        url: '/documents-company',
+        badgeId: 'badge-docs-company',
+      },
+      {
+        id: 'documents-department',
+        icon: this.getSVGIcon('sitemap'),
+        label: 'Abteilungsdokumente',
+        url: '/documents-department',
+        badgeId: 'badge-docs-department',
+      },
+      {
+        id: 'documents-team',
+        icon: this.getSVGIcon('team'),
+        label: 'Teamdokumente',
+        url: '/documents-team',
+        badgeId: 'badge-docs-team',
+      },
+      {
+        id: 'documents-personal',
+        icon: this.getSVGIcon('user'),
+        label: 'Persönliche Dokumente',
+        url: '/documents-personal',
+        badgeId: 'badge-docs-personal',
+      },
+      {
+        id: 'documents-payroll',
+        icon: this.getSVGIcon('money'),
+        label: 'Gehaltsabrechnungen',
+        url: '/documents-payroll',
+        badgeId: 'badge-docs-payroll',
+      },
+    ];
+  }
+
+  private getLeanManagementSubmenu(isAdmin: boolean): NavItem[] {
+    return [
+      {
+        id: 'kvp',
+        icon: this.getSVGIcon('lightbulb'),
+        label: 'KVP System',
+        url: '/kvp',
+        badge: 'new-kvp-suggestions',
+      },
+      {
+        id: 'surveys',
+        icon: this.getSVGIcon('poll'),
+        label: 'Umfragen',
+        url: isAdmin ? '/survey-admin' : '/survey-employee',
+        badge: isAdmin ? undefined : 'pending-surveys',
+      },
+      {
+        id: 'tpm',
+        icon: this.getSVGIcon('wrench'),
+        label: 'TPM',
+        url: this.getSectionUrl('tpm'),
+        section: 'tpm',
+      },
+      {
+        id: '5s',
+        icon: this.getSVGIcon('star'),
+        label: '5S',
+        url: this.getSectionUrl('5s'),
+        section: '5s',
+      },
+      {
+        id: 'standards',
+        icon: this.getSVGIcon('checklist'),
+        label: 'Standards',
+        url: this.getSectionUrl('standards'),
+        section: 'standards',
+      },
+    ];
   }
 
   private getSVGIcon(name: string): string {
     const iconsData: Record<string, string> = {
-      home: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
+      home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>',
       users:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
-      user: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
+      user: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>',
       document:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
       blackboard:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>',
       calendar:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>',
       clock:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
-      chat: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>',
+      chat: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4l4 4 4-4h4c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>',
       lightbulb:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17h8v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17h8v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/></svg>',
       money:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>',
       building:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
-      team: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
+      team: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
       'folder-tree':
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H13V20H11V21H9V20H7V18H9V11H7V9H9V3H11V9H13V11H15V13H13Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H13V20H11V21H9V20H7V18H9V11H7V9H9V3H11V9H13V11H15V13H13Z"/></svg>',
       settings:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>',
       feature:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19,8L15,12H18C18,15.31 15.31,18 12,18C10.99,18 10.03,17.75 9.2,17.3L7.74,18.76C8.97,19.54 10.43,20 12,20C16.42,20 20,16.42 20,12H23M6,12C6,8.69 8.69,6 12,6C13.01,6 13.97,6.25 14.8,6.7L16.26,5.24C15.03,4.46 13.57,4 12,4C7.58,4 4,7.58 4,12H1L5,16L9,12"/></svg>',
       admin:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6 14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,7C13.4,7 14.8,8.6,14.8,10V11H9.2V10C9.2,8.6 10.6,7 12,7M8.2,16V13H15.8V16H8.2Z"/></svg>',
       'user-shield':
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"/></svg>',
-      poll: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
-      lean: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"/></svg>',
+      poll: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3,22V8H7V22H3M10,22V2H14V22H10M17,22V14H21V22H17Z"/></svg>',
+      lean: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8Z"/></svg>',
       wrench:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/></svg>',
-      star: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.7,19L13.6,9.9C14.5,7.6 14,4.9 12.1,3C10.1,1 7.1,0.6 4.7,1.7L9,6L6,9L1.6,4.7C0.4,7.1 0.9,10.1 2.9,12.1C4.8,14 7.5,14.5 9.8,13.6L18.9,22.7C19.3,23.1 19.9,23.1 20.3,22.7L22.6,20.4C23.1,20 23.1,19.3 22.7,19Z"/></svg>',
+      star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,17.27L18.18,21L16.54,13.97L22,9.24L14.81,8.62L12,2L9.19,8.62L2,9.24L7.45,13.97L5.82,21L12,17.27Z"/></svg>',
       checklist:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M9,5V9H21V5M9,19H21V15H9M9,14H21V10H9M4,9H8V5H4M4,19H8V15H4M4,14H8V10H4V14Z"/></svg>',
       search:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M15.5,14h-0.79l-0.28-0.27C15.41,12.59,16,11.11,16,9.5 C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-0.59,4.23-1.57l0.27,0.28v0.79l5,4.99L20.49,19L15.5,14z M9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5,14h-0.79l-0.28-0.27C15.41,12.59,16,11.11,16,9.5 C16,5.91,13.09,3,9.5,3S3,5.91,3,9.5S5.91,16,9.5,16c1.61,0,3.09-0.59,4.23-1.57l0.27,0.28v0.79l5,4.99L20.49,19L15.5,14z M9.5,14C7.01,14,5,11.99,5,9.5S7.01,5,9.5,5S14,7.01,14,9.5S11.99,14,9.5,14z"/></svg>',
       sitemap:
-        '<svg width="19" height="19" viewBox="2 0 22 22" fill="currentColor"><path d="M15.19 21C14.12 19.43 13 17.36 13 15.5C13 13.67 13.96 12 15.4 11H15V9H17V10.23C17.5 10.09 18 10 18.5 10C18.67 10 18.84 10 19 10.03V3H5V21H11V17.5H13V21H15.19M15 5H17V7H15V5M9 19H7V17H9V19M9 15H7V13H9V15M9 11H7V9H9V11M9 7H7V5H9V7M11 5H13V7H11V5M11 9H13V11H11V9M11 15V13H13V15H11M18.5 12C16.6 12 15 13.61 15 15.5C15 18.11 18.5 22 18.5 22S22 18.11 22 15.5C22 13.61 20.4 12 18.5 12M18.5 16.81C17.8 16.81 17.3 16.21 17.3 15.61C17.3 14.91 17.9 14.41 18.5 14.41S19.7 15 19.7 15.61C19.8 16.21 19.2 16.81 18.5 16.81Z"/></svg>',
-      logs: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,15.5H16V17H8V15.5M8,11.5H16V13H8V11.5Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.19 21C14.12 19.43 13 17.36 13 15.5C13 13.67 13.96 12 15.4 11H15V9H17V10.23C17.5 10.09 18 10 18.5 10C18.67 10 18.84 10 19 10.03V3H5V21H11V17.5H13V21H15.19M15 5H17V7H15V5M9 19H7V17H9V19M9 15H7V13H9V15M9 11H7V9H9V11M9 7H7V5H9V7M11 5H13V7H11V5M11 9H13V11H11V9M11 15V13H13V15H11M18.5 12C16.6 12 15 13.61 15 15.5C15 18.11 18.5 22 18.5 22S22 18.11 22 15.5C22 13.61 20.4 12 18.5 12M18.5 16.81C17.8 16.81 17.3 16.21 17.3 15.61C17.3 14.91 17.9 14.41 18.5 14.41S19.7 15 19.7 15.61C19.8 16.21 19.2 16.81 18.5 16.81Z"/></svg>',
+      logs: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,15.5H16V17H8V15.5M8,11.5H16V13H8V11.5Z"/></svg>',
       'trash-clock':
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M15,16H19V18H15V16M15,8H19V10H15V8M15,12H19V14H15V12M5,12V9L9,5L13,9V13A2,2 0 0,1 11,15H7A2,2 0 0,1 5,13M9,3A1,1 0 0,0 8,4A1,1 0 0,0 9,5A1,1 0 0,0 10,4A1,1 0 0,0 9,3M2,17V20H11.67C11.24,19.09 11,18.07 11,17H2M6,8V10H8V8H6M6,11V13H8V11H6M16.5,3C13.46,3 11,5.46 11,8.5V9H13V8.5C13,6.57 14.57,5 16.5,5C18.43,5 20,6.57 20,8.5C20,10.43 18.43,12 16.5,12H16V14H16.5C19.54,14 22,11.54 22,8.5C22,5.46 19.54,3 16.5,3Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M15,16H19V18H15V16M15,8H19V10H15V8M15,12H19V14H15V12M5,12V9L9,5L13,9V13A2,2 0 0,1 11,15H7A2,2 0 0,1 5,13M9,3A1,1 0 0,0 8,4A1,1 0 0,0 9,5A1,1 0 0,0 10,4A1,1 0 0,0 9,3M2,17V20H11.67C11.24,19.09 11,18.07 11,17H2M6,8V10H8V8H6M6,11V13H8V11H6M16.5,3C13.46,3 11,5.46 11,8.5V9H13V8.5C13,6.57 14.57,5 16.5,5C18.43,5 20,6.57 20,8.5C20,10.43 18.43,12 16.5,12H16V14H16.5C19.54,14 22,11.54 22,8.5C22,5.46 19.54,3 16.5,3Z"/></svg>',
       generator:
-        '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2C5.9 2 5 2.9 5 4V6H4C2.9 6 2 6.9 2 8V20H4V21C4 21.55 4.45 22 5 22H6C6.55 22 7 21.55 7 21V20H17V21C17 21.55 17.45 22 18 22H19C19.55 22 20 21.55 20 21V20H22V8C22 6.9 21.11 6 20 6H19V4C19 2.9 18.11 2 17 2H7M14 10V8H20V10H14M14 14V12H20V14H14M7 4H17V6H7V4M7 8V12H9L6 18V14H4L7 8Z"/></svg>',
-      cog: '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>',
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2C5.9 2 5 2.9 5 4V6H4C2.9 6 2 6.9 2 8V20H4V21C4 21.55 4.45 22 5 22H6C6.55 22 7 21.55 7 21V20H17V21C17 21.55 17.45 22 18 22H19C19.55 22 20 21.55 20 21V20H22V8C22 6.9 21.11 6 20 6H19V4C19 2.9 18.11 2 17 2H7M14 10V8H20V10H14M14 14V12H20V14H14M7 4H17V6H7V4M7 8V12H9L6 18V14H4L7 8Z"/></svg>',
+      cog: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"/></svg>',
     };
     const icons = new Map(Object.entries(iconsData));
     return icons.get(name) ?? icons.get('home') ?? '';
@@ -1524,15 +1503,12 @@ class UnifiedNavigation {
 
     return `
             <nav class="sidebar-nav">
-                <button class="sidebar-title blackboard-button" data-action="navigate-blackboard" title="Zum Schwarzen Brett">
-                    <span class="title-icon pinned-icon">
-                        <span class="pin-head"></span>
-                        <span class="pin-needle"></span>
-                    </span>
-                    <span class="title-content">
-                        <span class="title-text">Schwarzes Brett</span>
-                    </span>
-                </button>
+             <ul class="sidebar-menu">
+                    ${menuItems.map((item, index) => this.createMenuItem(item, index === 0)).join('')}
+                </ul>
+                ${storageWidget}
+            </nav>
+
                 <div class="user-info-card" id="sidebar-user-info-card">
                     <div id="sidebar-user-avatar" class="user-avatar avatar-initials">${this.getInitials('', '')}</div>
                     <div class="user-details">
@@ -1545,11 +1521,16 @@ class UnifiedNavigation {
                         <span id="role-indicator" class="role-badge ${this.currentRole ?? ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
-                <ul class="sidebar-menu">
-                    ${menuItems.map((item, index) => this.createMenuItem(item, index === 0)).join('')}
-                </ul>
-                ${storageWidget}
-            </nav>
+                <button class="sidebar-title blackboard-button" data-action="navigate-blackboard" title="Zum Schwarzen Brett">
+                    <span class="title-icon pinned-icon">
+                        <span class="pin-head"></span>
+                        <span class="pin-needle"></span>
+                    </span>
+                    <span class="title-content">
+                        <span class="title-text">Schwarzes Brett</span>
+                    </span>
+                </button>
+
         `;
   }
 
@@ -1806,8 +1787,25 @@ class UnifiedNavigation {
 
   private attachSidebarToggle(): void {
     const toggleBtn = $$('#sidebar-toggle');
+    const sidebar = $$('.layout-container .sidebar') ?? $$('.sidebar');
+    const mainContent = $$('.main-content');
+    const chatMain = $$('.chat-main');
+    const chatSidebar = $$('.chat-sidebar');
 
-    // Debug: Check how many sidebars exist
+    this.debugSidebarInfo(sidebar, toggleBtn, mainContent);
+
+    if (!toggleBtn || !sidebar) {
+      console.error('[UnifiedNav] Toggle button or sidebar not found!');
+      return;
+    }
+
+    this.applySavedCollapsedState(sidebar, mainContent, chatMain, chatSidebar);
+    this.setupToggleClickHandler(toggleBtn, sidebar, mainContent, chatMain, chatSidebar);
+    this.setupHoverEffects(toggleBtn, sidebar);
+    this.addCollapsedTooltips();
+  }
+
+  private debugSidebarInfo(sidebar: Element | null, toggleBtn: Element | null, mainContent: Element | null): void {
     const allSidebars = document.querySelectorAll('.sidebar');
     console.info('[UnifiedNav] Number of sidebars found:', allSidebars.length);
     allSidebars.forEach((sb, index) => {
@@ -1815,24 +1813,19 @@ class UnifiedNavigation {
       console.info(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
     });
 
-    // Try to find the navigation sidebar specifically (now in layout-container)
-    const sidebar = $$('.layout-container .sidebar') ?? $$('.sidebar');
-    const mainContent = $$('.main-content');
-    const chatMain = $$('.chat-main');
-    const chatSidebar = $$('.chat-sidebar');
-
     console.info('[UnifiedNav] Toggle button:', toggleBtn);
     console.info('[UnifiedNav] Sidebar:', sidebar);
     console.info('[UnifiedNav] Sidebar ID:', sidebar?.id);
     console.info('[UnifiedNav] Sidebar class:', sidebar?.className);
     console.info('[UnifiedNav] Main content:', mainContent);
+  }
 
-    if (!toggleBtn || !sidebar) {
-      console.error('[UnifiedNav] Toggle button or sidebar not found!');
-      return;
-    }
-
-    // Check localStorage for saved state
+  private applySavedCollapsedState(
+    sidebar: Element,
+    mainContent: Element | null,
+    chatMain: Element | null,
+    chatSidebar: Element | null,
+  ): void {
     const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
     if (isCollapsed) {
       sidebar.classList.add('collapsed');
@@ -1841,8 +1834,15 @@ class UnifiedNavigation {
       chatSidebar?.classList.add(SIDEBAR_COLLAPSED_CLASS);
       this.updateToggleIcon();
     }
+  }
 
-    // Toggle click handler
+  private setupToggleClickHandler(
+    toggleBtn: Element,
+    sidebar: Element,
+    mainContent: Element | null,
+    chatMain: Element | null,
+    chatSidebar: Element | null,
+  ): void {
     toggleBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -1855,7 +1855,7 @@ class UnifiedNavigation {
       const newState = !isCurrentlyCollapsed;
 
       // Remove any inline width styles - let CSS handle it
-      sidebar.style.removeProperty('width');
+      (sidebar as HTMLElement).style.removeProperty('width');
 
       sidebar.classList.toggle('collapsed');
       mainContent?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
@@ -1863,7 +1863,7 @@ class UnifiedNavigation {
       chatSidebar?.classList.toggle(SIDEBAR_COLLAPSED_CLASS);
 
       // Force browser to recalculate styles
-      void sidebar.offsetWidth;
+      void (sidebar as HTMLElement).offsetWidth;
 
       // Save state
       localStorage.setItem('sidebarCollapsed', newState.toString());
@@ -1882,8 +1882,9 @@ class UnifiedNavigation {
       console.info('[UnifiedNav] Sidebar classes after:', sidebar.className);
       console.info('[UnifiedNav] Sidebar computed width after:', window.getComputedStyle(sidebar).width);
     });
+  }
 
-    // Hover effect for toggle button
+  private setupHoverEffects(toggleBtn: Element, sidebar: Element): void {
     toggleBtn.addEventListener('mouseenter', () => {
       const isSidebarCollapsed = sidebar.classList.contains('collapsed');
       const iconPath = toggleBtn.querySelector('.toggle-icon-path');
@@ -1911,9 +1912,6 @@ class UnifiedNavigation {
         iconPath.setAttribute('d', 'M3,6H21V8H3V6M3,11H21V13H3V11M3,16H21V18H3V16Z');
       }
     });
-
-    // Add tooltips for collapsed sidebar items
-    this.addCollapsedTooltips();
   }
 
   private updateToggleIcon(): void {

@@ -1163,7 +1163,6 @@ body {
   white-space: nowrap !important;
 
   background: linear-gradient(135deg, #c62828 0%, #ad1457 100%) !important;
-  box-shadow: 0 2px 8px rgb(198 40 40 / 40%) !important;
 
   transition: all 0.3s ease !important;
 }
