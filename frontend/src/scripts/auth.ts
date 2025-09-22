@@ -139,6 +139,104 @@ export function parseJwt(token: string): JWTPayload | null {
   }
 }
 
+// Helper: Get redirect URL based on user role
+function getRoleBasedRedirectUrl(): string {
+  const userRole = localStorage.getItem('userRole');
+  switch (userRole) {
+    case 'employee':
+      return '/employee-dashboard';
+    case 'admin':
+      return '/admin-dashboard';
+    case 'root':
+      return '/root-dashboard';
+    default:
+      return '/pages/login.html';
+  }
+}
+
+// Helper: Handle unauthorized error
+function handleUnauthorized(): never {
+  removeAuthToken();
+  window.location.assign('/login');
+  throw new Error('Unauthorized');
+}
+
+// Helper: Handle forbidden error
+function handleForbidden(): never {
+  const redirectUrl = getRoleBasedRedirectUrl();
+  console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
+  window.location.assign(redirectUrl);
+  throw new Error('Forbidden - insufficient permissions');
+}
+
+// Helper: Make V2 API request
+async function makeV2ApiRequest(path: string, method: string, body: string | null | undefined): Promise<unknown> {
+  switch (method.toUpperCase()) {
+    case 'GET':
+      return await apiClient.get(path);
+    case 'POST': {
+      const postBody = body !== undefined && body !== null ? (JSON.parse(body) as unknown) : undefined;
+      return await apiClient.post(path, postBody);
+    }
+    case 'PUT': {
+      const putBody = body !== undefined && body !== null ? (JSON.parse(body) as unknown) : undefined;
+      return await apiClient.put(path, putBody);
+    }
+    case 'DELETE':
+      return await apiClient.delete(path);
+    default:
+      throw new Error(`Unsupported method: ${method}`);
+  }
+}
+
+// Helper: Handle V2 API request with error handling
+async function fetchWithV2Api(url: string, options: RequestInit): Promise<Response> {
+  try {
+    const urlObj = new URL(url, window.location.origin);
+    const path = urlObj.pathname.replace('/api/v2', '').replace('/api', '');
+    const method = options.method ?? 'GET';
+
+    const response = await makeV2ApiRequest(path, method, options.body as string | null | undefined);
+
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      statusText: 'OK',
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+    });
+  } catch (error) {
+    if (error instanceof ApiError) {
+      if (error.status === 401) handleUnauthorized();
+      if (error.status === 403) handleForbidden();
+
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: error.status,
+        statusText: error.message,
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+      });
+    }
+    throw error;
+  }
+}
+
+// Helper: Handle V1 API request
+async function fetchWithV1Api(url: string, options: RequestInit, token: string): Promise<Response> {
+  const fingerprint = await BrowserFingerprint.generate();
+
+  const headers: HeadersInit = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'X-Browser-Fingerprint': fingerprint,
+    ...(options.headers ? (options.headers as Record<string, string>) : {}),
+  };
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401) handleUnauthorized();
+  if (response.status === 403) handleForbidden();
+
+  return response;
+}
+
 // Fetch with authentication
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken();
@@ -148,147 +246,8 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     throw new Error('No authentication token');
   }
 
-  // Check if v2 is enabled
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-
-  if (useV2 === true) {
-    // Use the new API client for v2
-    try {
-      // Extract the path from the URL
-      const urlObj = new URL(url, window.location.origin);
-      const path = urlObj.pathname.replace('/api/v2', '').replace('/api', '');
-
-      // Determine the HTTP method
-      const method = options.method ?? 'GET';
-
-      // Browser fingerprint is handled internally by apiClient
-
-      // Make the request using the API client
-      let response: unknown;
-      switch (method.toUpperCase()) {
-        case 'GET':
-          response = await apiClient.get(path);
-          break;
-        case 'POST': {
-          const postBody =
-            options.body !== undefined && options.body !== null
-              ? (JSON.parse(options.body as string) as unknown)
-              : undefined;
-          response = await apiClient.post(path, postBody);
-          break;
-        }
-        case 'PUT': {
-          const putBody =
-            options.body !== undefined && options.body !== null
-              ? (JSON.parse(options.body as string) as unknown)
-              : undefined;
-          response = await apiClient.put(path, putBody);
-          break;
-        }
-        case 'DELETE':
-          response = await apiClient.delete(path);
-          break;
-        default:
-          throw new Error(`Unsupported method: ${method}`);
-      }
-
-      // Convert response to fetch-compatible format
-      return new Response(JSON.stringify(response), {
-        status: 200,
-        statusText: 'OK',
-        headers: new Headers({ 'Content-Type': 'application/json' }),
-      });
-    } catch (error) {
-      if (error instanceof ApiError) {
-        if (error.status === 401) {
-          removeAuthToken();
-          window.location.href = '/login';
-          throw new Error('Unauthorized');
-        }
-
-        if (error.status === 403) {
-          const userRole = localStorage.getItem('userRole');
-          let redirectUrl = '/pages/login.html';
-
-          // Redirect to appropriate dashboard based on role
-          switch (userRole) {
-            case 'employee':
-              redirectUrl = '/employee-dashboard';
-              break;
-            case 'admin':
-              redirectUrl = '/admin-dashboard';
-              break;
-            case 'root':
-              redirectUrl = '/root-dashboard';
-              break;
-          }
-
-          console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
-          window.location.href = redirectUrl;
-          throw new Error('Forbidden - insufficient permissions');
-        }
-
-        // Return error response
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: error.status,
-          statusText: error.message,
-          headers: new Headers({ 'Content-Type': 'application/json' }),
-        });
-      }
-
-      throw error;
-    }
-  } else {
-    // Use traditional fetch for v1
-    // Get browser fingerprint
-    const fingerprint = await BrowserFingerprint.generate();
-
-    const headers: HeadersInit = {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-      'X-Browser-Fingerprint': fingerprint,
-      ...(options.headers ? (options.headers as Record<string, string>) : {}),
-    };
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    // Handle authentication errors
-    if (response.status === 401) {
-      removeAuthToken();
-      // Use location.assign to avoid race condition warning
-      window.location.assign('/login');
-      throw new Error('Unauthorized');
-    }
-
-    // Handle forbidden errors (wrong role)
-    if (response.status === 403) {
-      const userRole = localStorage.getItem('userRole');
-      let redirectUrl = '/pages/login.html';
-
-      // Redirect to appropriate dashboard based on role
-      switch (userRole) {
-        case 'employee':
-          redirectUrl = '/employee-dashboard';
-          break;
-        case 'admin':
-          redirectUrl = '/admin-dashboard';
-          break;
-        case 'root':
-          redirectUrl = '/root-dashboard';
-          break;
-      }
-
-      console.warn(`Access forbidden. Redirecting to ${redirectUrl}`);
-      // Use location.assign to avoid race condition warning
-      window.location.assign(redirectUrl);
-      throw new Error('Forbidden - insufficient permissions');
-    }
-
-    return response;
-  }
+  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
+  return useV2 ? await fetchWithV2Api(url, options) : await fetchWithV1Api(url, options, token);
 }
 
 // Load user information
@@ -299,16 +258,148 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 // Promise cache to prevent concurrent requests
 let profileLoadingPromise: Promise<User> | null = null;
 
+// Helper: Check if cache is valid
+function isCacheValid(): boolean {
+  return userProfileCache.data !== null && Date.now() - userProfileCache.timestamp < CACHE_DURATION;
+}
+
+// Helper: Convert API response to User
+function convertToUser(
+  data: {
+    id?: number;
+    username?: string;
+    email?: string;
+    firstName?: string;
+    first_name?: string;
+    lastName?: string;
+    last_name?: string;
+    role?: string;
+    tenantId?: number;
+    tenant_id?: number;
+    isActive?: boolean;
+    isArchived?: boolean;
+    createdAt?: string;
+    created_at?: string;
+    updatedAt?: string;
+    updated_at?: string;
+    user?: User;
+    message?: string;
+  },
+  useV2: boolean,
+): User {
+  if (useV2) {
+    return {
+      id: data.id,
+      username: data.username,
+      email: data.email,
+      first_name: data.firstName ?? data.first_name,
+      last_name: data.lastName ?? data.last_name,
+      role: data.role,
+      tenant_id: data.tenantId ?? data.tenant_id,
+      is_active: data.isActive ?? true,
+      is_archived: data.isArchived ?? false,
+      created_at: data.createdAt ?? data.created_at,
+      updated_at: data.updatedAt ?? data.updated_at,
+    } as User;
+  }
+  return data.user ?? (data as User);
+}
+
+// Helper: Update DOM elements with user info
+function updateUserDisplay(user: User): void {
+  const userName = document.querySelector('#userName') ?? document.querySelector('#user-name');
+  if (userName !== null) {
+    interface UserWithBothFormats extends User {
+      firstName?: string;
+      lastName?: string;
+    }
+    const userWithBoth = user as UserWithBothFormats;
+    const firstName = userWithBoth.firstName ?? userWithBoth.first_name ?? userWithBoth.username;
+    const lastName = userWithBoth.lastName ?? userWithBoth.last_name ?? '';
+    const displayName = `${firstName} ${lastName}`.trim();
+    if (userName.textContent !== displayName) {
+      userName.textContent = displayName;
+    }
+  }
+
+  const userRole = document.querySelector('#userRole');
+  if (userRole) {
+    userRole.textContent = user.role;
+  }
+}
+
+// Helper: Get fallback user on error
+function getFallbackUser(): User {
+  const userName = document.querySelector('#userName');
+  if (userName) userName.textContent = 'Benutzer';
+
+  const userRole = document.querySelector('#userRole');
+  if (userRole) userRole.textContent = localStorage.getItem('role') ?? 'Benutzer';
+
+  return {
+    id: 0,
+    username: 'Benutzer',
+    email: '',
+    first_name: 'Benutzer',
+    role: (localStorage.getItem('role') ?? 'admin') as User['role'],
+    tenant_id: 0,
+    is_active: true,
+    is_archived: false,
+    created_at: '',
+    updated_at: '',
+  } as User;
+}
+
+// Helper: Fetch user profile from API
+async function fetchUserProfile(): Promise<User> {
+  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
+  const profileUrl = useV2 ? '/api/v2/users/me' : '/api/user/profile';
+
+  const response = await fetchWithAuth(profileUrl);
+  console.info('loadUserInfo: Response status:', response.status);
+
+  const data = (await response.json()) as {
+    id?: number;
+    username?: string;
+    email?: string;
+    firstName?: string;
+    first_name?: string;
+    lastName?: string;
+    last_name?: string;
+    role?: string;
+    tenantId?: number;
+    tenant_id?: number;
+    isActive?: boolean;
+    isArchived?: boolean;
+    createdAt?: string;
+    created_at?: string;
+    updatedAt?: string;
+    updated_at?: string;
+    user?: User;
+    message?: string;
+  };
+  console.info('loadUserInfo: Response data:', data);
+
+  if (!response.ok) {
+    throw new Error(data.message ?? 'Fehler beim Laden der Benutzerdaten');
+  }
+
+  const user = convertToUser(data, useV2);
+  updateUserDisplay(user);
+
+  userProfileCache = { data: user, timestamp: Date.now() };
+  console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
+
+  return user;
+}
+
 export async function loadUserInfo(): Promise<User> {
   try {
-    // Check if we have cached data that's still fresh
-    const now = Date.now();
-    if (userProfileCache.data && now - userProfileCache.timestamp < CACHE_DURATION) {
+    if (isCacheValid() && userProfileCache.data) {
       console.info('loadUserInfo: Returning cached profile data');
       return userProfileCache.data;
     }
 
-    // If there's already a request in progress, wait for it
     if (profileLoadingPromise) {
       console.info('loadUserInfo: Waiting for existing profile request...');
       return await profileLoadingPromise;
@@ -316,127 +407,19 @@ export async function loadUserInfo(): Promise<User> {
 
     console.info('loadUserInfo: Attempting to fetch user profile...');
 
-    // Create the promise and store it
-    profileLoadingPromise = (async () => {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-      const profileUrl = useV2 === true ? '/api/v2/users/me' : '/api/user/profile';
-
-      const response = await fetchWithAuth(profileUrl);
-      console.info('loadUserInfo: Response status:', response.status);
-
-      const data = (await response.json()) as {
-        id?: number;
-        username?: string;
-        email?: string;
-        firstName?: string;
-        first_name?: string;
-        lastName?: string;
-        last_name?: string;
-        role?: string;
-        tenantId?: number;
-        tenant_id?: number;
-        isActive?: boolean;
-        isArchived?: boolean;
-        createdAt?: string;
-        created_at?: string;
-        updatedAt?: string;
-        updated_at?: string;
-        user?: User;
-        message?: string;
-      };
-      console.info('loadUserInfo: Response data:', data);
-
-      if (response.ok) {
-        let user: User;
-
-        if (useV2 === true) {
-          // v2 response has camelCase fields, convert to snake_case for compatibility
-          const v2User = data;
-          user = {
-            id: v2User.id,
-            username: v2User.username,
-            email: v2User.email,
-            first_name: v2User.firstName ?? v2User.first_name,
-            last_name: v2User.lastName ?? v2User.last_name,
-            role: v2User.role,
-            tenant_id: v2User.tenantId ?? v2User.tenant_id,
-            is_active: v2User.isActive ?? true,
-            is_archived: v2User.isArchived ?? false,
-            created_at: v2User.createdAt ?? v2User.created_at,
-            updated_at: v2User.updatedAt ?? v2User.updated_at,
-          } as User;
-        } else {
-          // v1 response
-          user = data.user ?? (data as User);
-        }
-
-        // Update user display - check both element IDs for compatibility
-        const userName = document.querySelector('#userName') ?? document.querySelector('#user-name');
-        if (userName !== null) {
-          // API v2 uses camelCase (firstName), API v1 uses snake_case (first_name)
-          // Handle both API versions with type assertion
-          interface UserWithBothFormats extends User {
-            firstName?: string;
-            lastName?: string;
-          }
-          const userWithBoth = user as UserWithBothFormats;
-          const firstName = userWithBoth.firstName ?? userWithBoth.first_name ?? userWithBoth.username;
-          const lastName = userWithBoth.lastName ?? userWithBoth.last_name ?? '';
-          const displayName = `${firstName} ${lastName}`.trim();
-          // Only update if not already correctly set
-          if (userName.textContent !== displayName) {
-            userName.textContent = displayName;
-          }
-        }
-
-        const userRole = document.querySelector('#userRole');
-        if (userRole) {
-          userRole.textContent = user.role;
-        }
-
-        // Update cache with fresh data
-        userProfileCache = { data: user, timestamp: Date.now() };
-        console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
-
-        // Clear the loading promise
+    // Create and store promise atomically
+    const promise = fetchUserProfile().finally(() => {
+      // Clear the promise when done, regardless of success or failure
+      if (profileLoadingPromise === promise) {
         profileLoadingPromise = null;
-        return user;
-      } else {
-        // Clear the loading promise on error
-        profileLoadingPromise = null;
-        throw new Error(data.message ?? 'Fehler beim Laden der Benutzerdaten');
       }
-    })();
+    });
 
-    return await profileLoadingPromise;
+    profileLoadingPromise = promise;
+    return await promise;
   } catch (error) {
     console.error('Error loading user info:', error);
-    profileLoadingPromise = null;
-
-    // Fallback: Set default values if API fails
-    const userName = document.querySelector('#userName');
-    if (userName) {
-      userName.textContent = 'Benutzer';
-    }
-
-    const userRole = document.querySelector('#userRole');
-    if (userRole) {
-      userRole.textContent = localStorage.getItem('role') ?? 'Benutzer';
-    }
-
-    // Don't throw error to prevent redirect loop
-    return {
-      id: 0,
-      username: 'Benutzer',
-      email: '',
-      first_name: 'Benutzer',
-      role: (localStorage.getItem('role') ?? 'admin') as User['role'],
-      tenant_id: 0,
-      is_active: true,
-      is_archived: false,
-      created_at: '',
-      updated_at: '',
-    } as User;
+    return getFallbackUser();
   }
 }
 
@@ -494,99 +477,75 @@ export async function logout(): Promise<void> {
   window.location.href = '/login';
 }
 
+// Helper: Login with V2 API
+async function loginV2(email: string, password: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const response = await apiClient.post<{
+      accessToken?: string;
+      refreshToken?: string;
+      user?: User;
+    }>('/auth/login', { email, password });
+
+    if (
+      response.accessToken !== undefined &&
+      response.accessToken.length > 0 &&
+      response.refreshToken !== undefined &&
+      response.refreshToken.length > 0
+    ) {
+      apiClient.setTokens(response.accessToken, response.refreshToken);
+      setAuthToken(response.accessToken, response.refreshToken);
+
+      if (response.user) {
+        localStorage.setItem('user', JSON.stringify(response.user));
+        localStorage.setItem('userRole', response.user.role);
+      }
+
+      return { success: true };
+    }
+    return { success: false, message: 'Invalid response format' };
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return { success: false, message: error.message };
+    }
+    return { success: false, message: 'Login failed' };
+  }
+}
+
+// Helper: Login with V1 API
+async function loginV1(email: string, password: string): Promise<{ success: boolean; message?: string }> {
+  const fingerprint = await BrowserFingerprint.generate();
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Browser-Fingerprint': fingerprint,
+    },
+    body: JSON.stringify({ email, password }),
+  });
+
+  const data = (await response.json()) as {
+    token?: string;
+    user?: User;
+    message?: string;
+  };
+
+  if (response.ok && data.token !== undefined && data.token.length > 0) {
+    setAuthToken(data.token);
+
+    if (data.user !== undefined) {
+      localStorage.setItem('userRole', data.user.role);
+    }
+
+    return { success: true };
+  }
+  return { success: false, message: data.message ?? 'Login failed' };
+}
+
 // Login function
 export async function login(email: string, password: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-    const loginUrl = useV2 === true ? '/api/v2/auth/login' : '/api/auth/login';
-
-    if (useV2 === true) {
-      // Use API client for v2
-      try {
-        const response = await apiClient.post<{
-          accessToken?: string;
-          refreshToken?: string;
-          user?: User;
-        }>('/auth/login', {
-          email,
-          password,
-        }); // No auth needed for login
-
-        // v2 response format
-        if (
-          response.accessToken !== undefined &&
-          response.accessToken.length > 0 &&
-          response.refreshToken !== undefined &&
-          response.refreshToken.length > 0
-        ) {
-          // Store tokens
-          apiClient.setTokens(response.accessToken, response.refreshToken);
-          setAuthToken(response.accessToken, response.refreshToken);
-
-          // Store user info
-          if (response.user) {
-            localStorage.setItem('user', JSON.stringify(response.user));
-            localStorage.setItem('userRole', response.user.role);
-          }
-
-          return { success: true };
-        } else {
-          return { success: false, message: 'Invalid response format' };
-        }
-      } catch (error) {
-        if (error instanceof ApiError) {
-          return { success: false, message: error.message };
-        }
-        return { success: false, message: 'Login failed' };
-      }
-    } else {
-      // Use traditional fetch for v1
-      const fingerprint = await BrowserFingerprint.generate();
-      const response = await fetch(loginUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Browser-Fingerprint': fingerprint,
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = (await response.json()) as {
-        id?: number;
-        username?: string;
-        email?: string;
-        firstName?: string;
-        first_name?: string;
-        lastName?: string;
-        last_name?: string;
-        role?: string;
-        tenantId?: number;
-        tenant_id?: number;
-        isActive?: boolean;
-        isArchived?: boolean;
-        createdAt?: string;
-        created_at?: string;
-        updatedAt?: string;
-        updated_at?: string;
-        token?: string;
-        user?: User;
-        message?: string;
-      };
-
-      if (response.ok && data.token !== undefined && data.token.length > 0) {
-        // Store token
-        setAuthToken(data.token);
-
-        // Store user info
-        if (data.user !== undefined) {
-          localStorage.setItem('userRole', data.user.role);
-        }
-
-        return { success: true };
-      } else {
-        return { success: false, message: data.message ?? 'Login failed' };
-      }
-    }
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
+    return useV2 ? await loginV2(email, password) : await loginV1(email, password);
   } catch (error) {
     console.error('Login error:', error);
     return { success: false, message: 'Network error' };
@@ -611,6 +570,46 @@ export function showInfo(message: string): void {
   console.info(`ℹ️ ${message}`);
 }
 
+// Helper: Check if should redirect to login
+function shouldRedirectToLogin(): boolean {
+  return !isAuthenticated() && !window.location.pathname.includes('login');
+}
+
+// Helper: Check if on authenticated page
+function isOnAuthenticatedPage(): boolean {
+  return isAuthenticated() && !window.location.pathname.includes('login');
+}
+
+// Helper: Initialize session manager
+function initializeSessionManager(): void {
+  const sessionManager = SessionManager.getInstance();
+  sessionManager.setRemoveAuthTokenCallback(removeAuthToken);
+  console.info('[AUTH] Session manager initialized');
+}
+
+// Helper: Enforce page access
+function enforcePageAccess(): void {
+  if (window.unifiedNav && typeof window.unifiedNav.enforcePageAccess === 'function') {
+    window.unifiedNav.enforcePageAccess();
+    console.info('[AUTH] Page access enforced via UnifiedNavigation');
+  } else {
+    console.info('[AUTH] Page access will be enforced by UnifiedNavigation');
+  }
+}
+
+// Helper: Initialize authenticated user
+async function initializeAuthenticatedUser(): Promise<void> {
+  console.info('[AUTH] Loading user info...');
+  try {
+    await loadUserInfo();
+  } catch (error: unknown) {
+    console.error('Failed to load user info:', error);
+  }
+
+  initializeSessionManager();
+  enforcePageAccess();
+}
+
 // Initialize authentication on page load
 document.addEventListener('DOMContentLoaded', () => {
   // Use IIFE to handle async operations
@@ -627,36 +626,14 @@ document.addEventListener('DOMContentLoaded', () => {
       isEmployeeDashboard: window.location.pathname.includes('employee-dashboard'),
     });
 
-    // Check if user is authenticated
-    if (!isAuthenticated() && !window.location.pathname.includes('login')) {
+    if (shouldRedirectToLogin()) {
       console.info('[AUTH] No authentication token found, redirecting to login');
       window.location.href = '/login';
       return;
     }
 
-    // Load user info if on authenticated page
-    if (isAuthenticated() && !window.location.pathname.includes('login')) {
-      console.info('[AUTH] Loading user info...');
-      try {
-        await loadUserInfo();
-      } catch (error: unknown) {
-        console.error('Failed to load user info:', error);
-        // Don't redirect immediately, let the user see the error
-      }
-
-      // Initialize session manager for authenticated users
-      const sessionManager = SessionManager.getInstance();
-      sessionManager.setRemoveAuthTokenCallback(removeAuthToken);
-      console.info('[AUTH] Session manager initialized');
-
-      // Enforce page access based on role - use UnifiedNavigation if available
-      if (window.unifiedNav && typeof window.unifiedNav.enforcePageAccess === 'function') {
-        window.unifiedNav.enforcePageAccess();
-        console.info('[AUTH] Page access enforced via UnifiedNavigation');
-      } else {
-        // UnifiedNavigation will handle this when it initializes
-        console.info('[AUTH] Page access will be enforced by UnifiedNavigation');
-      }
+    if (isOnAuthenticatedPage()) {
+      await initializeAuthenticatedUser();
     }
   })();
 });

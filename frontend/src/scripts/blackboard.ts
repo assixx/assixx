@@ -39,8 +39,16 @@ interface BlackboardEntry {
   author_first_name?: string;
   author_last_name?: string;
   author_full_name?: string;
+  // API v2 fields (camelCase)
+  authorName?: string;
+  authorFirstName?: string;
+  authorLastName?: string;
+  authorFullName?: string;
   created_at: string;
   updated_at: string;
+  // API v2 date fields (camelCase)
+  createdAt?: string;
+  updatedAt?: string;
   tags?: string[];
   attachment_count?: number;
   attachments?: BlackboardAttachment[];
@@ -926,6 +934,11 @@ async function loadEntries(): Promise<void> {
         updatedAt?: string;
         updated_at?: string;
         color?: string;
+        // Author fields from API v2
+        authorName?: string;
+        authorFirstName?: string;
+        authorLastName?: string;
+        authorFullName?: string;
         [key: string]: unknown;
       }
 
@@ -1194,7 +1207,8 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
     contentHtml = createTextContent(entry.content);
   }
 
-  const authorName = escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown');
+  // API v2 uses authorFullName (camelCase), v1 uses author_full_name (snake_case)
+  const authorName = escapeHtml(entry.authorFullName ?? entry.author_full_name ?? entry.author_name ?? 'Unknown');
   const colorClass = cardClass === 'pinboard-sticky' ? `color-${cardColor}` : '';
 
   const htmlContent = `
@@ -1213,7 +1227,7 @@ function createEntryCard(entry: BlackboardEntry): HTMLElement {
           <i class="fas fa-user" style="opacity: 0.6;"></i> ${authorName}
         </span>
         <span>
-          ${formatDate(entry.created_at)}
+          ${formatDate(entry.createdAt ?? entry.created_at)}
         </span>
       </div>
 
@@ -1556,6 +1570,11 @@ async function loadEntryForEdit(entryId: number): Promise<void> {
       orgId?: number;
       org_id?: number;
       color?: string;
+      // Author fields from API v2
+      authorName?: string;
+      authorFirstName?: string;
+      authorLastName?: string;
+      authorFullName?: string;
       [key: string]: unknown;
     }
 
@@ -1725,13 +1744,14 @@ function formatDate(dateString: string): string {
 
 // Helper: Build entry detail header HTML
 function buildEntryDetailHeader(entry: BlackboardEntry, priorityIcon: string): string {
-  const authorName = escapeHtml(entry.author_full_name ?? entry.author_name ?? 'Unknown');
+  // API v2 uses authorFullName (camelCase), v1 uses author_full_name (snake_case)
+  const authorName = escapeHtml(entry.authorFullName ?? entry.author_full_name ?? entry.author_name ?? 'Unknown');
   return `
     <div class="entry-detail-header">
       <h2>${priorityIcon} ${escapeHtml(entry.title)}</h2>
       <div class="entry-detail-meta">
         <span><i class="fas fa-user"></i> ${authorName}</span>
-        <span><i class="fas fa-clock"></i> ${formatDate(entry.created_at)}</span>
+        <span><i class="fas fa-clock"></i> ${formatDate(entry.createdAt ?? entry.created_at)}</span>
       </div>
     </div>
   `;

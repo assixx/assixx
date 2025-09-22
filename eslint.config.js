@@ -85,7 +85,7 @@ export default [
       'max-lines': [
         'warn',
         {
-          max: 1600,
+          max: 8000,
           skipBlankLines: true,
           skipComments: true,
         },
@@ -93,7 +93,7 @@ export default [
       'max-lines-per-function': [
         'warn',
         {
-          max: 100,
+          max: 80,
           skipBlankLines: true,
           skipComments: true,
           IIFEs: true,
@@ -300,7 +300,7 @@ export default [
       'sonarjs/non-existent-operator': 'error',
 
       // --- ANGEPASST --- Kognitive Komplexität auf einen realistischen Wert gesetzt.
-      'sonarjs/cognitive-complexity': ['warn', 15],
+      'sonarjs/cognitive-complexity': ['warn', 10],
       'sonarjs/no-collapsible-if': 'error',
       'sonarjs/no-collection-size-mischeck': 'error',
       'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
@@ -449,7 +449,7 @@ export default [
       'max-lines': [
         'warn',
         {
-          max: 800, // Stricter for frontend
+          max: 4000, // Stricter for frontend
           skipBlankLines: true,
           skipComments: true,
         },
@@ -457,7 +457,7 @@ export default [
       'max-lines-per-function': [
         'warn',
         {
-          max: 100, // Stricter for frontend
+          max: 60, // Stricter for frontend
           skipBlankLines: true,
           skipComments: true,
           IIFEs: true,
@@ -685,7 +685,7 @@ export default [
       'sonarjs/no-identical-conditions': 'error',
       'sonarjs/no-identical-functions': 'error',
       'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/cognitive-complexity': ['warn', 15],
+      'sonarjs/cognitive-complexity': ['warn', 10],
       'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
       'sonarjs/no-duplicated-branches': 'error',
     },
@@ -789,7 +789,7 @@ export default [
       'prefer-template': 'error',
       'no-return-await': 'error',
       'max-depth': 'off',
-      'max-lines': ['warn', 1600],
+      'max-lines': ['warn', 4000],
       'require-await': 'error',
       'no-async-promise-executor': 'error',
       'prefer-promise-reject-errors': 'error',

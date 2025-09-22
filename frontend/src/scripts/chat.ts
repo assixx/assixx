@@ -822,7 +822,7 @@ class ChatClient {
         '🌙',
         '☀️',
         '🌤️',
-        // eslint-disable-next-line max-lines
+
         '⛅',
         '🌥️',
         '🌦️',

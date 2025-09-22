@@ -9,16 +9,17 @@ import { ResponseAdapter } from '../utils/response-adapter';
 import { getAuthToken, removeAuthToken, parseJwt } from './auth';
 import { initPageProtection } from './pageProtection';
 import { setHTML } from '../utils/dom-utils';
+import type { ApiClient } from '../utils/api-client';
 
 // Extend window interface
 declare global {
   interface Window {
-    apiClient: typeof apiClient;
+    apiClient: ApiClient;
   }
 }
 
 // Make apiClient globally available
-window.apiClient = apiClient;
+// Note: apiClient is now set globally in api-client.ts itself when the module loads
 
 // Navigation initialization
 document.addEventListener('DOMContentLoaded', () => {
@@ -112,6 +113,44 @@ async function loadNavigation(): Promise<void> {
 }
 
 /**
+ * Generates admin navigation menu items
+ */
+function getAdminNavItems(): string {
+  return `
+    <li class="nav-item">
+      <a class="nav-link" href="/admin-dashboard">
+        <i class="fas fa-tachometer-alt me-1"></i> Dashboard
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/blackboard">
+        <i class="fas fa-clipboard-list me-1"></i> Blackboard
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/documents">
+        <i class="fas fa-file-alt me-1"></i> Dokumente
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/manage-departments">
+        <i class="fas fa-building me-1"></i> Abteilungen
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/employees">
+        <i class="fas fa-users me-1"></i> Mitarbeiter
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" href="/feature-management">
+        <i class="fas fa-cogs me-1"></i> Features
+      </a>
+    </li>
+  `;
+}
+
+/**
  * Create navigation for admin/root users
  */
 function createAdminNavigation(user: User): string {
@@ -127,36 +166,7 @@ function createAdminNavigation(user: User): string {
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav me-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="/admin-dashboard">
-                <i class="fas fa-tachometer-alt me-1"></i> Dashboard
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/blackboard">
-                <i class="fas fa-clipboard-list me-1"></i> Blackboard
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/documents">
-                <i class="fas fa-file-alt me-1"></i> Dokumente
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/manage-departments">
-                <i class="fas fa-building me-1"></i> Abteilungen
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/employees">
-                <i class="fas fa-users me-1"></i> Mitarbeiter
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="/feature-management">
-                <i class="fas fa-cogs me-1"></i> Features
-              </a>
-            </li>
+            ${getAdminNavItems()}
           </ul>
           <ul class="navbar-nav">
             <li class="nav-item">

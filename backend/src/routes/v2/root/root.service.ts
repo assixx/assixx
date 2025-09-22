@@ -462,54 +462,64 @@ export class RootService {
   }
 
   /**
+   * Validate email doesn't exist
+   */
+  private async checkEmailExists(email: string, tenantId: number): Promise<void> {
+    const [existing] = await execute<RowDataPacket[]>(
+      'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
+      [email, tenantId],
+    );
+
+    if (existing.length > 0) {
+      throw new ServiceError('DUPLICATE_EMAIL', 'Email already in use', 400);
+    }
+  }
+
+  /**
+   * Get tenant subdomain
+   */
+  private async getTenantSubdomain(tenantId: number): Promise<string> {
+    const [tenantData] = await execute<TenantRow[]>('SELECT subdomain FROM tenants WHERE id = ?', [
+      tenantId,
+    ]);
+    return tenantData[0]?.subdomain ?? 'DEFAULT';
+  }
+
+  /**
+   * Log creation errors
+   */
+  private logCreationError(error: unknown): void {
+    logger.error('[RootService] Error creating root user:', error);
+
+    if (isMySQLError(error)) {
+      logger.error('[RootService] MySQL Error:', {
+        code: error.code,
+        message: error.sqlMessage,
+        sql: error.sql,
+      });
+    } else if (error instanceof Error) {
+      logger.error('[RootService] Error details:', {
+        name: error.name,
+        message: error.message,
+      });
+    }
+  }
+
+  /**
    * Create root user
-   * @param data - The data object
-   * @param tenantId - The tenant ID
    */
   async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
     try {
-      logger.info('[RootService.createRootUser] Starting with data:', {
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        employeeNumber: data.employeeNumber,
-        departmentId: data.departmentId,
-        tenantId,
-      });
+      logger.info('[RootService.createRootUser] Starting', { email: data.email, tenantId });
 
-      // Check if email already exists
-      const [existing] = await execute<RowDataPacket[]>(
-        'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
-        [data.email, tenantId],
-      );
+      // Validate email
+      await this.checkEmailExists(data.email, tenantId);
 
-      if (existing.length > 0) {
-        throw new ServiceError('DUPLICATE_EMAIL', 'Email already in use', 400);
-      }
-
-      // Get tenant subdomain for employee_id
-      const [tenantData] = await execute<TenantRow[]>(
-        'SELECT subdomain FROM tenants WHERE id = ?',
-        [tenantId],
-      );
-
-      const subdomain = tenantData[0]?.subdomain ?? 'DEFAULT';
+      // Get tenant info
+      const subdomain = await this.getTenantSubdomain(tenantId);
 
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
-
-      logger.info('[RootService.createRootUser] Executing INSERT with values:', {
-        username: data.username || data.email,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        position: data.position,
-        notes: data.notes,
-        employeeNumber: data.employeeNumber ?? null,
-        departmentId: data.departmentId ?? null,
-        isActive: data.isActive ?? true,
-        tenantId,
-      });
 
       // Create root user
       const [result] = await execute<ResultSetHeader>(
@@ -532,38 +542,14 @@ export class RootService {
         ],
       );
 
-      console.log('[RootService.createRootUser] INSERT result:', {
-        insertId: result.insertId,
-        affectedRows: result.affectedRows,
-        resultType: typeof result.insertId,
-      });
-
       // Generate and update employee_id
       const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
-      console.log('[RootService.createRootUser] Generated employeeId:', employeeId);
-
       await execute('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, result.insertId]);
-      console.log('[RootService.createRootUser] UPDATE completed for ID:', result.insertId);
 
-      logger.info(
-        '[RootService.createRootUser] User created successfully with ID:',
-        result.insertId,
-      );
+      logger.info('[RootService.createRootUser] Created with ID:', result.insertId);
       return result.insertId;
     } catch (error: unknown) {
-      logger.error('[RootService.createRootUser] Error creating root user:', error);
-      logger.error('[RootService.createRootUser] Error type:', typeof error);
-
-      if (isMySQLError(error)) {
-        logger.error('[RootService.createRootUser] Error constructor:', error.constructor.name);
-        logger.error('[RootService.createRootUser] MySQL Error Code:', error.code);
-        logger.error('[RootService.createRootUser] MySQL Error Message:', error.sqlMessage);
-        logger.error('[RootService.createRootUser] MySQL Error SQL:', error.sql);
-      } else if (error instanceof Error) {
-        logger.error('[RootService.createRootUser] Error name:', error.name);
-        logger.error('[RootService.createRootUser] Error message:', error.message);
-      }
-
+      this.logCreationError(error);
       if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to create root user', error);
     }
@@ -809,12 +795,13 @@ export class RootService {
         );
       }
 
-      return await tenantDeletionService.requestTenantDeletion(
+      const result = await tenantDeletionService.requestTenantDeletion(
         tenantId,
         requestedBy,
         reason ?? 'No reason provided',
         ipAddress,
       );
+      return result.queueId;
     } catch (error: unknown) {
       logger.error('Error in requestTenantDeletion:', error);
       if (error instanceof ServiceError) throw error;

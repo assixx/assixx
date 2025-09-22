@@ -450,6 +450,7 @@ declare global {
   interface Window {
     FEATURE_FLAGS?: Record<string, boolean | undefined>;
     ApiClient: typeof ApiClient;
+    apiClient: ApiClient;
   }
 }
 
@@ -459,6 +460,7 @@ export const apiClient = ApiClient.getInstance();
 // Make ApiClient available globally for inline scripts
 if (typeof window !== 'undefined') {
   window.ApiClient = ApiClient;
+  window.apiClient = apiClient;
 }
 
 // Global error handler for unhandled API errors

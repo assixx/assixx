@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable no-secrets/no-secrets */
 /**

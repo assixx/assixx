@@ -72,20 +72,17 @@ class BlackboardWidget {
     const contentElement = document.querySelector('#blackboard-widget-content');
 
     try {
+      // Check if apiClient is available
+      if (!window.apiClient) {
+        console.error('API Client not available');
+        throw new Error('API Client not initialized');
+      }
+
       // Use pre-determined sidebar state
       const limit = this.sidebarCollapsed ? 5 : 3;
 
-      const response = await fetch(`/api/blackboard/dashboard?limit=${limit}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load entries');
-      }
-
-      this.entries = await response.json();
+      // Use API v2 client
+      this.entries = await window.apiClient.get(`/blackboard/dashboard?limit=${limit}`);
       this.renderEntries();
     } catch (error) {
       console.error('Error loading blackboard entries:', error);
@@ -183,10 +180,21 @@ class BlackboardWidget {
   }
 
   getFormattedDate(dateString) {
+    // Handle undefined or null
+    if (!dateString) {
+      return '';
+    }
     const date = new Date(dateString);
+    // Check if date is valid
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
     return date.toLocaleDateString('de-DE', {
       day: '2-digit',
       month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   }
 
@@ -259,7 +267,13 @@ class BlackboardWidget {
 
   createMiniNote(entry) {
     const color = this.getNoteColor(entry);
-    const formattedDate = this.getFormattedDate(entry.created_at);
+    // Support both v1 (created_at) and v2 (createdAt) API formats
+    const formattedDate = this.getFormattedDate(entry.created_at || entry.createdAt);
+
+    // Support both v1 and v2 API formats for author name
+    const authorName = this.escapeHtml(
+      entry.author_full_name || entry.authorFullName || entry.author_name || entry.authorName || 'Unknown',
+    );
 
     const contentText = this.parseContentText(entry.content);
     const isDirectAttachment = contentText && contentText.startsWith('[Attachment:');
@@ -283,10 +297,9 @@ class BlackboardWidget {
                 <div class="mini-note-title">${this.escapeHtml(entry.title)}</div>
                 ${contentHtml}
                 ${attachmentIndicator}
-                <div class="mini-note-meta">
-                    <span class="mini-note-priority">
-                        <span class="priority-dot ${entry.priority}"></span>
-                        ${this.getPriorityLabel(entry.priority)}
+                <div class="mini-note-meta" style="font-size: 12px; color: #000; display: flex; justify-content: space-between; align-items: center;">
+                    <span>
+                        <i class="fas fa-user" style="opacity: 0.6;"></i> ${authorName}
                     </span>
                     <span>${formattedDate}</span>
                 </div>
@@ -321,12 +334,36 @@ class BlackboardWidget {
   }
 }
 
-// Auto-initialize if container exists
-document.addEventListener('DOMContentLoaded', () => {
-  if (document.querySelector('#blackboard-widget-container')) {
-    window.blackboardWidget = new BlackboardWidget('blackboard-widget-container');
+// Auto-initialize function that can be called anytime
+function initializeBlackboardWidget() {
+  if (document.querySelector('#blackboard-widget-container') && !window.blackboardWidget) {
+    // Wait for apiClient to be available (max 5 seconds)
+    let attempts = 0;
+    const maxAttempts = 50;
+    const checkApiClient = setInterval(() => {
+      attempts++;
+      if (window.apiClient) {
+        clearInterval(checkApiClient);
+        console.log('BlackboardWidget: Initializing with API Client');
+        window.blackboardWidget = new BlackboardWidget('blackboard-widget-container');
+      } else if (attempts >= maxAttempts) {
+        clearInterval(checkApiClient);
+        console.error('BlackboardWidget: API Client not available after 5 seconds');
+      }
+    }, 100);
   }
-});
+}
+
+// Try to initialize on DOMContentLoaded (for direct script includes)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initializeBlackboardWidget);
+} else {
+  // DOM is already loaded (for dynamically loaded scripts)
+  initializeBlackboardWidget();
+}
+
+// Export the initialization function for manual calls
+window.initializeBlackboardWidget = initializeBlackboardWidget;
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
