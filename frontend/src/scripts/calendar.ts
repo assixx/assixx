@@ -4,6 +4,7 @@
  */
 
 import type { User } from '../types/api.types';
+import { canViewAllEmployees } from '../utils/auth-helpers';
 import { $$, $all, $$id, setHTML } from '../utils/dom-utils';
 import { featureFlags } from '../utils/feature-flags';
 import { getAuthToken, showSuccess, showError } from './auth';
@@ -3463,8 +3464,7 @@ async function loadTeams(token: string): Promise<void> {
  */
 async function loadEmployees(token: string): Promise<void> {
   // Only admins can fetch users list
-  const userRole = localStorage.getItem('userRole');
-  if (userRole === 'employee') {
+  if (!canViewAllEmployees()) {
     employees = [];
     return;
   }

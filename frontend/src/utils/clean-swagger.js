@@ -15,6 +15,7 @@ console.log(`Reading ${swaggerPath}...`);
 // eslint-disable-next-line security/detect-non-literal-fs-filename -- Command-line argument from user, safe for CLI tool
 const swagger = JSON.parse(fs.readFileSync(swaggerPath, 'utf8'));
 
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function cleanRefs(obj, path = '') {
   if (typeof obj !== 'object' || obj === null) {
     return obj;

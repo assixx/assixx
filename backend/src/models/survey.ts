@@ -155,6 +155,67 @@ export interface SurveyStatistics {
 }
 
 /**
+ * Insert survey questions
+ */
+async function insertSurveyQuestions(
+  connection: PoolConnection,
+  surveyId: number,
+  tenantId: number,
+  questions: SurveyCreateData['questions'],
+): Promise<void> {
+  if (!questions || questions.length === 0) return;
+
+  for (const [index, question] of questions.entries()) {
+    await connection.query<ResultSetHeader>(
+      `
+        INSERT INTO survey_questions (
+          tenant_id, survey_id, question_text, question_type, is_required, order_index, options
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        tenantId,
+        surveyId,
+        question.question_text,
+        question.question_type,
+        question.is_required !== false,
+        question.order_position ?? index + 1,
+        question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
+      ],
+    );
+  }
+}
+
+/**
+ * Insert survey assignments
+ */
+async function insertSurveyAssignments(
+  connection: PoolConnection,
+  surveyId: number,
+  tenantId: number,
+  assignments: SurveyCreateData['assignments'],
+): Promise<void> {
+  if (!assignments || assignments.length === 0) return;
+
+  for (const assignment of assignments) {
+    await connection.query(
+      `
+        INSERT INTO survey_assignments (
+          tenant_id, survey_id, assignment_type, department_id, team_id, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `,
+      [
+        tenantId,
+        surveyId,
+        assignment.type,
+        assignment.department_id ?? null,
+        assignment.team_id ?? null,
+        assignment.user_id ?? null,
+      ],
+    );
+  }
+}
+
+/**
  * Create a new survey
  */
 export async function createSurvey(
@@ -196,52 +257,9 @@ export async function createSurvey(
 
     const surveyId = surveyResult.insertId;
 
-    // Add questions
-    if (surveyData.questions && surveyData.questions.length > 0) {
-      for (const [index, question] of surveyData.questions.entries()) {
-        await connection.query<ResultSetHeader>(
-          `
-            INSERT INTO survey_questions (
-              tenant_id, survey_id, question_text, question_type, is_required, order_index, options
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-          `,
-          [
-            tenantId,
-            surveyId,
-            question.question_text,
-            question.question_type,
-            question.is_required !== false,
-            question.order_position ?? index + 1,
-            question.options && question.options.length > 0 ?
-              JSON.stringify(question.options)
-            : null,
-          ],
-        );
-
-        // No need to insert options separately - they're stored as JSON in the questions table
-      }
-    }
-
-    // Add assignments
-    if (surveyData.assignments && surveyData.assignments.length > 0) {
-      for (const assignment of surveyData.assignments) {
-        await connection.query(
-          `
-            INSERT INTO survey_assignments (
-              tenant_id, survey_id, assignment_type, department_id, team_id, user_id
-            ) VALUES (?, ?, ?, ?, ?, ?)
-          `,
-          [
-            tenantId,
-            surveyId,
-            assignment.type,
-            assignment.department_id ?? null,
-            assignment.team_id ?? null,
-            assignment.user_id ?? null,
-          ],
-        );
-      }
-    }
+    // Add questions and assignments
+    await insertSurveyQuestions(connection, surveyId, tenantId, surveyData.questions);
+    await insertSurveyAssignments(connection, surveyId, tenantId, surveyData.assignments);
 
     await connection.commit();
     return surveyId;
@@ -511,6 +529,77 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
 }
 
 /**
+ * Update survey questions
+ */
+async function updateSurveyQuestions(
+  connection: PoolConnection,
+  surveyId: number,
+  tenantId: number,
+  questions: SurveyUpdateData['questions'],
+): Promise<void> {
+  if (!questions) return;
+
+  // Delete existing questions (cascade will handle options)
+  await connection.query('DELETE FROM survey_questions WHERE survey_id = ?', [surveyId]);
+
+  // Add new questions
+  for (const [index, question] of questions.entries()) {
+    await connection.query<ResultSetHeader>(
+      `
+        INSERT INTO survey_questions (
+          tenant_id, survey_id, question_text, question_type, is_required, order_index, options
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        tenantId,
+        surveyId,
+        question.question_text,
+        question.question_type,
+        question.is_required !== false,
+        question.order_position ?? index + 1,
+        question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
+      ],
+    );
+  }
+}
+
+/**
+ * Update survey assignments
+ */
+async function updateSurveyAssignments(
+  connection: PoolConnection,
+  surveyId: number,
+  tenantId: number,
+  assignments: SurveyUpdateData['assignments'],
+): Promise<void> {
+  if (assignments === undefined) return;
+
+  // Delete existing assignments
+  await connection.query('DELETE FROM survey_assignments WHERE survey_id = ?', [surveyId]);
+
+  // Add new assignments
+  if (assignments.length > 0) {
+    for (const assignment of assignments) {
+      await connection.query(
+        `
+          INSERT INTO survey_assignments (
+            tenant_id, survey_id, assignment_type, department_id, team_id, user_id
+          ) VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [
+          tenantId,
+          surveyId,
+          assignment.type,
+          assignment.department_id ?? null,
+          assignment.team_id ?? null,
+          assignment.user_id ?? null,
+        ],
+      );
+    }
+  }
+}
+
+/**
  * Update survey
  */
 export async function updateSurvey(
@@ -529,7 +618,7 @@ export async function updateSurvey(
   try {
     await connection.beginTransaction();
 
-    // Update survey
+    // Update survey main data
     await connection.query(
       `
         UPDATE surveys SET
@@ -553,62 +642,9 @@ export async function updateSurvey(
       ],
     );
 
-    // Update questions if provided
-    if (surveyData.questions) {
-      // Delete existing questions and options (cascade will handle options)
-      await connection.query('DELETE FROM survey_questions WHERE survey_id = ?', [surveyId]);
-
-      // Add new questions
-      for (const [index, question] of surveyData.questions.entries()) {
-        await connection.query<ResultSetHeader>(
-          `
-            INSERT INTO survey_questions (
-              tenant_id, survey_id, question_text, question_type, is_required, order_index, options
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
-          `,
-          [
-            tenantId,
-            surveyId,
-            question.question_text,
-            question.question_type,
-            question.is_required !== false,
-            question.order_position ?? index + 1,
-            question.options && question.options.length > 0 ?
-              JSON.stringify(question.options)
-            : null,
-          ],
-        );
-
-        // No need to insert options separately - they're stored as JSON in the questions table
-      }
-    }
-
-    // Update assignments if provided
-    if (surveyData.assignments !== undefined) {
-      // Delete existing assignments
-      await connection.query('DELETE FROM survey_assignments WHERE survey_id = ?', [surveyId]);
-
-      // Add new assignments
-      if (surveyData.assignments.length > 0) {
-        for (const assignment of surveyData.assignments) {
-          await connection.query(
-            `
-              INSERT INTO survey_assignments (
-                tenant_id, survey_id, assignment_type, department_id, team_id, user_id
-              ) VALUES (?, ?, ?, ?, ?, ?)
-            `,
-            [
-              tenantId,
-              surveyId,
-              assignment.type,
-              assignment.department_id ?? null,
-              assignment.team_id ?? null,
-              assignment.user_id ?? null,
-            ],
-          );
-        }
-      }
-    }
+    // Update questions and assignments
+    await updateSurveyQuestions(connection, surveyId, tenantId, surveyData.questions);
+    await updateSurveyAssignments(connection, surveyId, tenantId, surveyData.assignments);
 
     await connection.commit();
     return true;

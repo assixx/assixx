@@ -204,16 +204,17 @@ export async function getDepartmentReport(filters: {
 }
 
 /**
- * Get shift analytics report
- * @param filters - The filter criteria
+ * Build shift query conditions
  */
-export async function getShiftReport(filters: ReportFilters): Promise<Record<string, unknown>> {
-  const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
-  const dateTo = filters.dateTo ?? getDefaultDateTo();
-
-  // Build conditions
+function buildShiftQueryConditions(filters: ReportFilters): {
+  conditions: string[];
+  params: (string | number)[];
+} {
   const conditions = [`s.tenant_id = ?`];
   const params: (string | number)[] = [filters.tenantId];
+
+  const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
+  const dateTo = filters.dateTo ?? getDefaultDateTo();
 
   conditions.push(`s.date BETWEEN ? AND ?`);
   params.push(dateFrom, dateTo);
@@ -228,8 +229,17 @@ export async function getShiftReport(filters: ReportFilters): Promise<Record<str
     params.push(filters.teamId);
   }
 
-  // Get shift summary
-  const [shiftSummaryRows] = await executeQuery(
+  return { conditions, params };
+}
+
+/**
+ * Get shift summary data
+ */
+async function getShiftSummary(
+  conditions: string[],
+  params: (string | number)[],
+): Promise<Record<string, unknown>> {
+  const [rows] = await executeQuery(
     `
     SELECT
       COUNT(*) as total_shifts,
@@ -243,10 +253,18 @@ export async function getShiftReport(filters: ReportFilters): Promise<Record<str
   `,
     params,
   );
-  const shiftSummary = shiftSummaryRows;
+  return (rows as Record<string, unknown>[])[0] ?? {};
+}
 
-  // Get overtime by department
-  const [overtimeByDeptRows] = await executeQuery(
+/**
+ * Get overtime by department data
+ */
+async function getOvertimeByDepartment(
+  tenantId: number,
+  dateFrom: string,
+  dateTo: string,
+): Promise<Record<string, unknown>[]> {
+  const [rows] = await executeQuery(
     `
     SELECT
       d.id as department_id,
@@ -262,12 +280,20 @@ export async function getShiftReport(filters: ReportFilters): Promise<Record<str
     ORDER BY d.name DESC
     LIMIT 10
   `,
-    [filters.tenantId, dateFrom, dateTo],
+    [tenantId, dateFrom, dateTo],
   );
-  const overtimeByDept = overtimeByDeptRows;
+  return rows as Record<string, unknown>[];
+}
 
-  // Get peak hours analysis
-  const [peakHoursRows] = await executeQuery(
+/**
+ * Get peak hours analysis
+ */
+async function getPeakHoursAnalysis(
+  tenantId: number,
+  dateFrom: string,
+  dateTo: string,
+): Promise<Record<string, unknown>[]> {
+  const [rows] = await executeQuery(
     `
     SELECT
       type as shift_type,
@@ -279,17 +305,29 @@ export async function getShiftReport(filters: ReportFilters): Promise<Record<str
     GROUP BY type
     ORDER BY count DESC
   `,
-    [filters.tenantId, dateFrom, dateTo],
+    [tenantId, dateFrom, dateTo],
   );
-  const peakHours = peakHoursRows;
+  return rows as Record<string, unknown>[];
+}
 
-  const summary = (shiftSummary as Record<string, unknown>[])[0] ?? {};
+/**
+ * Get shift analytics report
+ * @param filters - The filter criteria
+ */
+export async function getShiftReport(filters: ReportFilters): Promise<Record<string, unknown>> {
+  const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
+  const dateTo = filters.dateTo ?? getDefaultDateTo();
+
+  const { conditions, params } = buildShiftQueryConditions(filters);
+
+  const [summary, overtimeByDept, peakHours] = await Promise.all([
+    getShiftSummary(conditions, params),
+    getOvertimeByDepartment(filters.tenantId, dateFrom, dateTo),
+    getPeakHoursAnalysis(filters.tenantId, dateFrom, dateTo),
+  ]);
 
   return {
-    period: {
-      from: dateFrom,
-      to: dateTo,
-    },
+    period: { from: dateFrom, to: dateTo },
     totalShifts: Number(summary.total_shifts) || 0,
     coverage: {
       scheduled: Number(summary.total_required) || 0,
@@ -299,13 +337,124 @@ export async function getShiftReport(filters: ReportFilters): Promise<Record<str
     overtime: {
       totalHours: Number(summary.total_overtime_hours) || 0,
       totalCost: Number(summary.total_overtime_cost) || 0,
-      byDepartment: (overtimeByDept as Record<string, unknown>[]).map((row) => dbToApi(row)),
+      byDepartment: overtimeByDept.map((row) => dbToApi(row)),
     },
     patterns: {
-      peakHours: (peakHours as Record<string, unknown>[]).map((row) => dbToApi(row)),
+      peakHours: peakHours.map((row) => dbToApi(row)),
       understaffedShifts: (Number(summary.total_shifts) || 0) - (Number(summary.total_filled) || 0),
     },
   };
+}
+
+/**
+ * Build KVP query conditions
+ */
+function buildKvpQueryConditions(
+  tenantId: number,
+  dateFrom: string,
+  dateTo: string,
+  categoryId?: number,
+): { conditions: string[]; params: (string | number)[] } {
+  const conditions = [`k.tenant_id = ?`];
+  const params: (string | number)[] = [tenantId];
+
+  conditions.push(`k.created_at BETWEEN ? AND ?`);
+  params.push(dateFrom, dateTo);
+
+  if (categoryId) {
+    conditions.push(`k.category_id = ?`);
+    params.push(categoryId);
+  }
+
+  return { conditions, params };
+}
+
+/**
+ * Get KVP summary data
+ */
+async function getKvpSummary(
+  conditions: string[],
+  params: (string | number)[],
+): Promise<Record<string, unknown>> {
+  const [rows] = await executeQuery(
+    `
+    SELECT
+      COUNT(*) as total_suggestions,
+      COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
+      SUM(CASE WHEN status = 'implemented' THEN estimated_cost ELSE 0 END) as total_cost,
+      SUM(CASE WHEN status = 'implemented' THEN actual_savings ELSE 0 END) as total_savings
+    FROM kvp_suggestions k
+    WHERE ${conditions.join(' AND ')}
+  `,
+    params,
+  );
+  return (rows as Record<string, unknown>[])[0] ?? {};
+}
+
+/**
+ * Get KVP metrics by category
+ */
+async function getKvpByCategory(
+  tenantId: number,
+  dateFrom: string,
+  dateTo: string,
+): Promise<Record<string, unknown>[]> {
+  const [rows] = await executeQuery(
+    `
+    SELECT
+      c.id as category_id,
+      c.name as category_name,
+      COUNT(k.id) as suggestions,
+      COUNT(CASE WHEN k.status = 'implemented' THEN 1 END) as implemented,
+      AVG(CASE WHEN k.status = 'implemented' THEN k.actual_savings ELSE NULL END) as avg_savings
+    FROM kvp_categories c
+    LEFT JOIN kvp_suggestions k ON k.category_id = c.id
+      AND k.tenant_id = ?
+      AND k.created_at BETWEEN ? AND ?
+    GROUP BY c.id, c.name
+    ORDER BY suggestions DESC
+  `,
+    [tenantId, dateFrom, dateTo],
+  );
+  return rows as Record<string, unknown>[];
+}
+
+/**
+ * Get KVP top performers
+ */
+async function getKvpTopPerformers(
+  tenantId: number,
+  dateFrom: string,
+  dateTo: string,
+): Promise<Record<string, unknown>[]> {
+  const [rows] = await executeQuery(
+    `
+    SELECT
+      u.id as user_id,
+      CONCAT(u.first_name, ' ', u.last_name) as name,
+      COUNT(k.id) as suggestions,
+      SUM(CASE WHEN k.status = 'implemented' THEN k.actual_savings ELSE 0 END) as total_savings
+    FROM users u
+    JOIN kvp_suggestions k ON k.submitted_by = u.id
+    WHERE k.tenant_id = ?
+      AND k.created_at BETWEEN ? AND ?
+    GROUP BY u.id, u.first_name, u.last_name
+    HAVING suggestions > 0
+    ORDER BY total_savings DESC
+    LIMIT 10
+  `,
+    [tenantId, dateFrom, dateTo],
+  );
+  return rows as Record<string, unknown>[];
+}
+
+/**
+ * Calculate ROI from summary data
+ */
+function calculateRoi(summary: Record<string, unknown>): number {
+  const totalCost = Number(summary.total_cost);
+  const totalSavings = Number(summary.total_savings);
+  return totalCost > 0 ? (totalSavings - totalCost) / totalCost : 0;
 }
 
 /**
@@ -324,94 +473,30 @@ export async function getKvpReport(filters: {
     const dateFrom = filters.dateFrom ?? getDefaultDateFrom();
     const dateTo = filters.dateTo ?? getDefaultDateTo();
 
-    // Build conditions
-    const conditions = [`k.tenant_id = ?`];
-    const params: (string | number)[] = [filters.tenantId];
-
-    conditions.push(`k.created_at BETWEEN ? AND ?`);
-    params.push(dateFrom, dateTo);
-
-    if (filters.categoryId) {
-      conditions.push(`k.category_id = ?`);
-      params.push(filters.categoryId);
-    }
-
-    // Get KVP summary
-    const [kvpSummaryRows] = await executeQuery(
-      `
-    SELECT
-      COUNT(*) as total_suggestions,
-      COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
-      SUM(CASE WHEN status = 'implemented' THEN estimated_cost ELSE 0 END) as total_cost,
-      SUM(CASE WHEN status = 'implemented' THEN actual_savings ELSE 0 END) as total_savings
-    FROM kvp_suggestions k
-    WHERE ${conditions.join(' AND ')}
-  `,
-      params,
+    const { conditions, params } = buildKvpQueryConditions(
+      filters.tenantId,
+      dateFrom,
+      dateTo,
+      filters.categoryId,
     );
-    const kvpSummary = kvpSummaryRows;
 
-    // Get metrics by category
-    const [byCategoryRows] = await executeQuery(
-      `
-    SELECT
-      c.id as category_id,
-      c.name as category_name,
-      COUNT(k.id) as suggestions,
-      COUNT(CASE WHEN k.status = 'implemented' THEN 1 END) as implemented,
-      AVG(CASE WHEN k.status = 'implemented' THEN k.actual_savings ELSE NULL END) as avg_savings
-    FROM kvp_categories c
-    LEFT JOIN kvp_suggestions k ON k.category_id = c.id
-      AND k.tenant_id = ?
-      AND k.created_at BETWEEN ? AND ?
-    GROUP BY c.id, c.name
-    ORDER BY suggestions DESC
-  `,
-      [filters.tenantId, dateFrom, dateTo],
-    );
-    const byCategory = byCategoryRows;
-
-    // Get top performers
-    const [topPerformersRows] = await executeQuery(
-      `
-    SELECT
-      u.id as user_id,
-      CONCAT(u.first_name, ' ', u.last_name) as name,
-      COUNT(k.id) as suggestions,
-      SUM(CASE WHEN k.status = 'implemented' THEN k.actual_savings ELSE 0 END) as total_savings
-    FROM users u
-    JOIN kvp_suggestions k ON k.submitted_by = u.id
-    WHERE k.tenant_id = ?
-      AND k.created_at BETWEEN ? AND ?
-    GROUP BY u.id, u.first_name, u.last_name
-    HAVING suggestions > 0
-    ORDER BY total_savings DESC
-    LIMIT 10
-  `,
-      [filters.tenantId, dateFrom, dateTo],
-    );
-    const topPerformers = topPerformersRows;
-
-    const summary = (kvpSummary as Record<string, unknown>[])[0] ?? {};
-    const roi =
-      Number(summary.total_cost) > 0 ?
-        (Number(summary.total_savings) - Number(summary.total_cost)) / Number(summary.total_cost)
-      : 0;
+    const [summary, byCategory, topPerformers] = await Promise.all([
+      getKvpSummary(conditions, params),
+      getKvpByCategory(filters.tenantId, dateFrom, dateTo),
+      getKvpTopPerformers(filters.tenantId, dateFrom, dateTo),
+    ]);
 
     return {
-      period: {
-        from: dateFrom,
-        to: dateTo,
-      },
+      period: { from: dateFrom, to: dateTo },
       summary: {
         totalSuggestions: Number.parseInt(String(summary.total_suggestions)) || 0,
         implemented: Number.parseInt(String(summary.implemented)) || 0,
         totalCost: Number.parseFloat(String(summary.total_cost)) || 0,
         totalSavings: Number.parseFloat(String(summary.total_savings)) || 0,
-        roi: roi,
+        roi: calculateRoi(summary),
       },
-      byCategory: (byCategory as Record<string, unknown>[]).map((row) => dbToApi(row)),
-      topPerformers: (topPerformers as Record<string, unknown>[]).map((row) => dbToApi(row)),
+      byCategory: byCategory.map((row) => dbToApi(row)),
+      topPerformers: topPerformers.map((row) => dbToApi(row)),
     };
   } catch (error: unknown) {
     logError('[Reports Service] Error in getKvpReport:', error);
@@ -610,100 +695,105 @@ interface ExportReportParams {
 }
 
 /**
- *
- * @param params - The parameters object
+ * Get report data by type
  */
-export async function exportReport(
+async function getReportDataByType(
   params: ExportReportParams,
-): Promise<{ filename: string; content: Buffer | string; mimeType: string }> {
-  // Get report data based on type
-  let reportData: Record<string, unknown> | Buffer | unknown[];
-
+): Promise<Record<string, unknown> | Buffer | unknown[]> {
   switch (params.reportType) {
     case 'overview':
-      reportData = await getOverviewReport({
+      return await getOverviewReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom,
         dateTo: params.filters.dateTo,
       });
-      break;
     case 'employees':
-      reportData = await getEmployeeReport({
+      return await getEmployeeReport({
         tenantId: params.tenantId,
         ...params.filters,
       });
-      break;
     case 'departments':
-      reportData = {
+      return {
         departments: await getDepartmentReport({
           tenantId: params.tenantId,
           dateFrom: params.filters.dateFrom,
           dateTo: params.filters.dateTo,
         }),
       };
-      break;
     case 'shifts':
-      reportData = await getShiftReport({
+      return await getShiftReport({
         tenantId: params.tenantId,
         ...params.filters,
       });
-      break;
     case 'kvp':
-      reportData = await getKvpReport({
+      return await getKvpReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom,
         dateTo: params.filters.dateTo,
       });
-      break;
     case 'attendance':
-      reportData = getAttendanceReport({
+      return getAttendanceReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom ?? getDefaultDateFrom(),
         dateTo: params.filters.dateTo ?? getDefaultDateTo(),
         departmentId: params.filters.departmentId,
         teamId: params.filters.teamId,
       });
-      break;
     case 'compliance':
-      reportData = getComplianceReport({
+      return getComplianceReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom ?? getDefaultDateFrom(),
         dateTo: params.filters.dateTo ?? getDefaultDateTo(),
         departmentId: params.filters.departmentId,
       });
-      break;
     default:
       throw new ServiceError('Invalid report type', 'INVALID_REPORT_TYPE', 400);
   }
+}
 
-  // For now, return the data as-is
-  // In production, this would generate actual PDF/Excel/CSV files
+/**
+ * Format report data for export
+ */
+function formatReportForExport(
+  reportData: Record<string, unknown> | Buffer | unknown[],
+  reportType: string,
+  format: string,
+): { filename: string; content: Buffer | string; mimeType: string } {
   const timestamp = new Date().toISOString().split('T')[0];
-  switch (params.format) {
+
+  switch (format) {
     case 'pdf':
-      // Would use something like puppeteer or pdfkit
       return {
-        filename: `report-${params.reportType}-${timestamp}.pdf`,
+        filename: `report-${reportType}-${timestamp}.pdf`,
         content: Buffer.from(JSON.stringify(reportData, null, 2)),
         mimeType: 'application/pdf',
       };
     case 'excel':
-      // Would use something like exceljs
       return {
-        filename: `report-${params.reportType}-${timestamp}.xlsx`,
+        filename: `report-${reportType}-${timestamp}.xlsx`,
         content: Buffer.from(JSON.stringify(reportData, null, 2)),
         mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       };
     case 'csv':
-      // Would convert to CSV format
       return {
-        filename: `report-${params.reportType}-${timestamp}.csv`,
-        content: convertToCSV(reportData),
+        filename: `report-${reportType}-${timestamp}.csv`,
+        content: convertToCSV(reportData as Record<string, unknown>),
         mimeType: 'text/csv',
       };
     default:
       throw new ServiceError('Invalid export format', 'INVALID_EXPORT_FORMAT', 400);
   }
+}
+
+/**
+ *
+ * @param params - The parameters object
+ */
+export async function exportReport(
+  params: ExportReportParams,
+): Promise<{ filename: string; content: Buffer | string; mimeType: string }> {
+  const reportData = await getReportDataByType(params);
+  return formatReportForExport(reportData, params.reportType, params.format);
 }
 
 // Helper functions

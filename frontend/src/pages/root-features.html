@@ -609,9 +609,8 @@
         }
       }
 
-      // Update plan UI
-      function updatePlanUI() {
-        // Update plan cards
+      // Helper function to update plan cards
+      function updatePlanCards() {
         document.querySelectorAll('.plan-card').forEach((card) => {
           card.classList.remove('current');
           const btn = card.querySelector('.plan-action');
@@ -626,23 +625,27 @@
           btn.classList.add('current');
           btn.textContent = 'Aktueller Plan';
         }
+      }
 
-        // Update plan badge
-        const badge = document.querySelector('.plan-badge span');
-        if (badge) {
-          // Safe access with validation
-          let planName = currentPlan || 'Basic';
-          if (currentPlan === 'basic' && plans.basic) {
-            planName = plans.basic.name || planName;
-          } else if (currentPlan === 'professional' && plans.professional) {
-            planName = plans.professional.name || planName;
-          } else if (currentPlan === 'enterprise' && plans.enterprise) {
-            planName = plans.enterprise.name || planName;
-          }
-          badge.textContent = `${planName} Plan`;
+      // Helper function to get plan display name
+      function getPlanDisplayName(planKey) {
+        if (!planKey) return 'Basic';
+
+        // Use explicit property access to avoid object injection
+        let plan = null;
+        if (planKey === 'basic') {
+          plan = plans.basic;
+        } else if (planKey === 'professional') {
+          plan = plans.professional;
+        } else if (planKey === 'enterprise') {
+          plan = plans.enterprise;
         }
 
-        // Update addons
+        return plan ? (plan.name || planKey) : planKey;
+      }
+
+      // Helper function to update addons display
+      function updateAddonsDisplay() {
         if (tenantAddons.employees) {
           document.querySelector('#addon-employees').textContent = tenantAddons.employees;
         }
@@ -652,6 +655,81 @@
         if (tenantAddons.storage_gb) {
           document.querySelector('#addon-storage').textContent = `${tenantAddons.storage_gb}GB`;
         }
+      }
+
+      // Update plan UI
+      function updatePlanUI() {
+        // Update plan cards
+        updatePlanCards();
+
+        // Update plan badge
+        const badge = document.querySelector('.plan-badge span');
+        if (badge) {
+          const planName = getPlanDisplayName(currentPlan);
+          badge.textContent = `${planName} Plan`;
+        }
+
+        // Update addons
+        updateAddonsDisplay();
+      }
+
+      // Helper to get feature status text
+      function getFeatureStatusText(isActive, canActivate) {
+        if (isActive) return 'Aktiv';
+        if (!canActivate) return 'Gesperrt';
+        return 'Inaktiv';
+      }
+
+      // Helper to get feature status class
+      function getFeatureStatusClass(isActive, canActivate) {
+        if (isActive) return 'status-active';
+        if (!canActivate) return 'status-locked';
+        return 'status-inactive';
+      }
+
+      // Helper to render feature button
+      function renderFeatureButton(feature, isActive, canActivate) {
+        if (!canActivate) {
+          return `<button class="btn" disabled>Upgrade benötigt</button>`;
+        }
+        if (isActive) {
+          return `<button class="btn btn-deactivate" data-action="toggle-feature" data-feature="${feature.code}" data-state="false">
+            Deaktivieren
+          </button>`;
+        }
+        return `<button class="btn btn-activate" data-action="toggle-feature" data-feature="${feature.code}" data-state="true">
+          Aktivieren
+        </button>`;
+      }
+
+      // Helper to render a feature card
+      function renderFeatureCard(feature) {
+        const isIncludedInPlan = isFeatureIncludedInPlan(feature.code, currentPlan);
+        const canActivate = canActivateFeature(feature.minPlan, currentPlan);
+        const isActive = feature.active;
+
+        const cardClasses = `feature-card ${isActive ? 'active' : ''} ${!canActivate ? 'locked' : ''}`;
+        const statusClass = getFeatureStatusClass(isActive, canActivate);
+        const statusText = getFeatureStatusText(isActive, canActivate);
+        const actionButton = renderFeatureButton(feature, isActive, canActivate);
+
+        return `
+          <div class="${cardClasses}"
+               data-feature="${feature.code}"
+               data-min-plan="${feature.minPlan}">
+            <span class="feature-status ${statusClass}">
+              ${statusText}
+            </span>
+            <h4 class="feature-name">${feature.name}</h4>
+            <p class="feature-description">${feature.description}</p>
+            <div class="feature-plan-badge">
+              ${getPlanBadge(feature.minPlan)}
+            </div>
+            <div class="feature-actions">
+              ${actionButton}
+            </div>
+          </div>
+        `;
       }
 
       function loadFeatures() {
@@ -670,41 +748,7 @@
             </div>
             <div class="features-grid">
               ${categoryData.features
-                .map((feature) => {
-                  const isIncludedInPlan = isFeatureIncludedInPlan(feature.code, currentPlan);
-                  const canActivate = canActivateFeature(feature.minPlan, currentPlan);
-                  const isActive = feature.active;
-
-                  return `
-                  <div class="feature-card ${isActive ? 'active' : ''} ${!canActivate ? 'locked' : ''}"
-                       data-feature="${feature.code}"
-                       data-min-plan="${feature.minPlan}">
-                    <span class="feature-status ${isActive ? 'status-active' : !canActivate ? 'status-locked' : 'status-inactive'}">
-                      ${isActive ? 'Aktiv' : !canActivate ? 'Gesperrt' : 'Inaktiv'}
-                    </span>
-                    <h4 class="feature-name">${feature.name}</h4>
-                    <p class="feature-description">${feature.description}</p>
-                    <div class="feature-plan-badge">
-                      ${getPlanBadge(feature.minPlan)}
-                    </div>
-                    <div class="feature-actions">
-                      ${
-                        canActivate
-                          ? isActive
-                            ? `<button class="btn btn-deactivate" data-action="toggle-feature" data-feature="${feature.code}" data-state="false">
-                            Deaktivieren
-                          </button>`
-                            : `<button class="btn btn-activate" data-action="toggle-feature" data-feature="${feature.code}" data-state="true">
-                            Aktivieren
-                          </button>`
-                          : `<button class="btn" disabled>
-                          Upgrade benötigt
-                        </button>`
-                      }
-                    </div>
-                  </div>
-                `;
-                })
+                .map((feature) => renderFeatureCard(feature))
                 .join('')}
             </div>
           `;
@@ -757,25 +801,64 @@
         return plan;
       }
 
+      // Helper function to get plan name safely
+      function getSafePlanName(planKey) {
+        if (planKey === 'basic' && plans.basic) {
+          return plans.basic.name || planKey;
+        }
+        if (planKey === 'professional' && plans.professional) {
+          return plans.professional.name || planKey;
+        }
+        if (planKey === 'enterprise' && plans.enterprise) {
+          return plans.enterprise.name || planKey;
+        }
+        return planKey;
+      }
+
+      // Helper function to update addons filter visibility
+      function updateAddonsFilterVisibility(plan) {
+        const addonsFilterBtn = document.querySelector('[data-filter="addons"]');
+        if (!addonsFilterBtn) return;
+
+        if (plan === 'enterprise') {
+          addonsFilterBtn.style.display = 'none';
+          if (addonsFilterBtn.classList.contains('active')) {
+            const allFilterBtn = document.querySelector('[data-filter="all"]');
+            if (allFilterBtn) allFilterBtn.click();
+          }
+        } else {
+          addonsFilterBtn.style.display = 'inline-flex';
+        }
+      }
+
+      // Helper function to handle plan change success
+      async function handlePlanChangeSuccess(plan) {
+        // Update local state
+        currentPlan = plan;
+
+        // Update UI
+        updatePlanUI();
+        updateAddonsFilterVisibility(plan);
+
+        // Reload features
+        await loadTenantFeatures();
+        updateSummary();
+
+        alert('Plan erfolgreich geändert!');
+      }
+
       async function selectPlan(plan) {
         // Check if plan is already current
         if (plan === currentPlan) return;
 
-        // Safe access with validation
-        let planName = plan;
-        if (plan === 'basic' && plans.basic) {
-          planName = plans.basic.name || plan;
-        } else if (plan === 'professional' && plans.professional) {
-          planName = plans.professional.name || plan;
-        } else if (plan === 'enterprise' && plans.enterprise) {
-          planName = plans.enterprise.name || plan;
-        }
+        // Get plan name and confirm change
+        const planName = getSafePlanName(plan);
         if (!confirm(`Möchten Sie wirklich zum ${planName} Plan wechseln?`)) {
           return;
         }
 
         try {
-          const result = await apiClient.request('/plans/change', {
+          await apiClient.request('/plans/change', {
             method: 'POST',
             body: {
               tenantId: currentTenantId,
@@ -783,31 +866,7 @@
             },
           });
 
-          // Update local state only after successful API call
-          // ESLint may warn about race condition, but this is safe in our single-threaded context
-          // The function is only called via user interaction (button click)
-          // eslint-disable-next-line require-atomic-updates
-          currentPlan = plan;
-
-          // Update UI
-          updatePlanUI();
-
-          // Hide or show Add-ons filter based on plan
-          const addonsFilterBtn = document.querySelector('[data-filter="addons"]');
-          if (plan === 'enterprise') {
-            addonsFilterBtn.style.display = 'none';
-            if (addonsFilterBtn.classList.contains('active')) {
-              document.querySelector('[data-filter="all"]').click();
-            }
-          } else {
-            addonsFilterBtn.style.display = 'inline-flex';
-          }
-
-          // Reload features for new plan
-          await loadTenantFeatures();
-          updateSummary();
-
-          alert('Plan erfolgreich geändert!');
+          await handlePlanChangeSuccess(plan);
         } catch (error) {
           console.error('Error changing plan:', error);
           alert('Fehler beim Plan-Wechsel');
@@ -864,46 +923,56 @@
         });
       }
 
-      function adjustAddon(type, change) {
-        // Map frontend names to backend names
-        const addonMap = {
-          employees: 'employees',
-          admins: 'admins',
-          storage: 'storage_gb',
-        };
+      // Helper to get backend addon type
+      function getBackendAddonType(type) {
+        // Use explicit checks to avoid object injection
+        if (type === 'employees') return 'employees';
+        if (type === 'admins') return 'admins';
+        if (type === 'storage') return 'storage_gb';
+        return null;
+      }
 
-        // Safe access with validation
-        let backendType = null;
-        if (type === 'employees') {
-          backendType = 'employees';
-        } else if (type === 'admins') {
-          backendType = 'admins';
-        } else if (type === 'storage') {
-          backendType = 'storage_gb';
-        } else {
+      // Helper to get current addon value
+      function getCurrentAddonValue(backendType) {
+        if (backendType === 'employees') return tenantAddons.employees || 0;
+        if (backendType === 'admins') return tenantAddons.admins || 0;
+        if (backendType === 'storage_gb') return tenantAddons.storage_gb || 0;
+        return 0;
+      }
+
+      // Helper to set addon value
+      function setAddonValue(backendType, value) {
+        if (backendType === 'employees') {
+          tenantAddons.employees = value;
+        } else if (backendType === 'admins') {
+          tenantAddons.admins = value;
+        } else if (backendType === 'storage_gb') {
+          tenantAddons.storage_gb = value;
+        }
+      }
+
+      // Helper to format addon display value
+      function formatAddonDisplay(type, value) {
+        return type === 'storage' ? `${value}GB` : value;
+      }
+
+      function adjustAddon(type, change) {
+        const backendType = getBackendAddonType(type);
+        if (!backendType) {
           console.warn(`Invalid addon type: ${type}`);
           return;
         }
 
-        let currentValue = 0;
-        if (backendType === 'employees' && tenantAddons.employees !== undefined) {
-          currentValue = tenantAddons.employees;
-        } else if (backendType === 'admins' && tenantAddons.admins !== undefined) {
-          currentValue = tenantAddons.admins;
-        } else if (backendType === 'storage_gb' && tenantAddons.storage_gb !== undefined) {
-          currentValue = tenantAddons.storage_gb;
-        }
+        const currentValue = getCurrentAddonValue(backendType);
         const newValue = Math.max(0, currentValue + change);
 
-        // Safe assignment without object injection
-        if (backendType === 'employees') {
-          tenantAddons.employees = newValue;
-        } else if (backendType === 'admins') {
-          tenantAddons.admins = newValue;
-        } else if (backendType === 'storage_gb') {
-          tenantAddons.storage_gb = newValue;
+        setAddonValue(backendType, newValue);
+
+        const displayElement = document.querySelector(`#addon-${type}`);
+        if (displayElement) {
+          displayElement.textContent = formatAddonDisplay(type, newValue);
         }
-        document.querySelector(`#addon-${type}`).textContent = type === 'storage' ? `${newValue}GB` : newValue;
+
         updateSummary();
       }
 

@@ -108,6 +108,30 @@ interface CountResult extends RowDataPacket {
 }
 
 /**
+ * Apply access control filters for non-admin users
+ */
+function applyAccessControl(
+  query: string,
+  params: unknown[],
+  role: string | null | undefined,
+  departmentId: number | null | undefined,
+  teamId: number | null | undefined,
+): { query: string; params: unknown[] } {
+  const isAdminOrRoot = role === 'admin' || role === 'root';
+
+  if (!isAdminOrRoot) {
+    query += ` AND (
+          e.org_level = 'company' OR
+          (e.org_level = 'department' AND e.org_id = ?) OR
+          (e.org_level = 'team' AND e.org_id = ?)
+        )`;
+    params.push(departmentId ?? 0, teamId ?? 0);
+  }
+
+  return { query, params };
+}
+
+/**
  * Build query filters for blackboard entries
  */
 function buildQueryFilters(
@@ -133,14 +157,14 @@ function buildQueryFilters(
   }
 
   // Apply access control for non-admin users
-  if (options.role !== 'admin' && options.role !== 'root') {
-    updatedQuery += ` AND (
-          e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?)
-        )`;
-    updatedParams.push(options.departmentId ?? 0, options.teamId ?? 0);
-  }
+  const accessResult = applyAccessControl(
+    updatedQuery,
+    updatedParams,
+    options.role,
+    options.departmentId,
+    options.teamId,
+  );
+  updatedQuery = accessResult.query;
 
   // Apply search filter
   if (options.search !== undefined && options.search !== '') {
@@ -187,6 +211,99 @@ async function processEntries(entries: DbBlackboardEntry[]): Promise<void> {
 }
 
 /**
+ * Get total count of entries for pagination
+ */
+async function getTotalEntriesCount(
+  tenant_id: number,
+  status: string,
+  filter: string,
+  search: string,
+  role: string | null,
+  departmentId: number | null,
+  teamId: number | null,
+): Promise<number> {
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM blackboard_entries e
+    WHERE e.tenant_id = ? AND e.status = ?
+  `;
+  const countBaseParams: unknown[] = [tenant_id, status];
+
+  const { query: filteredCountQuery, params: countParams } = buildQueryFilters(
+    countQuery,
+    countBaseParams,
+    {
+      filter,
+      search,
+      priority: undefined,
+      requiresConfirmation: undefined,
+      role,
+      departmentId,
+      teamId,
+    },
+  );
+
+  const [countResult] = await executeQuery<CountResult[]>(filteredCountQuery, countParams);
+  return countResult[0].total;
+}
+
+/**
+ * Fetch entries with filters and pagination
+ */
+async function fetchEntries(
+  tenant_id: number,
+  userId: number,
+  status: string,
+  filter: string,
+  search: string,
+  priority: string | undefined,
+  requiresConfirmation: boolean | undefined,
+  role: string | null,
+  departmentId: number | null,
+  teamId: number | null,
+  sortBy: string,
+  sortDir: 'ASC' | 'DESC',
+  page: number,
+  limit: number,
+): Promise<DbBlackboardEntry[]> {
+  const baseQuery = `
+    SELECT e.*,
+           u.username as author_name,
+           u.first_name as author_first_name,
+           u.last_name as author_last_name,
+           CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
+           CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+           (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
+    FROM blackboard_entries e
+    LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
+    LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
+    WHERE e.tenant_id = ? AND e.status = ?
+  `;
+
+  const baseParams: unknown[] = [userId, tenant_id, status];
+
+  const { query: filteredQuery, params: queryParams } = buildQueryFilters(baseQuery, baseParams, {
+    filter,
+    search,
+    priority,
+    requiresConfirmation,
+    role,
+    departmentId,
+    teamId,
+  });
+
+  const finalQuery =
+    filteredQuery +
+    ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}` +
+    ' LIMIT ? OFFSET ?';
+  const offset = (page - 1) * limit;
+  queryParams.push(Number.parseInt(limit.toString(), 10), offset);
+
+  const [entries] = await executeQuery<DbBlackboardEntry[]>(finalQuery, queryParams);
+  return entries;
+}
+
+/**
  * Get all blackboard entries visible to the user
  */
 export async function getAllEntries(
@@ -210,25 +327,11 @@ export async function getAllEntries(
     // Determine user's department and team for access control
     const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-    // Build base query
-    const baseQuery = `
-        SELECT e.*,
-               u.username as author_name,
-               u.first_name as author_first_name,
-               u.last_name as author_last_name,
-               CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
-               (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
-        FROM blackboard_entries e
-        LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-        LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
-        WHERE e.tenant_id = ? AND e.status = ?
-      `;
-
-    const baseParams: unknown[] = [userId, tenant_id, status];
-
-    // Build query with filters
-    const { query: filteredQuery, params: queryParams } = buildQueryFilters(baseQuery, baseParams, {
+    // Fetch entries
+    const entries = await fetchEntries(
+      tenant_id,
+      userId,
+      status,
       filter,
       search,
       priority,
@@ -236,18 +339,11 @@ export async function getAllEntries(
       role,
       departmentId,
       teamId,
-    });
-
-    // Apply sorting and pagination
-    const finalQuery =
-      filteredQuery +
-      ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}` +
-      ' LIMIT ? OFFSET ?';
-    const offset = (page - 1) * limit;
-    queryParams.push(Number.parseInt(limit.toString(), 10), offset);
-
-    // Execute query
-    const [entries] = await executeQuery<DbBlackboardEntry[]>(finalQuery, queryParams);
+      sortBy,
+      sortDir,
+      page,
+      limit,
+    );
 
     // Debug log when no entries found
     if (entries.length === 0 && status === 'active') {
@@ -261,30 +357,16 @@ export async function getAllEntries(
     // Process entries
     await processEntries(entries);
 
-    // Count total entries for pagination
-    const countQuery = `
-        SELECT COUNT(*) as total
-        FROM blackboard_entries e
-        WHERE e.tenant_id = ? AND e.status = ?
-      `;
-    const countBaseParams: unknown[] = [tenant_id, status];
-
-    const { query: filteredCountQuery, params: countParams } = buildQueryFilters(
-      countQuery,
-      countBaseParams,
-      {
-        filter,
-        search,
-        priority: undefined,
-        requiresConfirmation: undefined,
-        role,
-        departmentId,
-        teamId,
-      },
+    // Get total count for pagination
+    const totalEntries = await getTotalEntriesCount(
+      tenant_id,
+      status,
+      filter,
+      search,
+      role,
+      departmentId,
+      teamId,
     );
-
-    const [countResult] = await executeQuery<CountResult[]>(filteredCountQuery, countParams);
-    const totalEntries = countResult[0].total;
 
     return {
       entries,
@@ -299,6 +381,26 @@ export async function getAllEntries(
     logger.error('Error in getAllEntries:', error);
     throw error;
   }
+}
+
+/**
+ * Check if user has access to entry
+ */
+function checkEntryAccess(
+  entry: DbBlackboardEntry,
+  role: string | null,
+  departmentId: number | null,
+  teamId: number | null,
+): boolean {
+  if (role === 'admin' || role === 'root') {
+    return true;
+  }
+
+  return (
+    entry.org_level === 'company' ||
+    (entry.org_level === 'department' && entry.org_id === departmentId) ||
+    (entry.org_level === 'team' && entry.org_id === teamId)
+  );
 }
 
 /**
@@ -347,16 +449,9 @@ export async function getEntryById(
       entry.content = Buffer.from(entry.content.data).toString('utf8');
     }
 
-    // Check access control for non-admin users
-    if (role !== 'admin' && role !== 'root') {
-      const hasAccess =
-        entry.org_level === 'company' ||
-        (entry.org_level === 'department' && entry.org_id === departmentId) ||
-        (entry.org_level === 'team' && entry.org_id === teamId);
-
-      if (!hasAccess) {
-        return null; // User doesn't have access to this entry
-      }
+    // Check access control
+    if (!checkEntryAccess(entry, role, departmentId, teamId)) {
+      return null;
     }
 
     // Load attachments for the entry
@@ -435,6 +530,47 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
 }
 
 /**
+ * Build update query for entry fields
+ */
+function buildUpdateQuery(entryData: EntryUpdateData): { query: string; params: unknown[] } {
+  let query = 'UPDATE blackboard_entries SET updated_at = NOW()';
+  const queryParams: unknown[] = [];
+
+  type EntryValue = string | number | boolean | Date | null | string[] | undefined;
+
+  const fields: [keyof EntryUpdateData, string, (val: EntryValue) => unknown][] = [
+    ['title', 'title', (v) => v],
+    ['content', 'content', (v) => v],
+    ['org_level', 'org_level', (v) => v],
+    ['org_id', 'org_id', (v) => v],
+    ['expires_at', 'expires_at', (v) => v],
+    ['priority', 'priority', (v) => v],
+    ['color', 'color', (v) => v],
+    ['status', 'status', (v) => v],
+    [
+      'requires_confirmation',
+      'requires_confirmation',
+      (v) =>
+        typeof v === 'boolean' ?
+          v ? 1
+          : 0
+        : v,
+    ],
+  ];
+
+  for (const [key, column, transform] of fields) {
+    // eslint-disable-next-line security/detect-object-injection -- key is from predefined array, not user input
+    const value = entryData[key];
+    if (value !== undefined) {
+      query += `, ${column} = ?`;
+      queryParams.push(transform(value as EntryValue));
+    }
+  }
+
+  return { query, params: queryParams };
+}
+
+/**
  * Update a blackboard entry
  */
 export async function updateEntry(
@@ -443,73 +579,15 @@ export async function updateEntry(
   tenant_id: number,
 ): Promise<DbBlackboardEntry | null> {
   try {
-    const {
-      title,
-      content,
-      org_level,
-      org_id,
-      expires_at,
-      priority,
-      color,
-      status,
-      requires_confirmation,
-    } = entryData;
-
-    // Build query dynamically based on provided fields
-    let query = 'UPDATE blackboard_entries SET updated_at = NOW()';
-    const queryParams: unknown[] = [];
-
-    if (title !== undefined) {
-      query += ', title = ?';
-      queryParams.push(title);
-    }
-
-    if (content !== undefined) {
-      query += ', content = ?';
-      queryParams.push(content);
-    }
-
-    if (org_level !== undefined) {
-      query += ', org_level = ?';
-      queryParams.push(org_level);
-    }
-
-    if (org_id !== undefined) {
-      query += ', org_id = ?';
-      queryParams.push(org_id);
-    }
-
-    if (expires_at !== undefined) {
-      query += ', expires_at = ?';
-      queryParams.push(expires_at);
-    }
-
-    if (priority !== undefined) {
-      query += ', priority = ?';
-      queryParams.push(priority);
-    }
-
-    if (color !== undefined) {
-      query += ', color = ?';
-      queryParams.push(color);
-    }
-
-    if (status !== undefined) {
-      query += ', status = ?';
-      queryParams.push(status);
-    }
-
-    if (requires_confirmation !== undefined) {
-      query += ', requires_confirmation = ?';
-      queryParams.push(requires_confirmation ? 1 : 0);
-    }
+    // Build update query
+    const { query, params } = buildUpdateQuery(entryData);
 
     // Finish query
-    query += ' WHERE id = ? AND tenant_id = ?';
-    queryParams.push(id, tenant_id);
+    const finalQuery = query + ' WHERE id = ? AND tenant_id = ?';
+    params.push(id, tenant_id);
 
     // Execute update
-    await executeQuery(query, queryParams);
+    await executeQuery(finalQuery, params);
 
     // Handle tags if provided
     if (entryData.tags !== undefined) {
@@ -647,6 +725,57 @@ export async function getConfirmationStatus(
 }
 
 /**
+ * Build dashboard query based on user role
+ */
+function buildDashboardQuery(
+  userId: number,
+  tenant_id: number,
+  role: string | null,
+  departmentId: number | null,
+  teamId: number | null,
+  limit: number,
+): { query: string; params: unknown[] } {
+  let query = `
+    SELECT e.*,
+           u.username as author_name,
+           u.first_name as author_first_name,
+           u.last_name as author_last_name,
+           CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
+           CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+           (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
+    FROM blackboard_entries e
+    LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
+    LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
+    WHERE e.tenant_id = ? AND e.status = 'active'
+  `;
+
+  const queryParams: unknown[] = [userId, tenant_id];
+
+  // Apply access control for non-admin users
+  if (role !== 'admin' && role !== 'root') {
+    query += ` AND (
+        e.org_level = 'company' OR
+        (e.org_level = 'department' AND e.org_id = ?) OR
+        (e.org_level = 'team' AND e.org_id = ?)
+      )`;
+    queryParams.push(departmentId ?? 0, teamId ?? 0);
+  }
+
+  // Prioritize unconfirmed entries that require confirmation
+  query += `
+    ORDER BY
+      (e.requires_confirmation = 1 AND c.id IS NULL) DESC,
+      e.priority = 'urgent' DESC,
+      e.priority = 'high' DESC,
+      e.created_at DESC
+    LIMIT ?
+  `;
+  queryParams.push(Number.parseInt(limit.toString(), 10));
+
+  return { query, params: queryParams };
+}
+
+/**
  * Get dashboard entries for a user
  */
 export async function getDashboardEntries(
@@ -658,63 +787,19 @@ export async function getDashboardEntries(
     // Get user info for access control
     const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
 
-    // Build query for dashboard entries
-    let query = `
-        SELECT e.*,
-               u.username as author_name,
-               u.first_name as author_first_name,
-               u.last_name as author_last_name,
-               CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-               CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
-               (SELECT COUNT(*) FROM blackboard_attachments WHERE entry_id = e.id) as attachment_count
-        FROM blackboard_entries e
-        LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-        LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
-        WHERE e.tenant_id = ? AND e.status = 'active'
-      `;
+    // Build and execute query
+    const { query, params } = buildDashboardQuery(
+      userId,
+      tenant_id,
+      role,
+      departmentId,
+      teamId,
+      limit,
+    );
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(query, params);
 
-    const queryParams: unknown[] = [userId, tenant_id];
-
-    // Apply access control for non-admin users
-    if (role !== 'admin' && role !== 'root') {
-      query += ` AND (
-          e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?)
-        )`;
-      queryParams.push(departmentId ?? 0, teamId ?? 0);
-    }
-
-    // Prioritize unconfirmed entries that require confirmation
-    query += `
-        ORDER BY
-          (e.requires_confirmation = 1 AND c.id IS NULL) DESC,
-          e.priority = 'urgent' DESC,
-          e.priority = 'high' DESC,
-          e.created_at DESC
-        LIMIT ?
-      `;
-    queryParams.push(Number.parseInt(limit.toString(), 10));
-
-    const [entries] = await executeQuery<DbBlackboardEntry[]>(query, queryParams);
-
-    // Konvertiere Buffer-Inhalte zu Strings (wie in getAllEntries) und load attachments for direct attachment entries
-    for (const entry of entries) {
-      if (Buffer.isBuffer(entry.content)) {
-        entry.content = entry.content.toString('utf8');
-      } else if (
-        typeof entry.content === 'object' &&
-        'type' in entry.content &&
-        Array.isArray(entry.content.data)
-      ) {
-        entry.content = Buffer.from(entry.content.data).toString('utf8');
-      }
-
-      // Load attachments for entries with any attachments
-      if (entry.attachment_count != null && entry.attachment_count > 0) {
-        entry.attachments = await getEntryAttachments(entry.id);
-      }
-    }
+    // Process entries (convert buffers and load attachments)
+    await processEntries(entries);
 
     return entries;
   } catch (error: unknown) {

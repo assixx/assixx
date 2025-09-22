@@ -247,7 +247,8 @@ function injectStyles() {
       }
 
       .breadcrumb-icon {
-        font-size: 16px;
+        font-size: 14px;
+        margin-right: 3px;
       }
 
       /* Mobile Anpassungen */
@@ -258,9 +259,7 @@ function injectStyles() {
           gap: 4px;
         }
 
-        .breadcrumb-icon {
-          font-size: 14px;
-        }
+      
 
         .breadcrumb-link {
           padding: 2px 6px;

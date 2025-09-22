@@ -208,6 +208,30 @@ export class DocumentsService {
   }
 
   /**
+   * Map null recipient IDs to undefined
+   */
+  private mapRecipientIds(apiDoc: Record<string, unknown>): void {
+    if (apiDoc.userId === null) apiDoc.userId = undefined;
+
+    if (apiDoc.teamId === null) apiDoc.teamId = undefined;
+
+    if (apiDoc.departmentId === null) apiDoc.departmentId = undefined;
+  }
+
+  /**
+   * Parse tags from string to array
+   */
+  private parseTags(apiDoc: Record<string, unknown>): void {
+    if (typeof apiDoc.tags === 'string') {
+      try {
+        apiDoc.tags = JSON.parse(apiDoc.tags);
+      } catch {
+        apiDoc.tags = [];
+      }
+    }
+  }
+
+  /**
    * Get document by ID
    * @param id - The resource ID
    * @param userId - The user ID
@@ -221,18 +245,13 @@ export class DocumentsService {
     try {
       const document = await Document.findById(id);
 
-      if (!document) {
-        throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
-      }
-
-      // Check tenant isolation
-      if (document.tenant_id !== tenantId) {
+      // Validate document exists and belongs to tenant
+      if (!document || document.tenant_id !== tenantId) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
       // Check access permissions
       const hasAccess = await this.checkDocumentAccess(document, userId, tenantId);
-
       if (!hasAccess) {
         throw new ServiceError(
           ERROR_CODES.FORBIDDEN,
@@ -241,27 +260,15 @@ export class DocumentsService {
         );
       }
 
-      // Mark as read
+      // Mark as read and get status
       await Document.markAsRead(id, userId, tenantId);
-
-      // Get read status
       const isRead = await Document.isReadByUser(id, userId, tenantId);
 
       const apiDoc = dbToApi(document);
 
-      // Map recipient IDs
-      if (apiDoc.userId === null) apiDoc.userId = undefined;
-      if (apiDoc.teamId === null) apiDoc.teamId = undefined;
-      if (apiDoc.departmentId === null) apiDoc.departmentId = undefined;
-
-      // Parse tags
-      if (typeof apiDoc.tags === 'string') {
-        try {
-          apiDoc.tags = JSON.parse(apiDoc.tags);
-        } catch {
-          apiDoc.tags = [];
-        }
-      }
+      // Clean up response data
+      this.mapRecipientIds(apiDoc);
+      this.parseTags(apiDoc);
 
       return {
         ...apiDoc,
@@ -334,6 +341,45 @@ export class DocumentsService {
   }
 
   /**
+   * Build update data object from input
+   */
+  private buildUpdateData(data: DocumentUpdateInput): Record<string, unknown> {
+    const updateData: Record<string, unknown> = {};
+
+    if (data.filename !== undefined) updateData.filename = data.filename;
+    if (data.category !== undefined) updateData.category = data.category;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.tags !== undefined) updateData.tags = data.tags;
+
+    return updateData;
+  }
+
+  /**
+   * Check if user can update document
+   */
+  private async checkUpdatePermission(
+    document: DbDocument,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    const user = await User.findById(userId, tenantId);
+    if (!user) {
+      throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.USER_NOT_FOUND, 404);
+    }
+
+    const isAdminOrRoot = user.role === 'admin' || user.role === 'root';
+    const isCreator = document.created_by === userId;
+
+    if (!isAdminOrRoot && !isCreator) {
+      throw new ServiceError(
+        ERROR_CODES.FORBIDDEN,
+        "You don't have permission to update this document",
+        403,
+      );
+    }
+  }
+
+  /**
    * Update a document
    * @param id - The resource ID
    * @param data - The data object
@@ -347,44 +393,15 @@ export class DocumentsService {
     tenantId: number,
   ): Promise<void> {
     try {
-      // Get existing document
       const document = await Document.findById(id);
 
       if (!document || document.tenant_id !== tenantId) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
-      // Check if user has permission to update
-      const user = await User.findById(userId, tenantId);
-      if (!user) {
-        throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.USER_NOT_FOUND, 404);
-      }
-
-      // Only admin or document creator can update
-      if (user.role !== 'admin' && user.role !== 'root' && document.created_by !== userId) {
-        throw new ServiceError(
-          ERROR_CODES.FORBIDDEN,
-          "You don't have permission to update this document",
-          403,
-        );
-      }
-
-      // Update document
-      const updateData: Record<string, unknown> = {};
-
-      if (data.filename !== undefined) updateData.filename = data.filename;
-      if (data.category !== undefined) updateData.category = data.category;
-      if (data.description !== undefined) updateData.description = data.description;
-      // Note: is_public and expires_at columns don't exist in current schema
-      // if (data.isPublic !== undefined) updateData.is_public = data.isPublic;
-      // if (data.expiresAt !== undefined) updateData.expires_at = data.expiresAt;
-      if (data.tags !== undefined) {
-        updateData.tags = data.tags; // Model will JSON.stringify it
-      }
-
+      await this.checkUpdatePermission(document, userId, tenantId);
+      const updateData = this.buildUpdateData(data);
       await Document.update(id, updateData);
-
-      // Update completed successfully
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -613,63 +630,76 @@ export class DocumentsService {
   }
 
   /**
+   * Validate user recipient
+   */
+  private async validateUserRecipient(userId: number | undefined, tenantId: number): Promise<void> {
+    if (!userId) {
+      throw new ServiceError(
+        ERROR_CODES.BAD_REQUEST,
+        'User ID is required for user recipient type',
+        400,
+      );
+    }
+    const user = await User.findById(userId, tenantId);
+    if (!user) {
+      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid user ID', 400);
+    }
+  }
+
+  /**
+   * Validate team recipient
+   */
+  private async validateTeamRecipient(teamId: number | undefined, tenantId: number): Promise<void> {
+    if (!teamId) {
+      throw new ServiceError(
+        ERROR_CODES.BAD_REQUEST,
+        'Team ID is required for team recipient type',
+        400,
+      );
+    }
+    const team = await Team.findById(teamId);
+    if (!team || team.tenant_id !== tenantId) {
+      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid team ID', 400);
+    }
+  }
+
+  /**
+   * Validate department recipient
+   */
+  private async validateDepartmentRecipient(
+    departmentId: number | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    if (!departmentId) {
+      throw new ServiceError(
+        ERROR_CODES.BAD_REQUEST,
+        'Department ID is required for department recipient type',
+        400,
+      );
+    }
+    const dept = await Department.findById(departmentId, tenantId);
+    if (!dept) {
+      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid department ID', 400);
+    }
+  }
+
+  /**
    * Validate recipient based on type
    * @param data - The data object
    * @param tenantId - The tenant ID
    */
   private async validateRecipient(data: DocumentCreateInput, tenantId: number): Promise<void> {
-    switch (data.recipientType) {
-      case 'user': {
-        if (!data.userId) {
-          throw new ServiceError(
-            ERROR_CODES.BAD_REQUEST,
-            'User ID is required for user recipient type',
-            400,
-          );
-        }
-        const user = await User.findById(data.userId, tenantId);
-        if (!user) {
-          throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid user ID', 400);
-        }
-        break;
-      }
-
-      case 'team': {
-        if (!data.teamId) {
-          throw new ServiceError(
-            ERROR_CODES.BAD_REQUEST,
-            'Team ID is required for team recipient type',
-            400,
-          );
-        }
-        const team = await Team.findById(data.teamId);
-        if (!team || team.tenant_id !== tenantId) {
-          throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid team ID', 400);
-        }
-        break;
-      }
-
-      case 'department': {
-        if (!data.departmentId) {
-          throw new ServiceError(
-            ERROR_CODES.BAD_REQUEST,
-            'Department ID is required for department recipient type',
-            400,
-          );
-        }
-        const dept = await Department.findById(data.departmentId, tenantId);
-        if (!dept) {
-          throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid department ID', 400);
-        }
-        break;
-      }
-
-      case 'company':
-        // No specific recipient needed
-        break;
-
-      default:
-        throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid recipient type', 400);
+    if (data.recipientType === 'user') {
+      await this.validateUserRecipient(data.userId, tenantId);
+    } else if (data.recipientType === 'team') {
+      await this.validateTeamRecipient(data.teamId, tenantId);
+    } else if (data.recipientType === 'department') {
+      await this.validateDepartmentRecipient(data.departmentId, tenantId);
+    } else if (data.recipientType === 'company') {
+      // No specific recipient needed
+      return;
+    } else {
+      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid recipient type', 400);
     }
   }
 

@@ -1,6 +1,7 @@
 // Department Groups Management
 import domPurify from 'dompurify';
 import { ApiClient } from '../utils/api-client';
+import { isRoot } from '../utils/auth-helpers';
 import { showSuccessAlert, showErrorAlert, showConfirm } from './utils/alerts';
 
 interface Department {
@@ -43,8 +44,7 @@ class DepartmentGroupsManager {
 
   private init(): void {
     // Auth check
-    const userRole = localStorage.getItem('userRole');
-    if (userRole !== 'root') {
+    if (!isRoot()) {
       window.location.href = '/login';
       return;
     }
@@ -373,6 +373,75 @@ class DepartmentGroupsManager {
     showErrorAlert('Diese Funktion ist noch nicht implementiert');
   }
 
+  private handleSelectGroup(element: HTMLElement): void {
+    const groupId = this.getGroupIdFromElement(element);
+    if (groupId !== null) {
+      this.selectGroup(groupId);
+    }
+  }
+
+  private handleEditGroup(element: HTMLElement): void {
+    const groupId = this.getGroupIdFromElement(element);
+    if (groupId !== null) {
+      this.editGroup(groupId);
+    }
+  }
+
+  private handleAddDepartments(element: HTMLElement): void {
+    const groupId = this.getGroupIdFromElement(element);
+    if (groupId !== null) {
+      this.addDepartmentsToGroup(groupId);
+    }
+  }
+
+  private handleDeleteGroup(element: HTMLElement): void {
+    const groupId = this.getGroupIdFromElement(element);
+    if (groupId !== null) {
+      void this.deleteGroup(groupId);
+    }
+  }
+
+  private handleClickAction(target: HTMLElement): void {
+    // Handle group selection
+    const selectBtn = target.closest<HTMLElement>('[data-action="select-group"]');
+    if (selectBtn) {
+      this.handleSelectGroup(selectBtn);
+      return;
+    }
+
+    // Handle create group button
+    if (target.closest('[data-action="create-group"]')) {
+      this.showCreateGroupModal();
+      return;
+    }
+
+    // Handle close modal
+    if (target.closest('[data-action="close-modal"]')) {
+      this.closeModal();
+      return;
+    }
+
+    // Handle edit group
+    const editBtn = target.closest<HTMLElement>('[data-action="edit-group"]');
+    if (editBtn) {
+      this.handleEditGroup(editBtn);
+      return;
+    }
+
+    // Handle add departments
+    const addBtn = target.closest<HTMLElement>('[data-action="add-departments"]');
+    if (addBtn) {
+      this.handleAddDepartments(addBtn);
+      return;
+    }
+
+    // Handle delete group
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-group"]');
+    if (deleteBtn) {
+      this.handleDeleteGroup(deleteBtn);
+    }
+  }
+
   private setupEventListeners(): void {
     // Form submission
     document.addEventListener('submit', (e) => {
@@ -385,52 +454,7 @@ class DepartmentGroupsManager {
     // Click events
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-
-      // Handle group selection
-      const selectBtn = target.closest<HTMLElement>('[data-action="select-group"]');
-      if (selectBtn) {
-        const groupId = this.getGroupIdFromElement(selectBtn);
-        if (groupId !== null) {
-          this.selectGroup(groupId);
-        }
-      }
-
-      // Handle create group button
-      if (target.closest('[data-action="create-group"]')) {
-        this.showCreateGroupModal();
-      }
-
-      // Handle close modal
-      if (target.closest('[data-action="close-modal"]')) {
-        this.closeModal();
-      }
-
-      // Handle edit group
-      const editBtn = target.closest<HTMLElement>('[data-action="edit-group"]');
-      if (editBtn) {
-        const groupId = this.getGroupIdFromElement(editBtn);
-        if (groupId !== null) {
-          this.editGroup(groupId);
-        }
-      }
-
-      // Handle add departments
-      const addBtn = target.closest<HTMLElement>('[data-action="add-departments"]');
-      if (addBtn) {
-        const groupId = this.getGroupIdFromElement(addBtn);
-        if (groupId !== null) {
-          this.addDepartmentsToGroup(groupId);
-        }
-      }
-
-      // Handle delete group
-      const deleteBtn = target.closest<HTMLElement>('[data-action="delete-group"]');
-      if (deleteBtn) {
-        const groupId = this.getGroupIdFromElement(deleteBtn);
-        if (groupId !== null) {
-          void this.deleteGroup(groupId);
-        }
-      }
+      this.handleClickAction(target);
     });
 
     // Close modal on outside click

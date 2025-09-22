@@ -1,5 +1,6 @@
 // Areas Management Module
 import { apiClient } from '../utils/api-client.js';
+import { isAdmin } from '../utils/auth-helpers';
 import { showSuccessAlert, showErrorAlert } from './utils/alerts.js';
 import { setHTML } from '../utils/dom-utils.js';
 
@@ -40,9 +41,8 @@ async function initializePage(): Promise<void> {
   try {
     // Check authentication
     const token = localStorage.getItem('token');
-    const role = localStorage.getItem('userRole');
 
-    if (token === null || token === '' || (role !== 'admin' && role !== 'root')) {
+    if (token === null || token === '' || !isAdmin()) {
       window.location.href = '/login';
       return;
     }

@@ -4,6 +4,7 @@
 
 import type { User, JWTPayload } from '../types/api.types';
 import { apiClient, ApiError } from '../utils/api-client';
+import { getUserRole, setUserRole, clearUserRole, getActiveRole } from '../utils/auth-helpers';
 import { BrowserFingerprint } from './utils/browser-fingerprint';
 import { SessionManager } from './utils/session-manager';
 
@@ -88,9 +89,8 @@ export function removeAuthToken(): void {
 
   // Clear other auth data
   localStorage.removeItem('role');
-  localStorage.removeItem('activeRole'); // Clear role switching state
+  clearUserRole(); // Clear role switching state and user role
   localStorage.removeItem('user'); // Clear cached user data
-  localStorage.removeItem('userRole'); // Clear cached user role
 
   // Clear cookie for server-side page protection
   document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
@@ -141,7 +141,7 @@ export function parseJwt(token: string): JWTPayload | null {
 
 // Helper: Get redirect URL based on user role
 function getRoleBasedRedirectUrl(): string {
-  const userRole = localStorage.getItem('userRole');
+  const userRole = getUserRole();
   switch (userRole) {
     case 'employee':
       return '/employee-dashboard';
@@ -457,8 +457,7 @@ export async function logout(): Promise<void> {
 
   // Clear all auth data
   removeAuthToken();
-  localStorage.removeItem('userRole');
-  localStorage.removeItem('activeRole');
+  clearUserRole();
   localStorage.removeItem('tenantId');
   localStorage.removeItem('browserFingerprint');
   localStorage.removeItem('fingerprintTimestamp');
@@ -497,7 +496,7 @@ async function loginV2(email: string, password: string): Promise<{ success: bool
 
       if (response.user) {
         localStorage.setItem('user', JSON.stringify(response.user));
-        localStorage.setItem('userRole', response.user.role);
+        setUserRole(response.user.role);
       }
 
       return { success: true };
@@ -533,7 +532,7 @@ async function loginV1(email: string, password: string): Promise<{ success: bool
     setAuthToken(data.token);
 
     if (data.user !== undefined) {
-      localStorage.setItem('userRole', data.user.role);
+      setUserRole(data.user.role);
     }
 
     return { success: true };
@@ -615,8 +614,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Use IIFE to handle async operations
   void (async () => {
     const token = getAuthToken();
-    const userRole = localStorage.getItem('userRole');
-    const activeRole = localStorage.getItem('activeRole');
+    const userRole = getUserRole();
+    const activeRole = getActiveRole();
 
     console.info('[AUTH] Initialization:', {
       token: token !== null && token.length > 0,

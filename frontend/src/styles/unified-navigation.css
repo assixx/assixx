@@ -90,11 +90,12 @@
 
   margin-top: 2px;
   padding: 5px 20px;
-  border-bottom: 1px solid rgb(255 193 7 / 30%);
+
+  /* border-bottom: 1px solid rgb(255 193 7 / 30%); */
   border-radius: 5px;
 
-  background: #ffc1071c;
-  box-shadow: -2px 5px 14px #ffc10724;
+  /* background: #ffc1071c; */
+  /* box-shadow: -2px 5px 14px #ffc10724; */
 }
 
 .role-switch-banner-content {
@@ -151,7 +152,7 @@
   /* border-right: 1px solid rgba(255, 255, 255, 0.1); */
   height: auto;
   min-height: calc(100vh - 60px);
-  margin-top: 60px;
+  margin-top: 4px;
   margin-left: 10px;
 
   background: rgb(255 255 255 / 0%);
@@ -389,7 +390,7 @@
   width: 40px;
   height: 40px;
   margin-right: 15px;
-  margin-left: -6px;
+  margin-left: 8px;
   border: 1px solid transparent;
   border-radius: 8px;
 
