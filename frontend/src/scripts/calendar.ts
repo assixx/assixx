@@ -3463,7 +3463,7 @@ async function loadTeams(token: string): Promise<void> {
  */
 async function loadEmployees(token: string): Promise<void> {
   // Only admins can fetch users list
-  const userRole = getUserRole();
+  const userRole = localStorage.getItem('userRole');
   if (userRole === 'employee') {
     employees = [];
     return;
