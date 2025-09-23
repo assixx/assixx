@@ -214,6 +214,73 @@ export class DepartmentController {
    * @param res - The response object
    * @param _next - The _next parameter
    */
+  private async logDepartmentUpdate(
+    req: AuthenticatedRequest,
+    departmentId: number,
+    body: {
+      name?: string;
+      description?: string;
+      managerId?: number;
+      parentId?: number;
+      areaId?: number;
+      status?: string;
+      visibility?: string;
+    },
+    oldDepartment: unknown,
+  ): Promise<void> {
+    const oldDept = oldDepartment as Department | null;
+    await rootLog.create({
+      tenant_id: req.user.tenant_id,
+      user_id: req.user.id,
+      action: 'update',
+      entity_type: 'department',
+      entity_id: departmentId,
+      details: `Aktualisiert: ${body.name ?? 'Unbekannt'}`,
+      old_values: {
+        name: oldDept?.name,
+        description: oldDept?.description,
+        manager_id: oldDept?.manager_id,
+        parent_id: oldDept?.parent_id,
+        status: oldDept?.status,
+        visibility: oldDept?.visibility,
+      },
+      new_values: {
+        name: body.name,
+        description: body.description,
+        manager_id: body.managerId,
+        parent_id: body.parentId,
+        status: body.status,
+        visibility: body.visibility,
+        updated_by: req.user.email,
+      },
+      ip_address: req.ip ?? req.socket.remoteAddress,
+      user_agent: req.get('user-agent'),
+      was_role_switched: false,
+    });
+  }
+
+  private handleDepartmentError(res: Response, error: unknown): void {
+    logger.error('Error in updateDepartment:', error);
+    const errorObj = error as {
+      code?: number;
+      message?: string;
+      details?: unknown;
+    };
+    if (errorObj.code !== undefined) {
+      res
+        .status(errorObj.code)
+        .json(
+          errorResponse(
+            `DEPT_${errorObj.code}`,
+            errorObj.message ?? DEFAULT_ERROR_MESSAGE,
+            errorObj.details as { field: string; message: string }[] | undefined,
+          ),
+        );
+    } else {
+      res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
+    }
+  }
+
   async updateDepartment(
     req: AuthenticatedRequest,
     res: Response,
@@ -266,56 +333,11 @@ export class DepartmentController {
       );
 
       // Log department update
-      await rootLog.create({
-        tenant_id: req.user.tenant_id,
-        user_id: req.user.id,
-        action: 'update',
-        entity_type: 'department',
-        entity_id: departmentId,
-        details: `Aktualisiert: ${body.name ?? 'Unbekannt'}`,
-        old_values: {
-          name: (oldDepartment as unknown as Department | null)?.name,
-          description: (oldDepartment as unknown as Department | null)?.description,
-          manager_id: (oldDepartment as unknown as Department | null)?.manager_id,
-          parent_id: (oldDepartment as unknown as Department | null)?.parent_id,
-          status: (oldDepartment as unknown as Department | null)?.status,
-          visibility: (oldDepartment as unknown as Department | null)?.visibility,
-        },
-        new_values: {
-          name: body.name,
-          description: body.description,
-          manager_id: body.managerId,
-          parent_id: body.parentId,
-          status: body.status,
-          visibility: body.visibility,
-          updated_by: req.user.email,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get('user-agent'),
-        was_role_switched: false,
-      });
+      await this.logDepartmentUpdate(req, departmentId, body, oldDepartment);
 
       res.json(successResponse(department, 'Department updated successfully'));
     } catch (error: unknown) {
-      logger.error('Error in updateDepartment:', error);
-      const errorObj = error as {
-        code?: number;
-        message?: string;
-        details?: unknown;
-      };
-      if (errorObj.code !== undefined) {
-        res
-          .status(errorObj.code)
-          .json(
-            errorResponse(
-              `DEPT_${errorObj.code}`,
-              errorObj.message ?? DEFAULT_ERROR_MESSAGE,
-              errorObj.details as { field: string; message: string }[] | undefined,
-            ),
-          );
-      } else {
-        res.status(500).json(errorResponse('DEPT_500', INTERNAL_SERVER_ERROR));
-      }
+      this.handleDepartmentError(res, error);
     }
   }
 

@@ -127,93 +127,100 @@ export class AdminPermissionsService {
    * @param adminId - The adminId parameter
    * @param tenantId - The tenant ID
    */
+  private async getAdminRole(adminId: number, tenantId: number): Promise<boolean> {
+    const [adminRows] = await execute<RowDataPacket[]>(
+      'SELECT role FROM users WHERE id = ? AND tenant_id = ?',
+      [adminId, tenantId],
+    );
+
+    logger.info(`[getAdminRole] Admin query result:`, adminRows);
+
+    if (adminRows.length === 0) {
+      logger.error(`[getAdminRole] Admin not found - adminId: ${adminId}, tenantId: ${tenantId}`);
+      throw new ServiceError('NOT_FOUND', 'Admin not found');
+    }
+
+    return adminRows[0].role === 'root';
+  }
+
+  private async getDepartmentPermissions(
+    adminId: number,
+    tenantId: number,
+  ): Promise<AdminDepartment[]> {
+    const query = `
+      SELECT
+        d.id,
+        d.name,
+        d.description,
+        adp.can_read,
+        adp.can_write,
+        adp.can_delete
+      FROM admin_department_permissions adp
+      JOIN departments d ON adp.department_id = d.id
+      WHERE adp.admin_user_id = ?
+      AND adp.tenant_id = ?
+      AND d.status = 'active'
+      ORDER BY d.name
+    `;
+    const [rows] = await execute<DepartmentPermissionRow[]>(query, [adminId, tenantId]);
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      canRead: row.can_read === 1,
+      canWrite: row.can_write === 1,
+      canDelete: row.can_delete === 1,
+    }));
+  }
+
+  private async getGroupPermissions(adminId: number, tenantId: number): Promise<AdminGroup[]> {
+    const query = `
+      SELECT
+        dg.id,
+        dg.name,
+        dg.description,
+        COUNT(DISTINCT dgm.department_id) as department_count,
+        agp.can_read,
+        agp.can_write,
+        agp.can_delete
+      FROM admin_group_permissions agp
+      JOIN department_groups dg ON agp.group_id = dg.id
+      LEFT JOIN department_group_members dgm ON dg.id = dgm.group_id
+      WHERE agp.admin_user_id = ?
+      AND agp.tenant_id = ?
+      GROUP BY dg.id, dg.name, dg.description, agp.can_read, agp.can_write, agp.can_delete
+      ORDER BY dg.name
+    `;
+    const [rows] = await execute<GroupPermissionRow[]>(query, [adminId, tenantId]);
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      departmentCount: row.department_count,
+      canRead: row.can_read === 1,
+      canWrite: row.can_write === 1,
+      canDelete: row.can_delete === 1,
+    }));
+  }
+
+  private async getTotalDepartments(tenantId: number): Promise<number> {
+    const [countResult] = await execute<RowDataPacket[]>(
+      "SELECT COUNT(*) as total FROM departments WHERE tenant_id = ? AND status = 'active'",
+      [tenantId],
+    );
+    return (countResult[0] as { total: number }).total;
+  }
+
   async getAdminPermissions(adminId: number, tenantId: number): Promise<AdminPermissionsResponse> {
     try {
       logger.info(`[getAdminPermissions] Starting for adminId: ${adminId}, tenantId: ${tenantId}`);
 
-      // Get the admin user to check their role
-      const [adminRows] = await execute<RowDataPacket[]>(
-        'SELECT role FROM users WHERE id = ? AND tenant_id = ?',
-        [adminId, tenantId],
-      );
-
-      logger.info(`[getAdminPermissions] Admin query result:`, adminRows);
-
-      if (adminRows.length === 0) {
-        logger.error(
-          `[getAdminPermissions] Admin not found - adminId: ${adminId}, tenantId: ${tenantId}`,
-        );
-        throw new ServiceError('NOT_FOUND', 'Admin not found');
-      }
-
-      const isRoot = adminRows[0].role === 'root';
-
-      // Get direct department permissions
-      const departmentQuery = `
-        SELECT
-          d.id,
-          d.name,
-          d.description,
-          adp.can_read,
-          adp.can_write,
-          adp.can_delete
-        FROM admin_department_permissions adp
-        JOIN departments d ON adp.department_id = d.id
-        WHERE adp.admin_user_id = ?
-        AND adp.tenant_id = ?
-        AND d.status = 'active'
-        ORDER BY d.name
-      `;
-      const [departmentRows] = await execute<DepartmentPermissionRow[]>(departmentQuery, [
-        adminId,
-        tenantId,
-      ]);
-
-      const departments: AdminDepartment[] = departmentRows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        canRead: row.can_read === 1,
-        canWrite: row.can_write === 1,
-        canDelete: row.can_delete === 1,
-      }));
-
-      // Get group permissions
-      const groupQuery = `
-        SELECT
-          dg.id,
-          dg.name,
-          dg.description,
-          COUNT(DISTINCT dgm.department_id) as department_count,
-          agp.can_read,
-          agp.can_write,
-          agp.can_delete
-        FROM admin_group_permissions agp
-        JOIN department_groups dg ON agp.group_id = dg.id
-        LEFT JOIN department_group_members dgm ON dg.id = dgm.group_id
-        WHERE agp.admin_user_id = ?
-        AND agp.tenant_id = ?
-        GROUP BY dg.id, dg.name, dg.description, agp.can_read, agp.can_write, agp.can_delete
-        ORDER BY dg.name
-      `;
-      const [groupRows] = await execute<GroupPermissionRow[]>(groupQuery, [adminId, tenantId]);
-
-      const groups: AdminGroup[] = groupRows.map((row) => ({
-        id: row.id,
-        name: row.name,
-        description: row.description,
-        departmentCount: row.department_count,
-        canRead: row.can_read === 1,
-        canWrite: row.can_write === 1,
-        canDelete: row.can_delete === 1,
-      }));
-
-      // Get total department count
-      const [countResult] = await execute<RowDataPacket[]>(
-        "SELECT COUNT(*) as total FROM departments WHERE tenant_id = ? AND status = 'active'",
-        [tenantId],
-      );
-      const totalDepartments = (countResult[0] as { total: number }).total;
+      const isRoot = await this.getAdminRole(adminId, tenantId);
+      const departments = await this.getDepartmentPermissions(adminId, tenantId);
+      const groups = await this.getGroupPermissions(adminId, tenantId);
+      const totalDepartments = await this.getTotalDepartments(tenantId);
 
       return {
         departments,

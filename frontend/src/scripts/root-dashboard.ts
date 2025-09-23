@@ -471,7 +471,7 @@ async function loadActivityLogs(): Promise<void> {
                   log.userName !== undefined && log.userName !== ''
                     ? `<div class="log-user">
                         <i class="fas fa-user"></i> ${log.userName}
-                        ${log.userRole !== undefined && log.userRole !== '' ? `(${getuserRoleLabel(log.userRole)})` : ''}
+                        ${log.userRole !== undefined && log.userRole !== '' ? `<span class="role-badge role-${log.userRole.toLowerCase()}">${getuserRoleLabel(log.userRole)}</span>` : ''}
                     </div>`
                     : ''
                 }

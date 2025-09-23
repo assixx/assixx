@@ -5,8 +5,7 @@
 
 import type { User, BlackboardEntry } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
-import { ResponseAdapter } from '../utils/response-adapter';
-import { getAuthToken, removeAuthToken, parseJwt } from './auth';
+import { getAuthToken, removeAuthToken, parseJwt, loadUserInfo } from './auth';
 import { initPageProtection } from './pageProtection';
 import { setHTML } from '../utils/dom-utils';
 import type { ApiClient } from '../utils/api-client';
@@ -46,25 +45,14 @@ function setupEventListeners(): void {
 /**
  * Fetch user data from API
  */
-async function fetchUserData(token: string): Promise<User | null> {
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-
-  if (useV2 === true) {
-    const response = await apiClient.get<User>('/users/me');
-    return ResponseAdapter.adaptUserResponse(response) as User;
-  }
-
-  const userResponse = await fetch('/api/user/profile', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!userResponse.ok) {
+async function fetchUserData(_token: string): Promise<User | null> {
+  try {
+    // Use cached user data from auth.js to prevent duplicate API calls
+    return await loadUserInfo();
+  } catch (error) {
+    console.error('Error fetching user data:', error);
     return null;
   }
-
-  return (await userResponse.json()) as User;
 }
 
 /**

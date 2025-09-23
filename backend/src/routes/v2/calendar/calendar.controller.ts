@@ -356,6 +356,55 @@ export async function createEvent(
  *       404:
  *         description: Event not found
  */
+async function logEventUpdate(
+  req: AuthenticatedRequest,
+  eventId: number,
+  updateData: CalendarEventUpdateData,
+  oldEvent: CalendarEvent | null,
+): Promise<void> {
+  const { user } = req;
+  const baseLogData = {
+    tenant_id: user.tenant_id,
+    user_id: user.id,
+    action: 'update',
+    entity_type: 'calendar_event',
+    entity_id: eventId,
+    ip_address: req.ip ?? req.socket.remoteAddress,
+    user_agent: req.get(USER_AGENT_HEADER),
+    was_role_switched: false,
+  };
+
+  const newValues = {
+    title: updateData.title,
+    start_time: updateData.startTime,
+    end_time: updateData.endTime,
+    location: updateData.location,
+    status: updateData.status,
+    updated_by: user.email,
+  };
+
+  if (oldEvent) {
+    await rootLog.create({
+      ...baseLogData,
+      details: `Aktualisiert: ${updateData.title ?? oldEvent.title}`,
+      old_values: {
+        title: oldEvent.title,
+        start_time: oldEvent.startTime,
+        end_time: oldEvent.endTime,
+        location: oldEvent.location,
+        status: oldEvent.status,
+      },
+      new_values: newValues,
+    });
+  } else {
+    await rootLog.create({
+      ...baseLogData,
+      details: `Aktualisiert: Event ID ${eventId}`,
+      new_values: newValues,
+    });
+  }
+}
+
 export async function updateEvent(
   req: AuthenticatedRequest,
   res: Response,
@@ -392,56 +441,8 @@ export async function updateEvent(
       userRole,
     );
 
-    // Log calendar event update (only if we have old values)
-    if (oldEvent) {
-      await rootLog.create({
-        tenant_id: tenantId,
-        user_id: userId,
-        action: 'update',
-        entity_type: 'calendar_event',
-        entity_id: eventId,
-        details: `Aktualisiert: ${updateData.title ?? oldEvent.title}`,
-        old_values: {
-          title: oldEvent.title,
-          start_time: oldEvent.startTime,
-          end_time: oldEvent.endTime,
-          location: oldEvent.location,
-          status: oldEvent.status,
-        },
-        new_values: {
-          title: updateData.title,
-          start_time: updateData.startTime,
-          end_time: updateData.endTime,
-          location: updateData.location,
-          status: updateData.status,
-          updated_by: user.email,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
-    } else {
-      // Log without old values if we couldn't access them
-      await rootLog.create({
-        tenant_id: tenantId,
-        user_id: userId,
-        action: 'update',
-        entity_type: 'calendar_event',
-        entity_id: eventId,
-        details: `Aktualisiert: Event ID ${eventId}`,
-        new_values: {
-          title: updateData.title,
-          start_time: updateData.startTime,
-          end_time: updateData.endTime,
-          location: updateData.location,
-          status: updateData.status,
-          updated_by: user.email,
-        },
-        ip_address: req.ip ?? req.socket.remoteAddress,
-        user_agent: req.get(USER_AGENT_HEADER),
-        was_role_switched: false,
-      });
-    }
+    // Log calendar event update
+    await logEventUpdate(req, eventId, updateData, oldEvent);
 
     res.json(successResponse({ event }));
   } catch (error: unknown) {

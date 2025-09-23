@@ -53,6 +53,92 @@ interface TenantCreateResult {
 }
 
 // Neuen Tenant erstellen (Self-Service)
+async function checkSubdomainExists(connection: PoolConnection, subdomain: string): Promise<void> {
+  const [existing] = await connection.query<RowDataPacket[]>(
+    'SELECT id FROM tenants WHERE subdomain = ?',
+    [subdomain],
+  );
+
+  if (existing.length > 0) {
+    throw new Error('Diese Subdomain ist bereits vergeben');
+  }
+}
+
+function generateTemporaryEmployeeNumber(): string {
+  const timestamp = Date.now().toString().slice(-6);
+  // Generate cryptographically secure random number between 0-999 without bias
+  let randomInt: number;
+  do {
+    const randomBuffer = randomBytes(2); // 2 bytes = 16 bits (0-65535)
+    randomInt = randomBuffer.readUInt16BE(0);
+    // Reject values >= 65000 to ensure uniform distribution when using % 1000
+  } while (randomInt >= 65000);
+  randomInt = randomInt % 1000; // Now safe to use modulo without bias
+  const random = randomInt.toString().padStart(3, '0');
+  return `TEMP-${timestamp}${random}`;
+}
+
+async function createRootUser(
+  connection: PoolConnection,
+  tenantId: number,
+  tenantData: TenantCreateData,
+): Promise<number> {
+  const hashedPassword = await bcrypt.hash(tenantData.admin_password, 10);
+  const employeeNumber = generateTemporaryEmployeeNumber();
+
+  const [userResult] = await connection.query<ResultSetHeader>(
+    `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number)
+       VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?)`,
+    [
+      tenantData.admin_email,
+      tenantData.admin_email,
+      hashedPassword,
+      tenantData.admin_first_name,
+      tenantData.admin_last_name,
+      tenantId,
+      tenantData.phone,
+      employeeNumber,
+    ],
+  );
+
+  const userId = userResult.insertId;
+
+  // Generate employee_id
+  const { generateEmployeeId } = await import('../utils/employeeIdGenerator');
+  const employeeId = generateEmployeeId(tenantData.subdomain, 'root', userId);
+
+  await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, userId]);
+
+  await connection.query(
+    'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, TRUE)',
+    [tenantId, userId],
+  );
+
+  return userId;
+}
+
+async function assignBasicPlan(connection: PoolConnection, tenantId: number): Promise<void> {
+  const [plans] = await connection.query<RowDataPacket[]>(
+    'SELECT id FROM plans WHERE code = ? AND is_active = true',
+    ['basic'],
+  );
+
+  if (plans.length > 0) {
+    const basicPlanId = plans[0].id as number;
+
+    await connection.query(
+      `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
+         VALUES (?, ?, 'trial', NOW())`,
+      [tenantId, basicPlanId],
+    );
+
+    await connection.query('UPDATE tenants SET current_plan_id = ? WHERE id = ?', [
+      basicPlanId,
+      tenantId,
+    ]);
+  }
+}
+
 export async function createTenant(tenantData: TenantCreateData): Promise<TenantCreateResult> {
   logger.info('[DEBUG] Starting tenant creation...');
   const connection = await getConnection();
@@ -61,27 +147,10 @@ export async function createTenant(tenantData: TenantCreateData): Promise<Tenant
   try {
     await connection.beginTransaction();
 
-    const {
-      company_name,
-      subdomain,
-      email,
-      phone,
-      address,
-      admin_email,
-      admin_password,
-      admin_first_name,
-      admin_last_name,
-    } = tenantData;
+    const { company_name, subdomain, email, phone, address, admin_email } = tenantData;
 
     // 1. Prüfe ob Subdomain bereits existiert
-    const [existing] = await connection.query<RowDataPacket[]>(
-      'SELECT id FROM tenants WHERE subdomain = ?',
-      [subdomain],
-    );
-
-    if (existing.length > 0) {
-      throw new Error('Diese Subdomain ist bereits vergeben');
-    }
+    await checkSubdomainExists(connection, subdomain);
 
     // 2. Erstelle Tenant
     const trialEndsAt = new Date();
@@ -95,84 +164,16 @@ export async function createTenant(tenantData: TenantCreateData): Promise<Tenant
 
     const tenantId = tenantResult.insertId;
 
-    // 3. Erstelle Root-Benutzer (Firmeninhaber)
-    const hashedPassword = await bcrypt.hash(admin_password, 10);
+    // 3. Erstelle Root-Benutzer
+    const userId = await createRootUser(connection, tenantId, tenantData);
 
-    // Create user first without employee_id but WITH phone
-    // Generate unique TEMPORARY employee number using timestamp and cryptographically secure random component
-    const timestamp = Date.now().toString().slice(-6);
-    // Generate cryptographically secure random number between 0-999 without bias
-    // We use rejection sampling to avoid modulo bias
-    let randomInt: number;
-    do {
-      const randomBuffer = randomBytes(2); // 2 bytes = 16 bits (0-65535)
-      randomInt = randomBuffer.readUInt16BE(0);
-      // Reject values >= 65000 to ensure uniform distribution when using % 1000
-      // 65000 = 65 * 1000, so values 0-64999 map uniformly to 0-999
-    } while (randomInt >= 65000);
-    randomInt = randomInt % 1000; // Now safe to use modulo without bias
-    const random = randomInt.toString().padStart(3, '0');
-    const employeeNumber = `TEMP-${timestamp}${random}`;
+    // 4. Weise Basic-Plan zu
+    await assignBasicPlan(connection, tenantId);
 
-    const [userResult] = await connection.query<ResultSetHeader>(
-      `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number)
-         VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?)`,
-      [
-        admin_email,
-        admin_email,
-        hashedPassword,
-        admin_first_name,
-        admin_last_name,
-        tenantId,
-        phone,
-        employeeNumber, // Unique employee number
-      ],
-    );
-
-    const userId = userResult.insertId;
-
-    // Generate employee_id using the same format as in root.ts
-    const { generateEmployeeId } = await import('../utils/employeeIdGenerator');
-    const employeeId = generateEmployeeId(subdomain, 'root', userId);
-
-    // Update user with generated employee_id
-    await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, userId]);
-
-    // 4. Verknüpfe Admin mit Tenant
-    await connection.query(
-      'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, TRUE)',
-      [tenantId, userId],
-    );
-
-    // 5. Weise Basic-Plan zu
-    // Hole Basic Plan ID
-    const [plans] = await connection.query<RowDataPacket[]>(
-      'SELECT id FROM plans WHERE code = ? AND is_active = true',
-      ['basic'],
-    );
-
-    if (plans.length > 0) {
-      const basicPlanId = plans[0].id as number;
-
-      // Erstelle tenant_plans Eintrag
-      await connection.query(
-        `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
-           VALUES (?, ?, 'trial', NOW())`,
-        [tenantId, basicPlanId],
-      );
-
-      // Update tenant mit current_plan_id
-      await connection.query('UPDATE tenants SET current_plan_id = ? WHERE id = ?', [
-        basicPlanId,
-        tenantId,
-      ]);
-    }
-
-    // 6. Aktiviere Trial-Features
+    // 5. Aktiviere Trial-Features
     await activateTrialFeatures(tenantId, connection);
 
     await connection.commit();
-
     logger.info(`Neuer Tenant erstellt: ${company_name} (${subdomain})`);
 
     return {

@@ -216,57 +216,49 @@ export async function incrementDownloadCount(id: number): Promise<boolean> {
   }
 }
 
-export async function updateDocument(id: number, data: DocumentUpdateData): Promise<boolean> {
-  const { fileName, fileContent, category, description, year, month, isArchived } = data;
-  logger.info(`Updating document ${id}`);
-  let query = 'UPDATE documents SET ';
-  const params: unknown[] = [];
+function buildUpdateQuery(data: DocumentUpdateData): { updates: string[]; params: unknown[] } {
   const updates: string[] = [];
+  const params: unknown[] = [];
 
-  if (fileName !== undefined) {
-    updates.push('file_name = ?');
-    params.push(fileName);
+  const fieldMappings: Record<string, string> = {
+    fileName: 'file_name',
+    fileContent: 'file_content',
+    category: 'category',
+    description: 'description',
+    year: 'year',
+    month: 'month',
+    isArchived: 'is_archived',
+    filename: 'filename',
+  };
+
+  for (const [key, dbColumn] of Object.entries(fieldMappings)) {
+    const value = data[key as keyof DocumentUpdateData];
+    if (value !== undefined) {
+      updates.push(`${dbColumn} = ?`);
+      params.push(value);
+    }
   }
-  if (fileContent !== undefined) {
-    updates.push('file_content = ?');
-    params.push(fileContent);
-  }
-  if (category !== undefined) {
-    updates.push('category = ?');
-    params.push(category);
-  }
-  if (description !== undefined) {
-    updates.push('description = ?');
-    params.push(description);
-  }
-  if (year !== undefined) {
-    updates.push('year = ?');
-    params.push(year);
-  }
-  if (month !== undefined) {
-    updates.push('month = ?');
-    params.push(month);
-  }
-  if (isArchived !== undefined) {
-    updates.push('is_archived = ?');
-    params.push(isArchived);
-  }
-  // Handle additional fields that v2 API uses
-  if (data.filename !== undefined) {
-    updates.push('filename = ?');
-    params.push(data.filename);
-  }
+
+  // Handle special case for tags
   if (data.tags !== undefined) {
     updates.push('tags = ?');
     params.push(JSON.stringify(data.tags));
   }
+
+  return { updates, params };
+}
+
+export async function updateDocument(id: number, data: DocumentUpdateData): Promise<boolean> {
+  logger.info(`Updating document ${id}`);
+
+  const { updates, params } = buildUpdateQuery(data);
 
   if (updates.length === 0) {
     logger.warn(`No updates provided for document ${id}`);
     return false;
   }
 
-  query += `${updates.join(', ')} WHERE id = ?`;
+  const query = `UPDATE documents SET ${updates.join(', ')} WHERE id = ?`;
   params.push(id);
 
   try {
@@ -496,47 +488,71 @@ function buildAccessCondition(): string {
   )`;
 }
 
+// Helper: Check if filter value is valid
+function isValidFilterValue(value: unknown, type: 'string' | 'number'): boolean {
+  if (type === 'string') {
+    return value != null && value !== '';
+  }
+  return value != null && value !== 0;
+}
+
+// Helper: Add single filter condition
+function addFilterCondition(
+  query: string,
+  params: unknown[],
+  condition: string,
+  value: unknown,
+): { query: string; params: unknown[] } {
+  const updatedQuery = query + condition;
+  const updatedParams = [...params, value];
+  return { query: updatedQuery, params: updatedParams };
+}
+
 // Helper: Apply filter conditions to query
 function applyDocumentFilters(
   query: string,
   params: unknown[],
   filters?: DocumentFilters,
 ): { query: string; params: unknown[] } {
-  let updatedQuery = query;
-  const updatedParams = [...params];
-
   if (!filters) {
-    return { query: updatedQuery, params: updatedParams };
+    return { query, params };
   }
 
-  if (filters.category != null && filters.category !== '') {
-    updatedQuery += ' AND d.category = ?';
-    updatedParams.push(filters.category);
+  let updatedQuery = query;
+  let updatedParams = [...params];
+
+  const simpleFilters: {
+    field: keyof DocumentFilters;
+    condition: string;
+    type: 'string' | 'number';
+  }[] = [
+    { field: 'category', condition: ' AND d.category = ?', type: 'string' },
+    { field: 'year', condition: ' AND d.year = ?', type: 'number' },
+    { field: 'month', condition: ' AND d.month = ?', type: 'string' },
+    { field: 'recipientType', condition: ' AND d.recipient_type = ?', type: 'string' },
+  ];
+
+  // Apply simple filters
+  for (const filter of simpleFilters) {
+    const value = filters[filter.field];
+    if (isValidFilterValue(value, filter.type)) {
+      const result = addFilterCondition(updatedQuery, updatedParams, filter.condition, value);
+      updatedQuery = result.query;
+      updatedParams = result.params;
+    }
   }
 
-  if (filters.year != null && filters.year !== 0) {
-    updatedQuery += ' AND d.year = ?';
-    updatedParams.push(filters.year);
-  }
-
-  if (filters.month != null && filters.month !== '') {
-    updatedQuery += ' AND d.month = ?';
-    updatedParams.push(filters.month);
-  }
-
+  // Handle special cases
   if (filters.isArchived !== undefined) {
     updatedQuery += ' AND d.is_archived = ?';
     updatedParams.push(filters.isArchived);
   }
 
-  if (filters.searchTerm != null && filters.searchTerm !== '') {
+  const searchTerm = filters.searchTerm;
+  if (searchTerm != null && searchTerm !== '') {
     updatedQuery += ' AND (d.filename LIKE ? OR d.description LIKE ?)';
-    updatedParams.push(`%${filters.searchTerm}%`, `%${filters.searchTerm}%`);
-  }
-
-  if (filters.recipientType != null && filters.recipientType !== '') {
-    updatedQuery += ' AND d.recipient_type = ?';
-    updatedParams.push(filters.recipientType);
+    const searchPattern = `%${searchTerm}%`;
+    updatedParams.push(searchPattern, searchPattern);
   }
 
   return { query: updatedQuery, params: updatedParams };

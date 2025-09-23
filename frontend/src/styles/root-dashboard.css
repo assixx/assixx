@@ -72,10 +72,13 @@ h1 {
   padding: 24px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-md);
+
+  text-align: center;
+
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--shadow-sm);
-  text-align: center;
+
   transition: all 0.3s ease;
 }
 
@@ -89,6 +92,7 @@ h1 {
 
 #dashboard-data .stat-value {
   margin-bottom: 8px;
+
   font-size: 2.5rem;
   font-weight: 700;
   color: var(--primary-color);
@@ -385,6 +389,10 @@ h1 {
 .log-user {
   font-weight: 500;
   color: var(--primary-color);
+}
+
+.log-user i {
+  margin-right: 6px;
 }
 
 .view-all-logs {

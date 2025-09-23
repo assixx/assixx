@@ -217,9 +217,11 @@ export class AuditTrailService {
    * Get audit statistics
    * @param filter - The filter parameter
    */
-  async getStats(filter: AuditFilter): Promise<AuditStats> {
+  private buildStatsWhereClause(filter: AuditFilter): {
+    whereClause: string;
+    params: (string | number | Date)[];
+  } {
     const { tenantId, dateFrom, dateTo } = filter;
-
     const conditions: string[] = ['tenant_id = ?'];
     const params: (string | number | Date)[] = [tenantId];
 
@@ -232,52 +234,20 @@ export class AuditTrailService {
       params.push(dateTo);
     }
 
-    const whereClause = conditions.join(' AND ');
+    return { whereClause: conditions.join(' AND '), params };
+  }
 
-    // Get total entries
-    const [totalRows] = await execute<RowDataPacket[]>(
-      `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
-      params,
-    );
-
-    // Get counts by action
-    const [actionRows] = await execute<RowDataPacket[]>(
-      `SELECT action, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY action`,
-      params,
-    );
-
-    // Get counts by resource type
-    const [resourceRows] = await execute<RowDataPacket[]>(
-      `SELECT resource_type, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY resource_type`,
-      params,
-    );
-
-    // Get top users by activity
-    const [userRows] = await execute<RowDataPacket[]>(
-      `SELECT user_id, user_name, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY user_id, user_name
-       ORDER BY count DESC
-       LIMIT 10`,
-      params,
-    );
-
-    // Get counts by status
-    const [statusRows] = await execute<RowDataPacket[]>(
-      `SELECT status, COUNT(*) as count
-       FROM audit_trail
-       WHERE ${whereClause}
-       GROUP BY status`,
-      params,
-    );
-
+  private transformStatsResults(
+    actionRows: RowDataPacket[],
+    resourceRows: RowDataPacket[],
+    userRows: RowDataPacket[],
+    statusRows: RowDataPacket[],
+  ): {
+    byAction: Record<string, number>;
+    byResourceType: Record<string, number>;
+    byUser: { userId: number; userName: string; count: number }[];
+    byStatus: { success: number; failure: number };
+  } {
     const byAction: Record<string, number> = {};
     actionRows.forEach((row) => {
       byAction[row.action as string] = row.count as number;
@@ -294,10 +264,7 @@ export class AuditTrailService {
       count: row.count as number,
     }));
 
-    const byStatus = {
-      success: 0,
-      failure: 0,
-    };
+    const byStatus = { success: 0, failure: 0 };
     statusRows.forEach((row) => {
       if (row.status === 'success') {
         byStatus.success = row.count as number;
@@ -305,6 +272,48 @@ export class AuditTrailService {
         byStatus.failure = row.count as number;
       }
     });
+
+    return { byAction, byResourceType, byUser, byStatus };
+  }
+
+  async getStats(filter: AuditFilter): Promise<AuditStats> {
+    const { dateFrom, dateTo } = filter;
+    const { whereClause, params } = this.buildStatsWhereClause(filter);
+
+    // Get all required data
+    const [totalRows] = await execute<RowDataPacket[]>(
+      `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
+      params,
+    );
+
+    const [actionRows] = await execute<RowDataPacket[]>(
+      `SELECT action, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY action`,
+      params,
+    );
+
+    const [resourceRows] = await execute<RowDataPacket[]>(
+      `SELECT resource_type, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY resource_type`,
+      params,
+    );
+
+    const [userRows] = await execute<RowDataPacket[]>(
+      `SELECT user_id, user_name, COUNT(*) as count
+       FROM audit_trail WHERE ${whereClause}
+       GROUP BY user_id, user_name ORDER BY count DESC LIMIT 10`,
+      params,
+    );
+
+    const [statusRows] = await execute<RowDataPacket[]>(
+      `SELECT status, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY status`,
+      params,
+    );
+
+    const { byAction, byResourceType, byUser, byStatus } = this.transformStatsResults(
+      actionRows,
+      resourceRows,
+      userRows,
+      statusRows,
+    );
 
     return {
       totalEntries: totalRows[0].total as number,

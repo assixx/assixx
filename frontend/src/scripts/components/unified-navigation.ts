@@ -11,7 +11,7 @@ import { apiClient } from '../../utils/api-client';
 import { $$, setHTML } from '../../utils/dom-utils';
 import { switchRoleForRoot, switchRoleForAdmin } from '../role-switch';
 import { SSEClient } from '../utils/sse-client';
-// import { loadUserInfo as loadUserInfoFromAuth } from '../auth'; // Currently unused
+import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
 
 // Declare global type for window
 declare global {
@@ -533,9 +533,10 @@ class UnifiedNavigation {
 
   private async loadV2UserProfile(): Promise<void> {
     try {
-      console.info('[UnifiedNav] Calling apiClient.get for /users/me');
-      const userData = await apiClient.get<UserProfileResponse>('/users/me');
-      console.info('[UnifiedNav] Full user data from v2 API:', userData);
+      // Use cached user data from auth.js to prevent duplicate API calls
+      console.info('[UnifiedNav] Using cached user data from auth.js');
+      const userData = (await loadUserInfoFromAuth()) as UserProfileResponse;
+      console.info('[UnifiedNav] Full user data from cache:', userData);
 
       this.updateCompanyInfo(userData);
       this.updateUserInfo(userData);
@@ -545,7 +546,7 @@ class UnifiedNavigation {
 
       this.userProfileData = userData;
     } catch (error) {
-      console.error('[UnifiedNav] Error in v2 API call:', error);
+      console.error('[UnifiedNav] Error loading user data:', error);
     }
   }
 

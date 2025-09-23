@@ -353,8 +353,22 @@ function getFallbackUser(): User {
 // Helper: Fetch user profile from API
 async function fetchUserProfile(): Promise<User> {
   const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
-  const profileUrl = useV2 ? '/api/v2/users/me' : '/api/user/profile';
 
+  if (useV2) {
+    // Use apiClient for v2 API (already returns User object)
+    console.info('loadUserInfo: Using apiClient for v2 API');
+    const user = await apiClient.get<User>('/users/me');
+    console.info('loadUserInfo: Response data:', user);
+
+    updateUserDisplay(user);
+    userProfileCache = { data: user, timestamp: Date.now() };
+    console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
+
+    return user;
+  }
+
+  // Legacy v1 API uses fetch
+  const profileUrl = '/api/user/profile';
   const response = await fetchWithAuth(profileUrl);
   console.info('loadUserInfo: Response status:', response.status);
 

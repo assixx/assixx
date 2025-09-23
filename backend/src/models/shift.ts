@@ -1171,6 +1171,47 @@ interface V2SwapRequestResult extends RowDataPacket {
 // These methods support the v2 API service layer
 
 /**
+ * Add date filter to conditions
+ */
+function addDateFilter(
+  filters: V2ShiftFilters,
+  conditions: string[],
+  params: (string | number | null)[],
+): void {
+  const specificDate = filters.date;
+  const startDate = filters.start_date;
+  const endDate = filters.end_date;
+
+  if (specificDate != null && specificDate !== '') {
+    conditions.push('s.date = ?');
+    params.push(formatDateOnlyForMysql(specificDate));
+    return;
+  }
+
+  if (startDate != null && startDate !== '' && endDate != null && endDate !== '') {
+    conditions.push('s.date BETWEEN ? AND ?');
+    params.push(formatDateOnlyForMysql(startDate));
+    params.push(formatDateOnlyForMysql(endDate));
+  }
+}
+
+/**
+ * Add filter condition if value is valid
+ */
+function addFilterCondition(
+  field: string,
+  value: string | number | null | undefined,
+  conditions: string[],
+  params: (string | number | null)[],
+  emptyValue: string | number,
+): void {
+  if (value != null && value !== emptyValue) {
+    conditions.push(`${field} = ?`);
+    params.push(value);
+  }
+}
+
+/**
  * Build shift query filters
  */
 function buildShiftQueryFilters(filters: V2ShiftFilters): {
@@ -1181,48 +1222,18 @@ function buildShiftQueryFilters(filters: V2ShiftFilters): {
   const params: (string | number | null)[] = [];
 
   // Date filters
-  if (filters.date != null && filters.date !== '') {
-    conditions.push('s.date = ?');
-    params.push(formatDateOnlyForMysql(filters.date));
-  } else if (
-    filters.start_date != null &&
-    filters.start_date !== '' &&
-    filters.end_date != null &&
-    filters.end_date !== ''
-  ) {
-    conditions.push('s.date BETWEEN ? AND ?');
-    params.push(formatDateOnlyForMysql(filters.start_date));
-    params.push(formatDateOnlyForMysql(filters.end_date));
-  }
+  addDateFilter(filters, conditions, params);
 
-  // ID-based filters
-  const idFilters = [
-    { field: 's.user_id', value: filters.user_id },
-    { field: 's.department_id', value: filters.department_id },
-    { field: 's.team_id', value: filters.team_id },
-    { field: 's.template_id', value: filters.template_id },
-    { field: 's.plan_id', value: filters.plan_id },
-  ];
+  // ID-based filters (empty value is 0)
+  addFilterCondition('s.user_id', filters.user_id, conditions, params, 0);
+  addFilterCondition('s.department_id', filters.department_id, conditions, params, 0);
+  addFilterCondition('s.team_id', filters.team_id, conditions, params, 0);
+  addFilterCondition('s.template_id', filters.template_id, conditions, params, 0);
+  addFilterCondition('s.plan_id', filters.plan_id, conditions, params, 0);
 
-  for (const { field, value } of idFilters) {
-    if (value != null && value !== 0) {
-      conditions.push(`${field} = ?`);
-      params.push(value);
-    }
-  }
-
-  // String filters
-  const stringFilters = [
-    { field: 's.status', value: filters.status },
-    { field: 's.type', value: filters.type },
-  ];
-
-  for (const { field, value } of stringFilters) {
-    if (value != null && value !== '') {
-      conditions.push(`${field} = ?`);
-      params.push(value);
-    }
-  }
+  // String filters (empty value is '')
+  addFilterCondition('s.status', filters.status, conditions, params, '');
+  addFilterCondition('s.type', filters.type, conditions, params, '');
 
   return { conditions, params };
 }
@@ -1613,6 +1624,71 @@ async function createTemplate(data: V2TemplateData): Promise<number> {
 }
 
 /**
+ * Convert value for database storage
+ */
+function convertValueForDatabase(value: unknown): string | number | null {
+  if (typeof value === 'boolean') {
+    return value ? 1 : 0;
+  }
+  return value as string | number | null;
+}
+
+/**
+ * Build update fields for template
+ */
+function buildTemplateUpdateFields(data: Partial<V2TemplateData>): {
+  updateFields: string[];
+  values: (string | number | null | Date)[];
+} {
+  const updateFields: string[] = [];
+  const values: (string | number | null | Date)[] = [];
+
+  const allowedFields = [
+    'name',
+    'description',
+    'start_time',
+    'end_time',
+    'break_minutes',
+    'color',
+    'is_night_shift',
+    'is_active',
+  ];
+
+  for (const field of allowedFields) {
+    const value = data[field as keyof V2TemplateData];
+    if (value === undefined) {
+      continue;
+    }
+
+    updateFields.push(`${field} = ?`);
+    values.push(convertValueForDatabase(value));
+  }
+
+  return { updateFields, values };
+}
+
+/**
+ * Add duration update if times changed
+ */
+function addDurationUpdate(
+  data: Partial<V2TemplateData>,
+  updateFields: string[],
+  values: (string | number | null | Date)[],
+): void {
+  const startTime = data.start_time;
+  const endTime = data.end_time;
+
+  const hasValidTimes = startTime != null && startTime !== '' && endTime != null && endTime !== '';
+
+  if (!hasValidTimes) {
+    return;
+  }
+
+  updateFields.push('duration_hours = ?');
+  values.push(calculateDurationHours(startTime, endTime));
+}
+
+/**
  * Update template
  */
 async function updateTemplate(
@@ -1621,51 +1697,14 @@ async function updateTemplate(
   tenantId: number,
 ): Promise<void> {
   try {
-    const updateFields: string[] = [];
-    const values: (string | number | null | Date)[] = [];
-
-    const allowedFields = [
-      'name',
-      'description',
-      'start_time',
-      'end_time',
-      'break_minutes',
-      'color',
-      'is_night_shift',
-      'is_active',
-    ];
-
-    for (const field of allowedFields) {
-      if (data[field as keyof V2TemplateData] !== undefined) {
-        let dbField = field;
-        // break_minutes and is_night_shift are already correct field names
-
-        updateFields.push(`${dbField} = ?`);
-        const value = data[field as keyof V2TemplateData];
-        // Convert boolean to number for MySQL
-        values.push(
-          typeof value === 'boolean' ?
-            value ? 1
-            : 0
-          : (value as string | number | null),
-        );
-      }
-    }
+    const { updateFields, values } = buildTemplateUpdateFields(data);
 
     if (updateFields.length === 0) {
       throw new Error('No fields to update');
     }
 
-    // Recalculate duration if times changed
-    if (
-      data.start_time != null &&
-      data.start_time !== '' &&
-      data.end_time != null &&
-      data.end_time !== ''
-    ) {
-      updateFields.push('duration_hours = ?');
-      values.push(calculateDurationHours(data.start_time, data.end_time));
-    }
+    // Add duration update if times changed
+    addDurationUpdate(data, updateFields, values);
 
     const query = `
       UPDATE shift_templates

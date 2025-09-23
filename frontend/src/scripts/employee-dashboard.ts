@@ -5,7 +5,7 @@
 
 import type { User, Document } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
-import { getAuthToken, showError } from './auth';
+import { getAuthToken, showError, loadUserInfo } from './auth';
 import { formatDate, escapeHtml } from './common';
 import { $$id, setHTML } from '../utils/dom-utils';
 
@@ -137,7 +137,8 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   async function loadEmployeeInfo(): Promise<void> {
     try {
-      const employeeInfo = await apiClient.get<EmployeeInfo>('/users/me');
+      // Use cached user data from auth.js to prevent duplicate API calls
+      const employeeInfo = (await loadUserInfo()) as EmployeeInfo;
       displayEmployeeInfo(employeeInfo);
     } catch (error) {
       console.error('Fehler beim Laden der Mitarbeiterinformationen:', error);
@@ -162,10 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
       employeeName.textContent = getDisplayName(info);
     }
 
-    const userName = document.querySelector('#user-name');
-    if (userName) {
-      userName.textContent = info.first_name ?? info.username;
-    }
+    // #user-name is handled by unified-navigation - removed to prevent race condition
   }
 
   /**

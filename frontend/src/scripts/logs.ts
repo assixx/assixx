@@ -244,7 +244,7 @@ function formatLogEntry(entry: LogEntry): string {
       <td>
         <div class="user-info">
           <span class="user-name">${entry.userName}</span>
-          <span class="user-role ${roleClass}">${roleLabel}</span>
+          <span class="role-badge ${roleClass}">${roleLabel}</span>
         </div>
       </td>
       <td>
@@ -283,7 +283,7 @@ function displayLogs(logs: LogEntry[]) {
   setHTML(
     container,
     `
-    <table class="logs-table">
+    <table class="table">
       <thead>
         <tr>
           <th>ID</th>
@@ -305,9 +305,19 @@ function displayLogs(logs: LogEntry[]) {
 
 // Update pagination
 function updatePagination(pagination: Pagination) {
-  const pageInfo = $$('#page-info');
-  const prevBtn = $$('#prev-page');
-  const nextBtn = $$('#next-page');
+  const paginationContainer = $$('#pagination-container');
+  const pageInfo = $$('#pagination-info');
+  const prevBtn = $$('#prev-btn');
+  const nextBtn = $$('#next-btn');
+
+  // Show pagination container if there are results
+  if (paginationContainer) {
+    if (pagination.total > 0) {
+      paginationContainer.style.display = 'flex';
+    } else {
+      paginationContainer.style.display = 'none';
+    }
+  }
 
   if (pageInfo) {
     const currentPage = Math.floor(currentOffset / limit) + 1;
