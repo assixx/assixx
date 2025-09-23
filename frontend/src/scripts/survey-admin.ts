@@ -720,14 +720,49 @@ export class SurveyAdminManager {
   // Question Management
   // ============================================
 
-  public addQuestion(): void {
-    this.questionCounter++;
-    const questionId = `question_${this.questionCounter}`;
+  private createQuestionTypeDropdown(questionId: string): string {
+    return `
+      <div class="custom-dropdown">
+        <div class="dropdown-display" id="${questionId}_typeDisplay"
+             data-action="toggle-dropdown" data-params="${questionId}_type">
+          <span>Textantwort</span>
+          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
+            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="dropdown-options" id="${questionId}_typeDropdown">
+          <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|text|Textantwort">
+            Textantwort
+          </div>
+          <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|single_choice|Einzelauswahl">
+            Einzelauswahl
+          </div>
+          <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|multiple_choice|Mehrfachauswahl">
+            Mehrfachauswahl
+          </div>
+          <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|rating|Bewertung (1-5)">
+            Bewertung (1-5)
+          </div>
+          <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|yes_no|Ja/Nein">
+            Ja/Nein
+          </div>
+          <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|number|Zahl">
+            Zahl
+          </div>
+          <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|date|Datum">
+            Datum
+          </div>
+        </div>
+        <input type="hidden" id="${questionId}_typeValue" value="text">
+      </div>
+    `;
+  }
 
-    const questionHtml = `
+  private createQuestionHtml(questionId: string, questionNumber: number): string {
+    return `
       <div class="question-item" id="${questionId}">
         <div class="question-header">
-          <span class="question-number">${this.questionCounter}</span>
+          <span class="question-number">${questionNumber}</span>
           <button type="button" class="remove-question" data-action="remove-question" data-params="${questionId}">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
               <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -741,39 +776,7 @@ export class SurveyAdminManager {
         </div>
 
         <div class="question-controls">
-          <div class="custom-dropdown">
-            <div class="dropdown-display" id="${questionId}_typeDisplay"
-                 data-action="toggle-dropdown" data-params="${questionId}_type">
-              <span>Textantwort</span>
-              <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <div class="dropdown-options" id="${questionId}_typeDropdown">
-              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|text|Textantwort">
-                Textantwort
-              </div>
-              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|single_choice|Einzelauswahl">
-                Einzelauswahl
-              </div>
-              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|multiple_choice|Mehrfachauswahl">
-                Mehrfachauswahl
-              </div>
-              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|rating|Bewertung (1-5)">
-                Bewertung (1-5)
-              </div>
-              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|yes_no|Ja/Nein">
-                Ja/Nein
-              </div>
-              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|number|Zahl">
-                Zahl
-              </div>
-              <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|date|Datum">
-                Datum
-              </div>
-            </div>
-            <input type="hidden" id="${questionId}_typeValue" value="text">
-          </div>
+          ${this.createQuestionTypeDropdown(questionId)}
 
           <label class="checkbox-label">
             <input type="checkbox" id="${questionId}_required" checked>
@@ -793,6 +796,12 @@ export class SurveyAdminManager {
         </div>
       </div>
     `;
+  }
+
+  public addQuestion(): void {
+    this.questionCounter++;
+    const questionId = `question_${this.questionCounter}`;
+    const questionHtml = this.createQuestionHtml(questionId, this.questionCounter);
 
     const questionsList = document.querySelector('#questionsList');
     if (questionsList) {
@@ -913,44 +922,59 @@ export class SurveyAdminManager {
     await this.submitSurvey(surveyData);
   }
 
+  private collectAllUsersAssignment(): SurveyAssignment[] {
+    return [{ type: 'all_users' }];
+  }
+
+  private collectDepartmentAssignments(): SurveyAssignment[] | null {
+    const select = document.querySelector<HTMLSelectElement>('#departmentSelect');
+    if (!select) return [];
+
+    const selectedDepts = Array.from(select.selectedOptions).map((opt) => opt.value);
+    if (selectedDepts.length === 0) {
+      showErrorAlert('Bitte wählen Sie mindestens eine Abteilung aus');
+      return null;
+    }
+
+    return selectedDepts.map((deptId) => ({
+      type: 'department' as const,
+      departmentId: Number.parseInt(deptId),
+    }));
+  }
+
+  private collectTeamAssignments(): SurveyAssignment[] | null {
+    const select = document.querySelector<HTMLSelectElement>('#teamSelect');
+    if (!select) return [];
+
+    const selectedTeams = Array.from(select.selectedOptions).map((opt) => opt.value);
+    if (selectedTeams.length === 0) {
+      showErrorAlert('Bitte wählen Sie mindestens ein Team aus');
+      return null;
+    }
+
+    return selectedTeams.map((teamId) => ({
+      type: 'team' as const,
+      teamId: Number.parseInt(teamId),
+    }));
+  }
+
   private collectAssignments(): SurveyAssignment[] | null {
     const assignmentType = document.querySelector<HTMLInputElement>('#assignmentType')?.value;
-    const assignments: SurveyAssignment[] = [];
 
-    if (assignmentType === 'all_users') {
-      assignments.push({ type: 'all_users' });
-    } else if (assignmentType === 'department') {
-      const select = document.querySelector<HTMLSelectElement>('#departmentSelect');
-      if (select) {
-        const selectedDepts = Array.from(select.selectedOptions).map((opt) => opt.value);
-        if (selectedDepts.length === 0) {
-          showErrorAlert('Bitte wählen Sie mindestens eine Abteilung aus');
-          return null;
-        }
-        selectedDepts.forEach((deptId) => {
-          assignments.push({
-            type: 'department',
-            departmentId: Number.parseInt(deptId),
-          });
-        });
-      }
-    } else if (assignmentType === 'team') {
-      const select = document.querySelector<HTMLSelectElement>('#teamSelect');
-      if (select) {
-        const selectedTeams = Array.from(select.selectedOptions).map((opt) => opt.value);
-        if (selectedTeams.length === 0) {
-          showErrorAlert('Bitte wählen Sie mindestens ein Team aus');
-          return null;
-        }
-        selectedTeams.forEach((teamId) => {
-          assignments.push({
-            type: 'team',
-            teamId: Number.parseInt(teamId),
-          });
-        });
-      }
+    if (assignmentType === undefined || assignmentType === '') {
+      return [];
     }
-    return assignments;
+
+    switch (assignmentType) {
+      case 'all_users':
+        return this.collectAllUsersAssignment();
+      case 'department':
+        return this.collectDepartmentAssignments();
+      case 'team':
+        return this.collectTeamAssignments();
+      default:
+        return [];
+    }
   }
 
   private collectSurveyData(status: 'draft' | 'active', assignments: SurveyAssignment[]): Survey | null {
@@ -1096,35 +1120,42 @@ export class SurveyAdminManager {
     }
   }
 
+  private async deleteSurveyV2(surveyId: number): Promise<void> {
+    const endpoint = `/surveys/${surveyId}`;
+    await this.apiClient.delete(endpoint);
+    showSuccessAlert('Umfrage erfolgreich gelöscht');
+    await this.loadSurveys();
+  }
+
+  private async deleteSurveyV1(surveyId: number): Promise<void> {
+    const endpoint = `/api/surveys/${surveyId}`;
+    const response = await fetch(endpoint, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+      },
+    });
+
+    if (response.ok) {
+      showSuccessAlert('Umfrage erfolgreich gelöscht');
+      await this.loadSurveys();
+    }
+  }
+
   public async deleteSurvey(surveyId: number): Promise<void> {
-    if (await showConfirm('Möchten Sie diese Umfrage wirklich löschen?')) {
-      try {
-        const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
-        const endpoint = useV2 ? `/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+    const confirmed = await showConfirm('Möchten Sie diese Umfrage wirklich löschen?');
+    if (!confirmed) return;
 
-        if (useV2) {
-          // API v2 wirft einen Fehler bei nicht-200 Status
-          await this.apiClient.delete(endpoint);
-          showSuccessAlert('Umfrage erfolgreich gelöscht');
-          await this.loadSurveys();
-        } else {
-          // Legacy API v1
-          const response = await fetch(endpoint, {
-            method: 'DELETE',
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`, // FIX: Verhindert 'Bearer null' im Header
-            },
-          });
-
-          if (response.ok) {
-            showSuccessAlert('Umfrage erfolgreich gelöscht');
-            await this.loadSurveys();
-          }
-        }
-      } catch (error) {
-        console.error('Error deleting survey:', error);
-        showErrorAlert('Fehler beim Löschen der Umfrage');
+    try {
+      const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
+      if (useV2) {
+        await this.deleteSurveyV2(surveyId);
+      } else {
+        await this.deleteSurveyV1(surveyId);
       }
+    } catch (error) {
+      console.error('Error deleting survey:', error);
+      showErrorAlert('Fehler beim Löschen der Umfrage');
     }
   }
 

@@ -38,104 +38,130 @@ interface StatsRow extends RowDataPacket {
  */
 export class LogsService {
   /**
-   * Get paginated logs with filters (Root only)
-   * @param filters - The filter criteria
+   * Add search condition to query
    */
-  async getLogs(filters: LogsFilterParams): Promise<LogsListResponse> {
-    logger.info('[Logs v2 Service] getLogs called with filters:', filters);
-    
-    const {
-      page = 1,
-      limit = 50,
-      userId,
-      tenantId,
-      action,
-      entityType,
-      startDate,
-      endDate,
-      search
-    } = filters;
+  private addSearchCondition(
+    search: string | undefined,
+    conditions: string[],
+    params: unknown[]
+  ): void {
+    if (search === undefined || search === "") return;
 
-    const offset = (page - 1) * limit;
-    logger.info(`[Logs v2 Service] Calculated offset: ${offset} from page: ${page}, limit: ${limit}`);
-    
+    conditions.push('(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)');
+    const searchPattern = `%${search}%`;
+    params.push(searchPattern, searchPattern, searchPattern, searchPattern);
+  }
+
+  /**
+   * Add filter condition to query
+   */
+  private addFilterCondition(
+    value: unknown,
+    condition: string,
+    conditions: string[],
+    params: unknown[]
+  ): void {
+    if (value === undefined || value === "") return;
+    conditions.push(condition);
+    params.push(value);
+  }
+
+  /**
+   * Build WHERE clause conditions for logs query
+   */
+  private buildWhereClause(filters: LogsFilterParams): { whereClause: string; params: unknown[] } {
     const conditions: string[] = [];
     const params: unknown[] = [];
 
-    // Build WHERE conditions
-    if (userId) {
-      conditions.push('rl.user_id = ?');
-      params.push(userId);
-    }
+    const { userId, tenantId, action, entityType, startDate, endDate, search } = filters;
 
-    if (tenantId) {
-      conditions.push('rl.tenant_id = ?');
-      params.push(tenantId);
-    }
+    // Add simple filter conditions
+    const filterMappings = [
+      { value: userId, condition: 'rl.user_id = ?' },
+      { value: tenantId, condition: 'rl.tenant_id = ?' },
+      { value: action, condition: 'rl.action = ?' },
+      { value: entityType, condition: 'rl.entity_type = ?' },
+      { value: startDate, condition: 'rl.created_at >= ?' },
+      { value: endDate, condition: 'rl.created_at <= ?' },
+    ];
 
-    if (action !== undefined && action !== "") {
-      conditions.push('rl.action = ?');
-      params.push(action);
-    }
+    filterMappings.forEach(({ value, condition }) => {
+      this.addFilterCondition(value, condition, conditions, params);
+    });
 
-    if (entityType !== undefined && entityType !== "") {
-      conditions.push('rl.entity_type = ?');
-      params.push(entityType);
-    }
-
-    if (startDate !== undefined && startDate !== "") {
-      conditions.push('rl.created_at >= ?');
-      params.push(startDate);
-    }
-
-    if (endDate !== undefined && endDate !== "") {
-      conditions.push('rl.created_at <= ?');
-      params.push(endDate);
-    }
-
-    if (search !== undefined && search !== "") {
-      conditions.push('(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)');
-      const searchPattern = `%${search}%`;
-      params.push(searchPattern, searchPattern, searchPattern, searchPattern);
-    }
+    // Add search condition
+    this.addSearchCondition(search, conditions, params);
 
     const whereClause = conditions.length > 0 ? conditions.join(' AND ') : '1=1';
     logger.info(`[Logs v2 Service] Built WHERE clause: ${whereClause}`);
     logger.info(`[Logs v2 Service] Query params:`, params);
 
-    try {
-      // Get total count
-      const countQuery = `SELECT COUNT(*) as total FROM root_logs rl WHERE ${whereClause}`;
-      logger.info(`[Logs v2 Service] Count query: ${countQuery}`);
-      
-      const [countResult] = await executeQuery<RowDataPacket[]>(
-        countQuery,
-        params
-      );
-      const total = (countResult[0] as { total: number }).total;
-      logger.info(`[Logs v2 Service] Total count: ${total}`);
+    return { whereClause, params };
+  }
 
-      // Get paginated logs with user and tenant info
-      const logsQuery = `SELECT 
-          rl.*,
-          u.username as user_name,
-          u.email as user_email,
-          u.role as user_role,
-          t.company_name as tenant_name
-         FROM root_logs rl
-         LEFT JOIN users u ON rl.user_id = u.id
-         LEFT JOIN tenants t ON rl.tenant_id = t.id
-         WHERE ${whereClause}
-         ORDER BY rl.created_at DESC
-         LIMIT ? OFFSET ?`;
-      
-      logger.info(`[Logs v2 Service] Logs query: ${logsQuery}`);
-      logger.info(`[Logs v2 Service] Logs query params:`, [...params, limit, offset]);
-      
-      const [logs] = await executeQuery<DbLogRow[]>(
-        logsQuery,
-        [...params, limit, offset]
-      );
+  /**
+   * Get total count of logs matching filters
+   */
+  private async getLogsCount(whereClause: string, params: unknown[]): Promise<number> {
+    const countQuery = `SELECT COUNT(*) as total FROM root_logs rl WHERE ${whereClause}`;
+    logger.info(`[Logs v2 Service] Count query: ${countQuery}`);
+
+    const [countResult] = await executeQuery<RowDataPacket[]>(countQuery, params);
+    const total = (countResult[0] as { total: number }).total;
+    logger.info(`[Logs v2 Service] Total count: ${total}`);
+
+    return total;
+  }
+
+  /**
+   * Get paginated logs from database
+   */
+  private async getLogRecords(
+    whereClause: string,
+    params: unknown[],
+    limit: number,
+    offset: number
+  ): Promise<DbLogRow[]> {
+    const logsQuery = `SELECT
+        rl.*,
+        u.username as user_name,
+        u.email as user_email,
+        u.role as user_role,
+        t.company_name as tenant_name
+       FROM root_logs rl
+       LEFT JOIN users u ON rl.user_id = u.id
+       LEFT JOIN tenants t ON rl.tenant_id = t.id
+       WHERE ${whereClause}
+       ORDER BY rl.created_at DESC
+       LIMIT ? OFFSET ?`;
+
+    logger.info(`[Logs v2 Service] Logs query: ${logsQuery}`);
+    logger.info(`[Logs v2 Service] Logs query params:`, [...params, limit, offset]);
+
+    const [logs] = await executeQuery<DbLogRow[]>(
+      logsQuery,
+      [...params, limit, offset]
+    );
+
+    return logs;
+  }
+
+  /**
+   * Get paginated logs with filters (Root only)
+   * @param filters - The filter criteria
+   */
+  async getLogs(filters: LogsFilterParams): Promise<LogsListResponse> {
+    logger.info('[Logs v2 Service] getLogs called with filters:', filters);
+
+    const { page = 1, limit = 50 } = filters;
+    const offset = (page - 1) * limit;
+    logger.info(`[Logs v2 Service] Calculated offset: ${offset} from page: ${page}, limit: ${limit}`);
+
+    const { whereClause, params } = this.buildWhereClause(filters);
+
+    try {
+      const total = await this.getLogsCount(whereClause, params);
+      const logs = await this.getLogRecords(whereClause, params, limit, offset);
 
       return {
         logs: logs.map(log => this.formatLogResponse(log)),
@@ -143,9 +169,9 @@ export class LogsService {
           total,
           page,
           limit,
-          offset,  // Add offset for frontend compatibility
+          offset,
           totalPages: Math.ceil(total / limit),
-          hasMore: offset + limit < total  // Add hasMore flag
+          hasMore: offset + limit < total
         }
       };
     } catch (error: unknown) {

@@ -30,74 +30,32 @@ async function switchRole(): Promise<void> {
     const isCurrentlyEmployee = currentActiveRole === 'employee';
 
     if (userRole === 'root') {
-      // Root switching logic
-      if (currentActiveRole === 'employee' || currentActiveRole === 'admin') {
-        endpoint = '/api/role-switch/to-original'; // Back to Root
-      } else {
-        // Root can switch to admin or employee (handled by dropdown)
-        endpoint = '/api/role-switch/to-employee'; // Default
-      }
+      endpoint =
+        currentActiveRole === 'employee' || currentActiveRole === 'admin'
+          ? '/api/role-switch/to-original'
+          : '/api/role-switch/to-employee';
     } else {
-      // Admin switching logic
       endpoint = isCurrentlyEmployee ? '/api/role-switch/to-original' : '/api/role-switch/to-employee';
     }
 
     const response = await apiClient.post<{
       token: string;
-      user: {
-        activeRole: string;
-      };
+      user: { activeRole: string };
       message?: string;
     }>(endpoint, {});
 
-    // Update token and storage
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('activeRole', response.user.activeRole);
-
-    // Also update sessionStorage for KVP page compatibility
-    if (response.user.activeRole === 'employee' && (userRole === 'admin' || userRole === 'root')) {
-      sessionStorage.setItem('roleSwitch', 'employee');
-    } else {
-      sessionStorage.removeItem('roleSwitch');
-    }
-
-    // Update currentView immediately
-    currentView = response.user.activeRole;
-
-    // Clear all role switch banner dismissal states when switching roles
-    ['root', 'admin', 'employee'].forEach((role) => {
-      localStorage.removeItem(`roleSwitchBannerDismissed_${role}`);
-    });
+    // Update storage
+    updateStorageAfterSwitch(response);
 
     // Update UI immediately before redirect
     updateRoleUI();
 
-    // Show success message based on target role
-    let message = '';
-    if (response.user.activeRole === 'employee') {
-      message = 'Wechsel zur Mitarbeiter-Ansicht...';
-    } else if (response.user.activeRole === 'admin') {
-      message = 'Wechsel zur Admin-Ansicht...';
-    } else if (response.user.activeRole === 'root') {
-      message = 'Wechsel zur Root-Ansicht...';
-    }
+    // Show success message
+    const roleDisplayName = getRoleDisplayName(response.user.activeRole);
+    showToast(`Wechsel zur ${roleDisplayName}-Ansicht...`, 'success');
 
-    // Create toast notification
-    showToast(message, 'success');
-
-    // Always redirect to the appropriate dashboard
-    setTimeout(() => {
-      const newRole = response.user.activeRole;
-
-      // Direct redirect to dashboard based on role
-      if (newRole === 'admin') {
-        window.location.href = '/admin-dashboard';
-      } else if (newRole === 'employee') {
-        window.location.href = '/employee-dashboard';
-      } else {
-        window.location.href = '/root-dashboard';
-      }
-    }, 1000);
+    // Redirect to appropriate dashboard
+    redirectToDashboard(response.user.activeRole);
   } catch (error) {
     console.error('Role switch error:', error);
     showToast('Fehler beim Rollenwechsel', 'error');
@@ -142,6 +100,49 @@ function updateRoleUI(): void {
   }
 }
 
+// Get toast colors by type
+function getToastColors(type: 'success' | 'error' | 'warning'): {
+  bgColor: string;
+  borderColor: string;
+  textColor: string;
+} {
+  if (type === 'success') {
+    return {
+      bgColor: 'rgba(76, 175, 80, 0.1)',
+      borderColor: 'rgba(76, 175, 80, 0.2)',
+      textColor: 'rgba(76, 175, 80, 0.9)',
+    };
+  }
+  if (type === 'warning') {
+    return {
+      bgColor: 'rgba(255, 152, 0, 0.1)',
+      borderColor: 'rgba(255, 152, 0, 0.2)',
+      textColor: 'rgba(255, 152, 0, 0.9)',
+    };
+  }
+  return {
+    bgColor: 'rgba(244, 67, 54, 0.1)',
+    borderColor: 'rgba(244, 67, 54, 0.2)',
+    textColor: 'rgba(244, 67, 54, 0.9)',
+  };
+}
+
+// Create toast icon element
+function createToastIcon(type: 'success' | 'error' | 'warning'): HTMLSpanElement {
+  const icon = document.createElement('span');
+  if (type === 'success') {
+    icon.innerHTML =
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
+  } else if (type === 'warning') {
+    icon.innerHTML =
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
+  } else {
+    icon.innerHTML =
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+  }
+  return icon;
+}
+
 // Toast notification helper
 function showToast(message: string, type: 'success' | 'error' | 'warning' = 'success'): void {
   // Try to use existing toast system first
@@ -163,21 +164,7 @@ function showToast(message: string, type: 'success' | 'error' | 'warning' = 'suc
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
 
-  // Define colors based on type
-  let bgColor, borderColor, textColor;
-  if (type === 'success') {
-    bgColor = 'rgba(76, 175, 80, 0.1)';
-    borderColor = 'rgba(76, 175, 80, 0.2)';
-    textColor = 'rgba(76, 175, 80, 0.9)';
-  } else if (type === 'warning') {
-    bgColor = 'rgba(255, 152, 0, 0.1)';
-    borderColor = 'rgba(255, 152, 0, 0.2)';
-    textColor = 'rgba(255, 152, 0, 0.9)';
-  } else {
-    bgColor = 'rgba(244, 67, 54, 0.1)';
-    borderColor = 'rgba(244, 67, 54, 0.2)';
-    textColor = 'rgba(244, 67, 54, 0.9)';
-  }
+  const { bgColor, borderColor, textColor } = getToastColors(type);
 
   toast.style.cssText = `
     position: fixed;
@@ -199,26 +186,12 @@ function showToast(message: string, type: 'success' | 'error' | 'warning' = 'suc
     gap: 12px;
   `;
 
-  // Add icon
-  const icon = document.createElement('span');
-  if (type === 'success') {
-    icon.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
-  } else if (type === 'warning') {
-    icon.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
-  } else {
-    icon.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
-  }
-
-  // Add message text
+  const icon = createToastIcon(type);
   const messageSpan = document.createElement('span');
   messageSpan.textContent = message;
 
   toast.append(icon);
   toast.append(messageSpan);
-
   document.body.append(toast);
 
   setTimeout(() => {

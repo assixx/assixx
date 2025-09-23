@@ -143,6 +143,55 @@ export class SurveysService {
   }
 
   /**
+   * Check survey access for user
+   */
+  private async checkSurveyAccess(
+    surveyId: number,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<void> {
+    if (userRole === 'employee') {
+      const surveys = await survey.getAllByTenantForEmployee(tenantId, userId, {});
+      const hasAccess = surveys.some((s) => s.id === surveyId);
+      if (!hasAccess) {
+        throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
+      }
+      return;
+    }
+
+    if (userRole === 'admin') {
+      const surveys = await survey.getAllByTenantForAdmin(tenantId, userId, {});
+      const hasAccess = surveys.some((s) => s.id === surveyId);
+      if (!hasAccess) {
+        throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
+      }
+    }
+  }
+
+  /**
+   * Transform survey data to API format
+   */
+  private transformSurveyToApi(surveyData: Record<string, unknown>): unknown {
+    const apisurvey = dbToApi(surveyData);
+
+    if (surveyData.questions) {
+      apisurvey.questions = (surveyData.questions as Record<string, unknown>[]).map((q) => ({
+        ...dbToApi(q),
+        orderPosition: q.order_position ?? q.order_index,
+      }));
+    }
+
+    if (surveyData.assignments) {
+      apisurvey.assignments = (surveyData.assignments as Record<string, unknown>[]).map((a) =>
+        dbToApi(a),
+      );
+    }
+
+    return apisurvey;
+  }
+
+  /**
    * Get survey by ID
    * @param surveyId - The surveyId parameter
    * @param tenantId - The tenant ID
@@ -162,47 +211,9 @@ export class SurveysService {
         throw new ServiceError('NOT_FOUND', 'survey not found');
       }
 
-      // Check access permissions
-      if (userRole === 'employee') {
-        // Employee can only see surveys assigned to them
-        const assignedsurveys = await survey.getAllByTenantForEmployee(tenantId, userId, {});
-        const hasAccess = assignedsurveys.some((s) => s.id === surveyId);
+      await this.checkSurveyAccess(surveyId, tenantId, userId, userRole);
 
-        if (!hasAccess) {
-          throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
-        }
-      } else if (userRole === 'admin') {
-        // Admin can see surveys in their departments
-        const adminsurveys = await survey.getAllByTenantForAdmin(tenantId, userId, {});
-        const hasAccess = adminsurveys.some((s) => s.id === surveyId);
-
-        if (!hasAccess) {
-          throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
-        }
-      }
-
-      // Transform to API format
-      const apisurvey = dbToApi(surveyData);
-
-      // Transform questions
-      if (surveyData.questions) {
-        apisurvey.questions = surveyData.questions.map((q: Record<string, unknown>) => {
-          const apiQuestion = dbToApi(q);
-          return {
-            ...apiQuestion,
-            orderPosition: q.order_position ?? q.order_index,
-          };
-        });
-      }
-
-      // Transform assignments
-      if (surveyData.assignments) {
-        apisurvey.assignments = surveyData.assignments.map((a: Record<string, unknown>) =>
-          dbToApi(a),
-        );
-      }
-
-      return apisurvey;
+      return this.transformSurveyToApi(surveyData);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       console.error('Error getting survey:', error);

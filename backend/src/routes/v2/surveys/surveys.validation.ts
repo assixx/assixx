@@ -6,6 +6,45 @@ import { ValidationChain, body, param, query } from 'express-validator';
 
 import { handleValidationErrors } from '../../../middleware/validation';
 
+// Helper functions for validation
+const VALID_QUESTION_TYPES = ['text', 'single_choice', 'multiple_choice', 'rating', 'number'];
+const CHOICE_QUESTION_TYPES = ['single_choice', 'multiple_choice'];
+
+function validateQuestionText(question: Record<string, unknown>, index: number): void {
+  if (!question.questionText || typeof question.questionText !== 'string') {
+    throw new Error(`Question ${index + 1}: questionText is required`);
+  }
+}
+
+function validateQuestionType(question: Record<string, unknown>, index: number): void {
+  if (
+    typeof question.questionType !== 'string' ||
+    !VALID_QUESTION_TYPES.includes(question.questionType)
+  ) {
+    throw new Error(`Question ${index + 1}: Invalid questionType`);
+  }
+}
+
+function validateChoiceOptions(question: Record<string, unknown>, index: number): void {
+  const isChoiceQuestion =
+    typeof question.questionType === 'string' &&
+    CHOICE_QUESTION_TYPES.includes(question.questionType);
+
+  if (!isChoiceQuestion) return;
+
+  if (!Array.isArray(question.options) || question.options.length < 2) {
+    throw new Error(`Question ${index + 1}: Choice questions need at least 2 options`);
+  }
+}
+
+function validateOrderPosition(question: Record<string, unknown>, index: number): void {
+  if (question.orderPosition === undefined) return;
+
+  if (typeof question.orderPosition !== 'number') {
+    throw new Error(`Question ${index + 1}: orderPosition must be a number`);
+  }
+}
+
 // Custom validators
 const validateQuestions: ValidationChain = body('questions')
   .optional()
@@ -14,33 +53,48 @@ const validateQuestions: ValidationChain = body('questions')
   .custom((questions: unknown[]) => {
     for (const [index, item] of questions.entries()) {
       const question = item as Record<string, unknown>;
-      if (!question.questionText || typeof question.questionText !== 'string') {
-        throw new Error(`Question ${index + 1}: questionText is required`);
-      }
-
-      const validTypes = ['text', 'single_choice', 'multiple_choice', 'rating', 'number'];
-      if (
-        typeof question.questionType !== 'string' ||
-        !validTypes.includes(question.questionType)
-      ) {
-        throw new Error(`Question ${index + 1}: Invalid questionType`);
-      }
-
-      // Check options for choice questions
-      if (
-        ['single_choice', 'multiple_choice'].includes(question.questionType) &&
-        (!Array.isArray(question.options) || question.options.length < 2)
-      ) {
-        throw new Error(`Question ${index + 1}: Choice questions need at least 2 options`);
-      }
-
-      // Check orderPosition
-      if (question.orderPosition !== undefined && typeof question.orderPosition !== 'number') {
-        throw new Error(`Question ${index + 1}: orderPosition must be a number`);
-      }
+      validateQuestionText(question, index);
+      validateQuestionType(question, index);
+      validateChoiceOptions(question, index);
+      validateOrderPosition(question, index);
     }
     return true;
   });
+
+// Helper functions for assignment validation
+const VALID_ASSIGNMENT_TYPES = ['all_users', 'department', 'team', 'user'];
+
+function validateAssignmentType(assignment: Record<string, unknown>, index: number): void {
+  if (typeof assignment.type !== 'string' || !VALID_ASSIGNMENT_TYPES.includes(assignment.type)) {
+    throw new Error(`Assignment ${index + 1}: Invalid type`);
+  }
+}
+
+function validateAssignmentRequiredFields(
+  assignment: Record<string, unknown>,
+  index: number,
+): void {
+  switch (assignment.type) {
+    case 'department':
+      if (!assignment.departmentId) {
+        throw new Error(`Assignment ${index + 1}: departmentId required for department type`);
+      }
+      break;
+    case 'team':
+      if (!assignment.teamId) {
+        throw new Error(`Assignment ${index + 1}: teamId required for team type`);
+      }
+      break;
+    case 'user':
+      if (!assignment.userId) {
+        throw new Error(`Assignment ${index + 1}: userId required for user type`);
+      }
+      break;
+    case 'all_users':
+      // No additional fields required for all_users
+      break;
+  }
+}
 
 const validateAssignments: ValidationChain = body('assignments')
   .optional()
@@ -49,21 +103,8 @@ const validateAssignments: ValidationChain = body('assignments')
   .custom((assignments: unknown[]) => {
     for (const [index, item] of assignments.entries()) {
       const assignment = item as Record<string, unknown>;
-      const validTypes = ['all_users', 'department', 'team', 'user'];
-      if (typeof assignment.type !== 'string' || !validTypes.includes(assignment.type)) {
-        throw new Error(`Assignment ${index + 1}: Invalid type`);
-      }
-
-      // Validate based on type
-      if (assignment.type === 'department' && !assignment.departmentId) {
-        throw new Error(`Assignment ${index + 1}: departmentId required for department type`);
-      }
-      if (assignment.type === 'team' && !assignment.teamId) {
-        throw new Error(`Assignment ${index + 1}: teamId required for team type`);
-      }
-      if (assignment.type === 'individual' && !assignment.userId) {
-        throw new Error(`Assignment ${index + 1}: userId required for individual type`);
-      }
+      validateAssignmentType(assignment, index);
+      validateAssignmentRequiredFields(assignment, index);
     }
     return true;
   });

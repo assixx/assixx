@@ -134,6 +134,74 @@ export interface EventsListResponse {
 }
 
 /**
+ * Apply org level filter to query
+ */
+function applyOrgLevelFilter(
+  query: string,
+  params: unknown[],
+  filter: string,
+  userDepartmentId?: number | null,
+  userTeamId?: number | null,
+  userId?: number,
+): { query: string; params: unknown[] } {
+  let updatedQuery = query;
+  const updatedParams = [...params];
+
+  switch (filter) {
+    case 'company':
+      updatedQuery += " AND e.org_level = 'company'";
+      break;
+    case 'department':
+      updatedQuery += " AND e.org_level = 'department' AND e.department_id = ?";
+      updatedParams.push(userDepartmentId);
+      break;
+    case 'team':
+      updatedQuery += " AND e.org_level = 'team' AND e.team_id = ?";
+      updatedParams.push(userTeamId);
+      break;
+    case 'personal':
+      updatedQuery +=
+        " AND (e.org_level = 'personal' AND (e.user_id = ? OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)))";
+      updatedParams.push(userId, userId);
+      break;
+  }
+
+  return { query: updatedQuery, params: updatedParams };
+}
+
+/**
+ * Apply date and search filters to query
+ */
+function applyDateAndSearchFilters(
+  query: string,
+  params: unknown[],
+  startDate?: string,
+  endDate?: string,
+  search?: string,
+): { query: string; params: unknown[] } {
+  let updatedQuery = query;
+  const updatedParams = [...params];
+
+  if (startDate !== undefined && startDate !== '') {
+    updatedQuery += ' AND e.end_date >= ?';
+    updatedParams.push(startDate);
+  }
+
+  if (endDate !== undefined && endDate !== '') {
+    updatedQuery += ' AND e.start_date <= ?';
+    updatedParams.push(endDate);
+  }
+
+  if (search !== undefined && search !== '') {
+    updatedQuery += ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
+    const searchTerm = `%${search}%`;
+    updatedParams.push(searchTerm, searchTerm, searchTerm);
+  }
+
+  return { query: updatedQuery, params: updatedParams };
+}
+
+/**
  * Apply org level and access filters to query
  */
 function applyEventFilters(
@@ -152,28 +220,20 @@ function applyEventFilters(
   },
 ): { query: string; params: unknown[] } {
   let updatedQuery = query;
-  const updatedParams = [...params];
+  let updatedParams = [...params];
 
   // Apply org level filter based on new structure
   if (options.filter !== 'all') {
-    switch (options.filter) {
-      case 'company':
-        updatedQuery += " AND e.org_level = 'company'";
-        break;
-      case 'department':
-        updatedQuery += " AND e.org_level = 'department' AND e.department_id = ?";
-        updatedParams.push(options.userDepartmentId);
-        break;
-      case 'team':
-        updatedQuery += " AND e.org_level = 'team' AND e.team_id = ?";
-        updatedParams.push(options.userTeamId);
-        break;
-      case 'personal':
-        updatedQuery +=
-          " AND (e.org_level = 'personal' AND (e.user_id = ? OR EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)))";
-        updatedParams.push(options.userId, options.userId);
-        break;
-    }
+    const orgResult = applyOrgLevelFilter(
+      updatedQuery,
+      updatedParams,
+      options.filter,
+      options.userDepartmentId,
+      options.userTeamId,
+      options.userId,
+    );
+    updatedQuery = orgResult.query;
+    updatedParams = orgResult.params;
   }
 
   // Apply access control for ALL users (including admins) for privacy
@@ -203,25 +263,16 @@ function applyEventFilters(
     updatedParams.push(options.userId, options.userId);
   }
 
-  // Apply date range filter
-  if (options.startDate !== undefined && options.startDate !== '') {
-    updatedQuery += ' AND e.end_date >= ?';
-    updatedParams.push(options.startDate);
-  }
+  // Apply date range and search filters
+  const filterResult = applyDateAndSearchFilters(
+    updatedQuery,
+    updatedParams,
+    options.startDate,
+    options.endDate,
+    options.search,
+  );
 
-  if (options.endDate !== undefined && options.endDate !== '') {
-    updatedQuery += ' AND e.start_date <= ?';
-    updatedParams.push(options.endDate);
-  }
-
-  // Apply search filter
-  if (options.search !== undefined && options.search !== '') {
-    updatedQuery += ' AND (e.title LIKE ? OR e.description LIKE ? OR e.location LIKE ?)';
-    const searchTerm = `%${options.search}%`;
-    updatedParams.push(searchTerm, searchTerm, searchTerm);
-  }
-
-  return { query: updatedQuery, params: updatedParams };
+  return { query: filterResult.query, params: filterResult.params };
 }
 
 /**
@@ -250,6 +301,38 @@ function processCalendarEvents(events: DbCalendarEvent[]): void {
 }
 
 /**
+ * Get event count for pagination
+ */
+async function getEventCount(
+  tenantId: number,
+  dbStatus: string,
+  options: {
+    filter: string;
+    userDepartmentId?: number | null;
+    userTeamId?: number | null;
+    userId: number;
+    role?: string | null;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+  },
+): Promise<number> {
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM calendar_events e
+    WHERE e.tenant_id = ? AND e.status = ?
+  `;
+  const countBaseParams: unknown[] = [tenantId, dbStatus];
+  const { query: filteredCountQuery, params: countParams } = applyEventFilters(
+    countQuery,
+    countBaseParams,
+    { ...options, isCountQuery: true },
+  );
+  const [countResult] = await executeQuery<CountResult[]>(filteredCountQuery, countParams);
+  return countResult[0].total;
+}
+
+/**
  * Get all calendar events visible to the user
  */
 export async function getAllEvents(
@@ -272,10 +355,7 @@ export async function getAllEvents(
       userTeamId,
     } = options;
 
-    // Map status from API to database
     const dbStatus = status === 'active' ? 'confirmed' : status;
-
-    // Determine user's role for access control
     const { role } = await user.getUserDepartmentAndTeam(userId);
 
     // Build base query
@@ -288,7 +368,6 @@ export async function getAllEvents(
         LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
         WHERE e.tenant_id = ? AND e.status = ?
       `;
-
     const baseParams: unknown[] = [userId, tenantId, dbStatus];
 
     // Apply filters
@@ -305,43 +384,25 @@ export async function getAllEvents(
     });
 
     // Apply sorting and pagination
-    const finalQuery = filteredQuery + ` ORDER BY e.${sortBy} ${sortDir}` + ' LIMIT ? OFFSET ?';
+    const finalQuery = filteredQuery + ` ORDER BY e.${sortBy} ${sortDir} LIMIT ? OFFSET ?`;
     const offset = (page - 1) * limit;
     queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query
     const [events] = await executeQuery<DbCalendarEvent[]>(finalQuery, queryParams);
-
-    // Process events
     processCalendarEvents(events);
 
-    // Count total events for pagination
-    const countQuery = `
-        SELECT COUNT(*) as total
-        FROM calendar_events e
-        WHERE e.tenant_id = ? AND e.status = ?
-      `;
-
-    const countBaseParams: unknown[] = [tenantId, dbStatus];
-
-    const { query: filteredCountQuery, params: countParams } = applyEventFilters(
-      countQuery,
-      countBaseParams,
-      {
-        filter,
-        userDepartmentId,
-        userTeamId,
-        userId,
-        role,
-        startDate,
-        endDate,
-        search,
-        isCountQuery: true,
-      },
-    );
-
-    const [countResult] = await executeQuery<CountResult[]>(filteredCountQuery, countParams);
-    const totalEvents = countResult[0].total;
+    // Get total count for pagination
+    const totalEvents = await getEventCount(tenantId, dbStatus, {
+      filter,
+      userDepartmentId,
+      userTeamId,
+      userId,
+      role,
+      startDate,
+      endDate,
+      search,
+    });
 
     return {
       events,
@@ -561,6 +622,25 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
 }
 
 /**
+ * Get value for all_day field
+ */
+function getAllDayValue(allDay: boolean | undefined): number | undefined {
+  if (allDay === undefined) return undefined;
+  return allDay ? 1 : 0;
+}
+
+/**
+ * Get value for reminder_time field
+ */
+function getReminderValue(
+  reminderTime: number | string | null | undefined,
+): number | null | undefined {
+  if (reminderTime === undefined) return undefined;
+  if (reminderTime === '' || reminderTime === null) return null;
+  return Number.parseInt(reminderTime.toString());
+}
+
+/**
  * Build update query for calendar event
  */
 function buildEventUpdateQuery(
@@ -594,12 +674,7 @@ function buildEventUpdateQuery(
     {
       condition: eventData.all_day !== undefined,
       field: 'all_day',
-      value:
-        eventData.all_day !== undefined ?
-          eventData.all_day ?
-            1
-          : 0
-        : undefined,
+      value: getAllDayValue(eventData.all_day),
     },
     {
       condition: eventData.org_level !== undefined,
@@ -620,11 +695,7 @@ function buildEventUpdateQuery(
     {
       condition: eventData.reminder_time !== undefined,
       field: 'reminder_minutes',
-      value:
-        eventData.reminder_time === '' || eventData.reminder_time === null ? null
-        : eventData.reminder_time !== undefined ?
-          Number.parseInt(eventData.reminder_time.toString())
-        : undefined,
+      value: getReminderValue(eventData.reminder_time),
     },
     { condition: eventData.color !== undefined, field: 'color', value: eventData.color },
   ];

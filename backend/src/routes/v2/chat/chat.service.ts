@@ -193,6 +193,78 @@ interface MessageRow extends RowDataPacket {
  */
 export class ChatService {
   /**
+   * Build chat users query based on user role
+   */
+  private buildChatUsersQuery(
+    currentUser: RowDataPacket,
+    tenantId: number,
+    currentUserId: number,
+  ): { query: string; params: unknown[] } {
+    const baseQuery = `
+      SELECT
+        u.id,
+        u.username,
+        u.email,
+        u.first_name,
+        u.last_name,
+        u.profile_picture,
+        u.department_id,
+        d.name as department_name,
+        u.role
+      FROM users u
+      LEFT JOIN departments d ON u.department_id = d.id
+    `;
+
+    if (currentUser.role === 'admin' || currentUser.role === 'root') {
+      return {
+        query: `${baseQuery} WHERE u.tenant_id = ? AND u.id != ?`,
+        params: [tenantId, currentUserId],
+      };
+    }
+
+    return {
+      query: `${baseQuery} WHERE u.tenant_id = ? AND u.id != ? AND (u.department_id = ? OR u.role IN ('admin', 'root'))`,
+      params: [tenantId, currentUserId, currentUser.department_id],
+    };
+  }
+
+  /**
+   * Filter users by search term
+   */
+  private filterUsersBySearch(users: ChatUserRow[], search?: string): ChatUserRow[] {
+    if (search === undefined || search === '') return users;
+
+    const searchLower = search.toLowerCase();
+    return users.filter((user) => {
+      const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
+      return (
+        user.username.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower) ||
+        fullName.includes(searchLower)
+      );
+    });
+  }
+
+  /**
+   * Transform database user to chat user format
+   */
+  private transformToChatUser(user: ChatUserRow): ChatUser {
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      first_name: user.first_name ?? '',
+      last_name: user.last_name ?? '',
+      profile_picture: user.profile_picture,
+      department_id: user.department_id,
+      department: user.department_name,
+      role: user.role,
+      status: 'offline', // TODO: Implement online status
+      last_seen: null, // TODO: Implement last seen
+    };
+  }
+
+  /**
    * Get list of users available for chat
    * @param tenantId - The tenant ID
    * @param currentUserId - The currentUserId parameter
@@ -204,7 +276,6 @@ export class ChatService {
     search?: string,
   ): Promise<ChatUser[]> {
     try {
-      // Get current user's role and department
       const [userRows] = await execute<RowDataPacket[]>(
         'SELECT role, department_id FROM users WHERE id = ? AND tenant_id = ?',
         [currentUserId, tenantId],
@@ -214,80 +285,11 @@ export class ChatService {
         throw new ServiceError('USER_NOT_FOUND', 'Current user not found', 404);
       }
 
-      const currentUser = userRows[0];
-      let query: string;
-      let params: unknown[];
-
-      // Admins and roots can see all users in tenant
-      if (currentUser.role === 'admin' || currentUser.role === 'root') {
-        query = `
-          SELECT
-            u.id,
-            u.username,
-            u.email,
-            u.first_name,
-            u.last_name,
-            u.profile_picture,
-            u.department_id,
-            d.name as department_name,
-            u.role
-          FROM users u
-          LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ? AND u.id != ?
-        `;
-        params = [tenantId, currentUserId];
-      } else {
-        // Employees can only see users in their department + all admins
-        query = `
-          SELECT
-            u.id,
-            u.username,
-            u.email,
-            u.first_name,
-            u.last_name,
-            u.profile_picture,
-            u.department_id,
-            d.name as department_name,
-            u.role
-          FROM users u
-          LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ?
-            AND u.id != ?
-            AND (u.department_id = ? OR u.role IN ('admin', 'root'))
-        `;
-        params = [tenantId, currentUserId, currentUser.department_id];
-      }
-
+      const { query, params } = this.buildChatUsersQuery(userRows[0], tenantId, currentUserId);
       const [users] = await execute<ChatUserRow[]>(query, params);
+      const filteredUsers = this.filterUsersBySearch(users, search);
 
-      // Apply search filter if provided
-      let filteredUsers = users;
-      if (search !== undefined && search !== '') {
-        const searchLower = search.toLowerCase();
-        filteredUsers = users.filter((user) => {
-          const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
-          return (
-            user.username.toLowerCase().includes(searchLower) ||
-            user.email.toLowerCase().includes(searchLower) ||
-            fullName.includes(searchLower)
-          );
-        });
-      }
-
-      // Transform to v2 format - using snake_case to match frontend expectations
-      return filteredUsers.map((user) => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        first_name: user.first_name ?? '',
-        last_name: user.last_name ?? '',
-        profile_picture: user.profile_picture,
-        department_id: user.department_id,
-        department: user.department_name,
-        role: user.role, // Include role for frontend filtering
-        status: 'offline', // TODO: Implement online status
-        last_seen: null, // TODO: Implement last seen
-      }));
+      return filteredUsers.map((user) => this.transformToChatUser(user));
     } catch {
       throw new ServiceError('CHAT_USERS_ERROR', 'Failed to fetch chat users', 500);
     }
@@ -521,6 +523,100 @@ export class ChatService {
   }
 
   /**
+   * Check if 1:1 conversation already exists
+   */
+  private async findExisting1to1Conversation(
+    tenantId: number,
+    user1Id: number,
+    user2Id: number,
+  ): Promise<number | null> {
+    interface ConversationIdRow extends RowDataPacket {
+      id: number;
+    }
+
+    const [existing] = await execute<ConversationIdRow[]>(
+      `SELECT c.id
+       FROM conversations c
+       WHERE c.tenant_id = ?
+       AND c.is_group = 0
+       AND EXISTS (
+         SELECT 1 FROM conversation_participants cp1
+         WHERE cp1.conversation_id = c.id AND cp1.user_id = ?
+       )
+       AND EXISTS (
+         SELECT 1 FROM conversation_participants cp2
+         WHERE cp2.conversation_id = c.id AND cp2.user_id = ?
+       )
+       AND (
+         SELECT COUNT(*) FROM conversation_participants cp3
+         WHERE cp3.conversation_id = c.id
+       ) = 2`,
+      [tenantId, user1Id, user2Id],
+    );
+    return existing.length > 0 ? existing[0].id : null;
+  }
+
+  /**
+   * Create conversation in database
+   */
+  private async insertConversation(
+    tenantId: number,
+    name: string | null,
+    isGroup: boolean,
+  ): Promise<number> {
+    const [result] = await execute<ResultSetHeader>(
+      `INSERT INTO conversations (tenant_id, name, is_group, created_at, updated_at)
+       VALUES (?, ?, ?, NOW(), NOW())`,
+      [tenantId, name, isGroup ? 1 : 0],
+    );
+    log('[Chat Service] Created conversation with ID:', result.insertId);
+    return result.insertId;
+  }
+
+  /**
+   * Add participants to conversation
+   */
+  private async addParticipants(
+    tenantId: number,
+    conversationId: number,
+    creatorId: number,
+    participantIds: number[],
+  ): Promise<void> {
+    // Add creator as admin
+    await execute(
+      `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
+       VALUES (?, ?, ?, 1, NOW())`,
+      [tenantId, conversationId, creatorId],
+    );
+
+    // Add other participants
+    for (const participantId of participantIds) {
+      await execute(
+        `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
+         VALUES (?, ?, ?, 0, NOW())`,
+        [tenantId, conversationId, participantId],
+      );
+    }
+  }
+
+  /**
+   * Retrieve conversation by ID from list
+   */
+  private async retrieveConversationById(
+    tenantId: number,
+    creatorId: number,
+    conversationId: number,
+  ): Promise<Conversation> {
+    const conversations = await this.getConversations(tenantId, creatorId, { limit: 100 });
+    const conversation = conversations.data.find((c) => c.id === conversationId);
+
+    if (!conversation) {
+      throw new ServiceError('CONVERSATION_NOT_FOUND', 'Failed to retrieve conversation', 404);
+    }
+    return conversation;
+  }
+
+  /**
    * Create a new conversation
    * @param tenantId - The tenant ID
    * @param creatorId - The creatorId parameter
@@ -532,98 +628,34 @@ export class ChatService {
     data: CreateConversationData,
   ): Promise<{ conversation: Conversation }> {
     try {
-      log('[Chat Service] createConversation called with:', {
-        tenantId,
-        creatorId,
-        data,
-      });
-
-      // Critical debug: Log actual tenant_id being used
+      log('[Chat Service] createConversation called with:', { tenantId, creatorId, data });
       logError('[CRITICAL DEBUG] Creating conversation with tenantId:', tenantId);
 
-      // Check if it's a 1:1 conversation and if it already exists
       const isGroup = data.isGroup ?? data.participantIds.length > 1;
 
+      // Check for existing 1:1 conversation
       if (!isGroup && data.participantIds.length === 1) {
-        // Check if 1:1 conversation already exists
-        const [existing] = await execute<RowDataPacket[]>(
-          `SELECT c.id
-           FROM conversations c
-           WHERE c.tenant_id = ?
-           AND c.is_group = 0
-           AND EXISTS (
-             SELECT 1 FROM conversation_participants cp1
-             WHERE cp1.conversation_id = c.id AND cp1.user_id = ?
-           )
-           AND EXISTS (
-             SELECT 1 FROM conversation_participants cp2
-             WHERE cp2.conversation_id = c.id AND cp2.user_id = ?
-           )
-           AND (
-             SELECT COUNT(*) FROM conversation_participants cp3
-             WHERE cp3.conversation_id = c.id
-           ) = 2`,
-          [tenantId, creatorId, data.participantIds[0]],
+        const existingId = await this.findExisting1to1Conversation(
+          tenantId,
+          creatorId,
+          data.participantIds[0],
         );
 
-        if (existing.length > 0) {
-          // Return existing conversation
-          const conversations = await this.getConversations(tenantId, creatorId, {
-            limit: 100,
-          });
-          const conversation = conversations.data.find((c) => c.id === existing[0].id);
-          if (!conversation) {
-            throw new ServiceError(
-              'CONVERSATION_NOT_FOUND',
-              'Failed to retrieve existing conversation',
-              404,
-            );
-          }
+        if (existingId !== null) {
+          const conversation = await this.retrieveConversationById(tenantId, creatorId, existingId);
           return { conversation };
         }
       }
 
       // Create new conversation
       log('[Chat Service] Creating new conversation with isGroup:', isGroup);
-      const [conversationResult] = await execute<ResultSetHeader>(
-        `INSERT INTO conversations (tenant_id, name, is_group, created_at, updated_at)
-         VALUES (?, ?, ?, NOW(), NOW())`,
-        [tenantId, data.name ?? null, isGroup ? 1 : 0],
-      );
+      const conversationId = await this.insertConversation(tenantId, data.name ?? null, isGroup);
 
-      const conversationId = conversationResult.insertId;
-      log('[Chat Service] Created conversation with ID:', conversationId);
+      // Add participants
+      await this.addParticipants(tenantId, conversationId, creatorId, data.participantIds);
 
-      // Add creator as participant
-      await execute(
-        `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
-         VALUES (?, ?, ?, 1, NOW())`,
-        [tenantId, conversationId, creatorId],
-      );
-
-      // Add other participants
-      for (const participantId of data.participantIds) {
-        await execute(
-          `INSERT INTO conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
-           VALUES (?, ?, ?, 0, NOW())`,
-          [tenantId, conversationId, participantId],
-        );
-      }
-
-      // Get the created conversation details
-      const conversations = await this.getConversations(tenantId, creatorId, {
-        limit: 100,
-      });
-      const conversation = conversations.data.find((c) => c.id === conversationId);
-
-      if (!conversation) {
-        throw new ServiceError(
-          'CREATE_CONVERSATION_ERROR',
-          'Failed to retrieve created conversation',
-          500,
-        );
-      }
-
+      // Retrieve and return the created conversation
+      const conversation = await this.retrieveConversationById(tenantId, creatorId, conversationId);
       return { conversation };
     } catch (error: unknown) {
       logError('[Chat Service] createConversation error:', error);

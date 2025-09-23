@@ -51,19 +51,15 @@ function setupSSEConnection(res: Response, userId: number, role: string, tenantI
 }
 
 /**
- * Create notification handlers based on user role
+ * Create survey handlers for employees
  */
-function createNotificationHandlers(
+function createSurveyHandlers(
   res: Response,
   tenantId: number,
   userId: number,
-  role: string,
 ): Record<string, (data: NotificationData) => void> {
-  const handlers: Record<string, (data: NotificationData) => void> = {};
-
-  // Survey notifications for employees
-  if (role === 'employee') {
-    handlers['survey.created'] = (data) => {
+  return {
+    ['survey.created']: (data) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending NEW_SURVEY to user ${userId}`);
         res.write(
@@ -78,9 +74,8 @@ function createNotificationHandlers(
           })}\n\n`,
         );
       }
-    };
-
-    handlers['survey.updated'] = (data) => {
+    },
+    ['survey.updated']: (data) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending SURVEY_UPDATED to user ${userId}`);
         res.write(
@@ -91,30 +86,48 @@ function createNotificationHandlers(
           })}\n\n`,
         );
       }
-    };
-  }
-
-  // Document notifications for all users
-  handlers['document.uploaded'] = (data) => {
-    if (data.tenantId === tenantId && data.document) {
-      logger.info(`[SSE] Sending NEW_DOCUMENT to user ${userId}`);
-      res.write(
-        `data: ${JSON.stringify({
-          type: 'NEW_DOCUMENT',
-          document: {
-            id: data.document.id,
-            filename: data.document.filename,
-            category: data.document.category,
-          },
-          timestamp: new Date().toISOString(),
-        })}\n\n`,
-      );
-    }
+    },
   };
+}
 
-  // KVP and admin notifications
-  if (role === 'admin' || role === 'root') {
-    handlers['kvp.submitted'] = (data) => {
+/**
+ * Create document handler for all users
+ */
+function createDocumentHandler(
+  res: Response,
+  tenantId: number,
+  userId: number,
+): Record<string, (data: NotificationData) => void> {
+  return {
+    ['document.uploaded']: (data) => {
+      if (data.tenantId === tenantId && data.document) {
+        logger.info(`[SSE] Sending NEW_DOCUMENT to user ${userId}`);
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'NEW_DOCUMENT',
+            document: {
+              id: data.document.id,
+              filename: data.document.filename,
+              category: data.document.category,
+            },
+            timestamp: new Date().toISOString(),
+          })}\n\n`,
+        );
+      }
+    },
+  };
+}
+
+/**
+ * Create admin-specific handlers
+ */
+function createAdminHandlers(
+  res: Response,
+  tenantId: number,
+  userId: number,
+): Record<string, (data: NotificationData) => void> {
+  return {
+    ['kvp.submitted']: (data) => {
       if (data.tenantId === tenantId && data.kvp) {
         logger.info(`[SSE] Sending NEW_KVP to user ${userId}`);
         res.write(
@@ -129,9 +142,8 @@ function createNotificationHandlers(
           })}\n\n`,
         );
       }
-    };
-
-    handlers['survey.created'] = (data) => {
+    },
+    ['survey.created']: (data) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending NEW_SURVEY_CREATED to admin ${userId}`);
         res.write(
@@ -146,7 +158,32 @@ function createNotificationHandlers(
           })}\n\n`,
         );
       }
-    };
+    },
+  };
+}
+
+/**
+ * Create notification handlers based on user role
+ */
+function createNotificationHandlers(
+  res: Response,
+  tenantId: number,
+  userId: number,
+  role: string,
+): Record<string, (data: NotificationData) => void> {
+  const handlers: Record<string, (data: NotificationData) => void> = {};
+
+  // Survey notifications for employees
+  if (role === 'employee') {
+    Object.assign(handlers, createSurveyHandlers(res, tenantId, userId));
+  }
+
+  // Document notifications for all users
+  Object.assign(handlers, createDocumentHandler(res, tenantId, userId));
+
+  // KVP and admin notifications
+  if (role === 'admin' || role === 'root') {
+    Object.assign(handlers, createAdminHandlers(res, tenantId, userId));
   }
 
   return handlers;

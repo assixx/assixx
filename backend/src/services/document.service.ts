@@ -119,94 +119,121 @@ class DocumentService {
   }
 
   /**
+   * Build base documents query
+   */
+  private buildBaseDocumentsQuery(): string {
+    return `
+      SELECT
+        d.id,
+        d.tenant_id,
+        d.created_by as uploaded_by,
+        d.user_id,
+        d.team_id,
+        d.department_id,
+        d.recipient_type,
+        d.category,
+        d.filename as file_name,
+        d.original_name,
+        d.file_path,
+        d.file_size,
+        d.mime_type,
+        d.description,
+        d.tags,
+        d.uploaded_at as created_at,
+        d.uploaded_at as updated_at,
+        d.is_archived as is_deleted,
+        -- Uploader info
+        CONCAT(uploader.first_name, ' ', uploader.last_name) as uploaded_by_name,
+        -- Check if document has been read
+        CASE
+          WHEN drs.id IS NOT NULL THEN 1
+          ELSE 0
+        END as is_read,
+        -- Determine scope based on recipient_type
+        CASE
+          WHEN d.recipient_type = 'company' THEN 'company'
+          WHEN d.recipient_type = 'department' THEN 'department'
+          WHEN d.recipient_type = 'team' THEN 'team'
+          WHEN d.recipient_type = 'user' AND d.user_id = ? THEN 'personal'
+          ELSE 'other'
+        END as scope
+      FROM documents d
+      LEFT JOIN users uploader ON d.created_by = uploader.id
+      LEFT JOIN document_read_status drs ON d.id = drs.document_id AND drs.user_id = ?
+      WHERE d.tenant_id = ?
+        AND d.is_archived = 0
+    `;
+  }
+
+  /**
+   * Add scope filters to query
+   */
+  private addScopeFilters(
+    query: string,
+    params: (number | undefined)[],
+    scope: string | undefined,
+    options: GetDocumentsOptions,
+  ): string {
+    const { userId, departmentId, teamId } = options;
+
+    if (scope && scope !== 'all') {
+      switch (scope) {
+        case 'company':
+          return query + ` AND d.recipient_type = 'company'`;
+        case 'department':
+          params.push(departmentId);
+          return query + ` AND d.recipient_type = 'department' AND d.department_id = ?`;
+        case 'team':
+          params.push(teamId);
+          return query + ` AND d.recipient_type = 'team' AND d.team_id = ?`;
+        case 'personal':
+          params.push(userId);
+          return query + ` AND d.recipient_type = 'user' AND d.user_id = ?`;
+        default:
+          return query;
+      }
+    }
+
+    // Show all documents user has access to
+    params.push(departmentId, teamId, userId);
+    return (
+      query +
+      ` AND (
+      d.recipient_type = 'company' OR
+      (d.recipient_type = 'department' AND d.department_id = ?) OR
+      (d.recipient_type = 'team' AND d.team_id = ?) OR
+      (d.recipient_type = 'user' AND d.user_id = ?)
+    )`
+    );
+  }
+
+  /**
+   * Get total count of documents
+   */
+  private async getDocumentCount(query: string, params: (number | undefined)[]): Promise<number> {
+    const countQuery =
+      query.replace('SELECT', 'SELECT COUNT(*) as total FROM (SELECT') + ') as subquery';
+    const [countRows] = await executeQuery<RowDataPacket[]>(countQuery, params);
+    return Array.isArray(countRows) && countRows.length > 0 ? (countRows[0].total as number) : 0;
+  }
+
+  /**
    * Get documents with filters
    * @param options - The options object
    */
   async getDocuments(options: GetDocumentsOptions): Promise<DocumentsResponse> {
     try {
-      const { tenant_id, userId, scope, departmentId, teamId, limit, offset } = options;
+      const { tenant_id, userId, scope, limit, offset } = options;
 
-      // Build SQL query based on scope
-      let query = `
-        SELECT
-          d.id,
-          d.tenant_id,
-          d.created_by as uploaded_by,
-          d.user_id,
-          d.team_id,
-          d.department_id,
-          d.recipient_type,
-          d.category,
-          d.filename as file_name,
-          d.original_name,
-          d.file_path,
-          d.file_size,
-          d.mime_type,
-          d.description,
-          d.tags,
-          d.uploaded_at as created_at,
-          d.uploaded_at as updated_at,
-          d.is_archived as is_deleted,
-          -- Uploader info
-          CONCAT(uploader.first_name, ' ', uploader.last_name) as uploaded_by_name,
-          -- Check if document has been read
-          CASE
-            WHEN drs.id IS NOT NULL THEN 1
-            ELSE 0
-          END as is_read,
-          -- Determine scope based on recipient_type
-          CASE
-            WHEN d.recipient_type = 'company' THEN 'company'
-            WHEN d.recipient_type = 'department' THEN 'department'
-            WHEN d.recipient_type = 'team' THEN 'team'
-            WHEN d.recipient_type = 'user' AND d.user_id = ? THEN 'personal'
-            ELSE 'other'
-          END as scope
-        FROM documents d
-        LEFT JOIN users uploader ON d.created_by = uploader.id
-        LEFT JOIN document_read_status drs ON d.id = drs.document_id AND drs.user_id = ?
-        WHERE d.tenant_id = ?
-          AND d.is_archived = 0
-      `;
-
+      // Build base query
+      let query = this.buildBaseDocumentsQuery();
       const params: (number | undefined)[] = [userId, userId, tenant_id];
 
       // Add scope-based filters
-      if (scope && scope !== 'all') {
-        switch (scope) {
-          case 'company':
-            query += ` AND d.recipient_type = 'company'`;
-            break;
-          case 'department':
-            query += ` AND d.recipient_type = 'department' AND d.department_id = ?`;
-            params.push(departmentId);
-            break;
-          case 'team':
-            query += ` AND d.recipient_type = 'team' AND d.team_id = ?`;
-            params.push(teamId);
-            break;
-          case 'personal':
-            query += ` AND d.recipient_type = 'user' AND d.user_id = ?`;
-            params.push(userId);
-            break;
-        }
-      } else {
-        // Show all documents user has access to
-        query += ` AND (
-          d.recipient_type = 'company' OR
-          (d.recipient_type = 'department' AND d.department_id = ?) OR
-          (d.recipient_type = 'team' AND d.team_id = ?) OR
-          (d.recipient_type = 'user' AND d.user_id = ?)
-        )`;
-        params.push(departmentId, teamId, userId);
-      }
+      query = this.addScopeFilters(query, params, scope, options);
 
       // Get total count
-      const countQuery =
-        query.replace('SELECT', 'SELECT COUNT(*) as total FROM (SELECT') + ') as subquery';
-      const [countRows] = await executeQuery<RowDataPacket[]>(countQuery, params);
-      const total =
-        Array.isArray(countRows) && countRows.length > 0 ? (countRows[0].total as number) : 0;
+      const total = await this.getDocumentCount(query, params);
 
       // Add ordering and pagination
       query += ` ORDER BY d.uploaded_at DESC LIMIT ? OFFSET ?`;

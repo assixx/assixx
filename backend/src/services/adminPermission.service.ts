@@ -2,7 +2,13 @@
  * Admin Permission Service
  * Handles department and group permissions for admin users
  */
-import { ResultSetHeader, RowDataPacket, execute, getConnection } from '../utils/db';
+import {
+  PoolConnection,
+  ResultSetHeader,
+  RowDataPacket,
+  execute,
+  getConnection,
+} from '../utils/db';
 import { logger } from '../utils/logger.js';
 
 interface Permission {
@@ -195,6 +201,73 @@ class AdminPermissionService {
   }
 
   /**
+   * Insert new department permissions
+   */
+  private async insertDepartmentPermissions(
+    connection: PoolConnection,
+    adminId: number,
+    departmentIds: number[],
+    tenantId: number,
+    permissions: Permission,
+    assignedBy: number,
+  ): Promise<void> {
+    if (departmentIds.length === 0) return;
+
+    const values = departmentIds.map((deptId) => [
+      tenantId,
+      adminId,
+      deptId,
+      permissions.can_read ? 1 : 0,
+      permissions.can_write ? 1 : 0,
+      permissions.can_delete ? 1 : 0,
+      assignedBy,
+    ]);
+
+    logger.info(`[DEBUG] Inserting permissions:`, {
+      departmentCount: departmentIds.length,
+      sampleValue: values[0],
+    });
+
+    const placeholders = departmentIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+
+    await connection.execute(
+      `INSERT INTO admin_department_permissions
+       (tenant_id, admin_user_id, department_id, can_read, can_write, can_delete, assigned_by)
+       VALUES ${placeholders}`,
+      values.flat(),
+    );
+  }
+
+  /**
+   * Log department permission changes for audit
+   */
+  private async logDepartmentPermissionChange(
+    connection: PoolConnection,
+    tenantId: number,
+    adminId: number,
+    assignedBy: number,
+    oldPerms: unknown,
+    departmentIds: number[],
+    permissions: Permission,
+  ): Promise<void> {
+    await connection.execute(
+      `INSERT INTO admin_permission_logs
+       (tenant_id, action, admin_user_id, target_id, target_type, changed_by, old_permissions, new_permissions)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        tenantId,
+        'modify',
+        adminId,
+        0, // No specific target, batch operation
+        'department',
+        assignedBy,
+        JSON.stringify(oldPerms),
+        JSON.stringify(departmentIds.map((id) => ({ department_id: id, ...permissions }))),
+      ],
+    );
+  }
+
+  /**
    * Set department permissions for an admin (overwrites existing)
    * @param adminId - The adminId parameter
    * @param departmentIds - The departmentIds parameter
@@ -228,61 +301,38 @@ class AdminPermissionService {
 
       // Log old permissions for audit
       const [oldPerms] = await connection.execute(
-        `SELECT department_id, can_read, can_write, can_delete 
-         FROM admin_department_permissions 
+        `SELECT department_id, can_read, can_write, can_delete
+         FROM admin_department_permissions
          WHERE admin_user_id = ? AND tenant_id = ?`,
         [adminId, tenantId],
       );
 
       // Remove all existing permissions
       await connection.execute(
-        `DELETE FROM admin_department_permissions 
+        `DELETE FROM admin_department_permissions
          WHERE admin_user_id = ? AND tenant_id = ?`,
         [adminId, tenantId],
       );
 
       // Add new permissions
-      if (departmentIds.length > 0) {
-        const values = departmentIds.map((deptId) => [
-          tenantId,
-          adminId,
-          deptId,
-          permissions.can_read ? 1 : 0,
-          permissions.can_write ? 1 : 0,
-          permissions.can_delete ? 1 : 0,
-          assignedBy,
-        ]);
-
-        logger.info(`[DEBUG] Inserting permissions:`, {
-          departmentCount: departmentIds.length,
-          sampleValue: values[0],
-        });
-
-        const placeholders = departmentIds.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
-
-        await connection.execute(
-          `INSERT INTO admin_department_permissions 
-           (tenant_id, admin_user_id, department_id, can_read, can_write, can_delete, assigned_by) 
-           VALUES ${placeholders}`,
-          values.flat(),
-        );
-      }
+      await this.insertDepartmentPermissions(
+        connection,
+        adminId,
+        departmentIds,
+        tenantId,
+        permissions,
+        assignedBy,
+      );
 
       // Log permission change
-      await connection.execute(
-        `INSERT INTO admin_permission_logs 
-         (tenant_id, action, admin_user_id, target_id, target_type, changed_by, old_permissions, new_permissions) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          tenantId,
-          'modify',
-          adminId,
-          0, // No specific target, batch operation
-          'department',
-          assignedBy,
-          JSON.stringify(oldPerms),
-          JSON.stringify(departmentIds.map((id) => ({ department_id: id, ...permissions }))),
-        ],
+      await this.logDepartmentPermissionChange(
+        connection,
+        tenantId,
+        adminId,
+        assignedBy,
+        oldPerms,
+        departmentIds,
+        permissions,
       );
 
       await connection.commit();

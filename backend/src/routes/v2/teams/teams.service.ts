@@ -349,6 +349,37 @@ export class TeamsService {
   }
 
   /**
+   * Validate team ownership
+   */
+  private async validateTeamOwnership(id: number, tenantId: number): Promise<void> {
+    const team = await Team.findById(id);
+    if (!team || team.tenant_id !== tenantId) {
+      throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
+    }
+  }
+
+  /**
+   * Handle team members before deletion
+   */
+  private async handleTeamMembersForDeletion(id: number, force: boolean): Promise<void> {
+    const members = await Team.getTeamMembers(id);
+    if (members.length === 0) {
+      return;
+    }
+
+    if (!force) {
+      throw new ServiceError('BAD_REQUEST', 'Cannot delete team with members', 400, {
+        memberCount: members.length,
+      });
+    }
+
+    // Remove all team members
+    for (const member of members) {
+      await Team.removeUserFromTeam(member.id, id);
+    }
+  }
+
+  /**
    * Delete a team
    * @param id - The resource ID
    * @param tenantId - The tenant ID
@@ -356,26 +387,8 @@ export class TeamsService {
    */
   async deleteTeam(id: number, tenantId: number, force = false): Promise<{ message: string }> {
     try {
-      // Check if team exists and belongs to tenant
-      const team = await Team.findById(id);
-      if (!team || team.tenant_id !== tenantId) {
-        throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
-      }
-
-      // Check if team has members
-      const members = await Team.getTeamMembers(id);
-      if (members.length > 0) {
-        if (force) {
-          // Remove all team members first
-          for (const member of members) {
-            await Team.removeUserFromTeam(member.id, id);
-          }
-        } else {
-          throw new ServiceError('BAD_REQUEST', 'Cannot delete team with members', 400, {
-            memberCount: members.length,
-          });
-        }
-      }
+      await this.validateTeamOwnership(id, tenantId);
+      await this.handleTeamMembersForDeletion(id, force);
 
       const success = await Team.delete(id);
       if (!success) {

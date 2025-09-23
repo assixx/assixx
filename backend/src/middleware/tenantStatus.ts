@@ -16,6 +16,79 @@ interface TenantStatusRow extends RowDataPacket {
 }
 
 /**
+ * Check if the request path is whitelisted
+ */
+function isPathWhitelisted(path: string): boolean {
+  const whitelistedPaths = [
+    '/api/auth/logout',
+    '/api/root/tenants/:id/deletion-status',
+    '/api/root/tenants/:id/cancel-deletion',
+    '/api/export-data',
+    '/health',
+  ];
+
+  return whitelistedPaths.some((whitelistedPath) => {
+    // Safe: whitelistedPaths is a hardcoded array, not user input
+    // eslint-disable-next-line security/detect-non-literal-regexp
+    const regex = new RegExp('^' + whitelistedPath.replace(/:[^/]+/g, '[^/]+') + '$');
+    return regex.test(path);
+  });
+}
+
+/**
+ * Handle tenant status response based on deletion status
+ */
+function handleTenantStatus(
+  tenant: TenantStatusRow,
+  tenantId: number,
+  username: string,
+  res: Response,
+  next: NextFunction,
+): void {
+  switch (tenant.deletion_status) {
+    case 'active':
+      next();
+      break;
+
+    case 'marked_for_deletion':
+      res.setHeader('X-Tenant-Status', 'marked-for-deletion');
+      if (tenant.deletion_requested_at) {
+        const scheduledDate = new Date(tenant.deletion_requested_at);
+        scheduledDate.setDate(scheduledDate.getDate() + 30);
+        res.setHeader('X-Tenant-Deletion-Date', scheduledDate.toISOString());
+      }
+      next();
+      break;
+
+    case 'suspended':
+      logger.warn(`Access denied to suspended tenant ${tenantId} by user ${username}`);
+      res.status(403).json({
+        error: 'Tenant is suspended and scheduled for deletion',
+        code: 'TENANT_SUSPENDED',
+        status: tenant.deletion_status,
+        message:
+          'Ihr Konto wurde gesperrt und wird gelöscht. Bitte kontaktieren Sie den Support für weitere Informationen.',
+      });
+      break;
+
+    case 'deleting':
+      logger.warn(`Access denied to deleting tenant ${tenantId} by user ${username}`);
+      res.status(403).json({
+        error: 'Tenant is currently being deleted',
+        code: 'TENANT_DELETING',
+        status: tenant.deletion_status,
+        message:
+          'Ihr Konto wird gerade gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
+      });
+      break;
+
+    default:
+      logger.error(`Unknown tenant deletion status: ${String(tenant.deletion_status)}`);
+      next();
+  }
+}
+
+/**
  * Middleware to check tenant status before allowing access
  * Skips check for certain whitelisted routes
  */
@@ -35,23 +108,8 @@ export async function checkTenantStatus(
 
     const tenantId = authReq.user.tenant_id;
 
-    // Whitelist certain routes that should always be accessible
-    const whitelistedPaths = [
-      '/api/auth/logout',
-      '/api/root/tenants/:id/deletion-status',
-      '/api/root/tenants/:id/cancel-deletion',
-      '/api/export-data',
-      '/health',
-    ];
-
-    const isWhitelisted = whitelistedPaths.some((path) => {
-      // Safe: whitelistedPaths is a hardcoded array, not user input
-      // eslint-disable-next-line security/detect-non-literal-regexp
-      const regex = new RegExp('^' + path.replace(/:[^/]+/g, '[^/]+') + '$');
-      return regex.test(req.path);
-    });
-
-    if (isWhitelisted) {
+    // Check if path is whitelisted
+    if (isPathWhitelisted(req.path)) {
       next();
       return;
     }
@@ -71,56 +129,7 @@ export async function checkTenantStatus(
       return;
     }
 
-    const tenant = tenantRows[0];
-
-    // Block access based on deletion status
-    switch (tenant.deletion_status) {
-      case 'active':
-        // Normal operation
-        next();
-        break;
-
-      case 'marked_for_deletion':
-        // Still accessible but with warning header
-        res.setHeader('X-Tenant-Status', 'marked-for-deletion');
-        if (tenant.deletion_requested_at) {
-          const scheduledDate = new Date(tenant.deletion_requested_at);
-          scheduledDate.setDate(scheduledDate.getDate() + 30);
-          res.setHeader('X-Tenant-Deletion-Date', scheduledDate.toISOString());
-        }
-        next();
-        break;
-
-      case 'suspended':
-        logger.warn(
-          `Access denied to suspended tenant ${tenantId} by user ${authReq.user.username}`,
-        );
-        res.status(403).json({
-          error: 'Tenant is suspended and scheduled for deletion',
-          code: 'TENANT_SUSPENDED',
-          status: tenant.deletion_status,
-          message:
-            'Ihr Konto wurde gesperrt und wird gelöscht. Bitte kontaktieren Sie den Support für weitere Informationen.',
-        });
-        break;
-
-      case 'deleting':
-        logger.warn(
-          `Access denied to deleting tenant ${tenantId} by user ${authReq.user.username}`,
-        );
-        res.status(403).json({
-          error: 'Tenant is currently being deleted',
-          code: 'TENANT_DELETING',
-          status: tenant.deletion_status,
-          message:
-            'Ihr Konto wird gerade gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.',
-        });
-        break;
-
-      default:
-        logger.error(`Unknown tenant deletion status: ${String(tenant.deletion_status)}`);
-        next();
-    }
+    handleTenantStatus(tenantRows[0], tenantId, authReq.user.username, res, next);
   } catch (error: unknown) {
     logger.error('Error in tenant status middleware:', error);
     // Don't block access on middleware errors

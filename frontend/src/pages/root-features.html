@@ -641,7 +641,7 @@
           plan = plans.enterprise;
         }
 
-        return plan ? (plan.name || planKey) : planKey;
+        return plan ? plan.name || planKey : planKey;
       }
 
       // Helper function to update addons display
@@ -747,9 +747,7 @@
               <h3 class="category-title">${categoryName}</h3>
             </div>
             <div class="features-grid">
-              ${categoryData.features
-                .map((feature) => renderFeatureCard(feature))
-                .join('')}
+              ${categoryData.features.map((feature) => renderFeatureCard(feature)).join('')}
             </div>
           `;
 

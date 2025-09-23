@@ -83,6 +83,12 @@ interface KvpShareRequest extends TenantRequest {
   };
 }
 
+interface DepartmentStat {
+  department_id: number;
+  department_name: string;
+  [key: string]: unknown;
+}
+
 /**
  *
  */
@@ -200,12 +206,15 @@ class KvpController {
     return { additionalWhere, additionalParams };
   }
 
-  private async getUserDepartmentId(userId: number): Promise<number | undefined> {
+  private async getUserDepartmentId(
+    userId: number,
+    requestedDeptId?: number,
+  ): Promise<number | undefined> {
     const [userInfo] = await executeQuery<RowDataPacket[]>(
       'SELECT department_id FROM users WHERE id = ?',
       [userId],
     );
-    return userInfo[0]?.department_id as number | undefined;
+    return requestedDeptId ?? (userInfo[0]?.department_id as number | undefined);
   }
 
   private async fetchSuggestions(queryData: {
@@ -375,6 +384,90 @@ class KvpController {
   }
 
   /**
+   * Insert new KVP suggestion
+   */
+  private async insertSuggestion(
+    tenantId: number,
+    userId: number,
+    departmentId: number,
+    body: KvpCreateRequest['body'],
+  ): Promise<number> {
+    const [result] = await executeQuery<ResultSetHeader>(
+      `INSERT INTO kvp_suggestions
+       (tenant_id, title, description, category_id, department_id,
+        org_level, org_id, submitted_by, status, priority,
+        expected_benefit, estimated_cost)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        tenantId,
+        body.title,
+        body.description,
+        body.category_id ?? null,
+        departmentId,
+        'department',
+        departmentId,
+        userId,
+        'new',
+        body.priority ?? 'normal',
+        body.expected_benefit ?? null,
+        body.estimated_cost ?? null,
+      ],
+    );
+
+    return result.insertId;
+  }
+
+  /**
+   * Fetch created suggestion with joins
+   */
+  private async fetchCreatedSuggestion(suggestionId: number): Promise<RowDataPacket[]> {
+    const [newSuggestion] = await executeQuery<RowDataPacket[]>(
+      `SELECT s.*,
+              u.first_name as submitted_by_name,
+              u.last_name as submitted_by_lastname,
+              d.name as department_name,
+              cat.name as category_name,
+              cat.icon as category_icon,
+              cat.color as category_color
+       FROM kvp_suggestions s
+       LEFT JOIN users u ON s.submitted_by = u.id
+       LEFT JOIN departments d ON s.department_id = d.id
+       LEFT JOIN kvp_categories cat ON s.category_id = cat.id
+       WHERE s.id = ?`,
+      [suggestionId],
+    );
+
+    return newSuggestion;
+  }
+
+  /**
+   * Log KVP creation activity
+   */
+  private async logKvpCreation(
+    userId: number,
+    suggestionId: number,
+    title: string,
+    departmentId: number,
+    categoryId: number | null,
+    req: KvpCreateRequest,
+  ): Promise<void> {
+    await executeQuery<ResultSetHeader>(
+      `INSERT INTO activity_logs
+       (user_id, action, entity_type, entity_id, details, ip_address, user_agent)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        'kvp_created',
+        'kvp_suggestion',
+        suggestionId,
+        JSON.stringify({ title, department_id: departmentId, category_id: categoryId }),
+        req.ip ?? req.socket.remoteAddress,
+        req.headers['user-agent'] ?? null,
+      ],
+    );
+  }
+
+  /**
    * Create a new KVP suggestion
    * POST /api/kvp
    * @param req - The request object
@@ -388,86 +481,26 @@ class KvpController {
       }
 
       const { id: userId, tenant_id: tenantId } = req.user;
+      const departmentId = await this.getUserDepartmentId(userId, req.body.department_id);
 
-      // Get user's department
-      const [userInfo] = await executeQuery<RowDataPacket[]>(
-        'SELECT department_id FROM users WHERE id = ?',
-        [userId],
-      );
-
-      const departmentId =
-        req.body.department_id ?? (userInfo[0]?.department_id as number | undefined);
-
-      // Validate departmentId exists
       if (departmentId === undefined) {
         res.status(400).json({ error: 'Department ID is required' });
         return;
       }
 
-      // Create suggestion
-      const [result] = await executeQuery<ResultSetHeader>(
-        `INSERT INTO kvp_suggestions
-         (tenant_id, title, description, category_id, department_id,
-          org_level, org_id, submitted_by, status, priority,
-          expected_benefit, estimated_cost)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          tenantId,
-          req.body.title,
-          req.body.description,
-          req.body.category_id ?? null,
-          departmentId,
-          'department', // Default to department level
-          departmentId, // org_id same as department_id initially
-          userId,
-          'new',
-          req.body.priority ?? 'normal',
-          req.body.expected_benefit ?? null,
-          req.body.estimated_cost ?? null,
-        ],
+      const suggestionId = await this.insertSuggestion(tenantId, userId, departmentId, req.body);
+      const newSuggestion = await this.fetchCreatedSuggestion(suggestionId);
+
+      await this.logKvpCreation(
+        userId,
+        suggestionId,
+        req.body.title,
+        departmentId,
+        req.body.category_id ?? null,
+        req,
       );
 
-      // Get created suggestion
-      const [newSuggestion] = await executeQuery<RowDataPacket[]>(
-        `SELECT s.*,
-                u.first_name as submitted_by_name,
-                u.last_name as submitted_by_lastname,
-                d.name as department_name,
-                cat.name as category_name,
-                cat.icon as category_icon,
-                cat.color as category_color
-         FROM kvp_suggestions s
-         LEFT JOIN users u ON s.submitted_by = u.id
-         LEFT JOIN departments d ON s.department_id = d.id
-         LEFT JOIN kvp_categories cat ON s.category_id = cat.id
-         WHERE s.id = ?`,
-        [result.insertId],
-      );
-
-      // Log the creation
-      await executeQuery<ResultSetHeader>(
-        `INSERT INTO activity_logs
-         (user_id, action, entity_type, entity_id, details, ip_address, user_agent)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          userId,
-          'kvp_created',
-          'kvp_suggestion',
-          result.insertId,
-          JSON.stringify({
-            title: req.body.title,
-            department_id: departmentId,
-            category_id: req.body.category_id ?? null,
-          }),
-          req.ip ?? req.socket.remoteAddress,
-          req.headers['user-agent'] ?? null,
-        ],
-      );
-
-      res.status(201).json({
-        success: true,
-        suggestion: newSuggestion[0],
-      });
+      res.status(201).json({ success: true, suggestion: newSuggestion[0] });
     } catch (error: unknown) {
       console.error('Error in KvpController.create:', error);
       res.status(500).json({
@@ -844,6 +877,58 @@ class KvpController {
   }
 
   /**
+   * Get department statistics for root user
+   */
+  private async getRootDepartmentStats(tenantId: number): Promise<DepartmentStat[]> {
+    const [departments] = await executeQuery<RowDataPacket[]>(
+      'SELECT id, name FROM departments WHERE tenant_id = ?',
+      [tenantId],
+    );
+
+    const departmentStats: DepartmentStat[] = [];
+    for (const dept of departments) {
+      const stats = await kvpPermissionService.getSuggestionStats(
+        'department',
+        dept.id as number,
+        tenantId,
+      );
+      departmentStats.push({
+        department_id: dept.id as number,
+        department_name: dept.name as string,
+        ...stats,
+      });
+    }
+    return departmentStats;
+  }
+
+  /**
+   * Get department statistics for admin user
+   */
+  private async getAdminDepartmentStats(
+    departmentIds: number[],
+    tenantId: number,
+  ): Promise<DepartmentStat[]> {
+    const departmentStats: DepartmentStat[] = [];
+
+    for (const deptId of departmentIds) {
+      const [deptInfo] = await executeQuery<RowDataPacket[]>(
+        'SELECT name FROM departments WHERE id = ?',
+        [deptId],
+      );
+
+      if (deptInfo.length === 0) continue;
+
+      const stats = await kvpPermissionService.getSuggestionStats('department', deptId, tenantId);
+      departmentStats.push({
+        department_id: deptId,
+        department_name: deptInfo[0].name as string,
+        ...stats,
+      });
+    }
+    return departmentStats;
+  }
+
+  /**
    * Get department statistics
    * GET /api/kvp/stats
    * @param req - The request object
@@ -863,12 +948,6 @@ class KvpController {
         return;
       }
 
-      // Get admin departments if not root
-      let departmentIds: number[] = [];
-      if (role === 'admin') {
-        departmentIds = await kvpPermissionService.getAdminDepartments(userId, tenantId);
-      }
-
       // Get company-wide stats
       const companyStats = await kvpPermissionService.getSuggestionStats(
         'company',
@@ -876,53 +955,13 @@ class KvpController {
         tenantId,
       );
 
-      // Get department stats
-      interface DepartmentStat {
-        department_id: number;
-        department_name: string;
-        [key: string]: unknown;
-      }
-      const departmentStats: DepartmentStat[] = [];
+      // Get department stats based on role
+      let departmentStats: DepartmentStat[];
       if (role === 'root') {
-        // Get all departments
-        const [departments] = await executeQuery<RowDataPacket[]>(
-          'SELECT id, name FROM departments WHERE tenant_id = ?',
-          [tenantId],
-        );
-
-        for (const dept of departments) {
-          const stats = await kvpPermissionService.getSuggestionStats(
-            'department',
-            dept.id as number,
-            tenantId,
-          );
-          departmentStats.push({
-            department_id: dept.id as number,
-            department_name: dept.name as string,
-            ...stats,
-          });
-        }
+        departmentStats = await this.getRootDepartmentStats(tenantId);
       } else {
-        // Get only admin's departments
-        for (const deptId of departmentIds) {
-          const [deptInfo] = await executeQuery<RowDataPacket[]>(
-            'SELECT name FROM departments WHERE id = ?',
-            [deptId],
-          );
-
-          if (deptInfo.length > 0) {
-            const stats = await kvpPermissionService.getSuggestionStats(
-              'department',
-              deptId,
-              tenantId,
-            );
-            departmentStats.push({
-              department_id: deptId,
-              department_name: deptInfo[0].name as string,
-              ...stats,
-            });
-          }
-        }
+        const departmentIds = await kvpPermissionService.getAdminDepartments(userId, tenantId);
+        departmentStats = await this.getAdminDepartmentStats(departmentIds, tenantId);
       }
 
       res.json({

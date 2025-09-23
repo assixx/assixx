@@ -152,6 +152,12 @@ router.get(
 );
 
 router.get(
+  '/stats',
+  ...security.root(),
+  typed.auth(rootController.getDashboard.bind(rootController)),
+);
+
+router.get(
   '/storage',
   ...security.root(),
   typed.auth(rootController.getStorageInfo.bind(rootController)),

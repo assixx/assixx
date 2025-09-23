@@ -38,12 +38,15 @@ interface AdminUser extends User {
 }
 
 interface DashboardData {
-  user: {
-    id: number;
-    userName: string;
-    userRole: string;
-    iat: number;
-    exp: number;
+  adminCount: number;
+  employeeCount: number;
+  totalUsers: number;
+  tenantCount: number;
+  activeFeatures: string[];
+  systemHealth: {
+    database: string;
+    storage: string;
+    services: string;
   };
 }
 
@@ -248,9 +251,24 @@ async function loadDashboardData(): Promise<void> {
     setHTML(
       dashboardContent,
       `
-            <p>👤 <strong>Benutzer:</strong> ${data.user.userName}</p>
-            <p>🔑 <strong>userRole:</strong> ${data.user.userRole}</p>
-            <p>🆔 <strong>ID:</strong> ${data.user.id}</p>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">${data.adminCount}</span>
+                    <span class="stat-label">Admins</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">${data.employeeCount}</span>
+                    <span class="stat-label">Mitarbeiter</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">${data.totalUsers}</span>
+                    <span class="stat-label">Gesamte Benutzer</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-value">${data.tenantCount}</span>
+                    <span class="stat-label">Tenants</span>
+                </div>
+            </div>
         `,
     );
   } catch (error) {
@@ -425,17 +443,18 @@ async function loadActivityLogs(): Promise<void> {
       id: number;
       action: string;
       details?: unknown;
-      created_at: string;
+      createdAt: string;
       userName?: string;
       userRole?: string;
     }
 
-    const logs = await apiClient.request<LogEntry[]>(`${API_ENDPOINTS.LOGS}?limit=5`);
+    const response = await apiClient.request<{ logs: LogEntry[] }>(`${API_ENDPOINTS.LOGS}?limit=5`);
+    const logs = response.logs;
 
     const logsEl = document.querySelector('#activity-logs');
     if (logsEl === null) return;
 
-    if (logs.length === 0) {
+    if (!logs || logs.length === 0) {
       setHTML(logsEl as HTMLElement, '<div class="no-data">Keine kürzlichen Aktivitäten</div>');
       return;
     }
@@ -446,7 +465,7 @@ async function loadActivityLogs(): Promise<void> {
             <div class="log-entry" data-action="navigate-logs">
                 <div class="log-header">
                     <span class="log-action">${getActionLabel(log.action)}</span>
-                    <span class="log-time">${new Date(log.created_at).toLocaleString('de-DE')}</span>
+                    <span class="log-time">${new Date(log.createdAt).toLocaleString('de-DE')}</span>
                 </div>
                 ${
                   log.userName !== undefined && log.userName !== ''

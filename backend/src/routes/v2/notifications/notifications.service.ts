@@ -11,6 +11,64 @@ import { dbToApi } from '../../../utils/fieldMapping.js';
 import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
 
 /**
+ * Build query conditions for notifications
+ */
+function buildNotificationConditions(
+  userId: number,
+  tenantId: number,
+  filters: NotificationFilters,
+): { conditions: string[]; params: (string | number | boolean)[] } {
+  const conditions = [`n.tenant_id = ?`];
+  const params: (string | number | boolean)[] = [tenantId];
+
+  conditions.push(`(n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
+    OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
+    OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`);
+  params.push(userId, userId, userId);
+
+  if (filters.type) {
+    conditions.push(`n.type = ?`);
+    params.push(filters.type);
+  }
+
+  if (filters.priority) {
+    conditions.push(`n.priority = ?`);
+    params.push(filters.priority);
+  }
+
+  return { conditions, params };
+}
+
+/**
+ * Get counts for notifications
+ */
+async function getNotificationCounts(
+  userId: number,
+  conditions: string[],
+  params: (string | number | boolean)[],
+  filters: NotificationFilters,
+): Promise<{ total: number; unreadCount: number }> {
+  const countQuery = `
+    SELECT COUNT(*) as total
+    FROM notifications n
+    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
+    WHERE ${conditions.join(' AND ')}
+    ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
+  `;
+  const [[countResult]] = await executeQuery<RowDataPacket[]>(countQuery, [userId, ...params]);
+
+  const unreadQuery = `
+    SELECT COUNT(*) as unread
+    FROM notifications n
+    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
+    WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
+  `;
+  const [[unreadResult]] = await executeQuery<RowDataPacket[]>(unreadQuery, [userId, ...params]);
+
+  return { total: Number(countResult.total), unreadCount: Number(unreadResult.unread) };
+}
+
+/**
  * Get notifications for a user with filters
  * @param userId - The user ID
  * @param tenantId - The tenant ID
@@ -32,89 +90,32 @@ export async function listNotifications(
   const limit = filters.limit ?? 20;
   const offset = (page - 1) * limit;
 
-  // Build query conditions
-  const conditions = [`n.tenant_id = ?`];
-  const params: (string | number | boolean)[] = [tenantId];
+  const { conditions, params } = buildNotificationConditions(userId, tenantId, filters);
 
-  // User can see broadcast notifications or their own
-  conditions.push(`(n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-    OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
-    OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`);
-  params.push(userId, userId, userId);
-
-  if (filters.type) {
-    conditions.push(`n.type = ?`);
-    params.push(filters.type);
-  }
-
-  if (filters.priority) {
-    conditions.push(`n.priority = ?`);
-    params.push(filters.priority);
-  }
-
-  // Build the main query
+  // Build and execute main query
   let query = `
-    SELECT
-      n.*,
-      nrs.read_at,
+    SELECT n.*, nrs.read_at,
       CASE WHEN nrs.id IS NOT NULL THEN true ELSE false END as is_read,
       u.username as created_by_name
     FROM notifications n
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
     LEFT JOIN users u ON n.created_by = u.id
     WHERE ${conditions.join(' AND ')}
-  `;
-
-  // Add unread filter if specified
-  if (filters.unread === true) {
-    query += ` AND nrs.id IS NULL`;
-  }
-
-  // Add ordering and pagination
-  query += ` ORDER BY n.created_at DESC LIMIT ? OFFSET ?`;
-  params.unshift(userId); // For the JOIN
-  params.push(limit, offset);
-
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
-
-  // Get total count
-  const countQuery = `
-    SELECT COUNT(*) as total
-    FROM notifications n
-    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${conditions.join(' AND ')}
     ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
-  `;
-  const countParams = [userId, ...params.slice(1, -2)]; // Exclude limit/offset
-  const [[countResult]] = await executeQuery<RowDataPacket[]>(countQuery, countParams);
-  const total = Number(countResult.total);
+    ORDER BY n.created_at DESC LIMIT ? OFFSET ?`;
 
-  // Get unread count
-  const unreadQuery = `
-    SELECT COUNT(*) as unread
-    FROM notifications n
-    LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
-    WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
-  `;
-  const [[unreadResult]] = await executeQuery<RowDataPacket[]>(unreadQuery, [
-    userId,
-    ...params.slice(1, -2),
-  ]);
-  const unreadCount = Number(unreadResult.unread);
+  const [rows] = await executeQuery<RowDataPacket[]>(query, [userId, ...params, limit, offset]);
 
+  const { total, unreadCount } = await getNotificationCounts(userId, conditions, params, filters);
   const totalPages = Math.ceil(total / limit);
+
   return {
     notifications: rows.map((row) => dbToApi(row)),
     total,
     page,
     totalPages,
     unreadCount,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages,
-    },
+    pagination: { page, limit, total, totalPages },
   };
 }
 

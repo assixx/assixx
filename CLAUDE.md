@@ -127,14 +127,16 @@ docker-compose restart backend
 
 ## MANDATORY CHECKLIST (TodoWrite with 10+ items) read
 
-1. Docker Check (with "skip": WITHOUT dev-status.sh)
-2. Follow (~/projects/Assixx/docs/BEFORE-STARTING-DEV.md)
-3. Read(~/projects/Assixx/docs/TYPESCRIPT-STANDARDS.md) (MANDATORY for Backend, read whole File)
-4. Read(~/projects/Assixx/README.md)
-5. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
-6. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
-7. Read(~/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-MIGRATION-MASTERPLAN.md (already done, just for context)
-8. Dont do more than this and than recap fast and than ask user that youre ready.
+1. Docker Check (with "skip": WITHOUT dev-status.sh) (read whole file)
+2. Read(~/projects/Assixx/CLAUDE-KAIZEN-MANIFEST.md)
+3. Follow (~/projects/Assixx/docs/BEFORE-STARTING-DEV.md)
+4. Read(~/projects/Assixx/docs/TYPESCRIPT-STANDARDS.md) (MANDATORY for Backend, read whole File)
+5. Read(~/projects/Assixx/README.md)
+6. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
+7. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
+8. Read(~/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-MIGRATION-MASTERPLAN.md (already done, just for context)
+9. Dont do more than this and than recap fast and than ask user that youre ready.
+10. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatorylist
 
 ## 📊 PROGRESS DOCUMENTATION
 

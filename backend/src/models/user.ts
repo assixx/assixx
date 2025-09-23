@@ -107,17 +107,78 @@ interface UserDepartmentTeam extends RowDataPacket {
 
 // User Model Functions
 
-export async function createUser(userData: UserCreateData): Promise<number> {
+/**
+ * Generate initial employee ID for user creation
+ */
+async function generateInitialEmployeeId(
+  employeeId: string | undefined,
+  tenantId: number,
+  role: string | undefined,
+): Promise<string | undefined> {
+  if (employeeId != null && employeeId !== '') {
+    return employeeId;
+  }
+
+  const [tenantResult] = await executeQuery<RowDataPacket[]>(
+    'SELECT subdomain FROM tenants WHERE id = ?',
+    [tenantId],
+  );
+
+  if (tenantResult.length > 0) {
+    const rawSubdomain = tenantResult[0].subdomain as string | null | undefined;
+    const subdomain = rawSubdomain ?? 'DEFAULT';
+    const { tempId } = generateTempEmployeeId(subdomain, role ?? 'employee');
+    return tempId;
+  }
+  return undefined;
+}
+
+/**
+ * Update temporary employee ID with actual ID after user creation
+ */
+async function updateTemporaryEmployeeId(
+  userId: number,
+  tenantId: number,
+  role: string | undefined,
+  originalEmployeeId: string | undefined,
+  finalEmployeeId: string | undefined,
+): Promise<void> {
+  if (
+    (originalEmployeeId == null || originalEmployeeId === '') &&
+    finalEmployeeId?.includes('TEMP') === true
+  ) {
+    const [tenantResult] = await executeQuery<RowDataPacket[]>(
+      'SELECT subdomain FROM tenants WHERE id = ?',
+      [tenantId],
+    );
+
+    if (tenantResult.length > 0) {
+      const rawSubdomain = tenantResult[0].subdomain as string | null | undefined;
+      const subdomain = rawSubdomain ?? 'DEFAULT';
+      const newEmployeeId = generateEmployeeId(subdomain, role ?? 'employee', userId);
+      await executeQuery('UPDATE users SET employee_id = ? WHERE id = ?', [newEmployeeId, userId]);
+    }
+  }
+}
+
+/**
+ * Build query parameters for user creation
+ */
+function buildUserQueryParams(
+  userData: UserCreateData,
+  finalUsername: string,
+  hashedPassword: string,
+  finalEmployeeId: string | undefined,
+  iban: string,
+): unknown[] {
   const {
     email,
-    password,
     role,
     company,
     notes,
     first_name: firstName,
     last_name: lastName,
     age,
-    employee_id: employeeId,
     employee_number: employeeNumber,
     department_id: departmentId,
     position,
@@ -132,90 +193,71 @@ export async function createUser(userData: UserCreateData): Promise<number> {
     is_active: isActive = 1,
   } = userData;
 
-  // Always use email as username
-  const finalUsername = email;
+  return [
+    finalUsername,
+    email,
+    hashedPassword,
+    role,
+    company,
+    notes,
+    firstName,
+    lastName,
+    age,
+    finalEmployeeId,
+    employeeNumber ?? `EMP${Date.now()}`,
+    iban,
+    departmentId,
+    position,
+    phone,
+    address,
+    birthday,
+    hireDate,
+    emergencyContact,
+    profilePicture,
+    status,
+    isArchived,
+    isActive,
+    userData.tenant_id,
+  ];
+}
 
-  // Default-IBAN, damit der Server nicht abstürzt, wenn keine IBAN übergeben wird
-  const iban = userData.iban ?? '';
+export async function createUser(userData: UserCreateData): Promise<number> {
+  const { email, password, employee_id: employeeId, role, tenant_id: tenantId } = userData;
 
-  // Password is already hashed in the service layer
-  const hashedPassword = password;
-
-  // Generate employee_id if not provided
-  let finalEmployeeId = employeeId;
-
-  if (employeeId == null || employeeId === '') {
-    // Get subdomain from tenant
-    const [tenantResult] = await executeQuery<RowDataPacket[]>(
-      'SELECT subdomain FROM tenants WHERE id = ?',
-      [userData.tenant_id],
-    );
-
-    if (tenantResult.length > 0) {
-      const subdomain = (tenantResult[0].subdomain as string) || 'DEFAULT';
-      const { tempId } = generateTempEmployeeId(subdomain, role || 'employee');
-      finalEmployeeId = tempId;
-    }
+  // Validate tenant_id is required for multi-tenant isolation
+  if (tenantId === undefined) {
+    throw new Error('tenant_id is required for user creation');
   }
 
+  const finalUsername = email;
+  const iban = userData.iban ?? '';
+  const hashedPassword = password;
+
+  const finalEmployeeId = await generateInitialEmployeeId(employeeId, tenantId, role);
+
   const query = `
-      INSERT INTO users (
-        username, email, password, role, company, notes,
-        first_name, last_name, age, employee_id, employee_number, iban,
-        department_id, position, phone, address, birthday,
-        hire_date, emergency_contact, profile_picture,
-        status, is_archived, is_active, tenant_id
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
+    INSERT INTO users (
+      username, email, password, role, company, notes,
+      first_name, last_name, age, employee_id, employee_number, iban,
+      department_id, position, phone, address, birthday,
+      hire_date, emergency_contact, profile_picture,
+      status, is_archived, is_active, tenant_id
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
 
   try {
-    const [result] = await executeQuery<ResultSetHeader>(query, [
+    const queryParams = buildUserQueryParams(
+      userData,
       finalUsername,
-      email,
       hashedPassword,
-      role,
-      company,
-      notes,
-      firstName,
-      lastName,
-      age,
       finalEmployeeId,
-      employeeNumber ?? `EMP${Date.now()}`,
       iban,
-      departmentId,
-      position,
-      phone,
-      address,
-      birthday,
-      hireDate,
-      emergencyContact,
-      profilePicture,
-      status,
-      isArchived,
-      isActive,
-      userData.tenant_id,
-    ]);
-
+    );
+    const [result] = await executeQuery<ResultSetHeader>(query, queryParams);
     logger.info(`User created successfully with ID: ${result.insertId}`);
 
-    // Update employee_id with actual user ID if it was generated
-    if ((employeeId == null || employeeId === '') && finalEmployeeId?.includes('TEMP') === true) {
-      const [tenantResult] = await executeQuery<RowDataPacket[]>(
-        'SELECT subdomain FROM tenants WHERE id = ?',
-        [userData.tenant_id],
-      );
-
-      if (tenantResult.length > 0) {
-        const subdomain = (tenantResult[0].subdomain as string) || 'DEFAULT';
-        const newEmployeeId = generateEmployeeId(subdomain, role || 'employee', result.insertId);
-
-        await executeQuery('UPDATE users SET employee_id = ? WHERE id = ?', [
-          newEmployeeId,
-          result.insertId,
-        ]);
-      }
-    }
+    await updateTemporaryEmployeeId(result.insertId, tenantId, role, employeeId, finalEmployeeId);
 
     return result.insertId;
   } catch (error) {
@@ -386,6 +428,37 @@ export async function deleteUser(id: number): Promise<boolean> {
   }
 }
 
+/**
+ * Process a single field for user update query
+ */
+function processUpdateField(
+  key: string,
+  value: unknown,
+  allowedFields: readonly (keyof UserCreateData)[],
+  fields: string[],
+  values: unknown[],
+): void {
+  if (!allowedFields.includes(key as keyof UserCreateData)) {
+    logger.warn(`Attempted to update non-allowed field: ${key}`);
+    return;
+  }
+
+  // Use backticks to escape column names properly
+  fields.push(`\`${key}\` = ?`);
+
+  // Special handling for boolean fields
+  if (key === 'is_active' || key === 'is_archived') {
+    logger.info(
+      `Special handling for ${key} field - received value: ${String(value)}, type: ${typeof value}`,
+    );
+    values.push(value === true ? 1 : 0);
+    logger.info(`${key} will be set to: ${value === true ? 1 : 0}`);
+  } else {
+    values.push(value);
+    logger.info(`Updating field ${key} to value: ${String(value)}`);
+  }
+}
+
 export async function updateUser(
   id: number,
   userData: Partial<UserCreateData>,
@@ -393,7 +466,7 @@ export async function updateUser(
 ): Promise<boolean> {
   try {
     // Define allowed fields for update to prevent SQL injection
-    const allowedFields: (keyof UserCreateData)[] = [
+    const allowedFields: readonly (keyof UserCreateData)[] = [
       'username',
       'email',
       'password',
@@ -422,7 +495,7 @@ export async function updateUser(
       'availability_start',
       'availability_end',
       'availability_notes',
-    ];
+    ] as const;
 
     // Dynamisch Query aufbauen basierend auf den zu aktualisierenden Feldern
     const fields: string[] = [];
@@ -430,27 +503,7 @@ export async function updateUser(
 
     // Für jedes übergebene Feld Query vorbereiten
     Object.entries(userData).forEach(([key, value]) => {
-      // SECURITY FIX: Only allow whitelisted fields to prevent SQL injection
-      if (allowedFields.includes(key as keyof UserCreateData)) {
-        // Special handling for boolean fields
-        if (key === 'is_active' || key === 'is_archived') {
-          logger.info(
-            `Special handling for ${key} field - received value: ${String(value)}, type: ${typeof value}`,
-          );
-          // Use backticks to escape column names properly
-          fields.push(`\`${key}\` = ?`);
-          // Ensure boolean is converted properly for MySQL
-          values.push(value === true ? 1 : 0);
-          logger.info(`${key} will be set to: ${value === true ? 1 : 0}`);
-        } else {
-          // Use backticks to escape column names properly
-          fields.push(`\`${key}\` = ?`);
-          values.push(value);
-          logger.info(`Updating field ${key} to value: ${String(value)}`);
-        }
-      } else {
-        logger.warn(`Attempted to update non-allowed field: ${key}`);
-      }
+      processUpdateField(key, value, allowedFields, fields, values);
     });
 
     // Wenn keine Felder zum Aktualisieren vorhanden sind, abbrechen
@@ -626,47 +679,24 @@ export async function updateUserProfilePicture(
   }
 }
 
+/**
+ * Build count query with filters
+ */
+function buildCountQuery(filters: UserFilter, values: unknown[]): string {
+  let query = `SELECT COUNT(*) as total FROM users u WHERE u.tenant_id = ?`;
+  values.push(filters.tenant_id);
+
+  // Reuse the existing buildFilterConditions function
+  query += buildFilterConditions(filters, values);
+
+  return query;
+}
+
 // Neue Methode: Anzahl der Benutzer zählen (für Pagination)
 export async function countUsersWithFilters(filters: UserFilter): Promise<number> {
   try {
-    let query = `SELECT COUNT(*) as total FROM users u WHERE u.tenant_id = ?`;
-    const values: unknown[] = [filters.tenant_id];
-
-    // Filter für archivierte Benutzer
-    if (filters.is_archived !== undefined) {
-      query += ` AND u.is_archived = ?`;
-      values.push(filters.is_archived);
-    } else {
-      // Standardmäßig nur nicht-archivierte Benutzer anzeigen
-      query += ` AND u.is_archived = 0`;
-    }
-
-    if (filters.role != null && filters.role !== '') {
-      query += ` AND u.role = ?`;
-      values.push(filters.role);
-    }
-
-    if (filters.department_id != null && filters.department_id !== 0) {
-      query += ` AND u.department_id = ?`;
-      values.push(filters.department_id);
-    }
-
-    if (filters.status != null && filters.status !== '') {
-      query += ` AND u.status = ?`;
-      values.push(filters.status);
-    }
-
-    if (filters.search != null && filters.search !== '') {
-      query += ` AND (
-          u.username LIKE ? OR
-          u.email LIKE ? OR
-          u.first_name LIKE ? OR
-          u.last_name LIKE ? OR
-          u.employee_id LIKE ?
-        )`;
-      const searchTerm = `%${filters.search}%`;
-      values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
-    }
+    const values: unknown[] = [];
+    const query = buildCountQuery(filters, values);
 
     const [rows] = await executeQuery<CountResult[]>(query, values);
     return rows[0].total;

@@ -214,25 +214,14 @@ export class UsersService {
   }
 
   /**
-   * Update user
-   * @param userId - The user ID
-   * @param updateData - The updateData parameter
-   * @param tenantId - The tenant ID
+   * Prepare update data for database
    */
-  async updateUser(userId: number, updateData: UpdateUserBody, tenantId: number): Promise<unknown> {
-    // Check if user exists
-    const user = await userModel.findById(userId, tenantId);
-    if (!user) {
-      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
-    }
-
-    // Convert from camelCase to snake_case
+  private async prepareUpdateData(updateData: UpdateUserBody): Promise<Record<string, unknown>> {
     const dbUpdateData = apiToDb(updateData as Record<string, unknown>);
 
     // Handle password update if provided
     if (updateData.password) {
-      const hashedPassword = await bcrypt.hash(updateData.password, 10);
-      dbUpdateData.password = hashedPassword;
+      dbUpdateData.password = await bcrypt.hash(updateData.password, 10);
     } else {
       delete dbUpdateData.password;
     }
@@ -241,34 +230,40 @@ export class UsersService {
     delete dbUpdateData.tenant_id;
     delete dbUpdateData.created_at;
 
+    return dbUpdateData;
+  }
+
+  /**
+   * Validate user exists
+   */
+  private async validateUserExists(userId: number, tenantId: number): Promise<void> {
+    const user = await userModel.findById(userId, tenantId);
+    if (!user) {
+      throw new ServiceError('NOT_FOUND', USER_NOT_FOUND_MESSAGE, 404);
+    }
+  }
+
+  /**
+   * Update user
+   * @param userId - The user ID
+   * @param updateData - The updateData parameter
+   * @param tenantId - The tenant ID
+   */
+  async updateUser(userId: number, updateData: UpdateUserBody, tenantId: number): Promise<unknown> {
     try {
-      // Update user
+      await this.validateUserExists(userId, tenantId);
+      const dbUpdateData = await this.prepareUpdateData(updateData);
+
       await userModel.update(userId, dbUpdateData, tenantId);
 
-      // Fetch updated user
       const updatedUser = await userModel.findById(userId, tenantId);
-
       if (!updatedUser) {
         throw new ServiceError('SERVER_ERROR', 'Failed to retrieve updated user', 500);
       }
 
       return dbToApi(sanitizeUser(updatedUser));
     } catch (error: unknown) {
-      // Handle database errors
-      if (
-        error instanceof Error &&
-        'code' in error &&
-        (error as { code: string }).code === 'ER_DUP_ENTRY'
-      ) {
-        const message = error.message;
-        const field =
-          message.includes('email') ? 'Email'
-          : message.includes('employee_number') ? 'Employee number'
-          : 'Field';
-
-        throw new ServiceError('CONFLICT', `${field} already exists`, 409);
-      }
-      throw error;
+      return this.handleDuplicateError(error);
     }
   }
 

@@ -452,10 +452,9 @@ const ResponseAdapterInternal = {
   },
 
   /**
-   * Apply specific field conversions for v1 format
+   * Convert Date fields to ISO strings for v1
    */
-  applyV1FieldConversions(data: Record<string, unknown>): Record<string, unknown> {
-    // Convert Date objects to strings for v1
+  convertDateFieldsToV1(data: Record<string, unknown>): void {
     const dateFields = [
       'created_at',
       'updated_at',
@@ -479,8 +478,12 @@ const ResponseAdapterInternal = {
         data[field] = data[field].toISOString();
       }
     });
+  },
 
-    // Convert booleans to numbers for v1 (MySQL style)
+  /**
+   * Convert boolean fields to numbers for v1 (MySQL style)
+   */
+  convertBooleanFieldsToV1(data: Record<string, unknown>): void {
     const booleanFields = [
       'is_active',
       'is_deleted',
@@ -527,6 +530,17 @@ const ResponseAdapterInternal = {
         data[field] = data[field] ? 1 : 0;
       }
     });
+  },
+
+  /**
+   * Apply specific field conversions for v1 format
+   */
+  applyV1FieldConversions(data: Record<string, unknown>): Record<string, unknown> {
+    // Convert Date objects to strings for v1
+    this.convertDateFieldsToV1(data);
+
+    // Convert booleans to numbers for v1 (MySQL style)
+    this.convertBooleanFieldsToV1(data);
 
     return data;
   },

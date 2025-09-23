@@ -152,7 +152,7 @@ async function loadLogs() {
 
   try {
     const params = buildQueryParams();
-    const response = await apiClient.request<LogsResponse>(`/system/logs?${params.toString()}`, {
+    const response = await apiClient.request<LogsResponse>(`/logs?${params.toString()}`, {
       method: 'GET',
     });
 
@@ -380,7 +380,7 @@ async function confirmDeleteLogs() {
   try {
     const params = buildQueryParams();
 
-    await apiClient.request(`/system/logs?${params.toString()}`, {
+    await apiClient.request(`/logs?${params.toString()}`, {
       method: 'DELETE',
     });
 
