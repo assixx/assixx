@@ -806,6 +806,93 @@ async function updateTeamMachines(
   console.info(`[TeamsManager] Updated machines: +${machinesToAdd.length} -${machinesToRemove.length}`);
 }
 
+interface ProcessedFormData {
+  teamData: Record<string, string | number>;
+  machineIds: number[];
+  userIds: number[];
+}
+
+function parseIdsFromString(value: string): number[] {
+  return value
+    .split(',')
+    .filter((id) => id.length > 0)
+    .map((id) => Number.parseInt(id, 10));
+}
+
+function processTeamFormData(formData: FormData): ProcessedFormData {
+  const teamData: Record<string, string | number> = {};
+  let machineIds: number[] = [];
+  let userIds: number[] = [];
+
+  formData.forEach((value, key) => {
+    if (key === 'machineIds' && typeof value === 'string' && value.length > 0) {
+      machineIds = parseIdsFromString(value);
+    } else if (key === 'userIds' && typeof value === 'string' && value.length > 0) {
+      userIds = parseIdsFromString(value);
+    } else if (typeof value === 'string' && value.length > 0) {
+      // Whitelist of allowed form field keys to prevent object injection
+      switch (key) {
+        case 'teamLeadId':
+          teamData.leaderId = value;
+          break;
+        case 'id':
+          teamData.id = Number.parseInt(value, 10);
+          break;
+        case 'name':
+          teamData.name = value;
+          break;
+        case 'description':
+          teamData.description = value;
+          break;
+        case 'departmentId':
+          teamData.departmentId = Number.parseInt(value, 10);
+          break;
+        case 'leaderId':
+          teamData.leaderId = Number.parseInt(value, 10);
+          break;
+        case 'teamType':
+          teamData.teamType = value;
+          break;
+        case 'maxMembers':
+          teamData.maxMembers = Number.parseInt(value, 10);
+          break;
+        case 'status':
+          teamData.status = value;
+          break;
+        // Ignore memberIds as it's handled separately
+        case 'memberIds':
+          break;
+        // Ignore unknown keys for security
+        default:
+          console.warn(`Ignoring unknown form field: ${key}`);
+      }
+    }
+  });
+
+  return { teamData, machineIds, userIds };
+}
+
+async function updateTeamRelations(
+  savedTeam: Team,
+  teamData: Record<string, string | number>,
+  userIds: number[],
+  machineIds: number[],
+): Promise<void> {
+  // Handle team members and machines for existing teams
+  if ('id' in teamData) {
+    const currentTeam = await teamsManager?.getTeamDetails(Number(teamData.id));
+    if (currentTeam) {
+      await Promise.all([
+        updateTeamMembers(savedTeam.id, currentTeam.members ?? [], userIds),
+        updateTeamMachines(savedTeam.id, currentTeam.machines ?? [], machineIds),
+      ]);
+    }
+  } else {
+    // For new teams, add all selected members and machines
+    await Promise.all([updateTeamMembers(savedTeam.id, [], userIds), updateTeamMachines(savedTeam.id, [], machineIds)]);
+  }
+}
+
 function setupSaveTeam(): void {
   const w = window as unknown as WindowWithTeamHandlers;
   w.saveTeam = async () => {
@@ -813,61 +900,7 @@ function setupSaveTeam(): void {
     if (form === null) return;
 
     const formData = new FormData(form);
-    const teamData: Record<string, string | number> = {};
-
-    let machineIds: number[] = [];
-    let userIds: number[] = [];
-
-    formData.forEach((value, key) => {
-      if (key === 'machineIds' && typeof value === 'string' && value.length > 0) {
-        machineIds = value
-          .split(',')
-          .filter((id) => id.length > 0)
-          .map((id) => Number.parseInt(id, 10));
-      } else if (key === 'userIds' && typeof value === 'string' && value.length > 0) {
-        userIds = value
-          .split(',')
-          .filter((id) => id.length > 0)
-          .map((id) => Number.parseInt(id, 10));
-      } else if (typeof value === 'string' && value.length > 0) {
-        // Whitelist of allowed form field keys to prevent object injection
-        switch (key) {
-          case 'teamLeadId':
-            teamData.leaderId = value;
-            break;
-          case 'id':
-            teamData.id = Number.parseInt(value, 10);
-            break;
-          case 'name':
-            teamData.name = value;
-            break;
-          case 'description':
-            teamData.description = value;
-            break;
-          case 'departmentId':
-            teamData.departmentId = Number.parseInt(value, 10);
-            break;
-          case 'leaderId':
-            teamData.leaderId = Number.parseInt(value, 10);
-            break;
-          case 'teamType':
-            teamData.teamType = value;
-            break;
-          case 'maxMembers':
-            teamData.maxMembers = Number.parseInt(value, 10);
-            break;
-          case 'status':
-            teamData.status = value;
-            break;
-          // Ignore memberIds as it's handled separately
-          case 'memberIds':
-            break;
-          // Ignore unknown keys for security
-          default:
-            console.warn(`Ignoring unknown form field: ${key}`);
-        }
-      }
-    });
+    const { teamData, machineIds, userIds } = processTeamFormData(formData);
 
     try {
       const savedTeam = await ('id' in teamData
@@ -875,22 +908,7 @@ function setupSaveTeam(): void {
         : teamsManager?.createTeam(teamData));
 
       if (savedTeam) {
-        // Handle team members and machines for existing teams
-        if ('id' in teamData) {
-          const currentTeam = await teamsManager?.getTeamDetails(Number(teamData.id));
-          if (currentTeam) {
-            await Promise.all([
-              updateTeamMembers(savedTeam.id, currentTeam.members ?? [], userIds),
-              updateTeamMachines(savedTeam.id, currentTeam.machines ?? [], machineIds),
-            ]);
-          }
-        } else {
-          // For new teams, add all selected members and machines
-          await Promise.all([
-            updateTeamMembers(savedTeam.id, [], userIds),
-            updateTeamMachines(savedTeam.id, [], machineIds),
-          ]);
-        }
+        await updateTeamRelations(savedTeam, teamData, userIds, machineIds);
       }
 
       w.closeTeamModal?.();

@@ -177,6 +177,62 @@
         }
       };
 
+      // Handle survey action button click
+      function handleSurveyAction(e) {
+        const surveyButton = e.target.closest('.survey-action');
+        if (!surveyButton) return false;
+
+        const card = surveyButton.closest('.survey-card');
+        if (!card) return true;
+
+        const surveyId = card.dataset.surveyId;
+        if (!surveyId) return true;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const action = card.classList.contains('completed') ? 'view' : 'start';
+        if (action === 'view') {
+          window.viewResponse(parseInt(surveyId));
+        } else {
+          window.startSurvey(parseInt(surveyId));
+        }
+        return true;
+      }
+
+      // Handle modal close buttons
+      function handleModalClose(e) {
+        if (e.target.id === 'modalCloseBtn' || e.target.id === 'modalCancelBtn') {
+          window.closeModal();
+          return true;
+        }
+        return false;
+      }
+
+      // Handle response modal close
+      function handleResponseModalClose(e) {
+        if (e.target.dataset.action === 'close-response-modal') {
+          window.closeResponseModal();
+          return true;
+        }
+        return false;
+      }
+
+      // Handle rating button click
+      function handleRatingClick(e) {
+        const ratingBtn = e.target.closest('.rating-option');
+        if (!ratingBtn) return false;
+
+        const questionId = ratingBtn.dataset.questionId;
+        const ratingValue = ratingBtn.dataset.ratingValue;
+
+        if (questionId && ratingValue) {
+          window.selectRating(parseInt(questionId), parseInt(ratingValue));
+          return true;
+        }
+        return false;
+      }
+
       // Initialize
       document.addEventListener('DOMContentLoaded', function () {
         loadSurveys();
@@ -184,44 +240,10 @@
         // Event delegation for all interactive elements (fixes DOMPurify onclick/onchange removal)
         // Handle click events
         document.body.addEventListener('click', (e) => {
-          // Handle survey action buttons
-          const surveyButton = e.target.closest('.survey-action');
-          if (surveyButton) {
-            const card = surveyButton.closest('.survey-card');
-            if (!card) return;
-
-            const surveyId = card.dataset.surveyId;
-            if (!surveyId) return;
-
-            e.preventDefault();
-            e.stopPropagation();
-
-            if (card.classList.contains('completed')) {
-              window.viewResponse(parseInt(surveyId));
-            } else {
-              window.startSurvey(parseInt(surveyId));
-            }
-            return;
-          }
-
-          // Handle modal close button
-          if (e.target.id === 'modalCloseBtn' || e.target.id === 'modalCancelBtn') {
-            window.closeModal();
-            return;
-          }
-
-          // Handle response modal close
-          if (e.target.dataset.action === 'close-response-modal') {
-            window.closeResponseModal();
-            return;
-          }
-
-          // Handle rating buttons
-          const ratingBtn = e.target.closest('.rating-option');
-          if (ratingBtn && ratingBtn.dataset.questionId && ratingBtn.dataset.ratingValue) {
-            window.selectRating(parseInt(ratingBtn.dataset.questionId), parseInt(ratingBtn.dataset.ratingValue));
-            return;
-          }
+          if (handleSurveyAction(e)) return;
+          if (handleModalClose(e)) return;
+          if (handleResponseModalClose(e)) return;
+          if (handleRatingClick(e)) return;
         });
 
         function handleTextInputChange(target) {
@@ -522,107 +544,99 @@
         return div;
       }
 
+      // Create text area input
+      function createTextInput(question) {
+        return `<textarea class="form-control"
+                          data-question-id="${question.id}"
+                          ${question.is_required ? 'required' : ''}></textarea>`;
+      }
+
+      // Create choice option HTML
+      function createChoiceOption(question, option, index, type) {
+        const optionText = typeof option === 'string' ? option : option.optionText;
+        const optionId = typeof option === 'string' ? index : option.id;
+        const inputType = type === 'single' ? 'radio' : 'checkbox';
+        const nameAttr = type === 'single' ? `name="question_${question.id}"` : '';
+        const dataAttr = type === 'multiple' ? `data-question-id="${question.id}"` : '';
+
+        return `
+          <div class="choice-option">
+              <input type="${inputType}"
+                     id="q${question.id}_opt${optionId}"
+                     ${nameAttr}
+                     value="${optionId}"
+                     ${dataAttr}
+                     ${question.is_required && type === 'single' ? 'required' : ''}>
+              <label for="q${question.id}_opt${optionId}">${optionText}</label>
+          </div>
+        `;
+      }
+
+      // Create rating input
+      function createRatingInput(question) {
+        const ratingOptions = [1, 2, 3, 4, 5]
+          .map(
+            (value) => `
+          <div class="rating-option"
+               id="rating_${question.id}_${value}"
+               data-question-id="${question.id}"
+               data-rating-value="${value}">
+              ${value}
+          </div>
+        `,
+          )
+          .join('');
+
+        return `<div class="rating-container">${ratingOptions}</div>`;
+      }
+
+      // Create yes/no input
+      function createYesNoInput(question) {
+        const required = question.is_required ? 'required' : '';
+        return `
+          <div class="choice-option">
+              <input type="radio"
+                     id="q${question.id}_yes"
+                     name="question_${question.id}"
+                     value="yes"
+                     ${required}
+                     data-text-value="Ja">
+              <label for="q${question.id}_yes">Ja</label>
+          </div>
+          <div class="choice-option">
+              <input type="radio"
+                     id="q${question.id}_no"
+                     name="question_${question.id}"
+                     value="no"
+                     ${required}
+                     data-text-value="Nein">
+              <label for="q${question.id}_no">Nein</label>
+          </div>
+        `;
+      }
+
+      // Create simple input
+      function createSimpleInput(type, question) {
+        return `<input type="${type}"
+                       class="form-control"
+                       data-question-id="${question.id}"
+                       ${question.is_required ? 'required' : ''}>`;
+      }
+
       // Create answer input based on question type
       function createAnswerInput(question) {
-        switch (question.questionType) {
-          case 'text':
-            return `<textarea class="form-control"
-                                    data-question-id="${question.id}"
-                                    ${question.is_required ? 'required' : ''}></textarea>`;
+        const inputCreators = {
+          text: () => createTextInput(question),
+          single_choice: () => question.options.map((opt, idx) => createChoiceOption(question, opt, idx, 'single')).join(''),
+          multiple_choice: () => question.options.map((opt, idx) => createChoiceOption(question, opt, idx, 'multiple')).join(''),
+          rating: () => createRatingInput(question),
+          yes_no: () => createYesNoInput(question),
+          number: () => createSimpleInput('number', question),
+          date: () => createSimpleInput('date', question),
+        };
 
-          case 'single_choice':
-            return question.options
-              .map((option, index) => {
-                // Handle both string array and object array formats
-                const optionText = typeof option === 'string' ? option : option.optionText;
-                const optionId = typeof option === 'string' ? index : option.id;
-                return `
-                        <div class="choice-option">
-                            <input type="radio"
-                                   id="q${question.id}_opt${optionId}"
-                                   name="question_${question.id}"
-                                   value="${optionId}"
-                                   ${question.is_required ? 'required' : ''}
->
-                            <label for="q${question.id}_opt${optionId}">${optionText}</label>
-                        </div>
-                    `;
-              })
-              .join('');
-
-          case 'multiple_choice':
-            return question.options
-              .map((option, index) => {
-                // Handle both string array and object array formats
-                const optionText = typeof option === 'string' ? option : option.optionText;
-                const optionId = typeof option === 'string' ? index : option.id;
-                return `
-                        <div class="choice-option">
-                            <input type="checkbox"
-                                   id="q${question.id}_opt${optionId}"
-                                   value="${optionId}"
-                                   data-question-id="${question.id}">
-                            <label for="q${question.id}_opt${optionId}">${optionText}</label>
-                        </div>
-                    `;
-              })
-              .join('');
-
-          case 'rating':
-            return `
-                        <div class="rating-container">
-                            ${[1, 2, 3, 4, 5]
-                              .map(
-                                (value) => `
-                                <div class="rating-option"
-                                     id="rating_${question.id}_${value}"
-                                     data-question-id="${question.id}"
-                                     data-rating-value="${value}">
-                                    ${value}
-                                </div>
-                            `,
-                              )
-                              .join('')}
-                        </div>
-                    `;
-
-          case 'yes_no':
-            return `
-                        <div class="choice-option">
-                            <input type="radio"
-                                   id="q${question.id}_yes"
-                                   name="question_${question.id}"
-                                   value="yes"
-                                   ${question.is_required ? 'required' : ''}
-                                   data-text-value="Ja">
-                            <label for="q${question.id}_yes">Ja</label>
-                        </div>
-                        <div class="choice-option">
-                            <input type="radio"
-                                   id="q${question.id}_no"
-                                   name="question_${question.id}"
-                                   value="no"
-                                   ${question.is_required ? 'required' : ''}
-                                   data-text-value="Nein">
-                            <label for="q${question.id}_no">Nein</label>
-                        </div>
-                    `;
-
-          case 'number':
-            return `<input type="number"
-                                   class="form-control"
-                                   data-question-id="${question.id}"
-                                   ${question.is_required ? 'required' : ''}>`;
-
-          case 'date':
-            return `<input type="date"
-                                   class="form-control"
-                                   data-question-id="${question.id}"
-                                   ${question.is_required ? 'required' : ''}>`;
-
-          default:
-            return '';
-        }
+        const creator = inputCreators[question.questionType];
+        return creator ? creator() : '';
       }
 
       // Update answer
@@ -761,46 +775,58 @@
         }
       });
 
+      // Fetch survey details
+      async function fetchSurveyDetails(surveyId, useV2) {
+        const endpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
+        const response = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch survey details');
+        }
+
+        const result = await response.json();
+        return useV2 && result.success ? result.data : result;
+      }
+
+      // Fetch user's survey response
+      async function fetchUserResponse(surveyId, useV2) {
+        const endpoint = useV2 ? `/api/v2/surveys/${surveyId}/my-response` : `/api/surveys/${surveyId}/my-response`;
+        const response = await fetch(endpoint, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+
+        if (!response.ok) {
+          return null;
+        }
+
+        const data = await response.json();
+        return useV2 && data.success && data.data ? data.data : data;
+      }
+
+      // Process and display response
+      function processResponse(survey, responseData) {
+        if (!responseData || !responseData.responded || !responseData.response) {
+          showAlert('Keine Antworten für diese Umfrage gefunden.');
+          return;
+        }
+        showResponseModal(survey, responseData.response);
+      }
+
       // View response (for completed surveys)
       window.viewResponse = async function viewResponse(surveyId) {
         try {
           const useV2 = window.FEATURE_FLAGS?.USE_API_V2_SURVEYS ?? false;
-          const surveyEndpoint = useV2 ? `/api/v2/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
 
-          // First get the survey details
-          const surveyResponse = await fetch(surveyEndpoint, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
+          const survey = await fetchSurveyDetails(surveyId, useV2);
+          const responseData = await fetchUserResponse(surveyId, useV2);
 
-          if (!surveyResponse.ok) {
-            showErrorAlert('Fehler beim Abrufen der Umfrage-Details');
-            return;
-          }
-
-          const surveyResult = await surveyResponse.json();
-          const survey = useV2 && surveyResult.success ? surveyResult.data : surveyResult;
-
-          // Then get the user's response
-          const myResponseEndpoint = useV2 ? `/api/v2/surveys/${surveyId}/my-response` : `/api/surveys/${surveyId}/my-response`;
-          const response = await fetch(myResponseEndpoint, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            // Handle API v2 response structure
-            const responseData = useV2 && data.success && data.data ? data.data : data;
-            if (responseData.responded && responseData.response) {
-              // Show response in a modal
-              showResponseModal(survey, responseData.response);
-            } else {
-              showAlert('Keine Antworten für diese Umfrage gefunden.');
-            }
-          }
+          processResponse(survey, responseData);
         } catch (error) {
           console.error('Error viewing response:', error);
           showErrorAlert('Fehler beim Abrufen Ihrer Antworten');

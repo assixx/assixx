@@ -239,6 +239,13 @@
         window.location.href = '/login';
       }
 
+      // Helper to check if deletion data indicates active request
+      function hasActiveDeletion(data) {
+        if (!data) return false;
+        if (Array.isArray(data)) return data.length > 0;
+        return data.queueId || data.id || data.data;
+      }
+
       // Check for pending deletion status on page load
       async function checkDeletionStatus() {
         try {
@@ -246,20 +253,15 @@
           const endpoint = useV2Root ? '/api/v2/root/tenant/deletion-status' : '/api/root/tenant/deletion-status';
           const response = await fetchWithAuth(endpoint);
 
-          if (response.ok) {
-            const data = await response.json();
-            // Show button if there's an active deletion request
-            // API returns either a single object or an array
-            const hasActiveRequest = data && (Array.isArray(data) ? data.length > 0 : data.queueId || data.id || data.data);
+          if (!response.ok) return;
 
-            if (hasActiveRequest) {
-              const button = document.querySelector('#deletionStatusButton');
-              if (button) {
-                button.classList.remove('u-hidden');
-              }
-            }
+          const data = await response.json();
+          if (!hasActiveDeletion(data)) return;
+
+          const button = document.querySelector('#deletionStatusButton');
+          if (button) {
+            button.classList.remove('u-hidden');
           }
-          // If 404 or no data, keep button hidden (default state)
         } catch (error) {
           // Silent fail - button stays hidden if API fails
           console.info('No pending deletion found');
@@ -271,32 +273,39 @@
         checkDeletionStatus();
       });
 
+      // Action handlers map - using Map to avoid object injection warnings
+      const actionHandlers = new Map([
+        ['show-delete-modal', () => window.showDeleteModal?.()],
+        ['close-delete-modal', () => window.closeDeleteModal?.()],
+        [
+          'delete-tenant',
+          (target) => {
+            if (!target.disabled) window.deleteTenant?.();
+          },
+        ],
+        ['close-status-modal', () => window.closeDeletionStatusModal?.()],
+        [
+          'navigate',
+          (target) => {
+            const href = target.dataset.href;
+            if (href) window.location.href = href;
+          },
+        ],
+      ]);
+
+      // Handle action based on data-action attribute
+      function handleAction(action, target) {
+        const handler = actionHandlers.get(action);
+        if (handler) handler(target);
+      }
+
       // Event Delegation for all actions
       document.addEventListener('click', function (e) {
         const target = e.target.closest('[data-action]');
         if (!target) return;
 
         const action = target.dataset.action;
-
-        switch (action) {
-          case 'show-delete-modal':
-            if (window.showDeleteModal) window.showDeleteModal();
-            break;
-          case 'close-delete-modal':
-            if (window.closeDeleteModal) window.closeDeleteModal();
-            break;
-          case 'delete-tenant':
-            if (window.deleteTenant && !target.disabled) window.deleteTenant();
-            break;
-          case 'close-status-modal':
-            if (window.closeDeletionStatusModal) window.closeDeletionStatusModal();
-            break;
-          case 'navigate': {
-            const href = target.dataset.href;
-            if (href) window.location.href = href;
-            break;
-          }
-        }
+        handleAction(action, target);
       });
 
       // Modal functions

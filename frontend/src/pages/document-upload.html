@@ -877,6 +877,85 @@
         }
       }
 
+      // Recipient configuration mapping using Map to avoid object injection
+      const recipientConfig = new Map([
+        [
+          'user',
+          {
+            idField: 'userId',
+            displaySelector: '#userDisplay',
+            errorMessage: 'Bitte wählen Sie einen Mitarbeiter aus.',
+          },
+        ],
+        [
+          'team',
+          {
+            idField: 'teamId',
+            displaySelector: '#teamDisplay',
+            errorMessage: 'Bitte wählen Sie ein Team aus.',
+          },
+        ],
+        [
+          'department',
+          {
+            idField: 'departmentId',
+            displaySelector: '#departmentDisplay',
+            errorMessage: 'Bitte wählen Sie eine Abteilung aus.',
+          },
+        ],
+        [
+          'company',
+          {
+            idField: null,
+            displayName: 'Gesamte Firma',
+          },
+        ],
+      ]);
+
+      // Validate recipient selection
+      function validateRecipient(recipientType, formData) {
+        const config = recipientConfig.get(recipientType);
+        if (!config) return { valid: false, error: 'Unbekannter Empfängertyp' };
+
+        if (recipientType === 'company') {
+          return { valid: true, recipientId: null, recipientName: config.displayName };
+        }
+
+        const recipientId = formData.get(config.idField);
+        if (!recipientId || recipientId === '') {
+          return { valid: false, error: config.errorMessage };
+        }
+
+        const recipientName = document.querySelector(config.displaySelector).querySelector('span').textContent;
+        return { valid: true, recipientId, recipientName };
+      }
+
+      // Prepare clean form data
+      function prepareFormData(formData, recipientType, fileInput, category) {
+        const cleanFormData = new FormData();
+        cleanFormData.append('recipientType', recipientType);
+        cleanFormData.append('document', fileInput.files[0]);
+        cleanFormData.append('category', category);
+
+        // Add optional fields
+        const description = formData.get('description');
+        if (description) cleanFormData.append('description', description);
+
+        const year = formData.get('year');
+        if (year) cleanFormData.append('year', year);
+
+        const month = formData.get('month');
+        if (month) cleanFormData.append('month', month);
+
+        // Add recipient-specific field
+        const config = recipientConfig.get(recipientType);
+        if (config && config.idField) {
+          cleanFormData.append(config.idField, formData.get(config.idField));
+        }
+
+        return cleanFormData;
+      }
+
       // Dokument hochladen
       async function uploadDocument(e) {
         e.preventDefault();
@@ -890,81 +969,24 @@
         const recipientType = document.querySelector('input[name="recipientType"]:checked').value;
         formData.append('recipientType', recipientType);
 
+        // Validate recipient
+        const recipientValidation = validateRecipient(recipientType, formData);
+        if (!recipientValidation.valid) {
+          showError(recipientValidation.error);
+          return;
+        }
+
         // Überprüfen, ob alle erforderlichen Felder ausgefüllt sind
         const category = formData.get('category');
         const fileInput = document.querySelector(FILE_INPUT_SELECTOR);
-
-        let recipientId = null;
-        // recipientName wird für zukünftige Features vorbereitet
-        let recipientName = '';
-
-        switch (recipientType) {
-          case 'user':
-            recipientId = formData.get('userId');
-            recipientName = document.querySelector('#userDisplay').querySelector('span').textContent;
-            if (!recipientId || recipientId === '') {
-              showError('Bitte wählen Sie einen Mitarbeiter aus.');
-              return;
-            }
-            break;
-          case 'team':
-            recipientId = formData.get('teamId');
-            recipientName = document.querySelector('#teamDisplay').querySelector('span').textContent;
-            if (!recipientId || recipientId === '') {
-              showError('Bitte wählen Sie ein Team aus.');
-              return;
-            }
-            break;
-          case 'department':
-            recipientId = formData.get('departmentId');
-            recipientName = document.querySelector('#departmentDisplay').querySelector('span').textContent;
-            if (!recipientId || recipientId === '') {
-              showError('Bitte wählen Sie eine Abteilung aus.');
-              return;
-            }
-            break;
-          case 'company':
-            recipientName = 'Gesamte Firma';
-            // Kein recipientId nötig für company
-            break;
-        }
 
         if (!category || !fileInput.files.length) {
           showError('Bitte füllen Sie alle erforderlichen Felder aus und wählen Sie eine Datei aus.');
           return;
         }
 
-        // Entferne nicht benötigte Felder aus FormData
-        const cleanFormData = new FormData();
-
-        // Füge nur die benötigten Felder hinzu
-        cleanFormData.append('recipientType', recipientType);
-        cleanFormData.append('document', fileInput.files[0]);
-        cleanFormData.append('category', category);
-
-        // Füge optionale Felder nur hinzu, wenn sie einen Wert haben
-        const description = formData.get('description');
-        if (description) cleanFormData.append('description', description);
-
-        const year = formData.get('year');
-        if (year) cleanFormData.append('year', year);
-
-        const month = formData.get('month');
-        if (month) cleanFormData.append('month', month);
-
-        // Füge nur den relevanten Empfänger hinzu
-        switch (recipientType) {
-          case 'user':
-            cleanFormData.append('userId', formData.get('userId'));
-            break;
-          case 'team':
-            cleanFormData.append('teamId', formData.get('teamId'));
-            break;
-          case 'department':
-            cleanFormData.append('departmentId', formData.get('departmentId'));
-            break;
-          // Bei 'company' wird kein spezifischer Empfänger benötigt
-        }
+        // Prepare clean form data
+        const cleanFormData = prepareFormData(formData, recipientType, fileInput, category);
 
         // Bestätigungsdialog anzeigen
         showConfirmationDialog(cleanFormData, async () => {

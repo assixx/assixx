@@ -36,11 +36,39 @@ class ModalManager {
   show(modalId: string, config?: Partial<ModalConfig>): HTMLElement | null {
     console.info(`[ModalManager] show() called for modalId: ${modalId}`);
 
-    // Check if modal already exists in activeModals
+    // Check and validate modal existence
+    let modal = this.checkModalExistence(modalId);
+
+    // Ensure modal is created
+    if (!modal) {
+      modal = this.ensureModalCreated(modalId, config);
+      if (!modal) {
+        return null;
+      }
+    }
+
+    // Add modal to DOM
+    this.addModalToDOM(modalId, modal);
+
+    // Setup animation and show modal
+    this.setupModalAnimation(modalId, modal);
+
+    // Track active modal
+    this.activeModals.set(modalId, modal);
+
+    // Call onOpen callback
+    if (config?.onOpen) {
+      console.info(`[ModalManager] Calling onOpen callback...`);
+      config.onOpen();
+    }
+
+    return modal;
+  }
+
+  private checkModalExistence(modalId: string): HTMLElement | undefined {
     let modal = this.activeModals.get(modalId);
     console.info(`[ModalManager] Existing modal in map: ${String(modal !== undefined)}`);
 
-    // Also check if it's in the DOM
     const modalInDom = document.querySelector(`#${modalId}`);
     console.info(`[ModalManager] Modal in DOM: ${String(modalInDom !== null)}`);
 
@@ -48,24 +76,30 @@ class ModalManager {
     if (modal && !modalInDom) {
       console.info(`[ModalManager] Modal was removed from DOM, clearing from map`);
       this.activeModals.delete(modalId);
-      modal = undefined;
+      return undefined;
     }
+
+    return modal;
+  }
+
+  private ensureModalCreated(modalId: string, config?: Partial<ModalConfig>): HTMLElement | undefined {
+    console.info(`[ModalManager] Creating new modal...`);
+    const createdModal = this.createModal(modalId, config);
+    const modal = createdModal ?? undefined;
 
     if (!modal) {
-      // Create modal from template or config
-      console.info(`[ModalManager] Creating new modal...`);
-      const createdModal = this.createModal(modalId, config);
-      modal = createdModal ?? undefined;
-      if (!modal) {
-        console.error(`[ModalManager] Failed to create modal!`);
-        return null;
-      }
-      console.info(`[ModalManager] Modal created successfully`);
-      console.info(`[ModalManager] Modal element:`, modal);
-      console.info(`[ModalManager] Modal parentElement before append:`, modal.parentElement);
+      console.error(`[ModalManager] Failed to create modal!`);
+      return undefined;
     }
 
-    // Add to DOM if not already there or not in document.body
+    console.info(`[ModalManager] Modal created successfully`);
+    console.info(`[ModalManager] Modal element:`, modal);
+    console.info(`[ModalManager] Modal parentElement before append:`, modal.parentElement);
+
+    return modal;
+  }
+
+  private addModalToDOM(modalId: string, modal: HTMLElement): void {
     if (!modal.parentElement || modal.parentElement !== document.body) {
       console.info(`[ModalManager] Adding modal to DOM...`);
       console.info(`[ModalManager] Current parent:`, modal.parentElement);
@@ -82,11 +116,12 @@ class ModalManager {
     } else {
       console.info(`[ModalManager] Modal already in document.body`);
     }
+  }
 
+  private setupModalAnimation(modalId: string, modal: HTMLElement): void {
     // Remove active class first to reset animation
     modal.classList.remove('active');
 
-    // Show modal with animation
     console.info(`[ModalManager] Showing modal with animation...`);
 
     // Ensure the modal is visible by removing any inline styles that might interfere
@@ -102,55 +137,52 @@ class ModalManager {
       modal.classList.add('active');
       console.info(`[ModalManager] Modal classes after show: ${modal.className}`);
 
-      // Add event listeners for close buttons
-      const closeButtons = modal.querySelectorAll('[data-action="close"], .modal-close');
-      closeButtons.forEach((button) => {
-        const closeHandler = (e: Event) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.info(`[ModalManager] Close button clicked for modal: ${modalId}`);
-          this.hide(modalId);
-        };
-
-        // Remove old listener if exists (to prevent duplicates)
-        button.removeEventListener('click', closeHandler);
-        // Add new listener
-        button.addEventListener('click', closeHandler);
-      });
+      // Setup close handlers
+      this.setupCloseHandlers(modalId, modal);
 
       // Double-check visibility after a frame
-      window.requestAnimationFrame(() => {
-        const styles = window.getComputedStyle(modal);
-        console.info(`[ModalManager] Modal computed style visibility:`, styles.visibility);
-        console.info(`[ModalManager] Modal computed style opacity:`, styles.opacity);
-        console.info(`[ModalManager] Modal computed style display:`, styles.display);
-
-        // If still not visible, force it (also check for empty string)
-        if (
-          styles.opacity === '' ||
-          styles.opacity === '0' ||
-          styles.visibility === 'hidden' ||
-          styles.visibility === '' ||
-          styles.display === 'none'
-        ) {
-          console.warn('[ModalManager] Modal not visible, forcing visibility');
-          modal.style.opacity = '1';
-          modal.style.visibility = 'visible';
-          modal.style.display = 'flex';
-        }
-      });
+      this.checkVisibilityAfterFrame(modal);
     });
+  }
 
-    // Track active modal
-    this.activeModals.set(modalId, modal);
+  private setupCloseHandlers(modalId: string, modal: HTMLElement): void {
+    const closeButtons = modal.querySelectorAll('[data-action="close"], .modal-close');
+    closeButtons.forEach((button) => {
+      const closeHandler = (e: Event) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.info(`[ModalManager] Close button clicked for modal: ${modalId}`);
+        this.hide(modalId);
+      };
 
-    // Call onOpen callback
-    if (config?.onOpen) {
-      console.info(`[ModalManager] Calling onOpen callback...`);
-      config.onOpen();
-    }
+      // Remove old listener if exists (to prevent duplicates)
+      button.removeEventListener('click', closeHandler);
+      // Add new listener
+      button.addEventListener('click', closeHandler);
+    });
+  }
 
-    return modal;
+  private checkVisibilityAfterFrame(modal: HTMLElement): void {
+    window.requestAnimationFrame(() => {
+      const styles = window.getComputedStyle(modal);
+      console.info(`[ModalManager] Modal computed style visibility:`, styles.visibility);
+      console.info(`[ModalManager] Modal computed style opacity:`, styles.opacity);
+      console.info(`[ModalManager] Modal computed style display:`, styles.display);
+
+      // If still not visible, force it (also check for empty string)
+      if (
+        styles.opacity === '' ||
+        styles.opacity === '0' ||
+        styles.visibility === 'hidden' ||
+        styles.visibility === '' ||
+        styles.display === 'none'
+      ) {
+        console.warn('[ModalManager] Modal not visible, forcing visibility');
+        modal.style.opacity = '1';
+        modal.style.visibility = 'visible';
+        modal.style.display = 'flex';
+      }
+    });
   }
 
   /**

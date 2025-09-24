@@ -34,6 +34,52 @@ class KvpPermissionService {
     }
   }
 
+  private async getSuggestionDetails(suggestionId: number): Promise<RowDataPacket | null> {
+    const [suggestions] = await executeQuery<RowDataPacket[]>(
+      `SELECT tenant_id, department_id, org_level, org_id, submitted_by
+       FROM kvp_suggestions
+       WHERE id = ?`,
+      [suggestionId],
+    );
+    return suggestions.length > 0 ? suggestions[0] : null;
+  }
+
+  private async canEmployeeViewSuggestion(
+    userId: number,
+    suggestion: RowDataPacket,
+  ): Promise<boolean> {
+    // Can see own suggestions
+    if (suggestion.submitted_by === userId) return true;
+
+    // Can see company-wide suggestions
+    if (suggestion.org_level === 'company') return true;
+
+    // Can see department suggestions if in same department
+    const [userInfo] = await executeQuery<RowDataPacket[]>(
+      'SELECT department_id FROM users WHERE id = ?',
+      [userId],
+    );
+
+    if (userInfo.length > 0 && suggestion.org_level === 'department') {
+      return userInfo[0].department_id === suggestion.department_id;
+    }
+
+    return false;
+  }
+
+  private async canAdminViewSuggestion(
+    userId: number,
+    suggestion: RowDataPacket,
+    tenantId: number,
+  ): Promise<boolean> {
+    // Can see company-wide
+    if (suggestion.org_level === 'company') return true;
+
+    // Check if admin manages this department
+    const adminDepts = await this.getAdminDepartments(userId, tenantId);
+    return adminDepts.includes(suggestion.department_id as number);
+  }
+
   /**
    * Check if user can view a specific KVP suggestion
    * @param userId - The user ID
@@ -52,49 +98,19 @@ class KvpPermissionService {
       if (role === 'root') return true;
 
       // Get suggestion details
-      const [suggestions] = await executeQuery<RowDataPacket[]>(
-        `SELECT tenant_id, department_id, org_level, org_id, submitted_by 
-         FROM kvp_suggestions 
-         WHERE id = ?`,
-        [suggestionId],
-      );
-
-      if (suggestions.length === 0) return false;
-      const suggestion = suggestions[0];
+      const suggestion = await this.getSuggestionDetails(suggestionId);
+      if (!suggestion) return false;
 
       // Check tenant match
       if (suggestion.tenant_id !== tenantId) return false;
 
-      // Employee logic
+      // Check role-specific permissions
       if (role === 'employee') {
-        // Can see own suggestions
-        if (suggestion.submitted_by === userId) return true;
-
-        // Can see company-wide suggestions
-        if (suggestion.org_level === 'company') return true;
-
-        // Can see department suggestions if in same department
-        const [userInfo] = await executeQuery<RowDataPacket[]>(
-          'SELECT department_id FROM users WHERE id = ?',
-          [userId],
-        );
-
-        if (userInfo.length > 0 && suggestion.org_level === 'department') {
-          return userInfo[0].department_id === suggestion.department_id;
-        }
+        return await this.canEmployeeViewSuggestion(userId, suggestion);
       }
 
-      // Admin logic
-      if (role === 'admin') {
-        // Can see company-wide
-        if (suggestion.org_level === 'company') return true;
-
-        // Check if admin manages this department
-        const adminDepts = await this.getAdminDepartments(userId, tenantId);
-        return adminDepts.includes(suggestion.department_id as number);
-      }
-
-      return false;
+      // At this point, role must be 'admin' (union type exhausted)
+      return await this.canAdminViewSuggestion(userId, suggestion, tenantId);
     } catch (error: unknown) {
       logger.error('Error checking view permission:', error);
       return false;
@@ -152,59 +168,61 @@ class KvpPermissionService {
     }
   }
 
-  /**
-   * Build SQL WHERE clause for visibility filtering
-   * @param params - The parameters object
-   */
-  async buildVisibilityQuery(params: KvpVisibilityQuery): Promise<{
-    whereClause: string;
-    queryParams: (string | number)[];
-  }> {
-    const { userId, role, tenantId, includeArchived, statusFilter, departmentFilter } = params;
-    const conditions: string[] = ['s.tenant_id = ?'];
-    const queryParams: (string | number)[] = [tenantId];
+  private async addEmployeeVisibilityConditions(
+    userId: number,
+    conditions: string[],
+    queryParams: (string | number)[],
+  ): Promise<void> {
+    // Get user's department
+    const [userInfo] = await executeQuery<RowDataPacket[]>(
+      'SELECT department_id FROM users WHERE id = ?',
+      [userId],
+    );
 
-    // Root sees everything
-    if (role === 'root') {
-      // No additional filters needed
-    } else if (role === 'employee') {
-      // Get user's department
-      const [userInfo] = await executeQuery<RowDataPacket[]>(
-        'SELECT department_id FROM users WHERE id = ?',
-        [userId],
-      );
+    const userDeptId = userInfo[0]?.department_id as number | null;
 
-      const userDeptId = userInfo[0]?.department_id as number | null;
+    // Employee sees: own + department + company-wide
+    const visibilityConditions = [
+      's.submitted_by = ?',
+      '(s.org_level = ? AND s.department_id = ?)',
+      's.org_level = ?',
+    ];
 
-      // Employee sees: own + department + company-wide
-      const visibilityConditions = [
-        's.submitted_by = ?',
-        '(s.org_level = ? AND s.department_id = ?)',
-        's.org_level = ?',
-      ];
+    conditions.push(`(${visibilityConditions.join(' OR ')})`);
+    queryParams.push(
+      userId,
+      'department',
+      userDeptId ?? 0, // Use 0 as fallback for NULL department
+      'company',
+    );
+  }
 
-      conditions.push(`(${visibilityConditions.join(' OR ')})`);
-      queryParams.push(
-        userId,
-        'department',
-        userDeptId ?? 0, // Use 0 as fallback for NULL department
-        'company',
-      );
+  private async addAdminVisibilityConditions(
+    userId: number,
+    tenantId: number,
+    conditions: string[],
+    queryParams: (string | number)[],
+  ): Promise<void> {
+    // Admin role - Get admin's managed departments
+    const adminDepts = await this.getAdminDepartments(userId, tenantId);
+
+    if (adminDepts.length > 0) {
+      const deptPlaceholders = adminDepts.map(() => '?').join(',');
+      conditions.push(`(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`);
+      queryParams.push(...adminDepts, 'company');
     } else {
-      // Admin role - Get admin's managed departments
-      const adminDepts = await this.getAdminDepartments(userId, tenantId);
-
-      if (adminDepts.length > 0) {
-        const deptPlaceholders = adminDepts.map(() => '?').join(',');
-        conditions.push(`(s.department_id IN (${deptPlaceholders}) OR s.org_level = ?)`);
-        queryParams.push(...adminDepts, 'company');
-      } else {
-        // Admin with no departments only sees company-wide
-        conditions.push('s.org_level = ?');
-        queryParams.push('company');
-      }
+      // Admin with no departments only sees company-wide
+      conditions.push('s.org_level = ?');
+      queryParams.push('company');
     }
+  }
 
+  private addStatusFilterConditions(
+    statusFilter: string | undefined,
+    includeArchived: boolean | undefined,
+    conditions: string[],
+    queryParams: (string | number)[],
+  ): void {
     // Status filter
     if (includeArchived === false) {
       conditions.push('s.status != ?');
@@ -220,6 +238,31 @@ class KvpPermissionService {
         queryParams.push(statusFilter);
       }
     }
+  }
+
+  /**
+   * Build SQL WHERE clause for visibility filtering
+   * @param params - The parameters object
+   */
+  async buildVisibilityQuery(params: KvpVisibilityQuery): Promise<{
+    whereClause: string;
+    queryParams: (string | number)[];
+  }> {
+    const { userId, role, tenantId, includeArchived, statusFilter, departmentFilter } = params;
+    const conditions: string[] = ['s.tenant_id = ?'];
+    const queryParams: (string | number)[] = [tenantId];
+
+    // Add role-specific visibility conditions
+    if (role === 'root') {
+      // No additional filters needed for root
+    } else if (role === 'employee') {
+      await this.addEmployeeVisibilityConditions(userId, conditions, queryParams);
+    } else {
+      await this.addAdminVisibilityConditions(userId, tenantId, conditions, queryParams);
+    }
+
+    // Add status filters
+    this.addStatusFilterConditions(statusFilter, includeArchived, conditions, queryParams);
 
     // Department filter (for admins)
     if (departmentFilter != null && departmentFilter !== 0 && role === 'admin') {

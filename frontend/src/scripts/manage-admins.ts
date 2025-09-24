@@ -6,16 +6,15 @@ import { showSuccessAlert, showErrorAlert } from './utils/alerts';
 
 // DOM Element Selectors - Constants to avoid duplication
 const SELECTORS = {
-  ADMIN_MODAL: '#adminModal',
-  MODAL_TITLE: '#modalTitle',
-  ADMIN_PASSWORD: '#adminPassword',
-  ADMIN_PASSWORD_CONFIRM: '#adminPasswordConfirm',
-  ADMIN_EMAIL_CONFIRM: '#adminEmailConfirm',
-  POSITION_DROPDOWN_VALUE: '#positionDropdownValue',
-  DEPARTMENT_SELECT: '#departmentSelect',
-  DEPARTMENT_SELECT_CONTAINER: '#departmentSelectContainer',
-  PERMISSION_TYPE_RADIO: 'input[name="permissionType"]',
-  PERMISSION_TYPE_CHECKED: 'input[name="permissionType"]:checked',
+  ADMIN_MODAL: '#admin-modal',
+  MODAL_TITLE: '#admin-modal-title',
+  ADMIN_PASSWORD: '#admin-password',
+  ADMIN_PASSWORD_CONFIRM: '#admin-password-confirm',
+  ADMIN_EMAIL_CONFIRM: '#admin-email-confirm',
+  DEPARTMENT_SELECT: '#department-select',
+  DEPARTMENT_SELECT_CONTAINER: '#department-select-container',
+  PERMISSION_TYPE_RADIO: 'input[name="permission-type"]',
+  PERMISSION_TYPE_CHECKED: 'input[name="permission-type"]:checked',
   EMAIL_ERROR: '#email-error',
   PASSWORD_ERROR: '#password-error',
 } as const;
@@ -73,6 +72,15 @@ let currentAdminId: number | null = null;
 let admins: Admin[] = [];
 let tenants: Tenant[] = [];
 
+// DOM Elements
+let addAdminBtn: HTMLButtonElement | null;
+let adminModal: HTMLElement | null;
+let deleteModal: HTMLElement | null;
+let adminForm: HTMLFormElement | null;
+let adminsTableContent: HTMLElement | null;
+let loadingDiv: HTMLElement | null;
+let emptyDiv: HTMLElement | null;
+
 // Initialize API Client
 const apiClient = ApiClient.getInstance();
 
@@ -123,7 +131,7 @@ async function loadAdminPermissions(adminId: number): Promise<{ departments: Dep
       permissions?: { departments?: Department[] };
       departments?: Department[];
       hasAllAccess?: boolean;
-    }>(`/root/admins/${String(adminId)}/permissions`, { method: 'GET' }, { version: 'v2' });
+    }>(`/admin-permissions/${String(adminId)}`, { method: 'GET' }, { version: 'v2' });
 
     // API v2 structure
     if (response.permissions !== undefined) {
@@ -182,69 +190,96 @@ async function loadAndPopulateDepartments() {
   }
 }
 
+// Generate HTML for a single admin table row
+function generateAdminRow(admin: Admin): string {
+  console.info(`Rendering admin row - ID: ${String(admin.id)}, isActive: ${String(admin.isActive)}`);
+
+  const lastLogin =
+    admin.lastLogin !== undefined && admin.lastLogin !== ''
+      ? new Date(admin.lastLogin).toLocaleString('de-DE')
+      : 'Noch nie';
+  const deptBadge = getDepartmentsBadge(admin);
+
+  const statusClass = !admin.isActive ? 'table-warning' : '';
+  const statusBadge = !admin.isActive ? ' <span class="badge badge-warning">Inaktiv</span>' : '';
+
+  console.info(`Admin ${admin.username} - statusClass: ${statusClass}, statusBadge: ${statusBadge}`);
+
+  return `
+    <tr class="${statusClass}">
+      <td>${String(admin.id)}</td>
+      <td>${admin.firstName} ${admin.lastName}${statusBadge}</td>
+      <td>${admin.email}</td>
+      <td>${getPositionDisplay(admin.position ?? '')}</td>
+      <td>${lastLogin}</td>
+      <td>${deptBadge}</td>
+      <td>
+        <button class="action-btn edit" data-action="edit-admin" data-admin-id="${String(admin.id)}">
+          Bearbeiten
+        </button>
+        <button class="action-btn permissions" data-action="show-permissions" data-admin-id="${String(admin.id)}">
+          Berechtigungen
+        </button>
+        <button class="action-btn delete" data-action="delete-admin" data-admin-id="${String(admin.id)}">
+          Löschen
+        </button>
+      </td>
+    </tr>
+  `;
+}
+
 // Render admin table
 function renderAdminTable() {
   console.info('renderAdminTable called');
-  const tbody = $$('#admins-table tbody');
-  if (tbody === null) {
-    console.error('admins-table tbody not found');
+  if (adminsTableContent === null) {
+    console.error('adminsTableContent not found');
     return;
   }
 
+  // Hide loading, show content
+  loadingDiv?.classList.add('u-hidden');
+
   if (admins.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="9" class="text-center">Keine Administratoren gefunden</td></tr>';
+    setHTML(adminsTableContent, '');
+    emptyDiv?.classList.remove('u-hidden');
     return;
   }
+
+  // Hide empty state
+  emptyDiv?.classList.add('u-hidden');
 
   console.info('Admins to render:', admins);
 
-  const rows = admins
-    .map((admin) => {
-      console.info(`Rendering admin row - ID: ${String(admin.id)}, isActive: ${String(admin.isActive)}`);
-
-      const lastLogin =
-        admin.lastLogin !== undefined && admin.lastLogin !== ''
-          ? new Date(admin.lastLogin).toLocaleString('de-DE')
-          : 'Noch nie';
-      const deptBadge = getDepartmentsBadge(admin);
-
-      const statusClass = !admin.isActive ? 'table-warning' : '';
-      const statusBadge = !admin.isActive ? ' <span class="badge badge-warning">Inaktiv</span>' : '';
-
-      console.info(`Admin ${admin.username} - statusClass: ${statusClass}, statusBadge: ${statusBadge}`);
-
-      return `
-        <tr class="${statusClass}">
-          <td>${String(admin.id)}</td>
-          <td>${admin.firstName} ${admin.lastName}${statusBadge}</td>
-          <td>${admin.email}</td>
-          <td>${getPositionDisplay(admin.position ?? '')}</td>
-          <td>${lastLogin}</td>
-          <td>${deptBadge}</td>
-          <td>
-            <button class="btn btn-sm btn-primary" onclick="window.editAdmin && window.editAdmin(${String(admin.id)})">
-              Bearbeiten
-            </button>
-            <button class="btn btn-sm btn-secondary" onclick="window.showPermissionsModal && window.showPermissionsModal(${String(
-              admin.id,
-            )})">
-              Berechtigungen
-            </button>
-            <button class="btn btn-sm btn-danger" onclick="window.deleteAdmin && window.deleteAdmin(${String(admin.id)})">
-              Löschen
-            </button>
-          </td>
+  const tableHTML = `
+    <table class="admin-table" id="admins-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>E-Mail</th>
+          <th>Position</th>
+          <th>Letzter Login</th>
+          <th>Abteilungen</th>
+          <th>Aktionen</th>
         </tr>
-      `;
-    })
-    .join('');
+      </thead>
+      <tbody>
+        ${admins.map((admin) => generateAdminRow(admin)).join('')}
+      </tbody>
+    </table>
+  `;
 
-  setHTML(tbody, rows);
+  setHTML(adminsTableContent, tableHTML);
 }
 
 // Load admins
 async function loadAdmins() {
   console.info('loadAdmins called');
+
+  // Show loading state
+  loadingDiv?.classList.remove('u-hidden');
+  emptyDiv?.classList.add('u-hidden');
+
   try {
     const endpoint = '/root/admins';
 
@@ -289,6 +324,8 @@ async function loadAdmins() {
   } catch (error) {
     console.error('Fehler:', error);
     showErrorAlert('Netzwerkfehler beim Laden der Admins');
+    // Hide loading on error
+    loadingDiv?.classList.add('u-hidden');
   }
 }
 
@@ -316,7 +353,7 @@ async function loadTenants() {
 
 // Update tenant dropdown
 function updateTenantDropdown() {
-  const select = $$('#adminTenant') as HTMLSelectElement | null;
+  const select = $$('#admin-tenant') as HTMLSelectElement | null;
   if (select !== null) {
     setHTML(
       select,
@@ -397,7 +434,7 @@ async function showPermissionsModal(adminId: number) {
 
 // Helper functions for form submission
 function validateEmails(): boolean {
-  const emailEl = $$('#adminEmail') as HTMLInputElement | null;
+  const emailEl = $$('#admin-email') as HTMLInputElement | null;
   const emailConfirmEl = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
   const email = emailEl !== null ? emailEl.value : '';
   const emailConfirm = emailConfirmEl !== null ? emailConfirmEl.value : '';
@@ -429,13 +466,13 @@ function validatePasswords(): boolean {
 }
 
 function getFormData(): AdminFormData {
-  const firstNameEl = $$('#adminFirstName') as HTMLInputElement | null;
-  const lastNameEl = $$('#adminLastName') as HTMLInputElement | null;
-  const emailEl = $$('#adminEmail') as HTMLInputElement | null;
+  const firstNameEl = $$('#admin-first-name') as HTMLInputElement | null;
+  const lastNameEl = $$('#admin-last-name') as HTMLInputElement | null;
+  const emailEl = $$('#admin-email') as HTMLInputElement | null;
   const email = emailEl !== null ? emailEl.value : '';
   const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
-  const positionEl = $$(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement | null;
-  const employeeNumberEl = $$('#adminEmployeeNumber') as HTMLInputElement | null;
+  const positionEl = $$('#admin-position') as HTMLSelectElement | null;
+  const employeeNumberEl = $$('#admin-employee-number') as HTMLInputElement | null;
 
   const formData: AdminFormData = {
     firstName: firstNameEl !== null ? firstNameEl.value : '',
@@ -444,14 +481,14 @@ function getFormData(): AdminFormData {
     username: email,
     password: passwordEl !== null ? passwordEl.value : '',
     position: positionEl !== null ? positionEl.value : '',
-    notes: ($('#adminNotes') as HTMLTextAreaElement).value,
+    notes: ($('#admin-notes') as HTMLTextAreaElement).value,
     role: 'admin',
     employeeNumber: employeeNumberEl !== null ? employeeNumberEl.value : '',
   };
 
   // Include isActive only when updating
   if (currentAdminId !== null && currentAdminId !== 0) {
-    const checkbox = $('#adminIsActive') as HTMLInputElement;
+    const checkbox = $('#admin-is-active') as HTMLInputElement;
     console.info('Checkbox checked state:', checkbox.checked);
     formData.isActive = checkbox.checked;
   }
@@ -550,37 +587,34 @@ async function updatePermissions(adminId: number): Promise<void> {
 
 // Helper functions to reduce cognitive complexity
 function fillAdminFormFields(admin: Admin): void {
-  ($('#adminFirstName') as HTMLInputElement).value = admin.firstName;
-  ($('#adminLastName') as HTMLInputElement).value = admin.lastName;
-  ($('#adminEmail') as HTMLInputElement).value = admin.email;
+  ($('#admin-first-name') as HTMLInputElement).value = admin.firstName;
+  ($('#admin-last-name') as HTMLInputElement).value = admin.lastName;
+  ($('#admin-email') as HTMLInputElement).value = admin.email;
   ($(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement).value = admin.email;
-  ($('#adminNotes') as HTMLTextAreaElement).value = admin.notes ?? '';
+  ($('#admin-notes') as HTMLTextAreaElement).value = admin.notes ?? '';
 }
 
 function setPositionDropdown(positionValue: string): void {
-  ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = positionValue;
-  const displayText = positionValue !== '' ? getPositionDisplay(positionValue) : 'Position auswählen...';
-  const positionDropdown = $$('#positionDropdownDisplay');
-  if (!positionDropdown) return;
-
-  const span = positionDropdown.querySelector('span');
-  if (span) span.textContent = displayText;
+  const positionSelect = $$('#admin-position') as HTMLSelectElement | null;
+  if (positionSelect) {
+    positionSelect.value = positionValue;
+  }
 }
 
 function setActiveStatus(isActive: boolean): void {
-  const activeStatusGroup = $$('#activeStatusGroup');
+  const activeStatusGroup = $$('#active-status-group');
   if (activeStatusGroup) activeStatusGroup.style.display = 'block';
 
-  const isActiveCheckbox = $('#adminIsActive') as HTMLInputElement;
+  const isActiveCheckbox = $('#admin-is-active') as HTMLInputElement;
   console.info('Setting checkbox for edit - isActive:', isActive);
   isActiveCheckbox.checked = isActive;
 }
 
 function hideEditModeElements(): void {
   const elements = [
-    { selector: '#emailConfirmGroup', display: 'none' },
-    { selector: '#passwordGroup', display: 'none' },
-    { selector: '#passwordConfirmGroup', display: 'none' },
+    { selector: '#email-confirm-group', display: 'none' },
+    { selector: '#password-group', display: 'none' },
+    { selector: '#password-confirm-group', display: 'none' },
     { selector: SELECTORS.EMAIL_ERROR, display: 'none' },
     { selector: SELECTORS.PASSWORD_ERROR, display: 'none' },
   ];
@@ -599,7 +633,7 @@ async function setPermissionType(admin: Admin): Promise<void> {
 
   // Hide all containers first
   const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-  const groupContainer = $$('#groupSelectContainer');
+  const groupContainer = $$('#group-select-container');
   if (deptContainer) deptContainer.style.display = 'none';
   if (groupContainer) groupContainer.style.display = 'none';
 
@@ -667,7 +701,6 @@ async function editAdminHandler(adminId: number) {
   const admin = admins.find((a) => String(a.id) === String(adminId));
   if (!admin) return;
 
-  const modal = $$(SELECTORS.ADMIN_MODAL);
   const title = $$(SELECTORS.MODAL_TITLE);
   if (title) title.textContent = 'Admin bearbeiten';
 
@@ -683,7 +716,7 @@ async function editAdminHandler(adminId: number) {
   await setPermissionType(admin);
   setOptionalFields();
 
-  modal?.classList.add('active');
+  adminModal?.classList.add('active');
 }
 
 async function showDeleteConfirmationModal(admin: Admin): Promise<boolean> {
@@ -708,7 +741,7 @@ async function showDeleteConfirmationModal(admin: Admin): Promise<boolean> {
     document.body.appendChild(modal);
 
     const confirmBtn = modal.querySelector('#confirm-delete');
-    const cancelBtn = modal.querySelector('#cancel-delete');
+    const cancelBtn = modal.querySelector('#cancel-delete-modal');
 
     const cleanup = () => {
       modal.remove();
@@ -773,35 +806,34 @@ async function deleteAdminHandler(adminId: number) {
 
 // Helper function to clear form fields
 function clearFormFields() {
-  ($('#adminFirstName') as HTMLInputElement).value = '';
-  ($('#adminLastName') as HTMLInputElement).value = '';
-  ($('#adminEmail') as HTMLInputElement).value = '';
+  ($('#admin-first-name') as HTMLInputElement).value = '';
+  ($('#admin-last-name') as HTMLInputElement).value = '';
+  ($('#admin-email') as HTMLInputElement).value = '';
   ($(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement).value = '';
   ($(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement).value = '';
   ($(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement).value = '';
-  ($('#adminNotes') as HTMLTextAreaElement).value = '';
-  ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = '';
+  ($('#admin-notes') as HTMLTextAreaElement).value = '';
+  resetPositionDropdown();
 }
 
 // Helper function to reset position dropdown
 function resetPositionDropdown() {
-  const positionDropdown = $$('#positionDropdownDisplay');
-  if (positionDropdown) {
-    const span = positionDropdown.querySelector('span');
-    if (span) span.textContent = 'Position auswählen...';
+  const positionSelect = $$('#admin-position') as HTMLSelectElement | null;
+  if (positionSelect) {
+    positionSelect.value = '';
   }
 }
 
 // Helper function to reset form visibility
 function resetFormVisibility() {
-  const activeStatusGroup = $$('#activeStatusGroup');
+  const activeStatusGroup = $$('#active-status-group');
   if (activeStatusGroup) activeStatusGroup.style.display = 'none';
 
-  const emailConfirmGroup = $$('#emailConfirmGroup');
+  const emailConfirmGroup = $$('#email-confirm-group');
   if (emailConfirmGroup) emailConfirmGroup.style.display = 'block';
 
-  const passwordGroup = $$('#passwordGroup');
-  const passwordConfirmGroup = $$('#passwordConfirmGroup');
+  const passwordGroup = $$('#password-group');
+  const passwordConfirmGroup = $$('#password-confirm-group');
   if (passwordGroup) passwordGroup.style.display = 'block';
   if (passwordConfirmGroup) passwordConfirmGroup.style.display = 'block';
 }
@@ -821,11 +853,11 @@ function resetPermissionSettings() {
   });
 
   const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-  const groupContainer = $$('#groupSelectContainer');
+  const groupContainer = $$('#group-select-container');
   if (deptContainer) deptContainer.style.display = 'none';
   if (groupContainer) groupContainer.style.display = 'none';
 
-  const noneRadio = document.querySelector('input[name="permissionType"][value="none"]');
+  const noneRadio = document.querySelector('input[name="permission-type"][value="none"]');
   if (noneRadio) {
     (noneRadio as HTMLInputElement).checked = true;
   }
@@ -842,7 +874,6 @@ function resetModalUIElements() {
 // Modal functions
 function showAddAdminModal() {
   currentAdminId = null;
-  const modal = $$(SELECTORS.ADMIN_MODAL);
   const title = $$(SELECTORS.MODAL_TITLE);
 
   if (title) title.textContent = 'Neuen Administrator hinzufügen';
@@ -865,12 +896,11 @@ function showAddAdminModal() {
     passwordConfirmField.required = true;
   }
 
-  modal?.classList.add('active');
+  adminModal?.classList.add('active');
 }
 
 function closeAdminModal() {
-  const modal = $$(SELECTORS.ADMIN_MODAL);
-  modal?.classList.remove('active');
+  adminModal?.classList.remove('active');
   currentAdminId = null;
 }
 
@@ -878,6 +908,27 @@ function closePermissionsModal() {
   const modal = $$('#permissionsModal');
   if (modal) {
     modal.classList.remove('active');
+  }
+}
+
+// Close delete modal
+function closeDeleteModal(): void {
+  deleteModal?.classList.remove('active');
+}
+
+// Show delete modal
+function showDeleteModal(adminId: number): void {
+  const admin = admins.find((a) => a.id === adminId);
+  if (!admin) {
+    showErrorAlert('Administrator nicht gefunden');
+    return;
+  }
+
+  const deleteIdInput = document.querySelector<HTMLInputElement>('#delete-admin-id');
+
+  if (deleteModal && deleteIdInput) {
+    deleteIdInput.value = String(adminId);
+    deleteModal.classList.add('active');
   }
 }
 
@@ -1006,48 +1057,7 @@ function setupPasswordValidation() {
   }
 }
 
-// Helper function to setup position dropdown
-function setupPositionDropdown() {
-  const positionDropdown = $$('#positionDropdownDisplay');
-  const positionDropdownMenu = $$('.position-dropdown-menu');
-
-  if (positionDropdown && positionDropdownMenu) {
-    positionDropdown.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      positionDropdownMenu.classList.toggle('show');
-    });
-
-    // Handle position selection
-    const positionItems = positionDropdownMenu.querySelectorAll('.dropdown-item');
-    positionItems.forEach((item) => {
-      item.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (!(e.target instanceof HTMLElement)) return;
-        const target = e.target;
-        const position = target.dataset.value ?? '';
-        const displayText = target.textContent;
-
-        // Update display
-        const span = positionDropdown.querySelector('span');
-        if (span) span.textContent = displayText;
-
-        // Update hidden input
-        ($(SELECTORS.POSITION_DROPDOWN_VALUE) as HTMLInputElement).value = position;
-
-        // Close dropdown
-        positionDropdownMenu.classList.remove('show');
-      });
-    });
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-      if (!positionDropdown.contains(e.target as Node) && !positionDropdownMenu.contains(e.target as Node)) {
-        positionDropdownMenu.classList.remove('show');
-      }
-    });
-  }
-}
+// Position dropdown no longer needed - using standard select element
 
 // Check authentication
 function checkAuth(): boolean {
@@ -1076,7 +1086,7 @@ function setupPermissionRadioHandlers(): void {
       void (async () => {
         const permissionType = (e.target as HTMLInputElement).value;
         const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-        const groupContainer = $$('#groupSelectContainer');
+        const groupContainer = $$('#group-select-container');
 
         // Hide all containers first
         if (deptContainer !== null) deptContainer.style.display = 'none';
@@ -1096,8 +1106,8 @@ function setupPermissionRadioHandlers(): void {
 
 // Setup department selection buttons
 function setupDepartmentSelectionButtons(): void {
-  const selectAllBtn = $$('#selectAllDepartments');
-  const deselectAllBtn = $$('#deselectAllDepartments');
+  const selectAllBtn = $$('#select-all-departments');
+  const deselectAllBtn = $$('#deselect-all-departments');
   const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
 
   selectAllBtn?.addEventListener('click', (e) => {
@@ -1121,7 +1131,7 @@ function setupDepartmentSelectionButtons(): void {
 
 // Setup form submit handler
 function setupFormSubmitHandler(): void {
-  $$('#adminForm')?.addEventListener('submit', (e) => {
+  adminForm?.addEventListener('submit', (e) => {
     void (async () => {
       e.preventDefault();
 
@@ -1158,13 +1168,80 @@ function setupFormSubmitHandler(): void {
   });
 }
 
+// Initialize DOM elements
+function initializeDOMElements(): void {
+  addAdminBtn = document.querySelector<HTMLButtonElement>('#add-admin-btn');
+  adminModal = document.querySelector('#admin-modal');
+  deleteModal = document.querySelector('#delete-admin-modal');
+  adminForm = document.querySelector<HTMLFormElement>('#admin-form');
+  adminsTableContent = document.querySelector('#admins-table-content');
+  loadingDiv = document.querySelector('#admins-loading');
+  emptyDiv = document.querySelector('#admins-empty');
+}
+
+// Attach event listeners
+function attachEventListeners(): void {
+  // Add admin button
+  addAdminBtn?.addEventListener('click', () => {
+    showAddAdminModal();
+  });
+
+  // Modal close buttons
+  document.querySelector('#close-admin-modal')?.addEventListener('click', closeAdminModal);
+  document.querySelector('#cancel-admin-modal')?.addEventListener('click', closeAdminModal);
+  document.querySelector('#close-delete-modal')?.addEventListener('click', closeDeleteModal);
+  document.querySelector('#cancel-delete-modal')?.addEventListener('click', closeDeleteModal);
+
+  // Delete confirmation
+  document.querySelector('#confirm-delete-admin')?.addEventListener('click', () => {
+    const deleteInput = document.querySelector<HTMLInputElement>('#delete-admin-id');
+    if (deleteInput !== null && deleteInput.value !== '') {
+      void deleteAdminHandler(Number.parseInt(deleteInput.value, 10));
+    }
+  });
+
+  // Event delegation for admin action buttons
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+
+    // Handle edit admin
+    const editBtn = target.closest<HTMLElement>('[data-action="edit-admin"]');
+    if (editBtn) {
+      const adminId = editBtn.dataset.adminId;
+      if (adminId !== undefined) {
+        void editAdminHandler(Number.parseInt(adminId, 10));
+      }
+    }
+
+    // Handle delete admin
+    const deleteBtn = target.closest<HTMLElement>('[data-action="delete-admin"]');
+    if (deleteBtn) {
+      const adminId = deleteBtn.dataset.adminId;
+      if (adminId !== undefined) {
+        showDeleteModal(Number.parseInt(adminId, 10));
+      }
+    }
+
+    // Handle permissions
+    const permBtn = target.closest<HTMLElement>('[data-action="show-permissions"]');
+    if (permBtn) {
+      const adminId = permBtn.dataset.adminId;
+      if (adminId !== undefined) {
+        void showPermissionsModal(Number.parseInt(adminId, 10));
+      }
+    }
+  });
+}
+
 // Initialize the admin management
 (() => {
   if (!checkAuth()) return;
 
+  initializeDOMElements();
+  attachEventListeners();
   setupGlobalFunctions();
   loadInitialData();
-  setupPositionDropdown();
+  // setupPositionDropdown(); - No longer needed, using standard select
   setupPermissionRadioHandlers();
   setupDepartmentSelectionButtons();
   setupFormSubmitHandler();

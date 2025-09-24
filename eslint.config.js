@@ -85,7 +85,7 @@ export default [
       'max-lines': [
         'warn',
         {
-          max: 8000,
+          max: 800,
           skipBlankLines: true,
           skipComments: true,
         },
@@ -449,7 +449,7 @@ export default [
       'max-lines': [
         'warn',
         {
-          max: 4000, // Stricter for frontend
+          max: 400, // Stricter for frontend
           skipBlankLines: true,
           skipComments: true,
         },
@@ -789,7 +789,7 @@ export default [
       'prefer-template': 'error',
       'no-return-await': 'error',
       'max-depth': 'off',
-      'max-lines': ['warn', 4000],
+      'max-lines': ['warn', 400],
       'require-await': 'error',
       'no-async-promise-executor': 'error',
       'prefer-promise-reject-errors': 'error',

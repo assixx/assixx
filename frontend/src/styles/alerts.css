@@ -1,0 +1,86 @@
+/**
+ * Alerts and Confirmation Dialog Styles
+ * Used by the alerts.ts utility for showing confirmation dialogs
+ */
+
+.custom-confirm-dialog {
+  position: fixed;
+  z-index: 99999;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+}
+
+.confirm-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  height: 100%;
+
+  background: rgb(0 0 0 / 70%);
+}
+
+.confirm-modal {
+  max-width: 500px;
+  padding: 30px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 12px;
+
+  background: linear-gradient(135deg, rgb(30 30 40 / 95%) 0%, rgb(20 20 30 / 95%) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
+}
+
+.confirm-modal p {
+  margin: 0 0 25px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #fff;
+}
+
+.confirm-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+}
+
+.confirm-buttons button {
+  cursor: pointer;
+
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-md);
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition: all 0.3s ease;
+}
+
+.btn-confirm-yes {
+  color: #fff;
+  background: linear-gradient(135deg, #00d4ff 0%, #09c 100%);
+}
+
+.btn-confirm-yes:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgb(0 212 255 / 30%);
+}
+
+.btn-confirm-no {
+  border: 1px solid rgb(255 255 255 / 20%);
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
+}
+
+.btn-confirm-no:hover {
+  background: rgb(255 255 255 / 15%);
+}

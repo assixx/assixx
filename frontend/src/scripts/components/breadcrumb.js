@@ -423,7 +423,8 @@ function handleSurveyPages(items, currentPage) {
 
 // Helper: Handle admin pages
 function handleAdminPages(items, currentPage) {
-  const adminPages = ['/manage-users', '/manage-admins', '/admin-config'];
+  // manage-admins is now standalone, not under admin-dashboard anymore
+  const adminPages = ['/manage-users', '/admin-config'];
   if (adminPages.includes(currentPage)) {
     items.push({
       label: ADMIN_DASHBOARD_LABEL,

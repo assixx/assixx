@@ -13,7 +13,12 @@ import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types';
 import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { logger } from '../../../utils/logger';
-import { ServiceError, documentsService } from './documents.service';
+import {
+  DocumentCreateInput,
+  DocumentFilters,
+  ServiceError,
+  documentsService,
+} from './documents.service';
 
 interface Document {
   id: number;
@@ -131,26 +136,29 @@ export const uploadMiddleware = upload.single('document');
  *       500:
  *         description: Server error
  */
+function parseDocumentFilters(query: AuthenticatedRequest['query']): DocumentFilters {
+  return {
+    category: query.category as string,
+    recipientType: query.recipientType as string,
+    userId: query.userId ? Number.parseInt(query.userId as string) : undefined,
+    teamId: query.teamId ? Number.parseInt(query.teamId as string) : undefined,
+    departmentId: query.departmentId ? Number.parseInt(query.departmentId as string) : undefined,
+    year: query.year ? Number.parseInt(query.year as string) : undefined,
+    month: query.month ? Number.parseInt(query.month as string) : undefined,
+    isArchived: query.isArchived === 'true',
+    search: query.search as string,
+    page: query.page ? Number.parseInt(query.page as string) : 1,
+    limit: query.limit ? Number.parseInt(query.limit as string) : 20,
+  };
+}
+
 export async function listDocuments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     logger.info('Documents v2: listDocuments called', {
       userId: req.user.id,
       tenantId: req.user.tenant_id,
     });
-    const filters = {
-      category: req.query.category as string,
-      recipientType: req.query.recipientType as string,
-      userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
-      teamId: req.query.teamId ? Number.parseInt(req.query.teamId as string) : undefined,
-      departmentId:
-        req.query.departmentId ? Number.parseInt(req.query.departmentId as string) : undefined,
-      year: req.query.year ? Number.parseInt(req.query.year as string) : undefined,
-      month: req.query.month ? Number.parseInt(req.query.month as string) : undefined,
-      isArchived: req.query.isArchived === 'true',
-      search: req.query.search as string,
-      page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-      limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
-    };
+    const filters = parseDocumentFilters(req.query);
 
     const result = await documentsService.listDocuments(req.user.id, req.user.tenant_id, filters);
 
@@ -289,6 +297,56 @@ export async function getDocumentById(req: AuthenticatedRequest, res: Response):
  *       500:
  *         description: Server error
  */
+function parseDocumentData(
+  file: Express.Multer.File,
+  body: Record<string, string>,
+): DocumentCreateInput {
+  return {
+    filename: file.filename || file.originalname,
+    originalName: file.originalname,
+    fileSize: file.size,
+    fileContent: file.buffer,
+    mimeType: file.mimetype,
+    category: body.category,
+    recipientType: body.recipientType,
+    userId: body.userId ? Number.parseInt(body.userId) : undefined,
+    teamId: body.teamId ? Number.parseInt(body.teamId) : undefined,
+    departmentId: body.departmentId ? Number.parseInt(body.departmentId) : undefined,
+    description: body.description,
+    year: body.year ? Number.parseInt(body.year) : undefined,
+    month: body.month ? Number.parseInt(body.month) : undefined,
+    tags: body.tags ? (JSON.parse(body.tags) as string[]) : undefined,
+    isPublic: body.isPublic === 'true',
+    expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+  };
+}
+
+async function logDocumentUpload(
+  document: unknown,
+  documentData: DocumentCreateInput,
+  req: AuthenticatedRequest,
+): Promise<void> {
+  await rootLog.create({
+    tenant_id: req.user.tenant_id,
+    user_id: req.user.id,
+    action: 'upload',
+    entity_type: 'document',
+    entity_id: (document as Document).id,
+    details: `Hochgeladen: ${(document as Document).filename || documentData.filename}`,
+    new_values: {
+      filename: (document as Document).filename || documentData.filename,
+      category: documentData.category,
+      file_size: documentData.fileSize,
+      mime_type: documentData.mimeType,
+      recipient_type: documentData.recipientType,
+      uploaded_by: req.user.email,
+    },
+    ip_address: req.ip ?? req.socket.remoteAddress,
+    user_agent: req.get('user-agent'),
+    was_role_switched: false,
+  });
+}
+
 export async function createDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     if (!req.file) {
@@ -296,27 +354,8 @@ export async function createDocument(req: AuthenticatedRequest, res: Response): 
       return;
     }
 
-    // Cast req.body to proper type for form data
     const body = req.body as Record<string, string>;
-
-    const documentData = {
-      filename: req.file.filename || req.file.originalname,
-      originalName: req.file.originalname,
-      fileSize: req.file.size,
-      fileContent: req.file.buffer,
-      mimeType: req.file.mimetype,
-      category: body.category,
-      recipientType: body.recipientType,
-      userId: body.userId ? Number.parseInt(body.userId) : undefined,
-      teamId: body.teamId ? Number.parseInt(body.teamId) : undefined,
-      departmentId: body.departmentId ? Number.parseInt(body.departmentId) : undefined,
-      description: body.description,
-      year: body.year ? Number.parseInt(body.year) : undefined,
-      month: body.month ? Number.parseInt(body.month) : undefined,
-      tags: body.tags ? (JSON.parse(body.tags) as string[]) : undefined,
-      isPublic: body.isPublic === 'true',
-      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
-    };
+    const documentData = parseDocumentData(req.file, body);
 
     const document = await documentsService.createDocument(
       documentData,
@@ -324,26 +363,7 @@ export async function createDocument(req: AuthenticatedRequest, res: Response): 
       req.user.tenant_id,
     );
 
-    // Log document upload
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'upload',
-      entity_type: 'document',
-      entity_id: (document as unknown as Document).id,
-      details: `Hochgeladen: ${(document as unknown as Document).filename || documentData.filename}`,
-      new_values: {
-        filename: (document as unknown as Document).filename || documentData.filename,
-        category: documentData.category,
-        file_size: documentData.fileSize,
-        mime_type: documentData.mimeType,
-        recipient_type: documentData.recipientType,
-        uploaded_by: req.user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
-      was_role_switched: false,
-    });
+    await logDocumentUpload(document, documentData, req);
 
     res.status(201).json(successResponse(document));
   } catch (error: unknown) {

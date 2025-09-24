@@ -290,6 +290,35 @@ export class KVPService {
     }
   }
 
+  private validateUpdatePermissions(
+    existing: KVPSuggestion,
+    data: KVPUpdateData,
+    userId: number,
+    userRole: string,
+  ): void {
+    // Check permissions
+    if (userRole === 'employee' && existing.submittedBy !== userId) {
+      throw new ServiceError('FORBIDDEN', 'You can only update your own suggestions');
+    }
+
+    // Update status is admin-only operation
+    if (data.status && userRole !== 'admin' && userRole !== 'root') {
+      throw new ServiceError('FORBIDDEN', 'Only admins can update status');
+    }
+  }
+
+  private buildUpdateFields(data: KVPUpdateData): Record<string, unknown> {
+    const updateFields: Record<string, unknown> = {};
+    if (data.title !== undefined) updateFields.title = data.title;
+    if (data.description !== undefined) updateFields.description = data.description;
+    if (data.categoryId !== undefined) updateFields.category_id = data.categoryId;
+    if (data.priority !== undefined) updateFields.priority = data.priority;
+    if (data.expectedBenefit !== undefined) updateFields.expected_benefit = data.expectedBenefit;
+    if (data.estimatedCost !== undefined) updateFields.estimated_cost = data.estimatedCost;
+    if (data.actualSavings !== undefined) updateFields.actual_savings = data.actualSavings;
+    return updateFields;
+  }
+
   /**
    * Update a KVP suggestion
    * @param id - The resource ID
@@ -308,15 +337,8 @@ export class KVPService {
     // First, check if the suggestion exists and user has access
     const existing = await this.getSuggestionById(id, tenantId, userId, userRole);
 
-    // Check permissions
-    if (userRole === 'employee' && existing.submittedBy !== userId) {
-      throw new ServiceError('FORBIDDEN', 'You can only update your own suggestions');
-    }
-
-    // Update status is admin-only operation
-    if (data.status && userRole !== 'admin' && userRole !== 'root') {
-      throw new ServiceError('FORBIDDEN', 'Only admins can update status');
-    }
+    // Validate permissions
+    this.validateUpdatePermissions(existing, data, userId, userRole);
 
     try {
       // If status is being updated, use the special method
@@ -331,15 +353,7 @@ export class KVPService {
       }
 
       // Update other fields
-      const updateFields: Record<string, unknown> = {};
-      if (data.title !== undefined) updateFields.title = data.title;
-      if (data.description !== undefined) updateFields.description = data.description;
-      if (data.categoryId !== undefined) updateFields.category_id = data.categoryId;
-      if (data.priority !== undefined) updateFields.priority = data.priority;
-      if (data.expectedBenefit !== undefined) updateFields.expected_benefit = data.expectedBenefit;
-      if (data.estimatedCost !== undefined) updateFields.estimated_cost = data.estimatedCost;
-      if (data.actualSavings !== undefined) updateFields.actual_savings = data.actualSavings;
-
+      const updateFields = this.buildUpdateFields(data);
       if (Object.keys(updateFields).length > 0) {
         await kvpModel.updateSuggestion(id, tenantId, updateFields);
       }

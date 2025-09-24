@@ -12,18 +12,7 @@ import path from 'path';
 import Feature from '../models/feature';
 import { logger } from './logger';
 
-/**
- * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
- * Entfernt gefährliche Tags und Attribute
- * @param html - Der zu bereinigende HTML-Inhalt
- * @returns Bereinigter HTML-Inhalt
- */
-function sanitizeHtml(html: string): string {
-  if (!html) return '';
-
-  let sanitized = html;
-
-  // Schritt 1: Entferne gefährliche Tags mit mehreren Durchgängen
+function removeDangerousTags(html: string): string {
   const dangerousTags = [
     'script',
     'iframe',
@@ -35,59 +24,51 @@ function sanitizeHtml(html: string): string {
     'base',
     'applet',
   ];
-
-  // Mehrere Durchgänge um verschachtelte Tags zu erwischen
+  let sanitized = html;
   for (let i = 0; i < 3; i++) {
     dangerousTags.forEach((tag) => {
-      // Entferne komplette Tags mit Inhalt (inkl. malformed end tags)
       // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(fullTagRegex, '');
-
-      // Entferne self-closing und einzelne Tags
       // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(singleTagRegex, '');
-
-      // Entferne closing Tags falls übrig (inkl. malformed tags)
       // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const closeTagRegex = new RegExp(`</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(closeTagRegex, '');
     });
   }
+  return sanitized;
+}
 
-  // Schritt 2: Entferne Event-Handler mit mehreren Patterns
+function removeEventHandlers(html: string): string {
   const eventHandlerPatterns = [
     /\bon\w+\s*=\s*["'][^"']*["']/gi,
     /\bon\w+\s*=\s*`[^`]*`/gi,
     /\bon\w+\s*=\s*[^\s>]+/gi,
-    /\son\w+/gi, // Fallback für alleinstehende Handler
+    /\son\w+/gi,
   ];
-
-  // Mehrere Durchgänge für vollständige Entfernung
+  let sanitized = html;
   for (let i = 0; i < 3; i++) {
     eventHandlerPatterns.forEach((pattern) => {
       sanitized = sanitized.replace(pattern, '');
     });
   }
+  return sanitized;
+}
 
-  // Schritt 3: URL-Bereinigung mit verbesserter Erkennung
+function sanitizeUrls(html: string): string {
   const urlPatterns = [
-    // href Attribute
     /href\s*=\s*["']([^"']*)["']/gi,
     /href\s*=\s*([^\s>]+)/gi,
-    // src Attribute
     /src\s*=\s*["']([^"']*)["']/gi,
     /src\s*=\s*([^\s>]+)/gi,
-    // andere URL Attribute
     /(?:action|formaction|data|code|codebase)\s*=\s*["']([^"']*)["']/gi,
   ];
-
+  let sanitized = html;
   urlPatterns.forEach((pattern) => {
     sanitized = sanitized.replace(pattern, (match: string, url: string) => {
       const lowerUrl = url.toLowerCase().trim();
-
-      // Gefährliche Schemas
       if (
         /^(javascript|vbscript|data:text\/html|data:text\/javascript|data:application\/javascript)/i.test(
           lowerUrl,
@@ -95,52 +76,56 @@ function sanitizeHtml(html: string): string {
       ) {
         return match.replace(url, '#');
       }
-
-      // Für data: URLs - nur Bilder erlauben
       if (
         lowerUrl.startsWith('data:') &&
         !/^data:image\/(png|jpg|jpeg|gif|webp|svg\+xml)/i.test(lowerUrl)
       ) {
         return match.replace(url, '#');
       }
-
       return match;
     });
   });
+  return sanitized;
+}
 
-  // Schritt 4: Style-Bereinigung
-  sanitized = sanitized.replace(
-    /style\s*=\s*["']([^"']*)["']/gi,
-    (_match: string, styleContent: string) => {
-      let cleanedStyle = styleContent;
+function sanitizeStyles(html: string): string {
+  return html.replace(/style\s*=\s*["']([^"']*)["']/gi, (_match: string, styleContent: string) => {
+    let cleanedStyle = styleContent;
+    const dangerousCSS = [
+      /expression\s*\([^)]*\)/gi,
+      /javascript\s*:/gi,
+      /vbscript\s*:/gi,
+      /-moz-binding\s*:/gi,
+      /behavior\s*:/gi,
+      /@import/gi,
+      /import\s*\(/gi,
+    ];
+    dangerousCSS.forEach((pattern) => {
+      cleanedStyle = cleanedStyle.replace(pattern, '');
+    });
+    cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
+      if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
+        return '';
+      }
+      return urlMatch;
+    });
+    return cleanedStyle.trim() !== '' ? `style="${cleanedStyle}"` : '';
+  });
+}
 
-      // Gefährliche CSS-Eigenschaften mit globaler Ersetzung
-      const dangerousCSS = [
-        /expression\s*\([^)]*\)/gi,
-        /javascript\s*:/gi,
-        /vbscript\s*:/gi,
-        /-moz-binding\s*:/gi,
-        /behavior\s*:/gi,
-        /@import/gi,
-        /import\s*\(/gi,
-      ];
-
-      dangerousCSS.forEach((pattern) => {
-        cleanedStyle = cleanedStyle.replace(pattern, '');
-      });
-
-      // URL-Funktionen bereinigen
-      cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
-        if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
-          return '';
-        }
-        return urlMatch;
-      });
-
-      return cleanedStyle.trim() !== '' ? `style="${cleanedStyle}"` : '';
-    },
-  );
-
+/**
+ * Sanitiert HTML-Inhalt für sicheren E-Mail-Versand
+ * Entfernt gefährliche Tags und Attribute
+ * @param html - Der zu bereinigende HTML-Inhalt
+ * @returns Bereinigter HTML-Inhalt
+ */
+function sanitizeHtml(html: string): string {
+  if (!html) return '';
+  let sanitized = html;
+  sanitized = removeDangerousTags(sanitized);
+  sanitized = removeEventHandlers(sanitized);
+  sanitized = sanitizeUrls(sanitized);
+  sanitized = sanitizeStyles(sanitized);
   return sanitized.trim();
 }
 

@@ -121,20 +121,33 @@ class AreasManager {
     if (!tbody) return;
 
     if (this.areas.length === 0) {
-      const tr = document.createElement('tr');
-      const td = document.createElement('td');
-      td.colSpan = 7;
-      td.className = 'text-center text-muted';
-      td.textContent = 'Keine Bereiche gefunden';
-      tr.append(td);
-      tbody.innerHTML = '';
-      tbody.append(tr);
+      this.renderEmptyTable(tbody);
       return;
     }
 
-    const safeHTML = this.areas
-      .map(
-        (area) => `
+    const safeHTML = this.areas.map((area) => this.createAreaRowHTML(area)).join('');
+
+    // Use setHTML from dom-utils to safely set content
+    // This clears existing content and uses template element for safe parsing
+    setHTML(tbody, safeHTML);
+
+    // Add event listeners for buttons
+    this.attachRowEventListeners(tbody);
+  }
+
+  private renderEmptyTable(tbody: HTMLElement): void {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.className = 'text-center text-muted';
+    td.textContent = 'Keine Bereiche gefunden';
+    tr.append(td);
+    tbody.innerHTML = '';
+    tbody.append(tr);
+  }
+
+  private createAreaRowHTML(area: Area): string {
+    return `
       <tr>
         <td>
           <strong>${this.escapeHtml(area.name)}</strong>
@@ -160,15 +173,10 @@ class AreasManager {
           </button>
         </td>
       </tr>
-    `,
-      )
-      .join('');
+    `;
+  }
 
-    // Use setHTML from dom-utils to safely set content
-    // This clears existing content and uses template element for safe parsing
-    setHTML(tbody, safeHTML);
-
-    // Add event listeners for buttons
+  private attachRowEventListeners(tbody: HTMLElement): void {
     tbody.querySelectorAll('button[data-action]').forEach((button) => {
       button.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLButtonElement;
@@ -280,6 +288,128 @@ class AreasManager {
 // Initialize when DOM is ready
 let areasManager: AreasManager | null = null;
 
+// Setup area operation handlers
+function setupAreaHandlers(manager: AreasManager): void {
+  const w = window as unknown as WindowWithAreaHandlers;
+
+  w.editArea = async (id: number) => {
+    const area = await manager.getAreaDetails(id);
+    if (area !== null) {
+      // TODO: Open edit modal with area data
+      console.info('Edit area:', area);
+      showError('Bearbeitungsmodal noch nicht implementiert');
+    }
+  };
+
+  w.viewAreaDetails = async (id: number) => {
+    const area = await manager.getAreaDetails(id);
+    if (area !== null) {
+      // TODO: Open details modal
+      console.info('View area:', area);
+      showError('Detailansicht noch nicht implementiert');
+    }
+  };
+
+  w.deleteArea = async (id: number) => {
+    await manager.deleteArea(id);
+  };
+}
+
+// Setup modal handlers
+function setupModalHandlers(manager: AreasManager): void {
+  const w = window as unknown as WindowWithAreaHandlers;
+
+  w.showAreaModal = () => {
+    const modal = document.querySelector('#areaModal');
+    if (modal !== null) {
+      modal.classList.add('active');
+      const form = document.querySelector<HTMLFormElement>('#areaForm');
+      if (form) form.reset();
+    }
+  };
+
+  w.closeAreaModal = (): void => {
+    const modal = document.querySelector('#areaModal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+  };
+
+  w.saveArea = async (): Promise<void> => {
+    const form = document.querySelector<HTMLFormElement>('#areaForm');
+    if (!form) return;
+
+    const areaData = extractAreaData(form);
+    if (!validateAreaData(areaData)) {
+      showError('Bitte geben Sie einen Bereichsnamen ein');
+      return;
+    }
+
+    try {
+      await manager.createArea(areaData as Partial<Area>);
+      w.closeAreaModal?.();
+      showSuccess('Bereich erfolgreich hinzugefügt');
+    } catch (error) {
+      console.error('Error creating area:', error);
+      showError('Fehler beim Hinzufügen des Bereichs');
+    }
+  };
+}
+
+// Extract area data from form
+function extractAreaData(form: HTMLFormElement): Record<string, string | number> {
+  const formData = new FormData(form);
+  const areaData: Record<string, string | number> = {};
+  const allowedKeys = ['name', 'description', 'type', 'capacity', 'parentId', 'address', 'isActive'];
+
+  formData.forEach((value, key) => {
+    if (typeof value === 'string' && value.length > 0 && allowedKeys.includes(key)) {
+      if (key === 'capacity' || key === 'parentId') {
+        const numValue = Number.parseInt(value, 10);
+        if (!Number.isNaN(numValue)) {
+          Object.assign(areaData, { [key]: numValue });
+        }
+      } else {
+        Object.assign(areaData, { [key]: value });
+      }
+    }
+  });
+
+  return areaData;
+}
+
+// Validate area data
+function validateAreaData(areaData: Record<string, string | number>): boolean {
+  return typeof areaData.name === 'string' && areaData.name.length > 0;
+}
+
+// Setup visibility checking for areas section
+function setupVisibilityChecking(manager: AreasManager): void {
+  const checkAreasVisibility = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    if (section === 'areas') {
+      void manager.loadAreas();
+    }
+  };
+
+  checkAreasVisibility();
+  window.addEventListener('popstate', checkAreasVisibility);
+
+  // Override history methods to detect URL changes
+  const originalPushState = window.history.pushState.bind(window.history);
+  window.history.pushState = (...args): void => {
+    originalPushState(...args);
+    setTimeout(checkAreasVisibility, 100);
+  };
+
+  const originalReplaceState = window.history.replaceState.bind(window.history);
+  window.history.replaceState = (...args): void => {
+    originalReplaceState(...args);
+    setTimeout(checkAreasVisibility, 100);
+  };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Only initialize if we're on the admin dashboard
   if (window.location.pathname === '/admin-dashboard') {
@@ -291,117 +421,10 @@ document.addEventListener('DOMContentLoaded', () => {
       void areasManager?.loadAreas();
     };
 
-    // Expose functions globally for HTML onclick handlers
-    const w = window as unknown as WindowWithAreaHandlers;
-    w.editArea = async (id: number) => {
-      const area = await areasManager?.getAreaDetails(id);
-      if (area !== null && area !== undefined) {
-        // TODO: Open edit modal with area data
-        console.info('Edit area:', area);
-        showError('Bearbeitungsmodal noch nicht implementiert');
-      }
-    };
-
-    w.viewAreaDetails = async (id: number) => {
-      const area = await areasManager?.getAreaDetails(id);
-      if (area !== null && area !== undefined) {
-        // TODO: Open details modal
-        console.info('View area:', area);
-        showError('Detailansicht noch nicht implementiert');
-      }
-    };
-
-    w.deleteArea = async (id: number) => {
-      await areasManager?.deleteArea(id);
-    };
-
-    // Handler for floating add button
-    w.showAreaModal = () => {
-      const modal = document.querySelector('#areaModal');
-      if (modal !== null) {
-        modal.classList.add('active');
-
-        // Reset form
-        const form = document.querySelector<HTMLFormElement>('#areaForm');
-        if (form) form.reset();
-      }
-    };
-
-    // Close modal handler
-    w.closeAreaModal = (): void => {
-      const modal = document.querySelector('#areaModal');
-      if (modal) {
-        modal.classList.remove('active');
-      }
-    };
-
-    // Save area handler
-    w.saveArea = async (): Promise<void> => {
-      const form = document.querySelector<HTMLFormElement>('#areaForm');
-      if (!form) return;
-
-      const formData = new FormData(form);
-      const areaData: Record<string, string | number> = {};
-
-      // Convert FormData to object with safe key assignment
-      const allowedKeys = ['name', 'description', 'type', 'capacity', 'parentId', 'address', 'isActive'];
-
-      formData.forEach((value, key) => {
-        if (typeof value === 'string' && value.length > 0 && allowedKeys.includes(key)) {
-          if (key === 'capacity' || key === 'parentId') {
-            const numValue = Number.parseInt(value, 10);
-            if (!Number.isNaN(numValue)) {
-              Object.assign(areaData, { [key]: numValue });
-            }
-          } else {
-            Object.assign(areaData, { [key]: value });
-          }
-        }
-      });
-
-      // Validate required fields
-      if (typeof areaData.name !== 'string' || areaData.name.length === 0) {
-        showError('Bitte geben Sie einen Bereichsnamen ein');
-        return;
-      }
-
-      try {
-        await areasManager?.createArea(areaData as Partial<Area>);
-        w.closeAreaModal?.();
-        showSuccess('Bereich erfolgreich hinzugefügt');
-      } catch (error) {
-        console.error('Error creating area:', error);
-        showError('Fehler beim Hinzufügen des Bereichs');
-      }
-    };
-
-    // Function to check if areas section is visible
-    const checkAreasVisibility = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const section = urlParams.get('section');
-      if (section === 'areas') {
-        void areasManager?.loadAreas();
-      }
-    };
-
-    // Check on initial load
-    checkAreasVisibility();
-
-    // Listen for URL changes
-    window.addEventListener('popstate', checkAreasVisibility);
-
-    // Also check when section parameter changes
-    const originalPushState = window.history.pushState.bind(window.history);
-    window.history.pushState = (...args): void => {
-      originalPushState(...args);
-      setTimeout(checkAreasVisibility, 100);
-    };
-
-    const originalReplaceState = window.history.replaceState.bind(window.history);
-    window.history.replaceState = (...args): void => {
-      originalReplaceState(...args);
-      setTimeout(checkAreasVisibility, 100);
-    };
+    // Setup all handlers
+    setupAreaHandlers(areasManager);
+    setupModalHandlers(areasManager);
+    setupVisibilityChecking(areasManager);
   }
 });
 

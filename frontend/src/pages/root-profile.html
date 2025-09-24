@@ -193,6 +193,48 @@
 
       // User info wird durch header-user-info.ts geladen
 
+      // Extract user data from API response
+      function extractUserData(data) {
+        const user = data.data || data.user || data;
+        return {
+          email: user.email || '',
+          firstName: user.firstName || user.first_name || '',
+          lastName: user.lastName || user.last_name || '',
+          profilePicture: user.profilePictureUrl || user.profile_picture || '',
+        };
+      }
+
+      // Fill form fields with user data
+      function fillFormFields(userData) {
+        document.querySelector('#email').value = userData.email;
+        document.querySelector('#first_name').value = userData.firstName;
+        document.querySelector('#last_name').value = userData.lastName;
+      }
+
+      // Display user initials when no profile picture
+      function displayInitials(firstName, lastName) {
+        const container = document.querySelector('#profile-picture-display');
+        if (!container) return;
+
+        const firstInitial = firstName.charAt(0).toUpperCase() || '';
+        const lastInitial = lastName.charAt(0).toUpperCase() || '';
+        const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
+
+        console.info('[Root Profile] Setting initials:', { firstName, lastName, initials });
+        container.classList.add('avatar-initials');
+        container.textContent = initials;
+      }
+
+      // Handle profile picture display
+      function handleProfilePicture(profilePicture, firstName, lastName) {
+        if (profilePicture) {
+          displayProfilePicture(profilePicture);
+          // Header wird automatisch durch header-user-info.ts aktualisiert
+        } else {
+          displayInitials(firstName, lastName);
+        }
+      }
+
       // Load current profile data
       async function loadProfile() {
         try {
@@ -205,44 +247,17 @@
             },
           });
 
-          if (response.ok) {
-            const data = await response.json();
-            console.info('[Root Profile] API Response:', data);
-
-            // Handle different response formats
-            const user = data.data || data.user || data;
-
-            // Handle both camelCase (v2) and snake_case (v1)
-            const firstName = user.firstName || user.first_name || '';
-            const lastName = user.lastName || user.last_name || '';
-            const profilePicture = user.profilePictureUrl || user.profile_picture || '';
-
-            // Fill form fields
-            document.querySelector('#email').value = user.email || '';
-            document.querySelector('#first_name').value = firstName;
-            document.querySelector('#last_name').value = lastName;
-
-            // Load profile picture if exists
-            if (profilePicture) {
-              displayProfilePicture(profilePicture);
-              // Header wird automatisch durch header-user-info.ts aktualisiert
-            } else {
-              // Show initials if no profile picture
-              const container = document.querySelector('#profile-picture-display');
-              if (container) {
-                const firstInitial = firstName.charAt(0).toUpperCase() || '';
-                const lastInitial = lastName.charAt(0).toUpperCase() || '';
-                const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
-
-                console.info('[Root Profile] User data:', user);
-                console.info('[Root Profile] Setting initials:', { firstName, lastName, initials });
-                container.classList.add('avatar-initials');
-                container.textContent = initials;
-              }
-            }
-          } else {
+          if (!response.ok) {
             showMessage('Fehler beim Laden des Profils', 'error');
+            return;
           }
+
+          const data = await response.json();
+          console.info('[Root Profile] API Response:', data);
+
+          const userData = extractUserData(data);
+          fillFormFields(userData);
+          handleProfilePicture(userData.profilePicture, userData.firstName, userData.lastName);
         } catch (error) {
           console.error('Error loading profile:', error);
           showMessage('Fehler beim Laden des Profils', 'error');

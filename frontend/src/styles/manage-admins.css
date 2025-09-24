@@ -27,22 +27,33 @@ body::after {
 .admin-table {
   border-collapse: collapse;
   width: 100%;
-  margin-top: 20px;
+  background: transparent;
 }
 
-.admin-table th {
+.admin-table thead th {
   padding: 12px;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   font-weight: 600;
+  color: #fff;
   color: var(--text-primary);
   text-align: left;
 
-  background: rgb(33 150 243 / 10%);
+  background: #2196f31a;
 }
 
-.admin-table tr:hover {
-  background: rgb(255 255 255 / 2%);
+.admin-table tbody tr {
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  background: rgb(255 255 255 / 1%);
+}
+
+.admin-table tbody tr:hover {
+  background: rgb(255 255 255 / 3%);
+}
+
+.admin-table tbody td {
+  padding: 12px;
+  color: var(--text-primary);
 }
 
 /* Action Buttons */
@@ -81,6 +92,15 @@ body::after {
 .action-btn.delete:hover {
   border-color: rgb(244 67 54 / 50%);
   background: rgb(244 67 54 / 20%);
+}
+
+.action-btn.permissions {
+  border-color: rgb(156 39 176 / 30%);
+}
+
+.action-btn.permissions:hover {
+  border-color: rgb(156 39 176 / 50%);
+  background: rgb(156 39 176 / 20%);
 }
 
 /* Add Admin Button */

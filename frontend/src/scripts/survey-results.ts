@@ -401,75 +401,85 @@ class SurveyResultsPage {
     `;
 
     this.responsesData.responses.forEach((response, index) => {
-      console.info(`[Survey Results] Processing response ${index + 1}:`, response);
-
-      // Show user name only if not anonymous and we have user data
-      const respondentName = isAnonymous
-        ? `Anonym #${index + 1}`
-        : (() => {
-            const fullName = `${response.first_name ?? ''} ${response.last_name ?? ''}`.trim();
-            if (fullName !== '') return fullName;
-            if (response.username !== undefined && response.username !== '') return response.username;
-            return `Teilnehmer #${index + 1}`;
-          })();
-
-      const completedDate = (() => {
-        const dateValue = response.completed_at ?? response.completedAt;
-        if (dateValue !== undefined && dateValue !== '') {
-          return this.formatDate(dateValue);
-        }
-        return 'In Bearbeitung';
-      })();
-
-      html += `
-        <div class="response-card">
-          <div class="response-header">
-            <h4>${escapeHtml(respondentName)}</h4>
-            <span class="response-meta">
-              <i class="fas fa-clock"></i> ${completedDate}
-              ${
-                response.status === 'completed'
-                  ? '<span class="status-badge completed">Abgeschlossen</span>'
-                  : '<span class="status-badge pending">In Bearbeitung</span>'
-              }
-            </span>
-          </div>
-          <div class="response-answers">
-      `;
-
-      // Display answers for each question
-      if (this.surveyData?.questions && response.answers) {
-        this.surveyData.questions.forEach((question) => {
-          const answer = response.answers?.find((a) => a.question_id === question.id || a.questionId === question.id);
-
-          const questionText = question.questionText;
-          const answerText = answer
-            ? (answer.answer_text ??
-              answer.answerText ??
-              answer.answer_number ??
-              answer.answerNumber ??
-              'Keine Antwort')
-            : 'Keine Antwort';
-
-          html += `
-            <div class="answer-item">
-              <strong>${escapeHtml(questionText)}:</strong>
-              <span>${escapeHtml(String(answerText))}</span>
-            </div>
-          `;
-        });
-      }
-
-      html += `
-          </div>
-        </div>
-      `;
+      html += this.renderResponseCard(response, index, isAnonymous);
     });
 
     html += `
         </div>
       </div>
     `;
+
+    return html;
+  }
+
+  private renderResponseCard(response: SurveyResponse, index: number, isAnonymous: boolean): string {
+    console.info(`[Survey Results] Processing response ${index + 1}:`, response);
+
+    const respondentName = this.getRespondentName(response, index, isAnonymous);
+    const completedDate = this.getCompletedDate(response);
+    const statusBadge =
+      response.status === 'completed'
+        ? '<span class="status-badge completed">Abgeschlossen</span>'
+        : '<span class="status-badge pending">In Bearbeitung</span>';
+
+    return `
+      <div class="response-card">
+        <div class="response-header">
+          <h4>${escapeHtml(respondentName)}</h4>
+          <span class="response-meta">
+            <i class="fas fa-clock"></i> ${completedDate}
+            ${statusBadge}
+          </span>
+        </div>
+        <div class="response-answers">
+          ${this.renderAnswerItems(response)}
+        </div>
+      </div>
+    `;
+  }
+
+  private getRespondentName(response: SurveyResponse, index: number, isAnonymous: boolean): string {
+    if (isAnonymous) {
+      return `Anonym #${index + 1}`;
+    }
+
+    const fullName = `${response.first_name ?? ''} ${response.last_name ?? ''}`.trim();
+    if (fullName !== '') return fullName;
+    if (response.username !== undefined && response.username !== '') return response.username;
+    return `Teilnehmer #${index + 1}`;
+  }
+
+  private getCompletedDate(response: SurveyResponse): string {
+    const dateValue = response.completed_at ?? response.completedAt;
+    if (dateValue !== undefined && dateValue !== '') {
+      return this.formatDate(dateValue);
+    }
+    return 'In Bearbeitung';
+  }
+
+  private renderAnswerItems(response: SurveyResponse): string {
+    if (!this.surveyData?.questions || !response.answers) {
+      return '';
+    }
+
+    let html = '';
+    this.surveyData.questions.forEach((question) => {
+      const answer = response.answers?.find(
+        (a: ResponseAnswer) => a.question_id === question.id || a.questionId === question.id,
+      );
+
+      const questionText = question.questionText;
+      const answerText = answer
+        ? (answer.answer_text ?? answer.answerText ?? answer.answer_number ?? answer.answerNumber ?? 'Keine Antwort')
+        : 'Keine Antwort';
+
+      html += `
+        <div class="answer-item">
+          <strong>${escapeHtml(questionText)}:</strong>
+          <span>${escapeHtml(String(answerText))}</span>
+        </div>
+      `;
+    });
 
     return html;
   }

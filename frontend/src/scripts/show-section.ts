@@ -3,20 +3,85 @@
  * Used by admin-dashboard and unified-navigation
  */
 
+interface SectionWindow {
+  loadEmployeesTable?: () => void;
+  loadDocumentsTable?: () => void;
+  loadPayslipsTable?: () => void;
+  loadEmployeesForPayslipSelect?: () => void;
+  loadDepartmentsTable?: () => void;
+  loadTeamsTable?: () => void;
+}
+
+// Helper to hide all sections
+function hideAllSections(): void {
+  const allSections = document.querySelectorAll<HTMLElement>('.content-section, .dashboard-section');
+  allSections.forEach((section: HTMLElement) => {
+    section.style.display = 'none';
+    section.classList.remove('active');
+  });
+}
+
+// Helper to update navigation state
+function updateNavigationState(sectionName: string, sectionId: string): void {
+  const navItems = document.querySelectorAll<HTMLElement>('.nav-item');
+  navItems.forEach((item: HTMLElement) => {
+    item.classList.remove('active');
+    const itemSection = item.dataset.section;
+    if (itemSection === sectionName || itemSection === sectionId) {
+      item.classList.add('active');
+    }
+  });
+}
+
+// Helper to update URL
+function updateURLWithSection(sectionName: string, sectionId: string): void {
+  const url = new URL(window.location.href);
+  url.searchParams.set('section', sectionName);
+  window.history.replaceState({ section: sectionId }, '', url.toString());
+}
+
+// Helper to safely call a function if it exists
+function callIfExists(fn: (() => void) | undefined, name?: string): void {
+  if (typeof fn === 'function') {
+    if (name !== undefined && name !== '') {
+      console.info(`[ShowSection] Calling ${name}`);
+    }
+    fn();
+  } else if (name !== undefined && name !== '') {
+    console.warn(`[ShowSection] ${name} function not found`);
+  }
+}
+
+// Map section names to their loader functions
+function loadSectionData(sectionBaseName: string, sectionWindow: SectionWindow): void {
+  switch (sectionBaseName) {
+    case 'employees':
+      callIfExists(sectionWindow.loadEmployeesTable, 'loadEmployeesTable');
+      break;
+    case 'documents':
+      callIfExists(sectionWindow.loadDocumentsTable);
+      break;
+    case 'payslips':
+      callIfExists(sectionWindow.loadPayslipsTable);
+      callIfExists(sectionWindow.loadEmployeesForPayslipSelect);
+      break;
+    case 'departments':
+      callIfExists(sectionWindow.loadDepartmentsTable);
+      break;
+    case 'teams':
+      callIfExists(sectionWindow.loadTeamsTable);
+      break;
+  }
+}
+
 /**
  * Show a specific section and hide all others
  */
 export function showSection(sectionName: string): void {
   console.info(`[ShowSection] Navigating to section: ${sectionName}`);
 
-  // Hide all sections
-  const allSections = document.querySelectorAll<HTMLElement>('.content-section, .dashboard-section');
-  allSections.forEach((section: HTMLElement) => {
-    section.style.display = 'none';
-    section.classList.remove('active');
-  });
+  hideAllSections();
 
-  // Show requested section
   // Check if sectionName already contains '-section'
   let sectionId = sectionName;
   if (!sectionName.endsWith('-section')) {
@@ -28,68 +93,12 @@ export function showSection(sectionName: string): void {
     targetSection.style.display = 'block';
     targetSection.classList.add('active');
 
-    // Update navigation active state
-    const navItems = document.querySelectorAll<HTMLElement>('.nav-item');
-    navItems.forEach((item: HTMLElement) => {
-      item.classList.remove('active');
-      // Compare with original sectionName (without -section)
-      const itemSection = item.dataset.section;
-      if (itemSection === sectionName || itemSection === sectionId) {
-        item.classList.add('active');
-      }
-    });
-
-    // Update URL with query parameter
-    const url = new URL(window.location.href);
-    url.searchParams.set('section', sectionName);
-    window.history.replaceState({ section: sectionId }, '', url.toString());
+    updateNavigationState(sectionName, sectionId);
+    updateURLWithSection(sectionName, sectionId);
 
     console.info(`[ShowSection] Section ${sectionId} displayed`);
 
     // Load section-specific data (with small delay to ensure functions are loaded)
-    interface SectionWindow {
-      loadEmployeesTable?: () => void;
-      loadDocumentsTable?: () => void;
-      loadPayslipsTable?: () => void;
-      loadEmployeesForPayslipSelect?: () => void;
-      loadDepartmentsTable?: () => void;
-      loadTeamsTable?: () => void;
-    }
-
-    // Helper to safely call a function if it exists
-    function callIfExists(fn: (() => void) | undefined, name?: string): void {
-      if (typeof fn === 'function') {
-        if (name !== undefined && name !== '') {
-          console.info(`[ShowSection] Calling ${name}`);
-        }
-        fn();
-      } else if (name !== undefined && name !== '') {
-        console.warn(`[ShowSection] ${name} function not found`);
-      }
-    }
-
-    // Map section names to their loader functions
-    function loadSectionData(sectionBaseName: string, sectionWindow: SectionWindow): void {
-      switch (sectionBaseName) {
-        case 'employees':
-          callIfExists(sectionWindow.loadEmployeesTable, 'loadEmployeesTable');
-          break;
-        case 'documents':
-          callIfExists(sectionWindow.loadDocumentsTable);
-          break;
-        case 'payslips':
-          callIfExists(sectionWindow.loadPayslipsTable);
-          callIfExists(sectionWindow.loadEmployeesForPayslipSelect);
-          break;
-        case 'departments':
-          callIfExists(sectionWindow.loadDepartmentsTable);
-          break;
-        case 'teams':
-          callIfExists(sectionWindow.loadTeamsTable);
-          break;
-      }
-    }
-
     setTimeout(() => {
       const sectionBaseName = sectionName.replace('-section', '');
       const sectionWindow = window as unknown as SectionWindow;

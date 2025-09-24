@@ -1108,21 +1108,35 @@ class ChatClient {
     }
   }
 
+  private handleConnectionEstablished(): void {
+    console.info('✅ Connection established');
+    // Join conversations
+    this.conversations.forEach((conv) => {
+      if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+        this.ws.send(
+          JSON.stringify({
+            type: 'join_conversation',
+            data: { conversationId: conv.id },
+          }),
+        );
+      }
+    });
+  }
+
+  private handleWebSocketError(data: unknown): void {
+    console.error('❌ WebSocket Error:', data);
+    if (data !== null && data !== undefined && typeof data === 'object' && 'message' in data) {
+      const errorMessage = typeof data.message === 'string' ? data.message : 'Fehler beim Senden der Nachricht';
+      this.showNotification(errorMessage, 'error');
+    } else {
+      this.showNotification('Fehler bei der Kommunikation mit dem Server', 'error');
+    }
+  }
+
   handleWebSocketMessage(message: WebSocketMessage): void {
     switch (message.type) {
       case 'connection_established':
-        console.info('✅ Connection established');
-        // Join conversations
-        this.conversations.forEach((conv) => {
-          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(
-              JSON.stringify({
-                type: 'join_conversation',
-                data: { conversationId: conv.id },
-              }),
-            );
-          }
-        });
+        this.handleConnectionEstablished();
         break;
 
       case 'auth_error':
@@ -1132,7 +1146,6 @@ class ChatClient {
         break;
 
       case 'new_message': {
-        // Backend sends message data directly, not wrapped in { message, conversationId }
         const messageData = message.data as Message & { conversation_id: number };
         this.handleNewMessage({
           message: messageData,
@@ -1165,20 +1178,7 @@ class ChatClient {
         break;
 
       case 'error':
-        // Handle error messages from WebSocket
-        console.error('❌ WebSocket Error:', message.data);
-        if (
-          message.data !== null &&
-          message.data !== undefined &&
-          typeof message.data === 'object' &&
-          'message' in message.data
-        ) {
-          const errorMessage =
-            typeof message.data.message === 'string' ? message.data.message : 'Fehler beim Senden der Nachricht';
-          this.showNotification(errorMessage, 'error');
-        } else {
-          this.showNotification('Fehler bei der Kommunikation mit dem Server', 'error');
-        }
+        this.handleWebSocketError(message.data);
         break;
 
       default:
@@ -1847,49 +1847,63 @@ class ChatClient {
     }
   }
 
+  private createFileFormData(file: File): FormData {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (this.currentConversationId !== null && this.currentConversationId !== 0) {
+      formData.append('conversationId', this.currentConversationId.toString());
+    }
+    return formData;
+  }
+
+  private async uploadFileV2(formData: FormData): Promise<number | null> {
+    try {
+      const response = await this.apiClient.request<{ success: boolean; data: { id: number } }>('/chat/attachments', {
+        method: 'POST',
+        body: formData,
+      });
+      return response.success ? response.data.id : null;
+    } catch (error) {
+      console.error('❌ Error uploading file (v2):', error);
+      return null;
+    }
+  }
+
+  private async uploadFileV1(formData: FormData): Promise<number | null> {
+    try {
+      const response = await fetch('/api/chat/attachments', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.token ?? ''}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = (await response.json()) as { id: number };
+        return result.id;
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Error uploading file (v1):', error);
+      return null;
+    }
+  }
+
+  private async uploadSingleFile(file: File): Promise<number | null> {
+    const formData = this.createFileFormData(file);
+    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
+
+    return useV2 ? await this.uploadFileV2(formData) : await this.uploadFileV1(formData);
+  }
+
   async uploadFiles(): Promise<number[]> {
     const attachmentIds: number[] = [];
 
     for (const file of this.pendingFiles) {
-      try {
-        const formData = new FormData();
-        formData.append('file', file);
-        if (this.currentConversationId !== null && this.currentConversationId !== 0) {
-          formData.append('conversationId', this.currentConversationId.toString());
-        }
-
-        const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
-
-        if (useV2) {
-          // v2 API returns { success, data }
-          const response = await this.apiClient.request<{ success: boolean; data: { id: number } }>(
-            '/chat/attachments',
-            {
-              method: 'POST',
-              body: formData,
-            },
-          );
-
-          if (response.success) {
-            attachmentIds.push(response.data.id);
-          }
-        } else {
-          // v1 API - legacy code
-          const response = await fetch('/api/chat/attachments', {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${this.token ?? ''}`,
-            },
-            body: formData,
-          });
-
-          if (response.ok) {
-            const result = (await response.json()) as { id: number };
-            attachmentIds.push(result.id);
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error uploading file:', error);
+      const attachmentId = await this.uploadSingleFile(file);
+      if (attachmentId !== null) {
+        attachmentIds.push(attachmentId);
       }
     }
 
@@ -2489,80 +2503,67 @@ class ChatClient {
     });
   }
 
+  private createDepartmentOption(dept: { id: number; name: string }): HTMLDivElement {
+    const option = document.createElement('div');
+    option.className = 'dropdown-option';
+    option.onclick = () => {
+      if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
+        window.selectChatDropdownOption('department', dept.id, dept.name);
+      }
+    };
+
+    const optionInfo = document.createElement('div');
+    optionInfo.className = 'option-info';
+    const optionName = document.createElement('div');
+    optionName.className = 'option-name';
+    optionName.textContent = dept.name;
+    optionInfo.append(optionName);
+    option.append(optionInfo);
+
+    return option;
+  }
+
+  private renderDepartmentsToDropdown(departments: { id: number; name: string }[]): void {
+    const dropdown = $$('#departmentDropdown') as HTMLSelectElement | null;
+    if (!dropdown) return;
+
+    dropdown.innerHTML = '';
+    const deptList = Array.isArray(departments) ? departments : [];
+    deptList.forEach((dept) => {
+      dropdown.append(this.createDepartmentOption(dept));
+    });
+  }
+
+  private async loadDepartmentsV2(): Promise<void> {
+    const departments = await this.apiClient.request<{ id: number; name: string }[]>('/departments', {
+      method: 'GET',
+    });
+    this.renderDepartmentsToDropdown(departments);
+  }
+
+  private async loadDepartmentsV1(): Promise<void> {
+    const response = await fetch('/api/departments', {
+      headers: {
+        Authorization: `Bearer ${this.token ?? ''}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const departments = (await response.json()) as { id: number; name: string }[];
+    this.renderDepartmentsToDropdown(departments);
+  }
+
   private async loadDepartments(): Promise<void> {
     try {
       const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
       if (useV2) {
-        // v2 API returns data array directly
-        const departments = await this.apiClient.request<{ id: number; name: string }[]>('/departments', {
-          method: 'GET',
-        });
-
-        const dropdown = $$('#departmentDropdown') as HTMLSelectElement | null;
-
-        if (dropdown) {
-          dropdown.innerHTML = '';
-
-          // Handle both array response and empty departments
-          const deptList = Array.isArray(departments) ? departments : [];
-
-          deptList.forEach((dept: { id: number; name: string }) => {
-            const option = document.createElement('div');
-            option.className = 'dropdown-option';
-            option.onclick = () => {
-              if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
-                window.selectChatDropdownOption('department', dept.id, dept.name);
-              }
-            };
-            // Build option content with DOM methods
-            const optionInfo = document.createElement('div');
-            optionInfo.className = 'option-info';
-            const optionName = document.createElement('div');
-            optionName.className = 'option-name';
-            optionName.textContent = dept.name;
-            optionInfo.append(optionName);
-            option.append(optionInfo);
-            dropdown.append(option);
-          });
-        }
+        await this.loadDepartmentsV2();
       } else {
-        // v1 API - legacy code
-        const response = await fetch('/api/departments', {
-          headers: {
-            Authorization: `Bearer ${this.token ?? ''}`,
-          },
-        });
-
-        if (response.ok) {
-          const departments = (await response.json()) as { id: number; name: string }[];
-          const dropdown = $$('#departmentDropdown') as HTMLSelectElement | null;
-
-          if (dropdown) {
-            dropdown.innerHTML = '';
-
-            departments.forEach((dept) => {
-              const option = document.createElement('div');
-              option.className = 'dropdown-option';
-              option.onclick = () => {
-                if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
-                  window.selectChatDropdownOption('department', dept.id, dept.name);
-                }
-              };
-              // Build option content with DOM methods
-              const optionInfo = document.createElement('div');
-              optionInfo.className = 'option-info';
-              const optionName = document.createElement('div');
-              optionName.className = 'option-name';
-              optionName.textContent = dept.name;
-              optionInfo.append(optionName);
-              option.append(optionInfo);
-              dropdown.append(option);
-            });
-          }
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        await this.loadDepartmentsV1();
       }
     } catch (error) {
       console.error('Error loading departments:', error);
@@ -2802,57 +2803,51 @@ class ChatClient {
     void this.selectConversation(conversationId);
   }
 
+  private async deleteConversationV2(conversationId: number): Promise<void> {
+    const response = await this.apiClient.request<{ message: string }>(`/chat/conversations/${conversationId}`, {
+      method: 'DELETE',
+    });
+
+    if (response.message === '') {
+      throw new Error('Failed to delete conversation');
+    }
+  }
+
+  private async deleteConversationV1(conversationId: number): Promise<void> {
+    const response = await fetch(`/api/chat/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${this.token ?? ''}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+  }
+
   async deleteCurrentConversation(): Promise<void> {
     if (this.currentConversationId === null || this.currentConversationId === 0) return;
 
     // Use custom confirm dialog instead of native confirm
     const userConfirmed = await this.showConfirmDialog('Möchten Sie diese Unterhaltung wirklich löschen?');
-    if (!userConfirmed) {
-      return;
-    }
+    if (!userConfirmed) return;
 
     try {
       const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
       if (useV2) {
-        // v2 API returns { message: "..." } directly (apiClient unwraps success wrapper)
-        const response = await this.apiClient.request<{ message: string }>(
-          `/chat/conversations/${this.currentConversationId}`,
-          {
-            method: 'DELETE',
-          },
-        );
-
-        if (response.message !== '') {
-          this.showNotification('Unterhaltung gelöscht', 'success');
-
-          // Reload the page to refresh everything
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-        } else {
-          throw new Error('Failed to delete conversation');
-        }
+        await this.deleteConversationV2(this.currentConversationId);
       } else {
-        // v1 API - legacy code
-        const response = await fetch(`/api/chat/conversations/${this.currentConversationId}`, {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${this.token ?? ''}`,
-          },
-        });
-
-        if (response.ok) {
-          this.showNotification('Unterhaltung gelöscht', 'success');
-
-          // Reload the page to refresh everything
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-        } else {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        await this.deleteConversationV1(this.currentConversationId);
       }
+
+      this.showNotification('Unterhaltung gelöscht', 'success');
+
+      // Reload the page to refresh everything
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
     } catch (error) {
       console.error('❌ Error deleting conversation:', error);
       this.showNotification('Fehler beim Löschen der Unterhaltung', 'error');

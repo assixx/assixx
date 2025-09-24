@@ -82,7 +82,7 @@ class MachinesManager {
 
   // setupDropdownEventDelegation removed - using native select elements instead of custom dropdowns
 
-  private initializeEventListeners() {
+  private setupModalListeners() {
     // Add Machine Button (Floating Button)
     document.querySelector('#add-machine-btn')?.addEventListener('click', () => {
       void this.showMachineModal();
@@ -102,7 +102,9 @@ class MachinesManager {
       e.preventDefault();
       void this.saveMachine();
     });
+  }
 
+  private setupFilterListeners() {
     // Filter buttons
     document.querySelector('#show-all-machines')?.addEventListener('click', () => {
       this.currentFilter = 'all';
@@ -123,8 +125,10 @@ class MachinesManager {
       this.currentFilter = 'repair';
       void this.loadMachines();
     });
+  }
 
-    // Search
+  private setupSearchListeners() {
+    // Search button
     document.querySelector('#machine-search-btn')?.addEventListener('click', () => {
       const searchInput = document.querySelector<HTMLInputElement>('#machine-search');
       this.searchTerm = searchInput?.value ?? '';
@@ -139,7 +143,9 @@ class MachinesManager {
         void this.loadMachines();
       }
     });
+  }
 
+  private setupDeleteModalListeners() {
     // Delete modal event listeners
     document.querySelector('#confirm-delete-machine')?.addEventListener('click', () => {
       const deleteInput = document.querySelector<HTMLInputElement>('#delete-machine-id');
@@ -157,7 +163,9 @@ class MachinesManager {
       const modal = document.querySelector('#delete-machine-modal');
       if (modal) modal.classList.remove('active');
     });
+  }
 
+  private setupMachineActionDelegation() {
     // Helper to handle machine action
     const handleMachineAction = (
       button: HTMLElement | null,
@@ -176,11 +184,17 @@ class MachinesManager {
       const w = window as WindowWithMachineHandlers;
 
       handleMachineAction(target.closest<HTMLElement>('[data-action="edit-machine"]'), w.editMachine);
-
       handleMachineAction(target.closest<HTMLElement>('[data-action="view-machine-details"]'), w.viewMachineDetails);
-
       handleMachineAction(target.closest<HTMLElement>('[data-action="delete-machine"]'), w.deleteMachine);
     });
+  }
+
+  private initializeEventListeners() {
+    this.setupModalListeners();
+    this.setupFilterListeners();
+    this.setupSearchListeners();
+    this.setupDeleteModalListeners();
+    this.setupMachineActionDelegation();
   }
 
   async loadMachines(): Promise<void> {
@@ -222,6 +236,41 @@ class MachinesManager {
     }
   }
 
+  private generateMachineRow(machine: Machine): string {
+    return `
+      <tr>
+        <td>
+          <strong>${escapeHtml(machine.name)}</strong>
+          ${machine.qrCode !== undefined && machine.qrCode !== '' ? `<i class="fas fa-qrcode ms-2" title="QR-Code verfügbar"></i>` : ''}
+        </td>
+        <td>${escapeHtml(machine.model ?? '-')}</td>
+        <td>${escapeHtml(machine.manufacturer ?? '-')}</td>
+        <td>${escapeHtml(machine.departmentName ?? '-')}</td>
+        <td>
+          <span class="badge ${this.getStatusBadgeClass(machine.status)}">
+            ${escapeHtml(this.getStatusLabel(machine.status))}
+          </span>
+        </td>
+        <td>${machine.operatingHours !== undefined && machine.operatingHours > 0 ? escapeHtml(`${machine.operatingHours}h`) : '-'}</td>
+        <td>
+          ${machine.nextMaintenance !== undefined && machine.nextMaintenance.length > 0 ? escapeHtml(new Date(machine.nextMaintenance).toLocaleDateString('de-DE')) : '-'}
+          ${this.getMaintenanceWarning(machine.nextMaintenance)}
+        </td>
+        <td>
+          <button class="btn btn-sm btn-secondary" data-action="edit-machine" data-machine-id="${machine.id}">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-secondary" data-action="view-machine-details" data-machine-id="${machine.id}">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" data-action="delete-machine" data-machine-id="${machine.id}">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
   private renderMachinesTable(): void {
     const tbody = document.querySelector('#machines-table-body');
     const machinesTable = document.querySelector('#machines-table');
@@ -259,42 +308,7 @@ class MachinesManager {
     }
 
     // eslint-disable-next-line no-unsanitized/property -- All user data is escaped with escapeHtml()
-    tbody.innerHTML = this.machines
-      .map(
-        (machine) => `
-      <tr>
-        <td>
-          <strong>${escapeHtml(machine.name)}</strong>
-          ${machine.qrCode !== undefined && machine.qrCode !== '' ? `<i class="fas fa-qrcode ms-2" title="QR-Code verfügbar"></i>` : ''}
-        </td>
-        <td>${escapeHtml(machine.model ?? '-')}</td>
-        <td>${escapeHtml(machine.manufacturer ?? '-')}</td>
-        <td>${escapeHtml(machine.departmentName ?? '-')}</td>
-        <td>
-          <span class="badge ${this.getStatusBadgeClass(machine.status)}">
-            ${escapeHtml(this.getStatusLabel(machine.status))}
-          </span>
-        </td>
-        <td>${machine.operatingHours !== undefined && machine.operatingHours > 0 ? escapeHtml(`${machine.operatingHours}h`) : '-'}</td>
-        <td>
-          ${machine.nextMaintenance !== undefined && machine.nextMaintenance.length > 0 ? escapeHtml(new Date(machine.nextMaintenance).toLocaleDateString('de-DE')) : '-'}
-          ${this.getMaintenanceWarning(machine.nextMaintenance)}
-        </td>
-        <td>
-          <button class="btn btn-sm btn-secondary" data-action="edit-machine" data-machine-id="${machine.id}">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="btn btn-sm btn-secondary" data-action="view-machine-details" data-machine-id="${machine.id}">
-            <i class="fas fa-eye"></i>
-          </button>
-          <button class="btn btn-sm btn-danger" data-action="delete-machine" data-machine-id="${machine.id}">
-            <i class="fas fa-trash"></i>
-          </button>
-        </td>
-      </tr>
-    `,
-      )
-      .join('');
+    tbody.innerHTML = this.machines.map((machine) => this.generateMachineRow(machine)).join('');
   }
 
   private getStatusBadgeClass(status: string): string {
@@ -574,121 +588,133 @@ class MachinesManager {
 // Initialize when DOM is ready
 let machinesManager: MachinesManager | null = null;
 
+// Helper to populate edit form with machine data
+async function populateEditForm(machine: Machine) {
+  const modal = document.querySelector('#machine-modal');
+  if (modal === null) return;
+
+  modal.classList.add('active');
+
+  // First load departments and areas
+  await machinesManager?.loadDepartmentsForMachineSelect();
+  await machinesManager?.loadAreasForMachineSelect();
+
+  // Helper to set input value
+  const setInputValue = (id: string, value: string | number | undefined) => {
+    const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
+    if (input !== null && value !== undefined) {
+      input.value = value.toString();
+    }
+  };
+
+  // Fill form fields
+  setInputValue('machine-id', machine.id);
+  setInputValue('machine-name', machine.name);
+  setInputValue('machine-model', machine.model);
+  setInputValue('machine-manufacturer', machine.manufacturer);
+  setInputValue('machine-serial', machine.serialNumber);
+  setInputValue('machine-department', machine.departmentId);
+  setInputValue('machine-area', machine.areaId);
+  setInputValue('machine-type', machine.machineType);
+  setInputValue('machine-status', machine.status);
+  setInputValue('machine-hours', machine.operatingHours);
+
+  // Format date for input
+  if (machine.nextMaintenance !== undefined) {
+    const date = new Date(machine.nextMaintenance);
+    const formattedDate = date.toISOString().split('T')[0];
+    setInputValue('machine-next-maintenance', formattedDate);
+  }
+
+  // Update modal title
+  const modalTitle = document.querySelector('#machine-modal-title');
+  if (modalTitle !== null) {
+    modalTitle.textContent = 'Maschine bearbeiten';
+  }
+}
+
+// Setup window handlers for machine operations
+function setupWindowHandlers() {
+  const w = window as unknown as WindowWithMachineHandlers;
+
+  // Export loadMachinesTable function to window for show-section.ts
+  (window as WindowWithMachineHandlers & { loadMachinesTable?: () => void }).loadMachinesTable = () => {
+    console.info('[MachinesManager] loadMachinesTable called');
+    void machinesManager?.loadMachines();
+  };
+
+  // Edit machine handler
+  w.editMachine = async (id: number) => {
+    const machine = await machinesManager?.getMachineDetails(id);
+    if (machine !== null && machine !== undefined) {
+      await populateEditForm(machine);
+    }
+  };
+
+  // View details handler
+  w.viewMachineDetails = async (id: number) => {
+    const machine = await machinesManager?.getMachineDetails(id);
+    if (machine !== null) {
+      console.info('View machine:', machine);
+      showErrorAlert('Detailansicht noch nicht implementiert');
+    }
+  };
+
+  // Delete handler
+  w.deleteMachine = async (id: number) => {
+    await machinesManager?.deleteMachine(id);
+  };
+
+  // Modal handlers
+  w.showMachineModal = async () => {
+    await machinesManager?.showMachineModal();
+  };
+
+  w.closeMachineModal = () => {
+    machinesManager?.closeMachineModal();
+  };
+
+  w.saveMachine = async () => {
+    await machinesManager?.saveMachine();
+  };
+}
+
+// Setup URL change monitoring for section visibility
+function setupUrlMonitoring() {
+  const checkMachinesVisibility = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    if (section === 'machines') {
+      void machinesManager?.loadMachines();
+    }
+  };
+
+  // Check on initial load
+  checkMachinesVisibility();
+
+  // Listen for URL changes
+  window.addEventListener('popstate', checkMachinesVisibility);
+
+  // Monitor pushState/replaceState
+  const originalPushState = window.history.pushState.bind(window.history);
+  window.history.pushState = function (...args) {
+    originalPushState.apply(window.history, args);
+    setTimeout(checkMachinesVisibility, 100);
+  };
+
+  const originalReplaceState = window.history.replaceState.bind(window.history);
+  window.history.replaceState = function (...args) {
+    originalReplaceState.apply(window.history, args);
+    setTimeout(checkMachinesVisibility, 100);
+  };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Only initialize if we're on the manage-machines page
   if (window.location.pathname === '/manage-machines' || window.location.pathname.includes('manage-machines')) {
     machinesManager = new MachinesManager();
-
-    // Export loadMachinesTable function to window for show-section.ts
-    (window as WindowWithMachineHandlers & { loadMachinesTable?: () => void }).loadMachinesTable = () => {
-      console.info('[MachinesManager] loadMachinesTable called');
-      void machinesManager?.loadMachines();
-    };
-
-    // Expose functions globally for event delegation
-    const w = window as unknown as WindowWithMachineHandlers;
-    w.editMachine = async (id: number) => {
-      const machine = await machinesManager?.getMachineDetails(id);
-      if (machine !== null && machine !== undefined) {
-        // Open modal with loaded departments and areas
-        const modal = document.querySelector('#machine-modal');
-        if (modal !== null) {
-          modal.classList.add('active');
-
-          // First load departments and areas
-          await machinesManager?.loadDepartmentsForMachineSelect();
-          await machinesManager?.loadAreasForMachineSelect();
-
-          // Then fill form with machine data
-          const setInputValue = (id: string, value: string | number | undefined) => {
-            const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
-            if (input !== null && value !== undefined) {
-              input.value = value.toString();
-            }
-          };
-
-          setInputValue('machine-id', machine.id);
-          setInputValue('machine-name', machine.name);
-          setInputValue('machine-model', machine.model);
-          setInputValue('machine-manufacturer', machine.manufacturer);
-          setInputValue('machine-serial', machine.serialNumber);
-          setInputValue('machine-department', machine.departmentId);
-          setInputValue('machine-area', machine.areaId);
-          setInputValue('machine-type', machine.machineType);
-          setInputValue('machine-status', machine.status);
-          setInputValue('machine-hours', machine.operatingHours);
-
-          // Format date for input
-          if (machine.nextMaintenance !== undefined) {
-            const date = new Date(machine.nextMaintenance);
-            const formattedDate = date.toISOString().split('T')[0];
-            setInputValue('machine-next-maintenance', formattedDate);
-          }
-
-          // Update modal title
-          const modalTitle = document.querySelector('#machine-modal-title');
-          if (modalTitle !== null) {
-            modalTitle.textContent = 'Maschine bearbeiten';
-          }
-        }
-      }
-    };
-
-    w.viewMachineDetails = async (id: number) => {
-      const machine = await machinesManager?.getMachineDetails(id);
-      if (machine !== null) {
-        // TODO: Open details modal
-        console.info('View machine:', machine);
-        showErrorAlert('Detailansicht noch nicht implementiert');
-      }
-    };
-
-    w.deleteMachine = async (id: number) => {
-      await machinesManager?.deleteMachine(id);
-    };
-
-    // Handler for floating add button - not needed anymore as it's handled in initializeEventListeners
-    w.showMachineModal = async () => {
-      await machinesManager?.showMachineModal();
-    };
-
-    // Close modal handler
-    w.closeMachineModal = () => {
-      machinesManager?.closeMachineModal();
-    };
-
-    // Save machine handler
-    w.saveMachine = async () => {
-      await machinesManager?.saveMachine();
-    };
-
-    // Function to check if machines section is visible
-    const checkMachinesVisibility = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const section = urlParams.get('section');
-      if (section === 'machines') {
-        void machinesManager?.loadMachines();
-      }
-    };
-
-    // Check on initial load
-    checkMachinesVisibility();
-
-    // Listen for URL changes
-    window.addEventListener('popstate', checkMachinesVisibility);
-
-    // Also check when section parameter changes
-    const originalPushState = window.history.pushState.bind(window.history);
-    window.history.pushState = function (...args) {
-      originalPushState.apply(window.history, args);
-      setTimeout(checkMachinesVisibility, 100);
-    };
-
-    const originalReplaceState = window.history.replaceState.bind(window.history);
-    window.history.replaceState = function (...args) {
-      originalReplaceState.apply(window.history, args);
-      setTimeout(checkMachinesVisibility, 100);
-    };
+    setupWindowHandlers();
+    setupUrlMonitoring();
   }
 });
 

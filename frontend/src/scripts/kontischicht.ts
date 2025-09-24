@@ -364,7 +364,7 @@ class KontischichtManager {
     modalContainer.className = 'modal-container modal-lg';
     modalContainer.style.cssText = `
       backdrop-filter: blur(20px) saturate(180%);
-      background: #121212c4;
+      background: #121212;
       border: 1px solid hsla(0,0%,100%,.1);
       border-radius: var(--radius-md);
       box-shadow: 0 8px 32px #0006,inset 0 1px #ffffff1a;

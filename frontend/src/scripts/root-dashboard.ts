@@ -454,7 +454,7 @@ async function loadActivityLogs(): Promise<void> {
     const logsEl = document.querySelector('#activity-logs');
     if (logsEl === null) return;
 
-    if (!logs || logs.length === 0) {
+    if (logs.length === 0) {
       setHTML(logsEl as HTMLElement, '<div class="no-data">Keine kürzlichen Aktivitäten</div>');
       return;
     }

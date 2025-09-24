@@ -79,6 +79,31 @@ function setupFilterListeners() {
   });
 }
 
+// Helper function to check if a filter value should be included
+function shouldIncludeFilter(value: string | undefined): boolean {
+  return value !== undefined && value !== '' && value !== 'all';
+}
+
+// Helper function to calculate start date based on timerange
+function calculateStartDate(timerange: string, now: Date): string {
+  switch (timerange) {
+    case 'today':
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    case 'week': {
+      const weekAgo = new Date(now);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return weekAgo.toISOString();
+    }
+    case 'month': {
+      const monthAgo = new Date(now);
+      monthAgo.setMonth(monthAgo.getMonth() - 1);
+      return monthAgo.toISOString();
+    }
+    default:
+      return '';
+  }
+}
+
 // Build query params for API
 function buildQueryParams(): URLSearchParams {
   const params = new URLSearchParams({
@@ -86,49 +111,29 @@ function buildQueryParams(): URLSearchParams {
     offset: currentOffset.toString(),
   });
 
-  // Add filters - don't send 'all' to backend
+  // Add user filter
   if (currentFilters.user !== undefined && currentFilters.user !== '') {
     params.append('userId', currentFilters.user);
   }
-  if (currentFilters.action !== undefined && currentFilters.action !== '' && currentFilters.action !== 'all') {
-    params.append('action', currentFilters.action);
-  }
-  if (
-    currentFilters.entity_type !== undefined &&
-    currentFilters.entity_type !== '' &&
-    currentFilters.entity_type !== 'all'
-  ) {
-    params.append('entityType', currentFilters.entity_type);
-  }
-  // v2 API uses startDate/endDate instead of timerange
-  if (currentFilters.timerange !== undefined && currentFilters.timerange !== '' && currentFilters.timerange !== 'all') {
-    const now = new Date();
-    const endDate = now.toISOString();
-    let startDate: string;
 
-    switch (currentFilters.timerange) {
-      case 'today':
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-        break;
-      case 'week': {
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        startDate = weekAgo.toISOString();
-        break;
-      }
-      case 'month': {
-        const monthAgo = new Date(now);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        startDate = monthAgo.toISOString();
-        break;
-      }
-      default:
-        startDate = '';
-    }
+  // Add action filter
+  if (shouldIncludeFilter(currentFilters.action)) {
+    params.append('action', currentFilters.action ?? '');
+  }
+
+  // Add entity type filter
+  if (shouldIncludeFilter(currentFilters.entity_type)) {
+    params.append('entityType', currentFilters.entity_type ?? '');
+  }
+
+  // Add date range filters
+  if (shouldIncludeFilter(currentFilters.timerange)) {
+    const now = new Date();
+    const startDate = calculateStartDate(currentFilters.timerange ?? '', now);
 
     if (startDate !== '') {
       params.append('startDate', startDate);
-      params.append('endDate', endDate);
+      params.append('endDate', now.toISOString());
     }
   }
 
@@ -303,6 +308,26 @@ function displayLogs(logs: LogEntry[]) {
   );
 }
 
+// Helper function to update button state
+function setButtonDisabled(button: Element | null, disabled: boolean): void {
+  if (!button) return;
+
+  if (disabled) {
+    button.setAttribute('disabled', 'true');
+  } else {
+    button.removeAttribute('disabled');
+  }
+}
+
+// Helper function to update pagination info text
+function updatePageInfo(pageInfo: Element | null, pagination: Pagination): void {
+  if (!pageInfo) return;
+
+  const currentPage = Math.floor(currentOffset / limit) + 1;
+  const totalPages = Math.ceil(pagination.total / limit);
+  pageInfo.textContent = `Seite ${currentPage} von ${totalPages} (${pagination.total} Einträge)`;
+}
+
 // Update pagination
 function updatePagination(pagination: Pagination) {
   const paginationContainer = $$('#pagination-container');
@@ -310,36 +335,17 @@ function updatePagination(pagination: Pagination) {
   const prevBtn = $$('#prev-btn');
   const nextBtn = $$('#next-btn');
 
-  // Show pagination container if there are results
+  // Show/hide pagination container based on results
   if (paginationContainer) {
-    if (pagination.total > 0) {
-      paginationContainer.style.display = 'flex';
-    } else {
-      paginationContainer.style.display = 'none';
-    }
+    paginationContainer.style.display = pagination.total > 0 ? 'flex' : 'none';
   }
 
-  if (pageInfo) {
-    const currentPage = Math.floor(currentOffset / limit) + 1;
-    const totalPages = Math.ceil(pagination.total / limit);
-    pageInfo.textContent = `Seite ${currentPage} von ${totalPages} (${pagination.total} Einträge)`;
-  }
+  // Update page info text
+  updatePageInfo(pageInfo, pagination);
 
-  if (prevBtn) {
-    if (currentOffset === 0) {
-      prevBtn.setAttribute('disabled', 'true');
-    } else {
-      prevBtn.removeAttribute('disabled');
-    }
-  }
-
-  if (nextBtn) {
-    if (!pagination.hasMore) {
-      nextBtn.setAttribute('disabled', 'true');
-    } else {
-      nextBtn.removeAttribute('disabled');
-    }
-  }
+  // Update button states
+  setButtonDisabled(prevBtn, currentOffset === 0);
+  setButtonDisabled(nextBtn, !pagination.hasMore);
 }
 
 // Apply filters

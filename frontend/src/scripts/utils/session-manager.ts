@@ -2,6 +2,8 @@
  * Session Manager - Handles user session timeout and activity tracking
  */
 
+import { setHTML } from '../../utils/dom-utils';
+
 export class SessionManager {
   private static instance: SessionManager | undefined;
   private lastActivityTime: number;
@@ -94,10 +96,20 @@ export class SessionManager {
   }
 
   private showTimeoutWarning(): void {
-    // Create warning modal
+    const warningModal = this.createWarningModal();
+    document.body.append(warningModal);
+    this.attachWarningModalHandlers(warningModal);
+  }
+
+  private createWarningModal(): HTMLDivElement {
     const warningModal = document.createElement('div');
     warningModal.id = 'session-warning-modal';
-    warningModal.innerHTML = `
+    setHTML(warningModal, this.getWarningModalHTML());
+    return warningModal;
+  }
+
+  private getWarningModalHTML(): string {
+    return `
       <div style="
         position: fixed;
         top: 0;
@@ -146,18 +158,16 @@ export class SessionManager {
         </div>
       </div>
     `;
-    document.body.append(warningModal);
+  }
 
-    // Add event delegation for the modal buttons
+  private attachWarningModalHandlers(warningModal: HTMLDivElement): void {
     warningModal.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
 
-      // Handle extend session button
       if (target.dataset.action === 'extend-session') {
         this.extendSession();
       }
 
-      // Handle logout button
       if (target.dataset.action === 'session-logout') {
         this.logout();
       }

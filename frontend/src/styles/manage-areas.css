@@ -302,7 +302,7 @@ body::after {
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-md);
 
-  background: #121212c4;
+  background: #121212;
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px #0006,
