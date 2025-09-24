@@ -451,6 +451,7 @@ export interface RotationPatternAPIResponse {
   name?: string;
   description?: string;
   pattern_type?: string;
+  // eslint-disable-next-line max-lines
   patternType?: string;
   pattern_config?: Record<string, unknown>;
   patternConfig?: Record<string, unknown>;

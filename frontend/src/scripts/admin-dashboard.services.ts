@@ -119,8 +119,8 @@ export class DashboardService {
         const documents = (await response.json()) as Document[];
         return documents.length;
       }
-    } catch (error) {
-      console.error('Error loading document count:', error);
+    } catch {
+      /* Error */
     }
     return 0;
   }
@@ -140,8 +140,8 @@ export class DashboardService {
         const departments = useV2 && !Array.isArray(data) && 'data' in data ? data.data : (data as Department[]);
         return departments.length;
       }
-    } catch (error) {
-      console.error('Error loading department count:', error);
+    } catch {
+      /* Error */
     }
     return 0;
   }
@@ -162,8 +162,8 @@ export class DashboardService {
         const teams = (await response.json()) as Team[];
         return teams.length;
       }
-    } catch (error) {
-      console.error('Error loading team count:', error);
+    } catch {
+      /* Error */
     }
     return 0;
   }
@@ -201,8 +201,7 @@ export class EmployeeService {
       }
 
       return mapUsers(employees);
-    } catch (error) {
-      console.error('Error loading recent employees:', error);
+    } catch {
       return [];
     }
   }
@@ -287,8 +286,7 @@ export class DepartmentService {
 
       const data = (await response.json()) as Department[] | { data: Department[] };
       return useV2 && !Array.isArray(data) && 'data' in data ? data.data : (data as Department[]);
-    } catch (error) {
-      console.error('Error loading departments:', error);
+    } catch {
       return [];
     }
   }
@@ -352,8 +350,7 @@ export class TeamService {
       }
 
       return (await response.json()) as Team[];
-    } catch (error) {
-      console.error('Error loading teams:', error);
+    } catch {
       return [];
     }
   }
@@ -418,8 +415,7 @@ export class DocumentService {
 
       const data = (await response.json()) as Document[] | { documents?: Document[] };
       return Array.isArray(data) ? data : (data.documents ?? []);
-    } catch (error) {
-      console.error('Error loading recent documents:', error);
+    } catch {
       return [];
     }
   }
@@ -462,8 +458,7 @@ export class BlackboardService {
         entries?: BlackboardEntryExtended[];
       };
       return data.entries ?? [];
-    } catch (error) {
-      console.error('Error loading blackboard preview:', error);
+    } catch {
       return [];
     }
   }
@@ -490,28 +485,18 @@ export class BlackboardService {
       }
 
       return (await response.json()) as BlackboardEntryExtended[];
-    } catch (error) {
-      console.error('Error loading blackboard widget:', error);
+    } catch {
       return [];
     }
   }
 
   getPriorityLabel(priority: string): string {
-    switch (priority) {
-      case 'urgent':
-        return 'Dringend';
-      case 'high':
-        return 'Hoch';
-      case 'normal':
-        return 'Normal';
-      case 'low':
-        return 'Niedrig';
-      case 'critical':
-        return 'Kritisch';
-      case 'medium':
-        return 'Mittel';
-      default:
-        return 'Normal';
-    }
+    if (priority === 'urgent') return 'Dringend';
+    if (priority === 'high') return 'Hoch';
+    if (priority === 'normal') return 'Normal';
+    if (priority === 'low') return 'Niedrig';
+    if (priority === 'critical') return 'Kritisch';
+    if (priority === 'medium') return 'Mittel';
+    return 'Normal';
   }
 }

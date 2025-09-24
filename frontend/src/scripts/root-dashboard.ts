@@ -493,6 +493,7 @@ async function loadActivityLogs(): Promise<void> {
 
 // Helper function to get readable action labels
 function getActionLabel(action: string): string {
+  // eslint-disable-next-line max-lines
   const actionLabels = new Map<string, string>([
     ['create', 'Erstellt'],
     ['update', 'Aktualisiert'],

@@ -13,20 +13,6 @@
 // Constants
 const DROPDOWN_OPTION_CLASS = 'dropdown-option';
 
-// HTML-Entities escapen (kept for potential future use)
-// eslint-disable-next-line no-unused-vars
-function escapeHtml(unsafe) {
-  if (unsafe === null || unsafe === undefined) {
-    return '';
-  }
-  return String(unsafe)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
 // Konvertiere native selects zu custom dropdowns
 function convertSelectsToDropdowns() {
   // Org Level Dropdown

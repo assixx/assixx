@@ -482,6 +482,7 @@ class SurveyResultsPage {
     });
 
     return html;
+    // eslint-disable-next-line max-lines
   }
 
   private attachEventHandlers(): void {

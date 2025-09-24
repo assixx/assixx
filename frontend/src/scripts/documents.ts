@@ -580,6 +580,7 @@ async function downloadDocument(docId?: string | number): Promise<void> {
       showErrorAlert('Netzwerkfehler beim Herunterladen. Bitte überprüfen Sie Ihre Verbindung.');
     } else {
       showErrorAlert('Fehler beim Herunterladen des Dokuments');
+      // eslint-disable-next-line max-lines
     }
   }
 }

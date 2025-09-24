@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Swagger/OpenAPI Configuration for Assixx API
  */

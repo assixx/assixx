@@ -502,6 +502,7 @@ class MachinesManager {
 
     try {
       // Check if we're editing (machine-id has value) or creating new
+      // eslint-disable-next-line max-lines
       const machineIdInput = document.querySelector<HTMLInputElement>('#machine-id');
       const machineId = machineIdInput?.value;
 

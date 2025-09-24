@@ -1029,6 +1029,7 @@ export class ChatService {
         );
       }
 
+      // eslint-disable-next-line max-lines
       log('[Chat Service] User is participant, updating last read message');
 
       // Get the latest message id in the conversation

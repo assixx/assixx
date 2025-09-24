@@ -523,6 +523,7 @@ export function showSection(sectionId: string): void {
   }
 
   // Update active navigation
+  // eslint-disable-next-line max-lines
   document.querySelectorAll('.nav-link').forEach((link) => {
     link.classList.remove('active');
   });

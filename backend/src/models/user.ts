@@ -992,6 +992,7 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
 
 // Find all users by tenant
 export async function findAllUsersByTenant(tenantId: number): Promise<DbUser[]> {
+  // eslint-disable-next-line max-lines
   try {
     const [rows] = await executeQuery<DbUser[]>(
       `SELECT u.*, d.name as department

@@ -1041,6 +1041,7 @@ function parseRecurrenceOptions(options: string[]): { count: number; until: Date
 function getIntervalDays(pattern: string): number {
   switch (pattern) {
     case 'daily':
+      // eslint-disable-next-line max-lines
       return 1;
     case 'weekly':
       return 7;

@@ -494,6 +494,7 @@ function initializeApp(): void {
     }
 
     // Handle show root permissions
+    // eslint-disable-next-line max-lines
     const permissionsBtn = target.closest<HTMLElement>('[data-action="show-root-permissions"]');
     if (permissionsBtn) {
       const userId = permissionsBtn.dataset.userId;

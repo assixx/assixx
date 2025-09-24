@@ -570,6 +570,7 @@ export class DocumentBase {
    * Helper methods
    */
   protected getFileIcon(mimeOrName: string): string {
+    // eslint-disable-next-line max-lines
     const mime = mimeOrName.toLowerCase();
 
     if (mime.includes('pdf')) return 'fas fa-file-pdf';

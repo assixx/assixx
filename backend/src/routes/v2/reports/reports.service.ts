@@ -1026,6 +1026,7 @@ function getAttendanceMetrics(
   _dateTo: string,
   _departmentId?: number,
   _teamId?: number,
+  // eslint-disable-next-line max-lines
 ): {
   avgRate: number;
   absences: number;

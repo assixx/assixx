@@ -97,23 +97,7 @@ export async function createDocument({
   tags,
   mimeType = 'application/octet-stream',
 }: DocumentCreateData): Promise<number> {
-  // Log based on recipient type
-  let logMessage = `Creating new document in category ${category} for `;
-  switch (recipientType) {
-    case 'user':
-      logMessage += `user ${userId ?? 'unknown'}`;
-      break;
-    case 'team':
-      logMessage += `team ${teamId ?? 'unknown'}`;
-      break;
-    case 'department':
-      logMessage += `department ${departmentId ?? 'unknown'}`;
-      break;
-    case 'company':
-      logMessage += `entire company (tenant ${tenant_id})`;
-      break;
-  }
-  logger.info(logMessage);
+  // Log creation based on recipient type
 
   // We need to also set default values for required fields
   const query =
@@ -138,7 +122,6 @@ export async function createDocument({
       createdBy ?? userId ?? 1, // created_by - use createdBy if provided, otherwise userId, otherwise 1
       tags ? JSON.stringify(tags) : null, // tags as JSON
     ]);
-    logger.info(`Document created successfully with ID ${result.insertId}`);
     return result.insertId;
   } catch (error: unknown) {
     logger.error(`Error creating document: ${(error as Error).message}`);
@@ -147,12 +130,10 @@ export async function createDocument({
 }
 
 export async function findDocumentsByUserId(userId: number): Promise<DbDocument[]> {
-  logger.info(`Fetching documents for user ${userId}`);
   const query =
     'SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? ORDER BY upload_date DESC';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [userId]);
-    logger.info(`Retrieved ${rows.length} documents for user ${userId}`);
     return rows;
   } catch (error: unknown) {
     logger.error(`Error fetching documents for user ${userId}: ${(error as Error).message}`);
@@ -170,7 +151,6 @@ export async function findDocumentsByUserIdAndCategory(
     'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [userId, category, archived]);
-    logger.info(`Retrieved ${rows.length} ${category} documents for user ${userId}`);
     return rows;
   } catch (error: unknown) {
     logger.error(
@@ -181,7 +161,6 @@ export async function findDocumentsByUserIdAndCategory(
 }
 
 export async function findDocumentById(id: number): Promise<DbDocument | null> {
-  logger.info(`Fetching document with ID ${id}`);
   const query = 'SELECT * FROM documents WHERE id = ?';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [id]);
@@ -189,7 +168,6 @@ export async function findDocumentById(id: number): Promise<DbDocument | null> {
       logger.warn(`Document with ID ${id} not found`);
       return null;
     }
-    logger.info(`Document ${id} retrieved successfully`);
     return rows[0];
   } catch (error: unknown) {
     logger.error(`Error fetching document ${id}: ${(error as Error).message}`);
@@ -198,7 +176,6 @@ export async function findDocumentById(id: number): Promise<DbDocument | null> {
 }
 
 export async function incrementDownloadCount(id: number): Promise<boolean> {
-  logger.info(`Incrementing download count for document ${id}`);
   // Note: download_count column doesn't exist in current schema
   // For now, just verify the document exists
   const query = 'SELECT id FROM documents WHERE id = ?';
@@ -208,7 +185,6 @@ export async function incrementDownloadCount(id: number): Promise<boolean> {
       logger.warn(`No document found with ID ${id} for download tracking`);
       return false;
     }
-    logger.info(`Download tracked for document ${id}`);
     return true;
   } catch (error: unknown) {
     logger.error(`Error tracking download for document ${id}: ${(error as Error).message}`);
@@ -249,8 +225,6 @@ function buildUpdateQuery(data: DocumentUpdateData): { updates: string[]; params
 }
 
 export async function updateDocument(id: number, data: DocumentUpdateData): Promise<boolean> {
-  logger.info(`Updating document ${id}`);
-
   const { updates, params } = buildUpdateQuery(data);
 
   if (updates.length === 0) {
@@ -276,17 +250,14 @@ export async function updateDocument(id: number, data: DocumentUpdateData): Prom
 }
 
 export async function archiveDocument(id: number): Promise<boolean> {
-  logger.info(`Archiving document ${id}`);
   return await updateDocument(id, { isArchived: true });
 }
 
 export async function unarchiveDocument(id: number): Promise<boolean> {
-  logger.info(`Unarchiving document ${id}`);
   return await updateDocument(id, { isArchived: false });
 }
 
 export async function deleteDocument(id: number): Promise<boolean> {
-  logger.info(`Deleting document ${id}`);
   const query = 'DELETE FROM documents WHERE id = ?';
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [id]);
@@ -670,16 +641,13 @@ export async function countDocumentsByTenant(tenant_id: number): Promise<number>
 
 // Get total storage used by tenant (in bytes)
 export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
-  logger.info(`Calculating total storage used by tenant ${tenant_id}`);
   try {
     const [rows] = await executeQuery<RowDataPacket[]>(
       'SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?',
       [tenant_id],
     );
     // MySQL SUM can return null or string, ensure we return a number
-    const totalSize = Number.parseInt(String(rows[0]?.total_size ?? '0')) || 0;
-    logger.info(`Tenant ${tenant_id} is using ${totalSize} bytes of storage`);
-    return totalSize;
+    return Number.parseInt(String(rows[0]?.total_size ?? '0')) || 0;
   } catch (error: unknown) {
     logger.error(`Error calculating storage for tenant ${tenant_id}: ${(error as Error).message}`);
     return 0;
@@ -758,8 +726,6 @@ export async function findDocumentsWithFilters(
   tenantId: number,
   filters: DocumentFilters,
 ): Promise<{ documents: DbDocument[]; total: number }> {
-  logger.info('Finding documents with filters', filters);
-
   const baseQuery = `
       SELECT d.*, u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
@@ -803,8 +769,6 @@ export async function findDocumentsWithFilters(
 
     // Get documents
     const [rows] = await executeQuery<DbDocument[]>(finalQuery, finalParams);
-    logger.info(`Found ${rows.length} documents (total: ${total}) with filters`);
-
     return {
       documents: rows,
       total,

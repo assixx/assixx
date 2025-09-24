@@ -4,18 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Firmenkalender - Assixx</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
-    <!-- FullCalendar CSS -->
-    <link rel="stylesheet" href="/styles/lib/fullcalendar.min.css" />
-    <!-- Calendar spezifische Styles -->
-    <link rel="stylesheet" href="/styles/calendar.css" />
+
+    <!-- Critical Layout State - Prevents Layout Shift -->
+    <script>
+      // Set sidebar state IMMEDIATELY to prevent any layout shift
+      (function () {
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
+        // Also set CSS custom properties for immediate use
+        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
+        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
+        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
+        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
+      })();
+    </script>
     <script src="/feature-flags.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
-    <link rel="stylesheet" href="/styles/unified-navigation.css" />
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <!-- FullCalendar CSS -->
+    <link rel="stylesheet" href="/styles/lib/fullcalendar.min.css" />
+
+    <!-- Dashboard Theme - General theme styles -->
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
+    <!-- Calendar spezifische Styles -->
+    <link rel="stylesheet" href="/styles/calendar.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
   </head>
   <body>
@@ -25,7 +42,7 @@
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Main Content -->
-      <main class="container main-content">
+      <main class="main-content">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 

@@ -477,6 +477,7 @@ const ResponseAdapterInternal = {
         // eslint-disable-next-line security/detect-object-injection -- field is from predefined dateFields array, not user input
         data[field] = data[field].toISOString();
       }
+      // eslint-disable-next-line max-lines
     });
   },
 

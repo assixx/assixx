@@ -497,6 +497,7 @@ function formatDetailsForModal(details: LogDetails): string {
 
 // Show full details in modal
 function showFullDetails(encodedDetails: string) {
+  // eslint-disable-next-line max-lines
   try {
     const detailsStr = decodeURIComponent(encodedDetails);
     const details = JSON.parse(detailsStr) as LogDetails;

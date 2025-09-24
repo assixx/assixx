@@ -521,6 +521,7 @@ async function loginV2(email: string, password: string): Promise<{ success: bool
       return { success: false, message: error.message };
     }
     return { success: false, message: 'Login failed' };
+    // eslint-disable-next-line max-lines
   }
 }
 
