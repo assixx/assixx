@@ -710,7 +710,7 @@
 .btn-primary {
   color: #fff;
   background: linear-gradient(135deg, #2196f3, #1976d2);
-  box-shadow: 0 2px 8px rgb(33 150 243 / 30%);
+  box-shadow: 0 1px 8px rgb(33 150 243 / 30%);
 }
 
 .btn-primary:hover {

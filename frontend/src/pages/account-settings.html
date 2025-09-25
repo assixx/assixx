@@ -229,9 +229,9 @@
 
     <!-- JavaScript -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
-    <script type="module" src="/scripts/role-switch.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
     <script type="module">
-      import { fetchWithAuth, showError } from '/scripts/auth.js';
+      import { fetchWithAuth, showError } from '/scripts/auth/index.js';
       import { showErrorAlert } from '/scripts/utils/alerts.js';
 
       const token = localStorage.getItem('token');

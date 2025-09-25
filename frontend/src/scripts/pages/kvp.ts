@@ -1,187 +1,44 @@
 /**
  * KVP Page Script
- * Handles KVP suggestions with department-based visibility
+ * Handles KVP suggestions UI and user interactions
  */
 
-import { ApiClient } from '../../utils/api-client';
 import { $$, setHTML } from '../../utils/dom-utils';
-import { getAuthToken } from '../auth';
 import notificationService from '../services/notification.service';
 import { showConfirm } from '../utils/alerts';
-
-interface User {
-  id: number;
-  role: 'root' | 'admin' | 'employee';
-  tenantId: number;
-  departmentId: number | null; // Make it explicitly nullable but always present
-}
-
-interface KvpSuggestion {
-  id: number;
-  title: string;
-  description: string;
-  status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
-  priority: 'low' | 'normal' | 'high' | 'urgent';
-  orgLevel: 'company' | 'department' | 'team';
-  orgId: number;
-  departmentId: number;
-  departmentName: string;
-  teamId?: number;
-  teamName?: string;
-  submittedBy: number;
-  submittedByName: string;
-  submittedByLastname: string;
-  categoryId: number;
-  categoryName: string;
-  categoryIcon: string;
-  categoryColor: string;
-  sharedBy?: number;
-  sharedByName?: string;
-  sharedAt?: string;
-  createdAt: string;
-  expectedBenefit?: string;
-  estimatedCost?: number;
-  actualSavings?: number;
-  attachmentCount?: number;
-  roi?: number; // NEW in v2!
-}
-
-interface KvpCategory {
-  id: number;
-  name: string;
-  icon?: string;
-  color: string;
-}
-
-interface Department {
-  id: number;
-  name: string;
-}
-
-interface KvpWindow extends Window {
-  selectCategory: (id: string, name: string) => void;
-  selectDepartment: (id: string, name: string) => void;
-  selectKvpCategory?: (id: string, name: string) => void;
-  showCreateModal: () => void;
-  hideCreateModal: () => void;
-  selectedPhotos?: File[];
-}
-
-// Type for v1 API response with snake_case fields
-interface V1Suggestion {
-  id: number;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  org_level?: string;
-  orgLevel?: string;
-  org_id?: number;
-  orgId?: number;
-  department_id?: number;
-  departmentId?: number;
-  department_name?: string;
-  departmentName?: string;
-  submitted_by?: number;
-  submittedBy?: number;
-  submitted_by_name?: string;
-  submittedByName?: string;
-  submitted_by_lastname?: string;
-  submittedByLastname?: string;
-  category_id?: number;
-  categoryId?: number;
-  category_name?: string;
-  categoryName?: string;
-  category_icon?: string;
-  categoryIcon?: string;
-  category_color?: string;
-  categoryColor?: string;
-  shared_by?: number;
-  sharedBy?: number;
-  shared_by_name?: string;
-  sharedByName?: string;
-  shared_at?: string;
-  sharedAt?: string;
-  created_at?: string;
-  createdAt?: string;
-  expected_benefit?: string;
-  expectedBenefit?: string;
-  estimated_cost?: number;
-  estimatedCost?: number;
-  actual_savings?: number;
-  actualSavings?: number;
-  attachment_count?: number;
-  attachmentCount?: number;
-  roi?: number;
-}
-
-interface V1Status {
-  new?: number;
-  in_review?: number;
-  implemented?: number;
-  approved?: number;
-  rejected?: number;
-  archived?: number;
-}
-
-interface V2Status {
-  new?: number;
-  inReview?: number;
-  approved?: number;
-  implemented?: number;
-  rejected?: number;
-  archived?: number;
-}
-
-interface StatsResponse {
-  company?: {
-    total: number;
-    byStatus: V1Status | V2Status;
-    totalSavings: number;
-  };
-  total?: number;
-  byStatus?: V2Status;
-  totalSavings?: number;
-}
-
-interface UserMeResponse {
-  id?: number;
-  teamId?: number;
-  team_id?: number;
-  teamName?: string;
-  team?: { id: number };
-  teams?: { id: number; team_id?: number }[];
-}
-
-interface TeamResponse {
-  id: number;
-  team_lead_id?: number;
-  teamLeadId?: number;
-  leaderId?: number;
-}
+import { KvpApiService } from './kvp-api';
+import type {
+  User,
+  KvpSuggestion,
+  KvpCategory,
+  Department,
+  KvpWindow,
+  V1Status,
+  V2Status,
+  StatsResponse,
+  UserMeResponse,
+  TeamResponse,
+  ValidationError,
+} from './kvp-types';
 
 class KvpPage {
-  private apiClient: ApiClient;
+  private apiService: KvpApiService;
   private currentUser: User | null = null;
   private currentFilter = 'all';
   private suggestions: KvpSuggestion[] = [];
   private categories: KvpCategory[] = [];
   private departments: Department[] = [];
-  private useV2API = true;
   private currentTeamId: number | null = null;
 
   constructor() {
-    this.apiClient = ApiClient.getInstance();
-    // Check feature flag for v2 API
-    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_KVP?: boolean } };
-    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_KVP !== false;
+    this.apiService = new KvpApiService();
     void this.init();
   }
 
   private async init(): Promise<void> {
     try {
       // Get current user
-      this.currentUser = await this.getCurrentUser();
+      this.currentUser = await this.apiService.getCurrentUser();
 
       // Setup UI based on role
       this.setupRoleBasedUI();
@@ -200,44 +57,6 @@ class KvpPage {
     } catch (error) {
       console.error('Error initializing KVP page:', error);
       this.showError('Fehler beim Laden der Seite');
-    }
-  }
-
-  private async getCurrentUser(): Promise<User | null> {
-    try {
-      if (this.useV2API) {
-        // Get full user data including departmentId
-        const userData = await this.apiClient.get<User & { departmentId?: number }>('/users/me');
-        console.log('User data from /users/me:', userData);
-        return userData;
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch('/api/users/me', {
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to get user info');
-
-        interface V1UserResponse {
-          user: User & {
-            tenant_id?: number;
-            department_id?: number;
-          };
-        }
-        const data = (await response.json()) as V1UserResponse;
-        // Convert snake_case to camelCase for v1
-        return {
-          ...data.user,
-          tenantId: (data.user as { tenant_id?: number }).tenant_id ?? data.user.tenantId,
-          departmentId: (data.user as { department_id?: number }).department_id ?? data.user.departmentId,
-        };
-      }
-    } catch (error) {
-      console.error('Error getting current user:', error);
-      return null;
     }
   }
 
@@ -303,27 +122,7 @@ class KvpPage {
 
   private async loadCategories(): Promise<void> {
     try {
-      let categories: KvpCategory[];
-
-      if (this.useV2API) {
-        // v2 API
-        categories = await this.apiClient.get<KvpCategory[]>('/kvp/categories');
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch('/api/kvp/categories', {
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to load categories');
-
-        const data = (await response.json()) as { categories?: KvpCategory[] };
-        categories = data.categories ?? [];
-      }
-
-      this.categories = categories;
+      this.categories = await this.apiService.loadCategories();
 
       // Populate category dropdown
       const categoryDropdown = document.querySelector('#categoryDropdown');
@@ -354,27 +153,7 @@ class KvpPage {
     if (effectiveRole === 'employee') return;
 
     try {
-      let departments: Department[];
-
-      if (this.useV2API) {
-        // v2 API
-        departments = await this.apiClient.get<Department[]>('/departments');
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch('/api/departments', {
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to load departments');
-
-        const data = (await response.json()) as { departments?: Department[] };
-        departments = data.departments ?? [];
-      }
-
-      this.departments = departments;
+      this.departments = await this.apiService.loadDepartments();
 
       // Populate department dropdown
       const departmentDropdown = document.querySelector('#departmentDropdown');
@@ -421,8 +200,9 @@ class KvpPage {
 
     this.addFilterParams(params);
 
+    const useV2API = this.apiService.useV2API;
     if (this.currentFilter === 'archived') {
-      params.append(this.useV2API ? 'includeArchived' : 'include_archived', 'true');
+      params.append(useV2API ? 'includeArchived' : 'include_archived', 'true');
     }
 
     return params;
@@ -430,13 +210,14 @@ class KvpPage {
 
   private addFilterParams(params: URLSearchParams): void {
     const filters = this.getFilterValues();
+    const useV2API = this.apiService.useV2API;
 
     if (filters.status !== '') params.append('status', filters.status);
     if (filters.category !== '') {
-      params.append(this.useV2API ? 'categoryId' : 'category_id', filters.category);
+      params.append(useV2API ? 'categoryId' : 'category_id', filters.category);
     }
     if (filters.department !== '') {
-      params.append(this.useV2API ? 'departmentId' : 'department_id', filters.department);
+      params.append(useV2API ? 'departmentId' : 'department_id', filters.department);
     }
     if (filters.search !== '') params.append('search', filters.search);
   }
@@ -456,63 +237,7 @@ class KvpPage {
   }
 
   private async fetchSuggestions(params: URLSearchParams): Promise<KvpSuggestion[]> {
-    if (this.useV2API) {
-      return await this.apiClient.get<KvpSuggestion[]>(`/kvp?${params}`);
-    }
-
-    return await this.fetchV1Suggestions(params);
-  }
-
-  private async fetchV1Suggestions(params: URLSearchParams): Promise<KvpSuggestion[]> {
-    const token = getAuthToken();
-    const response = await fetch(`/api/kvp?${params}`, {
-      headers: {
-        Authorization: `Bearer ${token ?? ''}`,
-      },
-    });
-
-    if (!response.ok) throw new Error('Failed to load suggestions');
-
-    const data = (await response.json()) as { suggestions?: KvpSuggestion[] };
-    return (data.suggestions ?? []).map((s) => this.convertSuggestionToCamelCase(s));
-  }
-
-  private convertSuggestionToCamelCase(suggestion: unknown): KvpSuggestion {
-    const s = suggestion as V1Suggestion;
-    return this.mapV1ToKvpSuggestion(s);
-  }
-
-  private mapV1ToKvpSuggestion(s: V1Suggestion): KvpSuggestion {
-    // Helper to get value from snake_case or camelCase
-    const getVal = <T>(snake: T | undefined, camel: T | undefined, def: T): T => snake ?? camel ?? def;
-
-    return {
-      id: s.id,
-      title: s.title,
-      description: s.description,
-      status: s.status as KvpSuggestion['status'],
-      priority: s.priority as KvpSuggestion['priority'],
-      orgLevel: getVal(s.org_level, s.orgLevel, 'department') as KvpSuggestion['orgLevel'],
-      orgId: getVal(s.org_id, s.orgId, 0),
-      departmentId: getVal(s.department_id, s.departmentId, 0),
-      departmentName: getVal(s.department_name, s.departmentName, ''),
-      submittedBy: getVal(s.submitted_by, s.submittedBy, 0),
-      submittedByName: getVal(s.submitted_by_name, s.submittedByName, ''),
-      submittedByLastname: getVal(s.submitted_by_lastname, s.submittedByLastname, ''),
-      categoryId: getVal(s.category_id, s.categoryId, 0),
-      categoryName: getVal(s.category_name, s.categoryName, ''),
-      categoryIcon: getVal(s.category_icon, s.categoryIcon, ''),
-      categoryColor: getVal(s.category_color, s.categoryColor, ''),
-      sharedBy: s.shared_by ?? s.sharedBy,
-      sharedByName: s.shared_by_name ?? s.sharedByName,
-      sharedAt: s.shared_at ?? s.sharedAt,
-      createdAt: getVal(s.created_at, s.createdAt, ''),
-      expectedBenefit: s.expected_benefit ?? s.expectedBenefit,
-      estimatedCost: s.estimated_cost ?? s.estimatedCost,
-      actualSavings: s.actual_savings ?? s.actualSavings,
-      attachmentCount: s.attachment_count ?? s.attachmentCount,
-      roi: s.roi,
-    };
+    return await this.apiService.fetchSuggestions(params);
   }
 
   private renderSuggestions(): void {
@@ -672,23 +397,7 @@ class KvpPage {
     if (!confirmed) return;
 
     try {
-      if (this.useV2API) {
-        // v2 API
-        await this.apiClient.post(`/kvp/${id}/share`, {});
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch(`/api/kvp/${id}/share`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to share suggestion');
-      }
-
+      await this.apiService.shareSuggestion(id);
       this.showSuccess('Vorschlag wurde firmenweit geteilt');
       await this.loadSuggestions();
     } catch (error) {
@@ -704,23 +413,7 @@ class KvpPage {
     if (!confirmed) return;
 
     try {
-      if (this.useV2API) {
-        // v2 API
-        await this.apiClient.post(`/kvp/${id}/unshare`, {});
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch(`/api/kvp/${id}/unshare`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to unshare suggestion');
-      }
-
+      await this.apiService.unshareSuggestion(id);
       this.showSuccess('Teilen wurde rückgängig gemacht');
       await this.loadSuggestions();
     } catch (error) {
@@ -740,29 +433,11 @@ class KvpPage {
   }
 
   private async fetchStatistics(): Promise<unknown> {
-    if (this.useV2API) {
-      return await this.apiClient.get('/kvp/dashboard/stats');
-    }
-
-    const token = getAuthToken();
-    const response = await fetch('/api/kvp/stats', {
-      headers: { Authorization: `Bearer ${token ?? ''}` },
-    });
-    if (!response.ok) throw new Error('Failed to load statistics');
-    return await response.json();
+    return await this.apiService.fetchStatistics();
   }
 
   private normalizeStatsData(statsData: unknown): StatsResponse {
-    const rawData = statsData as StatsResponse;
-    return rawData.company
-      ? rawData
-      : {
-          company: {
-            total: rawData.total ?? 0,
-            byStatus: rawData.byStatus ?? {},
-            totalSavings: rawData.totalSavings ?? 0,
-          },
-        };
+    return this.apiService.normalizeStatsData(statsData);
   }
 
   private updateStatisticsDisplay(data: StatsResponse): void {
@@ -817,6 +492,7 @@ class KvpPage {
 
   private setupEventListeners(): void {
     this.setupFilterButtons();
+    // eslint-disable-next-line max-lines
     this.setupSecondaryFilters();
     this.setupSearchFilter();
     this.setupKvpCategorySelection();
@@ -971,7 +647,7 @@ class KvpPage {
   }
 
   private async fetchUserInfo(): Promise<UserMeResponse> {
-    return await this.apiClient.get<UserMeResponse>('/users/me');
+    return await this.apiService.fetchUserInfo();
   }
 
   private extractTeamId(userInfo: UserMeResponse): number | undefined {
@@ -1015,7 +691,7 @@ class KvpPage {
   private async findUserTeamAsLead(userId?: number): Promise<TeamResponse | undefined> {
     if (userId === undefined || userId === 0) return undefined;
 
-    const teamsResponse = await this.apiClient.get<TeamResponse[]>('/teams');
+    const teamsResponse = await this.apiService.fetchTeams();
     console.log('Checking if user is team lead. User ID:', userId);
     console.log('Teams response:', teamsResponse);
 
@@ -1144,35 +820,7 @@ class KvpPage {
   }
 
   private async submitSuggestion(data: Record<string, unknown>): Promise<number> {
-    if (this.useV2API) {
-      return await this.submitV2Suggestion(data);
-    }
-    return await this.submitV1Suggestion(data);
-  }
-
-  private async submitV2Suggestion(data: Record<string, unknown>): Promise<number> {
-    const result = await this.apiClient.post<{ id: number }>('/kvp', data);
-    return result.id;
-  }
-
-  private async submitV1Suggestion(data: Record<string, unknown>): Promise<number> {
-    const token = getAuthToken();
-    const response = await fetch('/api/kvp', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token ?? ''}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-
-    if (!response.ok) {
-      const error = (await response.json()) as { message?: string };
-      throw new Error(error.message ?? 'Fehler beim Erstellen des Vorschlags');
-    }
-
-    const result = (await response.json()) as { suggestion: { id: number } };
-    return result.suggestion.id;
+    return await this.apiService.submitSuggestion(data);
   }
 
   private async handlePhotoUpload(suggestionId: number): Promise<void> {
@@ -1216,13 +864,6 @@ class KvpPage {
   }
 
   private handleValidationError(error: Error): void {
-    interface ValidationError extends Error {
-      details?: {
-        field: string;
-        message: string;
-      }[];
-    }
-
     const apiError = error as ValidationError;
     if (apiError.details !== undefined && Array.isArray(apiError.details)) {
       const errorMessages = apiError.details.map((detail) => this.formatValidationMessage(detail));
@@ -1243,44 +884,7 @@ class KvpPage {
   }
 
   private async uploadPhotos(suggestionId: number, photos: File[]): Promise<void> {
-    console.info('Uploading photos:', photos.length, 'photos for suggestion', suggestionId);
-
-    const formData = new FormData();
-    photos.forEach((photo, index) => {
-      console.info(`Adding photo ${index}:`, photo.name, photo.size, photo.type);
-      formData.append('files', photo);
-    });
-
-    try {
-      if (this.useV2API) {
-        // v2 API
-        console.info('Sending photo upload request to v2 API');
-        await this.apiClient.upload(`/kvp/${suggestionId}/attachments`, formData);
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        console.info('Sending photo upload request to:', `/api/kvp/${suggestionId}/attachments`);
-        const response = await fetch(`/api/kvp/${suggestionId}/attachments`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-          body: formData,
-        });
-
-        console.info('Upload response status:', response.status);
-        const responseData = (await response.json()) as { message?: string };
-        console.info('Upload response data:', responseData);
-
-        if (!response.ok) {
-          console.error('Fehler beim Hochladen der Fotos:', responseData);
-          throw new Error(responseData.message ?? 'Upload fehlgeschlagen');
-        }
-      }
-    } catch (error) {
-      console.error('Error uploading photos:', error);
-      throw error;
-    }
+    await this.apiService.uploadPhotos(suggestionId, photos);
   }
 }
 

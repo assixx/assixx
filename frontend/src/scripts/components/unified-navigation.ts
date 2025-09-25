@@ -9,9 +9,9 @@ import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { apiClient } from '../../utils/api-client';
 import { $$, setHTML } from '../../utils/dom-utils';
-import { switchRoleForRoot, switchRoleForAdmin } from '../role-switch';
+import { switchRoleForRoot, switchRoleForAdmin } from '../auth/role-switch';
 import { SSEClient } from '../utils/sse-client';
-import { loadUserInfo as loadUserInfoFromAuth } from '../auth';
+import { loadUserInfo as loadUserInfoFromAuth } from '../auth/index';
 
 // Declare global type for window
 declare global {
@@ -526,6 +526,7 @@ class UnifiedNavigation {
       if (useV2 === true) {
         await this.loadV2UserProfile();
       }
+      // eslint-disable-next-line max-lines
     } catch (error) {
       console.error('[UnifiedNav] Error loading full user profile:', error);
     }
@@ -1976,7 +1977,7 @@ class UnifiedNavigation {
 
       const performLogout = async () => {
         // Use the logout function from auth module which logs the action
-        const { logout } = await import('../auth.js');
+        const { logout } = await import('../auth/index.js');
         await logout();
       };
 
@@ -2002,7 +2003,7 @@ class UnifiedNavigation {
       }
     } else {
       // Fallback to direct logout if modal not found
-      const { logout } = await import('../auth.js');
+      const { logout } = await import('../auth/index.js');
       await logout();
     }
   }

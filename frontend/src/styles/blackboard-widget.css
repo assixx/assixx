@@ -89,7 +89,7 @@
   padding: 1rem;
   border-radius: 8px;
 
-  box-shadow: 0 2px 8px rgb(0 0 0 / 10%);
+  box-shadow: 0 1px 8px rgb(0 0 0 / 10%);
 }
 
 .mini-note:hover {

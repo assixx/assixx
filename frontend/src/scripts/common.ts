@@ -5,8 +5,8 @@
 
 import type { User, BlackboardEntry } from '../types/api.types';
 import { apiClient } from '../utils/api-client';
-import { getAuthToken, removeAuthToken, parseJwt, loadUserInfo } from './auth';
-import { initPageProtection } from './pageProtection';
+import { getAuthToken, removeAuthToken, parseJwt, loadUserInfo } from './auth/index';
+import { initPageProtection } from './auth/page-protection';
 import { setHTML } from '../utils/dom-utils';
 import type { ApiClient } from '../utils/api-client';
 

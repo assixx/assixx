@@ -57,7 +57,7 @@ body::after {
 .action-btn:hover {
   transform: translateY(-1px);
   background: rgb(255 255 255 / 10%);
-  box-shadow: 0 2px 8px rgb(255 255 255 / 10%);
+  box-shadow: 0 1px 8px rgb(255 255 255 / 10%);
 }
 
 .action-btn.edit {

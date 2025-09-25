@@ -311,7 +311,7 @@ textarea.form-control {
 
   background: rgb(33 150 243 / 8%);
   backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgb(33 150 243 / 15%);
+  box-shadow: 0 1px 8px rgb(33 150 243 / 15%);
 }
 
 .file-info.active {

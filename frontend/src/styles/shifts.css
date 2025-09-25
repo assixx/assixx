@@ -944,7 +944,7 @@ body::after {
 .tab-btn.active {
   color: var(--primary-color);
   background: rgb(52 152 219 / 20%);
-  box-shadow: 0 2px 8px rgb(52 152 219 / 20%);
+  box-shadow: 0 1px 8px rgb(52 152 219 / 20%);
 }
 
 .tab-content {

@@ -1228,7 +1228,7 @@ body:has(.sidebar.collapsed) .header .logo {
 
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
   box-shadow:
-    0 2px 8px rgb(33 150 243 / 30%),
+    0 1px 8px rgb(33 150 243 / 30%),
     inset 0 1px 0 rgb(255 255 255 / 20%);
 }
 

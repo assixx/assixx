@@ -1,0 +1,431 @@
+/**
+ * Admin Areas Management
+ * Handles area/location CRUD operations for admin dashboard
+ */
+
+import { ApiClient } from '../../utils/api-client';
+import { setHTML } from '../../utils/dom-utils';
+import { showSuccess, showError } from '../auth';
+
+interface Area {
+  id: number;
+  name: string;
+  description?: string;
+  type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
+  capacity?: number;
+  parentId?: number;
+  parentName?: string;
+  address?: string;
+  isActive?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  tenantId?: number;
+  createdBy?: number;
+}
+
+// ApiResponse interface removed - not used in this file
+
+interface WindowWithAreaHandlers extends Window {
+  editArea?: (id: number) => Promise<void>;
+  viewAreaDetails?: (id: number) => Promise<void>;
+  deleteArea?: (id: number) => Promise<void>;
+  showAreaModal?: () => void;
+  closeAreaModal?: () => void;
+  saveArea?: () => Promise<void>;
+}
+
+class AreasManager {
+  private apiClient: ApiClient;
+  private areas: Area[] = [];
+  private currentFilter: 'all' | 'production' | 'warehouse' | 'office' = 'all';
+  private searchTerm = '';
+
+  private escapeHtml(text: string | null | undefined): string {
+    if (text == null) return '-';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  constructor() {
+    this.apiClient = ApiClient.getInstance();
+    this.initializeEventListeners();
+  }
+
+  private initializeEventListeners() {
+    // Filter buttons
+    document.querySelector('#show-all-areas')?.addEventListener('click', () => {
+      this.currentFilter = 'all';
+      void this.loadAreas();
+    });
+
+    document.querySelector('#filter-areas-production')?.addEventListener('click', () => {
+      this.currentFilter = 'production';
+      void this.loadAreas();
+    });
+
+    document.querySelector('#filter-areas-warehouse')?.addEventListener('click', () => {
+      this.currentFilter = 'warehouse';
+      void this.loadAreas();
+    });
+
+    document.querySelector('#filter-areas-office')?.addEventListener('click', () => {
+      this.currentFilter = 'office';
+      void this.loadAreas();
+    });
+
+    // Search
+    document.querySelector('#area-search-btn')?.addEventListener('click', () => {
+      const searchInput = document.querySelector<HTMLInputElement>('#area-search');
+      this.searchTerm = searchInput ? searchInput.value : '';
+      void this.loadAreas();
+    });
+
+    // Enter key on search
+    document.querySelector('#area-search')?.addEventListener('keypress', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter') {
+        const searchInput = e.target as HTMLInputElement;
+        this.searchTerm = searchInput.value;
+        void this.loadAreas();
+      }
+    });
+  }
+
+  async loadAreas(): Promise<void> {
+    try {
+      const params: Record<string, string> = {};
+
+      if (this.currentFilter !== 'all') {
+        params.type = this.currentFilter;
+      }
+
+      if (this.searchTerm.length > 0) {
+        params.search = this.searchTerm;
+      }
+
+      const response = await this.apiClient.request<Area[]>('/areas', {
+        method: 'GET',
+      });
+
+      // v2 API: apiClient.request already extracts the data array
+      this.areas = response;
+      this.renderAreasTable();
+    } catch (error) {
+      console.error('Error loading areas:', error);
+      showError('Fehler beim Laden der Bereiche');
+    }
+  }
+
+  private renderAreasTable(): void {
+    const tbody = document.querySelector<HTMLElement>('#areas-table-body');
+    if (!tbody) return;
+
+    if (this.areas.length === 0) {
+      this.renderEmptyTable(tbody);
+      return;
+    }
+
+    const safeHTML = this.areas.map((area) => this.createAreaRowHTML(area)).join('');
+
+    // Use setHTML from dom-utils to safely set content
+    // This clears existing content and uses template element for safe parsing
+    setHTML(tbody, safeHTML);
+
+    // Add event listeners for buttons
+    this.attachRowEventListeners(tbody);
+  }
+
+  private renderEmptyTable(tbody: HTMLElement): void {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 7;
+    td.className = 'text-center text-muted';
+    td.textContent = 'Keine Bereiche gefunden';
+    tr.append(td);
+    tbody.innerHTML = '';
+    tbody.append(tr);
+  }
+
+  private createAreaRowHTML(area: Area): string {
+    return `
+      <tr>
+        <td>
+          <strong>${this.escapeHtml(area.name)}</strong>
+        </td>
+        <td>${this.escapeHtml(area.description)}</td>
+        <td>${this.escapeHtml(this.getTypeLabel(area.type))}</td>
+        <td>${area.capacity != null ? `${String(area.capacity)} Plätze` : '-'}</td>
+        <td>${this.escapeHtml(area.address)}</td>
+        <td>
+          <span class="badge ${area.isActive !== false ? 'badge-success' : 'badge-secondary'}">
+            ${area.isActive !== false ? 'Aktiv' : 'Inaktiv'}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-secondary" data-action="edit" data-id="${String(area.id)}">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-sm btn-secondary" data-action="view" data-id="${String(area.id)}">
+            <i class="fas fa-eye"></i>
+          </button>
+          <button class="btn btn-sm btn-danger" data-action="delete" data-id="${String(area.id)}">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }
+
+  private attachRowEventListeners(tbody: HTMLElement): void {
+    tbody.querySelectorAll('button[data-action]').forEach((button) => {
+      button.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLButtonElement;
+        const action = target.dataset.action;
+        const id = Number.parseInt(target.dataset.id ?? '0', 10);
+        const w = window as WindowWithAreaHandlers;
+
+        if (action === 'edit' && w.editArea) {
+          void w.editArea(id);
+        } else if (action === 'view' && w.viewAreaDetails) {
+          void w.viewAreaDetails(id);
+        } else if (action === 'delete' && w.deleteArea) {
+          void w.deleteArea(id);
+        }
+      });
+    });
+  }
+
+  private getTypeLabel(type: string): string {
+    switch (type) {
+      case 'production':
+        return 'Produktion';
+      case 'warehouse':
+        return 'Lager';
+      case 'office':
+        return 'Büro';
+      case 'building':
+        return 'Gebäude';
+      case 'outdoor':
+        return 'Außenbereich';
+      case 'other':
+        return 'Sonstiges';
+      default:
+        return type;
+    }
+  }
+
+  async createArea(areaData: Partial<Area>): Promise<Area> {
+    try {
+      const response = await this.apiClient.request<Area>('/areas', {
+        method: 'POST',
+        body: JSON.stringify(areaData),
+      });
+
+      showSuccess('Bereich erfolgreich erstellt');
+      await this.loadAreas();
+      return response;
+    } catch (error) {
+      console.error('Error creating area:', error);
+      showError('Fehler beim Erstellen des Bereichs');
+      throw error;
+    }
+  }
+
+  async updateArea(id: number, areaData: Partial<Area>): Promise<Area> {
+    try {
+      const response = await this.apiClient.request<Area>(`/areas/${String(id)}`, {
+        method: 'PUT',
+        body: JSON.stringify(areaData),
+      });
+
+      showSuccess('Bereich erfolgreich aktualisiert');
+      await this.loadAreas();
+      return response;
+    } catch (error) {
+      console.error('Error updating area:', error);
+      showError('Fehler beim Aktualisieren des Bereichs');
+      throw error;
+    }
+  }
+
+  async deleteArea(_id: number): Promise<void> {
+    // TODO: Implement proper confirmation modal
+    // For now, show error message to indicate feature is pending
+    showError('Löschbestätigung: Feature noch nicht implementiert - Bereich kann nicht gelöscht werden');
+
+    // Code below will be activated once confirmation modal is implemented
+    /*
+    try {
+      await this.apiClient.request(`/areas/${_id}`, {
+        method: 'DELETE',
+      });
+
+      showSuccess('Bereich erfolgreich gelöscht');
+      await this.loadAreas();
+    } catch (error) {
+      console.error('Error deleting area:', error);
+      showError('Fehler beim Löschen des Bereichs');
+    }
+    */
+
+    // Temporary await to satisfy async requirement
+    await Promise.resolve();
+  }
+
+  async getAreaDetails(id: number): Promise<Area | null> {
+    try {
+      return await this.apiClient.request<Area>(`/areas/${String(id)}`, {
+        method: 'GET',
+      });
+    } catch (error) {
+      console.error('Error getting area details:', error);
+      showError('Fehler beim Laden der Bereichsdetails');
+      return null;
+    }
+  }
+}
+
+// Initialize when DOM is ready
+let areasManager: AreasManager | null = null;
+
+// Setup area operation handlers
+function setupAreaHandlers(manager: AreasManager): void {
+  const w = window as unknown as WindowWithAreaHandlers;
+
+  w.editArea = async (id: number) => {
+    const area = await manager.getAreaDetails(id);
+    if (area !== null) {
+      // TODO: Open edit modal with area data
+      console.info('Edit area:', area);
+      showError('Bearbeitungsmodal noch nicht implementiert');
+    }
+  };
+
+  w.viewAreaDetails = async (id: number) => {
+    const area = await manager.getAreaDetails(id);
+    if (area !== null) {
+      // TODO: Open details modal
+      console.info('View area:', area);
+      showError('Detailansicht noch nicht implementiert');
+    }
+  };
+
+  w.deleteArea = async (id: number) => {
+    await manager.deleteArea(id);
+  };
+}
+
+// Setup modal handlers
+function setupModalHandlers(manager: AreasManager): void {
+  const w = window as unknown as WindowWithAreaHandlers;
+
+  w.showAreaModal = () => {
+    const modal = document.querySelector('#areaModal');
+    if (modal !== null) {
+      modal.classList.add('active');
+      const form = document.querySelector<HTMLFormElement>('#areaForm');
+      if (form) form.reset();
+    }
+  };
+
+  w.closeAreaModal = (): void => {
+    const modal = document.querySelector('#areaModal');
+    if (modal) {
+      modal.classList.remove('active');
+    }
+  };
+
+  w.saveArea = async (): Promise<void> => {
+    const form = document.querySelector<HTMLFormElement>('#areaForm');
+    if (!form) return;
+
+    const areaData = extractAreaData(form);
+    if (!validateAreaData(areaData)) {
+      showError('Bitte geben Sie einen Bereichsnamen ein');
+      return;
+    }
+
+    try {
+      await manager.createArea(areaData as Partial<Area>);
+      w.closeAreaModal?.();
+      showSuccess('Bereich erfolgreich hinzugefügt');
+    } catch (error) {
+      console.error('Error creating area:', error);
+      showError('Fehler beim Hinzufügen des Bereichs');
+    }
+  };
+}
+
+// Extract area data from form
+function extractAreaData(form: HTMLFormElement): Record<string, string | number> {
+  const formData = new FormData(form);
+  const areaData: Record<string, string | number> = {};
+  const allowedKeys = ['name', 'description', 'type', 'capacity', 'parentId', 'address', 'isActive'];
+
+  formData.forEach((value, key) => {
+    if (typeof value === 'string' && value.length > 0 && allowedKeys.includes(key)) {
+      if (key === 'capacity' || key === 'parentId') {
+        const numValue = Number.parseInt(value, 10);
+        if (!Number.isNaN(numValue)) {
+          Object.assign(areaData, { [key]: numValue });
+        }
+      } else {
+        Object.assign(areaData, { [key]: value });
+      }
+    }
+  });
+
+  return areaData;
+}
+
+// Validate area data
+function validateAreaData(areaData: Record<string, string | number>): boolean {
+  return typeof areaData.name === 'string' && areaData.name.length > 0;
+}
+
+// Setup visibility checking for areas section
+function setupVisibilityChecking(manager: AreasManager): void {
+  const checkAreasVisibility = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const section = urlParams.get('section');
+    if (section === 'areas') {
+      void manager.loadAreas();
+    }
+  };
+
+  checkAreasVisibility();
+  window.addEventListener('popstate', checkAreasVisibility);
+
+  // Override history methods to detect URL changes
+  const originalPushState = window.history.pushState.bind(window.history);
+  window.history.pushState = (...args): void => {
+    originalPushState(...args);
+    setTimeout(checkAreasVisibility, 100);
+  };
+
+  const originalReplaceState = window.history.replaceState.bind(window.history);
+  window.history.replaceState = (...args): void => {
+    originalReplaceState(...args);
+    setTimeout(checkAreasVisibility, 100);
+  };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Only initialize if we're on the admin dashboard
+  if (window.location.pathname === '/admin-dashboard') {
+    areasManager = new AreasManager();
+
+    // Export loadAreasTable function to window for show-section.ts
+    (window as WindowWithAreaHandlers & { loadAreasTable?: () => void }).loadAreasTable = () => {
+      console.info('[AreasManager] loadAreasTable called');
+      void areasManager?.loadAreas();
+    };
+
+    // Setup all handlers
+    setupAreaHandlers(areasManager);
+    setupModalHandlers(areasManager);
+    setupVisibilityChecking(areasManager);
+  }
+});
+
+export { AreasManager };
