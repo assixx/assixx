@@ -47,8 +47,6 @@ body::after {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--shadow-sm);
-
-  animation: fade-in-up 0.6s ease-out;
 }
 
 .welcome-hero::before {
@@ -528,6 +526,18 @@ body::after {
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--shadow-sm);
+}
+
+.info-card:hover {
+  position: relative;
+  z-index: 1;
+
+  border-color: #008eff80;
+
+  background: #ffffff08;
+  box-shadow:
+    0 12px 40px #00000080,
+    inset 0 1px #ffffff26;
 }
 
 .info-label {

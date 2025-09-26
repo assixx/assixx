@@ -2,8 +2,8 @@
  * Globale Stile für Assixx
  */
 
-/* Import Outfit font definitions - must be at the top */
-@import "fonts-outfit.css";
+/* Font import removed - already imported via dashboard-theme.css */
+/* @import "fonts-outfit.css"; */
 
 :root {
   /* Farben */

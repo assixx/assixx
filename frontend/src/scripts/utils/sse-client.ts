@@ -133,7 +133,7 @@ export class SSEClient {
     console.info('[SSE] New document notification received');
 
     if (window.unifiedNav?.updateUnreadDocuments) {
-      void window.unifiedNav.updateUnreadDocuments();
+      window.unifiedNav.updateUnreadDocuments();
     }
 
     if (data.document?.filename !== undefined && data.document.filename !== '') {
@@ -145,7 +145,7 @@ export class SSEClient {
     console.info('[SSE] New KVP notification received');
 
     if (window.unifiedNav?.updateNewKvpSuggestions) {
-      void window.unifiedNav.updateNewKvpSuggestions();
+      window.unifiedNav.updateNewKvpSuggestions();
     }
 
     if (data.kvp?.title !== undefined && data.kvp.title !== '') {

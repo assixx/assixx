@@ -100,6 +100,28 @@ export default defineConfig({
 
   // Custom plugins
   plugins: [
+    // Plugin to inject font preloads into all HTML files
+    {
+      name: 'inject-font-preloads',
+      transformIndexHtml: {
+        order: 'pre', // Run before other transformations
+        handler(html, ctx) {
+          // Skip if already has Google Fonts Outfit
+          if (html.includes('fonts.googleapis.com/css2') && html.includes('Outfit')) {
+            return html;
+          }
+
+          // Add preconnect and font link after <title> tag
+          const fontPreloads = `
+    <!-- Font Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">`;
+
+          return html.replace('</title>', `</title>${fontPreloads}`);
+        },
+      },
+    },
     // Plugin to handle external scripts
     {
       name: 'handle-external-scripts',

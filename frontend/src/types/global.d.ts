@@ -10,7 +10,7 @@ interface Window {
   showSuccess?: (message: string) => void;
   showError?: (message: string) => void;
   showInfo?: (message: string) => void;
-  showSection?: (section: string) => void;
+  // showSection removed - deprecated, sections are now separate pages
 }
 
 // Declare global functions
@@ -24,7 +24,7 @@ declare function logout(): void;
 declare function showSuccess(message: string): void;
 declare function showError(message: string): void;
 declare function showInfo(message: string): void;
-declare function showSection(sectionId: string): void;
+// showSection removed - deprecated, sections are now separate pages
 declare function parseJwt(token: string): JWTPayload;
 
 // Toastify type declarations

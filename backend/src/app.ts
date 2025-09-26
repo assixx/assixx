@@ -676,7 +676,7 @@ app.get('/login', (_req: Request, res: Response): void => {
   console.info('[DEBUG] GET /login - serving login page');
   // Fix path for Docker environment
   const projectRoot = process.cwd(); // In Docker this is /app
-  const loginPath = path.join(projectRoot, 'frontend', 'src', 'pages', 'login.html');
+  const loginPath = path.join(projectRoot, 'frontend', 'dist', 'pages', 'login.html');
   res.sendFile(loginPath);
 });
 
@@ -684,7 +684,7 @@ app.get('/login', (_req: Request, res: Response): void => {
 app.get(RATE_LIMIT_PATH, (_req: Request, res: Response): void => {
   console.info('[DEBUG] GET /rate-limit - serving rate limit page');
   const projectRoot = process.cwd(); // In Docker this is /app
-  const rateLimitPath = path.join(projectRoot, 'frontend', 'src', 'pages', 'rate-limit.html');
+  const rateLimitPath = path.join(projectRoot, 'frontend', 'dist', 'pages', 'rate-limit.html');
   res.sendFile(rateLimitPath);
 });
 

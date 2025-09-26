@@ -11,79 +11,79 @@ import type { DashboardStats, Department, Team, EmployeeFormData, BlackboardEntr
 
 // Constants - No longer needed as we only use v2 APIs via apiClient
 
+// Cache TTL in milliseconds
+const CACHE_TTL = 30000; // 30 seconds
+
+// Global cache for API data to prevent duplicate calls
+interface ApiCache {
+  departments?: { data: Department[]; timestamp: number };
+  teams?: { data: Team[]; timestamp: number };
+  employees?: { data: User[]; timestamp: number };
+  documents?: { data: Document[]; timestamp: number };
+}
+
+const apiCache: ApiCache = {};
+
+// Helper to check if cache is valid
+function isCacheValid(timestamp: number | undefined): boolean {
+  if (timestamp === undefined || timestamp === 0) return false;
+  return Date.now() - timestamp < CACHE_TTL;
+}
+
 /**
  * Service for handling dashboard statistics
  */
 export class DashboardService {
-  private apiClient: ApiClient;
+  // DashboardService only uses cached data, no direct API calls
 
-  constructor() {
-    this.apiClient = ApiClient.getInstance();
-  }
-
-  async loadStats(): Promise<DashboardStats> {
+  loadStats(): DashboardStats {
     const authToken = getAuthToken();
     if (authToken === null || authToken === '') {
       throw new Error('No authentication token');
     }
 
-    // Always use v2 APIs - load stats individually
-    return await this.loadStatsIndividually();
-  }
-
-  private async loadStatsIndividually(): Promise<DashboardStats> {
-    const [employeeCount, documentCount, departmentCount, teamCount] = await Promise.all([
-      this.getEmployeeCount(),
-      this.getDocumentCount(),
-      this.getDepartmentCount(),
-      this.getTeamCount(),
-    ]);
-
+    // Use cached data counts instead of making separate API calls
     return {
-      employeeCount,
-      documentCount,
-      departmentCount,
-      teamCount,
+      employeeCount: this.getEmployeeCount(),
+      documentCount: this.getDocumentCount(),
+      departmentCount: this.getDepartmentCount(),
+      teamCount: this.getTeamCount(),
     };
   }
 
-  private async getEmployeeCount(): Promise<number> {
-    try {
-      const users = await this.apiClient.get<User[]>('/users?role=employee');
-      return users.length;
-    } catch (error) {
-      console.error('Error loading employee count:', error);
+  private getEmployeeCount(): number {
+    // Check if we have valid cached employees data
+    if (apiCache.employees !== undefined && isCacheValid(apiCache.employees.timestamp)) {
+      return apiCache.employees.data.length;
     }
+    // Data will be loaded by EmployeeService.loadAllEmployees()
     return 0;
   }
 
-  private async getDocumentCount(): Promise<number> {
-    try {
-      const response = await this.apiClient.get<{ documents: Document[] }>('/documents');
-      return response.documents.length;
-    } catch {
-      /* Error */
+  private getDocumentCount(): number {
+    // Check if we have valid cached documents data
+    if (apiCache.documents !== undefined && isCacheValid(apiCache.documents.timestamp)) {
+      return apiCache.documents.data.length;
     }
+    // Data will be loaded by DocumentService.loadAllDocuments()
     return 0;
   }
 
-  private async getDepartmentCount(): Promise<number> {
-    try {
-      const departments = await this.apiClient.get<Department[]>('/departments');
-      return departments.length;
-    } catch {
-      /* Error */
+  private getDepartmentCount(): number {
+    // Check if we have valid cached departments data
+    if (apiCache.departments !== undefined && isCacheValid(apiCache.departments.timestamp)) {
+      return apiCache.departments.data.length;
     }
+    // Data will be loaded by DepartmentService.loadDepartments()
     return 0;
   }
 
-  private async getTeamCount(): Promise<number> {
-    try {
-      const teams = await this.apiClient.get<Team[]>('/teams');
-      return teams.length;
-    } catch {
-      /* Error */
+  private getTeamCount(): number {
+    // Check if we have valid cached teams data
+    if (apiCache.teams !== undefined && isCacheValid(apiCache.teams.timestamp)) {
+      return apiCache.teams.data.length;
     }
+    // Data will be loaded by TeamService.loadTeams()
     return 0;
   }
 }
@@ -100,9 +100,43 @@ export class EmployeeService {
 
   async loadRecentEmployees(limit = 5): Promise<MappedUser[]> {
     try {
-      const employees = await this.apiClient.get<User[]>(`/users?role=employee&limit=${String(limit)}`);
-      return mapUsers(employees);
+      // First ensure we have all employees loaded and cached
+      await this.loadAllEmployees();
+
+      // Return the most recent employees from cache
+      if (apiCache.employees !== undefined && isCacheValid(apiCache.employees.timestamp)) {
+        const recentEmployees = apiCache.employees.data.slice(0, limit);
+        return mapUsers(recentEmployees);
+      }
+
+      return [];
     } catch {
+      return [];
+    }
+  }
+
+  async loadAllEmployees(): Promise<User[]> {
+    // Check cache first
+    if (apiCache.employees !== undefined && isCacheValid(apiCache.employees.timestamp)) {
+      return apiCache.employees.data;
+    }
+
+    try {
+      // Capture timestamp before async operation
+      const fetchStartTime = Date.now();
+      const employees = await this.apiClient.get<User[]>('/users?role=employee');
+
+      // Only update cache if it wasn't updated by another operation while we were fetching
+      if (apiCache.employees === undefined || apiCache.employees.timestamp < fetchStartTime) {
+        apiCache.employees = {
+          data: employees,
+          timestamp: Date.now(),
+        };
+      }
+
+      return employees;
+    } catch (error) {
+      console.error('Error loading employees:', error);
       return [];
     }
   }
@@ -142,9 +176,27 @@ export class DepartmentService {
   }
 
   async loadDepartments(): Promise<Department[]> {
+    // Check cache first
+    if (apiCache.departments !== undefined && isCacheValid(apiCache.departments.timestamp)) {
+      return apiCache.departments.data;
+    }
+
     try {
-      return await this.apiClient.get<Department[]>('/departments');
-    } catch {
+      // Capture timestamp before async operation
+      const fetchStartTime = Date.now();
+      const departments = await this.apiClient.get<Department[]>('/departments');
+
+      // Only update cache if it wasn't updated by another operation while we were fetching
+      if (apiCache.departments === undefined || apiCache.departments.timestamp < fetchStartTime) {
+        apiCache.departments = {
+          data: departments,
+          timestamp: Date.now(),
+        };
+      }
+
+      return departments;
+    } catch (error) {
+      console.error('Error loading departments:', error);
       return [];
     }
   }
@@ -156,6 +208,8 @@ export class DepartmentService {
     visibility?: string;
   }): Promise<void> {
     await this.apiClient.post('/departments', data);
+    // Clear cache after creating new department
+    delete apiCache.departments;
     showSuccess('Abteilung erfolgreich erstellt');
   }
 }
@@ -171,15 +225,35 @@ export class TeamService {
   }
 
   async loadTeams(): Promise<Team[]> {
+    // Check cache first
+    if (apiCache.teams !== undefined && isCacheValid(apiCache.teams.timestamp)) {
+      return apiCache.teams.data;
+    }
+
     try {
-      return await this.apiClient.get<Team[]>('/teams');
-    } catch {
+      // Capture timestamp before async operation
+      const fetchStartTime = Date.now();
+      const teams = await this.apiClient.get<Team[]>('/teams');
+
+      // Only update cache if it wasn't updated by another operation while we were fetching
+      if (apiCache.teams === undefined || apiCache.teams.timestamp < fetchStartTime) {
+        apiCache.teams = {
+          data: teams,
+          timestamp: Date.now(),
+        };
+      }
+
+      return teams;
+    } catch (error) {
+      console.error('Error loading teams:', error);
       return [];
     }
   }
 
   async createTeam(data: { name: string; departmentId: number; description?: string }): Promise<void> {
     await this.apiClient.post('/teams', data);
+    // Clear cache after creating new team
+    delete apiCache.teams;
     showSuccess('Team erfolgreich erstellt');
   }
 }
@@ -196,9 +270,43 @@ export class DocumentService {
 
   async loadRecentDocuments(limit = 5): Promise<Document[]> {
     try {
-      const response = await this.apiClient.get<{ documents: Document[] }>(`/documents?limit=${String(limit)}`);
-      return response.documents;
+      // First ensure we have all documents loaded and cached
+      await this.loadAllDocuments();
+
+      // Return the most recent documents from cache
+      if (apiCache.documents !== undefined && isCacheValid(apiCache.documents.timestamp)) {
+        return apiCache.documents.data.slice(0, limit);
+      }
+
+      return [];
     } catch {
+      return [];
+    }
+  }
+
+  async loadAllDocuments(): Promise<Document[]> {
+    // Check cache first
+    if (apiCache.documents !== undefined && isCacheValid(apiCache.documents.timestamp)) {
+      return apiCache.documents.data;
+    }
+
+    try {
+      // Capture timestamp before async operation
+      const fetchStartTime = Date.now();
+      const response = await this.apiClient.get<{ documents: Document[] }>('/documents');
+      const documents = response.documents;
+
+      // Only update cache if it wasn't updated by another operation while we were fetching
+      if (apiCache.documents === undefined || apiCache.documents.timestamp < fetchStartTime) {
+        apiCache.documents = {
+          data: documents,
+          timestamp: Date.now(),
+        };
+      }
+
+      return documents;
+    } catch (error) {
+      console.error('Error loading documents:', error);
       return [];
     }
   }

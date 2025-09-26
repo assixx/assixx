@@ -506,32 +506,7 @@ export function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-/**
- * Show section by ID
- */
-export function showSection(sectionId: string): void {
-  // Hide all sections
-  document.querySelectorAll('.content-section').forEach((section) => {
-    (section as HTMLElement).style.display = 'none';
-  });
-
-  // Show selected section
-  const selectedSection = document.querySelector(`#${sectionId}`);
-  if (selectedSection instanceof HTMLElement) {
-    selectedSection.style.display = 'block';
-  }
-
-  // Update active navigation
-
-  document.querySelectorAll('.nav-link').forEach((link) => {
-    link.classList.remove('active');
-  });
-
-  const activeLink = document.querySelector(`[data-section="${sectionId}"]`);
-  if (activeLink) {
-    activeLink.classList.add('active');
-  }
-}
+// showSection removed - deprecated, sections are now separate pages
 
 /**
  * Logout user
@@ -552,7 +527,7 @@ declare global {
     formatDate: typeof formatDate;
     formatDateTime: typeof formatDateTime;
     escapeHtml: typeof escapeHtml;
-    showSection: typeof showSection;
+    // showSection removed - deprecated, sections are now separate pages
     logout: () => Promise<void>;
   }
 }
@@ -565,6 +540,6 @@ if (typeof window !== 'undefined') {
   window.formatDate = formatDate;
   window.formatDateTime = formatDateTime;
   window.escapeHtml = escapeHtml;
-  window.showSection = showSection;
+  // window.showSection removed - deprecated, sections are now separate pages
   window.logout = logout;
 }

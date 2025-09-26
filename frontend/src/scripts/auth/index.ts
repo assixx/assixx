@@ -2,9 +2,10 @@
  * Authentication utilities for Assixx
  */
 
-import type { User, JWTPayload } from '../../types/api.types';
+import type { User } from '../../types/api.types';
 import { apiClient, ApiError } from '../../utils/api-client';
 import { getUserRole, setUserRole, clearUserRole, getActiveRole } from '../../utils/auth-helpers';
+import { parseJwt } from '../../utils/jwt-utils';
 import { SessionManager } from '../utils/session-manager';
 
 // Extend window for auth functions
@@ -101,24 +102,8 @@ export function isAuthenticated(): boolean {
   return true;
 }
 
-// Parse JWT token
-export function parseJwt(token: string): JWTPayload | null {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const decodedBase64 = atob(base64);
-    let percentEncoded = '';
-    for (let i = 0; i < decodedBase64.length; i++) {
-      const charCode = decodedBase64.charCodeAt(i);
-      percentEncoded += `%${('00' + charCode.toString(16)).slice(-2)}`;
-    }
-    const jsonPayload = decodeURIComponent(percentEncoded);
-    return JSON.parse(jsonPayload) as JWTPayload;
-  } catch (error) {
-    console.error('Error parsing JWT:', error);
-    return null;
-  }
-}
+// Re-export parseJwt for backward compatibility
+export { parseJwt } from '../../utils/jwt-utils';
 
 // Helper: Get redirect URL based on user role
 function getRoleBasedRedirectUrl(): string {

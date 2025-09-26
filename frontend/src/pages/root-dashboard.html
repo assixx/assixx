@@ -11,7 +11,6 @@
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <!-- CSS Styles -->
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
@@ -24,7 +23,7 @@
     <div id="navigation-container"></div>
 
     <!-- Employee Number Modal -->
-    <div id="employeeNumberModal" class="modal" class="u-hidden">
+    <div id="employeeNumberModal" class="modal u-hidden">
       <div class="modal-content" style="max-width: 400px">
         <div class="modal-header">
           <h2 class="modal-title">Personalnummer eingeben</h2>
@@ -50,9 +49,7 @@
                 required
                 style="text-align: center; font-size: 14px; letter-spacing: 2px"
               />
-              <small class="form-text" class="u-color-text-secondary">
-                Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen
-              </small>
+              <small class="form-text u-color-text-secondary">Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen</small>
             </div>
             <div class="form-actions" style="margin-top: 24px">
               <button
@@ -105,54 +102,10 @@
 
     <!-- Force dashboard to be active on page load -->
     <script type="module">
-      // Check if user should be on root dashboard by reading from JWT token
-      const token = localStorage.getItem('token');
-      let activeRole = null;
-      let userRole = localStorage.getItem('userRole');
+      import { SessionManager } from '/scripts/utils/session-manager.ts';
 
-      // Parse the JWT token to get the actual active role
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          activeRole = payload.activeRole || payload.role;
-          userRole = payload.role;
-
-          // Update localStorage to match token
-          localStorage.setItem('activeRole', activeRole);
-          if (userRole) {
-            localStorage.setItem('userRole', userRole);
-          }
-
-          console.info('[Root Dashboard] Token analysis:', {
-            tokenRole: payload.role,
-            tokenActiveRole: payload.activeRole,
-            finalActiveRole: activeRole,
-          });
-        } catch (e) {
-          console.error('[Root Dashboard] Error parsing token:', e);
-          activeRole = localStorage.getItem('activeRole') || userRole;
-        }
-      } else {
-        activeRole = localStorage.getItem('activeRole') || userRole;
-      }
-
-      // Only root users can access root dashboard when in root mode
-      if (userRole === 'root' && activeRole === 'root') {
-        // User is correctly on root dashboard
-        console.info('[Root Dashboard] User has root access');
-      } else if (userRole === 'root' && activeRole !== 'root') {
-        // Root user has switched to another role - redirect
-        console.info('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
-        if (activeRole === 'admin') {
-          window.location.replace('/admin-dashboard');
-        } else if (activeRole === 'employee') {
-          window.location.replace('/employee-dashboard');
-        }
-      } else if (userRole !== 'root') {
-        // Non-root user trying to access root dashboard - redirect to login
-        console.info('[Root Dashboard] Non-root user detected - redirecting to login');
-        window.location.replace('/login');
-      }
+      const session = SessionManager.getInstance();
+      session.validateDashboardAccess('root');
 
       document.addEventListener('DOMContentLoaded', () => {
         // Clear any stored active navigation to ensure dashboard is selected
@@ -160,67 +113,6 @@
       });
     </script>
     <script type="module" src="/scripts/dashboard/root.ts"></script>
-    <script>
-      // Dashboard neu laden bei Klick auf Logo
-      document.addEventListener('DOMContentLoaded', () => {
-        const logoContainer = document.querySelector('.logo-container');
-        if (logoContainer) {
-          logoContainer.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.href = '/root-dashboard';
-          });
-        }
-      });
-
-      // Custom Dropdown Functions
-
-      function toggleDropdown(dropdownId) {
-        const display = document.querySelector(dropdownId + 'Display');
-        const options = document.querySelector(dropdownId + 'Dropdown');
-
-        if (display && options) {
-          display.classList.toggle('active');
-          options.classList.toggle('active');
-        }
-
-        // Close other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d.id !== dropdownId + 'Display') {
-            d.classList.remove('active');
-          }
-        });
-        document.querySelectorAll('.dropdown-options').forEach((o) => {
-          if (o.id !== dropdownId + 'Dropdown') {
-            o.classList.remove('active');
-          }
-        });
-      }
-
-      function selectOption(dropdownId, value, text) {
-        const display = document.querySelector(dropdownId + 'Display');
-        const options = document.querySelector(dropdownId + 'Dropdown');
-        const input = document.querySelector(dropdownId + 'Value');
-
-        if (display && input) {
-          display.querySelector('span').textContent = text;
-          input.value = value;
-          display.classList.remove('active');
-          options.classList.remove('active');
-        }
-      }
-
-      // Close dropdowns when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => {
-            d.classList.remove('active');
-          });
-          document.querySelectorAll('.dropdown-options').forEach((o) => {
-            o.classList.remove('active');
-          });
-        }
-      });
-    </script>
 
     <!-- Breadcrumb Component -->
     <script type="module">

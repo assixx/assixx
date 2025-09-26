@@ -1,12 +1,16 @@
 /* Assixx Dashboard Theme - Konsistentes Design für alle Dashboards */
 
-/* Import Core Fonts - Outfit from Google Fonts */
-@import "./fonts-outfit.css";
-
 /* Import Utility Classes */
 @import "./utilities.css";
 
+/* Font loading moved to Vite plugin for better performance (preconnect + parallel loading) */
+
 :root {
+  /* Font Variables from fonts-outfit.css */
+  --font-primary: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
+  --font-display: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
+  --font-body: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
+
   /* Farben */
   --primary-color: #2196f3;
   --primary-dark: #1976d2;

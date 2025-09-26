@@ -3,6 +3,7 @@
  */
 
 import { setHTML } from '../../utils/dom-utils';
+import { parseJwt } from '../../utils/jwt-utils';
 
 export class SessionManager {
   private static instance: SessionManager | undefined;
@@ -226,6 +227,120 @@ export class SessionManager {
       window.location.href = '/login?timeout=true';
     } else {
       window.location.href = '/login';
+    }
+  }
+
+  /**
+   * Extract and update roles from JWT token
+   */
+  private extractRoles(): { activeRole: string | null; userRole: string | null } {
+    const token = localStorage.getItem('token');
+    let activeRole: string | null = null;
+    let userRole = localStorage.getItem('userRole');
+
+    if (token !== null && token !== '') {
+      const payload = parseJwt(token);
+      if (payload !== null) {
+        activeRole = payload.activeRole ?? payload.role;
+        userRole = payload.role;
+
+        if (activeRole !== '') {
+          localStorage.setItem('activeRole', activeRole);
+        }
+        localStorage.setItem('userRole', userRole);
+      } else {
+        activeRole = localStorage.getItem('activeRole') ?? userRole;
+      }
+    } else {
+      activeRole = localStorage.getItem('activeRole') ?? userRole;
+    }
+
+    return { activeRole, userRole };
+  }
+
+  /**
+   * Validates root dashboard access
+   */
+  private validateRootAccess(userRole: string | null, activeRole: string | null): boolean {
+    if (userRole === 'root' && activeRole === 'root') {
+      console.info('[Root Dashboard] User has root access');
+      return true;
+    }
+    if (userRole === 'root' && activeRole !== 'root') {
+      console.info('[Root Dashboard] Root user has switched to', activeRole, '- redirecting');
+      this.redirectToDashboard(activeRole);
+    } else {
+      console.info('[Root Dashboard] Non-root user detected - redirecting to login');
+      window.location.replace('/login');
+    }
+    return false;
+  }
+
+  /**
+   * Validates admin dashboard access
+   */
+  private validateAdminAccess(activeRole: string | null): boolean {
+    if (activeRole === 'admin') {
+      console.info('[Admin Dashboard] User has admin access');
+      return true;
+    }
+    if (activeRole === 'root') {
+      console.info('[Admin Dashboard] Root user detected - redirecting to root dashboard');
+      window.location.replace('/root-dashboard');
+    } else if (activeRole === 'employee') {
+      console.info('[Admin Dashboard] Employee user detected - redirecting to employee dashboard');
+      window.location.replace('/employee-dashboard');
+    } else {
+      console.info('[Admin Dashboard] No valid role - redirecting to login');
+      window.location.replace('/login');
+    }
+    return false;
+  }
+
+  /**
+   * Validates dashboard access based on required role
+   */
+  public validateDashboardAccess(requiredDashboard: 'root' | 'admin' | 'employee'): boolean {
+    const { activeRole, userRole } = this.extractRoles();
+
+    switch (requiredDashboard) {
+      case 'root':
+        return this.validateRootAccess(userRole, activeRole);
+      case 'admin':
+        return this.validateAdminAccess(activeRole);
+      case 'employee':
+        if (activeRole === 'employee' || activeRole === 'admin' || activeRole === 'root') {
+          console.info('[Employee Dashboard] User has access');
+          return true;
+        }
+        console.info('[Employee Dashboard] Invalid role - redirecting to login');
+        window.location.replace('/login');
+        return false;
+      default:
+        window.location.replace('/login');
+        return false;
+    }
+  }
+
+  private redirectToDashboard(role: string | null): void {
+    if (role === null || role === '') {
+      window.location.replace('/login');
+      return;
+    }
+
+    switch (role) {
+      case 'root':
+        window.location.replace('/root-dashboard');
+        break;
+      case 'admin':
+        window.location.replace('/admin-dashboard');
+        break;
+      case 'employee':
+        window.location.replace('/employee-dashboard');
+        break;
+      default:
+        window.location.replace('/login');
+        break;
     }
   }
 

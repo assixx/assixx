@@ -6,7 +6,7 @@
 
 import { $$, $$id, setText, hide } from '../../../utils/dom-utils';
 import { getAuthToken, showError } from '../../auth';
-import { showSection } from '../../utils/show-section';
+// showSection removed - deprecated, sections are now separate pages
 import type { EmployeeFormData } from './types';
 // Type for the BlackboardWidget from blackboard-widget.js
 interface BlackboardWidgetInstance {
@@ -39,6 +39,11 @@ class AdminDashboard {
   // Getter for blackboard widget (for future use if needed)
   public getBlackboardWidget(): BlackboardWidgetInstance | null {
     return this.blackboardWidget;
+  }
+
+  // Getter for document service (used by HTML to access cached documents)
+  public getDocumentService(): DocumentService {
+    return this.documentService;
   }
 
   constructor() {
@@ -75,7 +80,7 @@ class AdminDashboard {
     }, 100);
 
     // Handle section parameter
-    this.handleSectionParameter();
+    // Section parameters are deprecated - admin dashboard always shows dashboard
   }
 
   private setupEventListeners(): void {
@@ -127,18 +132,19 @@ class AdminDashboard {
   }
 
   private setupManageLinks(): void {
+    // These links should navigate to separate pages, not sections
     const links = [
-      { id: 'manage-employees-link', section: 'employees' },
-      { id: 'manage-documents-link', section: 'documents' },
-      { id: 'manage-departments-link', section: 'departments' },
+      { id: 'manage-employees-link', url: '/manage-employees' },
+      { id: 'manage-documents-link', url: '/documents' },
+      { id: 'manage-departments-link', url: '/manage-departments' },
     ];
 
-    links.forEach(({ id, section }) => {
+    links.forEach(({ id, url }) => {
       const link = $$id(id);
       if (link !== null) {
         link.addEventListener('click', (e) => {
           e.preventDefault();
-          showSection(section);
+          window.location.href = url;
         });
       }
     });
@@ -153,22 +159,26 @@ class AdminDashboard {
       // Give browser time to render Blackboard before loading other data
       await new Promise((resolve) => setTimeout(resolve, 10));
 
-      // ONLY AFTER Blackboard is rendered, start loading other data
+      // Load all data first (this will populate the cache)
+      // These calls will cache the data for subsequent use
       await Promise.all([
-        this.loadRecentEmployees(),
-        this.loadDashboardStats(),
-        this.loadRecentDocuments(),
-        this.loadDepartments(),
-        this.loadTeams(),
+        this.loadRecentEmployees(), // Will load ALL employees and cache them
+        this.loadRecentDocuments(), // Will load ALL documents and cache them
+        this.loadDepartments(), // Will load and cache departments
+        this.loadTeams(), // Will load and cache teams
       ]);
+
+      // NOW load stats - this will use the cached data from above
+      // No additional API calls will be made
+      this.loadDashboardStats();
     } catch (error) {
       console.error('[Admin Dashboard] Error loading initial data:', error);
     }
   }
 
-  private async loadDashboardStats(): Promise<void> {
+  private loadDashboardStats(): void {
     try {
-      const stats = await this.dashboardService.loadStats();
+      const stats = this.dashboardService.loadStats();
       this.dashboardUI.updateStats(stats);
     } catch (error) {
       console.error('Error loading dashboard stats:', error);
@@ -302,8 +312,10 @@ class AdminDashboard {
       form.reset();
       this.employeeModalUI.hideModal();
 
-      // Reload data
-      await Promise.all([this.loadRecentEmployees(), this.loadDashboardStats()]);
+      // Reload data - loadRecentEmployees will refresh the employee cache
+      await this.loadRecentEmployees();
+      // Update stats with new cached data
+      this.loadDashboardStats();
 
       // Optional: reload page for full refresh
       setTimeout(() => {
@@ -335,8 +347,12 @@ class AdminDashboard {
       const modal = $$id('department-modal');
       if (modal !== null) hide(modal);
 
-      // Reload data
-      await Promise.all([this.loadDepartments(), this.employeeModalUI.loadDepartmentsForSelect()]);
+      // Reload data - loadDepartments will refresh the cache
+      // loadDepartmentsForSelect will use the cached data
+      await this.loadDepartments();
+      await this.employeeModalUI.loadDepartmentsForSelect();
+      // Update stats with new cached data
+      this.loadDashboardStats();
     } catch (error) {
       console.error('Error creating department:', error);
       showError(
@@ -364,24 +380,17 @@ class AdminDashboard {
       const modal = $$id('team-modal');
       if (modal !== null) hide(modal);
 
-      // Reload teams
+      // Reload teams - will refresh cache
       await this.loadTeams();
+      // Update stats with new cached data
+      this.loadDashboardStats();
     } catch (error) {
       console.error('Error creating team:', error);
       showError(`Fehler beim Erstellen des Teams: ${error instanceof Error ? error.message : 'Unbekannter Fehler'}`);
     }
   }
 
-  private handleSectionParameter(): void {
-    const urlParams = new URLSearchParams(window.location.search);
-    const section = urlParams.get('section');
-
-    if (section !== null && section.length > 0) {
-      showSection(section);
-    } else {
-      showSection('dashboard');
-    }
-  }
+  // handleSectionParameter removed - deprecated, no sections anymore
 }
 
 // ============================================================================
@@ -392,6 +401,9 @@ class AdminDashboard {
 document.addEventListener('DOMContentLoaded', () => {
   const dashboard = new AdminDashboard();
   dashboard.initialize();
+
+  // Expose dashboard instance to window for HTML access to services
+  window.adminDashboard = dashboard;
 });
 
 // ============================================================================
@@ -400,9 +412,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 declare global {
   interface Window {
+    adminDashboard?: AdminDashboard;
     showNewEmployeeModal?: () => Promise<void>;
     loadDepartmentsForEmployeeSelect?: () => Promise<void>;
-    showSection: typeof showSection;
     selectDropdownOption?: (dropdownName: string, value: string, label: string) => void;
     BlackboardWidget?: new (containerId: string) => BlackboardWidgetInstance;
     blackboardWidget?: BlackboardWidgetInstance;
@@ -422,7 +434,7 @@ if (typeof window !== 'undefined') {
     await employeeModalUI.loadDepartmentsForSelect();
   };
 
-  window.showSection = showSection;
+  // showSection removed - deprecated
 
   window.selectDropdownOption = (dropdownName: string, value: string, label: string): void => {
     const input = $$(`#${dropdownName}_id`) as HTMLInputElement | null;

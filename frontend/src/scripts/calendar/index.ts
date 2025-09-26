@@ -453,7 +453,7 @@ async function checkUnreadEvents(): Promise<void> {
 
     // Update badge in navigation
     if (window.unifiedNav) {
-      void window.unifiedNav.updateUnreadCalendarEvents();
+      window.unifiedNav.updateUnreadCalendarEvents();
     }
   } catch (error: unknown) {
     console.error('Error checking unread events:', error);
@@ -2140,7 +2140,7 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
 
       // Update badge in navigation
       if (window.unifiedNav) {
-        void window.unifiedNav.updateUnreadCalendarEvents();
+        window.unifiedNav.updateUnreadCalendarEvents();
       }
 
       // Reload the page to refresh everything

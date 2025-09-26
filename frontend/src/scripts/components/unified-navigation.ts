@@ -5,7 +5,7 @@
  */
 
 // Import types
-import type { User, Tenant, Document } from '../../types/api.types';
+import type { User, Tenant } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { apiClient } from '../../utils/api-client';
@@ -296,12 +296,15 @@ class UnifiedNavigation {
   }
 
   private setupBadgeUpdates(): void {
+    // TODO: Migrate all badge updates to SSE (Server-Sent Events)
+    // Currently deprecated - will be handled by sse-client.ts
+
     // Initial badge updates (once after 1 second)
     setTimeout(() => {
-      void this.updateUnreadMessages();
-      void this.updateUnreadDocuments();
-      void this.updateNewKvpSuggestions();
-      void this.updateUnreadCalendarEvents();
+      void this.updateUnreadMessages(); // Keep for chat messages until WebSocket/SSE migration
+      // void this.updateUnreadDocuments(); // DEPRECATED - will be handled by SSE
+      // void this.updateNewKvpSuggestions(); // DEPRECATED - will be handled by SSE
+      // void this.updateUnreadCalendarEvents(); // DEPRECATED - will be handled by SSE
     }, 1000);
 
     // REMOVED: 10-minute polling for surveys - replaced by SSE
@@ -309,9 +312,9 @@ class UnifiedNavigation {
     setInterval(() => {
       void this.updateUnreadMessages(); // Keep for now (WebSocket only covers direct messages)
       // void this.updatePendingSurveys(); // REMOVED - handled by SSE
-      void this.updateUnreadDocuments(); // Keep for now (not yet in SSE)
-      void this.updateNewKvpSuggestions(); // Keep for now (not yet in SSE)
-      void this.updateUnreadCalendarEvents(); // Keep for now (not yet in SSE)
+      // void this.updateUnreadDocuments(); // DEPRECATED - will be handled by SSE
+      // void this.updateNewKvpSuggestions(); // DEPRECATED - will be handled by SSE
+      // void this.updateUnreadCalendarEvents(); // DEPRECATED - will be handled by SSE
     }, 600000);
   }
 
@@ -502,19 +505,6 @@ class UnifiedNavigation {
     void this.loadFullUserProfile();
   }
 
-  private getSectionUrl(section: string): string {
-    // Check if we're on admin-dashboard page
-    const isOnAdminDashboard = window.location.pathname.includes('admin-dashboard');
-
-    if (isOnAdminDashboard) {
-      // If we're already on admin dashboard, use simple query parameter
-      return `?section=${section}`;
-    } else {
-      // If we're on another page, navigate to admin dashboard with section parameter
-      return `/admin-dashboard?section=${section}`;
-    }
-  }
-
   private async loadFullUserProfile(): Promise<void> {
     try {
       const token = localStorage.getItem('token');
@@ -671,14 +661,14 @@ class UnifiedNavigation {
         id: 'dashboard',
         icon: this.getSVGIcon('home'),
         label: 'Übersicht',
-        url: this.getSectionUrl('dashboard'),
+        url: '/admin-dashboard',
         section: 'dashboard',
       },
       {
         id: 'employees',
         icon: this.getSVGIcon('users'),
         label: 'Mitarbeiter',
-        url: this.getSectionUrl('employees'),
+        url: '/manage-employees',
         section: 'employees',
         children: [
           {
@@ -1002,27 +992,28 @@ class UnifiedNavigation {
         url: isAdmin ? '/survey-admin' : '/survey-employee',
         badge: isAdmin ? undefined : 'pending-surveys',
       },
-      {
-        id: 'tpm',
-        icon: this.getSVGIcon('wrench'),
-        label: 'TPM',
-        url: this.getSectionUrl('tpm'),
-        section: 'tpm',
-      },
-      {
-        id: '5s',
-        icon: this.getSVGIcon('star'),
-        label: '5S',
-        url: this.getSectionUrl('5s'),
-        section: '5s',
-      },
-      {
-        id: 'standards',
-        icon: this.getSVGIcon('checklist'),
-        label: 'Standards',
-        url: this.getSectionUrl('standards'),
-        section: 'standards',
-      },
+      // TPM, 5S and Standards pages not yet separated - temporarily disabled
+      // {
+      //   id: 'tpm',
+      //   icon: this.getSVGIcon('wrench'),
+      //   label: 'TPM',
+      //   url: '/tpm',
+      //   section: 'tpm',
+      // },
+      // {
+      //   id: '5s',
+      //   icon: this.getSVGIcon('star'),
+      //   label: '5S',
+      //   url: '/5s',
+      //   section: '5s',
+      // },
+      // {
+      //   id: 'standards',
+      //   icon: this.getSVGIcon('checklist'),
+      //   label: 'Standards',
+      //   url: '/standards',
+      //   section: 'standards',
+      // },
     ];
   }
 
@@ -1280,7 +1271,7 @@ class UnifiedNavigation {
     return storedUserRole === 'root'
       ? 'root-dashboard'
       : userRole === 'admin'
-        ? 'admin-dashboard?section=dashboard'
+        ? 'admin-dashboard'
         : 'employee-dashboard';
   }
 
@@ -2589,7 +2580,13 @@ class UnifiedNavigation {
   }
 
   // Update Calendar unread events count (Events mit ausstehender Statusanfrage)
-  public async updateUnreadCalendarEvents(): Promise<void> {
+  // DEPRECATED: Will be replaced by SSE (Server-Sent Events)
+  // This method is currently disabled - badge updates will come from sse-client.ts
+  public updateUnreadCalendarEvents(): void {
+    // Method disabled - will be handled by SSE
+    return;
+
+    /* Original implementation kept for reference during SSE migration:
     try {
       const token = localStorage.getItem('token');
       if (token === null || token === '' || token === 'test-mode') return;
@@ -2618,8 +2615,11 @@ class UnifiedNavigation {
     } catch (error) {
       console.error('Error updating unread calendar events:', error);
     }
+    */
   }
 
+  // DEPRECATED: Helper methods for KVP updates - will be removed with SSE migration
+  /* These methods are kept for reference but are no longer used:
   private shouldSkipKvpUpdate(): boolean {
     const token = localStorage.getItem('token');
     return token === null || token === '' || token === 'test-mode';
@@ -2633,7 +2633,10 @@ class UnifiedNavigation {
     }
     return false;
   }
+  */
 
+  // DEPRECATED: Additional KVP helper methods - will be removed with SSE migration
+  /* These methods are kept for reference but are no longer used:
   private shouldShowKvpBadge(currentCount: number, hasClickedKvp: boolean): boolean {
     return currentCount > 0 && (!hasClickedKvp || currentCount > this.lastKnownKvpCount);
   }
@@ -2655,9 +2658,15 @@ class UnifiedNavigation {
       localStorage.setItem('lastKnownKvpCount', currentCount.toString());
     }
   }
+  */
 
-  // Update KVP new suggestions count (for admin/root only)
-  public async updateNewKvpSuggestions(): Promise<void> {
+  // DEPRECATED: Will be replaced by SSE (Server-Sent Events)
+  // This method is currently disabled - badge updates will come from sse-client.ts
+  public updateNewKvpSuggestions(): void {
+    // Method disabled - will be handled by SSE
+    return;
+
+    /* Original implementation kept for reference during SSE migration:
     try {
       if (this.shouldSkipKvpUpdate()) {
         return;
@@ -2691,6 +2700,7 @@ class UnifiedNavigation {
     } catch (error) {
       console.error('Error updating KVP suggestions count:', error);
     }
+    */
   }
 
   private getBadgeCount(badge: HTMLElement | null): number {
@@ -2746,6 +2756,8 @@ class UnifiedNavigation {
 
   // Offene Umfragen aktualisieren
 
+  // DEPRECATED: Document helper methods - will be removed with SSE migration
+  /* These methods are kept for reference but are no longer used:
   private shouldSkipDocumentUpdate(): boolean {
     const token = localStorage.getItem('token');
     if (token === null || token === '' || token === 'test-mode') {
@@ -2810,9 +2822,15 @@ class UnifiedNavigation {
     this.updateDocumentBadge('badge-docs-personal', unreadCounts.personal);
     this.updateDocumentBadge('badge-docs-payroll', unreadCounts.payroll);
   }
+  */
 
-  // Ungelesene Dokumente aktualisieren
-  public async updateUnreadDocuments(): Promise<void> {
+  // DEPRECATED: Will be replaced by SSE (Server-Sent Events)
+  // This method is currently disabled - badge updates will come from sse-client.ts
+  public updateUnreadDocuments(): void {
+    // Method disabled - will be handled by SSE
+    return;
+
+    /* Original implementation kept for reference during SSE migration:
     try {
       if (this.shouldSkipDocumentUpdate()) {
         return;
@@ -2839,6 +2857,7 @@ class UnifiedNavigation {
     } catch (error) {
       console.error('Error updating unread documents:', error);
     }
+    */
   }
 
   // Mark all documents as read
@@ -2975,7 +2994,7 @@ class UnifiedNavigation {
           dashboardUrl = 'employee-dashboard';
           break;
         case 'admin':
-          dashboardUrl = 'admin-dashboard?section=dashboard';
+          dashboardUrl = 'admin-dashboard';
           break;
         case 'root':
           dashboardUrl = 'root-dashboard';

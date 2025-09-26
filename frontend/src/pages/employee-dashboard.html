@@ -8,21 +8,14 @@
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script src="/scripts/critical/sidebar-init.js"></script>
 
-    <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <!-- CSS Styles -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
-    <!-- Dashboard Theme CSS -->
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <link rel="stylesheet" href="/styles/employee-dashboard.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <!-- Dom-utils Module für sichere HTML-Sanitization -->
-    <script type="module">
-      import { setHTML } from '/utils/dom-utils.js';
-      // Make setHTML globally available for inline scripts
-      window.setHTML = setHTML;
-    </script>
+    <link rel="stylesheet" href="/styles/blackboard-widget.css" />
 
     <!-- Common Scripts with ApiClient -->
     <script type="module" src="/scripts/common.js"></script>
@@ -114,6 +107,29 @@
             </div>
           </div>
 
+          <!-- Blackboard Widget -->
+          <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading">
+            <!-- Loading placeholder with same styles as final widget -->
+            <div class="blackboard-widget" style="animation: subtle-pulse 2s ease-in-out infinite">
+              <div class="blackboard-widget-header">
+                <h3 class="blackboard-widget-title">
+                  <i class="fas fa-thumbtack"></i>
+                  Schwarzes Brett
+                </h3>
+                <a href="/blackboard" class="blackboard-widget-link" style="opacity: 0.5">
+                  Alle anzeigen
+                  <i class="fas fa-arrow-right"></i>
+                </a>
+              </div>
+              <div id="blackboard-widget-content" style="min-height: 200px; display: flex; align-items: center; justify-content: center">
+                <div class="text-muted" style="text-align: center">
+                  <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem"></i>
+                  <p>Lade Einträge...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Quick Access Features -->
           <div class="dashboard-grid">
             <!-- Documents Card -->
@@ -132,76 +148,12 @@
               <span class="feature-badge">Immer aktuell</span>
             </div>
 
-            <!-- Blackboard Card -->
-            <div class="feature-card" data-action="navigate" data-href="/blackboard">
-              <div class="feature-icon">📋</div>
-              <h3 class="feature-title">Schwarzes Brett</h3>
-              <p class="feature-description">Aktuelle Ankündigungen und wichtige Informationen der Geschäftsführung</p>
-              <span class="feature-badge" id="unread-announcements-badge">Neue Meldungen</span>
-            </div>
-
             <!-- KVP Card -->
             <div class="feature-card" data-action="navigate" data-href="/kvp">
               <div class="feature-icon">💡</div>
               <h3 class="feature-title">Verbesserungsvorschläge</h3>
               <p class="feature-description">Teilen Sie Ihre Ideen zur Verbesserung der Arbeitsabläufe</p>
               <span class="feature-badge">Belohnung möglich</span>
-            </div>
-
-            <!-- Shifts Card -->
-            <div class="feature-card" data-action="navigate" data-href="/shifts">
-              <div class="feature-icon">🕒</div>
-              <h3 class="feature-title">Schichtplanung</h3>
-              <p class="feature-description">Ihre Schichtpläne und Arbeitszeiten in der Übersicht</p>
-              <span class="feature-badge">Wöchentlich</span>
-            </div>
-
-            <!-- Profile Card -->
-            <div class="feature-card" data-action="navigate" data-href="/employee-profile">
-              <div class="feature-icon">👤</div>
-              <h3 class="feature-title">Mein Profil</h3>
-              <p class="feature-description">Persönliche Daten verwalten und Einstellungen anpassen</p>
-              <span class="feature-badge">Personalisiert</span>
-            </div>
-          </div>
-
-          <!-- Quick Stats -->
-          <div class="quick-stats">
-            <div class="stats-header">
-              <h2 class="stats-title">Auf einen Blick</h2>
-              <button class="stats-refresh" data-action="refresh-dashboard">
-                <i class="fas fa-sync-alt"></i>
-                Aktualisieren
-              </button>
-            </div>
-            <div class="info-grid">
-              <div class="info-card">
-                <div class="info-label">Neue Dokumente</div>
-                <div class="info-value" id="new-documents-count">-</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Ungelesene Ankündigungen</div>
-                <div class="info-value" id="unread-announcements-count">-</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Nächster Termin</div>
-                <div class="info-value" id="next-appointment">-</div>
-              </div>
-              <div class="info-card">
-                <div class="info-label">Meine KVP Punkte</div>
-                <div class="info-value" id="kvp-points">-</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recent Activity -->
-          <div class="activity-feed">
-            <h2 class="stats-title" style="margin-bottom: var(--spacing-lg)">Letzte Aktivitäten</h2>
-            <div id="activity-list">
-              <div class="loading-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                Lade Aktivitäten...
-              </div>
             </div>
           </div>
         </div>
@@ -214,13 +166,8 @@
       // Initialize on page load
       document.addEventListener('DOMContentLoaded', function () {
         checkAuth();
-        // loadUserInfo() removed - unified-navigation handles this
         loadDashboardData();
-
-        // Logout wird von unified-navigation behandelt
       });
-
-      // loadUserInfo() removed - unified-navigation handles user display in header
 
       function parseToken(token) {
         try {
@@ -252,16 +199,6 @@
         }
       }
 
-      function logRoleCheck(payload) {
-        console.info('[Employee Dashboard Auth] Role check:', {
-          role: payload.role,
-          activeRole: payload.activeRole,
-          isRoleSwitched: payload.isRoleSwitched,
-          isAdminAsEmployee: payload.role === 'admin' && payload.activeRole === 'employee',
-          isRootAsEmployee: payload.role === 'root' && payload.activeRole === 'employee',
-        });
-      }
-
       function checkAuth() {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -279,16 +216,15 @@
         currentUser = payload;
 
         // Update welcome message
-        document.querySelector('#employee-name').textContent = `${payload.first_name || payload.username}`;
+        const nameElement = document.querySelector('#employee-name');
+        if (nameElement) {
+          nameElement.textContent = `${payload.first_name || payload.username}`;
+        }
 
         // Check access rights
-        logRoleCheck(payload);
-
         if (!isEmployeeAccess(payload)) {
           console.info('[Employee Dashboard Auth] Redirecting - not authorized');
           window.location.href = getRedirectUrl(payload.role);
-        } else {
-          console.info('[Employee Dashboard Auth] Access granted');
         }
       }
 
@@ -299,12 +235,6 @@
 
           // Load document count
           await loadDocumentCount();
-
-          // Load dashboard stats
-          await loadDashboardStats();
-
-          // Load recent activity
-          await loadRecentActivity();
         } catch (error) {
           console.error('Error loading dashboard data:', error);
         }
@@ -314,7 +244,6 @@
         try {
           const user = await apiClient.get('/users/me');
 
-          // employee-id element was removed, skip it
           const deptElement = document.querySelector('#employee-department');
           if (deptElement) {
             deptElement.textContent = user.departmentName || 'Nicht zugewiesen';
@@ -338,15 +267,14 @@
         try {
           // This would be an API call to get document count
           document.querySelector('#document-count').textContent = '12';
-          document.querySelector('#new-documents-count').textContent = '3';
 
           // Update badge visibility
           const newDocsCount = 3;
           const badge = document.querySelector('#new-documents-badge');
-          if (newDocsCount > 0) {
+          if (badge && newDocsCount > 0) {
             badge.textContent = `${newDocsCount} neue`;
             badge.style.display = 'inline-block';
-          } else {
+          } else if (badge) {
             badge.style.display = 'none';
           }
         } catch (error) {
@@ -354,165 +282,33 @@
         }
       }
 
-      async function loadDashboardStats() {
-        try {
-          // Simulated data - replace with actual API calls
-          document.querySelector('#unread-announcements-count').textContent = '2';
-          document.querySelector('#next-appointment').textContent = 'Morgen 14:00';
-          document.querySelector('#kvp-points').textContent = '125';
-
-          // Update badges
-          const unreadCount = 2;
-          const announcementsBadge = document.querySelector('#unread-announcements-badge');
-          if (unreadCount > 0) {
-            announcementsBadge.textContent = `${unreadCount} neue`;
-            announcementsBadge.style.display = 'inline-block';
-          } else {
-            announcementsBadge.style.display = 'none';
-          }
-        } catch (error) {
-          console.error('Error loading dashboard stats:', error);
-        }
-      }
-
-      async function loadRecentActivity() {
-        try {
-          // Simulated activity data
-          const activities = [
-            {
-              type: 'document',
-              title: 'Neue Lohnabrechnung erhalten',
-              time: 'vor 2 Stunden',
-              icon: '📄',
-            },
-            {
-              type: 'calendar',
-              title: 'Termin "Teambesprechung" hinzugefügt',
-              time: 'vor 1 Tag',
-              icon: '📅',
-            },
-            {
-              type: 'kvp',
-              title: 'KVP-Vorschlag eingereicht',
-              time: 'vor 3 Tagen',
-              icon: '💡',
-            },
-            {
-              type: 'document',
-              title: 'Bescheinigung heruntergeladen',
-              time: 'vor 1 Woche',
-              icon: '📄',
-            },
-          ];
-
-          const activityList = document.querySelector('#activity-list');
-          // Safe: HTML is generated from hardcoded data and sanitized with dom-utils
-          const htmlContent = activities
-            .map(
-              (activity) => `
-                  <div class="activity-item">
-                      <div class="activity-icon ${activity.type}">
-                          ${activity.icon}
-                      </div>
-                      <div class="activity-content">
-                          <div class="activity-title">${activity.title}</div>
-                          <div class="activity-time">${activity.time}</div>
-                      </div>
-                  </div>
-              `,
-            )
-            .join('');
-          // Use dom-utils setHTML for safe sanitization
-          if (activityList) {
-            window.setHTML(activityList, htmlContent);
-          }
-        } catch (error) {
-          console.error('Error loading activity:', error);
-          const activityList = document.querySelector('#activity-list');
-          if (activityList) {
-            window.setHTML(activityList, '<div class="loading-state">Fehler beim Laden der Aktivitäten</div>');
-          }
-        }
-      }
-
-      // Event delegation for navigation and actions
+      // Event delegation for navigation
       document.addEventListener('click', function (e) {
         const target = e.target.closest('[data-action]');
         if (target) {
           const action = target.dataset.action;
 
-          switch (action) {
-            case 'navigate': {
-              const href = target.dataset.href;
-              if (href) {
-                window.location.href = href;
-              }
-              break;
+          if (action === 'navigate') {
+            const href = target.dataset.href;
+            if (href) {
+              window.location.href = href;
             }
-            case 'refresh-dashboard':
-              if (window.loadDashboardData) {
-                window.loadDashboardData();
-              }
-              break;
           }
         }
       });
     </script>
 
+    <!-- JavaScript Modules -->
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
 
     <!-- Force dashboard to be active on page load -->
     <script type="module">
-      // Check if user should be on employee dashboard by reading from JWT token
-      const token = localStorage.getItem('token');
-      let activeRole = null;
-      let userRole = localStorage.getItem('userRole');
+      import { SessionManager } from '/scripts/utils/session-manager.ts';
 
-      // Parse the JWT token to get the actual active role
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split('.')[1]));
-          activeRole = payload.activeRole || payload.role;
-          userRole = payload.role;
-
-          // Update localStorage to match token
-          localStorage.setItem('activeRole', activeRole);
-          if (userRole) {
-            localStorage.setItem('userRole', userRole);
-          }
-
-          console.info('[Employee Dashboard] Token analysis:', {
-            tokenRole: payload.role,
-            tokenActiveRole: payload.activeRole,
-            finalActiveRole: activeRole,
-          });
-        } catch (e) {
-          console.error('[Employee Dashboard] Error parsing token:', e);
-          activeRole = localStorage.getItem('activeRole') || userRole;
-        }
-      } else {
-        activeRole = localStorage.getItem('activeRole') || userRole;
-      }
-
-      // All users can access employee dashboard when in employee mode
-      if (activeRole === 'employee') {
-        // User is correctly on employee dashboard
-        console.info('[Employee Dashboard] User in employee mode');
-      } else if (userRole === 'root' && activeRole === 'root') {
-        // Root user in root mode - redirect to root dashboard
-        console.info('[Employee Dashboard] Root user in root mode - redirecting');
-        window.location.replace('/root-dashboard');
-      } else if ((userRole === 'admin' || userRole === 'root') && activeRole === 'admin') {
-        // Admin/Root user in admin mode - redirect to admin dashboard
-        console.info('[Employee Dashboard] User in admin mode - redirecting');
-        window.location.replace('/admin-dashboard');
-      } else if (!userRole) {
-        // No user role - redirect to login
-        console.info('[Employee Dashboard] No user role - redirecting to login');
-        window.location.replace('/login');
-      }
+      const session = SessionManager.getInstance();
+      session.validateDashboardAccess('employee');
 
       document.addEventListener('DOMContentLoaded', () => {
         // Clear any stored active navigation to ensure dashboard is selected
@@ -526,5 +322,8 @@
       // Breadcrumb wird automatisch generiert basierend auf der URL
       initBreadcrumb();
     </script>
+
+    <!-- Blackboard Widget Script -->
+    <script src="/scripts/blackboard/widget.js"></script>
   </body>
 </html>
