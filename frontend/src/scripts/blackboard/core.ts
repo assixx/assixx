@@ -1662,7 +1662,6 @@ declare global {
     DashboardUI?: {
       openModal: (modalId: string) => void;
       closeModal: (modalId: string) => void;
-      showToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
       formatDate: (dateString: string) => string;
     };
   }

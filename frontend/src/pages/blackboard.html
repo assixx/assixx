@@ -10,7 +10,7 @@
     <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
-    <link rel="stylesheet" href="/styles/unified-navigation.css" />
+    <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <link rel="stylesheet" href="/styles/blackboard.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -477,6 +477,71 @@
 
     <!-- Marked.js for Markdown rendering -->
     <script type="module" src="/scripts/lib/marked.min.js"></script>
+
+    <!-- MutationObserver zum Schutz der Header-Struktur -->
+    <script>
+      window.addEventListener('DOMContentLoaded', function () {
+        const userInfoDiv = document.querySelector('#user-info');
+
+        if (userInfoDiv) {
+          // Speichere Referenzen zu den Original-Elementen
+          const originalAvatar = document.querySelector('#user-avatar');
+          const originalUserName = document.querySelector('#user-name');
+          const originalRoleIndicator = document.querySelector('#role-indicator');
+
+          function restoreElement(original, elementType, id, defaultContent, additionalSetup) {
+            const element = original ? original.cloneNode(true) : document.createElement(elementType);
+            element.id = id;
+            if (defaultContent) {
+              element.textContent = element.textContent || defaultContent;
+            }
+            if (additionalSetup) {
+              additionalSetup(element);
+            }
+            return element;
+          }
+
+          function restoreUserInfoElements() {
+            console.info('[Blackboard] Restoring user-info elements');
+            userInfoDiv.innerHTML = '';
+
+            // Avatar wiederherstellen
+            const newAvatar = restoreElement(originalAvatar, 'img', 'user-avatar', null, (el) => {
+              el.src = '/assets/images/default-avatar.svg';
+              el.alt = 'Avatar';
+            });
+            userInfoDiv.append(newAvatar);
+
+            // Username wiederherstellen
+            const newUserName = restoreElement(originalUserName, 'span', 'user-name', 'Lade...');
+            userInfoDiv.append(newUserName);
+          }
+
+          function checkUserInfoElements() {
+            const currentAvatar = document.querySelector('#user-avatar');
+            const currentUserName = document.querySelector('#user-name');
+            const currentRoleIndicator = document.querySelector('#role-indicator');
+
+            return !currentAvatar || !currentUserName || !currentRoleIndicator;
+          }
+
+          const observer = new MutationObserver(function (mutations) {
+            mutations.forEach(function (mutation) {
+              if (mutation.type !== 'childList' || mutation.target.id !== 'user-info') {
+                return;
+              }
+
+              if (checkUserInfoElements()) {
+                restoreUserInfoElements();
+              }
+            });
+          });
+
+          observer.observe(userInfoDiv, { childList: true, subtree: false });
+        }
+      });
+    </script>
+
     <!-- Modal Functions gemäß Design Standards -->
     <script>
       // Zoom Functionality
@@ -591,58 +656,20 @@
         }
       });
 
-      // Definiere DashboardUI direkt hier, um Abhängigkeiten zu vermeiden
-      window.DashboardUI = {
-        openModal: showModal,
-        closeModal: hideModal,
-        showToast: function (message, type) {
-          // Einfache Toast-Implementierung
-          const toast = document.createElement('div');
-          toast.className = 'toast-' + (type || 'info');
-          toast.textContent = message;
-
-          // Toast-Container erstellen
-          let container = document.querySelector('.toast-container');
-          if (!container) {
-            container = document.createElement('div');
-            container.className = 'toast-container';
-            document.body.append(container);
-          }
-
-          container.append(toast);
-
-          // Nach 3 Sekunden ausblenden
-          setTimeout(function () {
-            toast.remove();
-          }, 3000);
-        },
-        formatDate: function (date) {
-          if (!date) return '-';
-          const d = new Date(date);
-          return d.toLocaleDateString('de-DE');
-        },
-      };
+      // DashboardUI NICHT definieren - wie bei manage-areas.html
+      // Dadurch nutzt role-switch.ts automatisch den Fallback mit inline-styles
+      window.showModal = showModal;
+      window.hideModal = hideModal;
     </script>
-    <!-- Scripts with dynamic loading to prevent race condition -->
-    <script type="module">
-      // Wait for DOM to be ready before loading scripts
-      document.addEventListener('DOMContentLoaded', async () => {
-        // First load auth module
-        await import('/scripts/auth/index.ts');
-        // Then load unified navigation
-        await import('/scripts/components/unified-navigation.ts');
-        // Load role switch
-        await import('/scripts/auth/role-switch.ts');
-        // Load breadcrumb
-        const { initBreadcrumb } = await import('/scripts/components/breadcrumb.js');
-        initBreadcrumb();
-        // Finally load blackboard after a small delay
-        setTimeout(() => {
-          import('/scripts/blackboard/index.ts');
-        }, 100);
-      });
-    </script>
-    <!-- Update Modal to Design Standards -->
-    <script src="/scripts/blackboard/modal.js" type="module"></script>
+
+    <!-- Scripts in the same order as calendar.html -->
+    <script type="module" src="/scripts/common.js"></script>
+    <script type="module" src="/scripts/blackboard/index.ts"></script>
+    <!-- Unified Navigation -->
+    <script type="module" src="/scripts/components/unified-navigation.ts"></script>
+    <script type="module" src="/scripts/auth/role-switch.ts"></script>
+
+    <!-- Breadcrumb -->
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
   </body>
 </html>

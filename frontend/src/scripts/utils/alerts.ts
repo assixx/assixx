@@ -81,3 +81,11 @@ export function showErrorAlert(message: string): void {
 export function showSuccessAlert(message: string): void {
   notificationService.success('Erfolg', message);
 }
+
+/**
+ * Show a warning alert
+ * @param message - The warning message to display
+ */
+export function showWarningAlert(message: string): void {
+  notificationService.warning('Warnung', message);
+}

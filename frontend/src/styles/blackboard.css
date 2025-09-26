@@ -2177,7 +2177,7 @@ body::after {
   background: #000;
 } */
 
-.fullscreen-mode .blackboard-container {
+body.fullscreen-mode .blackboard-container {
   overflow-y: auto;
   display: grid;
   grid-template-columns: auto;
@@ -2190,29 +2190,31 @@ body::after {
   padding: 40px;
 }
 
-.fullscreen-mode .filters-container,
-.fullscreen-mode .sidebar,
-.fullscreen-mode .header,
-.fullscreen-mode .navigation,
-.fullscreen-mode #navigation-container,
-.fullscreen-mode #breadcrumb-container,
-.fullscreen-mode .controls-row,
-.fullscreen-mode .flex.flex-between.mb-4,
-.fullscreen-mode .card.mb-4 {
+/* Hide elements only in actual fullscreen mode */
+/* Use body.fullscreen-mode to ensure it's the fullscreen state, not sidebar collapse */
+body.fullscreen-mode .filters-container,
+body.fullscreen-mode .sidebar,
+body.fullscreen-mode .header,
+body.fullscreen-mode .navigation,
+body.fullscreen-mode #navigation-container,
+body.fullscreen-mode #breadcrumb-container,
+body.fullscreen-mode .controls-row,
+body.fullscreen-mode .flex.flex-between.mb-4,
+body.fullscreen-mode .card.mb-4 {
   display: none !important;
 }
 
-.fullscreen-mode .layout-container {
+body.fullscreen-mode .layout-container {
   padding: 0;
 }
 
-.fullscreen-mode .main-content {
+body.fullscreen-mode .main-content {
   max-width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-.fullscreen-mode .content-card {
+body.fullscreen-mode .content-card {
   padding: 0 !important;
   border: none !important;
   background: transparent !important;
@@ -2246,7 +2248,7 @@ body::after {
   background: rgb(255 255 255 / 20%);
 }
 
-.fullscreen-mode .fullscreen-exit-btn {
+body.fullscreen-mode .fullscreen-exit-btn {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -2272,51 +2274,16 @@ body::after {
   backdrop-filter: blur(10px);
 }
 
-.fullscreen-mode .auto-refresh-indicator {
+body.fullscreen-mode .auto-refresh-indicator {
   display: block;
 }
 
 /* Optimize notes for fullscreen */
-.fullscreen-mode .note {
+body.fullscreen-mode .note {
   transform: scale(1);
   height: 100%;
   min-height: 300px;
   margin: 0;
-}
-
-/* ========================================
-   Second Style Block - Toast & Utilities
-   ======================================== */
-
-/* Toast-Styles direkt im HTML einbinden */
-.toast-container {
-  position: fixed;
-  z-index: 9999;
-  right: 16px;
-  bottom: 16px;
-}
-
-.toast-info,
-.toast-error,
-.toast-success {
-  margin-top: 8px;
-  padding: 12px 16px;
-  border-left: 4px solid var(--primary-color);
-  border-radius: var(--radius-md);
-
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background-color: var(--background-light);
-  box-shadow: 0 1px 8px rgb(0 0 0 / 25%);
-}
-
-.toast-error {
-  border-left-color: var(--error-color);
-}
-
-.toast-success {
-  border-left-color: var(--success-color);
 }
 
 /* Filter Toggle Styles */
@@ -2427,7 +2394,9 @@ body #breadcrumb-container + * {
   margin-left: 10px;
 }
 
-.collapsed {
+/* Only hide filter content when collapsed, not the sidebar! */
+#filterContent.collapsed,
+.card-body.collapsed {
   display: none;
 }
 

@@ -248,8 +248,20 @@ app.use(
 app.use(
   '/assets',
   express.static(path.join(srcPath, 'assets'), {
-    setHeaders: (res: Response): void => {
+    setHeaders: (res: Response, path: string): void => {
       res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
+
+      // Set cache headers for images to prevent NS_BINDING_ABORTED
+      if (
+        path.endsWith('.png') ||
+        path.endsWith('.jpg') ||
+        path.endsWith('.jpeg') ||
+        path.endsWith('.ico') ||
+        path.endsWith('.gif')
+      ) {
+        res.setHeader('Cache-Control', 'public, max-age=604800, immutable'); // 7 days
+        res.setHeader('Expires', new Date(Date.now() + 604800000).toUTCString()); // 7 days from now
+      }
     },
   }),
 );

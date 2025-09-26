@@ -12,7 +12,7 @@ import { apiClient } from '../../utils/api-client';
 import { $$, setHTML } from '../../utils/dom-utils';
 import { switchRoleForRoot, switchRoleForAdmin } from '../auth/role-switch';
 import { SSEClient } from '../utils/sse-client';
-import { loadUserInfo as loadUserInfoFromAuth } from '../auth/index';
+import { loadUserInfo as loadUserInfoFromAuth, logout } from '../auth/index';
 
 // Declare global type for window
 declare global {
@@ -267,7 +267,7 @@ class UnifiedNavigation {
     // Inject CSS styles first
     this.injectCSS();
 
-    // Load collapsed state from localStorage
+    // Load collapsed state from localStorage FIRST
     this.isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
 
     // Clear any stale submenu state on init if we're on a dashboard
@@ -1965,7 +1965,6 @@ class UnifiedNavigation {
 
       const performLogout = async () => {
         // Use the logout function from auth module which logs the action
-        const { logout } = await import('../auth/index.js');
         await logout();
       };
 
@@ -1991,7 +1990,6 @@ class UnifiedNavigation {
       }
     } else {
       // Fallback to direct logout if modal not found
-      const { logout } = await import('../auth/index.js');
       await logout();
     }
   }

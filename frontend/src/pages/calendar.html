@@ -181,27 +181,7 @@
             }, 300);
           }
         },
-        showToast: function (message, type) {
-          // Einfache Toast-Implementierung
-          const toast = document.createElement('div');
-          toast.className = 'toast-' + (type || 'info');
-          toast.textContent = message;
-
-          // Toast-Container erstellen
-          let container = document.querySelector('.toast-container');
-          if (!container) {
-            container = document.createElement('div');
-            container.className = 'toast-container';
-            document.body.append(container);
-          }
-
-          container.append(toast);
-
-          // Nach 3 Sekunden ausblenden
-          setTimeout(function () {
-            toast.remove();
-          }, 3000);
-        },
+        // showToast entfernt - verwendet jetzt den funktionierenden Fallback aus role-switch.ts
         formatDate: function (date) {
           if (!date) return '-';
           const d = new Date(date);
@@ -282,6 +262,7 @@
     </script>
 
     <!-- Scripts in richtiger Reihenfolge -->
+    <script type="module" src="/scripts/common.js"></script>
     <script type="module" src="/scripts/calendar/index.ts"></script>
     <!-- Unified Navigation -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>

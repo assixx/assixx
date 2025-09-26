@@ -15,7 +15,6 @@ interface TabClickDetail {
 interface DashboardUI {
   openModal: (modalId: string) => void;
   closeModal: (modalId: string) => void;
-  showToast: (message: string, type?: 'info' | 'success' | 'error' | 'warning') => void;
   formatDate: (dateString: string) => string;
 }
 
@@ -118,7 +117,7 @@ function initTabs(): void {
 async function fetchUserData(token: string): Promise<User> {
   // Try v2 API first, fallback to v1 if needed
   try {
-    return await apiClient.get<User>('/users/profile');
+    return await apiClient.get<User>('/users/me');
   } catch (error) {
     console.error('Error fetching user data with v2:', error);
     // Fallback to v1 API
@@ -209,35 +208,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-/**
- * Toast-Benachrichtigung anzeigen
- */
-function showToast(message: string, type: 'info' | 'success' | 'error' | 'warning' = 'info'): void {
-  // Create toast container if it doesn't exist
-  let toastContainer = document.querySelector<HTMLElement>('.toast-container');
-  if (!toastContainer) {
-    toastContainer = document.createElement('div');
-    toastContainer.className = 'toast-container';
-    document.body.append(toastContainer);
-  }
-
-  // Create toast element
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type} fade-in`;
-  toast.textContent = message;
-
-  // Add to container
-  toastContainer.append(toast);
-
-  // Auto remove after 3 seconds
-  setTimeout(() => {
-    toast.classList.add('fade-out');
-    setTimeout(() => {
-      toast.remove();
-    }, 300);
-  }, 3000);
-}
-
 // Expose global utilities
 declare global {
   interface Window {
@@ -249,10 +219,9 @@ if (typeof window !== 'undefined') {
   window.DashboardUI = {
     openModal,
     closeModal,
-    showToast,
     formatDate,
   };
 }
 
 // Export functions for module usage
-export { openModal, closeModal, showToast, formatDate, initModals, initTabs };
+export { openModal, closeModal, formatDate, initModals, initTabs };

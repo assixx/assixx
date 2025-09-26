@@ -5,6 +5,7 @@
 
 import { apiClient } from '../../utils/api-client';
 import { $$ } from '../../utils/dom-utils';
+import { showSuccessAlert, showErrorAlert, showWarningAlert } from '../utils/alerts';
 
 // Check if user is admin or root
 const userRole = localStorage.getItem('userRole');
@@ -52,13 +53,13 @@ async function switchRole(): Promise<void> {
 
     // Show success message
     const roleDisplayName = getRoleDisplayName(response.user.activeRole);
-    showToast(`Wechsel zur ${roleDisplayName}-Ansicht...`, 'success');
+    showSuccessAlert(`Wechsel zur ${roleDisplayName}-Ansicht...`);
 
     // Redirect to appropriate dashboard
     redirectToDashboard(response.user.activeRole);
   } catch (error) {
     console.error('Role switch error:', error);
-    showToast('Fehler beim Rollenwechsel', 'error');
+    showErrorAlert('Fehler beim Rollenwechsel');
 
     // Re-enable button
     switchBtn.disabled = false;
@@ -98,125 +99,6 @@ function updateRoleUI(): void {
     }
     switchBtn.title = 'Als Mitarbeiter anzeigen';
   }
-}
-
-// Get toast colors by type
-function getToastColors(type: 'success' | 'error' | 'warning'): {
-  bgColor: string;
-  borderColor: string;
-  textColor: string;
-} {
-  if (type === 'success') {
-    return {
-      bgColor: 'rgba(76, 175, 80, 0.1)',
-      borderColor: 'rgba(76, 175, 80, 0.2)',
-      textColor: 'rgba(76, 175, 80, 0.9)',
-    };
-  }
-  if (type === 'warning') {
-    return {
-      bgColor: 'rgba(255, 152, 0, 0.1)',
-      borderColor: 'rgba(255, 152, 0, 0.2)',
-      textColor: 'rgba(255, 152, 0, 0.9)',
-    };
-  }
-  return {
-    bgColor: 'rgba(244, 67, 54, 0.1)',
-    borderColor: 'rgba(244, 67, 54, 0.2)',
-    textColor: 'rgba(244, 67, 54, 0.9)',
-  };
-}
-
-// Create toast icon element
-function createToastIcon(type: 'success' | 'error' | 'warning'): HTMLSpanElement {
-  const icon = document.createElement('span');
-  if (type === 'success') {
-    icon.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>';
-  } else if (type === 'warning') {
-    icon.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>';
-  } else {
-    icon.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
-  }
-  return icon;
-}
-
-// Toast notification helper
-function showToast(message: string, type: 'success' | 'error' | 'warning' = 'success'): void {
-  // Try to use existing toast system first
-  interface ToastWindow {
-    DashboardUI?: {
-      showToast: (message: string, type: 'success' | 'error' | 'warning') => void;
-    };
-  }
-
-  if (typeof window !== 'undefined') {
-    const toastWindow = window as unknown as ToastWindow;
-    if (toastWindow.DashboardUI?.showToast) {
-      toastWindow.DashboardUI.showToast(message, type);
-      return;
-    }
-  }
-
-  // Fallback toast implementation
-  const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-
-  const { bgColor, borderColor, textColor } = getToastColors(type);
-
-  toast.style.cssText = `
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    padding: 16px 24px;
-    background: ${bgColor};
-    border: 1px solid ${borderColor};
-    color: ${textColor};
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    z-index: 10000;
-    font-size: 14px;
-    font-weight: 500;
-    backdrop-filter: blur(10px);
-    animation: slideInRight 0.3s ease-out;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  `;
-
-  const icon = createToastIcon(type);
-  const messageSpan = document.createElement('span');
-  messageSpan.textContent = message;
-
-  toast.append(icon);
-  toast.append(messageSpan);
-  document.body.append(toast);
-
-  setTimeout(() => {
-    toast.style.animation = 'slideOutRight 0.3s ease-in';
-    setTimeout(() => {
-      toast.remove();
-    }, 300);
-  }, 3000);
-}
-
-// Add animation styles if not already present
-if (!document.querySelector('#toast-animations')) {
-  const style = document.createElement('style');
-  style.id = 'toast-animations';
-  style.textContent = `
-    @keyframes slideInRight {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideOutRight {
-      from { transform: translateX(0); opacity: 1; }
-      to { transform: translateX(100%); opacity: 0; }
-    }
-  `;
-  document.head.append(style);
 }
 
 // Initialize when DOM is ready
@@ -392,7 +274,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
 
     if (currentActiveRole === targetRole) {
       console.info('[RoleSwitch] Already in target role, showing warning');
-      showToast(`Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`, 'warning');
+      showWarningAlert(`Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`);
       setDropdownState(dropdownDisplay, true);
       return;
     }
@@ -402,7 +284,7 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     if (endpoint === '') {
       if (targetRole === 'employee' && currentActiveRole === 'employee') {
         console.warn('[RoleSwitch] Already in employee view!');
-        showToast('Sie sind bereits als Mitarbeiter aktiv!', 'warning');
+        showWarningAlert('Sie sind bereits als Mitarbeiter aktiv!');
         setDropdownState(dropdownDisplay, true);
         return;
       }
@@ -423,11 +305,11 @@ export async function switchRoleForRoot(targetRole: 'root' | 'admin' | 'employee
     }>(endpoint, {});
 
     updateStorageAfterSwitch(response);
-    showToast(`Wechsel zur ${getRoleDisplayName(targetRole)}-Ansicht...`, 'success');
+    showSuccessAlert(`Wechsel zur ${getRoleDisplayName(targetRole)}-Ansicht...`);
     redirectToDashboard(targetRole);
   } catch (error) {
     console.error('Role switch error:', error);
-    showToast('Fehler beim Rollenwechsel', 'error');
+    showErrorAlert('Fehler beim Rollenwechsel');
     setDropdownState(dropdownDisplay, true);
   }
 }
@@ -488,7 +370,7 @@ export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Prom
 
     if (currentActiveRole === targetRole) {
       console.info('[RoleSwitch-Admin] Already in target role, showing warning');
-      showToast(`Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`, 'warning');
+      showWarningAlert(`Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`);
       setDropdownState(dropdownDisplay, true);
       return;
     }
@@ -497,7 +379,7 @@ export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Prom
 
     if (endpoint === '') {
       console.warn('[RoleSwitch-Admin] Invalid switch:', currentActiveRole, '→', targetRole);
-      showToast('Dieser Rollenwechsel ist nicht möglich', 'error');
+      showErrorAlert('Dieser Rollenwechsel ist nicht möglich');
       setDropdownState(dropdownDisplay, true);
       return;
     }
@@ -511,11 +393,11 @@ export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Prom
     }>(endpoint.replace('/api', ''), {});
 
     updateAdminStorage(response);
-    showToast(`Wechsel zur ${getRoleDisplayName(targetRole)}-Ansicht...`, 'success');
+    showSuccessAlert(`Wechsel zur ${getRoleDisplayName(targetRole)}-Ansicht...`);
     redirectToDashboard(targetRole);
   } catch (error) {
     console.error('[RoleSwitch-Admin] Error:', error);
-    showToast('Fehler beim Rollenwechsel', 'error');
+    showErrorAlert('Fehler beim Rollenwechsel');
     setDropdownState(dropdownDisplay, true);
   }
 }

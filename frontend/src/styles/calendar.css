@@ -1625,37 +1625,6 @@ body::after {
   /* animation: fadeInUp 0.6s ease-out; */
 }
 
-/* Toast-Styles */
-.toast-container {
-  position: fixed;
-  z-index: 9999;
-  right: 16px;
-  bottom: 16px;
-}
-
-.toast-info,
-.toast-error,
-.toast-success {
-  margin-top: 8px;
-  padding: 12px 16px;
-  border-left: 4px solid var(--primary-color);
-  border-radius: var(--radius-md);
-
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background-color: var(--background-light);
-  box-shadow: 0 1px 8px rgb(0 0 0 / 25%);
-}
-
-.toast-error {
-  border-left-color: var(--error-color);
-}
-
-.toast-success {
-  border-left-color: var(--success-color);
-}
-
 /* Zusätzliche Styles für fehlende Klassen */
 .d-none {
   display: none !important;
