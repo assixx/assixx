@@ -58,12 +58,8 @@ export function setTenants(newTenants: Tenant[]): void {
   tenants = newTenants;
 }
 
-// ===== API CLIENT & FEATURE FLAGS =====
+// ===== API CLIENT =====
 export const apiClient = ApiClient.getInstance();
-
-// Check feature flag for v2 API - manage-admins uses ROOT endpoints
-const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_ROOT?: boolean } };
-export const useV2API = w.FEATURE_FLAGS?.USE_API_V2_ROOT === true;
 
 // ===== API FUNCTIONS =====
 
@@ -104,7 +100,7 @@ export async function loadDepartments(): Promise<Department[]> {
     const response = await apiClient.request<Department[] | { success: boolean; data: Department[] }>(
       '/departments',
       { method: 'GET' },
-      { version: useV2API ? 'v2' : 'v1' },
+      { version: 'v2' },
     );
 
     if (Array.isArray(response)) {
@@ -131,13 +127,13 @@ export async function loadAdmins(): Promise<void> {
       {
         method: 'GET',
       },
-      { version: useV2API ? 'v2' : 'v1' },
+      { version: 'v2' },
     );
 
     // Map the API response to ensure consistent field names
-    // API v2 returns { admins: [...] }, v1 returns array directly
+    // API v2 returns { admins: [...] }
     const adminData =
-      useV2API && typeof data === 'object' && 'admins' in data
+      typeof data === 'object' && 'admins' in data
         ? (data as { admins: UserAPIResponse[] }).admins
         : Array.isArray(data)
           ? data
@@ -181,7 +177,7 @@ export async function loadTenants(): Promise<void> {
       {
         method: 'GET',
       },
-      { version: useV2API ? 'v2' : 'v1' },
+      { version: 'v2' },
     );
 
     console.info('Loaded tenants:', response);
@@ -219,7 +215,7 @@ export async function deleteAdmin(adminId: number): Promise<void> {
     {
       method: 'DELETE',
     },
-    { version: useV2API ? 'v2' : 'v1' },
+    { version: 'v2' },
   );
 
   console.info('Delete response:', result);
@@ -241,7 +237,7 @@ export async function updateAdminPermissions(
         permissions: { can_read: true, can_write: false, can_delete: false },
       }),
     },
-    { version: useV2API ? 'v2' : 'v1' },
+    { version: 'v2' },
   );
 
   if (groupIds.length > 0) {
@@ -255,7 +251,7 @@ export async function updateAdminPermissions(
           permissions: { can_read: true, can_write: false, can_delete: false },
         }),
       },
-      { version: useV2API ? 'v2' : 'v1' },
+      { version: 'v2' },
     );
   }
 
@@ -277,6 +273,6 @@ export async function savePermissions(
         permissions: { can_read: true, can_write: false, can_delete: false },
       }),
     },
-    { version: useV2API ? 'v2' : 'v1' },
+    { version: 'v2' },
   );
 }

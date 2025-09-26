@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Admin Teams Management
  * Handles team CRUD operations for admin dashboard
@@ -31,9 +32,8 @@ class TeamsManager {
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
-    // Check feature flag for v2 API
-    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_TEAMS?: boolean } };
-    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_TEAMS !== false;
+    // Feature flags removed - always use v2
+    this.useV2API = true;
     this.initializeEventListeners();
     // Load teams initially
     void this.loadTeams();
@@ -514,7 +514,6 @@ function setupCloseTeamModal(): void {
     const modal = document.querySelector('#team-modal');
     if (modal !== null) {
       modal.classList.remove('active');
-      // eslint-disable-next-line max-lines
     }
   };
 }

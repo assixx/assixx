@@ -116,23 +116,24 @@ function initTabs(): void {
  * Fetch user data from API v1 or v2
  */
 async function fetchUserData(token: string): Promise<User> {
-  const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
-
-  if (useV2Users === true) {
+  // Try v2 API first, fallback to v1 if needed
+  try {
     return await apiClient.get<User>('/users/profile');
+  } catch (error) {
+    console.error('Error fetching user data with v2:', error);
+    // Fallback to v1 API
+    const response = await fetch('/api/user/profile', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Fehler beim Laden der Benutzerdaten');
+    }
+
+    return (await response.json()) as User;
   }
-
-  const response = await fetch('/api/user/profile', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Fehler beim Laden der Benutzerdaten');
-  }
-
-  return (await response.json()) as User;
 }
 
 /**

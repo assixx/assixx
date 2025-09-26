@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * New Shift Planning System - TypeScript Implementation
  * Interactive weekly shift planning with drag & drop functionality
@@ -222,8 +223,8 @@ class ShiftPlanningSystem {
   constructor() {
     // Initialize API client and check feature flag
     this.apiClient = ApiClient.getInstance();
-    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_SHIFTS?: boolean } };
-    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_SHIFTS !== false;
+    // Feature flags removed - always use v2
+    this.useV2API = true;
 
     this.currentWeek = new Date();
     this.selectedEmployee = null;

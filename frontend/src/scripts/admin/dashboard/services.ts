@@ -9,10 +9,7 @@ import { mapUsers, type MappedUser } from '../../../utils/api-mappers';
 import { getAuthToken, showSuccess } from '../../auth';
 import type { DashboardStats, Department, Team, EmployeeFormData, BlackboardEntryExtended } from './types';
 
-// Constants
-const API_V2_DEPARTMENTS = '/api/v2/departments';
-const API_V1_DEPARTMENTS = '/api/departments';
-const API_V1_TEAMS = '/api/teams';
+// Constants - No longer needed as we only use v2 APIs via apiClient
 
 /**
  * Service for handling dashboard statistics
@@ -30,32 +27,7 @@ export class DashboardService {
       throw new Error('No authentication token');
     }
 
-    // Check if any v2 APIs are enabled
-    const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
-    const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS === true;
-    const useV2Departments = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS === true;
-    const useV2Teams = window.FEATURE_FLAGS?.USE_API_V2_TEAMS === true;
-
-    // If any v2 API is enabled, load individually
-    if (useV2Users || useV2Documents || useV2Departments || useV2Teams) {
-      return await this.loadStatsIndividually();
-    }
-
-    // Try v1 admin stats endpoint
-    try {
-      const response = await fetch('/api/admin/dashboard-stats', {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-
-      if (response.ok) {
-        const data = (await response.json()) as DashboardStats | { data: DashboardStats };
-        return 'data' in data ? data.data : data;
-      }
-    } catch (error) {
-      console.error('Error loading dashboard stats:', error);
-    }
-
-    // Fallback to individual loading
+    // Always use v2 APIs - load stats individually
     return await this.loadStatsIndividually();
   }
 
@@ -77,20 +49,8 @@ export class DashboardService {
 
   private async getEmployeeCount(): Promise<number> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
-      if (useV2) {
-        const users = await this.apiClient.get<User[]>('/users?role=employee');
-        return users.length;
-      }
-
-      const authToken = getAuthToken();
-      const response = await fetch('/api/admin/employees', {
-        headers: { Authorization: `Bearer ${authToken ?? ''}` },
-      });
-      if (response.ok) {
-        const employees = (await response.json()) as User[];
-        return employees.length;
-      }
+      const users = await this.apiClient.get<User[]>('/users?role=employee');
+      return users.length;
     } catch (error) {
       console.error('Error loading employee count:', error);
     }
@@ -99,20 +59,8 @@ export class DashboardService {
 
   private async getDocumentCount(): Promise<number> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS === true;
-      if (useV2) {
-        const response = await this.apiClient.get<{ documents: Document[] }>('/documents');
-        return response.documents.length;
-      }
-
-      const authToken = getAuthToken();
-      const response = await fetch('/api/admin/documents', {
-        headers: { Authorization: `Bearer ${authToken ?? ''}` },
-      });
-      if (response.ok) {
-        const documents = (await response.json()) as Document[];
-        return documents.length;
-      }
+      const response = await this.apiClient.get<{ documents: Document[] }>('/documents');
+      return response.documents.length;
     } catch {
       /* Error */
     }
@@ -121,19 +69,8 @@ export class DashboardService {
 
   private async getDepartmentCount(): Promise<number> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS === true;
-      const apiPath = useV2 ? API_V2_DEPARTMENTS : API_V1_DEPARTMENTS;
-      const authToken = getAuthToken();
-
-      const response = await fetch(apiPath, {
-        headers: { Authorization: `Bearer ${authToken ?? ''}` },
-      });
-
-      if (response.ok) {
-        const data = (await response.json()) as Department[] | { data: Department[] };
-        const departments = useV2 && !Array.isArray(data) && 'data' in data ? data.data : (data as Department[]);
-        return departments.length;
-      }
+      const departments = await this.apiClient.get<Department[]>('/departments');
+      return departments.length;
     } catch {
       /* Error */
     }
@@ -142,20 +79,8 @@ export class DashboardService {
 
   private async getTeamCount(): Promise<number> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_TEAMS === true;
-      if (useV2) {
-        const teams = await this.apiClient.get<Team[]>('/teams');
-        return teams.length;
-      }
-
-      const authToken = getAuthToken();
-      const response = await fetch(API_V1_TEAMS, {
-        headers: { Authorization: `Bearer ${authToken ?? ''}` },
-      });
-      if (response.ok) {
-        const teams = (await response.json()) as Team[];
-        return teams.length;
-      }
+      const teams = await this.apiClient.get<Team[]>('/teams');
+      return teams.length;
     } catch {
       /* Error */
     }
@@ -175,25 +100,7 @@ export class EmployeeService {
 
   async loadRecentEmployees(limit = 5): Promise<MappedUser[]> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
-      let employees: User[] = [];
-
-      if (useV2) {
-        employees = await this.apiClient.get<User[]>(`/users?role=employee&limit=${String(limit)}`);
-      } else {
-        const authToken = getAuthToken();
-        const response = await fetch(`/api/users?role=employee&limit=${String(limit)}`, {
-          headers: { Authorization: `Bearer ${authToken ?? ''}` },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to load recent employees');
-        }
-
-        const data = (await response.json()) as User[] | { users?: User[]; employees?: User[] };
-        employees = Array.isArray(data) ? data : (data.users ?? data.employees ?? []);
-      }
-
+      const employees = await this.apiClient.get<User[]>(`/users?role=employee&limit=${String(limit)}`);
       return mapUsers(employees);
     } catch {
       return [];
@@ -201,8 +108,6 @@ export class EmployeeService {
   }
 
   async createEmployee(formData: EmployeeFormData): Promise<void> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
-
     const userData = {
       username: formData.email.split('@')[0],
       email: formData.email,
@@ -221,35 +126,7 @@ export class EmployeeService {
       role: 'employee' as const,
     };
 
-    if (useV2) {
-      await this.apiClient.post('/users', userData);
-    } else {
-      const authToken = getAuthToken();
-      const response = await fetch('/api/admin/employees', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken ?? ''}`,
-        },
-        body: JSON.stringify({
-          ...userData,
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          employee_id: userData.employeeId,
-          department_id: userData.departmentId,
-          birth_date: userData.birthDate,
-          start_date: userData.startDate,
-          house_number: userData.houseNumber,
-          postal_code: userData.postalCode,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = (await response.json()) as { message?: string };
-        throw new Error(error.message ?? 'Failed to create employee');
-      }
-    }
-
+    await this.apiClient.post('/users', userData);
     showSuccess('Mitarbeiter erfolgreich erstellt!');
   }
 }
@@ -266,20 +143,7 @@ export class DepartmentService {
 
   async loadDepartments(): Promise<Department[]> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS === true;
-      const apiPath = useV2 ? API_V2_DEPARTMENTS : API_V1_DEPARTMENTS;
-      const authToken = getAuthToken();
-
-      const response = await fetch(apiPath, {
-        headers: { Authorization: `Bearer ${authToken ?? ''}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load departments');
-      }
-
-      const data = (await response.json()) as Department[] | { data: Department[] };
-      return useV2 && !Array.isArray(data) && 'data' in data ? data.data : (data as Department[]);
+      return await this.apiClient.get<Department[]>('/departments');
     } catch {
       return [];
     }
@@ -291,27 +155,7 @@ export class DepartmentService {
     status?: string;
     visibility?: string;
   }): Promise<void> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS === true;
-
-    if (useV2) {
-      await this.apiClient.post('/departments', data);
-    } else {
-      const authToken = getAuthToken();
-      const response = await fetch(API_V1_DEPARTMENTS, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken ?? ''}`,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = (await response.json()) as { message?: string };
-        throw new Error(error.message ?? 'Failed to create department');
-      }
-    }
-
+    await this.apiClient.post('/departments', data);
     showSuccess('Abteilung erfolgreich erstellt');
   }
 }
@@ -328,53 +172,14 @@ export class TeamService {
 
   async loadTeams(): Promise<Team[]> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_TEAMS === true;
-
-      if (useV2) {
-        return await this.apiClient.get<Team[]>('/teams');
-      }
-
-      const authToken = getAuthToken();
-      const response = await fetch(API_V1_TEAMS, {
-        headers: { Authorization: `Bearer ${authToken ?? ''}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load teams');
-      }
-
-      return (await response.json()) as Team[];
+      return await this.apiClient.get<Team[]>('/teams');
     } catch {
       return [];
     }
   }
 
   async createTeam(data: { name: string; departmentId: number; description?: string }): Promise<void> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_TEAMS === true;
-
-    if (useV2) {
-      await this.apiClient.post('/teams', data);
-    } else {
-      const authToken = getAuthToken();
-      const response = await fetch(API_V1_TEAMS, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${authToken ?? ''}`,
-        },
-        body: JSON.stringify({
-          name: data.name,
-          department_id: data.departmentId,
-          description: data.description,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = (await response.json()) as { message?: string };
-        throw new Error(error.message ?? 'Failed to create team');
-      }
-    }
-
+    await this.apiClient.post('/teams', data);
     showSuccess('Team erfolgreich erstellt');
   }
 }
@@ -391,24 +196,8 @@ export class DocumentService {
 
   async loadRecentDocuments(limit = 5): Promise<Document[]> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS === true;
-
-      if (useV2) {
-        const response = await this.apiClient.get<{ documents: Document[] }>(`/documents?limit=${String(limit)}`);
-        return response.documents;
-      }
-
-      const authToken = getAuthToken();
-      const response = await fetch(`/api/documents?limit=${String(limit)}`, {
-        headers: { Authorization: `Bearer ${authToken ?? ''}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load recent documents');
-      }
-
-      const data = (await response.json()) as Document[] | { documents?: Document[] };
-      return Array.isArray(data) ? data : (data.documents ?? []);
+      const response = await this.apiClient.get<{ documents: Document[] }>(`/documents?limit=${String(limit)}`);
+      return response.documents;
     } catch {
       return [];
     }
@@ -432,26 +221,9 @@ export class BlackboardService {
         throw new Error('No auth token');
       }
 
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD === true;
-
-      if (useV2) {
-        return await this.apiClient.get<BlackboardEntryExtended[]>(
-          `/blackboard/entries?limit=${String(limit)}&sortBy=created_at&sortDir=DESC`,
-        );
-      }
-
-      const response = await fetch(`/api/blackboard/entries?limit=${String(limit)}&sortBy=created_at&sortOrder=DESC`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load blackboard entries');
-      }
-
-      const data = (await response.json()) as {
-        entries?: BlackboardEntryExtended[];
-      };
-      return data.entries ?? [];
+      return await this.apiClient.get<BlackboardEntryExtended[]>(
+        `/blackboard/entries?limit=${String(limit)}&sortBy=created_at&sortDir=DESC`,
+      );
     } catch {
       return [];
     }
@@ -464,21 +236,7 @@ export class BlackboardService {
         throw new Error('No auth token');
       }
 
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD === true;
-
-      if (useV2) {
-        return await this.apiClient.get<BlackboardEntryExtended[]>(`/blackboard/dashboard?limit=${String(limit)}`);
-      }
-
-      const response = await fetch(`/api/blackboard/dashboard?limit=${String(limit)}`, {
-        headers: { Authorization: `Bearer ${authToken}` },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load blackboard widget');
-      }
-
-      return (await response.json()) as BlackboardEntryExtended[];
+      return await this.apiClient.get<BlackboardEntryExtended[]>(`/blackboard/dashboard?limit=${String(limit)}`);
     } catch {
       return [];
     }

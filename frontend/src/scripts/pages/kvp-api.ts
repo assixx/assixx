@@ -22,9 +22,8 @@ export class KvpApiService {
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
-    // Check feature flag for v2 API
-    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_KVP?: boolean } };
-    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_KVP !== false;
+    // Feature flags removed - always use v2
+    this.useV2API = true;
   }
 
   async getCurrentUser(): Promise<User | null> {

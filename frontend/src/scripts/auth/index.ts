@@ -5,7 +5,6 @@
 import type { User, JWTPayload } from '../../types/api.types';
 import { apiClient, ApiError } from '../../utils/api-client';
 import { getUserRole, setUserRole, clearUserRole, getActiveRole } from '../../utils/auth-helpers';
-import { BrowserFingerprint } from '../utils/browser-fingerprint';
 import { SessionManager } from '../utils/session-manager';
 
 // Extend window for auth functions
@@ -23,22 +22,13 @@ declare global {
     showError: typeof showError;
     showInfo: typeof showInfo;
     parseJwt: typeof parseJwt;
-    FEATURE_FLAGS?: Record<string, boolean | undefined>;
   }
 }
 
 // Get authentication token from localStorage (compatible with existing system)
 export function getAuthToken(): string | null {
-  // Check if v2 is enabled
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-
-  if (useV2 === true) {
-    // For v2, use accessToken
-    return localStorage.getItem('accessToken');
-  }
-
-  // For v1, use old token names
-  return localStorage.getItem('token') ?? localStorage.getItem('authToken');
+  // Always use v2 accessToken
+  return localStorage.getItem('accessToken');
 }
 
 // Get current user's ID
@@ -56,25 +46,16 @@ export function getUserId(): number | null {
 
 // Set authentication token
 export function setAuthToken(token: string, refreshToken?: string): void {
-  // Check if v2 is enabled
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-
-  if (useV2 === true) {
-    // For v2, store both access and refresh tokens
-    localStorage.setItem('accessToken', token);
-    if (refreshToken !== undefined && refreshToken.length > 0) {
-      localStorage.setItem('refreshToken', refreshToken);
-    }
-    // Also store in old format for compatibility
-    localStorage.setItem('token', token);
-
-    // Set cookie for server-side page protection (temporary compatibility)
-    document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-  } else {
-    // For v1, use old token names
-    localStorage.setItem('token', token);
-    localStorage.setItem('authToken', token);
+  // For v2, store both access and refresh tokens
+  localStorage.setItem('accessToken', token);
+  if (refreshToken !== undefined && refreshToken.length > 0) {
+    localStorage.setItem('refreshToken', refreshToken);
   }
+  // Also store in old format for compatibility
+  localStorage.setItem('token', token);
+
+  // Set cookie for server-side page protection (temporary compatibility)
+  document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 }
 
 // Remove authentication token
@@ -219,24 +200,6 @@ async function fetchWithV2Api(url: string, options: RequestInit): Promise<Respon
 }
 
 // Helper: Handle V1 API request
-async function fetchWithV1Api(url: string, options: RequestInit, token: string): Promise<Response> {
-  const fingerprint = await BrowserFingerprint.generate();
-
-  const headers: HeadersInit = {
-    Authorization: `Bearer ${token}`,
-    'Content-Type': 'application/json',
-    'X-Browser-Fingerprint': fingerprint,
-    ...(options.headers ? (options.headers as Record<string, string>) : {}),
-  };
-
-  const response = await fetch(url, { ...options, headers });
-
-  if (response.status === 401) handleUnauthorized();
-  if (response.status === 403) handleForbidden();
-
-  return response;
-}
-
 // Fetch with authentication
 export async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getAuthToken();
@@ -246,8 +209,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
     throw new Error('No authentication token');
   }
 
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
-  return useV2 ? await fetchWithV2Api(url, options) : await fetchWithV1Api(url, options, token);
+  return await fetchWithV2Api(url, options);
 }
 
 // Load user information
@@ -264,47 +226,6 @@ function isCacheValid(): boolean {
 }
 
 // Helper: Convert API response to User
-function convertToUser(
-  data: {
-    id?: number;
-    username?: string;
-    email?: string;
-    firstName?: string;
-    first_name?: string;
-    lastName?: string;
-    last_name?: string;
-    role?: string;
-    tenantId?: number;
-    tenant_id?: number;
-    isActive?: boolean;
-    isArchived?: boolean;
-    createdAt?: string;
-    created_at?: string;
-    updatedAt?: string;
-    updated_at?: string;
-    user?: User;
-    message?: string;
-  },
-  useV2: boolean,
-): User {
-  if (useV2) {
-    return {
-      id: data.id,
-      username: data.username,
-      email: data.email,
-      first_name: data.firstName ?? data.first_name,
-      last_name: data.lastName ?? data.last_name,
-      role: data.role,
-      tenant_id: data.tenantId ?? data.tenant_id,
-      is_active: data.isActive ?? true,
-      is_archived: data.isArchived ?? false,
-      created_at: data.createdAt ?? data.created_at,
-      updated_at: data.updatedAt ?? data.updated_at,
-    } as User;
-  }
-  return data.user ?? (data as User);
-}
-
 // Helper: Update DOM elements with user info
 function updateUserDisplay(user: User): void {
   const userName = document.querySelector('#userName') ?? document.querySelector('#user-name');
@@ -352,60 +273,21 @@ function getFallbackUser(): User {
 
 // Helper: Fetch user profile from API
 async function fetchUserProfile(): Promise<User> {
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
+  // Use apiClient for v2 API (already returns User object)
+  console.info('loadUserInfo: Using apiClient for v2 API');
+  const user = await apiClient.get<User>('/users/me');
+  console.info('loadUserInfo: Response data:', user);
 
-  if (useV2) {
-    // Use apiClient for v2 API (already returns User object)
-    console.info('loadUserInfo: Using apiClient for v2 API');
-    const user = await apiClient.get<User>('/users/me');
-    console.info('loadUserInfo: Response data:', user);
-
-    updateUserDisplay(user);
-    userProfileCache = { data: user, timestamp: Date.now() };
-    console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
-
-    return user;
-  }
-
-  // Legacy v1 API uses fetch
-  const profileUrl = '/api/user/profile';
-  const response = await fetchWithAuth(profileUrl);
-  console.info('loadUserInfo: Response status:', response.status);
-
-  const data = (await response.json()) as {
-    id?: number;
-    username?: string;
-    email?: string;
-    firstName?: string;
-    first_name?: string;
-    lastName?: string;
-    last_name?: string;
-    role?: string;
-    tenantId?: number;
-    tenant_id?: number;
-    isActive?: boolean;
-    isArchived?: boolean;
-    createdAt?: string;
-    created_at?: string;
-    updatedAt?: string;
-    updated_at?: string;
-    user?: User;
-    message?: string;
-  };
-  console.info('loadUserInfo: Response data:', data);
-
-  if (!response.ok) {
-    throw new Error(data.message ?? 'Fehler beim Laden der Benutzerdaten');
-  }
-
-  const user = convertToUser(data, useV2);
   updateUserDisplay(user);
-
   userProfileCache = { data: user, timestamp: Date.now() };
   console.info('loadUserInfo: Profile cached for', CACHE_DURATION / 1000, 'seconds');
 
   return user;
 }
+
+// Legacy v1 code removed - always using v2 API
+
+// Legacy v1 code removed - always using v2 API
 
 export async function loadUserInfo(): Promise<User> {
   try {
@@ -444,25 +326,8 @@ export async function logout(): Promise<void> {
   // Call logout API to log the action
   if (token !== null && token.length > 0) {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH;
-      const logoutUrl = useV2 === true ? '/api/v2/auth/logout' : '/api/auth/logout';
-
-      if (useV2 === true) {
-        // Use API client for v2
-        await apiClient.post('/auth/logout', {});
-      } else {
-        // Use traditional fetch for v1
-        const fingerprint = await BrowserFingerprint.generate();
-        await fetch(logoutUrl, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-            'X-Browser-Fingerprint': fingerprint,
-          },
-          body: JSON.stringify({}), // Empty body to satisfy Content-Type validation
-        });
-      }
+      // Use API client for v2
+      await apiClient.post('/auth/logout', {});
     } catch (error) {
       console.error('Error logging logout:', error);
       // Continue with logout even if API call fails
@@ -482,9 +347,7 @@ export async function logout(): Promise<void> {
   profileLoadingPromise = null;
 
   // Clear API client tokens
-  if (window.FEATURE_FLAGS?.USE_API_V2_AUTH === true) {
-    apiClient.clearTokens();
-  }
+  apiClient.clearTokens();
 
   // Redirect to login
   window.location.href = '/login';
@@ -521,45 +384,14 @@ async function loginV2(email: string, password: string): Promise<{ success: bool
       return { success: false, message: error.message };
     }
     return { success: false, message: 'Login failed' };
-    // eslint-disable-next-line max-lines
   }
 }
 
 // Helper: Login with V1 API
-async function loginV1(email: string, password: string): Promise<{ success: boolean; message?: string }> {
-  const fingerprint = await BrowserFingerprint.generate();
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Browser-Fingerprint': fingerprint,
-    },
-    body: JSON.stringify({ email, password }),
-  });
-
-  const data = (await response.json()) as {
-    token?: string;
-    user?: User;
-    message?: string;
-  };
-
-  if (response.ok && data.token !== undefined && data.token.length > 0) {
-    setAuthToken(data.token);
-
-    if (data.user !== undefined) {
-      setUserRole(data.user.role);
-    }
-
-    return { success: true };
-  }
-  return { success: false, message: data.message ?? 'Login failed' };
-}
-
 // Login function
 export async function login(email: string, password: string): Promise<{ success: boolean; message?: string }> {
   try {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH === true;
-    return useV2 ? await loginV2(email, password) : await loginV1(email, password);
+    return await loginV2(email, password);
   } catch (error) {
     console.error('Login error:', error);
     return { success: false, message: 'Network error' };

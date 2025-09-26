@@ -90,8 +90,7 @@ function populateEmployeeSelect(userSelect: Element, employees: User[]): void {
  * Fetch employees from API
  */
 async function fetchEmployees(token: string): Promise<User[] | null> {
-  const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS === true;
-  const endpoint = useV2Users ? '/api/v2/users' : '/api/users';
+  const endpoint = '/api/v2/users';
 
   const response = await fetch(endpoint, {
     headers: {
@@ -104,7 +103,12 @@ async function fetchEmployees(token: string): Promise<User[] | null> {
     return null;
   }
 
-  return (await response.json()) as User[];
+  const result = (await response.json()) as { success?: boolean; data?: User[] } | User[];
+  // Handle v2 API response structure
+  if (typeof result === 'object' && 'success' in result && result.success === true && result.data !== undefined) {
+    return result.data;
+  }
+  return Array.isArray(result) ? result : null;
 }
 
 /**
@@ -251,8 +255,7 @@ async function performUploadRequest(
   formData: FormData,
   token: string,
 ): Promise<{ ok: boolean; result: { message?: string; error?: string } }> {
-  const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS === true;
-  const endpoint = useV2Documents ? '/api/v2/documents' : '/api/documents';
+  const endpoint = '/api/v2/documents';
 
   const response = await fetch(endpoint, {
     method: 'POST',

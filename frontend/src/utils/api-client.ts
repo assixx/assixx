@@ -26,7 +26,7 @@ export class ApiClient {
   private static instance: ApiClient | undefined;
   private token: string | null = null;
   private refreshToken: string | null = null;
-  private version: 'v1' | 'v2' = 'v2';
+  // Feature flags removed - always use v2
   private baseUrl = '';
   private isRedirectingToRateLimit = false; // Prevent multiple redirects
 
@@ -53,30 +53,13 @@ export class ApiClient {
     localStorage.setItem('refreshToken', refreshToken);
   }
 
-  setVersion(version: 'v1' | 'v2'): void {
-    this.version = version;
-  }
+  // Removed setVersion - always v2
 
-  private checkFeatureFlag(endpoint: string): boolean {
-    const featureKey = `USE_API_V2_${this.extractApiName(endpoint).toUpperCase()}`;
+  // Feature flags removed - always use v2
 
-    if (window.FEATURE_FLAGS === undefined || typeof window.FEATURE_FLAGS !== 'object') {
-      return false;
-    }
-
-    const flags = window.FEATURE_FLAGS as Record<string, unknown>;
-    for (const [key, value] of Object.entries(flags)) {
-      if (key === featureKey && value === true) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private determineVersion(endpoint: string, config: ApiConfig): 'v1' | 'v2' {
-    const useV2 = this.checkFeatureFlag(endpoint);
-    return useV2 ? 'v2' : (config.version ?? this.version);
+  private determineVersion(_endpoint: string, _config: ApiConfig): 'v2' {
+    // Always return v2 - feature flags removed
+    return 'v2';
   }
 
   private buildHeaders(options: RequestInit, config: ApiConfig, version: 'v1' | 'v2'): Record<string, string> {
@@ -134,14 +117,14 @@ export class ApiClient {
     return await this.handleResponse<T>(retryResponse, version);
   }
 
-  private shouldFallbackToV1(error: unknown, version: 'v1' | 'v2', config: ApiConfig): boolean {
-    const isClientError = error instanceof ApiError && error.status >= 400 && error.status < 500;
-    return version === 'v2' && config.version === undefined && this.version !== 'v1' && !isClientError;
+  private shouldFallbackToV1(_error: unknown, _version: 'v1' | 'v2', _config: ApiConfig): boolean {
+    // Feature flags removed - never fallback to v1
+    return false;
   }
 
   async request<T = unknown>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
     const version = this.determineVersion(endpoint, config);
-    const baseApiPath = version === 'v2' ? '/api/v2' : '/api';
+    const baseApiPath = '/api/v2'; // Always v2
     const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
     const headers = this.buildHeaders(options, config, version);
 
@@ -151,7 +134,7 @@ export class ApiClient {
       const response = await fetch(url, {
         ...options,
         headers,
-        credentials: version === 'v1' ? 'include' : 'omit',
+        credentials: 'omit', // v2 doesn't use cookies
       });
 
       // Handle token refresh for v2
@@ -176,11 +159,7 @@ export class ApiClient {
     }
   }
 
-  private extractApiName(endpoint: string): string {
-    // Extract API name from endpoint (e.g., /auth/login -> auth)
-    const part = endpoint.split('/').find(Boolean);
-    return part ?? '';
-  }
+  // Removed extractApiName - no longer needed without feature flags
 
   private handleRateLimit(): void {
     console.error('[API] Rate limit exceeded');
@@ -448,7 +427,6 @@ export class ApiError extends Error {
 // Declare global types
 declare global {
   interface Window {
-    FEATURE_FLAGS?: Record<string, boolean | undefined>;
     ApiClient: typeof ApiClient;
     apiClient: ApiClient;
   }

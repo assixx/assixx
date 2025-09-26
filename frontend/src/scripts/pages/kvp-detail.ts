@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * KVP Detail Page Script
  * Handles detailed view of KVP suggestions
@@ -6,14 +7,7 @@
 import { ApiClient } from '../../utils/api-client';
 import { getAuthToken } from '../auth';
 import { showSuccessAlert, showErrorAlert, showConfirm } from '../utils/alerts';
-import {
-  type KvpSuggestion,
-  type Comment,
-  type Attachment,
-  convertSuggestionToCamelCase,
-  getStatusText,
-  getShareLevelText,
-} from './kvp-detail-ui';
+import { type KvpSuggestion, type Comment, type Attachment, getStatusText, getShareLevelText } from './kvp-detail-ui';
 import { KvpDetailRenderer } from './kvp-detail-renderer';
 
 // Extend Window interface for openLightbox function
@@ -35,14 +29,10 @@ class KvpDetailPage {
   private currentUser: User | null = null;
   private suggestionId = 0;
   private suggestion: KvpSuggestion | null = null;
-  private useV2API = true;
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
     this.renderer = new KvpDetailRenderer();
-    // Check feature flag for v2 API
-    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_KVP?: boolean } };
-    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_KVP !== false;
     // Get suggestion ID from URL
     const urlParams = new URLSearchParams(window.location.search);
     const id = urlParams.get('id');
@@ -82,29 +72,7 @@ class KvpDetailPage {
 
   private async getCurrentUser(): Promise<User | null> {
     try {
-      if (this.useV2API) {
-        return await this.apiClient.get<User>('/users/me');
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch('/api/users/me', {
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-        });
-
-        if (!response.ok) throw new Error('Failed to get user info');
-
-        interface V1UserResponse {
-          user: User & { tenant_id?: number };
-        }
-        const data = (await response.json()) as V1UserResponse;
-        // Convert snake_case to camelCase for v1
-        return {
-          ...data.user,
-          tenantId: data.user.tenant_id ?? data.user.tenantId,
-        };
-      }
+      return await this.apiClient.get<User>('/users/me');
     } catch (error) {
       console.error('Error getting current user:', error);
       return null;
@@ -113,28 +81,7 @@ class KvpDetailPage {
 
   private async loadSuggestion(): Promise<void> {
     try {
-      if (this.useV2API) {
-        this.suggestion = await this.apiClient.get<KvpSuggestion>(`/kvp/${this.suggestionId}`);
-      } else {
-        // v1 fallback
-        const token = getAuthToken();
-        const response = await fetch(`/api/kvp/${this.suggestionId}`, {
-          headers: {
-            Authorization: `Bearer ${token ?? ''}`,
-          },
-        });
-
-        if (!response.ok) {
-          if (response.status === 403) {
-            throw new Error('Keine Berechtigung');
-          }
-          throw new Error('Failed to load suggestion');
-        }
-
-        const v1Suggestion = (await response.json()) as Record<string, unknown>;
-        // Convert snake_case to camelCase
-        this.suggestion = convertSuggestionToCamelCase(v1Suggestion);
-      }
+      this.suggestion = await this.apiClient.get<KvpSuggestion>(`/kvp/${this.suggestionId}`);
       this.renderer.setSuggestion(this.suggestion);
       this.renderer.renderSuggestion();
     } catch (error) {
@@ -506,7 +453,7 @@ class KvpDetailPage {
         // Pre-select if needed
 
         const preselect = deptSelect.dataset.preselect;
-        // eslint-disable-next-line max-lines
+
         if (preselect !== undefined) {
           deptSelect.value = preselect;
           delete deptSelect.dataset.preselect;

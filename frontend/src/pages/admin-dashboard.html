@@ -7,17 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-      })();
-    </script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
     <!-- Admin Dashboard CSS extracted to external file -->
     <link rel="stylesheet" href="/styles/admin-dashboard.css" />
 
@@ -25,8 +15,6 @@
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/blackboard-widget.css" />
-    <!-- Feature Flags -->
-    <script src="/feature-flags.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
@@ -1029,9 +1017,10 @@
       // Helper to fetch employee data
       async function fetchEmployeeData(employeeId) {
         const token = localStorage.getItem('token');
-        const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+        // Feature flags removed - always use v2
+        const useV2 = true;
 
-        const url = useV2 ? `/api/v2/users/${employeeId}` : `/api/users/${employeeId}`;
+        const url = `/api/v2/users/${employeeId}`;
         const headers = { Authorization: `Bearer ${localStorage.getItem('accessToken') || token}` };
 
         const response = await fetch(url, {
@@ -1076,7 +1065,8 @@
       function setCurrentStatus(employee, statusDisplay) {
         let currentStatus = employee.availabilityStatus || employee.availability_status || 'available';
 
-        if (window.FEATURE_FLAGS?.USE_API_V2_USERS && currentStatus === 'other') {
+        // Feature flags removed - always use v2
+        if (currentStatus === 'other') {
           currentStatus = 'unavailable';
         }
 
@@ -1189,52 +1179,34 @@
             const startDate = formData.get('start_date');
             const endDate = formData.get('end_date');
 
-            // Build the data object based on API version
-            const statusData = window.FEATURE_FLAGS?.USE_API_V2_USERS
-              ? (() => {
-                  // v2 API expects camelCase and specific status values
-                  const data = {
-                    availabilityStatus: v2Status,
-                  };
-                  // Only include dates if they have values (v2 validation expects ISO format or nothing)
-                  if (startDate) {
-                    data.availabilityStart = new Date(startDate).toISOString();
-                  }
-                  if (endDate) {
-                    data.availabilityEnd = new Date(endDate).toISOString();
-                  }
-                  const notes = formData.get('notes');
-                  if (notes) {
-                    data.availabilityNotes = notes;
-                  }
-                  return data;
-                })()
-              : {
-                  // v1 API expects snake_case
-                  availability_status: formData.get('status'),
-                  availability_start: formData.get('start_date'),
-                  availability_end: formData.get('end_date'),
-                  availability_notes: formData.get('notes'),
-                };
+            // Build the data object for v2 API
+            // Feature flags removed - always use v2
+            // v2 API expects camelCase and specific status values
+            const statusData = {
+              availabilityStatus: v2Status,
+            };
+            // Only include dates if they have values (v2 validation expects ISO format or nothing)
+            if (startDate) {
+              statusData.availabilityStart = new Date(startDate).toISOString();
+            }
+            if (endDate) {
+              statusData.availabilityEnd = new Date(endDate).toISOString();
+            }
+            const notes = formData.get('notes');
+            if (notes) {
+              statusData.availabilityNotes = notes;
+            }
 
             try {
-              const response = await (window.FEATURE_FLAGS?.USE_API_V2_USERS
-                ? fetch(`/api/v2/users/${employeeId}/availability`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                    },
-                    body: JSON.stringify(statusData),
-                  })
-                : fetch(`/api/users/${employeeId}/availability`, {
-                    method: 'PUT',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify(statusData),
-                  }));
+              // Feature flags removed - always use v2
+              const response = await fetch(`/api/v2/users/${employeeId}/availability`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+                },
+                body: JSON.stringify(statusData),
+              });
 
               if (response.ok) {
                 alert('Verfügbarkeitsstatus erfolgreich aktualisiert');
@@ -1245,9 +1217,8 @@
                 const errorData = await response.json();
                 console.error('API Error Response:', errorData);
                 // Handle v2 API error format
-                const errorMessage = window.FEATURE_FLAGS?.USE_API_V2_USERS
-                  ? errorData.error?.message || errorData.message || 'Status konnte nicht aktualisiert werden'
-                  : errorData.message || 'Status konnte nicht aktualisiert werden';
+                // Feature flags removed - always use v2
+                const errorMessage = errorData.error?.message || errorData.message || 'Status konnte nicht aktualisiert werden';
                 alert(`Fehler: ${errorMessage}`);
                 // Log the full request data for debugging
                 console.info('Request data sent was:', statusData);
@@ -1270,17 +1241,13 @@
         const token = localStorage.getItem('token');
 
         try {
-          const response = await (window.FEATURE_FLAGS?.USE_API_V2_DEPARTMENTS
-            ? fetch(`/api/v2/departments/${departmentId}`, {
-                method: 'DELETE',
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
-                },
-              })
-            : fetch(`/api/departments/${departmentId}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` },
-              }));
+          // Feature flags removed - always use v2
+          const response = await fetch(`/api/v2/departments/${departmentId}`, {
+            method: 'DELETE',
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('accessToken') || token}`,
+            },
+          });
 
           if (response.ok) {
             alert('Abteilung erfolgreich gelöscht');
@@ -1651,9 +1618,10 @@
       // Helper to fetch employees
       async function fetchEmployees() {
         const token = localStorage.getItem('token');
-        const useV2 = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+        // Feature flags removed - always use v2
+        const useV2 = true;
 
-        const url = useV2 ? '/api/v2/users?role=employee' : '/api/users?role=employee';
+        const url = '/api/v2/users?role=employee';
         const headers = { Authorization: `Bearer ${localStorage.getItem('accessToken') || token}` };
 
         const response = await fetch(url, {
@@ -1687,7 +1655,8 @@
       // Helper to get availability status
       function getEmployeeAvailabilityStatus(employee) {
         let status = employee.availabilityStatus || employee.availability_status || 'available';
-        if (window.FEATURE_FLAGS?.USE_API_V2_USERS && status === 'other') {
+        // Feature flags removed - always use v2
+        if (status === 'other') {
           status = 'unavailable';
         }
         return status;

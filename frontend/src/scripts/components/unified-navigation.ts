@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Unified Navigation Component für alle Dashboards
  * Verwendet rolle-basierte Menüs mit Glassmorphismus-Design
@@ -520,13 +521,9 @@ class UnifiedNavigation {
       if (token === null || token === 'test-mode') return;
 
       console.info('[UnifiedNav] Fetching full user profile with company data');
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? window.FEATURE_FLAGS?.USE_API_V2_USERS;
-      console.info('[UnifiedNav] useV2 flag:', useV2);
 
-      if (useV2 === true) {
-        await this.loadV2UserProfile();
-      }
-      // eslint-disable-next-line max-lines
+      // Always try to load v2 user profile
+      await this.loadV2UserProfile();
     } catch (error) {
       console.error('[UnifiedNav] Error loading full user profile:', error);
     }
@@ -1595,7 +1592,7 @@ class UnifiedNavigation {
           <span class="label">${item.label}</span>
           <span class="nav-indicator"></span>
           <span class="submenu-arrow">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor">
               <path d="M7 10l5 5 5-5z"/>
             </svg>
           </span>

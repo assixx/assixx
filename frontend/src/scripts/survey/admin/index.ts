@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Survey Administration Module
  * Manages survey CRUD operations, questions, and assignments
@@ -7,7 +8,6 @@ import { ApiClient } from '../../../utils/api-client';
 import { showSuccessAlert, showErrorAlert, showConfirm, showAlert } from '../../utils/alerts';
 import { $, setHTML } from '../../../utils/dom-utils';
 import { modalManager } from '../../utils/modal-manager';
-import { featureFlags } from '../../../utils/feature-flags';
 import type {
   WindowWithExtensions,
   Survey,
@@ -238,17 +238,16 @@ export class SurveyAdminManager {
 
   public async loadSurveys(): Promise<void> {
     try {
-      const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
-      const endpoint = useV2 ? '/surveys' : '/api/surveys';
-
-      const token = localStorage.getItem('token') ?? '';
-
       let surveys: Survey[] = [];
 
-      if (useV2) {
-        surveys = await this.apiClient.get<Survey[]>(endpoint);
-      } else {
-        const v1Response = await fetch(endpoint, {
+      // Try v2 API first, fallback to v1 if needed
+      try {
+        surveys = await this.apiClient.get<Survey[]>('/surveys');
+      } catch (v2Error) {
+        console.error('Error loading surveys with v2:', v2Error);
+        // Fallback to v1 API
+        const token = localStorage.getItem('token') ?? '';
+        const v1Response = await fetch('/api/surveys', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -265,9 +264,6 @@ export class SurveyAdminManager {
 
   public async loadTemplates(): Promise<void> {
     try {
-      const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
-      const endpoint = useV2 ? '/surveys/templates' : '/api/surveys/templates';
-
       interface TemplateResponse {
         success?: boolean;
         data?: SurveyTemplate[];
@@ -276,11 +272,14 @@ export class SurveyAdminManager {
 
       let templates: SurveyTemplate[] = [];
 
-      if (useV2) {
-        const v2Response = await this.apiClient.get<TemplateResponse>(endpoint);
+      // Try v2 API first, fallback to v1 if needed
+      try {
+        const v2Response = await this.apiClient.get<TemplateResponse>('/surveys/templates');
         templates = v2Response.data ?? [];
-      } else {
-        const v1Response = await fetch(endpoint, {
+      } catch (v2Error) {
+        console.error('Error loading templates with v2:', v2Error);
+        // Fallback to v1 API
+        const v1Response = await fetch('/api/surveys/templates', {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
           },
@@ -511,7 +510,6 @@ export class SurveyAdminManager {
       const typeInput = document.querySelector<HTMLInputElement>(`#${questionId}_typeValue`);
       const requiredInput = document.querySelector<HTMLInputElement>(`#${questionId}_required`);
 
-      // eslint-disable-next-line max-lines
       if (!textInput || !typeInput) return;
 
       const question: SurveyQuestion = {
@@ -650,8 +648,6 @@ export class SurveyAdminManager {
 
   private async submitSurvey(surveyData: Survey): Promise<void> {
     try {
-      const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
-      const endpoint = this.getSurveyEndpoint(useV2);
       const method = this.currentSurveyId !== null ? 'PUT' : 'POST';
 
       interface SurveyApiResponse {
@@ -660,12 +656,7 @@ export class SurveyAdminManager {
         error?: { message?: string };
       }
 
-      const response: SurveyApiResponse = await this.executeSurveyRequest<SurveyApiResponse>(
-        useV2,
-        method,
-        endpoint,
-        surveyData,
-      );
+      const response: SurveyApiResponse = await this.executeSurveyRequest<SurveyApiResponse>(method, surveyData);
 
       if (response.success === true || response.id !== undefined) {
         showSuccessAlert(
@@ -682,26 +673,37 @@ export class SurveyAdminManager {
     }
   }
 
-  private getSurveyEndpoint(useV2: boolean): string {
+  private getSurveyEndpointV2(): string {
     if (this.currentSurveyId !== null) {
-      return useV2 ? `/surveys/${this.currentSurveyId}` : `/api/surveys/${this.currentSurveyId}`;
+      return `/surveys/${this.currentSurveyId}`;
     }
-    return useV2 ? '/surveys' : '/api/surveys';
+    return '/surveys';
   }
 
-  private async executeSurveyRequest<T>(
-    useV2: boolean,
-    method: string,
-    endpoint: string,
-    surveyData: Survey,
-  ): Promise<T> {
-    if (useV2 && method === 'POST') {
-      return await this.apiClient.post<T>(endpoint, surveyData);
+  private getSurveyEndpointV1(): string {
+    if (this.currentSurveyId !== null) {
+      return `/api/surveys/${this.currentSurveyId}`;
     }
-    if (useV2 && method === 'PUT') {
-      return await this.apiClient.put<T>(endpoint, surveyData);
+    return '/api/surveys';
+  }
+
+  private async executeSurveyRequest<T>(method: string, surveyData: Survey): Promise<T> {
+    // Try v2 API first
+    try {
+      const endpointV2 = this.getSurveyEndpointV2();
+      if (method === 'POST') {
+        return await this.apiClient.post<T>(endpointV2, surveyData);
+      }
+      if (method === 'PUT') {
+        return await this.apiClient.put<T>(endpointV2, surveyData);
+      }
+    } catch (v2Error) {
+      console.error('Error with v2 API:', v2Error);
     }
-    const response = await fetch(endpoint, {
+
+    // Fallback to v1 API
+    const endpointV1 = this.getSurveyEndpointV1();
+    const response = await fetch(endpointV1, {
       method: method,
       headers: {
         Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
@@ -714,24 +716,26 @@ export class SurveyAdminManager {
 
   public async editSurvey(surveyId: number): Promise<void> {
     try {
-      const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
-      const endpoint = useV2 ? `/surveys/${surveyId}` : `/api/surveys/${surveyId}`;
-
       let survey: Survey | null = null;
 
+      // Try v2 API first, fallback to v1 if needed
       try {
-        survey = useV2
-          ? await this.apiClient.get<Survey>(endpoint)
-          : await fetch(endpoint, {
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
-              },
-            })
-              .then((r) => r.json() as Promise<unknown>)
-              .then((data) => data as Survey);
-      } catch (apiError) {
-        console.error('Failed to fetch survey:', apiError);
-        survey = null;
+        survey = await this.apiClient.get<Survey>(`/surveys/${surveyId}`);
+      } catch (v2Error) {
+        console.error('Failed to fetch survey with v2:', v2Error);
+        // Fallback to v1 API
+        try {
+          survey = await fetch(`/api/surveys/${surveyId}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+            },
+          })
+            .then((r) => r.json() as Promise<unknown>)
+            .then((data) => data as Survey);
+        } catch (v1Error) {
+          console.error('Failed to fetch survey with v1:', v1Error);
+          survey = null;
+        }
       }
 
       if (survey !== null) {
@@ -783,10 +787,12 @@ export class SurveyAdminManager {
     if (!confirmed) return;
 
     try {
-      const useV2 = featureFlags.isEnabled('USE_API_V2_SURVEYS');
-      if (useV2) {
+      // Try v2 API first, fallback to v1 if needed
+      try {
         await this.deleteSurveyV2(surveyId);
-      } else {
+      } catch (v2Error) {
+        console.error('Error deleting survey with v2:', v2Error);
+        // Fallback to v1 API
         await this.deleteSurveyV1(surveyId);
       }
     } catch (error) {

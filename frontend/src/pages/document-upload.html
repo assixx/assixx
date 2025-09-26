@@ -7,19 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <link rel="stylesheet" href="/styles/document-upload.css" />
@@ -847,8 +835,9 @@
         hideSuccess();
 
         try {
-          const useV2Documents = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-          const endpoint = useV2Documents ? '/api/v2/documents/upload' : '/api/documents/upload';
+          // Feature flags removed - always use v2
+          const useV2Documents = true;
+          const endpoint = '/api/v2/documents/upload';
           const response = await fetch(endpoint, {
             method: 'POST',
             headers: {

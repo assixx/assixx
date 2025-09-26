@@ -14,7 +14,6 @@
     <!-- Font loading after critical CSS -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <!-- Feature Flags for API v2 Migration -->
-    <script src="/feature-flags.js"></script>
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       // Simple setHTML implementation for login page (no navigation = no dom-utils import)
@@ -293,7 +292,8 @@
 
       // Helper functions to reduce complexity
       function isUsingV2Api() {
-        return window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_AUTH;
+        // Feature flags removed - always use v2
+        return true;
       }
 
       function prepareApiRequest(username, password, fingerprint, useV2) {

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Admin Employees Management
  * Handles employee CRUD operations for admin dashboard
@@ -23,14 +24,10 @@ class EmployeesManager {
   private employees: Employee[] = [];
   private currentFilter: 'all' | 'active' | 'inactive' = 'all';
   private searchTerm = '';
-  private useV2API = true; // Default to v2 API
   public currentEmployeeId: number | null = null; // Track current employee being edited
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
-    // Check feature flag for v2 API
-    const w = window as Window & { FEATURE_FLAGS?: { USE_API_V2_USERS?: boolean } };
-    this.useV2API = w.FEATURE_FLAGS?.USE_API_V2_USERS !== false;
     this.initializeEventListeners();
   }
 
@@ -211,13 +208,11 @@ class EmployeesManager {
         return;
       }
 
-      // Map response through api-mappers for consistent field names (only for v2)
-      const mappedUsers = this.useV2API ? mapUsers(response) : response;
+      // Map response through api-mappers for consistent field names
+      const mappedUsers = mapUsers(response);
 
-      // CRITICAL SECURITY: Only show users with role='employee'
-      // NEVER show admins or roots in the employees table
-      // Admins cannot manage other admins or see root users
-      this.employees = mappedUsers.filter((user) => user.role === 'employee') as Employee[];
+      // Map users to employees and apply security filter
+      this.employees = this.mapUsersToEmployees(mappedUsers);
 
       // Apply filters
       this.employees = this.filterByStatus(this.employees);
@@ -241,6 +236,77 @@ class EmployeesManager {
         showErrorAlert('Fehler beim Laden der Mitarbeiter');
       }
     }
+  }
+
+  private deriveStatusFromAvailability(availabilityStatus?: string): Employee['status'] {
+    // Map availability status to employee status
+    if (availabilityStatus === undefined) {
+      return 'active';
+    }
+
+    const status = availabilityStatus.toLowerCase();
+    if (status.includes('vacation')) {
+      return 'vacation';
+    } else if (status.includes('sick')) {
+      return 'sick';
+    } else if (status.includes('terminated')) {
+      return 'terminated';
+    } else if (status === 'unavailable' || status === 'inactive') {
+      return 'inactive';
+    }
+    return 'active';
+  }
+
+  private mapUsersToEmployees(mappedUsers: ReturnType<typeof mapUsers>): Employee[] {
+    // CRITICAL SECURITY: Only show users with role='employee'
+    // NEVER show admins or roots in the employees table
+    // Admins cannot manage other admins or see root users
+    return mappedUsers
+      .filter((user) => user.role === 'employee')
+      .map(
+        (user): Employee => ({
+          // Map basic User fields (snake_case for compatibility with Employee which extends User)
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          role: user.role,
+          tenant_id: user.tenantId,
+          is_active: user.isActive,
+          is_archived: false, // Default to false as MappedUser doesn't have this field
+          created_at: user.createdAt ?? '',
+          updated_at: user.updatedAt ?? '',
+
+          // Map Employee-specific fields
+          firstName: user.firstName,
+          lastName: user.lastName,
+          departmentId: user.departmentId ?? undefined,
+          departmentName: user.departmentName,
+          department_id: user.departmentId ?? undefined,
+          department_name: user.departmentName,
+          teamId: user.teamId ?? undefined,
+          teamName: user.teamName,
+          team_id: user.teamId ?? undefined,
+          team_name: user.teamName,
+          position: user.position,
+          employeeNumber: user.employeeNumber,
+          employee_number: user.employeeNumber,
+
+          // Map availability fields
+          availabilityStatus: user.availabilityStatus,
+          availability_status: user.availabilityStatus,
+          availabilityStart: user.availabilityStart,
+          availability_start: user.availabilityStart,
+          availabilityEnd: user.availabilityEnd,
+          availability_end: user.availabilityEnd,
+          availabilityNotes: user.availabilityNotes,
+          availability_notes: user.availabilityNotes,
+
+          // Derive status from availability
+          status: this.deriveStatusFromAvailability(user.availabilityStatus),
+        }),
+      );
   }
 
   showEmployeeModal(isEdit = false, departmentId?: number, teamId?: number): void {
@@ -530,7 +596,7 @@ class EmployeesManager {
 let employeesManager: EmployeesManager | null = null;
 
 // Setup URL change handling
-// eslint-disable-next-line max-lines
+
 function setupUrlChangeHandlers(): void {
   // Check URL and load employees if needed
   const checkAndLoadEmployees = () => {

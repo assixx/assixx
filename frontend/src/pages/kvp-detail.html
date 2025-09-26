@@ -6,18 +6,9 @@
     <title>KVP Vorschlag - Assixx</title>
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        const root = document.documentElement;
-        root.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        root.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        root.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-      })();
-    </script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Feature Flags for API v2 Migration -->
-    <script src="/feature-flags.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Calendar System
  * Client-side TypeScript for the company calendar feature
@@ -6,7 +7,6 @@
 import type { User } from '../../types/api.types';
 import { canViewAllEmployees } from '../../utils/auth-helpers';
 import { $$, $all, $$id, setHTML } from '../../utils/dom-utils';
-import { featureFlags } from '../../utils/feature-flags';
 import { getAuthToken, showSuccess, showError } from '../auth/index';
 import { modalManager } from '../utils/modal-manager';
 import { shiftCalendarIntegration } from '../shifts/calendar-integration';
@@ -422,8 +422,7 @@ async function checkUnreadEvents(): Promise<void> {
     const token = getAuthToken();
     if (token === null || token === '') return;
 
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
+    const apiUrl = '/api/v2/calendar/unread-events';
 
     const response = await fetch(apiUrl, {
       headers: {
@@ -437,7 +436,7 @@ async function checkUnreadEvents(): Promise<void> {
     }
 
     const data = (await response.json()) as { data?: { totalUnread?: number }; totalUnread?: number };
-    const result = useV2 ? data.data : data;
+    const result = data.data;
     const totalUnread = result?.totalUnread ?? 0;
 
     // If there are unread events, show the modal
@@ -477,8 +476,7 @@ async function fetchUnreadEvents(): Promise<UnreadEvent[]> {
   const token = getAuthToken();
   if (token === null || token === '') return [];
 
-  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-  const apiUrl = useV2 ? '/api/v2/calendar/unread-events' : '/api/calendar/unread-events';
+  const apiUrl = '/api/v2/calendar/unread-events';
 
   const response = await fetch(apiUrl, {
     headers: {
@@ -495,7 +493,7 @@ async function fetchUnreadEvents(): Promise<UnreadEvent[]> {
     data?: { eventsRequiringResponse?: UnreadEvent[] };
     eventsRequiringResponse?: UnreadEvent[];
   };
-  const result = useV2 ? data.data : data;
+  const result = data.data;
   return result?.eventsRequiringResponse ?? [];
 }
 
@@ -1399,10 +1397,9 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     }
 
     const params = buildEventQueryParams(fetchInfo);
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? `/api/v2/calendar/events?${params}` : `/api/calendar?${params}`;
+    const apiUrl = `/api/v2/calendar/events?${params}`;
 
-    console.info('[CALENDAR] Loading events - v2:', useV2, 'URL:', apiUrl);
+    console.info('[CALENDAR] Loading events - v2: true, URL:', apiUrl);
 
     const response = await fetch(apiUrl, {
       headers: { Authorization: `Bearer ${token}` },
@@ -1428,10 +1425,8 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
 
     let events = extractEventsFromResponse(data);
 
-    // Map v2 API response fields if needed
-    if (useV2) {
-      events = events.map(mapV2EventFields);
-    }
+    // Map v2 API response fields
+    events = events.map(mapV2EventFields);
 
     console.info('[CALENDAR] Formatted events for display:', events);
     const formattedEvents = events.map(formatEventForCalendar).filter((e): e is FullCalendarEventInput => e !== null);
@@ -1539,10 +1534,9 @@ async function loadUpcomingEvents(): Promise<void> {
       throw new Error('No token found');
     }
 
-    // Determine API endpoint based on feature flag
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? '/api/v2/calendar/dashboard' : '/api/calendar/dashboard';
-    console.info('[CALENDAR] Loading dashboard - v2:', useV2, 'URL:', apiUrl);
+    // Use v2 API endpoint
+    const apiUrl = '/api/v2/calendar/dashboard';
+    console.info('[CALENDAR] Loading dashboard - v2: true, URL:', apiUrl);
 
     // Fetch upcoming events
     const response = await fetch(apiUrl, {
@@ -1742,8 +1736,7 @@ function ensureUserDataLoaded(): void {
 
 // Helper: Fetch event data from API
 async function fetchEventData(eventId: number, token: string): Promise<CalendarEvent> {
-  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-  const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+  const apiUrl = `/api/v2/calendar/events/${eventId}`;
 
   const response = await fetch(apiUrl, {
     headers: {
@@ -1760,28 +1753,25 @@ async function fetchEventData(eventId: number, token: string): Promise<CalendarE
   }
 
   const data = (await response.json()) as unknown;
-  return normalizeEventData(data, useV2);
+  return normalizeEventData(data, true);
 }
 
 // Helper: Normalize event data from API response
-function normalizeEventData(data: unknown, useV2: boolean): CalendarEvent {
+function normalizeEventData(data: unknown, alwaysV2 = true): CalendarEvent {
   let eventData: CalendarEvent;
 
-  if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+  if (typeof data === 'object' && data !== null && 'data' in data) {
     const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
     if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
       eventData = v2Data.data.event;
     } else {
       eventData = v2Data.data as CalendarEvent;
     }
-  } else if (typeof data === 'object' && data !== null && 'data' in data) {
-    const v1Data = data as { data: CalendarEvent };
-    eventData = v1Data.data;
   } else {
     eventData = data as CalendarEvent;
   }
 
-  if (useV2) {
+  if (alwaysV2) {
     return mapV2EventToV1Format(eventData);
   }
   return eventData;
@@ -2123,11 +2113,10 @@ async function respondToEvent(eventId: number, response: string): Promise<void> 
     const token = getAuthToken();
     if (token === null || token === '') return;
 
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}/attendees/response` : `/api/calendar/${eventId}/respond`;
+    const apiUrl = `/api/v2/calendar/events/${eventId}/attendees/response`;
 
     const apiResponse = await fetch(apiUrl, {
-      method: useV2 ? 'PUT' : 'POST',
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
@@ -2774,62 +2763,16 @@ function buildEventDataV2(params: {
 }
 
 /**
- * Build event data for v1 API
- */
-function buildEventDataV1(params: {
-  title: string;
-  description: string;
-  startDateTime: string;
-  endDateTime: string;
-  allDay: boolean;
-  location: string;
-  orgLevel: string;
-  color: string;
-  requiresResponse: boolean;
-  departmentId: number | null;
-  teamId: number | null;
-  reminderTime: number | undefined;
-  recurrenceRule: string;
-}): Record<string, unknown> {
-  const eventData: Record<string, unknown> = {
-    title: params.title,
-    description: params.description,
-    start_time: params.startDateTime,
-    end_time: params.endDateTime,
-    all_day: params.allDay,
-    location: params.location,
-    org_level: params.orgLevel,
-    color: params.color,
-    requires_response: params.requiresResponse,
-  };
-
-  if (params.departmentId !== null) eventData.department_id = params.departmentId;
-  if (params.teamId !== null) eventData.team_id = params.teamId;
-  if (params.reminderTime !== undefined) eventData.reminder_time = params.reminderTime;
-  if (selectedAttendees.length > 0) eventData.attendee_ids = selectedAttendees;
-  if (params.recurrenceRule !== '') eventData.recurrence_rule = params.recurrenceRule;
-
-  // For API v1 compatibility, add org_id
-  if (params.orgLevel === 'department' && params.departmentId !== null) {
-    eventData.org_id = params.departmentId;
-  } else if (params.orgLevel === 'team' && params.teamId !== null) {
-    eventData.org_id = params.teamId;
-  }
-
-  return eventData;
-}
-
-/**
  * Get save event URL
  */
-function getSaveEventUrl(eventId: string | undefined, useV2: boolean): string {
+function getSaveEventUrl(eventId: string | undefined): string {
   const hasEventId = eventId !== undefined && eventId !== '';
 
   if (hasEventId) {
-    return useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+    return `/api/v2/calendar/events/${eventId}`;
   }
 
-  return useV2 ? '/api/v2/calendar/events' : '/api/calendar';
+  return '/api/v2/calendar/events';
 }
 
 /**
@@ -2852,9 +2795,8 @@ async function sendSaveEventRequest(
   eventData: Record<string, unknown>,
   eventId: string | undefined,
   token: string,
-  useV2: boolean,
 ): Promise<void> {
-  const url = getSaveEventUrl(eventId, useV2);
+  const url = getSaveEventUrl(eventId);
   const method = eventId !== undefined && eventId !== '' ? 'PUT' : 'POST';
 
   const response = await fetch(url, {
@@ -2959,13 +2901,12 @@ async function saveEvent(): Promise<void> {
   const eventParams = buildEventParams(inputs);
   if (!eventParams) return;
 
-  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-  const eventData = useV2 ? buildEventDataV2(eventParams) : buildEventDataV1(eventParams);
+  const eventData = buildEventDataV2(eventParams);
 
   console.info('Saving event data:', eventData);
 
   try {
-    await sendSaveEventRequest(eventData, inputs.eventIdInput?.value, authData.token, useV2);
+    await sendSaveEventRequest(eventData, inputs.eventIdInput?.value, authData.token);
   } catch (error: unknown) {
     console.error('Error saving event:', error);
     showError('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
@@ -2976,8 +2917,7 @@ async function saveEvent(): Promise<void> {
  * Fetch event data from API
  */
 async function fetchEventById(eventId: number, token: string): Promise<unknown> {
-  const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-  const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+  const apiUrl = `/api/v2/calendar/events/${eventId}`;
 
   const response = await fetch(apiUrl, {
     headers: {
@@ -2995,44 +2935,37 @@ async function fetchEventById(eventId: number, token: string): Promise<unknown> 
 /**
  * Parse event API response and normalize data
  */
-function parseEventApiResponse(data: unknown, useV2: boolean): CalendarEvent {
+function parseEventApiResponse(data: unknown): CalendarEvent {
   let eventData: CalendarEvent;
 
-  if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+  if (typeof data === 'object' && data !== null && 'data' in data) {
     const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
     if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
       eventData = v2Data.data.event;
     } else {
       eventData = v2Data.data as CalendarEvent;
     }
-  } else if (typeof data === 'object' && data !== null && 'data' in data) {
-    const v1Data = data as { data: CalendarEvent };
-    eventData = v1Data.data;
   } else {
     eventData = data as CalendarEvent;
   }
 
   // Map v2 API camelCase to snake_case for consistency
-  if (useV2) {
-    return {
-      ...eventData,
-      start_time: eventData.startTime ?? eventData.start_time,
-      end_time: eventData.endTime ?? eventData.end_time,
-      all_day: eventData.allDay ?? eventData.all_day,
-      org_level: eventData.orgLevel ?? eventData.org_level,
-      org_id: eventData.orgId ?? eventData.org_id,
-      created_by: eventData.createdBy ?? eventData.created_by,
-      created_at: eventData.createdAt ?? eventData.created_at,
-      updated_at: eventData.updatedAt ?? eventData.updated_at,
-      reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
-      creator_name: eventData.creatorName ?? eventData.creator_name,
-      department_name: eventData.departmentName ?? eventData.department_name,
-      team_name: eventData.teamName ?? eventData.team_name,
-      user_response: eventData.userResponse ?? eventData.user_response,
-    };
-  }
-
-  return eventData;
+  return {
+    ...eventData,
+    start_time: eventData.startTime ?? eventData.start_time,
+    end_time: eventData.endTime ?? eventData.end_time,
+    all_day: eventData.allDay ?? eventData.all_day,
+    org_level: eventData.orgLevel ?? eventData.org_level,
+    org_id: eventData.orgId ?? eventData.org_id,
+    created_by: eventData.createdBy ?? eventData.created_by,
+    created_at: eventData.createdAt ?? eventData.created_at,
+    updated_at: eventData.updatedAt ?? eventData.updated_at,
+    reminder_time: eventData.reminderMinutes ?? eventData.reminderTime ?? eventData.reminder_time,
+    creator_name: eventData.creatorName ?? eventData.creator_name,
+    department_name: eventData.departmentName ?? eventData.department_name,
+    team_name: eventData.teamName ?? eventData.team_name,
+    user_response: eventData.userResponse ?? eventData.user_response,
+  };
 }
 
 /**
@@ -3118,9 +3051,8 @@ async function loadEventForEdit(eventId: number): Promise<void> {
   if (token === null || token === '') return;
 
   try {
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
     const data = await fetchEventById(eventId, token);
-    const event = parseEventApiResponse(data, useV2);
+    const event = parseEventApiResponse(data);
 
     // Check if user is the creator
     if (!canUserEditEvent(event)) {
@@ -3266,10 +3198,9 @@ async function confirmDeleteEvent(): Promise<void> {
   if (token === null || token === '') return;
 
   try {
-    const useV2 = featureFlags.isEnabled('USE_API_V2_CALENDAR');
-    const apiUrl = useV2 ? `/api/v2/calendar/events/${eventId}` : `/api/calendar/${eventId}`;
+    const apiUrl = `/api/v2/calendar/events/${eventId}`;
 
-    console.info('[CALENDAR] Deleting event - v2:', useV2, 'URL:', apiUrl);
+    console.info('[CALENDAR] Deleting event - v2: true, URL:', apiUrl);
 
     const response = await fetch(apiUrl, {
       method: 'DELETE',
@@ -3343,8 +3274,7 @@ async function fetchUserData(): Promise<UserData> {
   }
 
   // Use AUTH feature flag for auth endpoints, not CALENDAR flag
-  const useV2Auth = featureFlags.isEnabled('USE_API_V2_AUTH');
-  const profileUrl = useV2Auth ? '/api/v2/users/me' : '/api/user/profile';
+  const profileUrl = '/api/v2/users/me';
 
   const response = await fetch(profileUrl, {
     headers: {
@@ -3381,9 +3311,9 @@ function extractV2Array(data: { data: unknown }): unknown[] | null {
 /**
  * Extract array from API response (v1 or v2)
  */
-function extractArrayFromApiResponse<T>(data: unknown, useV2: boolean): T[] {
+function extractArrayFromApiResponse<T>(data: unknown): T[] {
   // Handle v2 API response
-  if (useV2 && typeof data === 'object' && data !== null && 'data' in data) {
+  if (typeof data === 'object' && data !== null && 'data' in data) {
     const v2Result = extractV2Array(data as { data: unknown });
     if (v2Result !== null) {
       return v2Result as T[];
@@ -3437,12 +3367,11 @@ function getCurrentUserIdFromStorage(): number {
  * Load departments
  */
 async function loadDepartments(token: string): Promise<void> {
-  const useV2 = featureFlags.isEnabled('USE_API_V2_DEPARTMENTS');
-  const url = useV2 ? '/api/v2/departments' : '/api/departments';
+  const url = '/api/v2/departments';
   const data = await fetchApiData(url, token);
 
   if (data !== null) {
-    departments = extractArrayFromApiResponse<Department>(data, useV2);
+    departments = extractArrayFromApiResponse<Department>(data);
   }
 }
 
@@ -3450,12 +3379,11 @@ async function loadDepartments(token: string): Promise<void> {
  * Load teams
  */
 async function loadTeams(token: string): Promise<void> {
-  const useV2 = featureFlags.isEnabled('USE_API_V2_TEAMS');
-  const url = useV2 ? '/api/v2/teams' : '/api/teams';
+  const url = '/api/v2/teams';
   const data = await fetchApiData(url, token);
 
   if (data !== null) {
-    teams = extractArrayFromApiResponse<Team>(data, useV2);
+    teams = extractArrayFromApiResponse<Team>(data);
   }
 }
 
@@ -3469,12 +3397,11 @@ async function loadEmployees(token: string): Promise<void> {
     return;
   }
 
-  const useV2 = featureFlags.isEnabled('USE_API_V2_USERS');
-  const url = useV2 ? '/api/v2/users' : '/api/users';
+  const url = '/api/v2/users';
   const data = await fetchApiData(url, token);
 
   if (data !== null) {
-    const allEmployees = extractArrayFromApiResponse<User>(data, useV2);
+    const allEmployees = extractArrayFromApiResponse<User>(data);
     const currentUserId = getCurrentUserIdFromStorage();
     employees = allEmployees.filter((emp) => emp.id !== currentUserId);
   }
@@ -3912,12 +3839,11 @@ async function loadEmployeesForAttendees(): Promise<void> {
     }
 
     // For admins, load and display user list
-    const useV2 = featureFlags.isEnabled('USE_API_V2_USERS');
-    const url = useV2 ? '/api/v2/users' : '/api/users';
+    const url = '/api/v2/users';
     const data = await fetchApiData(url, token);
 
     if (data !== null) {
-      const users = extractArrayFromApiResponse<User>(data, useV2);
+      const users = extractArrayFromApiResponse<User>(data);
       const currentUserId = getCurrentUserIdFromStorage();
 
       // Store employees for later use

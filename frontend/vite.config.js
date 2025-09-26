@@ -108,7 +108,10 @@ export default defineConfig({
         handler(html) {
           // Temporarily comment out external scripts to avoid warnings
           return html
-            .replace(/<script src="\/feature-flags\.js"[^>]*><\/script>/g, '<!-- EXTERNAL_FEATURE_FLAGS: $& -->')
+            .replace(
+              /<script src="\/scripts\/critical\/sidebar-init\.js"[^>]*><\/script>/g,
+              '<!-- CRITICAL_SCRIPT: $& -->',
+            )
             .replace(/<script src="\/scripts\/lib\/fullcalendar[^"]*"[^>]*><\/script>/g, '<!-- EXTERNAL_SCRIPT: $& -->')
             .replace(/<link[^>]*href="[^"]*fontawesome[^"]*\.css"[^>]*>/g, '<!-- EXTERNAL_STYLE: $& -->');
         },
@@ -121,7 +124,7 @@ export default defineConfig({
         handler(html) {
           // Restore external scripts after processing
           return html
-            .replace(/<!-- EXTERNAL_FEATURE_FLAGS: (<script[^>]*><\/script>) -->/g, '$1')
+            .replace(/<!-- CRITICAL_SCRIPT: (<script[^>]*><\/script>) -->/g, '$1')
             .replace(/<!-- EXTERNAL_SCRIPT: (<script[^>]*><\/script>) -->/g, '$1')
             .replace(/<!-- EXTERNAL_STYLE: (<link[^>]*>) -->/g, '$1');
         },
@@ -141,12 +144,15 @@ export default defineConfig({
         if (!existsSync(stylesDir)) mkdirSync(stylesDir, { recursive: true });
         if (!existsSync(fontsDir)) mkdirSync(fontsDir, { recursive: true });
 
-        // Copy feature-flags.js to dist
-        const featureFlagsSource = resolve(__dirname, 'public/feature-flags.js');
-        const featureFlagsDest = resolve(distDir, 'feature-flags.js');
-        if (existsSync(featureFlagsSource)) {
-          copyFileSync(featureFlagsSource, featureFlagsDest);
-          console.info('✅ Copied feature-flags.js to dist');
+        // Copy critical scripts
+        const criticalScriptsDir = resolve(distDir, 'scripts/critical');
+        if (!existsSync(criticalScriptsDir)) mkdirSync(criticalScriptsDir, { recursive: true });
+
+        const sidebarInitSource = resolve(__dirname, 'src/scripts/critical/sidebar-init.js');
+        const sidebarInitDest = resolve(criticalScriptsDir, 'sidebar-init.js');
+        if (existsSync(sidebarInitSource)) {
+          copyFileSync(sidebarInitSource, sidebarInitDest);
+          console.info('✅ Copied sidebar-init.js to dist/scripts/critical');
         }
 
         // Copy purify.min.js to dist/js

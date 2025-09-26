@@ -7,20 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
@@ -184,8 +171,8 @@
           const token = getAuthToken();
           if (!token) return;
 
-          // Check if we should use v2 API
-          const useV2 = window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
+          // Feature flags removed - always use v2
+          const useV2 = true;
 
           if (useV2) {
             // V2 API: Get current plan and addons for storage info
@@ -359,7 +346,8 @@
       }
 
       function isV2ApiEnabled() {
-        return window.FEATURE_FLAGS?.USE_API_V2_PLANS === true;
+        // Feature flags removed - always use v2
+        return true;
       }
 
       async function performV2Upgrade(planId) {

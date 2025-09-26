@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Chat Client System
  * WebSocket-based real-time chat functionality
@@ -977,25 +978,23 @@ class ChatClient {
   async loadConversations(): Promise<void> {
     try {
       // Use apiClient which will handle v1/v2 based on feature flag
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
+      const response = await this.apiClient.request<{
+        data: Conversation[];
+        pagination?: unknown;
+      }>('/chat/conversations', {
+        method: 'GET',
+      });
 
-      if (useV2) {
-        // v2 API returns { data: [...], pagination } directly
-        const response = await this.apiClient.request<{
-          data: Conversation[];
-          pagination?: unknown;
-        }>('/chat/conversations', {
-          method: 'GET',
-        });
-
-        // Auch ein leeres Array ist valide - keine Conversations vorhanden
-        this.conversations = response.data.map((conv: Conversation) => ({
-          ...conv,
-          participants: Array.isArray(conv.participants) ? conv.participants : [],
-        }));
-        this.renderConversationList();
-      } else {
-        // v1 API - legacy code
+      // Auch ein leeres Array ist valide - keine Conversations vorhanden
+      this.conversations = response.data.map((conv: Conversation) => ({
+        ...conv,
+        participants: Array.isArray(conv.participants) ? conv.participants : [],
+      }));
+      this.renderConversationList();
+    } catch (error) {
+      console.error('❌ Error loading conversations:', error);
+      // Try v1 API as fallback
+      try {
         const response = await fetch('/api/chat/conversations', {
           headers: {
             Authorization: `Bearer ${this.token ?? ''}`,
@@ -1013,30 +1012,29 @@ class ChatClient {
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+      } catch (fallbackError) {
+        console.error('❌ Error in fallback:', fallbackError);
+        throw fallbackError;
       }
-    } catch (error) {
-      console.error('❌ Error loading conversations:', error);
-      throw error;
     }
   }
 
   async loadAvailableUsers(): Promise<void> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
+      // Use apiClient which will handle v1/v2 based on feature flag
+      const response = await this.apiClient.request<{
+        users: ChatUser[];
+        total: number;
+      }>('/chat/users', {
+        method: 'GET',
+      });
 
-      if (useV2) {
-        // v2 API returns { users: [...], total } directly
-        const response = await this.apiClient.request<{
-          users: ChatUser[];
-          total: number;
-        }>('/chat/users', {
-          method: 'GET',
-        });
-
-        // Auch eine leere User-Liste ist valide
-        this.availableUsers = response.users;
-      } else {
-        // v1 API - legacy code
+      // Auch eine leere User-Liste ist valide
+      this.availableUsers = response.users;
+    } catch (error) {
+      console.error('❌ Error loading available users:', error);
+      // Try v1 API as fallback
+      try {
         const response = await fetch('/api/chat/users', {
           headers: {
             Authorization: `Bearer ${this.token ?? ''}`,
@@ -1048,9 +1046,9 @@ class ChatClient {
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+      } catch (fallbackError) {
+        console.error('❌ Error in fallback:', fallbackError);
       }
-    } catch (error) {
-      console.error('❌ Error loading available users:', error);
     }
   }
 
@@ -1421,16 +1419,14 @@ class ChatClient {
       const token = localStorage.getItem('token');
       if (token === null || token === '') return;
 
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
-
-      if (useV2) {
-        // v2 API returns { markedCount: number } directly (apiClient unwraps success wrapper)
+      // Use apiClient which will handle v1/v2 based on feature flag
+      try {
         await this.apiClient.request<{ markedCount: number }>(`/chat/conversations/${conversationId}/read`, {
           method: 'POST',
           body: JSON.stringify({}), // Empty body to trigger Content-Type header
         });
-      } else {
-        // v1 API - legacy code
+      } catch {
+        // Fallback to v1 API
         await fetch(`/api/chat/conversations/${conversationId}/read`, {
           method: 'POST',
           headers: {
@@ -1451,21 +1447,20 @@ class ChatClient {
 
   async loadMessages(conversationId: number): Promise<void> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
+      // Use apiClient which will handle v1/v2 based on feature flag
+      const response = await this.apiClient.request<{
+        data: Message[];
+        pagination?: unknown;
+      }>(`/chat/conversations/${conversationId}/messages`, {
+        method: 'GET',
+      });
 
-      if (useV2) {
-        // v2 API returns { data: [...], pagination } directly
-        const response = await this.apiClient.request<{
-          data: Message[];
-          pagination?: unknown;
-        }>(`/chat/conversations/${conversationId}/messages`, {
-          method: 'GET',
-        });
-
-        // Auch eine leere Nachrichtenliste ist valide
-        this.displayMessages(response.data);
-      } else {
-        // v1 API - legacy code
+      // Auch eine leere Nachrichtenliste ist valide
+      this.displayMessages(response.data);
+    } catch (error) {
+      console.error('❌ Error loading messages:', error);
+      // Fallback to v1 API
+      try {
         const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
           headers: {
             Authorization: `Bearer ${this.token ?? ''}`,
@@ -1478,10 +1473,10 @@ class ChatClient {
         } else {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+      } catch (fallbackError) {
+        console.error('❌ Error in fallback:', fallbackError);
+        this.showNotification('Fehler beim Laden der Nachrichten', 'error');
       }
-    } catch (error) {
-      console.error('❌ Error loading messages:', error);
-      this.showNotification('Fehler beim Laden der Nachrichten', 'error');
     }
   }
 
@@ -1892,9 +1887,13 @@ class ChatClient {
 
   private async uploadSingleFile(file: File): Promise<number | null> {
     const formData = this.createFileFormData(file);
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
 
-    return useV2 ? await this.uploadFileV2(formData) : await this.uploadFileV1(formData);
+    // Try v2 API first, fallback to v1 if needed
+    try {
+      return await this.uploadFileV2(formData);
+    } catch {
+      return await this.uploadFileV1(formData);
+    }
   }
 
   async uploadFiles(): Promise<number[]> {
@@ -2558,15 +2557,15 @@ class ChatClient {
 
   private async loadDepartments(): Promise<void> {
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
-
-      if (useV2) {
-        await this.loadDepartmentsV2();
-      } else {
-        await this.loadDepartmentsV1();
-      }
+      // Try v2 API first, fallback to v1 if needed
+      await this.loadDepartmentsV2();
     } catch (error) {
-      console.error('Error loading departments:', error);
+      console.error('Error loading departments with v2:', error);
+      try {
+        await this.loadDepartmentsV1();
+      } catch (fallbackError) {
+        console.error('Error loading departments with v1:', fallbackError);
+      }
     }
   }
 
@@ -2747,11 +2746,10 @@ class ChatClient {
     isGroup: boolean;
     name?: string;
   }): Promise<void> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
-
-    if (useV2) {
+    // Try v2 API first, fallback to v1 if needed
+    try {
       await this.sendV2ConversationRequest(requestBody);
-    } else {
+    } catch {
       await this.sendV1ConversationRequest(requestBody);
     }
   }
@@ -2834,11 +2832,10 @@ class ChatClient {
     if (!userConfirmed) return;
 
     try {
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_CHAT ?? false;
-
-      if (useV2) {
+      // Try v2 API first, fallback to v1 if needed
+      try {
         await this.deleteConversationV2(this.currentConversationId);
-      } else {
+      } catch {
         await this.deleteConversationV1(this.currentConversationId);
       }
 

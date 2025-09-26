@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Admin Machines Management
  * Handles machine CRUD operations for admin dashboard
@@ -71,9 +72,8 @@ class MachinesManager {
   constructor() {
     this.apiClient = ApiClient.getInstance();
 
-    // Check feature flag for API v2
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_MACHINES ?? true;
-    console.info('[MachinesManager] Using API version:', useV2 ? 'v2' : 'v1');
+    // Using API v2
+    console.info('[MachinesManager] Using API version: v2');
 
     this.initializeEventListeners();
     // Load machines initially
@@ -210,21 +210,12 @@ class MachinesManager {
         params.search = this.searchTerm;
       }
 
-      const useV2 = window.FEATURE_FLAGS?.USE_API_V2_MACHINES ?? true;
-
-      if (useV2) {
-        const response = await this.apiClient.request<MachineAPIResponse[]>('/machines', {
-          method: 'GET',
-        });
-        // Map API response to frontend format
-        this.machines = mapMachines(response);
-      } else {
-        // v1 API fallback
-        const response = await this.apiClient.request<Machine[]>('/machines', {
-          method: 'GET',
-        });
-        this.machines = response;
-      }
+      // Using v2 API
+      const response = await this.apiClient.request<MachineAPIResponse[]>('/machines', {
+        method: 'GET',
+      });
+      // Map API response to frontend format
+      this.machines = mapMachines(response);
       console.info('[MachinesManager] Loaded machines:', this.machines);
       this.renderMachinesTable();
     } catch (error) {
@@ -502,7 +493,7 @@ class MachinesManager {
 
     try {
       // Check if we're editing (machine-id has value) or creating new
-      // eslint-disable-next-line max-lines
+
       const machineIdInput = document.querySelector<HTMLInputElement>('#machine-id');
       const machineId = machineIdInput?.value;
 

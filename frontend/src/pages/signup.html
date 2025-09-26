@@ -10,7 +10,6 @@
     <link rel="stylesheet" href="/styles/dashboard-theme.css" />
     <link rel="stylesheet" href="/styles/signup.css" />
     <!-- Feature Flags for API v2 Migration -->
-    <script src="/feature-flags.js"></script>
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
     <script type="module">
       import { setHTML } from '/utils/dom-utils.js';
@@ -456,7 +455,8 @@
       }
 
       function isUsingV2Api() {
-        return window.FEATURE_FLAGS && window.FEATURE_FLAGS.USE_API_V2_SIGNUP;
+        // Feature flags removed - always use v2
+        return true;
       }
 
       function prepareSignupData(data, fullPhone, useV2) {

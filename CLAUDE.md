@@ -134,9 +134,8 @@ docker-compose restart backend
 5. Read(~/projects/Assixx/README.md)
 6. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
 7. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
-8. Read(~/projects/Assixx/docs/api/API-V2-MIGRATION/API-V2-MIGRATION-MASTERPLAN.md (already done, just for context)
-9. Dont do more than this and than recap fast and than ask user that youre ready.
-10. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatorylist
+8. Dont do more than this and than recap fast and than ask user that youre ready.
+9. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
 
 ## 📊 PROGRESS DOCUMENTATION
 

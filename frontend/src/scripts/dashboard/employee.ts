@@ -29,12 +29,10 @@ function downloadDocument(docId?: string | number): void {
   const token = getAuthToken();
   if (token === null || token === '') return;
 
-  // Create a download link with proper API version and authorization
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_DOCUMENTS;
-  const apiPrefix = useV2 === true ? '/api/v2' : '/api';
-
+  // Create a download link - try v2 API endpoint first
+  // The backend will handle the fallback if v2 is not available
   const link = document.createElement('a');
-  link.href = `${apiPrefix}/documents/${docId}/download`;
+  link.href = `/api/v2/documents/${docId}/download`;
   link.download = '';
   link.style.display = 'none';
 

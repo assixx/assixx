@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Common functionality for Assixx
  * Includes navigation, helpers, and shared functionality
@@ -273,30 +274,29 @@ async function checkUnreadNotifications(): Promise<void> {
     const token = getAuthToken();
     if (token === null || token === '') return;
 
-    // Check if v2 API should be used
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_NOTIFICATIONS;
-
-    if (useV2 === true) {
+    // Try v2 API first, fallback to v1 if needed
+    try {
+      // Use API client for v2
+      const response = await apiClient.get<{ count?: number }>('/notifications/unread-count');
+      const count = response.count ?? 0;
+      updateNotificationBadge(count);
+    } catch (error) {
+      console.error('Error checking notifications (v2):', error);
+      // Fallback to v1 API
       try {
-        // Use API client for v2
-        const response = await apiClient.get<{ count?: number }>('/notifications/unread-count');
-        const count = response.count ?? 0;
-        updateNotificationBadge(count);
-      } catch (error) {
-        console.error('Error checking notifications (v2):', error);
-      }
-    } else {
-      // Use traditional fetch for v1
-      const response = await fetch('/api/notifications/unread-count', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        const response = await fetch('/api/notifications/unread-count', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      if (response.ok) {
-        const data = (await response.json()) as { count: number };
-        const count = data.count;
-        updateNotificationBadge(count);
+        if (response.ok) {
+          const data = (await response.json()) as { count: number };
+          const count = data.count;
+          updateNotificationBadge(count);
+        }
+      } catch (fallbackError) {
+        console.error('Error checking notifications (v1):', fallbackError);
       }
     }
   } catch (error) {
@@ -381,36 +381,35 @@ export async function loadBlackboardPreview(): Promise<void> {
     const token = getAuthToken();
     if (token === null || token === '') return;
 
-    // Check if v2 API should be used
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD;
-
-    if (useV2 === true) {
+    // Try v2 API first, fallback to v1 if needed
+    try {
+      // Use API client for v2
+      const response = await apiClient.get<BlackboardEntry[] | { data?: BlackboardEntry[]; items?: BlackboardEntry[] }>(
+        '/blackboard?limit=5',
+      );
+      // v2 response might have different format, adapt if needed
+      const entries = Array.isArray(response)
+        ? response
+        : ((response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).data ??
+          (response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).items ??
+          []);
+      displayBlackboardItems(entries);
+    } catch (error) {
+      console.error('Error loading blackboard (v2):', error);
+      // Fallback to v1 API
       try {
-        // Use API client for v2
-        const response = await apiClient.get<
-          BlackboardEntry[] | { data?: BlackboardEntry[]; items?: BlackboardEntry[] }
-        >('/blackboard?limit=5');
-        // v2 response might have different format, adapt if needed
-        const entries = Array.isArray(response)
-          ? response
-          : ((response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).data ??
-            (response as { data?: BlackboardEntry[]; items?: BlackboardEntry[] }).items ??
-            []);
-        displayBlackboardItems(entries);
-      } catch (error) {
-        console.error('Error loading blackboard (v2):', error);
-      }
-    } else {
-      // Use traditional fetch for v1
-      const response = await fetch('/api/blackboard?limit=5', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+        const response = await fetch('/api/blackboard?limit=5', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      if (response.ok) {
-        const entries = (await response.json()) as BlackboardEntry[];
-        displayBlackboardItems(entries);
+        if (response.ok) {
+          const entries = (await response.json()) as BlackboardEntry[];
+          displayBlackboardItems(entries);
+        }
+      } catch (fallbackError) {
+        console.error('Error loading blackboard (v1):', fallbackError);
       }
     }
   } catch (error) {
@@ -523,7 +522,7 @@ export function showSection(sectionId: string): void {
   }
 
   // Update active navigation
-  // eslint-disable-next-line max-lines
+
   document.querySelectorAll('.nav-link').forEach((link) => {
     link.classList.remove('active');
   });

@@ -7,20 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
@@ -238,8 +225,9 @@
       // Load current profile data
       async function loadProfile() {
         try {
-          const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
-          const endpoint = useV2Users ? '/api/v2/users/me' : '/api/user/profile';
+          // Feature flags removed - always use v2
+          const useV2Users = true;
+          const endpoint = '/api/v2/users/me';
 
           const response = await fetch(endpoint, {
             headers: {
@@ -276,7 +264,7 @@
             const data = Object.fromEntries(formData);
 
             try {
-              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const useV2Users = true;
               const endpoint = useV2Users ? '/api/v2/users/me/profile' : '/api/user/profile';
 
               const response = await fetch(endpoint, {
@@ -323,7 +311,7 @@
             const data = Object.fromEntries(formData);
 
             try {
-              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const useV2Users = true;
               const endpoint = useV2Users ? '/api/v2/users/me/password' : '/api/users/profile/password';
 
               const response = await fetch(endpoint, {
@@ -364,7 +352,7 @@
             formData.append('profilePicture', file);
 
             try {
-              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const useV2Users = true;
               const endpoint = useV2Users ? '/api/v2/users/me/profile-picture' : '/api/user/profile-picture';
 
               const response = await fetch(endpoint, {
@@ -396,7 +384,7 @@
             if (!confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) return;
 
             try {
-              const useV2Users = window.FEATURE_FLAGS?.USE_API_V2_USERS;
+              const useV2Users = true;
               const endpoint = useV2Users ? '/api/v2/users/me/profile-picture' : '/api/user/profile-picture';
 
               const response = await fetch(endpoint, {
@@ -512,7 +500,7 @@
       // Approval Functions
       async function loadPendingApprovals() {
         try {
-          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const useV2Root = true;
           const endpoint = useV2Root ? '/api/v2/root/deletion-approvals/pending' : '/api/root/deletion-approvals/pending';
 
           const response = await fetch(endpoint, {
@@ -613,7 +601,7 @@
         }
 
         try {
-          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const useV2Root = true;
           const endpoint = useV2Root
             ? `/api/v2/root/deletion-approvals/${queueId}/approve`
             : `/api/root/deletion-approvals/${queueId}/approve`;
@@ -644,7 +632,7 @@
         if (!reason) return;
 
         try {
-          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
+          const useV2Root = true;
           const endpoint = useV2Root
             ? `/api/v2/root/deletion-approvals/${queueId}/reject`
             : `/api/root/deletion-approvals/${queueId}/reject`;

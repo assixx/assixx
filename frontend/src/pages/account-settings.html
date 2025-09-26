@@ -7,20 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
-    <script>
-      // Set sidebar state IMMEDIATELY to prevent any layout shift
-      (function () {
-        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
-        document.documentElement.setAttribute('data-sidebar', sidebarCollapsed ? 'collapsed' : 'expanded');
-        // Also set CSS custom properties for immediate use
-        document.documentElement.style.setProperty('--sidebar-width', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--content-margin', sidebarCollapsed ? '60px' : '250px');
-        document.documentElement.style.setProperty('--grid-columns', sidebarCollapsed ? '4' : '3');
-        document.documentElement.style.setProperty('--widget-columns', sidebarCollapsed ? '5' : '3');
-        document.documentElement.style.setProperty('--card-padding', sidebarCollapsed ? '2rem' : '1.5rem');
-      })();
-    </script>
-    <script src="/feature-flags.js"></script>
+    <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
@@ -249,8 +236,8 @@
       // Check for pending deletion status on page load
       async function checkDeletionStatus() {
         try {
-          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
-          const endpoint = useV2Root ? '/api/v2/root/tenant/deletion-status' : '/api/root/tenant/deletion-status';
+          // Feature flags removed - always use v2
+          const endpoint = '/api/v2/root/tenant/deletion-status';
           const response = await fetchWithAuth(endpoint);
 
           if (!response.ok) return;
@@ -312,8 +299,8 @@
       window.showDeleteModal = async function () {
         // First check if there are at least 2 root users
         try {
-          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
-          const endpoint = useV2Root ? '/api/v2/root/users' : '/api/root/users';
+          // Feature flags removed - always use v2
+          const endpoint = '/api/v2/root/users';
           const response = await fetchWithAuth(endpoint);
           if (response.ok) {
             const data = await response.json();
@@ -377,9 +364,8 @@
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Lösche...';
 
         try {
-          // Use v2 endpoint with feature flag
-          const useV2Root = window.FEATURE_FLAGS?.USE_API_V2_ROOT;
-          const endpoint = useV2Root ? '/api/v2/root/tenants/current' : '/api/root/tenants/current';
+          // Feature flags removed - always use v2
+          const endpoint = '/api/v2/root/tenants/current';
           const response = await fetchWithAuth(endpoint, {
             method: 'DELETE',
             body: JSON.stringify({

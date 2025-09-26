@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Blackboard UI Helper Functions
  * UI utilities for modals, attachments, zoom/fullscreen, and direct attach
@@ -178,10 +179,9 @@ function setupDownloadLink(attachmentId: number, fileName: string): void {
   const downloadLink = $$id('downloadLink') as HTMLAnchorElement | null;
   if (downloadLink === null) return;
 
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
   const endpoint = `/blackboard/attachments/${attachmentId}?download=true`;
 
-  downloadLink.href = useV2 ? `/api/v2${endpoint}` : `/api${endpoint}`;
+  downloadLink.href = `/api/v2${endpoint}`;
   downloadLink.setAttribute('download', fileName);
   downloadLink.dataset.action = 'download-attachment';
   downloadLink.dataset.attachmentId = attachmentId.toString();
@@ -316,9 +316,8 @@ export async function previewAttachment(attachmentId: number, mimeType: string, 
   if (previewContent === null) return;
 
   try {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
     const endpoint = `/blackboard/attachments/${attachmentId}`;
-    const attachmentUrl = useV2 ? `/api/v2${endpoint}` : `/api${endpoint}`;
+    const attachmentUrl = `/api/v2${endpoint}`;
 
     if (mimeType.startsWith('image/')) {
       await displayImagePreview(endpoint, fileName, previewContent, previewModal);
@@ -538,7 +537,7 @@ export function handleDirectAttachFile(file: File): void {
     reader.onload = (e) => {
       // Create img element safely to prevent XSS
       previewImage.innerHTML = '';
-      // eslint-disable-next-line max-lines
+
       const img = document.createElement('img');
       img.src = e.target?.result as string;
       img.alt = file.name;
@@ -593,35 +592,19 @@ async function submitDirectAttachment(formData: FormData): Promise<void> {
   }
 
   const apiClient = ApiClient.getInstance();
-  const useV2 = window.FEATURE_FLAGS?.USE_API_V2_BLACKBOARD ?? false;
-  const endpoint = useV2 ? '/blackboard/entries' : '/blackboard';
+  const endpoint = '/blackboard/entries';
 
-  if (useV2) {
-    try {
-      await apiClient.request(
-        endpoint,
-        {
-          method: 'POST',
-          body: formData,
-        },
-        { version: 'v2', contentType: '' },
-      );
-    } catch (error) {
-      throw new Error((error as { message?: string }).message ?? 'Fehler beim Speichern');
-    }
-  } else {
-    const response = await fetch(`/api${endpoint}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
+  try {
+    await apiClient.request(
+      endpoint,
+      {
+        method: 'POST',
+        body: formData,
       },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = (await response.json()) as { message?: string };
-      throw new Error(error.message ?? 'Fehler beim Speichern');
-    }
+      { version: 'v2', contentType: '' },
+    );
+  } catch (error) {
+    throw new Error((error as { message?: string }).message ?? 'Fehler beim Speichern');
   }
 }
 

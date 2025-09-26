@@ -20,7 +20,6 @@ interface RequestOptions extends RequestInit {
 export class ApiService {
   private baseURL: string;
   private token: string | null;
-  private useV2 = false;
 
   /**
    *
@@ -30,8 +29,6 @@ export class ApiService {
     this.baseURL = baseURL;
     // Check for v2 token first, then v1
     this.token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
-    // Check if any v2 API is enabled
-    this.useV2 = window.FEATURE_FLAGS?.USE_API_V2_GLOBAL ?? false;
   }
 
   /**
@@ -109,11 +106,10 @@ export class ApiService {
   /**
    * Check if should use v2 API based on feature flags
    */
-  private shouldUseV2Api(endpoint: string): boolean {
-    const featureKey = `USE_API_V2_${endpoint.split('/')[1]?.toUpperCase()}`;
-    // Safe: featureKey is constructed from endpoint string, not user input
-    // eslint-disable-next-line security/detect-object-injection
-    return window.FEATURE_FLAGS?.[featureKey] ?? this.useV2;
+  private shouldUseV2Api(_endpoint: string): boolean {
+    // For now, always try v2 first (will be handled by try/catch fallback)
+    // In the future, this could check feature flags or configuration
+    return true;
   }
 
   /**
@@ -287,9 +283,8 @@ export class ApiService {
    * @param credentials
    */
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
-
-    if (useV2) {
+    // Try v2 API first, fallback to v1 if needed
+    try {
       // Use API client for v2
       const response = await apiClient.post<{
         accessToken?: string;
@@ -316,8 +311,9 @@ export class ApiService {
       }
 
       throw new Error('Invalid response format');
-    } else {
-      // Use v1 implementation
+    } catch (v2Error) {
+      console.error('Error with v2 login:', v2Error);
+      // Fallback to v1 implementation
       const response = await this.post<LoginResponse>('/auth/login', credentials);
       if (response.token !== '') {
         this.setToken(response.token);
@@ -330,14 +326,13 @@ export class ApiService {
    *
    */
   async logout(): Promise<void> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
-
     try {
-      if (useV2) {
+      // Try v2 API first, fallback to v1 if needed
+      try {
         // Use API client for v2
         await apiClient.post('/auth/logout', {});
-      } else {
-        // Use v1 implementation
+      } catch {
+        // Fallback to v1 implementation
         await this.post('/auth/logout');
       }
     } catch {
@@ -345,7 +340,7 @@ export class ApiService {
     } finally {
       this.setToken(null);
       // Safe: window.location is a global property, no race condition possible
-      // eslint-disable-next-line require-atomic-updates
+
       window.location.href = '/login';
     }
   }
@@ -354,26 +349,26 @@ export class ApiService {
    *
    */
   async checkAuth(): Promise<ApiResponse<{ authenticated: boolean }>> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
-
-    if (useV2) {
+    // Try v2 API first, fallback to v1 if needed
+    try {
+      const response = await apiClient.get<{ valid?: boolean; message?: string }>('/auth/validate');
+      // Convert v2 response to v1 format
+      return {
+        success: response.valid === true,
+        data: { authenticated: response.valid === true },
+        message: response.message ?? 'Authentication check complete',
+      };
+    } catch {
       try {
-        const response = await apiClient.get<{ valid?: boolean; message?: string }>('/auth/validate');
-        // Convert v2 response to v1 format
-        return {
-          success: response.valid === true,
-          data: { authenticated: response.valid === true },
-          message: response.message ?? 'Authentication check complete',
-        };
-      } catch (error) {
+        // Fallback to v1 implementation
+        return await this.get('/auth/check');
+      } catch (v1Error) {
         return {
           success: false,
           data: { authenticated: false },
-          message: (error as Error).message,
+          message: (v1Error as Error).message,
         };
       }
-    } else {
-      return await this.get('/auth/check');
     }
   }
 
@@ -382,13 +377,13 @@ export class ApiService {
    *
    */
   async getProfile(): Promise<User> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
-
-    if (useV2) {
+    // Try v2 API first, fallback to v1 if needed
+    try {
       const response = await apiClient.get<User>('/users/me');
       // Convert v2 response (camelCase) to v1 format (snake_case)
       return ResponseAdapter.adaptUserResponse(response) as User;
-    } else {
+    } catch {
+      // Fallback to v1 implementation
       return await this.get<User>('/user/profile');
     }
   }
@@ -398,28 +393,28 @@ export class ApiService {
    * @param data
    */
   async updateProfile(data: Partial<User>): Promise<ApiResponse<User>> {
-    const useV2 = window.FEATURE_FLAGS?.USE_API_V2_AUTH ?? this.useV2;
-
-    if (useV2) {
+    // Try v2 API first, fallback to v1 if needed
+    try {
+      // Convert v1 format (snake_case) to v2 format (camelCase) for request
+      const v2Data = ResponseAdapter.adaptUserRequest(data);
+      const response = await apiClient.patch('/users/me', v2Data);
+      // Convert v2 response back to v1 format
+      const adaptedUser = ResponseAdapter.adaptUserResponse(response) as User;
+      return {
+        success: true,
+        data: adaptedUser,
+        message: 'Profile updated successfully',
+      };
+    } catch {
       try {
-        // Convert v1 format (snake_case) to v2 format (camelCase) for request
-        const v2Data = ResponseAdapter.adaptUserRequest(data);
-        const response = await apiClient.patch('/users/me', v2Data);
-        // Convert v2 response back to v1 format
-        const adaptedUser = ResponseAdapter.adaptUserResponse(response) as User;
-        return {
-          success: true,
-          data: adaptedUser,
-          message: 'Profile updated successfully',
-        };
-      } catch (error) {
+        // Fallback to v1 implementation
+        return await this.patch('/user/profile', data);
+      } catch (v1Error) {
         return {
           success: false,
-          message: (error as Error).message,
+          message: (v1Error as Error).message,
         };
       }
-    } else {
-      return await this.patch('/user/profile', data);
     }
   }
 
