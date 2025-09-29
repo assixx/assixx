@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { readdirSync, existsSync, mkdirSync, copyFileSync } from 'fs';
+import tailwindcss from '@tailwindcss/vite';
 
 // Get all HTML files from src/pages
 const getHtmlInputs = () => {
@@ -100,6 +101,9 @@ export default defineConfig({
 
   // Custom plugins
   plugins: [
+    // Tailwind CSS Plugin - MUST BE FIRST
+    tailwindcss(),
+
     // Plugin to inject font preloads into all HTML files
     {
       name: 'inject-font-preloads',

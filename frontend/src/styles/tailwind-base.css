@@ -1,0 +1,53 @@
+/**
+ * Tailwind Base Styles
+ * Global base styles WITHOUT Tailwind @layer for now
+ * Step-by-step migration approach
+ */
+
+/* Global body styles - KEEPING ORIGINAL VARIABLES */
+body {
+  position: relative;
+
+  overflow-x: hidden;
+
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+
+  font-family:
+    Outfit,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+  line-height: 1.5;
+  color: var(--text-primary);
+
+  background: #000;
+}
+
+/* Glassmorphism gradient background - GLOBAL */
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(
+    5deg,
+    transparent,
+    rgb(0 142 255 / 10%) 100%,
+    rgb(1 0 4 / 51%) 0,
+    rgb(0 0 4 / 60%) 100%,
+    #000
+  );
+}
+
+/* Reset Bootstrap's body::before if it exists */
+body::before {
+  display: none;
+}

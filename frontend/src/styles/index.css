@@ -1,4 +1,4 @@
-@import "/styles/dashboard-theme.css";
+@import "./dashboard-theme.css";
 
 :root {
   /* Assixx Dark Theme - Konsistent mit Dashboard */
@@ -46,10 +46,6 @@
 }
 
 body {
-  position: relative;
-
-  overflow-x: hidden;
-
   font-family:
     Outfit,
     -apple-system,
@@ -61,18 +57,6 @@ body {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text-primary);
-
-  background: #000;
-}
-
-body::after {
-  content: "";
-
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-
-  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 3%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
 }
 
 /* Glassmorphismus Header */

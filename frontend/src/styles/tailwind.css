@@ -1,0 +1,32 @@
+/**
+ * Tailwind v4 Main Entry Point
+ * Modular architecture with proper layering
+ *
+ * Structure:
+ * - Base: Core resets and element styles
+ * - Components: Reusable component classes
+ * - Utilities: Helper and utility classes
+ * - Compat: Temporary Bootstrap compatibility layer
+ */
+
+/* Tailwind v4 Core */
+@import "tailwindcss";
+
+/* Design System Variables */
+@import "./design-system/variables-dark.css";
+
+/* Custom Layers */
+@import "./tailwind/base.css";
+
+/* Component modules */
+@import "./tailwind/components/glass.css";
+
+/* Utility layer */
+@import "./tailwind/utilities.css";
+
+/* Bootstrap Compatibility Layer (temporary) */
+@import "./tailwind/compat/bootstrap-buttons.css";
+@import "./tailwind/compat/bootstrap-forms.css";
+@import "./tailwind/compat/bootstrap-cards.css";
+@import "./tailwind/compat/bootstrap-modals.css";
+@import "./tailwind/compat/bootstrap-tables.css";

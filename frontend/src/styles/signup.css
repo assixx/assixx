@@ -27,17 +27,10 @@
 }
 
 body {
-  position: relative;
-
-  overflow-x: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  min-height: 100vh;
   padding: 10px;
-
-  background: #000;
 }
 
 body::before {
@@ -49,16 +42,6 @@ body::before {
 
   /* background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%); */
   opacity: 90%;
-}
-
-body::after {
-  content: "";
-
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-
-  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
 }
 
 /* Weniger kompakter Container für 16-Zoll Monitore - Glassmorphismus */
@@ -238,7 +221,7 @@ body::after {
 
   visibility: hidden;
   opacity: 0%;
-  background: rgb(18 18 18 / 80%);
+  background: rgb(18 18 18 / 100%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
 }
@@ -346,7 +329,7 @@ body::after {
 
   visibility: hidden;
   opacity: 0%;
-  background: rgb(18 18 18 / 80%);
+  background: rgb(18 18 18 / 100%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
 }

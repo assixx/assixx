@@ -8,7 +8,7 @@ export default {
       path: ['src/styles', 'node_modules'],
     },
 
-    // 2. CSS Nesting - Erlaubt verschachtelte Selektoren
+    // 2. CSS Nesting - Erlaubt verschachtelte Selektoren (auch für Tailwind @apply)
     'postcss-nesting': {
       // Nutzt die offizielle CSS Nesting Spec
       edition: '2024-02',
@@ -29,13 +29,13 @@ export default {
         'custom-media-queries': true, // @custom-media
         'has-pseudo-class': true, // :has()
         'is-pseudo-class': true, // :is()
-        'not-pseudo-class': true, // :not()
+        'not-pseudo-class': false, // DISABLED - Tailwind v4 handles this, prevents excessive :not(#\#) selectors
         'any-link-pseudo-class': true, // :any-link
         'dir-pseudo-class': true, // :dir()
         clamp: true, // clamp() function
         'logical-properties-and-values': true, // margin-inline-start etc.
         'media-query-ranges': true, // @media (width >= 768px)
-        'cascade-layers': true, // @layer
+        'cascade-layers': false, // DISABLED - Tailwind v4 handles layers natively, prevents specificity issues
         'gap-properties': true, // gap, row-gap, column-gap
         'overflow-wrap-property': true, // overflow-wrap
         'place-properties': true, // place-items, place-content

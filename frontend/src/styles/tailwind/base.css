@@ -1,0 +1,144 @@
+/**
+ * Tailwind v4 Base Layer
+ * Global resets and element styles
+ */
+
+@layer base {
+  /* Root setup */
+  :root {
+    color-scheme: dark;
+  }
+
+  /* Body reset */
+  body {
+    position: relative;
+
+    overflow-x: hidden;
+
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+
+    font-family: var(--font-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    line-height: 1.5;
+    color: var(--color-text-primary);
+
+    background: #000;
+  }
+
+  /* Glassmorphism background */
+  body::after {
+    pointer-events: none;
+    content: "";
+
+    position: fixed;
+    z-index: -1;
+    inset: 0;
+
+    background: linear-gradient(
+      5deg,
+      transparent,
+      rgb(0 142 255 / 10%) 100%,
+      rgb(1 0 4 / 51%) 0,
+      rgb(0 0 4 / 60%) 100%,
+      #000
+    );
+  }
+
+  /* Typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 0;
+    margin-bottom: 0.5em;
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 2.5rem;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  h6 {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  /* Links */
+  a {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  a:hover {
+    color: var(--color-primary-hover);
+  }
+
+  /* Forms */
+  input,
+  textarea,
+  select,
+  button {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  /* Focus */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Selection */
+  ::selection {
+    color: #fff;
+    background-color: var(--color-primary);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgb(255 255 255 / 5%);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background: rgb(255 255 255 / 20%);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(255 255 255 / 30%);
+  }
+}

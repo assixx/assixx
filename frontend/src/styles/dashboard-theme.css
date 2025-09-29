@@ -11,15 +11,21 @@
   --font-display: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
   --font-body: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
 
-  /* Farben */
-  --primary-color: #2196f3;
-  --primary-dark: #1976d2;
-  --primary-light: #42a5f5;
-  --secondary-color: #1b1b1b;
-  --background-dark: #121212;
-  --background-light: #1e1e1e;
-  --text-primary: #fff;
-  --text-secondary: #fff;
+  /* VARIABLE MAPPING: Old names → Design System names */
+  /* This allows gradual migration without breaking existing code */
+  --text-primary: var(--color-text-primary, #fff); /* Maps to Design System, fallback to white */
+  --text-secondary: var(--color-text-secondary, #e0e0e0);
+  --primary-color: var(--color-primary, #2196f3);
+  --primary-dark: var(--color-primary-hover, #1976d2);
+  --primary-light: var(--color-primary-active, #42a5f5);
+  --secondary-color: var(--color-secondary, #1b1b1b);
+  --background-dark: var(--color-background, #121212);
+  --background-light: var(--color-background-secondary, #1e1e1e);
+
+  /* Keep old values as fallbacks (will be removed later) */
+  --primary-color-old: #2196f3;
+  --text-primary-old: #fff;
+  --text-secondary-old: #fff;
   --success-color: #4caf50;
   --error-color: #f44336;
   --warning-color: #ff9800;
@@ -160,6 +166,15 @@
 }
 
 body {
+  /* IMPORTANT: Must override Bootstrap's aggressive defaults */
+  position: relative;
+
+  overflow-x: hidden;
+
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+
   font-family:
     Outfit,
     -apple-system,
@@ -167,10 +182,36 @@ body {
     "Segoe UI",
     Roboto,
     Arial,
-    sans-serif;
-  font-size: 0.875rem; /* 14px - rem für zoom scaling */
-  line-height: 1.6;
-  color: var(--text-primary);
+    sans-serif !important;
+  font-size: 0.875rem; /* 14px - dashboard specific */
+  line-height: 1.6; /* Dashboard specific line-height */
+  color: var(--text-primary) !important;
+
+  background: #000 !important;
+}
+
+/* Glassmorphism gradient background - GLOBAL */
+body::after {
+  pointer-events: none;
+  content: "";
+
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+
+  background: linear-gradient(
+    5deg,
+    transparent,
+    rgb(0 142 255 / 10%) 100%,
+    rgb(1 0 4 / 51%) 0,
+    rgb(0 0 4 / 60%) 100%,
+    #000
+  );
+}
+
+/* Reset Bootstrap's body::before if it exists */
+body::before {
+  display: none;
 }
 
 /* Header mit Logo */
@@ -608,7 +649,7 @@ body {
 /* .fade-in rule removed - was empty */
 
 /* Glassmorphismus Utility Classes */
-.glass-card {
+.custom-glass-card {
   padding: var(--glass-card-padding);
   border: var(--glass-card-border);
   border-radius: var(--glass-card-radius);
@@ -618,7 +659,7 @@ body {
   box-shadow: var(--glass-card-shadow);
 }
 
-.glass-card:hover {
+.custom-glass-card:hover {
   transform: var(--glass-card-transform-hover);
   background: var(--glass-card-bg-hover);
   box-shadow: var(--glass-card-shadow-hover);
