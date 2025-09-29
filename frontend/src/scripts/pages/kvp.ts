@@ -285,7 +285,7 @@ class KvpPage {
         : '';
 
     return `
-      <div class="glass-card kvp-card" data-id="${suggestion.id}">
+      <div class="custom-glass-card kvp-card" data-id="${suggestion.id}">
         <div class="status-badge ${statusClass}">${this.getStatusText(suggestion.status)}</div>
         <div class="suggestion-header">
           <h3 class="suggestion-title">${this.escapeHtml(suggestion.title)}</h3>

@@ -1,0 +1,28 @@
+{
+  "color": {
+    "background": {
+      "value": "{color.gray.950}",
+      "description": "Dark theme background"
+    },
+    "background-secondary": {
+      "value": "{color.gray.900}",
+      "description": "Dark theme secondary background"
+    },
+    "surface": {
+      "value": "{color.gray.800}",
+      "description": "Dark theme surface"
+    },
+    "text-primary": {
+      "value": "{color.white}",
+      "description": "Dark theme primary text"
+    },
+    "text-secondary": {
+      "value": "{color.gray.300}",
+      "description": "Dark theme secondary text"
+    },
+    "border": {
+      "value": "{color.gray.700}",
+      "description": "Dark theme border"
+    }
+  }
+}

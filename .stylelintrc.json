@@ -138,7 +138,71 @@
             "ignoreAtRules": [
               "layer",
               "custom-media",
-              "custom-selector"
+              "custom-selector",
+              "tailwind",
+              "apply",
+              "theme",
+              "config",
+              "screen",
+              "responsive",
+              "variants",
+              "utilities"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/tailwind.css", "**/app.css"],
+      "rules": {
+        "at-rule-no-unknown": [
+          true,
+          {
+            "ignoreAtRules": [
+              "layer",
+              "tailwind",
+              "apply",
+              "theme",
+              "config",
+              "screen",
+              "responsive",
+              "variants",
+              "utilities"
+            ]
+          }
+        ],
+        "scss/at-rule-no-unknown": [
+          true,
+          {
+            "ignoreAtRules": [
+              "layer",
+              "tailwind",
+              "apply",
+              "theme",
+              "config",
+              "screen",
+              "responsive",
+              "variants",
+              "utilities"
+            ]
+          }
+        ],
+        "selector-pseudo-class-no-unknown": [
+          true,
+          {
+            "ignorePseudoClasses": [
+              "global",
+              "local",
+              "export"
+            ]
+          }
+        ],
+        "function-no-unknown": [
+          true,
+          {
+            "ignoreFunctions": [
+              "theme",
+              "screen"
             ]
           }
         ]

@@ -191,7 +191,7 @@ class SurveyResultsPage {
     const completionRate = statistics.completion_rate ?? statistics.completionRate ?? 0;
 
     const htmlContent = `
-      <div class="glass-card results-header">
+      <div class="custom-glass-card results-header">
         <h2 class="survey-title">${escapeHtml(surveyData.title)}</h2>
         <div class="survey-meta">
           <span><i class="fas fa-calendar"></i> Erstellt: ${this.formatDate(surveyData.createdAt)}</span>
@@ -395,7 +395,7 @@ class SurveyResultsPage {
     console.info('[Survey Results] Total responses:', this.responsesData.responses.length);
 
     let html = `
-      <div class="glass-card responses-section">
+      <div class="custom-glass-card responses-section">
         <h3><i class="fas fa-users"></i> Individuelle Antworten (${this.responsesData.responses.length})</h3>
         <div class="responses-list">
     `;

@@ -156,7 +156,8 @@
    6. MODERNE COLOR SYNTAX
    ======================================== */
 
-.glass-card {
+/* Example - renamed to avoid Tailwind v4 conflicts */
+.custom-glass-card-example {
   border: 1px solid rgb(255 255 255 / 10%);
 
   /* Mit CSS Variables */
@@ -351,7 +352,7 @@
   :root {
     --background-dark: #f5f5f5;
     --text-primary: #1b1b1b;
-    --text-secondary: #666;
+    --text-secondary: #fff;
     --glass-bg: rgb(0 0 0 / 2%);
   }
 }

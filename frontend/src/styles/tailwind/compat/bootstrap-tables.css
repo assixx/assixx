@@ -1,0 +1,200 @@
+/**
+ * Bootstrap Table Compatibility
+ * Temporary compatibility layer for Bootstrap tables
+ * TO BE REMOVED after migration to Tailwind utilities
+ */
+
+@layer components {
+  /* Table Components */
+  .table {
+    border-collapse: collapse;
+
+    width: 100%;
+    margin-bottom: 1rem;
+
+    color: var(--color-text-primary);
+
+    background-color: transparent;
+  }
+
+  .table th,
+  .table td {
+    padding: 0.75rem;
+    border-top: 1px solid var(--glass-border);
+    vertical-align: top;
+  }
+
+  .table thead th {
+    border-top: 0;
+    border-bottom: 2px solid var(--glass-border);
+    vertical-align: bottom;
+  }
+
+  .table tbody + tbody {
+    border-top: 2px solid var(--glass-border);
+  }
+
+  /* Table Small */
+  .table-sm th,
+  .table-sm td {
+    padding: 0.3rem;
+  }
+
+  /* Table Bordered */
+  .table-bordered {
+    border: 1px solid var(--glass-border);
+  }
+
+  .table-bordered th,
+  .table-bordered td {
+    border: 1px solid var(--glass-border);
+  }
+
+  /* Table Borderless */
+  .table-borderless th,
+  .table-borderless td,
+  .table-borderless thead th,
+  .table-borderless tbody + tbody {
+    border: 0;
+  }
+
+  /* Table Striped */
+  .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgb(255 255 255 / 2%);
+  }
+
+  /* Table Hover */
+  .table-hover tbody tr:hover {
+    background-color: rgb(255 255 255 / 5%);
+  }
+
+  /* Table Dark */
+  .table-dark {
+    color: #fff;
+    background-color: #212529;
+  }
+
+  .table-dark th,
+  .table-dark td,
+  .table-dark thead th {
+    border-color: #32383e;
+  }
+
+  .table-dark.table-bordered {
+    border: 0;
+  }
+
+  .table-dark.table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgb(255 255 255 / 5%);
+  }
+
+  .table-dark.table-hover tbody tr:hover {
+    color: #fff;
+    background-color: rgb(255 255 255 / 7.5%);
+  }
+
+  /* Table Responsive */
+  .table-responsive {
+    overflow-x: auto;
+    display: block;
+    width: 100%;
+
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-responsive > .table-bordered {
+    border: 0;
+  }
+
+  /* Table Color Variants */
+  .table-primary,
+  .table-primary > th,
+  .table-primary > td {
+    background-color: #cfe2ff;
+  }
+
+  .table-hover .table-primary:hover {
+    background-color: #bacbe6;
+  }
+
+  .table-secondary,
+  .table-secondary > th,
+  .table-secondary > td {
+    background-color: #e2e3e5;
+  }
+
+  .table-hover .table-secondary:hover {
+    background-color: #cbccce;
+  }
+
+  .table-success,
+  .table-success > th,
+  .table-success > td {
+    background-color: #d1e7dd;
+  }
+
+  .table-hover .table-success:hover {
+    background-color: #bcd0c7;
+  }
+
+  .table-info,
+  .table-info > th,
+  .table-info > td {
+    background-color: #cff4fc;
+  }
+
+  .table-hover .table-info:hover {
+    background-color: #badce3;
+  }
+
+  .table-warning,
+  .table-warning > th,
+  .table-warning > td {
+    background-color: #fff3cd;
+  }
+
+  .table-hover .table-warning:hover {
+    background-color: #e6dbb8;
+  }
+
+  .table-danger,
+  .table-danger > th,
+  .table-danger > td {
+    background-color: #f8d7da;
+  }
+
+  .table-hover .table-danger:hover {
+    background-color: #dfc2c4;
+  }
+
+  .table-light,
+  .table-light > th,
+  .table-light > td {
+    background-color: #f8f9fa;
+  }
+
+  .table-hover .table-light:hover {
+    background-color: #dfe0e1;
+  }
+
+  .table-dark,
+  .table-dark > th,
+  .table-dark > td {
+    background-color: #d3d3d4;
+  }
+
+  .table-hover .table-dark:hover {
+    background-color: #bebebe;
+  }
+
+  /* Table Active State */
+  .table-active,
+  .table-active > th,
+  .table-active > td {
+    background-color: rgb(0 0 0 / 7.5%);
+  }
+
+  .table-hover .table-active:hover {
+    background-color: rgb(0 0 0 / 7.5%);
+  }
+}

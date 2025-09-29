@@ -1,29 +1,11 @@
 /* Admin Dashboard Styles - Extracted from admin-dashboard.html */
+/* Note: main.css (with Tailwind) is now loaded directly in HTML */
 
-@import "/styles/dashboard-theme.css";
-@import "/styles/breadcrumb-alignment.css";
+@import "./breadcrumb-alignment.css";
 
 /* ===============================================
    Glassmorphismus Design-Standards
    =============================================== */
-/* Dramatischer Hintergrund-Gradient */
-body {
-  position: relative;
-  overflow-x: hidden;
-  min-height: 100vh;
-  background: #000;
-}
-
-body::after {
-  pointer-events: none;
-  content: "";
-
-  position: fixed;
-  z-index: -1;
-  inset: 0;
-
-  background: linear-gradient(5deg, transparent, rgb(0 142 255 / 10%) 100%, #01000482 0, rgb(0 0 4 / 60%) 100%, #000);
-}
 
 /* Styles von breadcrumb-alignment.css und dashboard-theme.css */
 
@@ -757,7 +739,7 @@ body:not(.loaded) * {
 
   visibility: hidden;
   opacity: 0%;
-  background: rgb(18 18 18 / 80%);
+  background: rgb(18 18 18 / 100%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px rgb(0 0 0 / 40%),

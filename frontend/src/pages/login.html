@@ -8,6 +8,8 @@
 
     <!-- Critical CSS - Load immediately to prevent FOUC -->
     <link rel="preload" href="/styles/login.css" as="style" />
+    <link rel="stylesheet" href="/styles/main.css" />
+    <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/login.css" />
 
     <!-- Feature Flags for API v2 Migration -->
@@ -106,13 +108,13 @@
     <!-- Fragezeichen oben rechts - Glassmorphismus -->
     <div class="help-button" data-action="show-help">?</div>
     <div class="login-container">
-      <!-- Logo Section -->
-      <div class="login-header">
-        <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo u-cursor-pointer" data-action="reload-page" />
-      </div>
-
       <!-- Login Form -->
       <div class="login-card card">
+        <!-- Logo inside card -->
+        <div class="login-card-logo">
+          <img src="../assets/images/logo.png" alt="Assixx Logo" class="login-logo u-cursor-pointer" data-action="reload-page" />
+        </div>
+
         <!-- Session Expired Alert -->
         <div
           id="session-expired-alert"
