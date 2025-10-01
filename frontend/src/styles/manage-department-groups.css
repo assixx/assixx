@@ -1,5 +1,5 @@
 /* Extracted styles from manage-department-groups.html */
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 
 /* Glassmorphismus Background */
 
@@ -177,7 +177,7 @@
   overflow-y: auto;
 
   max-height: 200px;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 8px;
 

@@ -1,5 +1,5 @@
 /* Extracted styles from manage-employees.html */
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 
 /* Glassmorphismus Background */
 
@@ -15,7 +15,7 @@
 
   margin-bottom: 24px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 100% / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -29,7 +29,7 @@
   margin: 0 4px;
   padding: 6px 12px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: var(--text-secondary);
@@ -92,7 +92,7 @@
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(76 175 80 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -115,7 +115,7 @@ tr:hover .badge-success {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(255 152 0 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -148,7 +148,7 @@ tr:hover .badge-warning {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(244 67 54 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -166,7 +166,7 @@ tr:hover .badge-warning {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(0 188 212 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -184,7 +184,7 @@ tr:hover .badge-warning {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(69 90 100 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -284,7 +284,7 @@ tr:hover .badge-dark {
   max-width: 600px;
   max-height: 85vh !important;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: #121212;
   backdrop-filter: blur(20px) saturate(180%);

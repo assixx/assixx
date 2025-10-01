@@ -18,9 +18,9 @@
 }
 
 .status-card {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -33,7 +33,7 @@
   display: flex;
   align-items: start;
   justify-content: space-between;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .tenant-info h3 {
@@ -102,7 +102,7 @@
 
 /* Progress Bar */
 .progress-section {
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
 }
 
 .progress-bar-container {
@@ -133,11 +133,11 @@
 
 /* Timeline */
 .timeline {
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
 }
 
 .timeline h4 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   color: var(--text-primary);
 }
 
@@ -191,7 +191,7 @@
 .action-buttons {
   display: flex;
   gap: 12px;
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
 }
 
 .btn {
@@ -204,7 +204,7 @@
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -266,10 +266,10 @@
   gap: 12px;
   align-items: center;
 
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-2sm);
+  margin-top: var(--spacing-4);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 152 0 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 152 0 / 10%);
 }
@@ -290,7 +290,7 @@
   overflow: hidden;
 
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -298,7 +298,7 @@
 }
 
 .card-header {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -310,7 +310,7 @@
 }
 
 .card-body {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .text-secondary {

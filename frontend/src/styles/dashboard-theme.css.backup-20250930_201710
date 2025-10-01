@@ -1,11 +1,163 @@
-/**
- * Dashboard Theme Styles
- *
- * CSS Variables are now defined in:
- * design-system/variables-dark.css (Single Source of Truth)
- *
- * This file contains only CSS class definitions.
- */
+/* Assixx Dashboard Theme - Konsistentes Design für alle Dashboards */
+
+/* Import Utility Classes */
+@import "./utilities.css";
+
+/* Font loading moved to Vite plugin for better performance (preconnect + parallel loading) */
+
+:root {
+  /* Font Variables from fonts-outfit.css */
+  --font-primary: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
+  --font-display: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
+  --font-body: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
+
+  /* VARIABLE MAPPING: Old names → Design System names */
+  /* This allows gradual migration without breaking existing code */
+  --text-primary: var(--color-text-primary, #fff); /* Maps to Design System, fallback to white */
+  --text-secondary: var(--color-text-secondary, #e0e0e0);
+  --primary-color: var(--color-primary, #2196f3);
+  --primary-dark: var(--color-primary-hover, #1976d2);
+  --primary-light: var(--color-primary-active, #42a5f5);
+  --secondary-color: var(--color-secondary, #1b1b1b);
+  --background-dark: var(--color-background, #121212);
+  --background-light: var(--color-background-secondary, #1e1e1e);
+
+  /* Keep old values as fallbacks (will be removed later) */
+  --primary-color-old: #2196f3;
+  --text-primary-old: #fff;
+  --text-secondary-old: #fff;
+  --success-color: #4caf50;
+  --error-color: #f44336;
+  --warning-color: #ff9800;
+
+  /* modals */
+  /* background: hsl(var(--default-modal)); */
+  --default-modal: 0, 4.3%, 9%, 0.65;
+
+  /* border */
+  --border-color: hsl(0deg 0% 23.9%);
+  --border-width: 1px;
+
+  /* alert modal sizes */
+  --alert-modal-max-width: 30rem;
+  --alert-modal-min-height: 20rem;
+
+  /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
+  --accent-color: rgb(255 255 255 / 10%);
+  --accent-gradient: linear-gradient(135deg, rgb(255 255 255 / 15%), rgb(255 255 255 / 5%), rgb(255 255 255 / 10%));
+  --accent-glow: rgb(255 255 255 / 60%);
+
+  /* Abstände - rem für zoom-freundlichkeit */
+  --spacing-xs: 0.25rem; /* 4px */
+  --spacing-sm: 0.5rem; /* 8px */
+  --spacing-2sm: 0.75rem; /* 12px */
+  --spacing-md: 1rem; /* 16px */
+  --spacing-lg: 1.5rem; /* 24px */
+  --spacing-xl: 2rem; /* 32px */
+
+  /* Rundungen - rem für konsistentes scaling */
+  --radius-xs: 0.5rem;
+  --radius-sm: 1rem; /* 8px */
+  --radius-xl: 1.5rem; /* 12px */
+  --radius-lg: 1rem; /* 16px */
+
+  /* Schatten */
+  --shadow-sm: 0 2px 4px rgb(0 0 0 / 20%);
+  --shadow-md: 0 4px 8px rgb(0 0 0 / 30%);
+  --shadow-lg: 0 8px 16px rgb(0 0 0 / 40%);
+
+  /* Role Colors */
+  --admin-color: #ff6b6b;
+  --employee-color: #4ecdc4;
+
+  /* === NEUE VARIABLEN - EXAKTE WERTE AUS DEM AKTUELLEN DESIGN === */
+
+  /* Erweiterte Spacings - NUR wenn diese EXAKTEN Werte verwendet werden */
+  --spacing-2xs: 4px; /* NUR wenn aktuell genau 4px verwendet wird */
+  --spacing-2xl: 48px; /* NUR wenn aktuell genau 48px verwendet wird */
+  --spacing-3xl: 64px; /* NUR wenn aktuell genau 64px verwendet wird */
+  --spacing-xxl: 3rem; /* aus variables.css übernommen */
+
+  /* Display States */
+  --display-none: none;
+  --display-block: block;
+  --display-flex: flex;
+  --display-inline-flex: inline-flex;
+
+  /* Common Widths */
+  --modal-width: 500px;
+  --modal-width-lg: 600px;
+  --container-max-width: 1200px;
+
+  /* Common Margins (für häufige Patterns) */
+  --margin-text-top: 4px;
+  --margin-icon-right: 8px;
+
+  /* Glassmorphismus - Zentrale Design-Standards */
+  --glass-bg: rgb(255 255 255 / 2%);
+  --glass-bg-hover: rgb(255 255 255 / 3%);
+  --glass-bg-active: rgb(255 255 255 / 5%);
+  --glass-border: 1px solid rgb(255 255 255 / 10%);
+  --glass-shadow: rgb(0 0 0 / 10%);
+
+  /* Glassmorphismus - Komplette Pattern-Definitionen */
+  --glass-backdrop: blur(20px) saturate(180%);
+  --glass-backdrop-subtle: blur(10px) saturate(150%);
+  --glass-backdrop-strong: blur(30px) saturate(200%);
+
+  /* Standard Glass Card Pattern (wie stat-card in root-dashboard) */
+  --glass-card-bg: hsl(0deg 0% 100% / 2%);
+  --glass-card-border: 1px solid hsl(0deg 0% 100% / 10%);
+  --glass-card-shadow: var(--shadow-sm);
+  --glass-card-padding: var(--spacing-lg);
+  --glass-card-radius: var(--radius-xl);
+
+  /* Glass Card Hover States */
+  --glass-card-bg-hover: hsl(0deg 0% 100% / 3%);
+  --glass-card-shadow-hover: var(--shadow-md);
+  --glass-card-transform-hover: translateY(-2px);
+
+  /* Glass Form Elements Pattern */
+  --glass-form-bg: rgb(255 255 255 / 4%);
+  --glass-form-bg-hover: rgb(255 255 255 / 6%);
+  --glass-form-bg-focus: rgb(255 255 255 / 8%);
+  --glass-form-border: 1px solid hsl(0deg 0% 100% / 20%);
+  --glass-form-border-focus: 1px solid var(--primary-color);
+  --glass-form-backdrop: blur(5px);
+
+  /* Blur-Effekte */
+  --blur-sm: blur(10px);
+  --blur-md: blur(15px);
+  --blur-lg: blur(20px);
+
+  /* Z-Index System (aus variables.css) */
+  --z-dropdown: 100;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1000;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+  --z-notification: 2000;
+
+  /* Erweiterte Farben (aus variables.css) */
+  --danger-color: #e74c3c;
+  --info-color: #3498db;
+  --text-muted: #b0b0b0;
+  --text-dark: #333;
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-light: #f8f9fa;
+
+  /* Erweiterte Border Radius */
+  --radius-xl: 1.5rem;
+  --radius-round: 50%;
+
+  /* Erweiterte Shadows */
+  --shadow-xl: 0 20px 25px rgb(0 0 0 / 15%);
+
+  /* Transitions (aus variables.css) */
+}
 
 /* Header mit Logo */
 .header {
@@ -27,7 +179,7 @@
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-4);
+  gap: var(--spacing-md);
   align-items: center;
 
   text-decoration: none;
@@ -47,7 +199,7 @@
 
 .header-actions {
   display: flex;
-  gap: var(--spacing-4);
+  gap: var(--spacing-md);
   align-items: center;
 }
 
@@ -55,7 +207,7 @@
 .container {
   /* max-width: 1200px; */ /* Commented out - width handled by parent containers */
   margin: 0 auto;
-  padding: var(--spacing-6);
+  padding: var(--spacing-lg);
 }
 
 /* Cards */
@@ -73,8 +225,8 @@
 }
 
 .card-header {
-  margin-bottom: var(--spacing-4);
-  padding-bottom: var(--spacing-3);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-2sm);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -94,13 +246,10 @@
   border-collapse: collapse;
   width: 100%;
   margin-top: 20px;
-
-  /* Data table optimization: smaller font for better information density */
-  font-size: 12px; /* Best Practice 2025: GitHub, Linear, Stripe all use 12px */
 }
 
 .admin-table th {
-  padding: 8px 12px; /* Optimized: vertical reduced, horizontal increased */
+  padding: 10px;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   font-weight: 600;
@@ -111,7 +260,7 @@
 }
 
 .admin-table td {
-  padding: 8px 12px; /* Consistent with th */
+  padding: 10px;
   border-bottom: 1px solid rgb(255 255 255 / 5%);
   color: var(--text-secondary);
 }
@@ -120,18 +269,15 @@
   background: rgb(255 255 255 / 2%);
 }
 
-/* Employee Table - Data-dense optimization */
+/* Employee Table - Identische Styles wie admin-table */
 .employee-table {
   border-collapse: collapse;
   width: 100%;
   margin-top: 20px;
-
-  /* Data table optimization: smaller font for better information density */
-  font-size: 12px; /* Best Practice 2025: GitHub, Linear, Stripe all use 12px */
 }
 
 .employee-table th {
-  padding: 8px 12px; /* Optimized: vertical reduced, horizontal increased */
+  padding: 10px;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   font-weight: 600;
@@ -142,7 +288,7 @@
 }
 
 .employee-table td {
-  padding: 9px;
+  padding: 10px;
   border-bottom: 1px solid rgb(255 255 255 / 5%);
   color: var(--text-secondary);
 }
@@ -156,13 +302,13 @@
   cursor: pointer;
 
   display: inline-flex;
-  gap: var(--spacing-1);
+  gap: var(--spacing-xs);
   align-items: center;
 
   min-height: 2.5rem; /* Mindesthöhe für touch/zoom */
-  padding: var(--spacing-3);
+  padding: var(--spacing-2sm);
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-sm);
 
   font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
@@ -232,22 +378,21 @@
 
 /* Forms */
 .form-group {
-  margin-bottom: var(--spacing-4);
+  margin-bottom: var(--spacing-md);
 }
 
 .form-label {
   display: block;
-  margin-bottom: var(--spacing-1);
+  margin-bottom: var(--spacing-xs);
   font-size: 0.813rem; /* 13px */
   color: var(--text-secondary);
 }
 
 .form-control {
   width: 100%;
-  margin-top: 5px;
-  padding: var(--spacing-3);
+  padding: var(--spacing-2sm);
   border: var(--glass-form-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-sm);
 
   font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
@@ -284,59 +429,46 @@
   caret-color: var(--text-primary) !important;
 }
 
-/* Tables - Wrapped in @layer for proper cascade priority */
-@layer components {
-  .table {
-    overflow: hidden;
-    border-collapse: collapse;
+/* Tables */
+.table {
+  overflow: hidden;
+  border-collapse: collapse;
+  width: 100%;
+  border-radius: var(--radius-xl);
 
-    width: 100%;
-    border-radius: var(--radius-xl);
+  /* background-color: var(--background-light); */ /* Commented - tables inherit background */
+}
 
-    /* Data table optimization: 12px for better information density */
-    font-size: 12px; /* Best Practice 2025 */
-    color: var(--text-primary);
+.table th,
+.table td {
+  padding: var(--spacing-2sm);
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
 
-    /* Transparent background allows glass-morphism to show through */
-    background-color: transparent;
-  }
+.table th {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-transform: uppercase;
 
-  .table th,
-  .table td {
-    padding: var(--spacing-3);
-    border-bottom: 1px solid var(--glass-border);
-    text-align: left;
-    vertical-align: top;
-  }
+  background-color: var(--background-dark);
+}
 
-  .table thead th {
-    border-bottom: 2px solid var(--glass-border);
+.table tr:hover {
+  background-color: rgb(33 150 243 / 5%);
+}
 
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--primary-color);
-    text-transform: uppercase;
-    vertical-align: bottom;
-
-    /* Subtle glassmorphic background for headers */
-    background: rgb(255 255 255 / 3%);
-  }
-
-  .table tbody tr:hover {
-    background-color: rgb(33 150 243 / 5%);
-  }
-
-  .table tr:last-child td {
-    border-bottom: none;
-  }
+.table tr:last-child td {
+  border-bottom: none;
 }
 
 /* Status Badges */
 .badge {
   display: inline-block;
 
-  padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-2xl);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
 
   font-size: 12px;
   font-weight: 500;
@@ -371,8 +503,8 @@
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-6);
-  margin-bottom: var(--spacing-8);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 @media (width <= 1200px) {
@@ -394,7 +526,7 @@
 
   text-align: center;
 
-  background: var(--glass-bg);
+  background: var(--glass-card-bg);
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
 }
@@ -412,7 +544,7 @@
 }
 
 .stat-value {
-  margin-bottom: var(--spacing-1);
+  margin-bottom: var(--spacing-xs);
   font-size: 2rem; /* 32px */
   font-weight: 700;
   color: var(--primary-color);
@@ -426,7 +558,7 @@
 /* Responsive */
 @media (width <= 768px) {
   .container {
-    padding: var(--spacing-3);
+    padding: var(--spacing-2sm);
   }
 
   .dashboard-grid {
@@ -435,7 +567,7 @@
 
   .header {
     flex-direction: column;
-    gap: var(--spacing-4);
+    gap: var(--spacing-md);
   }
 
   .table {
@@ -467,14 +599,14 @@
   border: var(--glass-card-border);
   border-radius: var(--glass-card-radius);
 
-  background: var(--glass-bg);
+  background: var(--glass-card-bg);
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
 }
 
 .custom-glass-card:hover {
   transform: var(--glass-card-transform-hover);
-  background: var(--glass-bg-hover);
+  background: var(--glass-card-bg-hover);
   box-shadow: var(--glass-card-shadow-hover);
 }
 
@@ -484,7 +616,7 @@
   border: var(--glass-card-border);
   border-radius: var(--glass-card-radius);
 
-  background: var(--glass-bg);
+  background: var(--glass-card-bg);
   backdrop-filter: var(--glass-backdrop);
   box-shadow: var(--glass-card-shadow);
 }
@@ -507,44 +639,44 @@
 }
 
 .mt-1 {
-  margin-top: var(--spacing-1);
+  margin-top: var(--spacing-xs);
 }
 
 .mt-2 {
-  margin-top: var(--spacing-2);
+  margin-top: var(--spacing-sm);
 }
 
 .mt-3 {
-  margin-top: var(--spacing-4);
+  margin-top: var(--spacing-md);
 }
 
 .mt-4 {
-  margin-top: var(--spacing-6);
+  margin-top: var(--spacing-lg);
 }
 
 .mt-5 {
-  margin-top: var(--spacing-8);
+  margin-top: var(--spacing-xl);
 }
 
 .mb-1 {
-  margin-bottom: var(--spacing-1);
+  margin-bottom: var(--spacing-xs);
 }
 
 .mb-2 {
-  margin-bottom: var(--spacing-2);
+  margin-bottom: var(--spacing-sm);
 }
 
 .mb-3 {
-  margin-bottom: var(--spacing-4);
+  margin-bottom: var(--spacing-md);
 }
 
 /* REDUNDANT - Empty class with no function
 .mb-4 {
-  margin-bottom: var(--spacing-6);
+  margin-bottom: var(--spacing-lg);
 }
 */
 .mb-5 {
-  margin-bottom: var(--spacing-8);
+  margin-bottom: var(--spacing-xl);
 }
 
 .flex {
@@ -638,32 +770,32 @@
 }
 
 .gap-1 {
-  gap: var(--spacing-1);
+  gap: var(--spacing-xs);
 }
 
 .gap-2 {
-  gap: var(--spacing-2);
+  gap: var(--spacing-sm);
 }
 
 .gap-3 {
-  gap: var(--spacing-4);
+  gap: var(--spacing-md);
 }
 
 .gap-4 {
-  gap: var(--spacing-6);
+  gap: var(--spacing-lg);
 }
 
 .gap-5 {
-  gap: var(--spacing-8);
+  gap: var(--spacing-xl);
 }
 
 /* Tab Navigation */
 .tab-navigation {
   display: flex;
-  gap: var(--spacing-1);
+  gap: var(--spacing-xs);
 
-  margin-bottom: var(--spacing-4);
-  padding: 0 var(--spacing-6);
+  margin-bottom: var(--spacing-md);
+  padding: 0 var(--spacing-lg);
   border-bottom: 2px solid var(--border-color);
 }
 
@@ -671,7 +803,7 @@
   cursor: pointer;
 
   margin-bottom: -2px;
-  padding: var(--spacing-3);
+  padding: var(--spacing-2sm);
   border: none;
   border-bottom: 2px solid transparent;
 
@@ -692,7 +824,7 @@
 
 .tab-content {
   display: none;
-  padding: var(--spacing-6);
+  padding: var(--spacing-lg);
 }
 
 .tab-content.active {
@@ -702,9 +834,9 @@
 /* Admin Dashboard Grid */
 .admin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--spacing-6);
-  margin-bottom: var(--spacing-8);
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
 }
 
 .compact-card {
@@ -716,7 +848,7 @@
 .compact-content {
   overflow-y: auto;
   flex-grow: 1;
-  padding: var(--spacing-6);
+  padding: var(--spacing-lg);
 }
 
 .compact-list {
@@ -730,7 +862,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-3);
+  padding: var(--spacing-2sm);
   border-bottom: 1px solid var(--border-color);
 
   font-size: 13px;
@@ -743,7 +875,7 @@
 .view-all-link {
   display: block;
 
-  margin-top: var(--spacing-4);
+  margin-top: var(--spacing-md);
 
   font-weight: 500;
   color: var(--primary-color);
@@ -763,12 +895,12 @@
 .recent-activity-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
 }
 
 .recent-section h3 {
-  margin-bottom: var(--spacing-4);
+  margin-bottom: var(--spacing-md);
   font-size: 16px;
   color: var(--primary-color);
 }
@@ -780,7 +912,7 @@
 }
 
 .recent-list li {
-  padding: var(--spacing-3);
+  padding: var(--spacing-2sm);
   border-bottom: 1px solid var(--border-color);
   font-size: 13px;
   color: var(--text-secondary);
@@ -824,11 +956,11 @@
 /* General modal footer */
 .modal-footer {
   display: flex;
-  gap: var(--spacing-4);
+  gap: var(--spacing-md);
   justify-content: center;
 
-  margin-top: var(--spacing-6);
-  padding: var(--spacing-6);
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
   border-top: 1px solid var(--border-color);
 }
 
@@ -935,7 +1067,7 @@
   max-height: 200px;
   margin-right: -14px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-lg);
 
   visibility: hidden;
   opacity: 0%;
@@ -1163,7 +1295,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-6);
+  padding: var(--spacing-lg);
 
   background: #ffffff05;
 }
@@ -1176,12 +1308,12 @@
 }
 
 #logoutModal .logout-modal .logout-modal-body {
-  padding: var(--spacing-6);
+  padding: var(--spacing-lg);
 }
 
 #logoutModal .logout-modal .logout-message {
-  margin-top: var(--spacing-4);
-  margin-bottom: var(--spacing-4);
+  margin-top: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
 
   font-size: 1rem;
   color: var(--text-primary);
@@ -1189,12 +1321,12 @@
 }
 
 #logoutModal .logout-modal .logout-info {
-  gap: var(--spacing-2);
+  gap: var(--spacing-sm);
   align-items: center;
 
   margin-left: -6px;
-  padding: var(--spacing-3);
-  border-radius: var(--radius-2xl);
+  padding: var(--spacing-2sm);
+  border-radius: var(--radius-sm);
 
   font-size: 0.875rem;
   color: var(--text-secondary);
@@ -1211,11 +1343,11 @@
 #logoutModal .logout-modal .logout-modal-footer {
   display: flex;
   flex-shrink: 0;
-  gap: var(--spacing-4);
+  gap: var(--spacing-md);
   justify-content: center;
 
   margin: 0;
-  padding: var(--spacing-6);
+  padding: var(--spacing-lg);
   border-top: 0;
 
   background: #ffffff05;

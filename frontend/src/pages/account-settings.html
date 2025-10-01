@@ -17,7 +17,7 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/lib/fontawesome.min.css" />
     <!-- Dashboard Theme - WICHTIG: Enthält alle Base-Styles und CSS-Variablen -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
 
     <!-- Additional Styles -->
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
@@ -38,7 +38,7 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
@@ -47,7 +47,7 @@
             <!-- Danger Zone Card -->
             <div class="settings-card" style="border-color: rgba(244, 67, 54, 0.3)">
               <h2 class="card-title text-danger">Gefahrenzone</h2>
-              <div style="padding: 24px; background: rgba(244, 67, 54, 0.05); border-radius: var(--radius-sm); margin-bottom: 20px">
+              <div style="padding: 24px; background: rgba(244, 67, 54, 0.05); border-radius: var(--radius-2xl); margin-bottom: 20px">
                 <p class="text-danger" style="margin-bottom: 16px">
                   <i class="fas fa-exclamation-triangle"></i>
                   <strong>Achtung:</strong>
@@ -137,8 +137,8 @@
                 background: rgba(255, 255, 255, 0.05);
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 color: var(--text-primary);
-                padding: 12px;
-                border-radius: var(--radius-sm);
+                padding: 10px;
+                border-radius: var(--radius-2xl);
               "
             ></textarea>
           </div>

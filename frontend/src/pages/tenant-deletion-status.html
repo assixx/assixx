@@ -19,7 +19,7 @@
       import { setHTML } from '/utils/dom-utils.js';
       window.setHTML = setHTML; // Make available globally
     </script>
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/tenant-deletion-status.css" />
@@ -31,7 +31,7 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 

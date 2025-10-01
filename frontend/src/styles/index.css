@@ -1,43 +1,11 @@
-@import "./dashboard-theme.css";
+/**
+ * Index Page Styles
+ *
+ * IMPORTANT: Variable definitions removed - use base/variables.css as single source of truth
+ * This file should only contain component styles that USE variables, not DEFINE them
+ */
 
-:root {
-  /* Assixx Dark Theme - Konsistent mit Dashboard */
-  --primary-color: #2196f3;
-  --primary-dark: #1976d2;
-  --primary-light: #42a5f5;
-  --primary-hover: #1976d2;
-  --secondary-color: #1b1b1b;
-  --background-dark: #121212;
-  --background-light: #1e1e1e;
-  --text-primary: #fff;
-  --text-secondary: #fff;
-  --border-color: #333;
-  --success-color: #4caf50;
-  --error-color: #f44336;
-  --warning-color: #ff9800;
-
-  /* Neue Begleitfarbe - Platinum Glass für Premium/Special Elements */
-  --accent-color: rgb(255 255 255 / 10%);
-  --accent-gradient: linear-gradient(135deg, rgb(255 255 255 / 15%), rgb(255 255 255 / 5%), rgb(255 255 255 / 10%));
-  --accent-glow: rgb(255 255 255 / 60%);
-
-  /* Abstände */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-
-  /* Rundungen */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-
-  /* Schatten */
-  --shadow-sm: 0 2px 4px rgb(0 0 0 / 20%);
-  --shadow-md: 0 4px 8px rgb(0 0 0 / 30%);
-  --shadow-lg: 0 8px 16px rgb(0 0 0 / 40%);
-}
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 
 * {
   box-sizing: border-box;
@@ -90,7 +58,7 @@ body {
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
   text-decoration: none;
@@ -148,13 +116,13 @@ body {
 
   overflow: hidden;
   display: inline-flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
   justify-content: center;
 
   padding: 8px 15px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -211,7 +179,7 @@ body {
 .hero {
   max-width: 800px;
   margin: 0 auto;
-  padding: calc(var(--spacing-xl) * 3) 5% var(--spacing-xl);
+  padding: calc(var(--spacing-8) * 3) 5% var(--spacing-8);
   text-align: center;
 
   /* animation: fadeInUp 0.6s ease-out; */
@@ -230,7 +198,7 @@ body {
 }
 
 .hero h1 {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 3rem;
   font-weight: 700;
@@ -239,7 +207,7 @@ body {
 }
 
 .hero p {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 1.25rem;
   line-height: 1.6;
   color: var(--text-secondary);
@@ -247,7 +215,7 @@ body {
 
 /* Glassmorphismus Features Section */
 .features {
-  padding: var(--spacing-xl) 5%;
+  padding: var(--spacing-8) 5%;
   border-top: 1px solid rgb(255 255 255 / 10%);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
@@ -258,17 +226,17 @@ body {
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
 
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
 /* Glassmorphismus Feature Cards */
 .feature-card {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -285,7 +253,7 @@ body {
 }
 
 .feature-card h3 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-weight: 600;
   color: var(--primary-color);
 }
@@ -299,11 +267,11 @@ body {
 .pricing {
   max-width: 1400px;
   margin: 0 auto;
-  padding: calc(var(--spacing-xl) * 2) 5%;
+  padding: calc(var(--spacing-8) * 2) 5%;
 }
 
 .pricing h2 {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 3rem;
   font-weight: 700;
@@ -315,7 +283,7 @@ body {
 .pricing-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: var(--spacing-xl);
+  gap: var(--spacing-8);
 
   max-width: 1200px;
   margin: 0 auto;
@@ -330,9 +298,9 @@ body {
   flex-direction: column;
 
   min-height: 600px;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -365,7 +333,7 @@ body {
 }
 
 .pricing-card h3 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 
   font-size: 1.75rem;
   font-weight: 700;
@@ -374,7 +342,7 @@ body {
 }
 
 .price {
-  margin: var(--spacing-lg) 0;
+  margin: var(--spacing-6) 0;
 
   font-size: 3.5rem;
   font-weight: 700;
@@ -392,7 +360,7 @@ body {
 .feature-list {
   flex-grow: 1;
 
-  margin: var(--spacing-xl) 0;
+  margin: var(--spacing-8) 0;
   padding: 0;
 
   text-align: left;
@@ -402,8 +370,8 @@ body {
 .feature-list li {
   position: relative;
 
-  padding: var(--spacing-sm) 0;
-  padding-left: var(--spacing-xl);
+  padding: var(--spacing-2) 0;
+  padding-left: var(--spacing-8);
 
   font-size: 15px;
   line-height: 1.6;
@@ -422,7 +390,7 @@ body {
 
 /* Glassmorphismus Footer */
 .footer {
-  padding: var(--spacing-lg) 5%;
+  padding: var(--spacing-6) 5%;
   border-top: 1px solid rgb(255 255 255 / 15%);
 
   color: var(--text-secondary);
@@ -457,9 +425,9 @@ body {
   width: 90%;
   max-width: 500px;
   max-height: 90vh;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -469,13 +437,13 @@ body {
 }
 
 .modal-content h2 {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
   font-weight: 600;
   color: var(--primary-color);
 }
 
 .modal-content p {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 13px;
   color: var(--text-secondary);
 }
@@ -497,10 +465,10 @@ body {
 }
 
 .success {
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3);
   border: 1px solid rgb(76 175 80 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #fff;
 
@@ -547,7 +515,7 @@ input[type="checkbox"] {
 
   margin-top: 2rem;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -557,13 +525,13 @@ input[type="checkbox"] {
 .comparison-table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 14px;
+  font-size: 12px; /* Optimized from 14px - Best Practice 2025 for data tables */
   color: var(--text-primary);
 }
 
 .comparison-table th,
 .comparison-table td {
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
   text-align: left;
 }
@@ -599,8 +567,8 @@ input[type="checkbox"] {
 }
 
 .comparison-table .category-header td {
-  padding-top: var(--spacing-lg);
-  padding-bottom: var(--spacing-sm);
+  padding-top: var(--spacing-6);
+  padding-bottom: var(--spacing-2);
 
   font-size: 13px;
   font-weight: 600;
@@ -639,7 +607,6 @@ input[type="checkbox"] {
 
   font-size: 13px;
   font-weight: 700;
-  -webkit-font-smoothing: antialiased;
 
   /* Klarer Text ohne Schatten */
   color: #fff;
@@ -757,21 +724,21 @@ input[type="checkbox"] {
 /* Responsive Design */
 @media (width <= 768px) {
   .header {
-    padding: var(--spacing-2sm);
+    padding: var(--spacing-3);
   }
 
   .nav {
     flex-direction: column;
-    gap: var(--spacing-md);
+    gap: var(--spacing-4);
   }
 
   .logo-container {
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-2);
   }
 
   .nav-links {
     flex-wrap: wrap;
-    gap: var(--spacing-md);
+    gap: var(--spacing-4);
     justify-content: center;
   }
 
@@ -794,7 +761,7 @@ input[type="checkbox"] {
 
   .modal-content {
     width: 95%;
-    padding: var(--spacing-2sm);
+    padding: var(--spacing-3);
   }
 
   /* Comparison table responsive */
@@ -804,7 +771,7 @@ input[type="checkbox"] {
 
   .comparison-table th,
   .comparison-table td {
-    padding: var(--spacing-2sm);
+    padding: var(--spacing-3);
   }
 
   .feature-comparison h3 {

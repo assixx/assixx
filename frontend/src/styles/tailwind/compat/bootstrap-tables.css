@@ -1,37 +1,50 @@
 /**
  * Bootstrap Table Compatibility
- * Temporary compatibility layer for Bootstrap tables
- * TO BE REMOVED after migration to Tailwind utilities
+ * Fallback compatibility layer for Bootstrap tables
+ * These styles are in @layer components, so page-specific styles override them
+ *
+ * NOTE: dashboard-theme.css contains the primary table styles.
+ * This file serves as a fallback for pages that don't load dashboard-theme.css
  */
 
 @layer components {
-  /* Table Components */
+  /* Base Table Styles */
   .table {
     border-collapse: collapse;
 
     width: 100%;
     margin-bottom: 1rem;
 
-    color: var(--color-text-primary);
+    /* Data table optimization: 12px for better information density */
+    font-size: 12px;
+    color: var(--text-primary, var(--color-text-primary, #fff));
 
     background-color: transparent;
   }
 
   .table th,
   .table td {
-    padding: 0.75rem;
-    border-top: 1px solid var(--glass-border);
+    padding: var(--spacing-3, 0.75rem);
+    border-bottom: 1px solid var(--glass-border, rgb(255 255 255 / 10%));
+    text-align: left;
     vertical-align: top;
   }
 
   .table thead th {
     border-top: 0;
-    border-bottom: 2px solid var(--glass-border);
+    border-bottom: 2px solid var(--glass-border, rgb(255 255 255 / 10%));
+
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--primary-color, #2196f3);
     vertical-align: bottom;
+
+    /* Subtle glassmorphic background for headers */
+    background: rgb(255 255 255 / 3%);
   }
 
   .table tbody + tbody {
-    border-top: 2px solid var(--glass-border);
+    border-top: 2px solid var(--glass-border, rgb(255 255 255 / 10%));
   }
 
   /* Table Small */
@@ -65,7 +78,12 @@
 
   /* Table Hover */
   .table-hover tbody tr:hover {
-    background-color: rgb(255 255 255 / 5%);
+    background-color: rgb(33 150 243 / 5%);
+  }
+
+  /* Default hover if no .table-hover class */
+  .table tbody tr:hover {
+    background-color: rgb(255 255 255 / 2%);
   }
 
   /* Table Dark */

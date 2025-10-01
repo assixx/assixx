@@ -114,6 +114,13 @@
     background-color: var(--color-primary);
   }
 
+  /* Container Utilities */
+  @media (width >= 96rem) {
+    .container {
+      max-width: 106rem;
+    }
+  }
+
   /* Print Utilities */
   @media print {
     .print-hidden {

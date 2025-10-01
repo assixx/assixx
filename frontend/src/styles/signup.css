@@ -33,16 +33,7 @@ body {
   padding: 10px;
 }
 
-body::before {
-  content: "";
-
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-
-  /* background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%); */
-  opacity: 90%;
-}
+/* Global body::before moved to tailwind/base.css */
 
 /* Weniger kompakter Container für 16-Zoll Monitore - Glassmorphismus */
 .signup-container {
@@ -52,7 +43,7 @@ body::before {
   max-width: 1200px;
   padding: 28px 40px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -144,14 +135,14 @@ body::before {
 
 .input-group .form-control {
   border-right: none;
-  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+  border-radius: var(--radius-2xl) 0 0 var(--radius-2xl);
 }
 
 .input-group-suffix {
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-left: none;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: 0 var(--radius-2xl) var(--radius-2xl) 0;
 
   font-size: 14px;
   color: var(--text-secondary);
@@ -181,7 +172,7 @@ body::before {
 
   padding: 8px;
   border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   color: var(--text-primary);
@@ -217,7 +208,7 @@ body::before {
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -293,7 +284,7 @@ body::before {
 
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 15px;
   color: var(--text-primary);
@@ -325,7 +316,7 @@ body::before {
   transform: translateY(-10px);
 
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -347,7 +338,7 @@ body::before {
   align-items: center;
   justify-content: space-between;
 
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-bottom: 1px solid rgb(255 255 255 / 5%);
 
   font-size: 14px;
@@ -436,7 +427,7 @@ body::before {
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 15px;
   font-weight: 600;
@@ -495,9 +486,9 @@ body::before {
   display: none;
 
   margin-bottom: 16px;
-  padding: 12px 16px;
+  padding: 10px 16px;
   border: 1px solid rgb(16 185 129 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   color: #10b981;
@@ -764,7 +755,7 @@ select.form-control:hover:not(:focus),
   gap: 10px;
   align-items: center;
 
-  padding: 12px 20px;
+  padding: 10px 20px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 12px;
 

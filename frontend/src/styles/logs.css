@@ -1,4 +1,4 @@
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 
 /* Glassmorphismus Background */
 
@@ -14,7 +14,7 @@
 
   margin-bottom: 24px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 100% / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -22,9 +22,9 @@
 }
 
 .card-header {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   padding: 24px;
-  padding-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-4);
   border-bottom: 1px solid var(--border-color);
   border-radius: 10px;
 }
@@ -73,24 +73,19 @@
   width: 100%;
 }
 
-#logs-table-container {
-  padding: 0 24px 24px;
-}
-
-/* Table */
-.table,
+/* Table - Using .logs-table only to avoid conflicts with global .table class */
 .logs-table {
   overflow: hidden;
   border-collapse: collapse;
-  width: 100%;
 
-  /* background: var(--background-light); */
-  border-radius: var(--radius-md);
+  width: 100%;
+  border-radius: var(--radius-xl);
+
+  font-size: 12px; /* Best Practice 2025: data tables */
 }
 
-.table th,
 .logs-table th {
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   font-size: 13px;
@@ -103,7 +98,6 @@
   background: rgb(255 255 255 / 3%);
 }
 
-.table td,
 .logs-table td {
   padding: 16px;
   border-bottom: 1px solid rgb(255 255 255 / 5%);
@@ -111,9 +105,6 @@
   color: var(--text-primary);
 }
 
-/* .table tbody tr - Empty block removed */
-
-.table tbody tr:hover,
 .logs-table tbody tr:hover {
   background: rgb(255 255 255 / 2%);
 }
@@ -313,7 +304,7 @@
 
   padding: 8px 16px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   color: var(--text-primary);
@@ -495,7 +486,7 @@
   min-height: 42px;
   padding: 10px 15px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   color: #fff;
@@ -532,7 +523,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;

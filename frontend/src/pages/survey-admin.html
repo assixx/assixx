@@ -23,7 +23,7 @@
       referrerpolicy="no-referrer"
     />
     <!-- CSS Styles -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <link rel="stylesheet" href="/styles/survey-admin.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -34,7 +34,7 @@
 
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
@@ -107,7 +107,7 @@
               <input type="checkbox" id="isMandatory" />
               <label for="isMandatory">Verpflichtende Teilnahme</label>
             </div>
-            <p style="margin-top: var(--spacing-sm); color: var(--text-secondary); font-size: 0.85rem">
+            <p style="margin-top: var(--spacing-2); color: var(--text-secondary); font-size: 0.85rem">
               <i class="fas fa-info-circle"></i>
               Bei anonymen Umfragen werden keine Benutzerdaten gespeichert. Sie können nicht sehen, wer geantwortet hat.
             </p>
@@ -115,7 +115,7 @@
 
           <div class="form-group">
             <label class="form-label">Laufzeit</label>
-            <div style="display: flex; gap: var(--spacing-md)">
+            <div style="display: flex; gap: var(--spacing-4)">
               <div class="u-flex-1">
                 <label class="form-label u-fs-09rem">Startdatum</label>
                 <input type="datetime-local" id="startDate" class="form-control" />
@@ -180,7 +180,7 @@
           </div>
 
           <div class="question-builder">
-            <h3 style="margin-bottom: var(--spacing-md)">Fragen</h3>
+            <h3 style="margin-bottom: var(--spacing-4)">Fragen</h3>
             <div id="questionsList">
               <!-- Questions will be added here -->
             </div>

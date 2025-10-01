@@ -155,6 +155,7 @@
     {
       "files": ["**/tailwind.css", "**/app.css"],
       "rules": {
+        "no-invalid-position-at-import-rule": null,
         "at-rule-no-unknown": [
           true,
           {

@@ -12,7 +12,6 @@
 
     background: var(--glass-bg);
     backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
     box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
   }
 
@@ -29,7 +28,6 @@
     font-weight: 500;
 
     background: var(--glass-bg);
-    backdrop-filter: blur(10px) saturate(150%);
     backdrop-filter: blur(10px) saturate(150%);
 
     transition: all 0.3s ease;
@@ -56,7 +54,6 @@
     color: var(--color-text-primary);
 
     background: var(--glass-bg);
-    backdrop-filter: blur(10px) saturate(150%);
     backdrop-filter: blur(10px) saturate(150%);
 
     transition: all 0.3s ease;
@@ -95,7 +92,6 @@
 
     background: rgb(0 0 0 / 80%);
     backdrop-filter: blur(5px);
-    backdrop-filter: blur(5px);
   }
 
   .modal-content-glass {
@@ -110,7 +106,6 @@
 
     background: var(--glass-bg);
     backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
     box-shadow: 0 8px 32px 0 rgb(0 0 0 / 37%);
   }
 
@@ -124,7 +119,6 @@
     border-bottom: 1px solid var(--glass-border);
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
   }
 
@@ -174,7 +168,6 @@
 
     background: var(--glass-bg);
     backdrop-filter: blur(10px) saturate(150%);
-    backdrop-filter: blur(10px) saturate(150%);
   }
 
   /* Glass Alert */
@@ -185,7 +178,6 @@
     border-radius: 0.5rem;
 
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
   }
 

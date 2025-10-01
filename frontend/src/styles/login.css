@@ -1,4 +1,4 @@
-@import "./dashboard-theme.css";
+/* Dashboard theme is already loaded via main.css - no need to import again */
 
 /* Back Button - Glassmorphismus Style */
 .back-button {
@@ -11,7 +11,7 @@
   gap: 10px;
   align-items: center;
 
-  padding: 12px 20px;
+  padding: 10px 20px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 12px;
 
@@ -55,18 +55,7 @@
   transform: translateX(-3px);
 }
 
-/* Login page specific styles */
-
-body::before {
-  content: "";
-
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-
-  /* background: radial-gradient(circle at 50% 50%, #1e1e1e 0%, #121212 50%, #0a0a0a 100%); */
-  opacity: 90%;
-}
+/* Login page specific styles - Global body::before moved to tailwind/base.css */
 
 .login-container {
   display: flex;
@@ -75,7 +64,7 @@ body::before {
   justify-content: center;
 
   min-height: 85vh;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 /* Logo now inside card */
@@ -107,7 +96,7 @@ body::before {
 }
 
 .login-subtitle {
-  margin-top: var(--spacing-xs);
+  margin-top: var(--spacing-1);
   color: var(--text-secondary);
 }
 
@@ -116,9 +105,9 @@ body::before {
   max-width: 450px;
   margin-top: 50px;
   margin-top: unset !important;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -140,7 +129,7 @@ body::before {
 }
 
 .login-company {
-  margin-top: var(--spacing-xl);
+  margin-top: var(--spacing-8);
   text-align: center;
 }
 
@@ -150,7 +139,7 @@ body::before {
   width: 60%;
   margin: 0 auto;
   margin-top: 25px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
 
   font-family:
     Outfit,
@@ -165,8 +154,8 @@ body::before {
 }
 
 .login-footer {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-6);
   border-top: 1px solid var(--border-color);
   text-align: center;
 }
@@ -185,7 +174,7 @@ body::before {
 /* Responsive adjustments */
 @media (width <= 480px) {
   .login-card {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-6);
   }
 
   .login-title {
@@ -241,9 +230,9 @@ body::before {
 
 /* Alert Styles */
 .alert {
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-2sm);
-  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-2xl);
 
   color: #ffa700;
 

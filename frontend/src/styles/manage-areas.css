@@ -7,7 +7,7 @@
 .search-input {
   padding: 10px 12px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.95rem;
   color: #fff;
@@ -30,7 +30,7 @@
 
   padding: 10px 20px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-weight: 500;
   color: #fff;
@@ -87,7 +87,7 @@
 }
 
 .table thead th {
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   font-size: 0.875rem;
@@ -111,7 +111,7 @@
 }
 
 .table tbody td {
-  padding: 12px;
+  padding: 10px;
   color: var(--text-primary);
 }
 
@@ -122,11 +122,11 @@
 }
 
 .content-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 }
 
 .page-title {
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-2) 0;
   font-size: 1.75rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -139,13 +139,13 @@
 
 /* Filter and search controls */
 .controls-wrapper {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .flex-between {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
   justify-content: space-between;
 }
@@ -153,12 +153,12 @@
 .filter-buttons {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
 }
 
 .search-container {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 }
 
@@ -196,7 +196,7 @@
 /* Action buttons */
 .action-buttons {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
 }
 
 .btn-action {
@@ -219,7 +219,7 @@
 }
 
 .empty-state-title {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
   font-size: 1.25rem;
   font-weight: 500;
 }
@@ -281,7 +281,7 @@
   max-width: 600px;
   max-height: 85vh !important;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: #121212;
   backdrop-filter: blur(20px) saturate(180%);
@@ -295,7 +295,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 
   background: #ffffff05;
 }
@@ -318,7 +318,7 @@
   height: 32px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 1.5rem;
   color: var(--text-secondary);
@@ -334,17 +334,17 @@
 }
 
 .modal-body {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .modal-footer {
   display: flex !important;
   flex-shrink: 0 !important;
-  gap: var(--spacing-md) !important;
+  gap: var(--spacing-4) !important;
   justify-content: center !important;
 
   margin-top: 0 !important;
-  padding: var(--spacing-lg) !important;
+  padding: var(--spacing-6) !important;
   border-top: 0 !important;
 
   background: #ffffff05 !important;
@@ -352,13 +352,13 @@
 
 /* Form styles */
 .form-group {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .form-label {
   display: block;
 
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
 
   font-size: 0.875rem;
   font-weight: 500;
@@ -373,7 +373,7 @@
 
 /* Utility classes */
 .mb-3 {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .text-secondary {
@@ -386,10 +386,7 @@
 
 /* Media queries */
 @media (width <= 768px) {
-  .main-content {
-    margin-left: 0;
-    padding: var(--spacing-md);
-  }
+  /* .main-content - REMOVED: Migrated to Tailwind responsive utilities in manage-areas.html */
 
   .flex-between {
     flex-direction: column;
@@ -402,7 +399,7 @@
 
   .modal-content {
     width: 95%;
-    margin: var(--spacing-md);
+    margin: var(--spacing-4);
   }
 }
 
@@ -444,7 +441,7 @@
   margin: 0 4px;
   padding: 6px 12px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 12px;
   color: var(--text-color);

@@ -2,17 +2,12 @@
  * Calendar System Styles - Angepasst an das Assixx-Dashboard-Design
  */
 
-/* Main content padding */
-.main-content {
-  overflow-y: auto;
-  width: 100%;
-  height: calc(100vh - 56px);
-}
+/* Main content padding - REMOVED: Migrated to Tailwind utilities in calendar.html */
 
 /* Calendar Container */
 .calendar-card {
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-md);
 }
 
@@ -182,7 +177,7 @@
 .fc-event {
   cursor: pointer;
   border: none !important;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-sm);
 }
 
@@ -266,13 +261,13 @@
 }
 
 .view-selector button:first-child {
-  border-top-left-radius: var(--radius-sm);
-  border-bottom-left-radius: var(--radius-sm);
+  border-top-left-radius: var(--radius-2xl);
+  border-bottom-left-radius: var(--radius-2xl);
 }
 
 .view-selector button:last-child {
-  border-top-right-radius: var(--radius-sm);
-  border-bottom-right-radius: var(--radius-sm);
+  border-top-right-radius: var(--radius-2xl);
+  border-bottom-right-radius: var(--radius-2xl);
 }
 
 /* Upcoming Events Section */
@@ -283,7 +278,7 @@
 
 .event-item {
   display: flex;
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -303,7 +298,7 @@
 
   margin-right: 15px;
   padding: 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   text-align: center;
 
@@ -356,7 +351,7 @@
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -384,7 +379,7 @@
 
   width: 40px;
   height: 40px;
-  margin: var(--spacing-md) auto;
+  margin: var(--spacing-4) auto;
   border: 3px solid var(--primary-color);
   border-top-color: transparent;
   border-radius: 50%;
@@ -471,9 +466,9 @@
   max-width: 900px;
   max-height: 85vh !important;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
-  background: hsl(0deg 0% 6.7% / 77%);
+  background: hsl(0deg 0% 7%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow:
     0 8px 32px rgb(0 0 0 / 40%),
@@ -491,7 +486,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -533,18 +528,18 @@
   overflow-y: auto;
   flex: 1;
   min-height: 0;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .modal-footer {
   display: flex !important;
   flex-shrink: 0 !important;
-  gap: var(--spacing-md) !important;
+  gap: var(--spacing-4) !important;
   justify-content: center !important;
 
   margin-top: 0 !important;
-  padding: var(--spacing-md) var(--spacing-lg) !important;
-  padding: var(--spacing-lg) !important;
+  padding: var(--spacing-4) var(--spacing-6) !important;
+  padding: var(--spacing-6) !important;
   border-top: 0 !important;
 
   background: #ffffff05 !important;
@@ -597,7 +592,7 @@
   margin-bottom: 20px;
   padding: 15px;
   border-left: 3px solid var(--primary-color);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 1rem;
   line-height: 1.6;
@@ -614,7 +609,7 @@
   margin: 20px 0;
   padding: 24px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -636,7 +631,7 @@
   margin: 0 -10px;
   padding-right: 10px;
   padding-left: 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -693,9 +688,9 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: 12px 15px;
+  padding: 10px 15px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 255 255 / 3%);
 }
@@ -742,7 +737,7 @@
   margin-top: 30px;
   padding: 24px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -828,7 +823,7 @@
 
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   color: var(--text-secondary);
@@ -1005,9 +1000,9 @@ textarea.form-control {
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #fff;
 
@@ -1041,7 +1036,7 @@ textarea.form-control {
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -1083,7 +1078,7 @@ textarea.form-control {
   margin-bottom: 10px;
   padding: 10px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(5px);
@@ -1107,7 +1102,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1120,7 +1115,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1133,7 +1128,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1146,7 +1141,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1182,7 +1177,7 @@ textarea.form-control {
   width: 100px;
   padding: 15px;
   border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: none;
 }
@@ -1254,9 +1249,9 @@ textarea.form-control {
   display: block;
 
   width: 100%;
-  padding: 12px 15px;
+  padding: 10px 15px;
   border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 16px;
   color: var(--text-primary);
@@ -1292,7 +1287,7 @@ select.big-input:hover {
 
 /* Select option styling */
 select.big-input option {
-  padding: 12px;
+  padding: 10px;
   font-size: 15px;
   color: var(--text-primary);
   background: rgb(18 18 18 / 95%);
@@ -1342,7 +1337,7 @@ select.big-input:disabled {
 
   padding: 8px 16px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -1407,7 +1402,7 @@ select.big-input:disabled {
   margin: 8px 0;
   padding: 8px 12px;
   border-left: 3px solid rgb(52 152 219 / 50%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.875rem;
   color: rgb(52 152 219 / 90%);
@@ -1426,7 +1421,7 @@ select.big-input:disabled {
   max-height: 400px;
   padding: 10px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -1435,7 +1430,7 @@ select.big-input:disabled {
   margin-bottom: 8px;
   padding: 10px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 255 255 / 3%);
 }
@@ -1585,25 +1580,6 @@ select.big-input:disabled {
   cursor: pointer;
   user-select: none;
   margin: 0;
-}
-
-/* ========================================
-   Extracted CSS from calendar.html
-   Generated: 2025-09-17
-   ======================================== */
-
-/* Glassmorphismus Design-Standards */
-
-/* Glassmorphismus für Cards */
-.card {
-  margin-top: auto;
-  border: 1px solid rgb(255 255 255 / 10%);
-
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
-
-  /* animation: fadeInUp 0.6s ease-out; */
 }
 
 /* Zusätzliche Styles für fehlende Klassen */

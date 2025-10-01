@@ -281,7 +281,7 @@ class KontischichtManager {
       backdrop-filter: blur(20px) saturate(180%);
       background: #121212;
       border: 1px solid hsla(0,0%,100%,.1);
-      border-radius: var(--radius-md);
+      border-radius: var(--radius-3xl);
       box-shadow: 0 8px 32px #0006,inset 0 1px #ffffff1a;
       display: flex;
       flex-direction: column;
@@ -502,7 +502,7 @@ class KontischichtManager {
           color: #4299e1;
           border: 1px solid rgba(66, 153, 225, 0.4);
           padding: 8px 16px;
-          border-radius: var(--radius-md);
+          border-radius: var(--radius-3xl);
           cursor: pointer;
 
         ">Muster ändern</button>

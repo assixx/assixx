@@ -1,4 +1,4 @@
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 @import "./breadcrumb-alignment.css";
 @import "./user-info-update.css";
 
@@ -6,22 +6,22 @@
 .kvp-filter-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .filter-btn {
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-2) var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.9rem;
   font-weight: 500;
@@ -62,17 +62,17 @@
 .secondary-filters {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
 
   max-width: 800px;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .secondary-filters select,
 .secondary-filters input {
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: var(--text-primary);
 
@@ -91,14 +91,14 @@
 /* Info Box für Admins */
 .admin-info-box {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
-  margin-top: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-2sm);
+  margin-top: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 182 107 / 30%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 182 107 / 10%);
 }
@@ -114,7 +114,7 @@
 
   margin-bottom: 24px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 100% / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -122,12 +122,12 @@
 }
 
 .card-header {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid var(--border-color);
 }
 
 .card-body {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .card-title {
@@ -146,8 +146,8 @@
 .kvp-suggestions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: var(--spacing-lg);
-  margin-top: var(--spacing-lg);
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-6);
 }
 
 /* KVP Card */
@@ -170,8 +170,8 @@
 /* Status Badge */
 .status-badge {
   position: absolute;
-  top: var(--spacing-md);
-  right: var(--spacing-md);
+  top: var(--spacing-4);
+  right: var(--spacing-4);
 
   padding: 4px 12px;
   border-radius: 20px;
@@ -223,7 +223,7 @@
   gap: 4px;
   align-items: center;
 
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-2);
   border-radius: 16px;
 
   font-size: 0.75rem;
@@ -252,11 +252,11 @@
 
 /* Suggestion Content */
 .suggestion-header {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .suggestion-title {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -264,7 +264,7 @@
 
 .suggestion-meta {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
   font-size: 0.85rem;
@@ -281,7 +281,7 @@
   overflow: hidden;
 
   max-height: 4.8em; /* 3 lines * 1.6 line-height */
-  margin: var(--spacing-md) 0;
+  margin: var(--spacing-4) 0;
 
   font-size: 0.9rem;
   line-height: 1.6;
@@ -303,8 +303,8 @@
   align-items: center;
   justify-content: space-between;
 
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-4);
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -325,7 +325,7 @@
 /* Action Buttons */
 .action-buttons {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
 }
 
 .action-btn {
@@ -333,7 +333,7 @@
 
   padding: 6px 12px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 0.85rem;
   color: var(--text-primary);
@@ -410,14 +410,14 @@
 .stats-overview {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
 }
 
 .stat-card {
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -469,9 +469,9 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.9rem;
   color: #fff;
@@ -501,7 +501,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -583,7 +583,7 @@
   /* animation: fadeInUp 0.3s ease-out; */
   padding: 24px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 8.2% / 84%);
   backdrop-filter: blur(20px) saturate(500%);
@@ -595,7 +595,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -617,7 +617,7 @@
   height: 30px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 24px;
   color: var(--text-secondary);
@@ -636,10 +636,10 @@
 
 .modal-footer {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   justify-content: flex-end;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -648,13 +648,13 @@
   cursor: pointer;
 
   display: inline-flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
   justify-content: center;
 
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-2) var(--spacing-6);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.9rem;
   font-weight: 500;
@@ -691,13 +691,13 @@
 /* Warning Box */
 .warning-box {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: flex-start;
 
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 152 0 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 152 0 / 10%);
 }
@@ -724,8 +724,8 @@
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
 }
 
 .form-group.full-width {
@@ -734,15 +734,15 @@
 
 /* Photo Upload Styles */
 .photo-upload-area {
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-2);
 }
 
 .upload-box {
   cursor: pointer;
 
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: 2px dashed rgb(255 255 255 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -755,7 +755,7 @@
 }
 
 .upload-box i {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 2.5rem;
   color: rgb(255 255 255 / 50%);
 }
@@ -766,15 +766,15 @@
 }
 
 .upload-box p.small {
-  margin-top: var(--spacing-xs);
+  margin-top: var(--spacing-1);
   font-size: 0.85rem;
 }
 
 .photo-preview {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-top: var(--spacing-md);
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-4);
 }
 
 .photo-preview-item {
@@ -784,7 +784,7 @@
 
   width: 100px;
   height: 100px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 255 255 / 5%);
 }

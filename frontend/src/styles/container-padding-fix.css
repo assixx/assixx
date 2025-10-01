@@ -1,6 +1,6 @@
 /* Container Padding Fix - Konsistentes Padding für alle Container-Typen */
 
-/* Generelle Container-Klassen mit konsistentem Padding */
+/* Generelle Container-Klassen mit konsistentem Padding
 .container,
 .profile-container,
 .survey-container,
@@ -17,8 +17,8 @@
 .root-container,
 .department-container,
 .org-container {
-  padding: var(--spacing-lg) !important; /* 24px - wie bei root-dashboard */
-}
+  padding: var(--spacing-6) !important;  24px - wie bei root-dashboard 
+} */
 
 /* Spezifische Container die ihr eigenes Padding behalten sollten */
 .modal-container,
@@ -36,14 +36,14 @@
 }
 
 /* Main Content Area - NUR wenn es ein Container ist */
-.main-content > .container:first-child {
+main > .container:first-child {
   /* Nur Container bekommen das Padding */
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 /* Ausnahmen für spezielle Seiten */
-.main-content.chat-page > div:first-child,
-.main-content.no-padding > div:first-child {
+main.chat-page > div:first-child,
+main.no-padding > div:first-child {
   padding: 0;
 }
 
@@ -65,10 +65,10 @@
   .root-container,
   .department-container,
   .org-container {
-    padding: var(--spacing-md) !important; /* 16px auf Mobile */
+    padding: var(--spacing-4) !important; /* 16px auf Mobile */
   }
 
-  .main-content > .container:first-child {
-    padding: var(--spacing-2sm);
+  main > .container:first-child {
+    padding: var(--spacing-3);
   }
 }

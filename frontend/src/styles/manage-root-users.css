@@ -1,5 +1,5 @@
 /* Extracted styles from manage-root-users.html */
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 @import "./breadcrumb-alignment.css";
 
 /* Glassmorphismus Background */
@@ -44,7 +44,7 @@
 }
 
 .root-table th {
-  padding: 12px;
+  padding: 10px;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   font-weight: 600;
@@ -71,7 +71,7 @@
   margin: 0 4px;
   padding: 6px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 12px;
   color: var(--text-secondary);
@@ -163,7 +163,7 @@
   max-width: 500px;
   max-height: 90vh;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: #121212;
   backdrop-filter: blur(20px) saturate(180%);
@@ -189,7 +189,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -211,7 +211,7 @@
   height: 30px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 24px;
   color: var(--text-secondary);
@@ -225,7 +225,7 @@
 }
 
 .modal form {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 /* Custom Dropdown */
@@ -241,9 +241,9 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #fff;
 
@@ -272,7 +272,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -316,7 +316,7 @@
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 500;

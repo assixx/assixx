@@ -33,7 +33,6 @@
     background: var(--glass-bg);
     background-clip: padding-box;
     backdrop-filter: blur(10px) saturate(150%);
-    backdrop-filter: blur(10px) saturate(150%);
 
     transition:
       border-color 0.15s ease-in-out,
@@ -75,7 +74,6 @@
     background-repeat: no-repeat;
     background-position: right 0.5rem center;
     background-size: 1.5em 1.5em;
-    backdrop-filter: blur(10px) saturate(150%);
     backdrop-filter: blur(10px) saturate(150%);
 
     transition:
