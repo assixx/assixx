@@ -4,21 +4,16 @@
 
 /* Background Gradient - Essential for the page design */
 
-/* Main content area - wie calendar */
-.main-content {
-  overflow-y: auto;
-  width: 100%;
-  height: calc(100vh - 56px);
-}
+/* Main content area - REMOVED: Migrated to Tailwind utilities in shifts.html */
 
 /* Custom styles for shift planning interface - Glassmorphismus Design */
 .shift-planning-container {
   overflow: visible;
 
   margin: 0 auto;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -32,12 +27,12 @@
 
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
 
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 3%);
   backdrop-filter: blur(10px);
@@ -69,7 +64,7 @@
 }
 
 .info-label {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
 
   font-size: 12px;
   font-weight: 500;
@@ -97,9 +92,9 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #fff;
 
@@ -133,7 +128,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -167,14 +162,14 @@
 /* Week Navigation */
 .week-navigation {
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
   align-items: center;
   justify-content: center;
 
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
@@ -186,9 +181,9 @@
 .week-nav-btn {
   cursor: pointer;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-weight: 600;
   color: var(--text-primary);
@@ -213,7 +208,7 @@
 .main-planning-area {
   display: grid;
   grid-template-columns: 1fr 320px;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-8);
 }
 
 /* Week Schedule */
@@ -222,7 +217,7 @@
 
   padding: 10px;
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   box-shadow: var(--shadow-sm);
 }
@@ -240,9 +235,9 @@
 }
 
 .day-header {
-  padding: var(--spacing-md) var(--spacing-xs);
+  padding: var(--spacing-4) var(--spacing-1);
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: var(--primary-color);
   text-align: center;
@@ -269,9 +264,9 @@
   justify-content: center;
 
   min-height: 85px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 13px;
   font-weight: 600;
@@ -311,7 +306,7 @@
 
   min-height: 85px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(5px);
@@ -343,7 +338,7 @@
   justify-content: center;
 
   height: 100%;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
 
   text-align: center;
 }
@@ -368,9 +363,9 @@
 
   min-height: 120px;
   margin-top: 2px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
@@ -385,10 +380,10 @@
 
 .shift-info-title {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
 
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
 
   font-size: 14px;
   font-weight: 600;
@@ -401,9 +396,9 @@
   flex: 1;
 
   min-height: 300px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-family: inherit;
   font-size: 13px;
@@ -426,10 +421,10 @@
 /* Department Notice */
 .department-notice {
   max-width: 600px;
-  margin: var(--spacing-xl) auto;
-  padding: var(--spacing-xl) var(--spacing-lg);
+  margin: var(--spacing-8) auto;
+  padding: var(--spacing-8) var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -439,14 +434,14 @@
 }
 
 .department-notice .notice-icon {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 48px;
   color: var(--primary-color);
   opacity: 80%;
 }
 
 .department-notice h3 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 24px;
   color: var(--text-primary);
 }
@@ -459,9 +454,9 @@
 
 /* Employee Sidebar */
 .employee-sidebar {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -469,7 +464,7 @@
 }
 
 .shift-sidebar-title {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 17px;
   font-weight: 500;
@@ -488,7 +483,7 @@
   margin: 2px 0;
   padding: 6px 8px;
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(33 150 243 / 15%);
 }
@@ -583,7 +578,7 @@
   max-height: 90vh;
   padding: 0;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(30 39 46 / 95%);
   backdrop-filter: blur(20px);
@@ -645,7 +640,7 @@
 .modal-actions button {
   cursor: pointer;
 
-  padding: 12px 24px;
+  padding: 10px 24px;
   border: none;
   border-radius: 8px;
 
@@ -690,7 +685,7 @@
   max-width: 900px;
   max-height: 85vh !important;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md, 16px);
+  border-radius: var(--radius-xl, 16px);
 
   background: hsl(0deg 0% 6.7% / 77%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -908,7 +903,7 @@
 
   flex: 1;
 
-  padding: 12px 20px;
+  padding: 10px 20px;
   border: none;
   border-radius: 8px;
 
@@ -1106,7 +1101,7 @@
 
   padding: 8px 12px;
   border: 1px solid rgb(52 152 219 / 30%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 12px;
   color: var(--primary-color);
@@ -1354,7 +1349,7 @@
 
   padding: 8px 16px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -1695,11 +1690,11 @@
 
 /* Shift Details Modal Styles */
 .shift-detail-modal {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .shift-detail-modal h3 {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 20px;
   font-weight: 600;
   color: var(--primary-color);
@@ -1708,8 +1703,8 @@
 .shift-detail-info {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-8);
 }
 
 .detail-row {
@@ -1717,7 +1712,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-sm) 0;
+  padding: var(--spacing-2) 0;
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -1830,13 +1825,13 @@
 
 .kontischicht-scroll-container::-webkit-scrollbar-track {
   margin: 0 10px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: rgb(255 255 255 / 10%);
 }
 
 .kontischicht-scroll-container::-webkit-scrollbar-thumb {
   border: 2px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: linear-gradient(90deg, rgb(52 152 219 / 60%), rgb(52 152 219 / 40%));
   transition: background 0.3s ease;
 }
@@ -1849,14 +1844,14 @@
 /* Scroll Navigation */
 .week-scroll-navigation {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
   justify-content: center;
 
-  margin-bottom: var(--spacing-sm);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-2);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
@@ -1886,7 +1881,7 @@
 
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.875rem;
   font-weight: 500;
@@ -1997,13 +1992,13 @@
 }
 
 .shift-row.kontischicht-scroll-container::-webkit-scrollbar-track {
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: rgb(255 255 255 / 10%);
 }
 
 .shift-row.kontischicht-scroll-container::-webkit-scrollbar-thumb {
   border: 2px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   background: linear-gradient(90deg, rgb(52 152 219 / 60%), rgb(52 152 219 / 40%));
 }
 
@@ -2041,8 +2036,8 @@
 @media (width <=768px) {
   .week-scroll-navigation {
     flex-direction: column;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-sm);
+    gap: var(--spacing-2);
+    padding: var(--spacing-2);
   }
 
   .scroll-nav-btn {
@@ -2053,7 +2048,7 @@
   .scroll-indicator {
     order: -1;
     max-width: 100%;
-    margin-bottom: var(--spacing-sm);
+    margin-bottom: var(--spacing-2);
   }
 
   .kontischicht-scroll-container .day-header {
@@ -2114,7 +2109,7 @@
   margin: 5px 0;
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
 }
@@ -2217,18 +2212,18 @@
 .shift-controls {
   display: flex;
   justify-content: center;
-  margin: var(--spacing-md) auto var(--spacing-lg);
+  margin: var(--spacing-4) auto var(--spacing-6);
 }
 
 .controls-group {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
-  padding: var(--spacing-md);
+  padding: var(--spacing-4);
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
@@ -2237,7 +2232,7 @@
 .divider {
   width: 1px;
   height: 40px;
-  margin: 0 var(--spacing-sm);
+  margin: 0 var(--spacing-2);
   background: rgb(255 255 255 / 10%);
 }
 
@@ -2251,14 +2246,14 @@
 @media (width <=768px) {
   .controls-group {
     flex-direction: column;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-2);
     align-items: flex-start;
   }
 
   .divider {
     width: 100%;
     height: 1px;
-    margin: var(--spacing-sm) 0;
+    margin: var(--spacing-2) 0;
   }
 }
 
@@ -2396,10 +2391,10 @@
 
 /* ============ FAVORITES STYLES ============ */
 .favorites-container {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-4);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -2409,7 +2404,7 @@
 .favorites-header {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 }
 
@@ -2432,7 +2427,7 @@
   display: flex;
   flex: 1;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
 }
 
 .favorite-btn {
@@ -2446,7 +2441,7 @@
 
   padding: 8px 16px;
   border: 1px solid rgb(76 175 80 / 40%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 13px;
   font-weight: 600;
@@ -2510,11 +2505,11 @@
 
   display: inline-block;
 
-  margin-top: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  margin-top: var(--spacing-4);
+  margin-bottom: var(--spacing-4);
   padding: 10px 20px;
   border: 1px solid rgb(76 175 80 / 40%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 700;
@@ -2544,7 +2539,7 @@
   min-width: 150px;
   padding: var(--spacing-2);
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(33 150 243 / 15%);
 }
@@ -2591,7 +2586,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
 }
 
 .employee-name-sidebar {
@@ -2607,7 +2602,7 @@
 
 /* ============ CORE SHIFT PLANNING STYLES ============ */
 .shift-title {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 28px;
   font-weight: 700;
@@ -2617,10 +2612,10 @@
 
 /* Admin Actions Styles */
 .admin-actions {
-  margin-top: var(--spacing-xl);
-  padding: var(--spacing-lg);
+  margin-top: var(--spacing-8);
+  padding: var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -2634,10 +2629,10 @@
 .admin-btn {
   cursor: pointer;
 
-  margin: 0 var(--spacing-sm);
-  padding: var(--spacing-md) var(--spacing-lg);
+  margin: 0 var(--spacing-2);
+  padding: var(--spacing-4) var(--spacing-6);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 600;

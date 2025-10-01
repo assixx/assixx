@@ -16,7 +16,7 @@
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
     <!-- Dashboard Styles -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <link rel="stylesheet" href="/styles/manage-admins.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
@@ -31,7 +31,7 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 

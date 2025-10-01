@@ -24,7 +24,7 @@
 }
 
 .u-mt-xs {
-  margin-top: var(--spacing-xs) !important;
+  margin-top: var(--spacing-1) !important;
 }
 
 .u-mt-text {
@@ -41,23 +41,23 @@
 }
 
 .u-p-container {
-  padding: var(--spacing-lg) !important;
+  padding: var(--spacing-6) !important;
 }
 
 .u-px-lg {
-  padding-right: var(--spacing-lg) !important;
-  padding-left: var(--spacing-lg) !important;
+  padding-right: var(--spacing-6) !important;
+  padding-left: var(--spacing-6) !important;
 }
 
 /* === Flex Utilities === */
 .u-flex-gap-sm {
   display: flex;
-  gap: var(--spacing-sm) !important;
+  gap: var(--spacing-2) !important;
 }
 
 .u-flex-gap-md {
   display: flex;
-  gap: var(--spacing-md) !important;
+  gap: var(--spacing-4) !important;
 }
 
 .u-flex-center {
@@ -247,11 +247,11 @@
 }
 
 .u-mb-sm {
-  margin-bottom: var(--spacing-sm) !important;
+  margin-bottom: var(--spacing-2) !important;
 }
 
 .u-mb-md {
-  margin-bottom: var(--spacing-md) !important;
+  margin-bottom: var(--spacing-4) !important;
 }
 
 .u-my-20-15 {

@@ -1,14 +1,8 @@
-/* CSS Variablen
-:root {
-  --primary-color: #2196f3;
-  --secondary-color: #6c757d;
-  --text-primary: #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --background-light: rgba(255, 255, 255, 0.02);
-} */
+/**
+ * Manage Departments Styles
+ *
+ * IMPORTANT: Variable definitions removed - use base/variables.css as single source of truth
+ */
 
 /* Glassmorphismus Background */
 
@@ -29,7 +23,7 @@
   margin: 0 4px;
   padding: 6px 12px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: var(--text-secondary);
@@ -101,7 +95,7 @@
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(76 175 80 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -124,7 +118,7 @@ tr:hover .badge-success {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(255 152 0 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -157,7 +151,7 @@ tr:hover .badge-warning {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(244 67 54 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -221,7 +215,7 @@ tr:hover .badge-danger {
 .btn-sm.btn-status-active {
   padding: 0.25rem 0.5rem;
   border: 1px solid #ff6b35;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.75rem;
   font-weight: 500;
@@ -245,7 +239,7 @@ tr:hover .badge-danger {
 .btn-sm.btn-status-inactive {
   padding: 0.25rem 0.5rem;
   border: 1px solid #28a745;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.75rem;
   font-weight: 500;

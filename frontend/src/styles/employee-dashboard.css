@@ -1,11 +1,11 @@
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 
 /* Glassmorphismus Design-Standards */
 
 /* Main Content Container */
 .container {
   margin: 0 auto;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 /* Employee Dashboard spezifische Styles */
@@ -18,10 +18,10 @@
   justify-content: space-between;
 
   min-height: 120px;
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg) var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-6) var(--spacing-8);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   color: #fff;
 
@@ -81,7 +81,7 @@
 }
 
 .welcome-title {
-  margin: 0 0 var(--spacing-xs) 0;
+  margin: 0 0 var(--spacing-1) 0;
 
   font-size: 2rem;
   font-weight: 700;
@@ -105,15 +105,15 @@
   z-index: 2;
 
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
   align-items: center;
 }
 
 .welcome-stat {
   min-width: 80px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -132,7 +132,7 @@
 
 .welcome-stat-number {
   display: block;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
   font-size: 1.5rem;
   font-weight: 700;
 }
@@ -403,8 +403,8 @@
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-8);
 }
 
 .feature-card {
@@ -414,9 +414,9 @@
 
   overflow: hidden;
 
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -452,8 +452,8 @@
 
   width: 60px;
   height: 60px;
-  margin-bottom: var(--spacing-md);
-  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-4);
+  border-radius: var(--radius-xl);
 
   font-size: 1.5rem;
   color: #fff;
@@ -462,14 +462,14 @@
 }
 
 .feature-title {
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: 0 0 var(--spacing-2) 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .feature-description {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--text-secondary);
@@ -478,8 +478,8 @@
 .feature-badge {
   display: inline-block;
 
-  padding: var(--spacing-2sm);
-  border-radius: var(--radius-sm);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.8rem;
   font-weight: 500;
@@ -493,14 +493,14 @@
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-8);
 }
 
 .info-card {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -522,7 +522,7 @@
 }
 
 .info-label {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
 
   font-size: 0.9rem;
   color: var(--text-secondary);
@@ -537,10 +537,10 @@
 }
 
 .quick-stats {
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-8);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -553,7 +553,7 @@
   display: flex;
   align-items: center;
   justify-content: between;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .stats-title {
@@ -570,9 +570,9 @@
 
   overflow: hidden;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(0 142 255 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #fff;
 
@@ -606,9 +606,9 @@
 }
 
 .activity-feed {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -621,7 +621,7 @@
   display: flex;
   align-items: center;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border-bottom: 1px solid rgb(255 255 255 / 5%);
 
   background: transparent;
@@ -632,7 +632,7 @@
 }
 
 .activity-item:hover {
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
   background: var(--glass-bg);
 }
 
@@ -643,8 +643,8 @@
 
   width: 40px;
   height: 40px;
-  margin-right: var(--spacing-md);
-  border-radius: var(--radius-sm);
+  margin-right: var(--spacing-4);
+  border-radius: var(--radius-2xl);
 
   font-size: 1.2rem;
   color: #fff;
@@ -667,7 +667,7 @@
 }
 
 .activity-title {
-  margin: 0 0 var(--spacing-xs) 0;
+  margin: 0 0 var(--spacing-1) 0;
   font-weight: 500;
   color: var(--text-primary);
 }
@@ -678,12 +678,12 @@
 }
 
 .page-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 }
 
 @media (width <= 768px) {
   .container {
-    padding: 0 var(--spacing-md) var(--spacing-md) var(--spacing-md);
+    padding: 0 var(--spacing-4) var(--spacing-4) var(--spacing-4);
   }
 
   .dashboard-grid {
@@ -693,12 +693,12 @@
   .welcome-hero {
     flex-direction: column;
     min-height: auto;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-6);
     text-align: center;
   }
 
   .welcome-content {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-4);
     text-align: center;
   }
 
@@ -707,12 +707,12 @@
   }
 
   .welcome-stats {
-    gap: var(--spacing-md);
+    gap: var(--spacing-4);
   }
 
   .welcome-stat {
     min-width: 70px;
-    padding: var(--spacing-2sm);
+    padding: var(--spacing-3);
   }
 
   .info-grid {
@@ -721,7 +721,7 @@
 }
 
 .loading-state {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   color: var(--text-secondary);
   text-align: center;
 }

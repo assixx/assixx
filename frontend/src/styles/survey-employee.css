@@ -6,19 +6,19 @@
 .survey-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
 }
 
 .survey-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 }
 
 .survey-title {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 
   font-size: 2rem;
   font-weight: 700;
@@ -36,15 +36,15 @@
 
 /* Survey Cards */
 .surveys-section {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 }
 
 .section-title {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 1.5rem;
   font-weight: 600;
@@ -54,7 +54,7 @@
 .surveys-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
 }
 
 .survey-card {
@@ -64,9 +64,9 @@
 
   overflow: hidden;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
   backdrop-filter: blur(20px);
@@ -112,7 +112,7 @@
   display: flex;
   align-items: start;
   justify-content: space-between;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .survey-card-title {
@@ -147,7 +147,7 @@
 }
 
 .survey-card-description {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 0.9rem;
   line-height: 1.5;
   color: var(--text-secondary);
@@ -158,14 +158,14 @@
   align-items: center;
   justify-content: space-between;
 
-  margin-top: var(--spacing-md);
-  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-4);
+  padding-top: var(--spacing-4);
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
 .survey-deadline {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
 
   font-size: 0.85rem;
@@ -180,10 +180,10 @@
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
 
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-2) var(--spacing-6);
   border: none;
   border-radius: 25px;
 
@@ -259,17 +259,17 @@
 }
 
 .response-info {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-3);
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 10%);
 }
 
 .response-info p {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
   margin: 0;
@@ -280,12 +280,12 @@
 .response-answers {
   overflow-y: auto;
   max-height: 400px;
-  padding-right: var(--spacing-sm);
+  padding-right: var(--spacing-2);
 }
 
 .response-question {
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
+  padding-bottom: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -294,21 +294,21 @@
 }
 
 .response-question h4 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 1.1rem;
   color: var(--text-primary);
 }
 
 .response-answer {
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
   background: rgb(255 255 255 / 5%);
 }
 
 .response-answer p {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
   margin: 0;
@@ -345,9 +345,9 @@
 }
 
 .success-message {
-  padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
+  padding: var(--spacing-8) calc(var(--spacing-8) * 2);
   border: 2px solid #4caf50;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -358,7 +358,7 @@
 }
 
 .success-icon {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 4rem;
   color: #4caf50;
 
@@ -411,13 +411,13 @@
 .section-divider {
   position: relative;
   height: 1px;
-  margin: var(--spacing-xl) 0;
+  margin: var(--spacing-8) 0;
   background: linear-gradient(90deg, transparent, rgb(255 255 255 / 10%), transparent);
 }
 
 /* Empty State */
 .empty-state {
-  padding: var(--spacing-xl) * 2;
+  padding: var(--spacing-8) * 2;
   color: var(--text-secondary);
   text-align: center;
 }
@@ -429,7 +429,7 @@
 }
 
 .empty-state-title {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-primary);
@@ -463,7 +463,7 @@
   /* animation: fadeInUp 0.3s ease-out; */
   padding: 30px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -475,8 +475,8 @@
   align-items: center;
   justify-content: space-between;
 
-  margin-bottom: var(--spacing-lg);
-  padding: 0 0 var(--spacing-lg) 0;
+  margin-bottom: var(--spacing-6);
+  padding: 0 0 var(--spacing-6) 0;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -489,7 +489,7 @@
 .close-btn {
   cursor: pointer;
 
-  padding: var(--spacing-xs);
+  padding: var(--spacing-1);
   border: none;
   border-radius: 50%;
 
@@ -506,19 +506,19 @@
 
 /* Question Display */
 .question-item {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-6);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
 }
 
 .question-header {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: start;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 }
 
 .question-number {
@@ -550,7 +550,7 @@
 
 /* Answer Types */
 .answer-container {
-  margin-top: var(--spacing-md);
+  margin-top: var(--spacing-4);
 }
 
 textarea.form-control {
@@ -562,12 +562,12 @@ textarea.form-control {
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin-bottom: var(--spacing-sm);
-  padding: var(--spacing-2sm);
-  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-2);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-2xl);
 }
 
 .choice-option:hover {
@@ -589,9 +589,9 @@ textarea.form-control {
 /* Rating */
 .rating-container {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   justify-content: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .rating-option {
@@ -626,11 +626,11 @@ textarea.form-control {
 /* Submit Button */
 .form-actions {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   justify-content: flex-end;
 
-  margin-top: var(--spacing-xl);
-  padding-top: var(--spacing-xl);
+  margin-top: var(--spacing-8);
+  padding-top: var(--spacing-8);
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -639,17 +639,17 @@ textarea.form-control {
 }
 
 .survey-progress {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .btn {
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
 
-  padding: var(--spacing-sm) var(--spacing-lg);
+  padding: var(--spacing-2) var(--spacing-6);
   border: none;
   border-radius: 25px;
 
@@ -681,7 +681,7 @@ textarea.form-control {
 
 /* Progress Bar - Duplicate removed (first defined at line 678) */
 /* .survey-progress {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 } */
 
 .progress-bar {
@@ -697,7 +697,7 @@ textarea.form-control {
 }
 
 .progress-text {
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-2);
   font-size: 0.9rem;
   color: var(--text-secondary);
   text-align: center;

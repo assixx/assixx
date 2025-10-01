@@ -25,33 +25,22 @@
     sans-serif !important;
 }
 
-/* Main content padding - für Pinnwand-Layout */
-.main-content {
-  position: relative;
-
-  overflow-y: auto;
-
-  width: 100%;
-  height: calc(100vh - 56px);
-  padding: var(--spacing-lg);
-}
+/* Main content padding - REMOVED: Migrated to Tailwind utilities in blackboard.html */
 
 /* Override container max-width when sidebar is collapsed */
-.main-content.sidebar-collapsed .container {
+.sidebar-collapsed .container {
   max-width: none !important;
 }
 
-/* Specific override for blackboard page - main element has both classes */
-main.container.main-content.sidebar-collapsed {
+/* Specific override for blackboard page */
+main.container.sidebar-collapsed {
   width: 100% !important;
   max-width: 100% !important;
 }
 
-/* Also ensure any container inside main-content uses full width */
-.main-content.sidebar-collapsed .blackboard-container {
+/* Also ensure any container inside main uses full width when sidebar collapsed */
+.sidebar-collapsed .blackboard-container {
   max-width: 99% !important;
-
-  /* width: calc(100% - 80px) !important; /* Account for padding */
 }
 
 /* Pinnwand Container */
@@ -67,8 +56,8 @@ main.container.main-content.sidebar-collapsed {
   border-radius: 12px;
 
   background:
-    linear-gradient(45deg, #51191900 25%, #000 0), linear-gradient(-45deg, #fff0 25%, #fff0 0),
-    linear-gradient(45deg, #fff0 75%, #fff 0), linear-gradient(-45deg, #ffffff07 75%, #848484e3 0);
+    linear-gradient(45deg, #ffffff57 3%, #9a070700 0), linear-gradient(-45deg, #fff0 3% 0),
+    linear-gradient(45deg, #ffffffb2 3%, #fff0 0), linear-gradient(-45deg, #ffffff3d 3%, #84848400 0);
   background-position:
     0 0,
     -2px 4px,
@@ -225,7 +214,7 @@ main.container.main-content.sidebar-collapsed {
   gap: 10px;
   align-items: center;
 
-  padding: 12px 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid #e5e7eb;
 
   background: #f3f4f6;
@@ -247,7 +236,7 @@ main.container.main-content.sidebar-collapsed {
   transform: rotate(var(--rotation, -3deg));
 
   padding: 10px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: #17171700;
 }
@@ -280,7 +269,7 @@ main.container.main-content.sidebar-collapsed {
   transform: rotate(var(--rotation, -2deg));
 
   padding: 15px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: #85a1e4;
   box-shadow:
@@ -592,16 +581,15 @@ main.container.main-content.sidebar-collapsed {
 .form-input,
 .big-input {
   width: 100%;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-family: inherit;
   font-size: 14px;
   color: #fff;
 
   background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
 }
 
 /* Native Select verstecken */
@@ -624,9 +612,9 @@ select.form-control {
   justify-content: space-between;
 
   /* height: 42px; */
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   color: #fff;
@@ -656,7 +644,7 @@ select.form-control {
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -692,7 +680,7 @@ select.form-control {
 .big-label {
   display: block;
 
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
 
   font-size: 14px;
   font-weight: 500;
@@ -711,7 +699,7 @@ select.form-control {
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -736,7 +724,7 @@ select.form-control {
 
   padding: 10px 24px;
   border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -758,7 +746,7 @@ select.form-control {
 .color-picker {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
 }
 
 .color-option {
@@ -770,9 +758,9 @@ select.form-control {
   align-items: center;
 
   min-height: 60px;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 12px;
   color: #000;
@@ -798,7 +786,7 @@ select.form-control {
 /* Checkbox Update */
 .simple-checkbox {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: flex-start;
 }
 
@@ -823,9 +811,9 @@ select.form-control {
 .attachment-upload-zone {
   cursor: pointer;
 
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: 2px dashed rgb(255 255 255 / 20%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   text-align: center;
 
@@ -846,13 +834,13 @@ select.form-control {
 }
 
 .upload-icon {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 48px;
   color: rgb(255 255 255 / 40%);
 }
 
 .upload-text {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-1);
   font-size: 16px;
   font-weight: 500;
   color: var(--text-primary);
@@ -875,9 +863,9 @@ select.form-control {
   width: 90%;
   max-width: 900px;
   max-height: 85vh !important;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: #121212;
   backdrop-filter: blur(20px) saturate(180%);
@@ -893,7 +881,7 @@ select.form-control {
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -902,17 +890,17 @@ select.form-control {
   overflow-y: auto;
   flex: 1;
   max-height: calc(100vh - 250px);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 /* Button Group - Fixed at bottom */
 .button-group {
   display: flex;
   flex-shrink: 0;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   justify-content: flex-end;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
 
   background: rgb(0 0 0 / 20%);
@@ -948,7 +936,7 @@ select.form-control {
 .form-hint {
   display: block;
 
-  margin-top: var(--spacing-xs);
+  margin-top: var(--spacing-1);
 
   font-size: 12px;
   font-style: italic;
@@ -960,7 +948,7 @@ select.form-control {
   .entry-form-modal form {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-xl);
+    gap: var(--spacing-8);
     align-content: start;
   }
 
@@ -1001,7 +989,7 @@ select.form-control {
 
   .button-group {
     flex-direction: column-reverse;
-    gap: var(--spacing-sm);
+    gap: var(--spacing-2);
   }
 
   .button-group .btn {
@@ -1009,7 +997,7 @@ select.form-control {
   }
 
   .entry-form-modal form {
-    padding: var(--spacing-2sm);
+    padding: var(--spacing-3);
   }
 }
 
@@ -1023,7 +1011,7 @@ select.form-control {
 
   width: 100%;
   height: 10px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background-color: var(--background-dark);
 }
@@ -1034,7 +1022,7 @@ select.form-control {
   justify-content: center;
 
   height: 100%;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 10px;
   color: #fff;
@@ -1048,7 +1036,7 @@ select.form-control {
 
   width: 40px;
   height: 40px;
-  margin: var(--spacing-md) auto;
+  margin: var(--spacing-4) auto;
   border: 3px solid var(--primary-color);
   border-top-color: transparent;
   border-radius: 50%;
@@ -1069,9 +1057,9 @@ select.form-control {
   flex-direction: column;
 
   height: 100%;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background-color: var(--background-light);
   box-shadow: var(--shadow-sm);
@@ -1189,7 +1177,7 @@ select.form-control {
   top: 0;
   left: 0;
 
-  display: flex;
+  /* display wird durch .u-hidden bzw. JavaScript gesteuert */
   align-items: center;
   justify-content: center;
 
@@ -1200,6 +1188,11 @@ select.form-control {
   backdrop-filter: blur(10px);
 }
 
+/* Display flex nur wenn Modal aktiv ist */
+#entryDetailModal:not(.u-hidden) {
+  display: flex;
+}
+
 #entryDetailModal .modal-container {
   width: 90%;
   max-width: 600px; /* Merged: kept original max-width */
@@ -1208,18 +1201,18 @@ select.form-control {
 #entryDetailModal .modal-body {
   overflow-y: auto;
   max-height: 70vh;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .entry-detail-header {
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-6);
+  padding-bottom: var(--spacing-4);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
 .entry-detail-header h2 {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
   margin: 0;
@@ -1231,10 +1224,10 @@ select.form-control {
 
 .entry-detail-meta {
   display: flex;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
   align-items: center;
 
-  margin-top: var(--spacing-sm);
+  margin-top: var(--spacing-2);
 
   font-size: 13px;
   color: rgb(255 255 255 / 70%);
@@ -1242,7 +1235,7 @@ select.form-control {
 
 .entry-detail-meta span {
   display: flex;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-1);
   align-items: center;
 }
 
@@ -1252,7 +1245,7 @@ select.form-control {
 }
 
 .entry-detail-content {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 
   font-size: 15px;
   line-height: 1.7;
@@ -1264,8 +1257,8 @@ select.form-control {
 .entry-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
 }
 
 .entry-tags .badge {
@@ -1319,9 +1312,9 @@ select.form-control {
   display: block;
 
   width: 100%;
-  padding: 12px 15px;
+  padding: 10px 15px;
   border: 2px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 16px;
   color: var(--text-primary);
@@ -1370,7 +1363,7 @@ select.form-control {
 
   margin-bottom: 1rem;
   padding: 0.75rem;
-  border-radius: var(--radius-md, 8px);
+  border-radius: var(--radius-xl, 8px);
 
   background-color: var(--background-light, #f5f5f5);
   box-shadow: var(--shadow-sm, 0 1px 3px rgb(0 0 0 / 12%));
@@ -1664,7 +1657,7 @@ select.form-control {
   align-items: center;
   justify-content: space-between;
 
-  padding: 12px 16px;
+  padding: 10px 16px;
   border-radius: 8px;
 
   background: rgb(255 255 255 / 5%);
@@ -1715,7 +1708,7 @@ select.form-control {
 
   padding: 8px 12px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: #e74c3c;
@@ -1730,17 +1723,17 @@ select.form-control {
 
 /* Attachment Display in Entry - Compact Design */
 .entry-attachments {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
 .entry-attachments-title {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
 
   font-size: 14px;
   font-weight: 600;
@@ -1758,7 +1751,7 @@ select.form-control {
 .entry-attachment-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   width: 100%;
 }
 
@@ -1766,14 +1759,14 @@ select.form-control {
   cursor: pointer;
 
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
 
   box-sizing: border-box;
   width: 100%;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: rgb(255 255 255 / 90%);
   text-decoration: none;
@@ -1848,7 +1841,7 @@ select.form-control {
   height: auto;
   max-height: 90vh;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -1864,7 +1857,7 @@ select.form-control {
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -1878,7 +1871,7 @@ select.form-control {
 #attachmentPreviewModal .modal-body {
   overflow: auto;
   max-height: calc(90vh - 200px);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   background: transparent;
 }
 
@@ -1888,7 +1881,7 @@ select.form-control {
   max-width: 100%;
   height: auto;
   margin: 0 auto;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
 }
@@ -1896,16 +1889,16 @@ select.form-control {
 #attachmentPreviewModal object {
   width: 100%;
   min-height: 500px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
   background: rgb(255 255 255 / 95%);
 }
 
 #attachmentPreviewModal .modal-footer {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   justify-content: flex-end;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
 
   background: transparent;
@@ -1954,11 +1947,6 @@ select.form-control {
    Generated: 2025-09-17
    ======================================== */
 
-/* Blackboard spezifisches Container Styling - kein Padding */
-.blackboard-page .container {
-  padding: 0 !important;
-}
-
 /* PDF Preview Modal - Enhanced styles from inline HTML (duplicates removed) */
 /* Note: Basic modal styles already exist above, these are additional enhancements */
 
@@ -1982,21 +1970,26 @@ select.form-control {
   border: none;
 }
 
-/* Glassmorphismus Design-Standards */
-
-/* Glassmorphismus für Cards */
-.card {
-  /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
-  /* Verwendet die CSS-Variablen aus dem zentralen Theme */
-  /* animation: fade-in-up 0.6s ease-out; */
-}
-
 /* Modal Overlays - Glassmorphismus */
 .modal-overlay {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+
+  display: none; /* Standard: versteckt */
+  align-items: center;
+  justify-content: center;
+
+  background: rgb(0 0 0 / 70%);
   backdrop-filter: blur(10px);
+
   transition:
     opacity 0.1s ease,
     visibility 0.1s ease;
+}
+
+.modal-overlay.active {
+  display: flex; /* Sichtbar wenn active Klasse gesetzt */
 }
 
 .modal-container {
@@ -2014,7 +2007,6 @@ select.form-control {
 .search-field,
 .modern-select {
   color: #fff;
-  backdrop-filter: blur(10px);
 }
 
 .form-control:focus,
@@ -2103,7 +2095,7 @@ select.form-control {
   margin-left: auto;
   padding: 10px;
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
@@ -2189,7 +2181,7 @@ body.fullscreen-mode .layout-container {
   padding: 0;
 }
 
-body.fullscreen-mode .main-content {
+body.fullscreen-mode main {
   max-width: 100% !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -2280,11 +2272,6 @@ body.fullscreen-mode .note {
 body #breadcrumb-container + .card,
 body #breadcrumb-container + * {
   margin-top: -15px !important;
-}
-
-/* Breadcrumb linksbündig machen für blackboard */
-.breadcrumb {
-  padding-left: 0 !important;
 }
 
 /* ========================================
@@ -2390,7 +2377,7 @@ body #breadcrumb-container + * {
 .attachment-dropzone {
   cursor: pointer;
   border: 2px dashed rgb(255 255 255 / 30%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 }
 
 .dropzone-icon {
@@ -2405,7 +2392,7 @@ body #breadcrumb-container + * {
 
 /* Preview Styles */
 .attachment-preview-box {
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
   background: rgb(255 255 255 / 5%);
 }
 

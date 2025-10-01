@@ -25,7 +25,7 @@ export default {
       stage: 2, // Stabile Features
       features: {
         'nesting-rules': false, // Wir nutzen postcss-nesting stattdessen
-        'custom-properties': true, // CSS Variables
+        'custom-properties': false, // CSS Variables
         'custom-media-queries': true, // @custom-media
         'has-pseudo-class': true, // :has()
         'is-pseudo-class': true, // :is()

@@ -20,7 +20,7 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <!-- CSS Styles -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <link rel="stylesheet" href="/styles/survey-details.css" />
   </head>
@@ -31,7 +31,7 @@
     <!-- Main Layout -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="main-content">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
@@ -158,9 +158,9 @@
                         ${
                           surveyData.description
                             ? `
-                            <div style="margin-top: var(--spacing-lg);">
+                            <div style="margin-top: var(--spacing-6);">
                                 <span class="info-label">Beschreibung</span>
-                                <p style="color: var(--text-primary); margin-top: var(--spacing-xs);">
+                                <p style="color: var(--text-primary); margin-top: var(--spacing-1);">
                                     ${escapeHtml(surveyData.description)}
                                 </p>
                             </div>
@@ -274,8 +274,8 @@
         window.setHTML(
           contentArea,
           `
-                <div class="empty-state" style="text-align: center; padding: var(--spacing-xl); color: var(--text-secondary);">
-                    <div style="font-size: 3rem; margin-bottom: var(--spacing-md);">❌</div>
+                <div class="empty-state" style="text-align: center; padding: var(--spacing-8); color: var(--text-secondary);">
+                    <div style="font-size: 3rem; margin-bottom: var(--spacing-4);">❌</div>
                     <p>${safeMessage}</p>
                     <button class="btn btn-secondary" data-action="back-to-overview">
                         Zurück zur Übersicht

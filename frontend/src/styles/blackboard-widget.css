@@ -3,7 +3,7 @@
   margin-bottom: 2rem;
   padding: 1.5rem;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 100% / 2%);
   backdrop-filter: blur(20px) saturate(180%);

@@ -19,9 +19,9 @@
 
   overflow: hidden;
 
-  padding: var(--spacing-xl);
+  padding: var(--spacing-8);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
@@ -50,7 +50,7 @@
 }
 
 .compact-card .card-header {
-  padding: var(--spacing-md) var(--spacing-lg);
+  padding: var(--spacing-4) var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 5%);
   border-radius: 10px 10px 0 0;
 
@@ -60,7 +60,7 @@
 
 .compact-card .card-title {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
   margin: 0;
@@ -84,19 +84,19 @@
   display: flex;
   flex: 1;
   flex-direction: column;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .compact-list {
   flex: 1;
-  margin: var(--spacing-md) 0;
+  margin: var(--spacing-4) 0;
 }
 
 .compact-list .list-item {
-  margin-bottom: var(--spacing-sm);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-2);
+  padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 0.9rem;
   color: var(--text-secondary);
@@ -110,7 +110,7 @@
   overflow: hidden;
 
   margin-bottom: 8px;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid rgb(255 255 255 / 5%);
   border-radius: 8px;
 
@@ -184,7 +184,7 @@
 /* Button in Compact-Cards */
 .compact-card .btn-block {
   width: 100%;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   padding: 10px 16px;
 
   font-size: 0.9rem;
@@ -234,6 +234,7 @@
 
 /* Tabellen mit Glassmorphismus */
 .table {
+  font-size: 12px; /* Best Practice 2025: data tables */
   background: transparent;
 }
 
@@ -255,7 +256,7 @@
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--spacing-lg);
+  gap: var(--spacing-6);
   align-items: stretch;
 }
 
@@ -288,14 +289,6 @@
   }
 }
 
-/* Animation für Cards - bei Bedarf aktivieren
-.stat-card,
-.card,
-.compact-card {
-  animation: fade-in-up 0.6s ease-out;
-}
-*/
-
 @keyframes subtle-pulse {
   0% {
     box-shadow:
@@ -326,7 +319,7 @@
 .btn-status-active {
   padding: 0.375rem 0.75rem;
   border: 1px solid #ff6b35;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-weight: 500;
   color: #ff6b35;
@@ -349,7 +342,7 @@
 .btn-status-inactive {
   padding: 0.375rem 0.75rem;
   border: 1px solid #28a745;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-weight: 500;
   color: #28a745;
@@ -518,16 +511,6 @@
   --widget-padding: 2rem;
 }
 
-/* Apply to all main content */
-
-/* Apply to all cards and widgets
-.card,
-.widget,
-.stat-card,
-.blackboard-widget {
-  max-width: var(--card-max-width);
-} */
-
 /* Prevent any layout shift during initial load */
 body:not(.loaded) * {
   /* Reserved for dynamic styles to prevent layout shift */
@@ -561,7 +544,7 @@ body:not(.loaded) * {
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -582,7 +565,7 @@ body:not(.loaded) * {
   height: 30px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 24px;
   color: var(--text-secondary);
@@ -609,9 +592,9 @@ body:not(.loaded) * {
 
 .modal .form-control {
   width: 100%;
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #fff;
 
@@ -644,7 +627,7 @@ body:not(.loaded) * {
 }
 
 .modal form {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 /* Button Group Styles */
@@ -667,7 +650,7 @@ body:not(.loaded) * {
 /* Better button styles for tables */
 .table .btn-sm {
   padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
   font-size: 0.875rem;
   line-height: 1.5;
 }
@@ -690,9 +673,9 @@ body:not(.loaded) * {
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #fff;
 
@@ -735,7 +718,7 @@ body:not(.loaded) * {
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -816,14 +799,14 @@ body:not(.loaded) * {
 /* Search Styles */
 .search-container {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   margin-left: auto;
 }
 
 .flex-between {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
   justify-content: space-between;
 }
@@ -836,7 +819,7 @@ body:not(.loaded) * {
   max-height: 90vh;
 
   /* Verwendet CSS-Variablen aus dashboard-theme.css */
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 
   box-shadow: var(--shadow-sm);
 
@@ -873,7 +856,7 @@ body:not(.loaded) * {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(76 175 80 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -891,7 +874,7 @@ body:not(.loaded) * {
   width: fit-content;
   padding: 3px 8px;
   border: 1px solid rgb(244 67 54 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 700;
@@ -921,7 +904,7 @@ tr:hover .badge-warning {
 .team-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
 }
 
 .department-item,
@@ -930,8 +913,8 @@ tr:hover .badge-warning {
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-2sm);
-  border-radius: var(--radius-sm);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-2xl);
 
   background-color: var(--background-dark);
 }
@@ -1001,7 +984,7 @@ tr:hover .badge-warning {
   border: var(--glass-card-border);
   border-radius: var(--glass-card-radius);
 
-  background: var(--glass-card-bg);
+  background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);
   box-shadow: 0 24px 48px rgb(0 0 0 / 50%);
 }

@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="/styles/lib/fullcalendar.min.css" />
 
     <!-- Dashboard Theme - General theme styles -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <!-- Calendar spezifische Styles -->
     <link rel="stylesheet" href="/styles/calendar.css" />
@@ -30,7 +30,7 @@
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Main Content -->
-      <main class="main-content">
+      <main class="overflow-y-auto w-full h-[calc(100vh-56px)]">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 

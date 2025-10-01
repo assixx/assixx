@@ -21,7 +21,6 @@
     background-color: var(--glass-bg);
     background-clip: border-box;
     backdrop-filter: blur(10px) saturate(150%);
-    backdrop-filter: blur(10px) saturate(150%);
   }
 
   .card-body {

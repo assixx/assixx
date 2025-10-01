@@ -228,7 +228,7 @@ export function injectStyles() {
         text-decoration: none;
         /*  */
         padding: 4px 8px;
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-3xl);
       }
 
       .breadcrumb-link:hover {
@@ -242,7 +242,7 @@ export function injectStyles() {
       }
 
       .breadcrumb-current {
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-3xl);
         color: var(--text-primary);
         font-weight: 600;
         padding: 4px 8px;

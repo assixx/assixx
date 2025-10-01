@@ -1,6 +1,6 @@
 /* Account Settings Page Styles */
 
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 
 /* Glassmorphismus Design-Standards */
 
@@ -13,10 +13,10 @@
 
 /* Glassmorphismus Cards */
 .settings-card {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-8);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -28,10 +28,10 @@
 /* Card Title with accent bar */
 .card-title {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin: 0 0 var(--spacing-lg) 0;
+  margin: 0 0 var(--spacing-6) 0;
 
   font-size: 1.25rem;
   font-weight: 600;
@@ -80,7 +80,7 @@
   max-width: 500px;
   padding: 32px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 8.2% / 84%);
   backdrop-filter: blur(20px);
@@ -104,7 +104,7 @@
   margin-bottom: 24px;
   padding: 24px;
   border: 1px solid rgb(244 67 54 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(244 67 54 / 10%);
 }
@@ -151,7 +151,7 @@
   margin: 20px 0;
   padding: 16px;
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(33 150 243 / 10%);
 }
@@ -172,7 +172,7 @@
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 500;

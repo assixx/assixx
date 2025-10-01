@@ -1,4 +1,4 @@
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 @import "./breadcrumb-alignment.css";
 
 /* Document Pages Styles */
@@ -26,7 +26,7 @@
 
   padding: 6px 12px;
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
   color: rgb(255 255 255 / 60%);
@@ -121,7 +121,7 @@
   left: 10px;
 
   padding: 4px 10px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 11px;
   font-weight: 600;
@@ -206,7 +206,7 @@
 
   margin-bottom: 10px;
   padding: 4px 10px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 12px;
   color: #2196f3;
@@ -348,7 +348,7 @@
 
 .search-input {
   width: 100%;
-  padding: 12px 20px 12px 45px;
+  padding: 10px 20px 12px 45px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 8px;
 
@@ -803,15 +803,15 @@
 /* Glassmorphismus für Cards */
 .card {
   overflow: hidden;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 
   /* Glassmorphismus styles sind bereits in dashboard-theme.css definiert */
   /* Verwendet die CSS-Variablen aus dem zentralen Theme */
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 }
 
 .card-header {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 8%);
   background: rgb(255 255 255 / 1%);
 }
@@ -828,19 +828,19 @@
 }
 
 .card-body {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 /* Filter Pills */
 .filter-section {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 }
 
 .filter-pills {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-sm);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-6);
 }
 
 .filter-pill {
@@ -889,8 +889,8 @@
 .controls-section {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
 }
 
 .search-box {
@@ -903,7 +903,7 @@
   width: 100%;
   padding: 10px 15px 10px 45px;
   border: var(--glass-border);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   color: var(--text-primary);
@@ -959,12 +959,12 @@
 /* Stats Bar */
 .stats-bar {
   display: flex;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-8);
 
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 5%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: var(--glass-bg);
 }
@@ -972,7 +972,7 @@
 /* Stat items - Duplicates removed (first defined at lines 397-410) */
 /* .stat-item {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 }
 
@@ -1005,7 +1005,7 @@
 
   .filter-pills {
     overflow-x: auto;
-    padding-bottom: var(--spacing-sm);
+    padding-bottom: var(--spacing-2);
   }
 
   .documents-grid {
@@ -1014,7 +1014,7 @@
 
   .stats-bar {
     flex-wrap: wrap;
-    gap: var(--spacing-md);
+    gap: var(--spacing-4);
   }
 }
 
@@ -1055,7 +1055,7 @@
   max-width: 90%;
   max-height: 90vh;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 8.2% / 84%);
   backdrop-filter: var(--glass-backdrop);
@@ -1073,7 +1073,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 } */
 
@@ -1095,7 +1095,7 @@
   height: 40px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 2rem;
   color: var(--text-secondary);
@@ -1111,24 +1111,24 @@
 /* .modal-body {
   overflow-y: auto;
   flex: 1;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 } */
 
 /* .modal-footer {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   justify-content: flex-end;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
 } */
 
 /* Document Info Grid - Duplicates commented (first defined at lines 637-670) */
 /* .document-info {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
 } */
@@ -1136,7 +1136,7 @@
 /* .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
 } */
 
 /* .info-item {
@@ -1176,7 +1176,7 @@
 
   padding: 10px 20px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   font-size: 0.95rem;
   font-weight: 500;
@@ -1211,5 +1211,5 @@
 
 /* Page Header - Duplicate commented (first defined at line 733) */
 /* .page-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 } */

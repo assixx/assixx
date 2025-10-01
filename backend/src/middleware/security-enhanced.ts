@@ -207,7 +207,7 @@ const rateLimitStyles = `
     --spacing-md: 16px;
     --spacing-lg: 24px;
     --spacing-xl: 32px;
-    --radius-md: 12px;
+    --radius-3xl: 12px;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -253,7 +253,7 @@ const rateLimitStyles = `
     background: rgba(255, 255, 255, 0.02);
     backdrop-filter: blur(20px) saturate(180%);
     padding: var(--spacing-xl);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-3xl);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     border: 1px solid hsla(0, 0%, 100%, 0.1);
     text-align: center;
@@ -294,7 +294,7 @@ const rateLimitStyles = `
   .retry-info {
     background: rgba(33, 150, 243, 0.1);
     border: 1px solid rgba(33, 150, 243, 0.2);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-3xl);
     padding: var(--spacing-lg);
     margin-bottom: var(--spacing-xl);
   }

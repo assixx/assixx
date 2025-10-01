@@ -70,7 +70,7 @@
   --radius-2xl: 24px;
   --radius-xl: 16px;
   --radius-lg: 12px;
-  --radius-md: 8px;
+  --radius-xl: 8px;
   --radius-sm: 4px;
   --radius-none: 0;
   --glass-saturate-max: 200%;
@@ -124,7 +124,7 @@
   --modal-border-radius: var(--radius-xl);
   --modal-padding: var(--spacing-8);
   --input-font-size: var(--font-size-base);
-  --input-border-radius: var(--radius-md);
+  --input-border-radius: var(--radius-xl);
   --input-padding-y: var(--spacing-2);
   --input-padding-x: var(--spacing-3);
   --card-shadow: var(--shadow-md);
@@ -134,7 +134,7 @@
   --button-font-size-lg: var(--font-size-lg);
   --button-font-size-md: var(--font-size-base);
   --button-font-size-sm: var(--font-size-sm);
-  --button-border-radius: var(--radius-md);
+  --button-border-radius: var(--radius-xl);
   --button-padding-y: var(--spacing-2);
   --button-padding-x: var(--spacing-4);
   --glass-backdrop: blur(var(--glass-blur-lg)) saturate(var(--glass-saturate-high));

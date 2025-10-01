@@ -13,7 +13,7 @@
     <link id="unified-navigation-styles" rel="stylesheet" href="/styles/unified-navigation.css" />
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
-    <link rel="stylesheet" href="/styles/dashboard-theme.css" />
+    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/blackboard.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
@@ -32,7 +32,7 @@
     <!-- Main Layout mit Sidebar -->
     <div class="layout-container">
       <!-- Main Content -->
-      <main class="main-content">
+      <main class="relative overflow-y-auto w-full h-[calc(100vh-56px)] p-[var(--spacing-6)]">
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
@@ -413,67 +413,6 @@
             </button>
           </div>
         </form>
-      </div>
-    </div>
-
-    <!-- Confirmation Modal -->
-    <div class="modal-overlay u-hidden" id="confirmationModal">
-      <div class="modal-container modal-sm">
-        <div class="modal-header">
-          <h2 id="confirmationModalLabel">Bestätigung</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <p id="confirmationMessage" class="mb-0">Möchten Sie diesen Eintrag wirklich löschen?</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirmActionBtn">Löschen</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Confirmation Status Modal -->
-    <!-- TODO: Feature nicht implementiert - Nur UI vorhanden!
-         Benötigt:
-         - Button zum Öffnen des Modals in Entry-Karten
-         - JavaScript Funktion viewConfirmationStatus()
-         - Backend Endpoint GET /api/v2/blackboard/:id/confirmations
-         - Database Tabelle blackboard_confirmations (user_id, entry_id, read_at)
-         - Integration in Entry Detail Modal oder als Icon in Karten-Header
-    -->
-    <div class="modal-overlay u-hidden" id="confirmationStatusModal">
-      <div class="modal-container modal-lg">
-        <div class="modal-header">
-          <h2 id="confirmationStatusModalLabel">Lesebestätigungen</h2>
-          <button type="button" class="modal-close" data-action="close">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3">
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" id="confirmationProgress" style="width: 0%">0%</div>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table class="table">
-              <thead>
-                <tr>
-                  <th>Mitarbeiter</th>
-                  <th>E-Mail</th>
-                  <th>Status</th>
-                  <th>Zeitpunkt</th>
-                </tr>
-              </thead>
-              <tbody id="confirmationStatusList">
-                <!-- Wird dynamisch gefüllt -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
-        </div>
       </div>
     </div>
 

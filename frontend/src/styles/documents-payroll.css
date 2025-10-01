@@ -1,5 +1,5 @@
 /* Extracted styles from documents-payroll.html */
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 @import "./breadcrumb-alignment.css";
 @import "./documents.css";
 @import "./user-info-update.css";

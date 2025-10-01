@@ -54,7 +54,6 @@
     background-color: var(--glass-bg);
     background-clip: padding-box;
     backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
     outline: 0;
   }
 

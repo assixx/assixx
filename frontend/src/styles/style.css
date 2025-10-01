@@ -1,52 +1,23 @@
 /**
  * Globale Stile für Assixx
+ *
+ * IMPORTANT: Variable definitions removed - use base/variables.css as single source of truth
+ * This file should only contain component styles that USE variables, not DEFINE them
  */
 
 /* Font import removed - already imported via dashboard-theme.css */
 /* @import "fonts-outfit.css"; */
 
-:root {
-  /* Farben */
-  --primary-color: #2196f3;
-  --secondary-color: #4caf50;
-  --background-light: #f5f5f5;
-  --background-dark: #e0e0e0;
-  --text-primary: #fff;
-  --text-secondary: #fff;
-  --border-color: #ddd;
-  --error-color: #f44336;
-  --success-color: #4caf50;
-  --warning-color: #ff9800;
-
-  /* Abstände */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-
-  /* Radien */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-
-  /* Schatten */
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 12%);
-  --shadow-md: 0 4px 6px rgb(0 0 0 / 10%);
-  --shadow-lg: 0 10px 15px rgb(0 0 0 / 10%);
-}
-
 /* Body styles now handled by Tailwind base layer in tailwind-base.css */
 
 .container {
-  max-width: 1200px;
   margin: 0 auto;
 
   /* padding entfernt für volle Breite wie root-dashboard */
 }
 
 /* Container full width when sidebar is collapsed */
-.main-content.sidebar-collapsed .container {
+.sidebar-collapsed .container {
   max-width: none;
 }
 
@@ -84,7 +55,7 @@ header {
 
   padding: 0.5rem 1rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 1rem;
   font-weight: 500;
@@ -137,31 +108,8 @@ header {
   font-size: 0.875rem;
 }
 
-/* Table Styles */
-.table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-}
-
-.table th,
-.table td {
-  padding: 0.75rem;
-  border-top: 1px solid var(--border-color);
-  vertical-align: top;
-}
-
-.table thead th {
-  border-bottom: 2px solid var(--border-color);
-  font-weight: 600;
-  vertical-align: bottom;
-  background-color: #f5f5f5;
-}
-
-.table tbody tr:hover {
-  background-color: rgb(0 0 0 / 3%);
-}
+/* Table Styles - Moved to @layer components in tailwind/compat/bootstrap-tables.css
+ * to prevent specificity conflicts and enable proper dark mode support */
 
 /* Badge Styles */
 .badge {
@@ -189,17 +137,15 @@ header {
   min-width: 0;
   margin-bottom: 1rem;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   overflow-wrap: break-word;
 
-  background-color: #fff;
   background-clip: border-box;
   box-shadow: var(--shadow-sm);
 }
 
 .card-header {
-  margin-bottom: 0;
   padding: 0.75rem 1.25rem;
   border-bottom: 1px solid var(--border-color);
   background-color: rgb(0 0 0 / 2%);
@@ -335,7 +281,7 @@ header {
 /* Responsive utilities */
 @media (width <= 576px) {
   .container {
-    padding: var(--spacing-2sm); /* 16px auf Mobile */
+    padding: var(--spacing-3); /* 16px auf Mobile */
   }
 }
 
@@ -352,7 +298,7 @@ header {
 
   max-width: 350px;
   margin-bottom: 10px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background-color: rgb(255 255 255 / 90%);
   box-shadow: var(--shadow-md);

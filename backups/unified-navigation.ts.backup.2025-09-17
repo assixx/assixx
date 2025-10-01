@@ -3482,7 +3482,7 @@ const unifiedNavigationCSS = `
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.9);
         color: #fff;
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-xl);
         font-size: 14px;
         white-space: nowrap;
         z-index: 1000;
@@ -3521,7 +3521,7 @@ const unifiedNavigationCSS = `
         background: rgba(255, 255, 255, 0.02);
         backdrop-filter: blur(20px) saturate(180%);
         /*border: 1px solid rgba(115, 115, 115, 0.36);*/
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-xl);
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
@@ -3867,7 +3867,7 @@ const unifiedNavigationCSS = `
     .submenu-item.active .submenu-link {
         transform: translateX(1.25rem); /* 20px in rem */
         background: rgba(139, 139, 139, 0.12);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-xl);
         border: 1px solid hsla(0, 0%, 39.6%, 0.44);
         margin-right: 2rem; /* 80px in rem */
     }
@@ -3898,7 +3898,7 @@ const unifiedNavigationCSS = `
         background: rgba(255, 255, 255, 0.03);
         backdrop-filter: blur(20px) saturate(180%);
         border: 1px solid hsla(0,0%,100%,.1);
-        border-radius: var(--radius-md);
+        border-radius: var(--radius-xl);
         padding: var(--spacing-md);
         box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.4),

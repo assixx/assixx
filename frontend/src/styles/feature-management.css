@@ -78,6 +78,7 @@
 
 /* Table mit Glassmorphismus */
 .table {
+  font-size: 12px; /* Best Practice 2025: data tables */
   background: transparent;
 }
 

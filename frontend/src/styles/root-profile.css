@@ -1,4 +1,4 @@
-@import "./dashboard-theme.css";
+/* dashboard-theme.css already loaded via main.css - removed duplicate import */
 @import "./breadcrumb-alignment.css";
 
 /* Glassmorphismus Design-Standards */
@@ -18,10 +18,10 @@ h1 {
 
 /* Glassmorphismus Cards */
 .profile-card {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-8);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -33,10 +33,10 @@ h1 {
 /* Card Title with accent bar */
 .card-title {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin: 0 0 var(--spacing-lg) 0;
+  margin: 0 0 var(--spacing-6) 0;
 
   font-size: 1.25rem;
   font-weight: 600;
@@ -56,9 +56,9 @@ h1 {
 /* Profilbild Section */
 .profile-picture-section {
   display: flex;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-8);
   align-items: center;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
 }
 
 .profile-picture-container {
@@ -109,15 +109,15 @@ h1 {
 .profile-picture-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
 }
 
 /* Form Styling */
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
+  gap: var(--spacing-6);
+  margin-bottom: var(--spacing-6);
 }
 
 .form-control:disabled {
@@ -127,8 +127,8 @@ h1 {
 
 /* Password Section */
 .password-section {
-  margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -140,9 +140,9 @@ h1 {
 
   overflow: hidden;
 
-  padding: 12px 24px;
+  padding: 10px 24px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 14px;
   font-weight: 600;
@@ -190,9 +190,9 @@ h1 {
 
 /* Success/Error Messages */
 .alert {
-  margin-bottom: var(--spacing-md);
-  padding: var(--spacing-2sm);
-  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-3);
+  border-radius: var(--radius-2xl);
   backdrop-filter: blur(10px);
 
   /* animation: fadeInUp 0.3s ease-out; */
@@ -269,7 +269,7 @@ h1 {
   /* animation: fadeInUp 0.3s ease-out; */
   padding: 25px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
@@ -303,7 +303,7 @@ h1 {
   gap: 12px;
   align-items: center;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   color: #f44336;
@@ -320,29 +320,29 @@ h1 {
 }
 
 .modal-body {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
 }
 
 .warning-box {
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-2sm);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-3);
   border: 1px solid rgb(244 67 54 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(244 67 54 / 10%);
   backdrop-filter: blur(10px);
 }
 
 .confirmation-input {
-  margin-top: var(--spacing-lg);
+  margin-top: var(--spacing-6);
 }
 
 .modal-footer {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   justify-content: flex-end;
 
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
@@ -366,9 +366,9 @@ h1 {
 }
 
 .success-message {
-  padding: var(--spacing-xl) calc(var(--spacing-xl) * 2);
+  padding: var(--spacing-8) calc(var(--spacing-8) * 2);
   border: 2px solid #4caf50;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -379,7 +379,7 @@ h1 {
 }
 
 .success-icon {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   font-size: 4rem;
   color: #4caf50;
 
@@ -433,13 +433,13 @@ h1 {
 .cooling-off-info,
 .grace-period-info {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin: var(--spacing-sm) 0;
-  padding: var(--spacing-2sm);
+  margin: var(--spacing-2) 0;
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -473,19 +473,19 @@ h1 {
 
 /* Approval Section */
 .approval-section {
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-6);
   border: 1px solid rgb(255 193 7 / 20%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 193 7 / 5%);
 }
 
 .approval-header {
   display: flex;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
   align-items: center;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
 }
 
 .approval-header i {
@@ -496,13 +496,13 @@ h1 {
 .approval-list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: var(--spacing-4);
 }
 
 .approval-item {
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
   background: rgb(255 255 255 / 2%);
 }
 
@@ -515,7 +515,7 @@ h1 {
   display: flex;
   align-items: start;
   justify-content: space-between;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
 }
 
 .approval-item-info {
@@ -524,7 +524,7 @@ h1 {
 
 .approval-item-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
 }
 
 .approval-status {
@@ -545,13 +545,13 @@ h1 {
 
 .cooling-off-warning {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  margin-top: var(--spacing-sm);
-  padding: var(--spacing-2sm);
+  margin-top: var(--spacing-2);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 152 0 / 30%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   font-size: 13px;
 
@@ -565,13 +565,13 @@ h1 {
 /* Deletion Status Modal Styles - Glassmorphismus Design Standards */
 .deletion-status-container {
   display: flex;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-8);
   align-items: center;
 
-  margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-8);
+  padding: var(--spacing-8);
   border: 1px solid rgb(255 255 255 / 5%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
@@ -616,14 +616,14 @@ h1 {
 }
 
 .status-message .lead {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-2);
   font-size: 1.1rem;
   font-weight: 500;
   color: var(--text-primary);
 }
 
 .deletion-date {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 1rem;
   color: var(--text-secondary);
 }
@@ -636,12 +636,12 @@ h1 {
 /* .grace-period-info - Duplicate removed (first defined at line 523) */
 /* .grace-period-info {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-2);
   align-items: center;
 
-  padding: var(--spacing-2sm);
+  padding: var(--spacing-3);
   border: 1px solid rgb(255 193 7 / 20%);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-2xl);
 
   color: #ffc107;
 
@@ -656,8 +656,8 @@ h1 {
 .status-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-8);
 }
 
 .status-actions .btn {
@@ -666,9 +666,9 @@ h1 {
 }
 
 .export-reminder {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-6);
   border: 1px solid rgb(0 142 255 / 10%);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -676,14 +676,14 @@ h1 {
 }
 
 .export-reminder h4 {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-4);
   font-size: 1.2rem;
   font-weight: 600;
   color: var(--primary-color);
 }
 
 .export-reminder p {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-6);
   color: var(--text-secondary);
 }
 

@@ -157,7 +157,7 @@ function renderEmptyState(): string {
         Sie sind der einzige Root-Benutzer. Klicken Sie auf den + Button, um weitere Root-Benutzer hinzuzufügen.
       </div>
     </div>
-    <div style="margin-top: 16px; padding: 12px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px;">
+    <div style="margin-top: 16px; padding: 10px; background: rgba(255, 193, 7, 0.1); border: 1px solid rgba(255, 193, 7, 0.3); border-radius: 8px;">
       <p style="margin: 0; color: #ffc107; font-size: 14px;">
         <i class="fas fa-exclamation-triangle" style="margin-right: 8px;"></i>
         Ihr eigenes Profil wird hier nicht angezeigt. Bearbeiten Sie es über <a href="/root-profile" style="color: #ffc107; text-decoration: underline;">Mein Profil</a>.
@@ -193,7 +193,7 @@ function renderUserRow(user: RootUser): string {
 
 function renderProfileInfo(): string {
   return `
-    <div style="margin-top: 16px; padding: 12px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+    <div style="margin-top: 16px; padding: 10px; background: rgba(255, 255, 255, 0.02); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
       <p style="margin: 0; color: var(--text-secondary); font-size: 14px;">
         <i class="fas fa-info-circle" style="margin-right: 8px; color: var(--primary-color);"></i>
         Ihr eigenes Profil wird hier nicht angezeigt. Bearbeiten Sie es über <a href="/root-profile" style="color: var(--primary-color); text-decoration: underline;">Mein Profil</a>.
