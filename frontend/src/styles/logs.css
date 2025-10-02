@@ -304,7 +304,7 @@
 
   padding: 8px 16px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: var(--text-primary);
@@ -486,7 +486,7 @@
   min-height: 42px;
   padding: 10px 15px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: #fff;
@@ -523,7 +523,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;

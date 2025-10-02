@@ -94,7 +94,7 @@
 
   padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: #fff;
 
@@ -128,7 +128,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -183,7 +183,7 @@
 
   padding: var(--spacing-3);
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-weight: 600;
   color: var(--text-primary);
@@ -237,7 +237,7 @@
 .day-header {
   padding: var(--spacing-4) var(--spacing-1);
   border: var(--glass-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: var(--primary-color);
   text-align: center;
@@ -266,7 +266,7 @@
   min-height: 85px;
   padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
   font-weight: 600;
@@ -306,7 +306,7 @@
 
   min-height: 85px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(5px);
@@ -365,7 +365,7 @@
   margin-top: 2px;
   padding: var(--spacing-3);
   border: var(--glass-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
   backdrop-filter: blur(10px);
@@ -398,7 +398,7 @@
   min-height: 300px;
   padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-family: inherit;
   font-size: 13px;
@@ -483,7 +483,7 @@
   margin: 2px 0;
   padding: 6px 8px;
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 15%);
 }
@@ -700,7 +700,7 @@
   align-items: center;
   justify-content: space-between;
 
-  padding: var(--spacing-lg, 1.5rem);
+  padding: var(--spacing-6, 1.5rem);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   background: rgb(255 255 255 / 2%);
@@ -737,7 +737,7 @@
 .rotation-setup-modal .modal-body {
   overflow-y: auto;
   flex: 1;
-  padding: var(--spacing-lg, 1.5rem);
+  padding: var(--spacing-6, 1.5rem);
 }
 
 /* Modal Footer - Calendar Style */
@@ -747,7 +747,7 @@
   align-items: center;
   justify-content: flex-end;
 
-  padding: var(--spacing-lg, 1.5rem);
+  padding: var(--spacing-6, 1.5rem);
   border-top: 1px solid rgb(255 255 255 / 10%);
 
   background: rgb(255 255 255 / 2%);
@@ -1881,7 +1881,7 @@
 
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.875rem;
   font-weight: 500;
@@ -2441,7 +2441,7 @@
 
   padding: 8px 16px;
   border: 1px solid rgb(76 175 80 / 40%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
   font-weight: 600;
@@ -2509,7 +2509,7 @@
   margin-bottom: var(--spacing-4);
   padding: 10px 20px;
   border: 1px solid rgb(76 175 80 / 40%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 700;
@@ -2539,7 +2539,7 @@
   min-width: 150px;
   padding: var(--spacing-2);
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 15%);
 }
@@ -2632,7 +2632,7 @@
   margin: 0 var(--spacing-2);
   padding: var(--spacing-4) var(--spacing-6);
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 600;

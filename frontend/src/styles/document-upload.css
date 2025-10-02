@@ -96,7 +96,7 @@
 
   padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: #fff;
 
@@ -141,7 +141,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -258,7 +258,7 @@ textarea.form-control {
   margin-bottom: var(--spacing-4);
   padding: var(--spacing-3);
   border: 1px solid rgb(33 150 243 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 12px;
   color: rgb(255 255 255 / 70%);
@@ -286,7 +286,7 @@ textarea.form-control {
   margin-top: var(--spacing-2);
   padding: 10px 15px;
   border: 1px solid rgb(33 150 243 / 20%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: var(--text-primary);
 
@@ -351,7 +351,7 @@ textarea.form-control {
 
   padding: 5px;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 18px;
   color: var(--text-secondary);
@@ -393,7 +393,7 @@ textarea.form-control {
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -452,7 +452,7 @@ textarea.form-control {
 
   margin-bottom: var(--spacing-4);
   padding: 15px 20px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   backdrop-filter: blur(20px) saturate(180%);
 
@@ -529,7 +529,7 @@ textarea.form-control {
 
   padding: 10px 16px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);

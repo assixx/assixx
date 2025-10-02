@@ -1199,7 +1199,7 @@ body:has(.sidebar.collapsed) .header .logo {
   width: 100%;
   padding: var(--spacing-3);
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
   font-weight: 600;

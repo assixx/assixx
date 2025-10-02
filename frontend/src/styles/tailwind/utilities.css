@@ -4,14 +4,86 @@
  */
 
 @layer utilities {
+  /* Display Utilities */
+  .hidden {
+    display: none !important;
+  }
+
   /* Text Utilities */
   .text-balance {
     text-wrap: balance;
   }
 
+  .u-text-center {
+    text-align: center !important;
+  }
+
+  .u-text-left {
+    text-align: left !important;
+  }
+
+  .u-text-right {
+    text-align: right !important;
+  }
+
   /* Spacing Utilities */
   .content-spacing {
     padding-inline: clamp(1rem, 5vw, 3rem);
+  }
+
+  .u-mt-text {
+    margin: 0;
+    margin-top: var(--margin-text-top) !important;
+  }
+
+  .u-mb-md {
+    margin-bottom: var(--spacing-4) !important;
+  }
+
+  .u-mb-sm {
+    margin-bottom: var(--spacing-2) !important;
+  }
+
+  .u-mb-8 {
+    margin-bottom: 8px !important;
+  }
+
+  .u-mb-12 {
+    margin-bottom: 12px !important;
+  }
+
+  .u-m-0 {
+    margin: 0 !important;
+  }
+
+  /* Font Size Utilities */
+  .u-fs-09rem {
+    font-size: 0.9rem !important;
+  }
+
+  .u-fs-11 {
+    font-size: 11px !important;
+  }
+
+  .u-fs-12 {
+    font-size: 12px !important;
+  }
+
+  .u-fs-xl {
+    font-size: 1.5rem !important;
+  }
+
+  .u-fs-3xl {
+    font-size: 3rem !important;
+  }
+
+  /* Font Weight Utilities */
+  .u-fw-400 {
+    font-weight: 400 !important;
+  }
+
+  .u-fw-600 {
+    font-weight: 600 !important;
   }
 
   /* Animation Utilities */
@@ -85,6 +157,49 @@
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+
+  /* Color Utilities */
+  .u-color-primary {
+    color: var(--primary-color) !important;
+  }
+
+  .u-color-text-secondary {
+    color: var(--text-secondary) !important;
+  }
+
+  /* Opacity Utilities */
+  .u-opacity-80 {
+    opacity: 80% !important;
+  }
+
+  /* Cursor Utilities */
+  .u-cursor-pointer {
+    cursor: pointer !important;
+  }
+
+  /* Flex Utilities */
+  .u-flex {
+    display: flex !important;
+  }
+
+  .u-flex-1 {
+    flex: 1 !important;
+  }
+
+  /* Width Utilities */
+  .u-w-full {
+    width: 100% !important;
+  }
+
+  /* Padding Utilities */
+  .u-p-container {
+    padding: var(--spacing-6) !important;
+  }
+
+  /* Position Utilities */
+  .u-relative {
+    position: relative !important;
   }
 
   /* Z-Index Utilities */

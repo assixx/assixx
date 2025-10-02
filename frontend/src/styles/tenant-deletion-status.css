@@ -204,7 +204,7 @@
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -269,7 +269,7 @@
   margin-top: var(--spacing-4);
   padding: var(--spacing-3);
   border: 1px solid rgb(255 152 0 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 152 0 / 10%);
 }

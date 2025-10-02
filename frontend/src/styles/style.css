@@ -55,7 +55,7 @@ header {
 
   padding: 0.5rem 1rem;
   border: 1px solid transparent;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 1rem;
   font-weight: 500;
@@ -66,7 +66,6 @@ header {
 }
 
 .btn-primary {
-  border-color: var(--primary-color);
   color: #fff;
   background-color: var(--primary-color);
 }
@@ -128,22 +127,9 @@ header {
 }
 
 /* Card Styles */
-.card {
-  position: relative;
-
-  display: flex;
-  flex-direction: column;
-
-  min-width: 0;
-  margin-bottom: 1rem;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  overflow-wrap: break-word;
-
-  background-clip: border-box;
-  box-shadow: var(--shadow-sm);
-}
+/* .card definition removed - now centralized in dashboard-theme.css
+   with merged properties and semantic tokens (--card-padding, --card-border-radius, --card-shadow)
+   Migration: 2025-10-02 */
 
 .card-header {
   padding: 0.75rem 1.25rem;
@@ -212,9 +198,9 @@ header {
   margin-bottom: 1rem !important;
 }
 
-.mb-4 {
-  margin-bottom: 1.5rem !important;
-}
+/* .mb-4 removed - Tailwind generates native .mb-4 (16px = spacing-4)
+   Use .mb-6 for 24px spacing (Tailwind spacing-6)
+   Migration: 2025-10-02 */
 
 .mb-5 {
   margin-bottom: 3rem !important;

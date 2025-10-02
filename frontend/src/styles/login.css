@@ -232,7 +232,7 @@
 .alert {
   margin-bottom: var(--spacing-4);
   padding: var(--spacing-3);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: #ffa700;
 

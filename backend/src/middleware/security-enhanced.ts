@@ -204,9 +204,9 @@ const rateLimitStyles = `
     --primary-dark: #1976d2;
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
+    --spacing-4: 16px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
     --radius-3xl: 12px;
   }
 
@@ -252,7 +252,7 @@ const rateLimitStyles = `
     max-width: 450px;
     background: rgba(255, 255, 255, 0.02);
     backdrop-filter: blur(20px) saturate(180%);
-    padding: var(--spacing-xl);
+    padding: var(--spacing-8);
     border-radius: var(--radius-3xl);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -267,7 +267,7 @@ const rateLimitStyles = `
 
   .icon {
     font-size: 64px;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-6);
     display: inline-block;
     animation: pulse 2s infinite;
   }
@@ -281,22 +281,22 @@ const rateLimitStyles = `
     color: var(--text-primary);
     font-size: 28px;
     font-weight: 700;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-4);
   }
 
   .message {
     color: var(--text-secondary);
     font-size: 16px;
     line-height: 1.6;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-8);
   }
 
   .retry-info {
     background: rgba(33, 150, 243, 0.1);
     border: 1px solid rgba(33, 150, 243, 0.2);
     border-radius: var(--radius-3xl);
-    padding: var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-6);
+    margin-bottom: var(--spacing-8);
   }
 
   .retry-label {

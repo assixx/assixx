@@ -142,7 +142,7 @@ h1 {
 
   padding: 10px 24px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 600;
@@ -192,7 +192,7 @@ h1 {
 .alert {
   margin-bottom: var(--spacing-4);
   padding: var(--spacing-3);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   backdrop-filter: blur(10px);
 
   /* animation: fadeInUp 0.3s ease-out; */
@@ -327,7 +327,7 @@ h1 {
   margin-bottom: var(--spacing-6);
   padding: var(--spacing-3);
   border: 1px solid rgb(244 67 54 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(244 67 54 / 10%);
   backdrop-filter: blur(10px);
@@ -439,7 +439,7 @@ h1 {
   margin: var(--spacing-2) 0;
   padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -502,7 +502,7 @@ h1 {
 .approval-item {
   padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   background: rgb(255 255 255 / 2%);
 }
 
@@ -551,7 +551,7 @@ h1 {
   margin-top: var(--spacing-2);
   padding: var(--spacing-3);
   border: 1px solid rgb(255 152 0 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 13px;
 
@@ -641,7 +641,7 @@ h1 {
 
   padding: var(--spacing-3);
   border: 1px solid rgb(255 193 7 / 20%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: #ffc107;
 

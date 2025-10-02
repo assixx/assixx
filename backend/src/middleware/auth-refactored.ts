@@ -138,9 +138,9 @@ const SESSION_EXPIRED_STYLES = `
     --primary-dark: #1976d2;
     --text-primary: #ffffff;
     --text-secondary: rgba(255, 255, 255, 0.7);
-    --spacing-md: 16px;
-    --spacing-lg: 24px;
-    --spacing-xl: 32px;
+    --spacing-4: 16px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
     --radius-3xl: 12px;
   }
 
@@ -186,7 +186,7 @@ const SESSION_EXPIRED_STYLES = `
     max-width: 450px;
     background: rgba(255, 255, 255, 0.02);
     backdrop-filter: blur(20px) saturate(180%);
-    padding: var(--spacing-xl);
+    padding: var(--spacing-8);
     border-radius: var(--radius-3xl);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     border: 1px solid hsla(0, 0%, 100%, 0.1);
@@ -207,7 +207,7 @@ const SESSION_EXPIRED_STYLES = `
   .icon-container {
     width: 80px;
     height: 80px;
-    margin: 0 auto var(--spacing-lg);
+    margin: 0 auto var(--spacing-6);
     background: linear-gradient(135deg, #ff6b6b, #ff5252);
     border-radius: 50%;
     display: flex;
@@ -239,7 +239,7 @@ const SESSION_EXPIRED_STYLES = `
     color: var(--text-primary);
     font-size: 1.75rem;
     font-weight: 500;
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-4);
     animation: fadeInUp 0.6s ease-out 0.1s both;
   }
 
@@ -247,7 +247,7 @@ const SESSION_EXPIRED_STYLES = `
     color: var(--text-secondary);
     font-size: 1rem;
     line-height: 1.6;
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-6);
     animation: fadeInUp 0.6s ease-out 0.2s both;
   }
 
@@ -255,7 +255,7 @@ const SESSION_EXPIRED_STYLES = `
     color: var(--primary-color);
     font-weight: 500;
     font-size: 1.1rem;
-    margin-bottom: var(--spacing-xl);
+    margin-bottom: var(--spacing-8);
     animation: fadeInUp 0.6s ease-out 0.3s both;
   }
 
@@ -291,13 +291,13 @@ const SESSION_EXPIRED_STYLES = `
   .help-text {
     color: rgba(255, 255, 255, 0.4);
     font-size: 0.875rem;
-    margin-top: var(--spacing-xl);
+    margin-top: var(--spacing-8);
     animation: fadeInUp 0.6s ease-out 0.5s both;
   }
 
   @media (max-width: 480px) {
     .session-expired-card {
-      padding: var(--spacing-lg);
+      padding: var(--spacing-6);
     }
     h1 { font-size: 1.5rem; }
     p { font-size: 0.875rem; }

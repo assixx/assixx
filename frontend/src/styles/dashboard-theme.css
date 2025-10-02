@@ -58,18 +58,33 @@
   padding: var(--spacing-6);
 }
 
-/* Cards */
+/* Cards - Merged & Migrated to Semantic Tokens */
 .card {
-  overflow: hidden;
+  /* Layout Structure (from style.css) */
+  position: relative;
 
-  margin-bottom: 24px;
-  padding: var(--glass-card-padding);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  /* Spacing - Semantic Tokens (Design System Layer 2) */
+  margin-bottom: var(--card-margin-bottom); /* var(--spacing-6) = 24px */
+  padding: var(--card-padding); /* var(--spacing-6) = 24px */
+
+  /* Borders & Glass Effect */
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
+  border-radius: var(--card-border-radius); /* var(--radius-lg) = 0.5rem */
+
+  overflow-wrap: break-word;
 
   background: hsl(0deg 0% 100% / 2%);
+  background-clip: border-box;
   backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
+
+  /* Shadow - Semantic Token (Design System Layer 2) */
+  box-shadow: var(--card-shadow); /* var(--shadow-md) - stronger shadow */
 }
 
 .card-header {
@@ -162,7 +177,7 @@
   min-height: 2.5rem; /* Mindesthöhe für touch/zoom */
   padding: var(--spacing-3);
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
@@ -247,7 +262,7 @@
   margin-top: 5px;
   padding: var(--spacing-3);
   border: var(--glass-form-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
@@ -336,7 +351,7 @@
   display: inline-block;
 
   padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 12px;
   font-weight: 500;
@@ -538,11 +553,10 @@
   margin-bottom: var(--spacing-4);
 }
 
-/* REDUNDANT - Empty class with no function
-.mb-4 {
-  margin-bottom: var(--spacing-6);
-}
-*/
+/* REDUNDANT - .mb-4 removed 2025-10-02
+   Bootstrap override (24px) removed to allow Tailwind native .mb-4 (16px)
+   Migrated all HTML usage to .mb-6 for 24px spacing */
+
 .mb-5 {
   margin-bottom: var(--spacing-8);
 }
@@ -1194,7 +1208,7 @@
 
   margin-left: -6px;
   padding: var(--spacing-3);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.875rem;
   color: var(--text-secondary);
