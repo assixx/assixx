@@ -122,7 +122,7 @@ body {
 
   padding: 8px 15px;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -172,7 +172,6 @@ body {
 
 .btn-secondary:hover {
   transform: translateY(-1px);
-  border-color: var(--primary-color);
   background: rgb(255 255 255 / 8%);
 }
 
@@ -468,7 +467,7 @@ body {
   margin-bottom: var(--spacing-4);
   padding: var(--spacing-3);
   border: 1px solid rgb(76 175 80 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: #fff;
 

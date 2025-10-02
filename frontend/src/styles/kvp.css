@@ -21,7 +21,7 @@
 
   padding: var(--spacing-2) var(--spacing-6);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.9rem;
   font-weight: 500;
@@ -72,7 +72,7 @@
 .secondary-filters input {
   padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: var(--text-primary);
 
@@ -471,7 +471,7 @@
 
   padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.9rem;
   color: #fff;
@@ -501,7 +501,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -617,7 +617,7 @@
   height: 30px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 24px;
   color: var(--text-secondary);
@@ -654,7 +654,7 @@
 
   padding: var(--spacing-2) var(--spacing-6);
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.9rem;
   font-weight: 500;
@@ -697,7 +697,7 @@
   margin-bottom: var(--spacing-6);
   padding: var(--spacing-3);
   border: 1px solid rgb(255 152 0 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 152 0 / 10%);
 }
@@ -784,7 +784,7 @@
 
   width: 100px;
   height: 100px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
 }

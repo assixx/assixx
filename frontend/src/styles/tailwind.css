@@ -163,6 +163,7 @@
 /* Bootstrap Compatibility Layer (temporary) */
 @import "./tailwind/compat/bootstrap-buttons.css";
 @import "./tailwind/compat/bootstrap-forms.css";
-@import "./tailwind/compat/bootstrap-cards.css";
+
+/* bootstrap-cards.css REMOVED 2025-10-02 - Replaced by semantic .card in dashboard-theme.css - Backup: bootstrap-cards.css.bak */
 @import "./tailwind/compat/bootstrap-modals.css";
 @import "./tailwind/compat/bootstrap-tables.css";

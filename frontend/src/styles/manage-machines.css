@@ -16,7 +16,7 @@
 
   padding: 10px 20px;
   border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-weight: 500;
   color: #fff;
@@ -308,7 +308,7 @@
   height: 32px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 1.5rem;
   color: var(--text-secondary);

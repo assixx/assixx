@@ -177,7 +177,7 @@
 .fc-event {
   cursor: pointer;
   border: none !important;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
 }
 
@@ -298,7 +298,7 @@
 
   margin-right: 15px;
   padding: 10px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   text-align: center;
 
@@ -351,7 +351,7 @@
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -592,7 +592,7 @@
   margin-bottom: 20px;
   padding: 15px;
   border-left: 3px solid var(--primary-color);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 1rem;
   line-height: 1.6;
@@ -631,7 +631,7 @@
   margin: 0 -10px;
   padding-right: 10px;
   padding-left: 10px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -690,7 +690,7 @@
 
   padding: 10px 15px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 3%);
 }
@@ -823,7 +823,7 @@
 
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: var(--text-secondary);
@@ -1002,7 +1002,7 @@ textarea.form-control {
 
   padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   color: #fff;
 
@@ -1036,7 +1036,7 @@ textarea.form-control {
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -1078,7 +1078,7 @@ textarea.form-control {
   margin-bottom: 10px;
   padding: 10px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(5px);
@@ -1102,7 +1102,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1115,7 +1115,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1128,7 +1128,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1141,7 +1141,7 @@ textarea.form-control {
 
   margin-top: 5px;
   padding: 2px 8px;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.7rem;
   color: #fff;
@@ -1337,7 +1337,7 @@ select.big-input:disabled {
 
   padding: 8px 16px;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 500;
@@ -1402,7 +1402,7 @@ select.big-input:disabled {
   margin: 8px 0;
   padding: 8px 12px;
   border-left: 3px solid rgb(52 152 219 / 50%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.875rem;
   color: rgb(52 152 219 / 90%);
@@ -1421,7 +1421,7 @@ select.big-input:disabled {
   max-height: 400px;
   padding: 10px;
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -1430,7 +1430,7 @@ select.big-input:disabled {
   margin-bottom: 8px;
   padding: 10px;
   border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 3%);
 }

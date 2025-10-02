@@ -172,7 +172,7 @@ body {
 
   padding: 8px;
   border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: var(--text-primary);
@@ -208,7 +208,7 @@ body {
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -284,7 +284,7 @@ body {
 
   padding: 8px 12px;
   border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 15px;
   color: var(--text-primary);
@@ -316,7 +316,7 @@ body {
   transform: translateY(-10px);
 
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -427,7 +427,7 @@ body {
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 15px;
   font-weight: 600;
@@ -488,7 +488,7 @@ body {
   margin-bottom: 16px;
   padding: 10px 16px;
   border: 1px solid rgb(16 185 129 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: #10b981;

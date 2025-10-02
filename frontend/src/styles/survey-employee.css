@@ -302,7 +302,7 @@
 .response-answer {
   padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
   background: rgb(255 255 255 / 5%);
 }
 
@@ -567,7 +567,7 @@ textarea.form-control {
 
   margin-bottom: var(--spacing-2);
   padding: var(--spacing-3);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 }
 
 .choice-option:hover {

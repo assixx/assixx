@@ -104,7 +104,7 @@
   margin-bottom: 24px;
   padding: 24px;
   border: 1px solid rgb(244 67 54 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(244 67 54 / 10%);
 }
@@ -151,7 +151,7 @@
   margin: 20px 0;
   padding: 16px;
   border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(33 150 243 / 10%);
 }
@@ -172,7 +172,7 @@
 
   padding: 10px 24px;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 500;

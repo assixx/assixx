@@ -67,7 +67,7 @@ h1 {
 
   padding: var(--spacing-2) var(--spacing-6);
   border: 1px solid transparent;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 1rem;
   font-weight: 500;
@@ -166,7 +166,7 @@ h1 {
 
   margin-bottom: var(--spacing-6);
   padding: var(--spacing-3);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   /* animation: slideDown 0.3s ease-out; */
 }
@@ -307,7 +307,7 @@ h1 {
   margin-bottom: var(--spacing-6);
   padding: var(--spacing-3);
   border: 1px solid rgb(33 150 243 / 20%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.875rem;
   color: var(--text-secondary);

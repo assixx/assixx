@@ -215,7 +215,7 @@ tr:hover .badge-danger {
 .btn-sm.btn-status-active {
   padding: 0.25rem 0.5rem;
   border: 1px solid #ff6b35;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.75rem;
   font-weight: 500;
@@ -239,7 +239,7 @@ tr:hover .badge-danger {
 .btn-sm.btn-status-inactive {
   padding: 0.25rem 0.5rem;
   border: 1px solid #28a745;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.75rem;
   font-weight: 500;

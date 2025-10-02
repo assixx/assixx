@@ -265,7 +265,7 @@
   min-height: 80px;
   padding: var(--spacing-3);
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-family: inherit;
   font-size: 14px;
@@ -364,7 +364,7 @@
 
   padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
 }
@@ -485,7 +485,7 @@
 
   padding: 8px 12px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 0.9rem;
   color: var(--text-primary);
@@ -515,7 +515,7 @@
 
   max-height: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   visibility: hidden;
   opacity: 0%;
@@ -576,7 +576,7 @@
 
   max-width: 200px;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-weight: 500;
   color: var(--text-primary);
@@ -801,7 +801,7 @@
   padding: 10px 24px;
   border: none;
   border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 600;

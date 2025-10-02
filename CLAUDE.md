@@ -1,4 +1,5 @@
 # Claude Code – Assixx Project Complete Guide
+
 ALWAYS BE 100% BRUTAL HONEST
 
 ## 🔴🔴🔴 STOP! REQUIRED READING BEFORE ANYTHING ELSE! 🔴🔴🔴

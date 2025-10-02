@@ -14,7 +14,7 @@ import {
   type UserAPIResponse,
   type RotationPatternAPIResponse,
 } from '../../utils/api-mappers';
-import { $$, $$id, createElement, setData } from '../../utils/dom-utils';
+import { $$, $$id, createElement, hide, show, setData } from '../../utils/dom-utils';
 import { getAuthToken, showInfo } from '../auth/index';
 // escapeHtml removed - using DOM manipulation instead
 import { showSuccessAlert, showErrorAlert, showConfirm } from '../utils/alerts';
@@ -1544,6 +1544,15 @@ class ShiftPlanningSystem {
     if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
       console.info('[SHIFTS DEBUG] Team selected, loading data...');
 
+      // CRITICAL FIX: Directly hide department notice when team is selected
+      const departmentNotice = $$id('departmentNotice');
+      if (departmentNotice) {
+        departmentNotice.classList.add('hidden');
+        // IMPORTANT: Use inline style as extra protection
+        hide(departmentNotice);
+        console.info('[SHIFTS] Department notice hidden - team selected:', this.selectedContext.teamId);
+      }
+
       // IMPORTANT: Show UI IMMEDIATELY before loading data
       this.togglePlanningAreaVisibility();
       console.info('[SHIFTS DEBUG] UI visibility updated, now loading data...');
@@ -1647,7 +1656,7 @@ class ShiftPlanningSystem {
     }
 
     // Show the panel
-    memberPanel.classList.remove('u-hidden');
+    memberPanel.classList.remove('hidden');
 
     // Clear panel and rebuild with DOM methods
     while (memberPanel.firstChild) {
@@ -2166,10 +2175,10 @@ class ShiftPlanningSystem {
 
     const htmlElement = element as HTMLElement;
     if (hide) {
-      htmlElement.classList.add('u-hidden');
+      htmlElement.classList.add('hidden');
       console.info(`[SHIFTS UI] Hidden ${elementName}`);
     } else {
-      htmlElement.classList.remove('u-hidden');
+      htmlElement.classList.remove('hidden');
       console.info(`[SHIFTS UI] Shown ${elementName}`);
     }
   }
@@ -2177,7 +2186,7 @@ class ShiftPlanningSystem {
   private showPlanningArea(elements: ReturnType<typeof this.getPlanningAreaElements>): void {
     console.info('[SHIFTS UI] Showing planning area elements...');
 
-    this.toggleElement(elements.departmentNotice, true, 'department notice');
+    // Department notice is now handled separately in togglePlanningAreaVisibility
     this.toggleElement(elements.mainPlanningArea, false, 'main planning area');
 
     if (this.isAdmin) {
@@ -2193,7 +2202,7 @@ class ShiftPlanningSystem {
   private hidePlanningArea(elements: ReturnType<typeof this.getPlanningAreaElements>): void {
     console.info('[SHIFTS UI] Hiding planning area elements...');
 
-    this.toggleElement(elements.departmentNotice, false, 'department notice');
+    // Department notice is now handled separately in togglePlanningAreaVisibility
     this.toggleElement(elements.mainPlanningArea, true, 'main planning area');
     this.toggleElement(elements.adminActions, true, 'admin actions');
     this.toggleElement(elements.weekNavigation, true, 'week navigation');
@@ -2213,6 +2222,21 @@ class ShiftPlanningSystem {
       weekNavigation: !!elements.weekNavigation,
       shiftControls: !!elements.shiftControls,
     });
+
+    // Department notice should ONLY be visible when NO team is selected
+    const teamSelected = this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0;
+    if (elements.departmentNotice) {
+      const htmlElement = elements.departmentNotice as HTMLElement;
+      if (teamSelected) {
+        // Team IS selected - ensure notice is hidden with both class and inline style
+        htmlElement.classList.add('hidden');
+        hide(htmlElement);
+      } else {
+        // NO team selected - show notice
+        htmlElement.classList.remove('hidden');
+        show(htmlElement);
+      }
+    }
 
     const shouldShow = this.shouldShowPlanningArea();
     console.info('[SHIFTS UI] shouldShowPlanning:', shouldShow);

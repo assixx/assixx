@@ -903,7 +903,7 @@
   width: 100%;
   padding: 10px 15px 10px 45px;
   border: var(--glass-border);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   color: var(--text-primary);
@@ -964,7 +964,7 @@
   margin-bottom: var(--spacing-6);
   padding: var(--spacing-3);
   border: 1px solid rgb(255 255 255 / 5%);
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   background: var(--glass-bg);
 }
@@ -1095,7 +1095,7 @@
   height: 40px;
   padding: 0;
   border: none;
-  border-radius: var(--radius-2xl);
+  border-radius: var(--radius-xl);
 
   font-size: 2rem;
   color: var(--text-secondary);
