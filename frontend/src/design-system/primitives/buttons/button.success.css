@@ -1,0 +1,53 @@
+/**
+ * Design System - Success Button
+ *
+ * Purpose: Positive confirmation actions
+ * Usage: Approve, Confirm, Activate (success context)
+ *
+ * Visual: Green gradient with solid style
+ */
+
+.btn-success {
+  border: 1px solid var(--color-success-hover);
+  color: var(--color-white);
+
+  /* ========== VISUAL ========== */
+  background: var(--gradient-success); /* Green gradient */
+  box-shadow: var(--shadow-btn-success);
+}
+
+/* Hover state */
+.btn-success:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.1); /* Slightly brighten */
+  box-shadow: var(--shadow-btn-success-hover);
+}
+
+/* Focus state */
+.btn-success:focus-visible {
+  box-shadow:
+    var(--shadow-btn-success),
+    0 0 0 3px rgb(76 175 80 / 20%); /* Green focus ring */
+}
+
+/**
+ * WHY SUCCESS VARIANT?
+ *
+ * - Green = universal success/positive color
+ * - Differentiate from primary blue actions
+ * - Used less frequently than primary
+ * - Communicates positive outcome
+ *
+ * WHEN TO USE:
+ * ✅ Approve requests
+ * ✅ Confirm positive actions
+ * ✅ "Mark as complete"
+ * ✅ Success-focused CTAs
+ *
+ * WHEN NOT TO USE:
+ * ❌ Regular submit (use .btn-primary)
+ * ❌ Toggle activate (use .btn-status-inactive)
+ * ❌ Most common actions (use .btn-primary)
+ *
+ * NOTE: Use sparingly - primary should be most common
+ */

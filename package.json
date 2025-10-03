@@ -25,6 +25,8 @@
     "dev:backend": "nodemon backend/src/server.js",
     "dev:backend:ts": "nodemon --exec \"tsx\" backend/src/server.ts",
     "dev:frontend": "cd frontend && pnpm run dev",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build -o storybook-static",
     "build": "pnpm run build:ts && pnpm run build:frontend",
     "build:ts": "cd backend && tsc -p tsconfig.build.json && cd .. && node scripts/fix-esm-imports.js",
     "build:frontend": "cd frontend && pnpm run build",
@@ -97,6 +99,12 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@storybook/addon-essentials": "8.6.14",
+    "@storybook/addon-links": "8.6.14",
+    "@storybook/builder-vite": "8.6.14",
+    "@storybook/html": "8.6.14",
+    "@storybook/web-components": "8.6.14",
+    "@storybook/web-components-vite": "8.6.14",
     "@swc/core": "^1.13.5",
     "@swc/helpers": "^0.5.17",
     "@tailwindcss/vite": "4.1.14",
@@ -142,6 +150,7 @@
     "playwright": "^1.55.1",
     "prettier": "^3.6.2",
     "prettier-plugin-css-order": "^2.1.2",
+    "storybook": "8.6.14",
     "stylelint": "^16.24.0",
     "stylelint-config-clean-order": "^7.0.0",
     "stylelint-config-standard": "^39.0.0",
@@ -153,6 +162,7 @@
     "ts-jest": "^29.4.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^6.3.6"
   }
 }

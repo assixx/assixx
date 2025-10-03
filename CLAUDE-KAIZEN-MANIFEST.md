@@ -12,8 +12,6 @@ ALWAYS BE 100% BRUTAL HONEST
 **BEVOR du IRGENDWAS machst:**
 
 - [ ] CLAUDE-KAIZEN-MANIFEST.md gelesen? (DIESES DOKUMENT!)
-- [ ] TODO.md gecheckt? (Aktuelle Phase verstanden?)
-- [ ] DAILY-PROGRESS.md gelesen? (Was war gestern?)
 - [ ] Git Status geprüft? (Wo stehen wir?)
 - [ ] TodoWrite erstellt? (Für Session-Tracking)
 

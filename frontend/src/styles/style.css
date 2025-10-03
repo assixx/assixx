@@ -67,12 +67,6 @@ header {
 
 .btn-primary {
   color: #fff;
-  background-color: var(--primary-color);
-}
-
-.btn-primary:hover {
-  border-color: #1976d2;
-  background-color: #1976d2;
 }
 
 .btn-secondary {

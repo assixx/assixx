@@ -1,0 +1,72 @@
+/**
+ * Assixx Design System
+ *
+ * Version: 1.0.0
+ * Philosophy: Best Practice 2025 - Component-Driven Design
+ *
+ * Architecture:
+ * ├── Tokens       → Single source of truth (colors, shadows, etc.)
+ * ├── Primitives   → Atomic components (buttons, inputs, etc.)
+ * └── Utils        → Helper classes and utilities
+ *
+ * Reference:
+ * - Microsoft Fluent Design System
+ * - Google Material Design 3
+ * - Meta Design System
+ * - Apple Human Interface Guidelines
+ *
+ * USAGE:
+ * @import 'design-system';
+ *
+ * That's it! Entire design system is loaded.
+ */
+
+/* ========== DESIGN TOKENS ========== */
+/* Single source of truth for all design values */
+@import "./tokens/index.css";
+
+/* ========== PRIMITIVE COMPONENTS ========== */
+/* Atomic, reusable components */
+
+/* Buttons - Complete button system */
+@import "./primitives/buttons/index.css";
+
+/* Future primitives will be added here:
+ * @import "./primitives/inputs/index.css";
+ * @import "./primitives/cards/index.css";
+ * @import "./primitives/badges/index.css";
+ * @import "./primitives/modals/index.css";
+ */
+
+/* ========== UTILITIES ========== */
+/* Helper classes for layout and common patterns */
+/* Future: Will be added as needed */
+
+/**
+ * DESIGN SYSTEM ROADMAP
+ *
+ * Phase 1: ✅ Buttons (DONE)
+ * Phase 2: ⏳ Inputs & Forms
+ * Phase 3: ⏳ Cards & Containers
+ * Phase 4: ⏳ Modals & Overlays
+ * Phase 5: ⏳ Badges & Status
+ * Phase 6: ⏳ Navigation Components
+ * Phase 7: ⏳ Data Display (Tables, Lists)
+ * Phase 8: ⏳ Feedback (Toasts, Alerts)
+ *
+ * MIGRATION PLAN:
+ * 1. Build new component in design-system/
+ * 2. Test in design-standards.html
+ * 3. Update documentation
+ * 4. Replace bootstrap compat layer
+ * 5. Migrate pages one by one
+ * 6. Remove old CSS
+ *
+ * BEST PRACTICES:
+ * - One component per file
+ * - Token-first (no hardcoded values)
+ * - Base + Variants pattern
+ * - Accessible by default
+ * - React-migration ready
+ * - Comprehensive documentation
+ */

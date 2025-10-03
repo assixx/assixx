@@ -1,0 +1,110 @@
+/**
+ * Design System - Status Toggle Buttons
+ *
+ * Purpose: Toggle active/inactive status
+ * Usage: Activate/Deactivate users, features, etc.
+ *
+ * IMPORTANT LOGIC:
+ * - .btn-status-active → Shows "Deaktivieren" (current state IS active)
+ * - .btn-status-inactive → Shows "Aktivieren" (current state IS inactive)
+ *
+ * Visual: Outline style with status colors
+ */
+
+/* ========== ACTIVE STATE (Shows "Deaktivieren") ========== */
+
+.btn-status-active {
+  border: 1px solid var(--color-status-active);
+
+  color: var(--color-status-active); /* Orange text */
+
+  /* Current state: Active → Action: Deactivate */
+  background: transparent;
+  backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--shadow-btn-status-active);
+}
+
+.btn-status-active:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  border-color: var(--color-status-active-hover);
+
+  color: var(--color-status-active-hover);
+
+  background: rgb(255 107 53 / 10%); /* Subtle orange tint */
+  box-shadow: var(--shadow-btn-status-active-hover);
+}
+
+.btn-status-active:focus-visible {
+  box-shadow:
+    var(--shadow-btn-status-active),
+    0 0 0 3px rgb(255 107 53 / 20%);
+}
+
+/* ========== INACTIVE STATE (Shows "Aktivieren") ========== */
+
+.btn-status-inactive {
+  border: 1px solid var(--color-status-inactive);
+
+  color: var(--color-status-inactive); /* Green text */
+
+  /* Current state: Inactive → Action: Activate */
+  background: transparent;
+  backdrop-filter: blur(var(--blur-md));
+  box-shadow: var(--shadow-btn-status-inactive);
+}
+
+.btn-status-inactive:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  border-color: var(--color-status-inactive-hover);
+
+  color: var(--color-status-inactive-hover);
+
+  background: rgb(40 167 69 / 10%); /* Subtle green tint */
+  box-shadow: var(--shadow-btn-status-inactive-hover);
+}
+
+.btn-status-inactive:focus-visible {
+  box-shadow:
+    var(--shadow-btn-status-inactive),
+    0 0 0 3px rgb(40 167 69 / 20%);
+}
+
+/**
+ * WHY THIS LOGIC?
+ *
+ * INVERSE RELATIONSHIP:
+ * - Button shows OPPOSITE of current state
+ * - If user is ACTIVE → show "Deactivate" (orange/warning)
+ * - If user is INACTIVE → show "Activate" (green/positive)
+ *
+ * COLOR PSYCHOLOGY:
+ * - Orange = Warning/Caution (deactivating is a warning action)
+ * - Green = Positive/Go (activating is a positive action)
+ *
+ * OUTLINE STYLE:
+ * - Less visual weight than solid buttons
+ * - Status toggles are secondary actions
+ * - Glassmorphism maintains design language
+ *
+ * USAGE EXAMPLE:
+ * ```html
+ * <!-- User is currently active -->
+ * <button class="btn btn-status-active">Deaktivieren</button>
+ *
+ * <!-- User is currently inactive -->
+ * <button class="btn btn-status-inactive">Aktivieren</button>
+ * ```
+ *
+ * WHEN TO USE:
+ * ✅ User activate/deactivate
+ * ✅ Feature enable/disable
+ * ✅ Subscription pause/resume
+ * ✅ Any boolean status toggle
+ *
+ * WHEN NOT TO USE:
+ * ❌ Permanent deletion (use .btn-danger)
+ * ❌ Primary actions (use .btn-primary)
+ * ❌ Non-reversible actions
+ */

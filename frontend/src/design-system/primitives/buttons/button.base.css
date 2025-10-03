@@ -1,0 +1,187 @@
+/**
+ * Design System - Button Base
+ *
+ * Purpose: Core button foundation shared by ALL button variants
+ * Philosophy: Atomic Design - Base provides the skeleton, variants add flesh
+ *
+ * Reference:
+ * - Radix UI: Primitive button structure
+ * - Shadcn: Base + variant pattern
+ * - React Aria: Accessible button foundation
+ *
+ * This is the ONLY place where core button structure is defined
+ * All variants EXTEND this base, never override
+ */
+
+.btn {
+  /* ========== INTERACTIVITY ========== */
+  cursor: pointer;
+  user-select: none; /* Prevent text selection on click */
+
+  position: relative; /* For pseudo-elements (shine) */
+
+  overflow: hidden; /* Contain shine effect */
+
+  /* ========== LAYOUT ========== */
+  display: inline-flex;
+  gap: var(--spacing-2); /* 8px gap for icons */
+  align-items: center;
+  justify-content: center;
+
+  margin: 0; /* Reset margin */
+  padding: 0; /* Variants define padding */
+
+  /* ========== RESET ========== */
+  border: none; /* Remove browser default */
+
+  /* ========== VISUAL ========== */
+  border-radius: var(--radius-lg); /* 0.5rem = 8px - modern roundness */
+
+  /* ========== TYPOGRAPHY ========== */
+  font-family: inherit; /* Use system font */
+  font-size: var(--font-size-base); /* 14px - SaaS standard */
+  font-weight: var(--font-weight-medium); /* 500 - readable weight */
+  line-height: var(--line-height-none); /* 1 - tight for buttons */
+  text-align: center;
+  text-decoration: none; /* Remove underline on <a> */
+  white-space: nowrap; /* Prevent text wrapping */
+
+  background: none; /* Variants define background */
+
+  /* ========== ACCESSIBILITY ========== */
+  /* Focus visible for keyboard navigation */
+  outline: none; /* Remove browser default */
+
+  /* ========== TRANSITIONS ========== */
+  transition: var(--transition-btn); /* Smooth all property changes */
+}
+
+/* Focus state - WCAG AAA compliant */
+.btn:focus-visible {
+  outline: 2px solid transparent; /* For high contrast mode */
+  outline-offset: 2px;
+  box-shadow: var(--shadow-focus-primary);
+}
+
+/* Disabled state - applies to ALL variants */
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  pointer-events: none; /* Prevent any interaction */
+  cursor: not-allowed;
+  opacity: 50%; /* 50% opacity - clear visual feedback */
+}
+
+/* Active (pressed) state - subtle feedback */
+.btn:active:not(:disabled) {
+  transform: scale(0.98); /* Slight press effect */
+}
+
+/* ========== SIZE VARIANTS ========== */
+
+/* Small - Compact UI elements */
+.btn-sm {
+  padding: var(--spacing-1) var(--spacing-3); /* 4px 12px */
+  border-radius: var(--radius-md); /* 6px */
+  font-size: var(--font-size-sm); /* 13px */
+}
+
+/* Medium (default) - Most common */
+.btn,
+.btn-md {
+  padding: var(--spacing-2) var(--spacing-6); /* 8px 24px */
+  font-size: var(--font-size-base); /* 14px */
+}
+
+/* Large - Hero CTAs */
+.btn-lg {
+  padding: var(--spacing-3) var(--spacing-8); /* 12px 32px */
+  border-radius: var(--radius-xl); /* 12px */
+  font-size: var(--font-size-lg); /* 16px */
+}
+
+/* ========== LAYOUT MODIFIERS ========== */
+
+/* Full width button (mobile, forms) */
+.btn-block {
+  display: flex; /* Change from inline-flex */
+  width: 100%;
+}
+
+/* ========== ICON SUPPORT ========== */
+
+/* SVG icons in buttons - auto size */
+.btn svg {
+  flex-shrink: 0; /* Prevent icon squishing */
+  width: 1.25em; /* Scales with font size */
+  height: 1.25em;
+}
+
+/* Icon-only buttons - square aspect */
+.btn-icon {
+  aspect-ratio: 1; /* Perfect square */
+  padding: var(--spacing-2); /* Square padding */
+}
+
+.btn-icon svg {
+  width: 1.5em; /* Larger icon when solo */
+  height: 1.5em;
+}
+
+/* ========== LOADING STATE ========== */
+
+/* Loading spinner (optional enhancement) */
+.btn[data-loading="true"] {
+  pointer-events: none; /* Prevent clicks */
+  position: relative;
+  color: transparent; /* Hide text */
+}
+
+.btn[data-loading="true"]::after {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentcolor;
+  border-right-color: transparent;
+  border-radius: 50%;
+
+  animation: spin var(--duration-slow) linear infinite;
+}
+
+/* ========== LOADING ANIMATION ========== */
+
+/* Spin animation for loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/**
+ * WHY THIS STRUCTURE?
+ *
+ * 1. SEPARATION OF CONCERNS
+ *    - Base = structure & behavior
+ *    - Variants = visual appearance
+ *    - No mixing of concerns
+ *
+ * 2. CONSISTENCY
+ *    - All buttons behave the same
+ *    - Only visuals differ
+ *    - Predictable UX
+ *
+ * 3. MAINTAINABILITY
+ *    - Change structure in ONE place
+ *    - Variants automatically inherit
+ *    - No duplication
+ *
+ * 4. REACT-READY
+ *    - Maps to <Button variant="primary" size="lg" />
+ *    - Props → CSS classes
+ *    - Easy migration
+ */

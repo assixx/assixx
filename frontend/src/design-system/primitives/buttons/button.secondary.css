@@ -1,0 +1,53 @@
+/**
+ * Design System - Secondary Button
+ *
+ * Purpose: Alternative/Cancel actions
+ * Usage: Cancel, Back, Close, Secondary actions
+ *
+ * Visual: Outline style with glassmorphism
+ */
+
+.btn-secondary {
+  border: 1px solid rgb(255 255 255 / 12%); /* Subtle border */
+
+  color: var(--color-primary); /* Primary blue text */
+
+  /* ========== VISUAL ========== */
+  background: rgb(255 255 255 / 4%); /* Subtle glass background */
+  backdrop-filter: blur(var(--blur-sm)); /* 5px blur for glass effect */
+
+  /* No shadow on default state (lighter weight than primary) */
+  box-shadow: none;
+}
+
+/* Hover state - Strengthen glass and border */
+.btn-secondary:hover:not(:disabled) {
+  transform: translateY(-1px); /* Subtle lift (less than primary) */
+  border-color: var(--color-primary); /* Solid primary border */
+  background: rgb(255 255 255 / 8%); /* Stronger glass */
+}
+
+/* Focus state */
+.btn-secondary:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-focus-primary);
+}
+
+/**
+ * WHY OUTLINE STYLE?
+ *
+ * - Visual hierarchy: Less prominent than primary
+ * - Glassmorphism: Maintains design language
+ * - No shadow: Reduces visual weight
+ * - Primary color text: Still related to brand
+ *
+ * WHEN TO USE:
+ * ✅ Cancel buttons in forms/dialogs
+ * ✅ "Back" navigation buttons
+ * ✅ "More info" / "Learn more" links
+ * ✅ Secondary actions in button groups
+ *
+ * WHEN NOT TO USE:
+ * ❌ Primary form submit (use .btn-primary)
+ * ❌ Destructive actions (use .btn-danger)
+ */
