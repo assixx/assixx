@@ -167,3 +167,10 @@
 /* bootstrap-cards.css REMOVED 2025-10-02 - Replaced by semantic .card in dashboard-theme.css - Backup: bootstrap-cards.css.bak */
 @import "./tailwind/compat/bootstrap-modals.css";
 @import "./tailwind/compat/bootstrap-tables.css";
+
+/* ============================================================
+   DESIGN SYSTEM (Best Practice 2025)
+   Modern component-driven architecture
+   Replaces Bootstrap compat layer over time
+   ============================================================ */
+@import "../design-system/index.css";

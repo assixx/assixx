@@ -1,0 +1,81 @@
+/**
+ * Design System - Button System
+ *
+ * Purpose: Barrel export for all button styles
+ * Usage: @import 'design-system/primitives/buttons';
+ *
+ * Architecture:
+ * - Base defines structure & behavior
+ * - Variants define visual appearance
+ * - Effects add micro-interactions
+ *
+ * Import order matters:
+ * 1. Base (foundation)
+ * 2. Variants (build on base)
+ * 3. Effects (enhance variants)
+ */
+
+/* Foundation - Core button structure */
+@import "./button.base.css";
+
+/* Variants - Visual appearances */
+@import "./button.primary.css";
+@import "./button.primary-first.css";
+@import "./button.secondary.css";
+@import "./button.danger.css";
+@import "./button.success.css";
+@import "./button.status.css";
+
+/* Effects - Micro-interactions */
+@import "./button.effects.css";
+
+/**
+ * QUICK REFERENCE:
+ *
+ * Primary Actions (Gradient):
+ *   <button class="btn btn-primary">Save</button>
+ *
+ * Hero CTAs (Transparent):
+ *   <button class="btn btn-primary-first">Register</button>
+ *
+ * Cancel/Back:
+ *   <button class="btn btn-secondary">Cancel</button>
+ *
+ * Delete/Remove:
+ *   <button class="btn btn-danger">Delete</button>
+ *
+ * Success:
+ *   <button class="btn btn-success">Approve</button>
+ *
+ * Status Toggle:
+ *   <button class="btn btn-status-active">Deactivate</button>
+ *   <button class="btn btn-status-inactive">Activate</button>
+ *
+ * Sizes:
+ *   <button class="btn btn-primary btn-sm">Small</button>
+ *   <button class="btn btn-primary btn-lg">Large</button>
+ *
+ * Full Width:
+ *   <button class="btn btn-primary btn-block">Full Width</button>
+ *
+ * With Icon:
+ *   <button class="btn btn-primary">
+ *     <svg>...</svg>
+ *     Upload
+ *   </button>
+ *
+ * Icon Only:
+ *   <button class="btn btn-primary btn-icon">
+ *     <svg>...</svg>
+ *   </button>
+ *
+ * Loading:
+ *   <button class="btn btn-primary" data-loading="true">
+ *     Saving...
+ *   </button>
+ *
+ * Disabled:
+ *   <button class="btn btn-primary" disabled>
+ *     Disabled
+ *   </button>
+ */

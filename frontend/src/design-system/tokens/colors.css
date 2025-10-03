@@ -1,0 +1,71 @@
+/**
+ * Design System - Semantic Color Tokens
+ *
+ * Purpose: Maps Material Design colors to semantic meanings
+ * Philosophy: Best Practice 2025 - Semantic naming over presentational
+ *
+ * Reference:
+ * - Microsoft Fluent: Semantic color system
+ * - Google Material: Color roles
+ * - Tailwind Colors: Already in tailwind.css @theme
+ *
+ * NOTE: Base colors (blue-500, red-500, etc.) are in tailwind.css
+ * These tokens provide SEMANTIC mappings for components
+ */
+
+:root {
+  /* ========== PRIMARY (Brand Blue) ========== */
+  --color-primary: var(--color-blue-500); /* #2196f3 - Main brand color */
+  --color-primary-hover: var(--color-blue-700); /* #1976d2 - Hover/Active state */
+  --color-primary-light: var(--color-blue-400); /* #42a5f5 - Lighter variant */
+  --color-primary-dark: var(--color-blue-800); /* #1565c0 - Darker variant */
+
+  /* ========== DANGER (Destructive Actions) ========== */
+  --color-danger: var(--color-red-500); /* #f44336 - Delete, Remove */
+  --color-danger-hover: var(--color-red-600); /* #e53935 - Hover state */
+  --color-danger-light: var(--color-red-400); /* #ef5350 - Light variant */
+
+  /* ========== SUCCESS (Positive Actions) ========== */
+  --color-success: var(--color-green-500); /* #4caf50 - Success, Confirm */
+  --color-success-hover: var(--color-green-600); /* #43a047 - Hover state */
+  --color-success-light: var(--color-green-400); /* #66bb6a - Light variant */
+
+  /* ========== WARNING (Caution) ========== */
+  --color-warning: var(--color-orange-500); /* #ff9800 - Warning */
+  --color-warning-hover: var(--color-orange-600); /* #fb8c00 - Hover state */
+  --color-warning-light: var(--color-orange-400); /* #ffa726 - Light variant */
+
+  /* ========== STATUS TOGGLES (Custom) ========== */
+  /* Active → Deactivate (Orange) */
+  --color-status-active: #ff6b35; /* Orange - Show when active */
+  --color-status-active-hover: #ff5722; /* Darker orange on hover */
+
+  /* Inactive → Activate (Green) */
+  --color-status-inactive: #28a745; /* Green - Show when inactive */
+  --color-status-inactive-hover: #218838; /* Darker green on hover */
+
+  /* ========== NEUTRALS (Grayscale Semantics) ========== */
+  --color-background-dark: var(--color-gray-950); /* #121212 - Main dark BG */
+  --color-background-light: var(--color-gray-900); /* #212121 - Lighter dark BG */
+  --color-text-primary: var(--color-white); /* #fff - Primary text */
+  --color-text-secondary: var(--color-gray-400); /* #bdbdbd - Secondary text */
+  --color-border: var(--color-gray-800); /* #424242 - Borders */
+  --color-border-subtle: var(--color-gray-900); /* #212121 - Subtle borders */
+
+  /* ========== SURFACE (Glassmorphism) ========== */
+  --color-glass-bg: rgb(255 255 255 / 2%); /* Ultra-subtle glass */
+  --color-glass-bg-hover: rgb(255 255 255 / 3%); /* Hover glass */
+  --color-glass-border: rgb(255 255 255 / 10%); /* Glass border */
+  --color-glass-border-hover: rgb(255 255 255 / 20%); /* Hover border */
+
+  /* ========== OVERLAYS ========== */
+  --color-overlay-dark: rgb(0 0 0 / 70%); /* Modal overlay */
+  --color-overlay-darker: rgb(0 0 0 / 85%); /* Darker overlay */
+
+  /* ========== TRANSPARENCY LEVELS ========== */
+  /* Used for subtle backgrounds and effects */
+  --alpha-subtle: 0.02;
+  --alpha-light: 0.04;
+  --alpha-medium: 0.08;
+  --alpha-strong: 0.15;
+}

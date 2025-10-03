@@ -5,7 +5,13 @@ import containerQueries from '@tailwindcss/container-queries';
 /** @type {import('tailwindcss').Config} */
 export default {
   // Content paths für Tailwind CSS
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx,html}', './public/**/*.html'],
+  content: [
+    './index.html',
+    './src/**/*.{js,ts,jsx,tsx,html}',
+    './public/**/*.html',
+    '../Testing/test-pages/**/*.html', // Design System Living Style Guide
+    '../stories/**/*.{js,jsx,ts,tsx,mdx}', // Storybook stories (CRITICAL for utilities!)
+  ],
 
   // Safelist custom component classes that are defined in CSS
   safelist: [

@@ -192,46 +192,6 @@
   letter-spacing: 0.3px;
 }
 
-/* Buttons mit Glassmorphismus und Shine-Effekt */
-.btn {
-  position: relative;
-
-  overflow: hidden;
-
-  border: 1px solid rgb(255 255 255 / 20%);
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
-.btn-primary {
-  border-color: rgb(0 142 255 / 30%);
-  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn::after {
-  content: "";
-
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  transform: rotate(45deg) translate(-70%, -70%);
-
-  width: 200%;
-  height: 200%;
-
-  background: linear-gradient(45deg, transparent 30%, rgb(255 255 255 / 10%) 50%, transparent 70%);
-}
-
-.btn:hover::after {
-  transform: rotate(45deg) translate(-30%, -30%);
-}
-
 /* Tabellen mit Glassmorphismus */
 .table {
   font-size: 12px; /* Best Practice 2025: data tables */
@@ -662,25 +622,6 @@ body:not(.loaded) * {
 .custom-dropdown {
   position: relative;
   width: 100%;
-}
-
-/* Dropdown Display - Trigger Button */
-.dropdown-display,
-.custom-select-display {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-3);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  color: #fff;
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
 }
 
 .dropdown-display:hover,

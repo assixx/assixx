@@ -72,6 +72,7 @@ services:
       - ../backend:/app/backend:delegated
       - ../frontend:/app/frontend:delegated
       - ../scripts:/app/scripts:delegated
+      - ../Testing:/app/Testing:delegated
       - ../package.json:/app/package.json:delegated
       # pnpm-lock.yaml als read-only mounten (löst EBUSY Problem)
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:ro

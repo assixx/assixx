@@ -154,9 +154,6 @@ body {
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 6px 20px rgb(33 150 243 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
 }
 
 .btn-primary:hover::before {

@@ -868,7 +868,7 @@ body:has(.sidebar.collapsed) .header .logo {
   height: 2.1rem;
 
   /* 34px in rem */
-  margin-bottom: 0.313rem;
+  margin-bottom: 0.3rem;
 
   /* 5px in rem */
   padding: 0.5rem;
@@ -882,11 +882,9 @@ body:has(.sidebar.collapsed) .header .logo {
   font-size: 0.875rem;
 
   /* 14px in rem */
-  line-height: 1.25rem;
 
   /* 20px in rem */
   color: var(--text-secondary);
-  text-decoration: none;
 }
 
 .sidebar-link .icon {
@@ -973,7 +971,6 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
-  border: 1px solid hsl(0deg 0% 39.6%);
   background: rgb(139 139 139 / 41%);
 }
 
@@ -1030,7 +1027,7 @@ body:has(.sidebar.collapsed) .header .logo {
   margin-left: 0.375rem;
 
   /* 6px in rem */
-  padding: 0.5rem;
+  padding: 0.4rem;
 
   /* 3px 20px in rem */
   border-radius: 12px;
@@ -1054,8 +1051,9 @@ body:has(.sidebar.collapsed) .header .logo {
   margin-right: 2rem;
 
   /* 80px in rem */
-  border: 1px solid hsl(0deg 0% 39.6% / 44%);
-  border-radius: var(--radius-xl);
+  border-radius: var(--glass-card-radius);
+
+  text-align: center;
 
   background: rgb(139 139 139 / 12%);
 }

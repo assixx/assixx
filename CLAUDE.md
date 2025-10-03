@@ -136,8 +136,11 @@ docker-compose restart backend
 5. Read(~/projects/Assixx/README.md)
 6. Read(~/projects/Assixx/docs/DATABASE-MIGRATION-GUIDE.md)
 7. Read(~/projects/Assixx/eslint.config.js) for rules (read whole File)
-8. Dont do more than this and than recap fast and than ask user that youre ready.
-9. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
+8. Read(~/projects/Assixx/STORYBOOK.md) for UI context (read whole File)
+9. Read(~/projects/Assixx/frontend/src/styles/tailwind.css) for UI context (read whole File)
+10. Read(~/projects/Assixx/frontend/src/design-system/README.md) for UI context (read whole File)
+11. Dont do more than this and than recap fast and than ask user that youre ready.
+12. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
 
 ## 📊 PROGRESS DOCUMENTATION
 

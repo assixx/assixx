@@ -1,0 +1,219 @@
+/**
+ * Design System - Button Effects
+ *
+ * Purpose: Shine animation and special hover effects
+ * Philosophy: Subtle, delightful micro-interactions
+ *
+ * Reference:
+ * - iOS: Shine effect on purchase buttons
+ * - Stripe: Subtle hover animations
+ * - Linear: Premium button effects
+ *
+ * These effects are OPTIONAL enhancements
+ * Core buttons work without them
+ */
+
+/* ========== SHINE EFFECT ========== */
+
+/**
+ * Shine Animation - Slides across button on hover
+ *
+ * HOW IT WORKS:
+ * 1. ::before pseudo-element with gradient
+ * 2. Positioned off-screen left (-100%)
+ * 3. On hover, slides to right (100%)
+ * 4. Creates illusion of light moving across
+ *
+ * PERFORMANCE:
+ * - Uses transform (GPU-accelerated)
+ * - No layout thrashing
+ * - 60fps smooth animation
+ */
+
+/* Add shine to primary buttons */
+.btn-primary::before,
+.btn-primary-first::before {
+  pointer-events: none; /* Don't block clicks */
+  content: "";
+
+  position: absolute;
+  top: 0;
+  left: -100%; /* Start off-screen left */
+
+  width: 100%;
+  height: 100%;
+
+  background: var(--gradient-shine); /* transparent → white → transparent */
+
+  transition: left var(--duration-shine) var(--ease-out);
+}
+
+/* Trigger shine on hover */
+.btn-primary:hover::before,
+.btn-primary-first:hover::before {
+  left: 100%; /* Slide to off-screen right */
+}
+
+/* ========== RIPPLE EFFECT (Optional Enhancement) ========== */
+
+/**
+ * Material-style ripple on click
+ *
+ * NOTE: This requires JavaScript to position the ripple
+ * CSS only handles the animation
+ *
+ * Usage:
+ * <button class="btn btn-primary" data-ripple>Click me</button>
+ *
+ * JS adds <span class="ripple"> on click
+ */
+
+.btn {
+  overflow: hidden; /* Contain ripple */
+}
+
+.btn .ripple {
+  pointer-events: none;
+
+  position: absolute;
+  transform: scale(0);
+
+  border-radius: 50%;
+
+  background: rgb(255 255 255 / 50%);
+
+  animation: ripple-animation var(--duration-slow) var(--ease-out);
+}
+
+@keyframes ripple-animation {
+  to {
+    transform: scale(4);
+    opacity: 0%;
+  }
+}
+
+/* ========== PULSE EFFECT (Attention Grabber) ========== */
+
+/**
+ * Pulsing animation for important CTAs
+ *
+ * Usage: Add .btn-pulse class
+ * <button class="btn btn-primary btn-pulse">Limited Offer!</button>
+ *
+ * Use sparingly - only for time-sensitive CTAs
+ */
+
+.btn-pulse {
+  animation: btn-pulse var(--duration-pulse) var(--ease-in-out) infinite;
+}
+
+@keyframes btn-pulse {
+  0%,
+  100% {
+    box-shadow: var(--shadow-btn-primary);
+  }
+
+  50% {
+    box-shadow: var(--shadow-btn-primary-hover);
+  }
+}
+
+/* ========== GLOW EFFECT (Premium Elements) ========== */
+
+/**
+ * Subtle glow for premium/special buttons
+ *
+ * Usage: Add .btn-glow class
+ * Used for upgrade prompts, premium features
+ */
+
+.btn-glow {
+  animation: glow var(--duration-pulse) var(--ease-in-out) infinite alternate;
+}
+
+/* Glow animation */
+@keyframes glow {
+  from {
+    box-shadow:
+      0 4px 12px rgb(251 191 36 / 25%),
+      inset 0 1px 0 rgb(255 255 255 / 20%);
+  }
+
+  to {
+    box-shadow:
+      0 4px 20px rgb(251 191 36 / 40%),
+      inset 0 1px 0 rgb(255 255 255 / 20%);
+  }
+}
+
+/* ========== LOADING STATES ========== */
+
+/**
+ * Loading spinner (already defined in button.base.css)
+ * But we can enhance with progress indicator
+ */
+
+/* Progress bar variant (optional) */
+.btn[data-loading="progress"]::before {
+  content: "";
+
+  position: absolute;
+  bottom: 0;
+  left: 0;
+
+  width: var(--progress, 0%); /* Set via JS: style="--progress: 50%" */
+  height: 2px;
+
+  background: rgb(255 255 255 / 50%);
+
+  transition: width var(--duration-normal) var(--ease-out);
+}
+
+/**
+ * ACCESSIBILITY NOTES:
+ *
+ * 1. REDUCE MOTION
+ *    - Respect prefers-reduced-motion
+ *    - Disable animations for users who request it
+ *
+ * 2. FOCUS VISIBLE
+ *    - Effects don't interfere with focus states
+ *    - Keyboard navigation remains clear
+ *
+ * 3. PERFORMANCE
+ *    - All effects use transform/opacity (GPU)
+ *    - No layout thrashing
+ *    - Animations can be disabled globally
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary::before,
+  .btn-primary-first::before,
+  .btn-pulse,
+  .btn-glow,
+  .btn .ripple {
+    transition: none;
+    animation: none;
+  }
+
+  /* Keep functional transitions (hover) */
+  .btn {
+    transition: var(--transition-colors);
+  }
+}
+
+/**
+ * USAGE GUIDELINES:
+ *
+ * ✅ DO:
+ * - Use shine on primary CTAs
+ * - Keep effects subtle
+ * - Respect reduced motion
+ * - Test performance on mobile
+ *
+ * ❌ DON'T:
+ * - Overuse animations (visual noise)
+ * - Add effects to every button
+ * - Use pulse unless time-sensitive
+ * - Ignore accessibility
+ */

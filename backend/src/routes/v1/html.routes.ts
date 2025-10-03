@@ -32,7 +32,11 @@ router.get('/pages/index', rateLimiter.public, (_req: Request, res: Response) =>
 }); // Redirect old URL
 router.get('/login', rateLimiter.auth, servePage('login'));
 router.get('/signup', rateLimiter.auth, servePage('signup'));
-// router.get('/design-standards', rateLimiter.public, servePage('design-standards')); // Moved to test-pages
+
+// Development only - Design System Style Guide
+if (process.env.NODE_ENV !== 'production') {
+  router.get('/design-standards', rateLimiter.public, servePage('design-standards'));
+}
 
 // Authenticated pages - All users
 router.get('/dashboard', rateLimiter.authenticated, authenticateToken, servePage('dashboard'));
@@ -299,6 +303,8 @@ if (process.env.NODE_ENV !== 'production') {
   router.get('/test-db', rateLimiter.public, servePage('test-db'));
   router.get('/debug-dashboard', rateLimiter.public, servePage('debug-dashboard'));
   router.get('/token-debug', rateLimiter.public, servePage('token-debug'));
+  // Note: Design System documentation moved to Storybook (localhost:6006)
+  // Run: pnpm run storybook
 }
 
 export default router;

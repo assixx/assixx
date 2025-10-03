@@ -266,6 +266,30 @@ app.use(
   }),
 );
 
+// Serve Testing directory (Development only - Living Style Guide)
+if (process.env.NODE_ENV !== 'production') {
+  const testingPath = path.join(currentDirPath, '../../Testing');
+  app.use(
+    '/Testing',
+    express.static(testingPath, {
+      setHeaders: (res: Response, filePath: string): void => {
+        res.setHeader(X_CONTENT_TYPE_OPTIONS, 'nosniff');
+        res.setHeader('X-Frame-Options', 'DENY');
+
+        // Set correct MIME types
+        if (filePath.endsWith('.html')) {
+          res.setHeader(CONTENT_TYPE_HEADER, 'text/html');
+        } else if (filePath.endsWith('.css')) {
+          res.setHeader(CONTENT_TYPE_HEADER, 'text/css');
+        } else if (filePath.endsWith('.js')) {
+          res.setHeader(CONTENT_TYPE_HEADER, MIME_TYPE_JAVASCRIPT);
+        }
+      },
+    }),
+  );
+  console.info('[DEV] Testing directory served at /Testing (Living Style Guide available)');
+}
+
 // Handle /js/ requests - map to TypeScript files in development
 // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.public middleware
 app.use('/js', (req: Request, res: Response, next: NextFunction): void => {
