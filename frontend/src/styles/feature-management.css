@@ -24,17 +24,7 @@
   /* animation: fadeInUp 0.6s ease-out; */
 }
 
-/* Buttons mit Glassmorphismus und Shine-Effekt */
-.btn {
-  position: relative;
-
-  overflow: hidden;
-
-  border: 1px solid rgb(255 255 255 / 20%);
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
+/* Buttons mit Glassmorphismus und Shine-Effekt - Using Design System base */
 
 .btn-primary {
   border-color: rgb(0 142 255 / 30%);

@@ -49,6 +49,12 @@ export class NotificationService {
    * @param notification
    */
   show(notification: Omit<Notification, 'id'>): string {
+    // KISS: If any notification is active, ignore new ones completely
+    if (this.notifications.size > 0) {
+      console.info('[NOTIFICATION] Notification already active, ignoring new one');
+      return '';
+    }
+
     const id = this.generateId();
     const fullNotification: Notification = {
       id,

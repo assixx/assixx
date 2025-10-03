@@ -25,6 +25,14 @@
 @import "./button.danger.css";
 @import "./button.success.css";
 @import "./button.status.css";
+@import "./button.warning.css";
+@import "./button.info.css";
+@import "./button.light.css";
+@import "./button.dark.css";
+@import "./button.link.css";
+
+/* Modifiers - Sizes and layouts */
+@import "./button.sizes.css";
 
 /* Effects - Micro-interactions */
 @import "./button.effects.css";
@@ -50,6 +58,21 @@
  * Status Toggle:
  *   <button class="btn btn-status-active">Deactivate</button>
  *   <button class="btn btn-status-inactive">Activate</button>
+ *
+ * Warning:
+ *   <button class="btn btn-warning">Caution</button>
+ *
+ * Info:
+ *   <button class="btn btn-info">Information</button>
+ *
+ * Light:
+ *   <button class="btn btn-light">Light</button>
+ *
+ * Dark:
+ *   <button class="btn btn-dark">Dark</button>
+ *
+ * Link:
+ *   <button class="btn btn-link">Learn More</button>
  *
  * Sizes:
  *   <button class="btn btn-primary btn-sm">Small</button>

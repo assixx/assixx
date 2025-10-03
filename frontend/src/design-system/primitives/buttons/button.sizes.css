@@ -1,0 +1,66 @@
+/**
+ * Design System - Button Size Modifiers
+ *
+ * Purpose: Size variations for buttons
+ * Use Case: Small buttons in tables, large CTAs, full-width mobile buttons
+ *
+ * Reference: Bootstrap size compatibility + modern standards
+ */
+
+/* Small Size - Compact for tables/lists */
+.btn-sm,
+.btn.btn-sm {
+  padding: var(--spacing-1) var(--spacing-3); /* 4px 12px */
+  border-radius: var(--radius-md); /* 6px - smaller radius */
+  font-size: var(--font-size-sm); /* 13px */
+  line-height: var(--line-height-tight); /* 1.25 */
+}
+
+/* Medium Size - DEFAULT (defined in variants) */
+.btn-md,
+.btn.btn-md {
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  font-size: var(--font-size-base); /* 14px */
+}
+
+/* Large Size - Prominent CTAs */
+.btn-lg,
+.btn.btn-lg {
+  padding: var(--spacing-3) var(--spacing-6); /* 12px 24px */
+  border-radius: var(--radius-xl); /* 12px - larger radius */
+  font-size: var(--font-size-lg); /* 16px */
+  line-height: var(--line-height-normal); /* 1.5 */
+}
+
+/* Block/Full Width - Mobile friendly */
+.btn-block,
+.btn.btn-block {
+  display: table; /* Change from inline-flex */
+}
+
+/* Icon-only buttons (square aspect ratio) */
+.btn-icon,
+.btn.btn-icon {
+  aspect-ratio: 1; /* Perfect square */
+  padding: var(--spacing-2); /* 8px all sides */
+}
+
+.btn-icon.btn-sm {
+  padding: var(--spacing-1); /* 4px all sides */
+}
+
+.btn-icon.btn-lg {
+  padding: var(--spacing-3); /* 12px all sides */
+}
+
+/* Responsive size adjustments */
+@media (width <= 640px) {
+  /* On mobile, all buttons get slightly larger for touch */
+  .btn {
+    min-height: 44px; /* iOS touch target minimum */
+  }
+
+  .btn-sm {
+    min-height: 36px; /* Still accessible */
+  }
+}

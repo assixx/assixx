@@ -7,6 +7,7 @@
 ## 🎯 Philosophy
 
 This design system follows **Best Practice 2025** patterns used by:
+
 - **Microsoft** (Fluent Design System)
 - **Google** (Material Design 3)
 - **Meta** (React Design System)
@@ -88,6 +89,7 @@ That's it! The entire design system is now available.
 ### ✅ Buttons (Phase 1 - Complete)
 
 Full button system with 6 variants:
+
 - `btn-primary` - Main actions
 - `btn-primary-first` - Hero CTAs
 - `btn-secondary` - Cancel/Back
@@ -101,16 +103,16 @@ Full button system with 6 variants:
 
 ## 🗺️ Roadmap
 
-| Phase | Component | Status |
-|-------|-----------|--------|
-| 1 | Buttons | ✅ Done |
-| 2 | Inputs & Forms | ⏳ Next |
-| 3 | Cards & Containers | 📋 Planned |
-| 4 | Modals & Overlays | 📋 Planned |
-| 5 | Badges & Status | 📋 Planned |
-| 6 | Navigation | 📋 Planned |
-| 7 | Data Display | 📋 Planned |
-| 8 | Feedback | 📋 Planned |
+| Phase | Component          | Status     |
+| ----- | ------------------ | ---------- |
+| 1     | Buttons            | ✅ Done    |
+| 2     | Inputs & Forms     | ⏳ Next    |
+| 3     | Cards & Containers | 📋 Planned |
+| 4     | Modals & Overlays  | 📋 Planned |
+| 5     | Badges & Status    | 📋 Planned |
+| 6     | Navigation         | 📋 Planned |
+| 7     | Data Display       | 📋 Planned |
+| 8     | Feedback           | 📋 Planned |
 
 ---
 
@@ -160,7 +162,9 @@ Design tokens are the **single source of truth** for all visual properties.
 All components follow this pattern:
 
 ### Base
+
 Defines **structure & behavior** (what all variants share)
+
 - Layout (flex, grid)
 - Typography basics
 - Interactivity (cursor, user-select)
@@ -168,7 +172,9 @@ Defines **structure & behavior** (what all variants share)
 - Transitions
 
 ### Variants
+
 Define **visual appearance** (how they differ)
+
 - Colors
 - Backgrounds
 - Borders
@@ -176,7 +182,9 @@ Define **visual appearance** (how they differ)
 - Specific styles
 
 ### Effects
+
 Add **micro-interactions** (optional enhancements)
+
 - Hover animations
 - Shine effects
 - Pulse/glow
@@ -218,13 +226,13 @@ Every component is **WCAG AAA compliant** by default:
 This CSS architecture maps **1:1** to React components:
 
 ### Current (CSS Classes)
+
 ```html
-<button class="btn btn-primary btn-lg">
-  Submit
-</button>
+<button class="btn btn-primary btn-lg">Submit</button>
 ```
 
 ### Future (React Component)
+
 ```tsx
 <Button variant="primary" size="lg">
   Submit
@@ -232,6 +240,7 @@ This CSS architecture maps **1:1** to React components:
 ```
 
 ### Component Structure
+
 ```tsx
 // Button.tsx
 interface ButtonProps {
@@ -275,11 +284,13 @@ Every component MUST have:
 ### Adding a New Component
 
 1. **Create structure**
+
    ```bash
    mkdir -p design-system/primitives/your-component
    ```
 
 2. **Build component**
+
    ```
    your-component/
    ├── component.base.css
@@ -312,6 +323,7 @@ Every component MUST have:
 Preview all components: [`Testing/test-pages/design-standards.html`](../../Testing/test-pages/design-standards.html)
 
 This page serves as:
+
 - Visual regression reference
 - Component playground
 - Integration test

@@ -11,6 +11,9 @@
  */
 
 .btn-primary {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
   /* No border - gradient is the visual boundary */
   border: none;
   color: var(--color-white);
@@ -19,11 +22,7 @@
   box-shadow: var(--shadow-btn-primary);
 }
 
-/* Hover state - Elevate and brighten shadow */
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px); /* Lift up */
-  box-shadow: var(--shadow-btn-primary-hover);
-}
+
 
 /* Focus state - Accessibility */
 .btn-primary:focus-visible {

@@ -8,7 +8,10 @@
  */
 
 .btn-danger {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid #bd2130; /* Darker red border */
+
   color: var(--color-white);
 
   /* ========== VISUAL ========== */

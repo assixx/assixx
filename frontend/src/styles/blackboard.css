@@ -733,13 +733,7 @@ select.form-control {
   backdrop-filter: blur(5px);
 }
 
-.btn-secondary:hover,
-.secondary-button:hover,
-.big-button.secondary-button:hover {
-  transform: translateY(-1px);
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-}
+
 
 /* Color Picker Update */
 .color-picker {
@@ -2020,17 +2014,7 @@ select.form-control {
     inset 0 1px 2px rgb(0 0 0 / 20%);
 }
 
-/* Buttons mit Glassmorphismus und Shine-Effekt */
-.btn {
-  position: relative;
-
-  overflow: hidden;
-
-  border: 1px solid rgb(255 255 255 / 20%);
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
+/* Buttons mit Glassmorphismus und Shine-Effekt - Using Design System base */
 
 .btn-primary,
 .primary-button {
@@ -2158,6 +2142,7 @@ body.fullscreen-mode .blackboard-container {
 
   max-width: 100%;
   height: 100vh;
+  min-height: 5000px;
   margin: 0 auto;
   padding: 40px;
 }

@@ -66,11 +66,9 @@
  * <button class="btn btn-primary" data-ripple>Click me</button>
  *
  * JS adds <span class="ripple"> on click
+ *
+ * NOTE: overflow: hidden is already defined in button.base.css
  */
-
-.btn {
-  overflow: hidden; /* Contain ripple */
-}
 
 .btn .ripple {
   pointer-events: none;

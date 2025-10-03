@@ -161,24 +161,7 @@
   color: var(--text-primary);
 }
 
-/* Button Styles */
-.btn {
-  cursor: pointer;
-
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-
-  padding: 10px 24px;
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 500;
-
-  transition: all 0.3s ease;
-}
+/* Button Styles - Using Design System base */
 
 .btn-danger {
   border: 1px solid #f44336;

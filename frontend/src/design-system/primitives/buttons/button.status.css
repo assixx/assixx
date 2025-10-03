@@ -14,6 +14,8 @@
 /* ========== ACTIVE STATE (Shows "Deaktivieren") ========== */
 
 .btn-status-active {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid var(--color-status-active);
 
   color: var(--color-status-active); /* Orange text */
@@ -44,6 +46,8 @@
 /* ========== INACTIVE STATE (Shows "Aktivieren") ========== */
 
 .btn-status-inactive {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid var(--color-status-inactive);
 
   color: var(--color-status-inactive); /* Green text */

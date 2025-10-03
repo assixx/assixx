@@ -28,39 +28,35 @@
   align-items: center;
   justify-content: center;
 
-  margin: 0; /* Reset margin */
-  padding: 0; /* Variants define padding */
-
-  /* ========== RESET ========== */
-  border: none; /* Remove browser default */
+  /* ========== SPACING ========== */
+  padding: 0; /* Reset for variants to define */
+  border: none; /* Remove default border */
 
   /* ========== VISUAL ========== */
-  border-radius: var(--radius-lg); /* 0.5rem = 8px - modern roundness */
+  border-radius: var(--glass-card-radius);
 
   /* ========== TYPOGRAPHY ========== */
   font-family: inherit; /* Use system font */
   font-size: var(--font-size-base); /* 14px - SaaS standard */
   font-weight: var(--font-weight-medium); /* 500 - readable weight */
-  line-height: var(--line-height-none); /* 1 - tight for buttons */
   text-align: center;
-  text-decoration: none; /* Remove underline on <a> */
   white-space: nowrap; /* Prevent text wrapping */
 
-  background: none; /* Variants define background */
-
-  /* ========== ACCESSIBILITY ========== */
-  /* Focus visible for keyboard navigation */
-  outline: none; /* Remove browser default */
+  background: transparent; /* Variants define background */
 
   /* ========== TRANSITIONS ========== */
   transition: var(--transition-btn); /* Smooth all property changes */
 }
 
+/* For <a> tags styled as buttons */
+a.btn {
+  text-decoration: none;
+}
+
 /* Focus state - WCAG AAA compliant */
 .btn:focus-visible {
-  outline: 2px solid transparent; /* For high contrast mode */
+  outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-  box-shadow: var(--shadow-focus-primary);
 }
 
 /* Disabled state - applies to ALL variants */
@@ -85,27 +81,11 @@
   font-size: var(--font-size-sm); /* 13px */
 }
 
-/* Medium (default) - Most common */
-.btn,
-.btn-md {
-  padding: var(--spacing-2) var(--spacing-6); /* 8px 24px */
-  font-size: var(--font-size-base); /* 14px */
-}
-
-/* Large - Hero CTAs */
-.btn-lg {
-  padding: var(--spacing-3) var(--spacing-8); /* 12px 32px */
-  border-radius: var(--radius-xl); /* 12px */
-  font-size: var(--font-size-lg); /* 16px */
-}
+/* REMOVED - Size modifiers belong in button.sizes.css, not in base */
 
 /* ========== LAYOUT MODIFIERS ========== */
 
-/* Full width button (mobile, forms) */
-.btn-block {
-  display: flex; /* Change from inline-flex */
-  width: 100%;
-}
+/* REMOVED - btn-block is defined in button.sizes.css */
 
 /* ========== ICON SUPPORT ========== */
 

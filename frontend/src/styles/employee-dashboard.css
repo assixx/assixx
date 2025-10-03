@@ -773,22 +773,14 @@
   }
 }
 
-/* Buttons mit Glassmorphismus */
-.btn {
-  position: relative;
+/* Buttons mit Glassmorphismus - Using Design System base */
 
-  overflow: hidden;
-
-  border: 1px solid rgb(255 255 255 / 20%);
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
+/* DISABLED - Using Design System
 .btn-secondary {
   border-color: rgb(255 255 255 / 20%);
   background: linear-gradient(135deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 5%));
 }
+*/
 
 .btn:hover {
   transform: translateY(-2px);

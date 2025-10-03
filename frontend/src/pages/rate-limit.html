@@ -19,7 +19,6 @@
         <div class="retry-label">Versuchen Sie es wieder in:</div>
         <div class="retry-time countdown" id="countdown">0:20</div>
       </div>
-      <button class="btn-primary" id="retryBtn" data-action="redirect-login" disabled>Zurück zum Login</button>
     </div>
 
     <script>
@@ -33,7 +32,6 @@
       // Constants
       const RATE_LIMIT_DURATION = 20 * 1000; // 20 seconds in milliseconds
       const countdownEl = document.querySelector('#countdown');
-      const retryBtn = document.querySelector('#retryBtn');
 
       // Get or set rate limit timestamp
       let rateLimitTimestamp = localStorage.getItem('rateLimitTimestamp');
@@ -69,8 +67,6 @@
 
         if (timeLeft <= 0) {
           countdownEl.textContent = 'Weiterleitung...';
-          retryBtn.disabled = false;
-          retryBtn.textContent = 'Jetzt zum Login';
           if (timer) clearInterval(timer);
 
           // Clear the timestamp
@@ -94,21 +90,10 @@
         // Time already expired, redirect immediately
         localStorage.removeItem('rateLimitTimestamp');
         countdownEl.textContent = 'Weiterleitung...';
-        retryBtn.disabled = false;
-        retryBtn.textContent = 'Jetzt zum Login';
         setTimeout(() => {
           window.location.href = '/login?ratelimit=expired';
         }, 500);
       }
-
-      // Event delegation for button click
-      document.addEventListener('click', function (e) {
-        const button = e.target.closest('[data-action="redirect-login"]');
-        if (button && !button.disabled) {
-          localStorage.removeItem('rateLimitTimestamp');
-          window.location.href = '/login?ratelimit=expired';
-        }
-      });
     </script>
   </body>
 </html>

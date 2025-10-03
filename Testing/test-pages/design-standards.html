@@ -61,40 +61,40 @@
       }
 
       .ds-container {
-        max-width: 1400px;
         margin: 0 auto;
         padding: 60px 40px;
+        max-width: 1400px;
       }
 
       .ds-header {
-        text-align: center;
         margin-bottom: 80px;
+        text-align: center;
       }
 
       .ds-title {
-        font-size: 3rem;
-        font-weight: 700;
-        color: var(--color-white);
         margin: 0 0 16px 0;
+        color: var(--color-white);
+        font-weight: 700;
+        font-size: 3rem;
         text-shadow: 0 0 30px rgba(33, 150, 243, 0.4);
       }
 
       .ds-subtitle {
-        font-size: 1.25rem;
-        color: var(--color-text-secondary);
         margin: 0;
+        color: var(--color-text-secondary);
+        font-size: 1.25rem;
       }
 
       .ds-version {
         display: inline-block;
         margin-top: 16px;
-        padding: 6px 16px;
-        background: rgba(33, 150, 243, 0.1);
         border: 1px solid rgba(33, 150, 243, 0.3);
         border-radius: 20px;
+        background: rgba(33, 150, 243, 0.1);
+        padding: 6px 16px;
         color: var(--color-primary);
-        font-size: 0.875rem;
         font-weight: 600;
+        font-size: 0.875rem;
         letter-spacing: 0.5px;
       }
 
@@ -107,67 +107,67 @@
         align-items: center;
         gap: 12px;
         margin: 0 0 32px 0;
-        padding-bottom: 16px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 16px;
         color: var(--color-primary);
-        font-size: 2rem;
         font-weight: 600;
+        font-size: 2rem;
       }
 
       .ds-section-title::before {
-        content: '';
+        border-radius: 2px;
+        background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
         width: 4px;
         height: 32px;
-        background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
-        border-radius: 2px;
+        content: '';
       }
 
       .ds-card {
         backdrop-filter: blur(20px) saturate(180%);
+        margin-bottom: 24px;
         box-shadow: var(--shadow-glass);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-2xl);
         background: rgba(255, 255, 255, 0.02);
         padding: 32px;
-        margin-bottom: 24px;
       }
 
       .ds-card:hover {
         transform: translateY(-2px);
+        transition: all var(--duration-normal) var(--ease-out);
         box-shadow: var(--shadow-glass-hover);
         background: rgba(255, 255, 255, 0.03);
-        transition: all var(--duration-normal) var(--ease-out);
       }
 
       .ds-card-title {
-        font-size: 1.25rem;
-        font-weight: 600;
-        color: var(--color-white);
         margin: 0 0 20px 0;
+        color: var(--color-white);
+        font-weight: 600;
+        font-size: 1.25rem;
       }
 
       .ds-card-description {
-        color: var(--color-text-secondary);
         margin: 0 0 24px 0;
+        color: var(--color-text-secondary);
         line-height: 1.6;
       }
 
       .ds-showcase {
         display: flex;
         flex-wrap: wrap;
-        gap: 16px;
         align-items: center;
-        padding: 32px;
-        background: rgba(0, 0, 0, 0.2);
+        gap: 16px;
+        margin-bottom: 16px;
         border: 1px solid rgba(255, 255, 255, 0.05);
         border-radius: var(--radius-lg);
-        margin-bottom: 16px;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 32px;
       }
 
       .ds-code {
-        background: rgba(0, 0, 0, 0.4);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: var(--radius-lg);
+        background: rgba(0, 0, 0, 0.4);
         padding: 20px;
         overflow-x: auto;
       }
@@ -175,8 +175,8 @@
       .ds-code code {
         color: #64b5f6;
         font-size: 0.875rem;
-        font-family: 'SF Mono', 'Consolas', monospace;
         line-height: 1.6;
+        font-family: 'SF Mono', 'Consolas', monospace;
       }
 
       .ds-grid {
@@ -186,39 +186,34 @@
       }
 
       .ds-divider {
-        height: 1px;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          rgba(255, 255, 255, 0.2),
-          transparent
-        );
         margin: 48px 0;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+        height: 1px;
       }
 
       .ds-label {
         display: block;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--color-text-secondary);
         margin-bottom: 8px;
+        color: var(--color-text-secondary);
+        font-weight: 600;
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
       }
 
       .ds-note {
         display: flex;
         gap: 12px;
-        padding: 16px;
-        background: rgba(33, 150, 243, 0.05);
+        margin-top: 16px;
         border-left: 3px solid var(--color-primary);
         border-radius: var(--radius-md);
-        margin-top: 16px;
+        background: rgba(33, 150, 243, 0.05);
+        padding: 16px;
       }
 
       .ds-note-icon {
-        color: var(--color-primary);
         flex-shrink: 0;
+        color: var(--color-primary);
       }
 
       .ds-note-content {
@@ -292,8 +287,9 @@
         <div class="ds-card">
           <h3 class="ds-card-title">Primary First-Level (Hero CTAs)</h3>
           <p class="ds-card-description">
-            Special variant for landing pages and hero sections. <strong>Transparent background</strong> with
-            shadow-only boundary creates elegant, minimalist look.
+            Special variant for landing pages and hero sections.
+            <strong>Transparent background</strong> with shadow-only boundary creates elegant,
+            minimalist look.
           </p>
 
           <span class="ds-label">Visual Examples</span>
@@ -411,8 +407,8 @@
         <div class="ds-card">
           <h3 class="ds-card-title">Status Toggle Buttons</h3>
           <p class="ds-card-description">
-            Activate/deactivate status toggles. <strong>Important:</strong> Button shows OPPOSITE
-            of current state (inverse relationship).
+            Activate/deactivate status toggles. <strong>Important:</strong> Button shows OPPOSITE of
+            current state (inverse relationship).
           </p>
 
           <span class="ds-label">Visual Examples</span>
@@ -427,9 +423,9 @@
           <div class="ds-code">
             <code
               >&lt;!-- User is currently ACTIVE → show deactivate (orange) --&gt; <br />
-&lt;button class="btn btn-status-active"&gt;Deaktivieren&lt;/button&gt; <br /><br />
-&lt;!-- User is currently INACTIVE → show activate (green) --&gt; <br />
-&lt;button class="btn btn-status-inactive"&gt;Aktivieren&lt;/button&gt;</code
+              &lt;button class="btn btn-status-active"&gt;Deaktivieren&lt;/button&gt; <br /><br />
+              &lt;!-- User is currently INACTIVE → show activate (green) --&gt; <br />
+              &lt;button class="btn btn-status-inactive"&gt;Aktivieren&lt;/button&gt;</code
             >
           </div>
 
@@ -477,7 +473,9 @@
           <div class="ds-showcase">
             <button class="btn btn-primary btn-icon">
               <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z" />
+                <path
+                  d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"
+                />
               </svg>
             </button>
             <button class="btn btn-secondary btn-icon">
@@ -487,7 +485,9 @@
             </button>
             <button class="btn btn-danger btn-icon">
               <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" />
+                <path
+                  d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"
+                />
               </svg>
             </button>
           </div>
@@ -495,7 +495,13 @@
       </section>
 
       <!-- Footer -->
-      <div style="text-align: center; padding-top: 60px; border-top: 1px solid rgba(255, 255, 255, 0.1)">
+      <div
+        style="
+          text-align: center;
+          padding-top: 60px;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+        "
+      >
         <p style="color: var(--color-text-secondary); margin: 0">
           Assixx Design System v1.0.0 • Best Practice 2025
         </p>

@@ -101,7 +101,7 @@ export async function checkTenantStatus(
     const authReq = req as AuthenticatedRequest;
 
     // Skip if no user or no tenant_id
-    if (!authReq.user.tenant_id) {
+    if (!authReq.user || !authReq.user.tenant_id) {
       next();
       return;
     }

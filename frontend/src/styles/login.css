@@ -103,8 +103,6 @@
 .login-card {
   width: 100%;
   max-width: 450px;
-  margin-top: 50px;
-  margin-top: unset !important;
   padding: var(--spacing-8);
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
@@ -133,6 +131,7 @@
   text-align: center;
 }
 
+/* KILLED 2025-01-10 - Using Design System
 .btn-block {
   display: block;
 
@@ -151,7 +150,7 @@
     sans-serif;
   font-size: 16px;
   font-weight: 500;
-}
+} */
 
 .login-footer {
   margin-top: var(--spacing-6);
@@ -233,6 +232,7 @@
   margin-bottom: var(--spacing-4);
   padding: var(--spacing-3);
   border-radius: var(--radius-xl);
+  font-size: 14px;
 
   color: #ffa700;
 
@@ -339,44 +339,4 @@
     transform: scale(1.02);
     opacity: 95%;
   }
-}
-
-/* Button Glassmorphismus */
-.btn-primary {
-  position: relative;
-
-  overflow: hidden;
-
-  color: #fff;
-
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  box-shadow:
-    0 1px 4px rgb(33 150 243 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-.btn-primary::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  left: -100%;
-
-  width: 100%;
-  height: 100%;
-
-  background: linear-gradient(90deg, transparent, hsl(0deg 0% 100% / 20%), transparent);
-
-  transition: left 0.5s ease;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 20px rgb(33 150 243 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-.btn-primary:hover::before {
-  left: 100%;
 }

@@ -46,7 +46,7 @@ export class DashboardUI {
       return;
     }
 
-    const items = employees.slice(0, 5).map((emp) => {
+    const items = employees.slice(0, 3).map((emp) => {
       const item = createElement('div', { className: CLASS_COMPACT_ITEM });
       const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, emp.fullName);
       item.append(nameSpan);
