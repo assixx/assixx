@@ -1,0 +1,92 @@
+/**
+ * Design System - Button Warning Variant
+ *
+ * Purpose: Warning/caution actions that need user attention
+ * Use Case: Potentially risky actions, important notifications
+ *
+ * Color: Orange (#ff9800) with black text for contrast
+ * Reference: Material Design warning states
+ */
+
+.btn-warning {
+  /* Padding - matches other variants */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* Colors */
+  color: var(--color-black);
+
+  background: linear-gradient(135deg, var(--color-orange-500) 0%, var(--color-orange-600) 100%);
+
+  /* Border & Shadow */
+  box-shadow: var(--shadow-btn-warning, 0 2px 8px rgb(255 152 0 / 30%));
+
+  /* Transitions */
+  transition: var(--transition-all);
+}
+
+/* Hover State */
+.btn-warning:hover:not(:disabled) {
+  transform: translateY(-1px);
+  color: #000;
+  background: linear-gradient(135deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%);
+  box-shadow: var(--shadow-btn-warning-hover, 0 4px 12px rgb(255 152 0 / 40%));
+}
+
+/* Active/Pressed State */
+.btn-warning:active:not(:disabled) {
+  transform: translateY(0);
+  background: var(--color-orange-600);
+  box-shadow: var(--shadow-btn-warning-active, 0 1px 4px rgb(255 152 0 / 30%));
+}
+
+/* Focus State */
+.btn-warning:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 3px rgb(255 152 0 / 20%),
+    var(--shadow-btn-warning);
+}
+
+/* Disabled State */
+.btn-warning:disabled,
+.btn-warning.disabled {
+  cursor: not-allowed;
+
+  color: rgb(0 0 0 / 50%);
+
+  opacity: 60%;
+  background: var(--color-orange-200);
+  box-shadow: none;
+}
+
+/* Loading State */
+.btn-warning.loading {
+  pointer-events: none;
+  color: transparent;
+}
+
+.btn-warning.loading::after {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  margin-left: -8px;
+  border: 2px solid var(--color-black);
+  border-top-color: transparent;
+  border-radius: 50%;
+
+  animation: spin 0.6s linear infinite;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

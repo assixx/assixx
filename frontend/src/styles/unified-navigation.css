@@ -34,7 +34,7 @@
 }
 
 .header .logo {
-  width: 110px;
+  width: 120px;
   height: 50px;
   margin-left: -13px;
 }
@@ -207,7 +207,7 @@
   margin-top: 23px;
   margin-right: 1%;
   margin-left: 15px;
-  padding: var(--spacing-2);
+  padding: var(--spacing-1);
   border: 1px solid rgb(255 255 255 / 100%);
   border-radius: 10px;
 
@@ -1030,7 +1030,7 @@ body:has(.sidebar.collapsed) .header .logo {
   padding: 0.4rem;
 
   /* 3px 20px in rem */
-  border-radius: 12px;
+  border-radius: var(--glass-card-radius);
 
   font-size: 0.85rem;
   color: var(--text-secondary);
@@ -1038,7 +1038,6 @@ body:has(.sidebar.collapsed) .header .logo {
 }
 
 .submenu-link:hover {
-  border-color: rgb(33 150 243 / 15%);
   background: rgb(33 150 243 / 8%);
 }
 

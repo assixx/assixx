@@ -166,78 +166,6 @@
   background: rgb(255 255 255 / 2%);
 }
 
-/* Buttons */
-.btn {
-  cursor: pointer;
-
-  display: inline-flex;
-  gap: var(--spacing-1);
-  align-items: center;
-
-  min-height: 2.5rem; /* Mindesthöhe für touch/zoom */
-  padding: var(--spacing-3);
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-family: inherit; /* Inherit from body */
-  font-size: 0.875rem; /* 14px */
-  font-weight: 500;
-}
-
-.btn-primary {
-  color: #fff;
-}
-
-.btn-secondary {
-  border: 1px solid var(--primary-color);
-  color: var(--primary-color);
-  background-color: transparent;
-}
-
-.btn-secondary:hover {
-  color: #fff;
-}
-
-.btn-danger {
-  color: #fff;
-  background-color: var(--error-color);
-}
-
-.btn-danger:hover {
-  background-color: #d32f2f;
-}
-
-.btn-warning {
-  position: relative;
-
-  overflow: hidden;
-
-  border: 1px solid rgb(255 152 0 / 30%);
-
-  color: #ff9800;
-
-  background: rgb(255 152 0 / 15%);
-  backdrop-filter: blur(10px);
-}
-
-.btn-warning:hover {
-  border-color: rgb(255 152 0 / 50%);
-  color: #ffa726;
-  background: rgb(255 152 0 / 25%);
-  box-shadow: 0 4px 20px rgb(255 152 0 / 30%);
-}
-
-.btn-warning:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgb(255 152 0 / 20%);
-}
-
-/* Small button variant */
-.btn-sm.btn-warning {
-  padding: 6px 12px;
-  font-size: 13px;
-}
-
 /* Forms */
 .form-group {
   margin-bottom: var(--spacing-4);
@@ -255,7 +183,7 @@
   margin-top: 5px;
   padding: var(--spacing-3);
   border: var(--glass-form-border);
-  border-radius: var(--radius-xl);
+  border-radius: var(--glass-card-radius);
 
   font-family: inherit; /* Inherit from body */
   font-size: 0.875rem; /* 14px */
@@ -709,7 +637,7 @@
 /* Admin Dashboard Grid */
 .admin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: var(--spacing-6);
   margin-bottom: var(--spacing-8);
 }
@@ -762,10 +690,6 @@
   text-decoration: underline;
 }
 
-.btn-block {
-  width: 100%;
-}
-
 /* Recent Activity Grid */
 .recent-activity-grid {
   display: grid;
@@ -816,7 +740,6 @@
 
 .alert-error {
   border-color: rgb(244 67 54 / 30%);
-  border-left: 3px solid rgb(244 67 54 / 80%);
   color: rgb(239 83 80);
   background: linear-gradient(135deg, rgb(244 67 54 / 8%) 0%, rgb(244 67 54 / 3%) 100%);
 }

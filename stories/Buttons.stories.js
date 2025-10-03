@@ -199,6 +199,86 @@ export const StatusInactive = {
 };
 
 /**
+ * WARNING BUTTON
+ * Warning/caution actions with orange gradient
+ * Use for: Caution, Important notifications, Risky actions
+ */
+export const Warning = {
+  args: {
+    label: 'Caution',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+  },
+  render: (args) => createButton({ ...args, variant: 'warning' }),
+};
+
+/**
+ * INFO BUTTON
+ * Informational actions with cyan gradient
+ * Use for: Information, Help, Tooltips, Learn more
+ */
+export const Info = {
+  args: {
+    label: 'Information',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+  },
+  render: (args) => createButton({ ...args, variant: 'info' }),
+};
+
+/**
+ * LIGHT BUTTON
+ * Light theme button with subtle styling
+ * Use for: Secondary actions on dark backgrounds
+ */
+export const Light = {
+  args: {
+    label: 'Light',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+  },
+  render: (args) => createButton({ ...args, variant: 'light' }),
+};
+
+/**
+ * DARK BUTTON
+ * Dark theme button with strong contrast
+ * Use for: High contrast actions, Dark mode toggles
+ */
+export const Dark = {
+  args: {
+    label: 'Dark',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+  },
+  render: (args) => createButton({ ...args, variant: 'dark' }),
+};
+
+/**
+ * LINK BUTTON
+ * Text-only button that looks like a link
+ * Use for: Inline actions, Learn more, Minimal UI
+ */
+export const Link = {
+  args: {
+    label: 'Learn More',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+  },
+  render: (args) => createButton({ ...args, variant: 'link' }),
+};
+
+/**
  * SIZE VARIANTS
  * Small, Medium (default), Large
  */
@@ -296,7 +376,7 @@ export const AllVariants = {
   render: () => {
     const container = document.createElement('div');
     container.style.display = 'grid';
-    container.style.gridTemplateColumns = 'repeat(2, 1fr)';
+    container.style.gridTemplateColumns = 'repeat(3, 1fr)';
     container.style.gap = '24px';
     container.style.padding = '20px';
 
@@ -306,7 +386,13 @@ export const AllVariants = {
       { variant: 'secondary', label: 'Secondary' },
       { variant: 'danger', label: 'Danger' },
       { variant: 'success', label: 'Success' },
+      { variant: 'warning', label: 'Warning' },
+      { variant: 'info', label: 'Info' },
+      { variant: 'light', label: 'Light' },
+      { variant: 'dark', label: 'Dark' },
+      { variant: 'link', label: 'Link' },
       { variant: 'status-active', label: 'Status Active' },
+      { variant: 'status-inactive', label: 'Status Inactive' },
     ];
 
     variants.forEach(({ variant, label }) => {

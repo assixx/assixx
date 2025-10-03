@@ -691,21 +691,7 @@
   color: var(--text-primary);
 }
 
-/* Buttons */
-.btn {
-  cursor: pointer;
-
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-
-  font-size: 14px;
-  font-weight: 500;
-}
+/* Buttons - Using Design System base */
 
 .btn-primary {
   color: #fff;

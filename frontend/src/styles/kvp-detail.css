@@ -571,18 +571,7 @@
   margin-top: var(--spacing-6);
 }
 
-.btn {
-  cursor: pointer;
-
-  max-width: 200px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  font-weight: 500;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-}
+/* Button base - Using Design System */
 
 .btn:hover {
   transform: translateY(-2px);

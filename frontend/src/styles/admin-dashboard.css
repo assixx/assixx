@@ -181,17 +181,6 @@
   transform: translateX(3px);
 }
 
-/* Button in Compact-Cards */
-.compact-card .btn-block {
-  width: 100%;
-  margin-bottom: var(--spacing-4);
-  padding: 10px 16px;
-
-  font-size: 0.9rem;
-  font-weight: 500;
-  letter-spacing: 0.3px;
-}
-
 /* Tabellen mit Glassmorphismus */
 .table {
   font-size: 12px; /* Best Practice 2025: data tables */
@@ -439,7 +428,7 @@
   background: rgb(108 117 125 / 20%);
 }
 
-/* Info Button Style */
+/* Info Button Style - REMOVED 2025-01-10 - Using Design System buttons now
 .btn-info {
   border: 1px solid rgb(23 162 184 / 30%);
   color: #17a2b8;
@@ -450,7 +439,7 @@
   transform: translateY(-1px);
   border-color: #17a2b8;
   background: rgb(23 162 184 / 30%);
-}
+} */
 
 /* Global Layout Shift Prevention using CSS Custom Properties */
 :root {
@@ -1018,6 +1007,7 @@ tr:hover .badge-warning {
   color: var(--danger-color);
 }
 
+/* REMOVED 2025-01-10 - Using Design System buttons now
 .btn-secondary {
   color: var(--text-primary);
   background: rgb(255 255 255 / 10%);
@@ -1025,7 +1015,7 @@ tr:hover .badge-warning {
 
 .btn-secondary:hover {
   background: rgb(255 255 255 / 15%);
-}
+} */
 
 /* Compact Item Styles - Übersichtlich aber kompakt */
 .compact-item {

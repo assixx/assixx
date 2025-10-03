@@ -161,7 +161,7 @@
 @import "./tailwind/utilities.css";
 
 /* Bootstrap Compatibility Layer (temporary) */
-@import "./tailwind/compat/bootstrap-buttons.css";
+/* @import "./tailwind/compat/bootstrap-buttons.css"; -- DEACTIVATED 2025-01-10 - Using Design System buttons now */
 @import "./tailwind/compat/bootstrap-forms.css";
 
 /* bootstrap-cards.css REMOVED 2025-10-02 - Replaced by semantic .card in dashboard-theme.css - Backup: bootstrap-cards.css.bak */

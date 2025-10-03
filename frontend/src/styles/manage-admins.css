@@ -289,21 +289,7 @@
   margin-top: 20px;
 }
 
-.btn {
-  cursor: pointer;
-
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: center;
-
-  padding: 10px 24px;
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 500;
-}
+/* Button base - Using Design System */
 
 .btn-primary {
   color: #fff;

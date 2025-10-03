@@ -167,21 +167,7 @@ h1 {
   color: var(--primary-color);
 }
 
-/* Buttons - Glassmorphismus */
-.btn {
-  cursor: pointer;
-
-  position: relative;
-
-  overflow: hidden;
-
-  /* padding: 10px 24px; */
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 600;
-}
+/* Buttons - Glassmorphismus - Using Design System base */
 
 .btn-primary {
   color: #fff;

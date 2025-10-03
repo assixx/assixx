@@ -12,8 +12,12 @@
  */
 
 .btn-primary-first {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
   /* No border - shadow is the visual boundary */
   border: none;
+
   color: var(--color-white);
 
   /* ========== VISUAL ========== */
@@ -23,7 +27,6 @@
 
 /* Hover state - Same as primary but NO background */
 .btn-primary-first:hover:not(:disabled) {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-btn-primary-hover);
 
   /* Still no background! */

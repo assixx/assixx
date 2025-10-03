@@ -8,6 +8,8 @@
  */
 
 .btn-secondary {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid rgb(255 255 255 / 12%); /* Subtle border */
 
   color: var(--color-primary); /* Primary blue text */
@@ -22,7 +24,6 @@
 
 /* Hover state - Strengthen glass and border */
 .btn-secondary:hover:not(:disabled) {
-  transform: translateY(-1px); /* Subtle lift (less than primary) */
   border-color: var(--color-primary); /* Solid primary border */
   background: rgb(255 255 255 / 8%); /* Stronger glass */
 }

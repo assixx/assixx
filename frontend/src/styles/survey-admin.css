@@ -510,19 +510,7 @@
   margin-top: var(--spacing-8);
 }
 
-.btn {
-  cursor: pointer;
-
-  display: flex;
-  gap: var(--spacing-2);
-  align-items: center;
-
-  padding: var(--spacing-3);
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-weight: 500;
-}
+/* Button base - Using Design System */
 
 .btn-primary {
   color: #fff;

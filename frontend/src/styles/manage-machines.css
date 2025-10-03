@@ -6,24 +6,7 @@
 
 /* Glassmorphismus für Cards */
 
-/* Buttons mit Glassmorphismus und Shine-Effekt */
-.btn {
-  cursor: pointer;
-
-  position: relative;
-
-  overflow: hidden;
-
-  padding: 10px 20px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-xl);
-
-  font-weight: 500;
-  color: #fff;
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
+/* Buttons mit Glassmorphismus und Shine-Effekt - Using Design System base */
 
 .btn-primary {
   border-color: rgb(0 142 255 / 30%);
