@@ -22,8 +22,6 @@
   box-shadow: var(--shadow-btn-primary);
 }
 
-
-
 /* Focus state - Accessibility */
 .btn-primary:focus-visible {
   box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);

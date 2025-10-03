@@ -733,8 +733,6 @@ select.form-control {
   backdrop-filter: blur(5px);
 }
 
-
-
 /* Color Picker Update */
 .color-picker {
   display: grid;

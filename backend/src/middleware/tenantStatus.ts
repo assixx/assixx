@@ -5,7 +5,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { RowDataPacket } from 'mysql2';
 
-import type { AuthenticatedRequest } from '../types/request.types';
+import type { AuthUser, AuthenticatedRequest } from '../types/request.types';
 import { query } from '../utils/db';
 import { logger } from '../utils/logger';
 
@@ -98,14 +98,17 @@ export async function checkTenantStatus(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const authReq = req as AuthenticatedRequest;
+    // Check if request has user property (is authenticated)
+    // Using type guard to safely check for user existence
+    const reqWithUser = req as Request & { user?: AuthUser };
 
-    // Skip if no user or no tenant_id
-    if (!authReq.user || !authReq.user.tenant_id) {
+    if (reqWithUser.user === undefined || reqWithUser.user === null) {
       next();
       return;
     }
 
+    // Now TypeScript knows user exists and we can safely use it
+    const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id;
 
     // Check if path is whitelisted
