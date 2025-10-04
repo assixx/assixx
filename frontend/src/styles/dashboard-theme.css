@@ -17,10 +17,13 @@
   align-items: center;
   justify-content: space-between;
 
+  height: 60px;
   min-height: 3.5rem; /* 56px - min-height statt height für flexibilität */
   padding: 0.5rem 1rem; /* 8px 16px */
 
-  box-shadow: var(--shadow-sm);
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 0 0 2px #000;
 }
 
 .logo-container {
@@ -274,7 +277,7 @@
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-xl);
 
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -836,6 +839,8 @@
 
   font-size: 0.8rem;
   color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   backdrop-filter: blur(10px);
 }

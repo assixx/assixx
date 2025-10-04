@@ -1,0 +1,22 @@
+/**
+ * Table Hover Variant
+ *
+ * Enhanced hover effect with primary color
+ *
+ * Usage:
+ * <table class="data-table data-table--hover">
+ */
+
+.data-table--hover tbody tr:hover {
+  cursor: pointer;
+  background: rgb(33 150 243 / 5%);
+}
+
+/* Active row (if row is selected/clicked) */
+.data-table--hover tbody tr.is-active {
+  background: rgb(33 150 243 / 10%);
+}
+
+.data-table--hover tbody tr.is-active:hover {
+  background: rgb(33 150 243 / 12%);
+}

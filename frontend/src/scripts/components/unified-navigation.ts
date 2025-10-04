@@ -612,8 +612,9 @@ class UnifiedNavigation {
       headerUserName.textContent = fullName;
       console.info('[UnifiedNav] Set header name to:', fullName);
     } else {
-      headerUserName.textContent = userData.email;
-      console.info('[UnifiedNav] Fallback to email:', userData.email);
+      // No fallback - keep empty if no name available
+      headerUserName.textContent = '';
+      console.info('[UnifiedNav] No name available, keeping empty');
     }
   }
 

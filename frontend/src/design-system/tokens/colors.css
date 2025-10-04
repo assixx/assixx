@@ -20,6 +20,10 @@
   --color-primary-light: var(--color-blue-400); /* #42a5f5 - Lighter variant */
   --color-primary-dark: var(--color-blue-800); /* #1565c0 - Darker variant */
 
+  /* Alpha variants for overlays and highlights */
+  --color-primary-alpha-15: rgb(33 150 243 / 15%); /* 15% - Active backgrounds */
+  --color-primary-alpha-30: rgb(33 150 243 / 30%); /* 30% - Active borders */
+
   /* ========== DANGER (Destructive Actions) ========== */
   --color-danger: var(--color-red-500); /* #f44336 - Delete, Remove */
   --color-danger-hover: var(--color-red-600); /* #e53935 - Hover state */

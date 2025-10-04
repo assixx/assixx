@@ -20,6 +20,9 @@
 /* Animation & transition tokens */
 @import "./animations.css";
 
+/* Form control tokens */
+@import "./forms.css";
+
 /**
  * NOTE: Base design tokens (spacing, typography, base colors)
  * are already defined in /styles/tailwind.css @theme layer

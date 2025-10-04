@@ -127,19 +127,16 @@ export class DocumentBase {
       }
     }
 
-    // Sort dropdown
-    const sortDropdown = document.querySelector('#sortDropdown');
-    if (sortDropdown) {
-      sortDropdown.addEventListener('click', (e) => {
-        const target = e.target as HTMLElement | null;
-        if (target?.classList.contains('dropdown-option') === true) {
-          const sortValue = target.dataset.sort as SortOption | undefined;
-          if (sortValue !== undefined) {
-            this.currentSort = sortValue;
-            this.sortDocuments();
-            this.renderDocuments();
-            this.updateSortDisplay(target.textContent !== '' ? target.textContent : 'Sortierung');
-          }
+    // Sort select (native)
+    const sortSelect = document.querySelector('#sortSelect');
+    if (sortSelect instanceof HTMLSelectElement) {
+      sortSelect.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement | null;
+        if (target) {
+          const sortValue = target.value as SortOption;
+          this.currentSort = sortValue;
+          this.sortDocuments();
+          this.renderDocuments();
         }
       });
     }
@@ -570,11 +567,11 @@ export class DocumentBase {
    * Helper methods
    */
   protected getFileIcon(mimeOrName: string): string {
-    // eslint-disable-next-line max-lines
     const mime = mimeOrName.toLowerCase();
 
     if (mime.includes('pdf')) return 'fas fa-file-pdf';
     if (mime.includes('word') || mime.endsWith('.doc') || mime.endsWith('.docx')) return 'fas fa-file-word';
+    // eslint-disable-next-line max-lines
     if (mime.includes('excel') || mime.endsWith('.xls') || mime.endsWith('.xlsx')) return 'fas fa-file-excel';
     if (mime.includes('powerpoint') || mime.endsWith('.ppt') || mime.endsWith('.pptx')) return 'fas fa-file-powerpoint';
     if (mime.includes('image') || /\.(jpg|jpeg|png|gif|svg)$/.test(mime)) return 'fas fa-file-image';

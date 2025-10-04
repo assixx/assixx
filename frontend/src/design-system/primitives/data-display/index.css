@@ -1,0 +1,24 @@
+/**
+ * Data Display Components
+ *
+ * Components for displaying structured data:
+ * - Tables (multiple variants)
+ * - Empty states (no data fallback)
+ * - Data lists (key-value pairs)
+ *
+ * REPLACES: /styles/tailwind/compat/bootstrap-tables.css
+ */
+
+/* Tables */
+@import "./table.base.css";
+@import "./table.striped.css";
+@import "./table.hover.css";
+@import "./table.bordered.css";
+@import "./table.borderless.css";
+@import "./table.compact.css";
+
+/* Empty States */
+@import "./empty-state.css";
+
+/* Data Lists */
+@import "./data-list.css";

@@ -127,28 +127,71 @@ body {
   margin-bottom: 20px;
 }
 
-/* Subdomain Input Group */
-.input-group {
+/* Subdomain Input Group - YouTube-Style (bündig) */
+.subdomain-input-group {
+  display: flex;
+  align-items: stretch;
+}
+
+.subdomain-input {
+  flex: 1;
+
+  min-height: 44px;
+  padding: var(--form-field-padding-y) var(--form-field-padding-x);
+  border: var(--form-field-border);
+  border-right: none;
+  border-radius: var(--form-field-radius) 0 0 var(--form-field-radius);
+
+  font-size: var(--form-field-font-size);
+  line-height: 1.5;
+  color: var(--form-field-text);
+
+  background: var(--form-field-bg);
+  backdrop-filter: var(--glass-form-backdrop);
+
+  transition: var(--form-field-transition), var(--form-field-transition-shadow);
+}
+
+.subdomain-input:hover {
+  border: var(--form-field-border-hover);
+  border-right: none;
+  background: var(--form-field-bg-hover);
+}
+
+.subdomain-input:focus {
+  border: var(--form-field-border-focus);
+  border-right: none;
+
+  background: var(--form-field-bg-focus);
+  outline: none;
+  box-shadow: var(--form-field-focus-ring);
+}
+
+/* Subdomain Suffix - bündig wie YouTube Search Button */
+.subdomain-suffix {
   display: flex;
   align-items: center;
-}
+  justify-content: center;
 
-.input-group .form-control {
-  border-right: none;
-  border-radius: var(--radius-2xl) 0 0 var(--radius-2xl);
-}
-
-.input-group-suffix {
-  padding: 8px 12px;
-  border: 1px solid rgb(255 255 255 / 10%);
+  padding: 0 16px;
+  border: 1px solid rgb(255 255 255 / 12%);
   border-left: none;
-  border-radius: 0 var(--radius-2xl) var(--radius-2xl) 0;
+  border-radius: 0 var(--form-field-radius) var(--form-field-radius) 0;
 
   font-size: 14px;
   color: var(--text-secondary);
   white-space: nowrap;
 
-  background: rgb(255 255 255 / 2%);
+  background: rgb(255 255 255 / 8%);
+  backdrop-filter: blur(5px);
+
+  transition: all 0.2s ease;
+}
+
+/* When input is focused, highlight suffix too */
+.subdomain-input:focus + .subdomain-suffix {
+  border-color: var(--primary-color);
+  background: rgb(255 255 255 / 12%);
 }
 
 /* Phone Input Group */
@@ -157,7 +200,7 @@ body {
   gap: 8px;
 }
 
-/* Custom Country Select - Glassmorphismus */
+/* Custom Country Select - Design System Styles */
 .custom-country-select {
   position: relative;
   width: 85px;
@@ -170,20 +213,23 @@ body {
   gap: 4px;
   align-items: center;
 
-  padding: 8px;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-xl);
+  min-height: 44px;
+  padding: var(--form-field-padding-y) var(--form-field-padding-x);
+  border: var(--form-field-border);
+  border-radius: var(--form-field-radius);
 
-  font-size: 14px;
-  color: var(--text-primary);
+  font-size: var(--form-field-font-size);
+  color: var(--form-field-text);
 
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
+  background: var(--form-field-bg);
+  backdrop-filter: var(--glass-form-backdrop);
+
+  transition: var(--form-field-transition), var(--form-field-transition-shadow);
 }
 
 .country-display:hover {
-  border-color: rgb(255 255 255 / 15%);
-  background: rgb(255 255 255 / 6%);
+  border: var(--form-field-border-hover);
+  background: var(--form-field-bg-hover);
 }
 
 .country-display svg {
@@ -199,7 +245,7 @@ body {
 .country-dropdown {
   position: absolute;
   z-index: 1000;
-  top: calc(100% + 4px);
+  top: calc(100% + 5px);
   right: 0;
   left: 0;
   transform: translateY(-10px);
@@ -269,7 +315,7 @@ body {
   flex: 1;
 }
 
-/* Custom Plan Select - Glassmorphismus */
+/* Custom Plan Select - Design System Styles */
 .custom-plan-select {
   position: relative;
   width: 100%;
@@ -282,20 +328,23 @@ body {
   align-items: center;
   justify-content: space-between;
 
-  padding: 8px 12px;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-xl);
+  min-height: 44px;
+  padding: var(--form-field-padding-y) var(--form-field-padding-x);
+  border: var(--form-field-border);
+  border-radius: var(--form-field-radius);
 
-  font-size: 15px;
-  color: var(--text-primary);
+  font-size: var(--form-field-font-size);
+  color: var(--form-field-text);
 
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
+  background: var(--form-field-bg);
+  backdrop-filter: var(--glass-form-backdrop);
+
+  transition: var(--form-field-transition), var(--form-field-transition-shadow);
 }
 
 .plan-display:hover {
-  border-color: rgb(255 255 255 / 15%);
-  background: rgb(255 255 255 / 6%);
+  border: var(--form-field-border-hover);
+  background: var(--form-field-bg-hover);
 }
 
 .plan-display svg {
@@ -310,7 +359,7 @@ body {
 .plan-dropdown {
   position: absolute;
   z-index: 1000;
-  top: calc(100% + 4px);
+  top: calc(100% + 5px);
   right: 0;
   left: 0;
   transform: translateY(-10px);
@@ -369,17 +418,6 @@ body {
   color: #fff;
 }
 
-.error-message {
-  position: relative;
-
-  display: none;
-
-  margin-top: 4px;
-
-  font-size: 11px;
-  color: #ef4444;
-}
-
 /* Bottom Section */
 .bottom-section {
   display: flex;
@@ -404,8 +442,8 @@ body {
 }
 
 .terms-checkbox input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
+  width: 17px;
+  height: 17px;
   accent-color: var(--primary-color);
 }
 
@@ -416,58 +454,6 @@ body {
 
 .terms-link:hover {
   text-decoration: underline;
-}
-
-.submit-button {
-  cursor: pointer;
-
-  position: relative;
-
-  overflow: hidden;
-
-  padding: 10px 24px;
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-  white-space: nowrap;
-
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  box-shadow:
-    0 1px 4px rgb(33 150 243 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-.submit-button::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  left: -100%;
-
-  width: 100%;
-  height: 100%;
-
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%), transparent);
-}
-
-.submit-button:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 20px rgb(33 150 243 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-.submit-button:hover::before {
-  left: 100%;
-}
-
-.submit-button:disabled {
-  cursor: not-allowed;
-  transform: none;
-  opacity: 60%;
 }
 
 .login-link {
@@ -498,42 +484,6 @@ body {
   box-shadow:
     0 4px 12px rgb(16 185 129 / 20%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
-}
-
-/* Special Offer Banner - unten bei Submit */
-.offer-banner {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-
-  /* animation: glow 2s ease-in-out infinite alternate; */
-  margin: 0 16px;
-  padding: 6px 14px;
-  border-radius: 20px;
-
-  font-size: 13px;
-  font-weight: 500;
-  color: #fbbf24;
-
-  background: rgb(251 191 36 / 2%);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    0 4px 12px rgb(251 191 36 / 25%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-@keyframes glow {
-  from {
-    box-shadow:
-      0 4px 12px rgb(251 191 36 / 25%),
-      inset 0 1px 0 rgb(255 255 255 / 20%);
-  }
-
-  to {
-    box-shadow:
-      0 4px 20px rgb(251 191 36 / 40%),
-      inset 0 1px 0 rgb(255 255 255 / 20%);
-  }
 }
 
 /* Help Button - Glassmorphismus */
@@ -577,54 +527,6 @@ body {
     inset 0 1px 0 rgb(255 255 255 / 10%);
 }
 
-/* Autofill Styles für verschiedene Browser */
-/* Webkit browsers (Chrome, Safari, Edge) */
-.form-control:-webkit-autofill,
-.form-control:-webkit-autofill:hover,
-.form-control:-webkit-autofill:focus,
-.form-control:-webkit-autofill:active {
-  border: 1px solid rgb(255 255 255 / 12%) !important;
-
-  background-color: rgb(255 255 255 / 4%) !important;
-
-  /* Transparenter Hintergrund mit Box-Shadow Trick */
-  box-shadow: 0 0 0 30px rgb(255 255 255 / 4%) inset !important;
-
-  transition: background-color 5000s ease-in-out 0s;
-
-  -webkit-text-fill-color: var(--text-primary) !important;
-}
-
-/* Firefox */
-.form-control:autofill {
-  border: 1px solid rgb(255 255 255 / 12%) !important;
-  color: var(--text-primary) !important;
-  background: rgb(255 255 255 / 4%) !important;
-}
-
-/* Firefox specific - :-moz-autofill pseudo-class */
-.form-control:-moz-autofill {
-  border: 1px solid rgb(255 255 255 / 12%) !important;
-  background: rgb(255 255 255 / 4%) !important;
-}
-
-/* Placeholder - Duplicate removed (first defined at line 193) */
-/* .form-control::placeholder {
-  color: var(--text-secondary);
-  opacity: 60%;
-} */
-
-/* Phone input specific autofill */
-.phone-number:-webkit-autofill,
-.phone-number:-webkit-autofill:hover,
-.phone-number:-webkit-autofill:focus,
-.phone-number:-webkit-autofill:active {
-  padding-left: 12px !important;
-  box-shadow: 0 0 0 30px rgb(255 255 255 / 4%) inset !important;
-
-  -webkit-text-fill-color: var(--text-primary) !important;
-}
-
 /* Responsive für kleinere Bildschirme */
 @media (width <= 1200px) {
   .form-grid {
@@ -664,59 +566,6 @@ body {
 /* ========================================
    Extracted from signup.html - Second Style Block
    ======================================== */
-
-/* Zusätzliche Glassmorphismus-Effekte */
-.form-control:hover:not(:focus) {
-  border-color: rgb(255 255 255 / 15%);
-  background: rgb(255 255 255 / 6%);
-}
-
-select.form-control {
-  padding-right: 40px;
-
-  appearance: none;
-  background: rgb(255 255 255 / 4%);
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 20px;
-  backdrop-filter: blur(5px);
-}
-
-/* Hover Effekte für alle Select-Felder */
-select.form-control:hover:not(:focus),
-.country-select:hover:not(:focus) {
-  border-color: rgb(255 255 255 / 15%);
-  background: rgb(255 255 255 / 6%);
-}
-
-/* Firefox spezifisch für bessere Option Styles - Using supports instead of deprecated @document */
-@supports (-moz-appearance: none) {
-  select.form-control option,
-  .country-select option {
-    color: #e0e0e0 !important;
-    background-color: #121212 !important;
-  }
-}
-
-/* Webkit Browser (Chrome, Safari) */
-@media screen and (resolution >= 0dpi) {
-  select.form-control,
-  .country-select {
-    background-color: rgb(255 255 255 / 4%);
-  }
-
-  select option {
-    padding: 10px;
-    color: #e0e0e0;
-    background: #1a1a1a;
-  }
-
-  select option:hover {
-    background: #2a2a2a;
-    box-shadow: 0 0 10px 100px #2a2a2a inset;
-  }
-}
 
 /* Pulse Animation für Logo */
 /* .signup-logo {

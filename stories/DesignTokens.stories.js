@@ -21,6 +21,9 @@ export default {
  * Material Design color palette
  */
 export const Colors = {
+  parameters: {
+    layout: 'fullscreen', // Grid needs full width
+  },
   render: () => {
     const container = document.createElement('div');
     container.style.padding = '40px';
@@ -254,6 +257,9 @@ export const Typography = {
  * Shadow tokens for depth
  */
 export const Shadows = {
+  parameters: {
+    layout: 'fullscreen', // Grid needs full width
+  },
   render: () => {
     const container = document.createElement('div');
     container.style.padding = '40px';
@@ -306,6 +312,226 @@ export const Shadows = {
     });
 
     container.appendChild(grid);
+    return container;
+  },
+};
+
+/**
+ * FORM FIELD TOKENS
+ * Visualisierung der neuen Form-Token-States
+ */
+export const FormFields = {
+  parameters: {
+    layout: 'fullscreen', // Grid needs full width
+  },
+  render: () => {
+    const container = document.createElement('div');
+    container.style.padding = '40px';
+
+    const title = document.createElement('h2');
+    title.textContent = 'Form Field Tokens';
+    title.style.color = 'var(--color-white)';
+    title.style.marginBottom = '32px';
+    container.appendChild(title);
+
+    const description = document.createElement('p');
+    description.textContent =
+      'Token-basierte Grundlage für Inputs, Textareas und Selects (Glassmorphism Dark Theme).';
+    description.style.color = 'var(--color-text-secondary)';
+    description.style.marginBottom = '24px';
+    container.appendChild(description);
+
+    const tokenGrid = document.createElement('div');
+    tokenGrid.style.display = 'grid';
+    tokenGrid.style.gridTemplateColumns = 'repeat(4, 1fr)'; // Fixed 4 columns - prevents layout shift
+    tokenGrid.style.gap = '16px';
+    tokenGrid.style.marginBottom = '40px';
+
+    const tokens = [
+      { label: 'Text', token: '--form-field-text', preview: 'text' },
+      { label: 'Placeholder', token: '--form-field-placeholder', preview: 'text' },
+      { label: 'Helper Text', token: '--form-field-helper', preview: 'text' },
+      { label: 'Disabled Text', token: '--form-field-disabled-text', preview: 'text' },
+      { label: 'Background', token: '--form-field-bg', preview: 'background' },
+      { label: 'Hover Background', token: '--form-field-bg-hover', preview: 'background' },
+      { label: 'Focus Background', token: '--form-field-bg-focus', preview: 'background' },
+      { label: 'Disabled Background', token: '--form-field-bg-disabled', preview: 'background' },
+      { label: 'Border', token: '--form-field-border', preview: 'border' },
+      { label: 'Hover Border', token: '--form-field-border-hover', preview: 'border' },
+      { label: 'Focus Border', token: '--form-field-border-focus', preview: 'border' },
+      { label: 'Error Border', token: '--form-field-border-error', preview: 'border' },
+      { label: 'Success Border', token: '--form-field-border-success', preview: 'border' },
+      { label: 'Focus Ring', token: '--form-field-focus-ring', preview: 'shadow' },
+      { label: 'Padding X', token: '--form-field-padding-x', preview: 'text' },
+      { label: 'Padding Y', token: '--form-field-padding-y', preview: 'text' },
+      { label: 'Radius', token: '--form-field-radius', preview: 'text' },
+    ];
+
+    tokens.forEach((item) => {
+      const card = document.createElement('div');
+      card.style.padding = '20px';
+      card.style.background = 'rgba(255, 255, 255, 0.04)';
+      card.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+      card.style.borderRadius = '12px';
+
+      const label = document.createElement('div');
+      label.textContent = item.label;
+      label.style.color = 'var(--color-white)';
+      label.style.fontWeight = '500';
+      label.style.marginBottom = '8px';
+
+      const token = document.createElement('div');
+      token.textContent = item.token;
+      token.style.color = 'var(--color-text-secondary)';
+      token.style.fontFamily = 'monospace';
+      token.style.fontSize = '12px';
+      token.style.marginBottom = '12px';
+
+      const preview = document.createElement('div');
+      preview.style.borderRadius = '8px';
+      preview.style.height = '48px';
+      preview.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+      preview.style.display = 'flex';
+      preview.style.alignItems = 'center';
+      preview.style.justifyContent = 'center';
+      preview.style.fontSize = '12px';
+      preview.style.color = 'var(--color-text-secondary)';
+      preview.style.background = 'rgba(0, 0, 0, 0.2)';
+
+      if (item.preview === 'background') {
+        preview.style.background = `var(${item.token})`;
+        preview.textContent = 'Background';
+      }
+
+      if (item.preview === 'border') {
+        preview.style.border = `var(${item.token})`;
+        preview.textContent = 'Border';
+      }
+
+      if (item.preview === 'shadow') {
+        preview.style.boxShadow = `var(${item.token})`;
+        preview.textContent = 'Focus Ring';
+      }
+
+      if (item.preview === 'text') {
+        preview.textContent = 'Preview';
+        preview.style.color = `var(${item.token})`;
+      }
+
+      card.appendChild(label);
+      card.appendChild(token);
+      card.appendChild(preview);
+      tokenGrid.appendChild(card);
+    });
+
+    container.appendChild(tokenGrid);
+
+    const statesTitle = document.createElement('h3');
+    statesTitle.textContent = 'State Beispiele';
+    statesTitle.style.color = 'var(--color-white)';
+    statesTitle.style.marginBottom = '16px';
+    container.appendChild(statesTitle);
+
+    const stateGrid = document.createElement('div');
+    stateGrid.style.display = 'grid';
+    stateGrid.style.gridTemplateColumns = 'repeat(3, 1fr)'; // Fixed 3 columns - prevents layout shift
+    stateGrid.style.gap = '24px';
+
+    const states = [
+      {
+        label: 'Standard',
+        description: 'Neutraler Ausgangszustand',
+        styles: {
+          background: 'var(--form-field-bg)',
+          border: 'var(--form-field-border)',
+        },
+      },
+      {
+        label: 'Hover',
+        description: 'Hintergrund + Border nutzen Hover-Tokens',
+        styles: {
+          background: 'var(--form-field-bg-hover)',
+          border: 'var(--form-field-border-hover)',
+        },
+      },
+      {
+        label: 'Focus',
+        description: 'Aktiver Zustand inkl. Focus-Ring',
+        styles: {
+          background: 'var(--form-field-bg-focus)',
+          border: 'var(--form-field-border-focus)',
+          boxShadow: 'var(--form-field-focus-ring)',
+        },
+      },
+      {
+        label: 'Error',
+        description: 'Validierungsfehler',
+        styles: {
+          background: 'var(--form-field-bg)',
+          border: 'var(--form-field-border-error)',
+          color: 'var(--form-field-text-error)',
+        },
+      },
+      {
+        label: 'Success',
+        description: 'Validierung erfolgreich',
+        styles: {
+          background: 'var(--form-field-bg)',
+          border: 'var(--form-field-border-success)',
+          color: 'var(--form-field-text-success)',
+        },
+      },
+      {
+        label: 'Disabled',
+        description: 'Nicht editierbar',
+        styles: {
+          background: 'var(--form-field-bg-disabled)',
+          border: 'var(--form-field-border)',
+          color: 'var(--form-field-disabled-text)',
+          opacity: '0.6',
+        },
+      },
+    ];
+
+    states.forEach((state) => {
+      const card = document.createElement('div');
+      card.style.padding = '20px';
+      card.style.background = 'rgba(255, 255, 255, 0.04)';
+      card.style.border = '1px solid rgba(255, 255, 255, 0.08)';
+      card.style.borderRadius = '12px';
+
+      const label = document.createElement('div');
+      label.textContent = state.label;
+      label.style.color = 'var(--color-white)';
+      label.style.fontWeight = '600';
+      label.style.marginBottom = '6px';
+
+      const caption = document.createElement('div');
+      caption.textContent = state.description;
+      caption.style.color = 'var(--color-text-secondary)';
+      caption.style.fontSize = '12px';
+      caption.style.marginBottom = '12px';
+
+      const field = document.createElement('div');
+      field.textContent = 'Vorname';
+      field.style.height = '44px';
+      field.style.display = 'flex';
+      field.style.alignItems = 'center';
+      field.style.padding = `var(--form-field-padding-y) var(--form-field-padding-x)`;
+      field.style.borderRadius = 'var(--form-field-radius)';
+      field.style.transition = 'none';
+      field.style.fontSize = 'var(--form-field-font-size)';
+      field.style.color = 'var(--form-field-text)';
+
+      Object.assign(field.style, state.styles);
+
+      card.appendChild(label);
+      card.appendChild(caption);
+      card.appendChild(field);
+      stateGrid.appendChild(card);
+    });
+
+    container.appendChild(stateGrid);
     return container;
   },
 };

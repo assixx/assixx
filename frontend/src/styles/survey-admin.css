@@ -349,11 +349,6 @@
   height: 14px;
 }
 
-/* Utility Classes */
-.u-hidden {
-  display: none !important;
-}
-
 /* Checkbox Styles */
 .checkbox-label {
   cursor: pointer;
