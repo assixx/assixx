@@ -1,0 +1,67 @@
+/**
+ * Breadcrumb Navigation
+ *
+ * Path navigation showing page hierarchy (Home > Admin > Users)
+ * Source: breadcrumb.js, breadcrumb-config.js
+ *
+ * Usage:
+ * <nav class="breadcrumb">
+ *   <a href="/" class="breadcrumb__item">Home</a>
+ *   <span class="breadcrumb__separator">/</span>
+ *   <a href="/admin" class="breadcrumb__item">Admin</a>
+ *   <span class="breadcrumb__separator">/</span>
+ *   <span class="breadcrumb__item breadcrumb__item--active">Users</span>
+ * </nav>
+ */
+
+.breadcrumb {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+
+  padding: var(--spacing-3) 0;
+
+  font-size: 14px;
+  list-style: none;
+}
+
+.breadcrumb__item {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.breadcrumb__item:hover {
+  color: var(--color-primary);
+}
+
+.breadcrumb__item--active {
+  pointer-events: none;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.breadcrumb__separator {
+  user-select: none;
+  color: var(--color-text-secondary);
+  opacity: 50%;
+}
+
+/* Icon variant */
+.breadcrumb__item i {
+  margin-right: 6px;
+}
+
+/* Truncate long breadcrumbs on mobile */
+@media (width <= 768px) {
+  .breadcrumb {
+    font-size: 13px;
+  }
+
+  .breadcrumb__item {
+    overflow: hidden;
+    max-width: 120px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

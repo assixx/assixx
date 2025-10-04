@@ -1,0 +1,232 @@
+/**
+ * Design System - Alert Base
+ *
+ * Purpose: Foundation for inline alert/notification messages
+ * Usage: <div class="alert alert--success">Message</div>
+ *
+ * Pattern: Base defines structure, variants define appearance
+ */
+
+/* ========== BASE STRUCTURE ========== */
+
+.alert {
+  /* Layout */
+  position: relative;
+
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: flex-start;
+
+  /* Size */
+  padding: var(--spacing-4) var(--spacing-5);
+
+  /* Appearance */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-lg);
+
+  /* Typography */
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+
+  /* Glassmorphism base */
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+
+  /* Transition */
+  transition:
+    opacity var(--duration-normal) var(--ease-standard),
+    transform var(--duration-normal) var(--ease-standard);
+}
+
+/* ========== ICON ========== */
+
+.alert__icon {
+  /* Layout */
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  /* Size */
+  width: 20px;
+  height: 20px;
+
+  /* Typography */
+  font-size: 16px;
+
+  /* Inherit color from variant */
+  color: currentcolor;
+}
+
+/* ========== CONTENT ========== */
+
+.alert__content {
+  flex: 1;
+  min-width: 0; /* Fix text overflow */
+}
+
+.alert__title {
+  margin: 0 0 var(--spacing-1);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.alert__message {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+/* ========== CLOSE BUTTON ========== */
+
+.alert__close {
+  /* Reset button styles */
+  cursor: pointer;
+
+  /* Layout */
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+
+  /* Size */
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+
+  /* Appearance */
+  font-size: 14px;
+  color: var(--color-text-secondary);
+
+  background: transparent;
+
+  /* Transition */
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.alert__close:hover {
+  color: var(--color-text-primary);
+}
+
+.alert__close:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ========== ACTIONS ========== */
+
+.alert__actions {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-top: var(--spacing-3);
+}
+
+.alert__actions .btn {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* ========== MODIFIERS ========== */
+
+/* Extra small variant */
+.alert--xs {
+  padding: var(--spacing-2) var(--spacing-3);
+  font-size: 12px;
+}
+
+.alert--xs .alert__icon {
+  width: 14px;
+  height: 14px;
+  font-size: 12px;
+}
+
+.alert--xs .alert__title {
+  font-size: 12px;
+}
+
+.alert--xs .alert__message {
+  font-size: 11px;
+}
+
+/* Small variant */
+.alert--sm {
+  padding: var(--spacing-3) var(--spacing-4);
+  font-size: 13px;
+}
+
+.alert--sm .alert__icon {
+  width: 16px;
+  height: 16px;
+  font-size: 14px;
+}
+
+.alert--sm .alert__title {
+  font-size: 13px;
+}
+
+.alert--sm .alert__message {
+  font-size: 12px;
+}
+
+/* Large variant */
+.alert--lg {
+  padding: var(--spacing-5) var(--spacing-6);
+  font-size: 15px;
+}
+
+.alert--lg .alert__icon {
+  width: 24px;
+  height: 24px;
+  font-size: 18px;
+}
+
+.alert--lg .alert__title {
+  font-size: 16px;
+}
+
+/* Borderless variant */
+.alert--borderless {
+  border: none;
+}
+
+/* ========== ANIMATION STATES ========== */
+
+/* Enter animation */
+.alert--enter {
+  transform: translateY(-10px);
+  opacity: 0%;
+}
+
+.alert--enter-active {
+  transform: translateY(0);
+  opacity: 100%;
+}
+
+/* Exit animation */
+.alert--exit {
+  transform: translateY(0);
+  opacity: 100%;
+}
+
+.alert--exit-active {
+  transform: translateY(-10px);
+  opacity: 0%;
+}
+
+/* ========== ACCESSIBILITY ========== */
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .alert {
+    transition: none;
+  }
+
+  .alert--enter,
+  .alert--exit {
+    transform: none;
+  }
+}

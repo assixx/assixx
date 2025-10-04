@@ -48,6 +48,28 @@ design-system/
 │   │   ├── index.css                # Component barrel
 │   │   └── README.md                # Component docs
 │   │
+│   ├── forms/             # Form controls
+│   │   ├── form.base.css            # Input, Textarea, Select
+│   │   ├── index.css                # Component barrel
+│   │   └── README.md                # Component docs
+│   │
+│   ├── toggles/           # Toggle components
+│   │   ├── toggle-button-group.css  # Mutually exclusive buttons
+│   │   ├── index.css                # Component barrel
+│   │   └── README.md                # Component docs
+│   │
+│   ├── dropdowns/         # Custom dropdowns
+│   │   ├── custom-dropdown.css      # JS-driven dropdowns
+│   │   ├── index.css                # Component barrel
+│   │   └── README.md                # Component docs
+│   │
+│   ├── cards/             # Card containers
+│   │   ├── card-base.css            # Base card
+│   │   ├── card-stat.css            # Statistics cards
+│   │   ├── card-accent.css          # Accent cards
+│   │   ├── index.css                # Component barrel
+│   │   └── README.md                # Component docs
+│   │
 │   └── [future components...]
 │
 ├── utils/                 # Utility Classes (Future)
@@ -99,6 +121,142 @@ Full button system with 6 variants:
 
 [Full Button Documentation →](./primitives/buttons/README.md)
 
+### ✅ Form Fields (Phase 2 - Base)
+
+Token-basierte Glass-Eingabefelder:
+
+- `form-field` Wrapper + Inline-Variante
+- `form-field__control` für `input`, `textarea`, `select`
+- Statusklassen `.is-error`, `.is-success`, `.is-warning`
+- Helpertexte über `form-field__message`
+- Search Input mit Icon-Pattern
+
+[Form Field Docs →](./primitives/forms/README.md)
+
+### ✅ Toggles (Phase 2 - Complete)
+
+Mutually exclusive button groups:
+
+- `toggle-group` - Container für Toggle-Buttons
+- `toggle-group__btn` - Individual toggle button
+- `toggle-group__btn--active` - Active state
+- Use Cases: View modes, filters, segmented controls
+
+[Toggle Docs →](./primitives/toggles/README.md)
+
+### ✅ Dropdowns (Phase 2 - Complete)
+
+Custom JavaScript-driven dropdowns:
+
+- `dropdown__trigger` - Clickable trigger button
+- `dropdown__menu` - Options container
+- `dropdown__option` - Individual option
+- Use Cases: Plans (pricing), countries (flags), icons
+- **Note:** Prefer native `<select>` when possible
+
+[Dropdown Docs →](./primitives/dropdowns/README.md)
+
+### ✅ Cards (Phase 3 - Complete)
+
+Glassmorphism containers:
+
+- `card` - Base card with header/body/footer
+- `card-stat` - Statistics/KPI metrics
+- `card-accent` - Feature cards with top indicator bar
+- Color variants: success, warning, danger
+- Modifiers: clickable, compact, no-margin
+
+[Card Docs →](./primitives/cards/README.md)
+
+### ✅ Containers (Phase 3 - Complete)
+
+Glassmorphism page wrappers:
+
+- `page-container` - Main page wrapper (max-width 1200px)
+- Größer als Cards, für ganze Page-Bereiche
+- Modifiers: centered, wide, narrow, compact, borderless
+- Use cases: Login/Signup boxes, Settings pages, Form containers
+
+[Container Docs →](./primitives/containers/README.md)
+
+### ✅ Modals (Phase 4 - Complete)
+
+Glassmorphism overlay dialogs:
+
+- `modal-overlay` - Backdrop with blur
+- `modal` - Glassmorphism container with header/body/footer
+- Size variants: sm (500px), md (700px), lg (900px), xl (1200px)
+- Footer modifiers: centered, spaced
+- Use cases: Confirmations, quick forms, info dialogs
+
+[Modal Docs →](./primitives/modals/README.md)
+
+### ✅ Choice Cards (Phase 4 - Complete)
+
+Card-style selection controls:
+
+- `choice-group` - Container for choice cards
+- `choice-card` - Individual card (label) with radio/checkbox
+- Supports: Radio buttons (single choice) AND Checkboxes (multiple choice)
+- Custom indicators with animations
+- Use cases: Permissions, plan selection, settings options
+
+[Choice Cards Docs →](./primitives/choice-cards/README.md)
+
+### 🏷️ Badges & Status (Phase 5 - Complete)
+
+Status indicators, labels, and tags:
+
+- `badge` - Base badge component
+- `badge--success/warning/danger/info` - Status variants
+- `badge--login/create/update/delete` - Action variants
+- `badge--role-root/admin/employee` - Role variants
+- `badge--sm/lg` - Size modifiers
+- `badge--dot` - With dot indicator
+- `badge--uppercase` - Uppercase text
+- Use cases: Logs, status indicators, tags, roles
+
+[Badges Docs →](./primitives/badges/README.md)
+
+### 🧭 Navigation (Phase 6 - Complete)
+
+Wayfinding and content organization:
+
+- `breadcrumb` - Path navigation (Home > Admin > Users)
+- `pagination` - Page navigation for lists/tables
+- `tabs` - Tab-based content switching (underline + glass variants)
+- `stepper` - Multi-step progress indicator (horizontal + vertical)
+- `accordion` - Collapsible content sections
+- Use cases: Multi-level navigation, wizards, FAQs, settings
+
+[Navigation Docs →](./primitives/navigation/README.md)
+
+### 📊 Data Display (Phase 7 - Complete)
+
+Structured data presentation:
+
+- `data-table` - Glassmorphism tables with striped/hover/bordered/compact variants
+- `empty-state` - No data fallback displays with icon, title, description, CTA
+- `data-list` - Key-value pairs for detail views (stacked/grid/compact layouts)
+- **Replaces:** bootstrap-tables.css compatibility layer
+- Use cases: Logs, users, departments, teams, profile details
+
+[Data Display Docs →](./primitives/data-display/README.md)
+
+### 💬 Feedback & Notifications (Phase 8 - Complete)
+
+User feedback and loading states:
+
+- `alert` - Inline messages (success, warning, error, info) with actions
+- `progress` - Progress bars (linear, circular, indeterminate, striped)
+- `spinner` - Loading indicators (circular, dots, pulse, ring)
+- `skeleton` - Loading placeholders (text, avatar, card, table)
+- `toast` - Temporary notifications with auto-dismiss (Toastify-style)
+- **Features:** Auto-dismiss, stacking, progress bars, actions (undo)
+- Use cases: Form validation, file uploads, API responses, lazy loading
+
+[Feedback Docs →](./primitives/feedback/README.md)
+
 ---
 
 ## 🗺️ Roadmap
@@ -106,13 +264,29 @@ Full button system with 6 variants:
 | Phase | Component          | Status     |
 | ----- | ------------------ | ---------- |
 | 1     | Buttons            | ✅ Done    |
-| 2     | Inputs & Forms     | ⏳ Next    |
-| 3     | Cards & Containers | 📋 Planned |
-| 4     | Modals & Overlays  | 📋 Planned |
-| 5     | Badges & Status    | 📋 Planned |
-| 6     | Navigation         | 📋 Planned |
-| 7     | Data Display       | 📋 Planned |
-| 8     | Feedback           | 📋 Planned |
+| 2a    | Inputs & Forms     | ✅ Base    |
+| 2b    | Toggles            | ✅ Done    |
+| 2c    | Dropdowns          | ✅ Done    |
+| 3     | Cards & Containers | ✅ Done    |
+| 4     | Modals & Overlays  | ✅ Done    |
+| 5     | Badges & Status    | ✅ Done    |
+| 6     | Navigation         | ✅ Done    |
+| 7     | Data Display       | ✅ Done    |
+| 8     | Feedback & Toasts  | ✅ Done    |
+| 9     | Advanced Features  | 📋 Planned |
+
+### Mögliche "Advanced Features" für Phase 9
+
+1. **Tooltips** - Hover-Informationen
+2. **Popovers** - Click-basierte Overlays
+3. **Drawer/Sidebar** - Slide-in Navigation
+4. **Command Palette** - Keyboard-driven UI (Cmd+K)
+5. **Date/Time Pickers** - Calendar & Time Selection
+6. **File Upload** - Drag & Drop mit Preview
+7. **Rich Editors** - WYSIWYG/Markdown Editor
+8. **Charts/Graphs** - Visualisierungen
+9. **Animations/Transitions** - Utility-Klassen
+10. **Utilities** - Helper-Klassen (spacing, display, etc.)
 
 ---
 
@@ -364,8 +538,8 @@ This page serves as:
 
 ## 📊 Metrics
 
-- **Components:** 1 (Buttons)
-- **Variants:** 6 button types
+- **Components:** 22 (Buttons, Forms, Toggles, Dropdowns, Cards, Containers, Modals, Choice Cards, Badges, Breadcrumbs, Pagination, Tabs, Stepper, Accordion, Tables, Empty States, Data Lists, Alerts, Progress Bars, Spinners, Skeletons, Toasts)
+- **Variants:** 150+ component variations
 - **Tokens:** 50+ semantic values
 - **Documentation:** 100% coverage
 - **Accessibility:** WCAG AAA
@@ -374,6 +548,6 @@ This page serves as:
 ---
 
 **Maintained by:** Assixx Design System Team
-**Last Updated:** 2025-10-03
+**Last Updated:** 2025-10-04
 **Version:** 1.0.0
 **License:** Proprietary

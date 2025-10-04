@@ -30,9 +30,13 @@
 @import "./button.light.css";
 @import "./button.dark.css";
 @import "./button.link.css";
+@import "./button.modal.css";
 
 /* Modifiers - Sizes and layouts */
 @import "./button.sizes.css";
+
+/* Special - Floating action button */
+@import "./button.float.css";
 
 /* Effects - Micro-interactions */
 @import "./button.effects.css";
@@ -74,6 +78,9 @@
  * Link:
  *   <button class="btn btn-link">Learn More</button>
  *
+ * Modal Submit (Glassmorphism):
+ *   <button class="btn btn-modal">Save Changes</button>
+ *
  * Sizes:
  *   <button class="btn btn-primary btn-sm">Small</button>
  *   <button class="btn btn-primary btn-lg">Large</button>
@@ -100,5 +107,10 @@
  * Disabled:
  *   <button class="btn btn-primary" disabled>
  *     Disabled
+ *   </button>
+ *
+ * Floating Action Button:
+ *   <button class="btn-float" aria-label="Add item">
+ *     <i class="fas fa-plus"></i>
  *   </button>
  */

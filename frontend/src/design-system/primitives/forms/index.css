@@ -1,0 +1,6 @@
+/**
+ * Form Primitives
+ * Bündelt alle Form-bezogenen CSS-Dateien.
+ */
+
+@import "./form.base.css";

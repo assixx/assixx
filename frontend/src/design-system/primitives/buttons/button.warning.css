@@ -27,7 +27,7 @@
 /* Hover State */
 .btn-warning:hover:not(:disabled) {
   transform: translateY(-1px);
-  color: #000;
+  color: var(--color-black);
   background: linear-gradient(135deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%);
   box-shadow: var(--shadow-btn-warning-hover, 0 4px 12px rgb(255 152 0 / 40%));
 }

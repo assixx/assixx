@@ -4,9 +4,10 @@
  */
 
 // Import global styles
-import '../frontend/src/styles/tailwind.css';
+import '../frontend/src/styles/tailwind.css'; // Already imports design-system/index.css
 import '../frontend/src/styles/main.css';
 import '../frontend/src/styles/dashboard-theme.css';
+// NOTE: Design System is imported via tailwind.css - no need to import again
 
 /** @type { import('@storybook/html').Preview } */
 const preview = {

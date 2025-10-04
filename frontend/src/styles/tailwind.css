@@ -70,6 +70,7 @@
   /* Generates: p-*, m-*, gap-*, space-*, inset-*, etc. */
   --spacing-0: 0;
   --spacing-1: 4px;
+  --spacing-1-5: 6px; /* Half-step for precise spacing (toggles, small gaps) */
   --spacing-2: 8px;
   --spacing-3: 12px;
   --spacing-4: 16px;

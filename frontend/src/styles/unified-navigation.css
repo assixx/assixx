@@ -1,21 +1,4 @@
 /* Header Base Styles */
-.header {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  right: 0;
-  left: 0;
-
-  display: flex;
-  align-items: center;
-
-  height: 60px;
-  padding: 0 20px;
-
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
-}
 
 .header .header-content {
   display: flex;
@@ -483,7 +466,7 @@ body:has(.sidebar.collapsed) .header .logo {
   min-height: auto;
 
   /* 80px in rem */
-  margin-bottom: 1.25rem;
+  margin-bottom: 9rem;
   margin-left: 4px;
 
   /* 20px in rem */
@@ -544,8 +527,7 @@ body:has(.sidebar.collapsed) .header .logo {
 
   /* -9px in rem */
 
-  border: 1px solid hsl(0deg 0% 39.6%);
-  border-radius: 50%;
+  border-radius: var(--glass-card-radius);
 
   background: rgb(139 139 139 / 41%);
 }
@@ -561,7 +543,7 @@ body:has(.sidebar.collapsed) .header .logo {
 
   position: absolute;
   z-index: -1;
-  inset: -0.55rem;
+  inset: -0.525rem;
 
   /* -9px in rem */
 

@@ -1,0 +1,138 @@
+/**
+ * Pagination Navigation
+ *
+ * Page navigation for lists and tables
+ * Source: logs.css pagination styles
+ *
+ * Usage:
+ * <nav class="pagination">
+ *   <button class="pagination__btn pagination__btn--prev" disabled>Previous</button>
+ *   <div class="pagination__pages">
+ *     <button class="pagination__page pagination__page--active">1</button>
+ *     <button class="pagination__page">2</button>
+ *     <button class="pagination__page">3</button>
+ *   </div>
+ *   <button class="pagination__btn pagination__btn--next">Next</button>
+ * </nav>
+ */
+
+.pagination {
+  display: flex;
+  gap: var(--spacing-4);
+  align-items: center;
+  justify-content: center;
+
+  padding: var(--spacing-6) 0;
+}
+
+/* Pagination button (Previous/Next) */
+.pagination__btn {
+  cursor: pointer;
+
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: var(--radius-lg);
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+
+  background: rgb(255 255 255 / 5%);
+
+  transition: all 0.2s ease;
+}
+
+.pagination__btn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+.pagination__btn:disabled {
+  cursor: not-allowed;
+  opacity: 40%;
+}
+
+/* Page numbers container */
+.pagination__pages {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+}
+
+/* Individual page number */
+.pagination__page {
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 36px;
+  height: 36px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+
+  background: transparent;
+
+  transition: all 0.2s ease;
+}
+
+.pagination__page:hover:not(.pagination__page--active) {
+  color: var(--color-primary);
+  background: rgb(255 255 255 / 5%);
+}
+
+.pagination__page--active {
+  pointer-events: none;
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgb(33 150 243 / 10%);
+}
+
+/* Page info text (e.g., "Page 1 of 10") */
+.pagination__info {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+/* Ellipsis for truncated pages */
+.pagination__ellipsis {
+  user-select: none;
+  padding: 0 var(--spacing-2);
+  color: var(--color-text-secondary);
+}
+
+/* Compact variant (for mobile) */
+.pagination--compact .pagination__pages {
+  display: none;
+}
+
+.pagination--compact {
+  justify-content: space-between;
+}
+
+/* Responsive */
+@media (width <= 768px) {
+  .pagination {
+    gap: var(--spacing-3);
+  }
+
+  .pagination__btn {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: 13px;
+  }
+
+  .pagination__page {
+    min-width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+}

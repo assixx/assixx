@@ -1,0 +1,20 @@
+/**
+ * Table Borderless Variant
+ *
+ * Remove all borders for minimal aesthetic
+ *
+ * Usage:
+ * <table class="data-table data-table--borderless">
+ */
+
+.data-table--borderless th,
+.data-table--borderless td,
+.data-table--borderless thead th,
+.data-table--borderless tbody + tbody {
+  border: 0;
+}
+
+/* Optional: Add subtle separator between rows */
+.data-table--borderless.data-table--separated tbody tr:not(:last-child) {
+  border-bottom: 1px solid rgb(255 255 255 / 3%);
+}

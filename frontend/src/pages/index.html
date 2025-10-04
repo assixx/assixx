@@ -525,48 +525,48 @@
         <p>14 Tage kostenlos - keine Kreditkarte erforderlich</p>
 
         <form id="signupForm">
-          <div class="form-group">
-            <label class="form-label">Firmenname</label>
-            <input type="text" name="company_name" class="form-control" required />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="company_name">Firmenname</label>
+            <input type="text" id="company_name" name="company_name" class="form-field__control" required />
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Ihre Subdomain</label>
-            <div class="subdomain-input">
-              <input type="text" name="subdomain" class="form-control" required pattern="[a-z0-9-]+" />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="subdomain">Ihre Subdomain</label>
+            <div class="subdomain-input-group">
+              <input type="text" id="subdomain" name="subdomain" class="subdomain-input" required pattern="[a-z0-9-]+" />
               <span class="subdomain-suffix">.assixx.com</span>
             </div>
-            <div id="subdomainError" class="error"></div>
+            <p id="subdomainError" class="form-field__message form-field__message--error u-hidden"></p>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">E-Mail</label>
-            <input type="email" name="email" class="form-control" required />
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="email">E-Mail</label>
+            <input type="email" id="email" name="email" class="form-field__control" required />
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Telefon (optional)</label>
-            <input type="tel" name="phone" class="form-control" />
+          <div class="form-field">
+            <label class="form-field__label" for="phone">Telefon (optional)</label>
+            <input type="tel" id="phone" name="phone" class="form-field__control" />
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Ihr Name</label>
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required">Ihr Name</label>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
-              <input type="text" name="first_name" class="form-control" placeholder="Vorname" required />
-              <input type="text" name="last_name" class="form-control" placeholder="Nachname" required />
+              <input type="text" id="first_name" name="first_name" class="form-field__control" placeholder="Vorname" required />
+              <input type="text" id="last_name" name="last_name" class="form-field__control" placeholder="Nachname" required />
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Passwort</label>
-            <input type="password" name="password" class="form-control" required minlength="8" />
-            <small>Mindestens 8 Zeichen</small>
+          <div class="form-field">
+            <label class="form-field__label form-field__label--required" for="password">Passwort</label>
+            <input type="password" id="password" name="password" class="form-field__control" required minlength="8" />
+            <p class="form-field__message">Mindestens 8 Zeichen</p>
           </div>
 
-          <div class="form-group">
-            <label>
+          <div class="form-field">
+            <label class="terms-checkbox">
               <input type="checkbox" required />
-              Ich akzeptiere die AGB und Datenschutzerklärung
+              <span>Ich akzeptiere die AGB und Datenschutzerklärung</span>
             </label>
           </div>
 

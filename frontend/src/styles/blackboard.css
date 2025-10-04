@@ -707,15 +707,6 @@ select.form-control {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 }
 
-.btn-primary:hover,
-.primary-button:hover,
-.big-button.primary-button:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 20px rgb(33 150 243 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
 .btn-secondary,
 .secondary-button,
 .big-button.secondary-button {
@@ -2013,37 +2004,6 @@ select.form-control {
 }
 
 /* Buttons mit Glassmorphismus und Shine-Effekt - Using Design System base */
-
-.btn-primary,
-.primary-button {
-  border-color: rgb(0 142 255 / 30%);
-  background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-.btn::after {
-  content: "";
-
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  transform: rotate(45deg) translate(-70%, -70%);
-
-  width: 200%;
-  height: 200%;
-
-  background: linear-gradient(45deg, transparent 30%, rgb(255 255 255 / 10%) 50%, transparent 70%);
-
-  transition: transform 0.6s;
-}
-
-.btn:hover::after {
-  transform: rotate(45deg) translate(-30%, -30%);
-}
 
 /* Filter Pills - Glassmorphismus - bereits bei Zeile 1514 definiert */
 
