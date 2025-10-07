@@ -5,6 +5,8 @@
  * Phase 6 of Design System
  */
 
+import { autoInitAccordions } from '../frontend/src/design-system/primitives/navigation/accordion.js';
+
 export default {
   title: 'Design System/Navigation',
   parameters: {
@@ -17,7 +19,7 @@ export default {
 export const Breadcrumbs = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Default Breadcrumbs (Production)</h3>
       <nav class="breadcrumb">
         <div class="breadcrumb-item">
@@ -176,7 +178,7 @@ export const Breadcrumbs = () => {
 export const Pagination = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Default Pagination</h3>
       <nav class="pagination">
         <button class="pagination__btn pagination__btn--prev" disabled>
@@ -244,7 +246,7 @@ export const Pagination = () => {
 export const TabsUnderline = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Underline Tabs (Default)</h3>
       <div class="tabs">
         <div class="tabs__nav">
@@ -292,7 +294,7 @@ export const TabsUnderline = () => {
 export const TabsGlass = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Glass Tabs</h3>
       <div class="tabs tabs--glass">
         <div class="tabs__nav">
@@ -353,7 +355,7 @@ export const TabsGlass = () => {
 export const StepperHorizontal = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 48px; background: rgb(10, 10, 10);">
+    <div style="padding: 48px;">
       <h3 style="color: #fff; margin-bottom: 24px;">Horizontal Stepper</h3>
       <div class="stepper">
         <div class="stepper__step stepper__step--completed">
@@ -497,7 +499,7 @@ export const StepperHorizontal = () => {
 export const StepperVertical = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 48px; background: rgb(10, 10, 10);">
+    <div style="padding: 48px;">
       <h3 style="color: #fff; margin-bottom: 24px;">Vertical Stepper</h3>
       <div class="stepper stepper--vertical">
         <div class="stepper__step stepper__step--completed">
@@ -552,7 +554,7 @@ export const StepperVertical = () => {
 export const StepperClickable = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 48px; background: rgb(10, 10, 10);">
+    <div style="padding: 48px;">
       <h3 style="color: #fff; margin-bottom: 24px;">Clickable Stepper (hover to see effect)</h3>
       <div class="stepper stepper--clickable">
         <div class="stepper__step stepper__step--completed">
@@ -592,7 +594,7 @@ export const StepperClickable = () => {
 export const AccordionDefault = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Default Accordion</h3>
       <div class="accordion">
         <div class="accordion__item accordion__item--active">
@@ -705,13 +707,17 @@ export const AccordionDefault = () => {
       </div>
     </div>
   `;
+
+  // Initialize accordions
+  setTimeout(() => autoInitAccordions(), 0);
+
   return wrapper;
 };
 
 export const AccordionFlush = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Flush Accordion (No gaps)</h3>
       <div class="accordion accordion--flush">
         <div class="accordion__item">
@@ -761,13 +767,17 @@ export const AccordionFlush = () => {
       </div>
     </div>
   `;
+
+  // Initialize accordions
+  setTimeout(() => autoInitAccordions(), 0);
+
   return wrapper;
 };
 
 export const AccordionBordered = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Bordered Accordion</h3>
       <div class="accordion accordion--bordered">
         <div class="accordion__item">
@@ -806,13 +816,17 @@ export const AccordionBordered = () => {
       </div>
     </div>
   `;
+
+  // Initialize accordions
+  setTimeout(() => autoInitAccordions(), 0);
+
   return wrapper;
 };
 
 export const AccordionCompact = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Compact Accordion</h3>
       <div class="accordion accordion--compact">
         <div class="accordion__item">
@@ -851,6 +865,10 @@ export const AccordionCompact = () => {
       </div>
     </div>
   `;
+
+  // Initialize accordions
+  setTimeout(() => autoInitAccordions(), 0);
+
   return wrapper;
 };
 
@@ -859,7 +877,7 @@ export const AccordionCompact = () => {
 export const NavigationInDashboard = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 24px; background: rgb(10, 10, 10);">
+    <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Dashboard with Navigation</h3>
 
       <!-- Breadcrumbs -->
@@ -912,7 +930,7 @@ export const NavigationInDashboard = () => {
 export const OnboardingFlow = () => {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
-    <div style="padding: 48px; background: rgb(10, 10, 10);">
+    <div style="padding: 48px;">
       <h3 style="color: #fff; margin-bottom: 32px; text-align: center;">Company Onboarding</h3>
 
       <!-- Stepper -->

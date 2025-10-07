@@ -801,6 +801,7 @@ export default [
       'frontend/src/scripts/**/*.js',
       'frontend/src/components/**/*.js',
       'frontend/src/pages/**/*.js',
+      'frontend/src/design-system/**/*.js',
     ],
     languageOptions: {
       ecmaVersion: 2021,
@@ -945,6 +946,10 @@ export default [
       '**/*.yaml',
       'frontend/src/scripts/lib/**',
       'frontend/src/styles/lib/**',
+      'backups/**',
+      '.storybook/**',
+      'stories/**',
+      'design-system/build/**',
       'frontend/public/**',
       '**/*.d.ts',
       'backend/src/database/migrations/**/*.js',

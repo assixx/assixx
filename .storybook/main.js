@@ -10,15 +10,14 @@ export default {
   // Story files location
   stories: ['../stories/**/*.stories.@(js|jsx|ts|tsx|mdx)'],
 
-  // Addons
+  // Addons (essentials are now built into Storybook 9 core)
   addons: [
-    '@storybook/addon-essentials', // Controls, Actions, Viewport, Backgrounds, Docs
     '@storybook/addon-links', // Navigate between stories
   ],
 
-  // Framework (Storybook 8.6.14 - Web Components = Plain HTML support)
+  // Framework (Storybook 9 - HTML for Vanilla JS/Plain HTML)
   framework: {
-    name: '@storybook/web-components-vite',
+    name: '@storybook/html-vite',
     options: {},
   },
 
@@ -47,9 +46,9 @@ export default {
     });
   },
 
-  // Documentation
+  // Documentation (Storybook 9 - autodocs via tags: ['autodocs'] in stories)
   docs: {
-    autodocs: true, // Auto-generate docs for all stories
+    defaultName: 'Docs', // Name of the docs tab
   },
 
   // Static files (only directories that exist)

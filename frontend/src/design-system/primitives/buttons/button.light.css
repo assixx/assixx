@@ -11,14 +11,12 @@
 .btn-light {
   /* Padding - matches other variants */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-
-  /* Border for definition */
-  border: 1px solid var(--color-gray-300);
+  border: 1px solid rgb(189 189 189); /* Solid gray border - avatar style */
 
   /* Colors */
-  color: var(--color-gray-900);
+  color: var(--color-white);
 
-  background: var(--color-gray-100);
+  background: linear-gradient(135deg, rgb(224 224 224 / 15%), rgb(158 158 158 / 80%)); /* Avatar-style gradient */
 
   /* Shadow - subtle */
   box-shadow: var(--shadow-btn-light, 0 1px 3px rgb(0 0 0 / 8%));
@@ -27,11 +25,10 @@
   transition: var(--transition-all);
 }
 
-/* Hover State */
+/* Hover State - Brighten the gradient */
 .btn-light:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: var(--color-gray-400);
-  background: var(--color-gray-200);
+  background: linear-gradient(135deg, rgb(224 224 224 / 25%), rgb(158 158 158 / 90%));
   box-shadow: var(--shadow-btn-light-hover, 0 2px 6px rgb(0 0 0 / 12%));
 }
 

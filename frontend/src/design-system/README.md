@@ -135,12 +135,22 @@ Token-basierte Glass-Eingabefelder:
 
 ### ✅ Toggles (Phase 2 - Complete)
 
-Mutually exclusive button groups:
+Toggle components for selections and binary states:
+
+**Toggle Button Group** (Mutually exclusive):
 
 - `toggle-group` - Container für Toggle-Buttons
 - `toggle-group__btn` - Individual toggle button
 - `toggle-group__btn--active` - Active state
 - Use Cases: View modes, filters, segmented controls
+
+**Toggle Switch** (Binary ON/OFF) - Phase 10:
+
+- `toggle-switch` - iOS-style ON/OFF switch
+- Native checkbox with glassmorphism styling
+- Sizes: sm, md (default), lg
+- Colors: primary, success, danger, warning
+- Use Cases: Settings, feature activation, enable/disable
 
 [Toggle Docs →](./primitives/toggles/README.md)
 
@@ -191,15 +201,17 @@ Glassmorphism overlay dialogs:
 
 [Modal Docs →](./primitives/modals/README.md)
 
-### ✅ Choice Cards (Phase 4 - Complete)
+### ✅ Choice Cards (Phase 2d - Complete)
 
-Card-style selection controls:
+Card-style selection controls for radio buttons and checkboxes:
 
-- `choice-group` - Container for choice cards
-- `choice-card` - Individual card (label) with radio/checkbox
+- **Base:** `choice-card` - Card-style radio/checkbox with glassmorphism
+- **Plan Cards:** Enhanced cards for pricing/feature selection with prices
+- **Feature Cards:** Feature management cards with active/inactive states
 - Supports: Radio buttons (single choice) AND Checkboxes (multiple choice)
 - Custom indicators with animations
-- Use cases: Permissions, plan selection, settings options
+- Modifiers: lg, with-icon, compact
+- Use cases: Permissions, plan selection, feature activation, settings options
 
 [Choice Cards Docs →](./primitives/choice-cards/README.md)
 
@@ -257,36 +269,94 @@ User feedback and loading states:
 
 [Feedback Docs →](./primitives/feedback/README.md)
 
+### 📅 Date/Time Pickers (Phase 9 - Complete)
+
+Enhanced native HTML5 pickers:
+
+- `date-picker` - Single date selection with calendar icon
+- `time-picker` - Single time selection with clock icon
+- `date-range` - Start/End date selection with separator
+- **Philosophy:** Enhanced native inputs (not custom calendar UI)
+- **Benefits:** Mobile-optimized, accessible, zero JS, locale-aware
+- Sizes: sm, md, lg
+- States: error, success, warning, disabled
+- Use cases: Shifts, calendar events, feature activation periods
+
+[Pickers Docs →](./primitives/pickers/README.md)
+
+### 📤 File Upload (Phase 11 - Complete)
+
+Drag & drop file upload with previews:
+
+- `file-upload-zone` - Drag & drop area with glassmorphism
+- `file-upload-list` - File list with progress indicators
+- **Progressive Enhancement:** Works without JavaScript
+- **Features:** Drag & drop, file validation, image previews, progress bars
+- **JavaScript API:** Optional initFileUpload() for enhanced UX
+- Sizes: compact, default, large
+- States: dragover, uploading, success, error
+- Use cases: Documents, images, profile pictures, bulk uploads
+
+[File Upload Docs →](./primitives/file-upload/README.md)
+
+### 👤 Avatar (Phase 12 - Complete)
+
+WhatsApp-style user avatars with initials:
+
+- `avatar` - Base avatar component (circle or square)
+- **10 Color Variants:** `avatar--color-0` to `avatar--color-9` (consistent per user)
+- **Sizes:** xs (24px), sm (32px), md (40px), lg (56px), xl (80px)
+- **Shapes:** Circle (default), Square (`avatar--square`)
+- **Status Indicators:** online, offline, busy, away
+- **Avatar Groups:** Stacked avatars with count indicator
+- **Progressive Enhancement:** Works without JavaScript
+- **JavaScript API:** `getInitials()`, `getColorClass()`, `createAvatar()`
+- Use cases: User profiles, comments, chat, navigation, team lists
+
+[Avatar Docs →](./primitives/avatar/README.md)
+
+### 🔍 Search Input (Phase 13 - Complete)
+
+Enhanced search input with icons and clear button:
+
+- `search-input` - Base search input component
+- **Leading Icon:** Search icon (magnifying glass)
+- **Trailing Actions:** Clear button (X) + Loading spinner
+- **Sizes:** sm (36px), md (44px), lg (52px)
+- **States:** normal, has-value, loading, error, success, disabled
+- **Features:** Auto-show clear button, debounced search, min length validation
+- **Progressive Enhancement:** Works without JavaScript
+- **JavaScript API:** `initSearchInput()`, `setValue()`, `setLoading()`, `clear()`
+- **Results Dropdown:** Optional autocomplete/results display
+- Use cases: Global search, user filters, document search, settings navigation
+
+[Search Input Docs →](./primitives/search-input/README.md)
+
 ---
 
 ## 🗺️ Roadmap
 
-| Phase | Component          | Status     |
-| ----- | ------------------ | ---------- |
-| 1     | Buttons            | ✅ Done    |
-| 2a    | Inputs & Forms     | ✅ Base    |
-| 2b    | Toggles            | ✅ Done    |
-| 2c    | Dropdowns          | ✅ Done    |
-| 3     | Cards & Containers | ✅ Done    |
-| 4     | Modals & Overlays  | ✅ Done    |
-| 5     | Badges & Status    | ✅ Done    |
-| 6     | Navigation         | ✅ Done    |
-| 7     | Data Display       | ✅ Done    |
-| 8     | Feedback & Toasts  | ✅ Done    |
-| 9     | Advanced Features  | 📋 Planned |
-
-### Mögliche "Advanced Features" für Phase 9
-
-1. **Tooltips** - Hover-Informationen
-2. **Popovers** - Click-basierte Overlays
-3. **Drawer/Sidebar** - Slide-in Navigation
-4. **Command Palette** - Keyboard-driven UI (Cmd+K)
-5. **Date/Time Pickers** - Calendar & Time Selection
-6. **File Upload** - Drag & Drop mit Preview
-7. **Rich Editors** - WYSIWYG/Markdown Editor
-8. **Charts/Graphs** - Visualisierungen
-9. **Animations/Transitions** - Utility-Klassen
-10. **Utilities** - Helper-Klassen (spacing, display, etc.)
+| Phase | Component                     | Status  |
+| ----- | ----------------------------- | ------- |
+| 1     | Buttons                       | ✅ Done |
+| 2a    | Inputs & Forms                | ✅ Base |
+| 2b    | Toggles                       | ✅ Done |
+| 2c    | Dropdowns                     | ✅ Done |
+| 2d    | Choice Cards (Radio/Checkbox) | ✅ Done |
+| 3     | Cards & Containers            | ✅ Done |
+| 4     | Modals & Overlays             | ✅ Done |
+| 5     | Badges & Status               | ✅ Done |
+| 6     | Navigation                    | ✅ Done |
+| 7     | Data Display                  | ✅ Done |
+| 8     | Feedback & Toasts             | ✅ Done |
+| 9     | Date/Time Pickers             | ✅ Done |
+| 10    | Toggle Switch (ON/OFF)        | ✅ Done |
+| 11    | File Upload                   | ✅ Done |
+| 12    | Avatar                        | ✅ Done |
+| 13    | Search Input                  | ✅ Done |
+| 14    | Empty States                  | ✅ Done |
+| 15    | Tooltip (Hover Info)          | ✅ Done |
+| 16    | Accordion/Collapse            | ✅ Done |
 
 ---
 
@@ -538,8 +608,8 @@ This page serves as:
 
 ## 📊 Metrics
 
-- **Components:** 22 (Buttons, Forms, Toggles, Dropdowns, Cards, Containers, Modals, Choice Cards, Badges, Breadcrumbs, Pagination, Tabs, Stepper, Accordion, Tables, Empty States, Data Lists, Alerts, Progress Bars, Spinners, Skeletons, Toasts)
-- **Variants:** 150+ component variations
+- **Components:** 29 (Buttons, Forms, Toggle Button Groups, Toggle Switches, Dropdowns, Cards, Containers, Modals, Choice Cards, Badges, Breadcrumbs, Tabs, Tables, Data Lists, Alerts, Progress Bars, Spinners, Skeletons, Toasts, Date Picker, Time Picker, Date Range, File Upload, Avatar, Search Input)
+- **Variants:** 200+ component variations
 - **Tokens:** 50+ semantic values
 - **Documentation:** 100% coverage
 - **Accessibility:** WCAG AAA
@@ -548,6 +618,6 @@ This page serves as:
 ---
 
 **Maintained by:** Assixx Design System Team
-**Last Updated:** 2025-10-04
+**Last Updated:** 2025-10-07
 **Version:** 1.0.0
 **License:** Proprietary

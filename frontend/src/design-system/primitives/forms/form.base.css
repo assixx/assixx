@@ -75,7 +75,6 @@
 
     /* Trick: Use box-shadow to override background (works in Chrome/Safari) */
     box-shadow: 0 0 0 1000px var(--form-field-bg) inset !important;
-
     transition: background-color 5000s ease-in-out 0s;
 
     -webkit-text-fill-color: var(--form-field-text) !important;

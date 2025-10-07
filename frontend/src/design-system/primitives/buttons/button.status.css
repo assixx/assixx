@@ -18,7 +18,7 @@
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid var(--color-status-active);
 
-  color: var(--color-status-active); /* Orange text */
+  color: var(--color-status-active); /* Deep red text */
 
   /* Current state: Active → Action: Deactivate */
   background: transparent;
@@ -33,14 +33,14 @@
 
   color: var(--color-status-active-hover);
 
-  background: rgb(255 107 53 / 10%); /* Subtle orange tint */
+  background: rgb(198 40 40 / 10%); /* Subtle red tint */
   box-shadow: var(--shadow-btn-status-active-hover);
 }
 
 .btn-status-active:focus-visible {
   box-shadow:
     var(--shadow-btn-status-active),
-    0 0 0 3px rgb(255 107 53 / 20%);
+    0 0 0 3px rgb(198 40 40 / 20%);
 }
 
 /* ========== INACTIVE STATE (Shows "Aktivieren") ========== */
@@ -84,7 +84,7 @@
  * - If user is INACTIVE → show "Activate" (green/positive)
  *
  * COLOR PSYCHOLOGY:
- * - Orange = Warning/Caution (deactivating is a warning action)
+ * - Deep Red = Warning/Destructive (deactivating is a warning action)
  * - Green = Positive/Go (activating is a positive action)
  *
  * OUTLINE STYLE:

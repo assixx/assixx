@@ -11,23 +11,24 @@
 .btn-info {
   /* Padding - matches other variants */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  border: 1px solid rgb(0 172 193); /* Solid cyan border - avatar style */
 
   /* Colors - Cyan/Light Blue */
-  color: var(--color-black);
+  color: var(--color-white);
 
-  background: linear-gradient(135deg, #00bcd4 0%, /* Cyan 500 */ #0097a7 100% /* Cyan 700 */);
+  background: linear-gradient(135deg, rgb(0 188 212 / 15%), rgb(0 151 167 / 80%)); /* Avatar-style gradient */
 
-  /* Border & Shadow */
+  /* Shadow */
   box-shadow: var(--shadow-btn-info, 0 2px 8px rgb(0 188 212 / 30%));
 
   /* Transitions */
   transition: var(--transition-all);
 }
 
-/* Hover State */
+/* Hover State - Brighten the gradient */
 .btn-info:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #26c6da 0%, /* Cyan 400 */ #00bcd4 100% /* Cyan 500 */);
+  background: linear-gradient(135deg, rgb(0 188 212 / 25%), rgb(0 151 167 / 90%));
   box-shadow: var(--shadow-btn-info-hover, 0 4px 12px rgb(0 188 212 / 40%));
 }
 

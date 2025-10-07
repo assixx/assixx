@@ -6,3 +6,5 @@
  */
 
 @import "./choice-card.base.css";
+@import "./choice-card.plan.css";
+@import "./choice-card.feature.css";

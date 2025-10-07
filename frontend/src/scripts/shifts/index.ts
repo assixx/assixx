@@ -2178,7 +2178,8 @@ class ShiftPlanningSystem {
       htmlElement.classList.add('hidden');
       console.info(`[SHIFTS UI] Hidden ${elementName}`);
     } else {
-      htmlElement.classList.remove('hidden');
+      // Remove both possible hiding classes (u-hidden from HTML, hidden from JS)
+      htmlElement.classList.remove('hidden', 'u-hidden');
       console.info(`[SHIFTS UI] Shown ${elementName}`);
     }
   }

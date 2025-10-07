@@ -360,6 +360,117 @@ export const FormWithDropdown = {
 };
 
 /**
+ * Generic Confirm Modal
+ *
+ * Reusable confirmation modal with customizable text and actions.
+ * Use for any yes/no decision that requires user confirmation.
+ */
+export const ConfirmModal = {
+  args: {
+    title: 'Confirm Action',
+    message: 'Are you sure you want to proceed with this action?',
+    icon: 'fa-question-circle',
+    iconColor: 'var(--color-primary)',
+    confirmText: 'Confirm',
+    confirmVariant: 'primary',
+    cancelText: 'Cancel',
+    showWarning: false,
+    warningText: 'This action cannot be undone.',
+  },
+  argTypes: {
+    title: {
+      control: 'text',
+      description: 'Modal title',
+    },
+    message: {
+      control: 'text',
+      description: 'Main confirmation message',
+    },
+    icon: {
+      control: 'select',
+      options: [
+        'fa-question-circle',
+        'fa-exclamation-triangle',
+        'fa-info-circle',
+        'fa-check-circle',
+      ],
+      description: 'FontAwesome icon class',
+    },
+    iconColor: {
+      control: 'select',
+      options: [
+        'var(--color-primary)',
+        'var(--color-warning)',
+        'var(--color-danger)',
+        'var(--color-success)',
+      ],
+      description: 'Icon color',
+    },
+    confirmText: {
+      control: 'text',
+      description: 'Confirm button text',
+    },
+    confirmVariant: {
+      control: 'select',
+      options: ['primary', 'danger', 'success'],
+      description: 'Confirm button variant',
+    },
+    cancelText: {
+      control: 'text',
+      description: 'Cancel button text',
+    },
+    showWarning: {
+      control: 'boolean',
+      description: 'Show warning message',
+    },
+    warningText: {
+      control: 'text',
+      description: 'Warning message text',
+    },
+  },
+  render: (args) => {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div class="modal-overlay modal-overlay--active">
+        <div class="ds-modal ds-modal--sm">
+          <div class="ds-modal__header">
+            <h2 class="ds-modal__title">
+              <i class="fas ${args.icon}" style="color: ${args.iconColor};"></i>
+              ${args.title}
+            </h2>
+            <button class="ds-modal__close" data-action="close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="ds-modal__body">
+            <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-4);">
+              ${args.message}
+            </p>
+            ${
+              args.showWarning
+                ? `
+            <p style="color: var(--color-${args.confirmVariant === 'danger' ? 'danger' : 'warning'}); font-size: 0.875rem;">
+              <i class="fas fa-exclamation-triangle"></i> ${args.warningText}
+            </p>
+            `
+                : ''
+            }
+          </div>
+          <div class="ds-modal__footer ds-modal__footer--spaced">
+            <button class="btn btn-secondary">${args.cancelText}</button>
+            <button class="btn btn-${args.confirmVariant === 'primary' ? 'modal' : args.confirmVariant}">
+              ${args.confirmText}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    return wrapper;
+  },
+};
+
+/**
  * Info Dialog
  *
  * Simple information modal with centered footer.
