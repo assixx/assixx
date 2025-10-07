@@ -1,0 +1,260 @@
+/**
+ * Time Picker Component
+ *
+ * Enhanced native HTML5 time input with glassmorphism design
+ * Uses browser's native time picker for best UX and accessibility
+ *
+ * Usage:
+ * <div class="time-picker">
+ *   <i class="time-picker__icon fas fa-clock"></i>
+ *   <input type="time" class="time-picker__input" />
+ * </div>
+ *
+ * Variants:
+ * - .time-picker--sm - Small size
+ * - .time-picker--lg - Large size
+ * - .time-picker--error - Error state
+ * - .time-picker--success - Success state
+ * - .time-picker--disabled - Disabled state
+ * - .time-picker--24h - 24-hour format indicator
+ *
+ * @see design-system/primitives/pickers/date-picker.css
+ */
+
+/* ============================================================
+   BASE - Structure & Behavior
+   ============================================================ */
+
+.time-picker {
+  position: relative;
+  display: flex;
+  width: 100%;
+}
+
+/* Icon (left positioned) */
+.time-picker__icon {
+  pointer-events: none;
+
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: var(--spacing-4);
+  transform: translateY(-50%);
+
+  font-size: 16px;
+  color: var(--color-text-secondary);
+}
+
+/* Native time input */
+.time-picker__input {
+  width: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
+  padding-left: calc(var(--spacing-4) * 2 + 16px); /* Space for icon */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-lg);
+
+  font-family: var(--font-family-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary);
+
+  /* Remove browser default styling */
+  appearance: none;
+  appearance: none;
+  appearance: none;
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+/* Clock icon color on webkit browsers */
+.time-picker__input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 70%;
+  filter: invert(80%);
+  transition: opacity var(--duration-fast) var(--ease-standard);
+}
+
+.time-picker__input::-webkit-calendar-picker-indicator:hover {
+  opacity: 100%;
+}
+
+/* Placeholder text (when empty) */
+.time-picker__input:invalid {
+  color: var(--color-text-tertiary);
+}
+
+/* Focus state */
+.time-picker__input:focus {
+  border-color: var(--color-primary);
+  background: rgb(255 255 255 / 8%);
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
+}
+
+.time-picker__input:focus + .time-picker__icon,
+.time-picker:focus-within .time-picker__icon {
+  color: var(--color-primary);
+}
+
+/* Hover state */
+.time-picker__input:hover:not(:disabled) {
+  border-color: rgb(255 255 255 / 20%);
+  background: rgb(255 255 255 / 8%);
+}
+
+/* Disabled state */
+.time-picker__input:disabled,
+.time-picker--disabled .time-picker__input {
+  cursor: not-allowed;
+  opacity: 50%;
+  background: rgb(255 255 255 / 3%);
+}
+
+.time-picker--disabled .time-picker__icon {
+  opacity: 50%;
+}
+
+/* ============================================================
+   SIZE VARIANTS
+   ============================================================ */
+
+/* Small */
+.time-picker--sm .time-picker__input {
+  padding: var(--spacing-2) var(--spacing-3);
+  padding-left: calc(var(--spacing-3) * 2 + 14px);
+  font-size: 13px;
+}
+
+.time-picker--sm .time-picker__icon {
+  left: var(--spacing-3);
+  font-size: 14px;
+}
+
+/* Large */
+.time-picker--lg .time-picker__input {
+  padding: var(--spacing-4) var(--spacing-5);
+  padding-left: calc(var(--spacing-5) * 2 + 18px);
+  font-size: 16px;
+}
+
+.time-picker--lg .time-picker__icon {
+  left: var(--spacing-5);
+  font-size: 18px;
+}
+
+/* ============================================================
+   STATE VARIANTS
+   ============================================================ */
+
+/* Error state */
+.time-picker--error .time-picker__input {
+  border-color: var(--color-danger);
+  background: rgb(244 67 54 / 5%);
+}
+
+.time-picker--error .time-picker__input:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 3px rgb(244 67 54 / 10%);
+}
+
+.time-picker--error .time-picker__icon {
+  color: var(--color-danger);
+}
+
+/* Success state */
+.time-picker--success .time-picker__input {
+  border-color: var(--color-success);
+  background: rgb(76 175 80 / 5%);
+}
+
+.time-picker--success .time-picker__input:focus {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 3px rgb(76 175 80 / 10%);
+}
+
+.time-picker--success .time-picker__icon {
+  color: var(--color-success);
+}
+
+/* Warning state */
+.time-picker--warning .time-picker__input {
+  border-color: var(--color-warning);
+  background: rgb(255 152 0 / 5%);
+}
+
+.time-picker--warning .time-picker__input:focus {
+  border-color: var(--color-warning);
+  box-shadow: 0 0 0 3px rgb(255 152 0 / 10%);
+}
+
+.time-picker--warning .time-picker__icon {
+  color: var(--color-warning);
+}
+
+/* ============================================================
+   UTILITY MODIFIERS
+   ============================================================ */
+
+/* Full width (default, but explicit) */
+.time-picker--full {
+  width: 100%;
+}
+
+/* Inline (auto width) */
+.time-picker--inline {
+  display: inline-flex;
+  width: auto;
+}
+
+/* Without icon */
+.time-picker--no-icon .time-picker__input {
+  padding-left: var(--spacing-4);
+}
+
+.time-picker--no-icon .time-picker__icon {
+  display: none;
+}
+
+/* 24-hour format indicator (visual only, doesn't change input) */
+.time-picker--24h::after {
+  pointer-events: none;
+  content: "24h";
+
+  position: absolute;
+  top: 50%;
+  right: var(--spacing-4);
+  transform: translateY(-50%);
+
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+}
+
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .time-picker__input {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .time-picker__input {
+    transition: none;
+  }
+}
+
+/* Focus visible (keyboard navigation) */
+.time-picker__input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}

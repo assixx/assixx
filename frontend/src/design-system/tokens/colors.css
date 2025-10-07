@@ -40,9 +40,9 @@
   --color-warning-light: var(--color-orange-400); /* #ffa726 - Light variant */
 
   /* ========== STATUS TOGGLES (Custom) ========== */
-  /* Active → Deactivate (Orange) */
-  --color-status-active: #ff6b35; /* Orange - Show when active */
-  --color-status-active-hover: #ff5722; /* Darker orange on hover */
+  /* Active → Deactivate (Deep Red) */
+  --color-status-active: #c62828; /* Deep Red - Show when active */
+  --color-status-active-hover: #b71c1c; /* Darker red on hover */
 
   /* Inactive → Activate (Green) */
   --color-status-inactive: #28a745; /* Green - Show when inactive */

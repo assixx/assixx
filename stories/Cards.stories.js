@@ -214,11 +214,10 @@ export const AccentCards = {
   },
   render: (args) => {
     const container = document.createElement('div');
-    container.style.maxWidth = '600px';
+    container.style.maxWidth = '350px';
 
     const variantClass = args.variant !== 'default' ? `card-accent--${args.variant}` : '';
     const staticClass = args.isStatic ? 'card-accent--static' : '';
-    const buttonVariant = args.variant !== 'default' ? `btn-${args.variant}` : 'btn-primary';
 
     container.innerHTML = `
       <div class="card-accent ${variantClass} ${staticClass}">
@@ -229,10 +228,12 @@ export const AccentCards = {
           <p style="color: var(--color-text-secondary); margin-bottom: 12px;">
             ${args.description}
           </p>
-          <button class="btn ${buttonVariant}">
-            <i class="fas fa-${args.icon}"></i>
-            ${args.buttonText}
-          </button>
+          <div style="display: flex; justify-content: center; margin-top: var(--spacing-4);">
+            <button class="btn btn-modal" style="width: 80%;">
+              <i class="fas fa-${args.icon}"></i>
+              ${args.buttonText}
+            </button>
+          </div>
         </div>
       </div>
     `;

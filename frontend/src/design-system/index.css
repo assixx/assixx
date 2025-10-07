@@ -64,6 +64,27 @@
 /* Feedback - Alerts, progress, spinners, skeletons, toasts */
 @import "./primitives/feedback/index.css";
 
+/* Pickers - Date/Time pickers with enhanced native inputs */
+@import "./primitives/pickers/index.css";
+
+/* File Upload - Drag & drop file upload with previews */
+@import "./primitives/file-upload/index.css";
+
+/* Avatar - User profile avatars with initials */
+@import "./primitives/avatar/index.css";
+
+/* Search Input - Enhanced search with icons and clear button */
+@import "./primitives/search-input/index.css";
+
+/* Empty States - "No data" screens with minimal icons */
+@import "./primitives/empty-states/index.css";
+
+/* Tooltip - Hover/focus tooltips with auto-positioning */
+@import "./primitives/tooltip/index.css";
+
+/* Collapse - Standalone expandable sections */
+@import "./primitives/collapse/index.css";
+
 /* ========== UTILITIES ========== */
 /* Helper classes for layout and common patterns */
 /* Future: Will be added as needed */
