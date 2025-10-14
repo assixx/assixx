@@ -40,6 +40,14 @@
   /* Backdrop styling */
   background: rgb(0 0 0 / 60%);
   backdrop-filter: blur(8px);
+<<<<<<< HEAD
+=======
+
+  /* Smooth transition */
+  transition:
+    visibility 0.3s,
+    opacity 0.3s ease;
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
 }
 
 /* Active state - visible */
@@ -67,6 +75,7 @@
   max-width: 700px; /* Default: md */
   max-height: 85vh;
 
+<<<<<<< HEAD
   /* Schlicht & Elegant - Wie Cards */
   border: 1px solid rgb(255 255 255 / 10%); /* Card border */
   border-radius: var(--radius-xl); /* 12px */
@@ -74,6 +83,17 @@
   background: rgb(15 15 15 / 95%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: 0 8px 32px rgb(0 0 0 / 40%);
+=======
+  /* Glassmorphism */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl); /* 12px */
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-lg);
+
+  transition: transform 0.3s ease;
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
 }
 
 /* Active state - scales to normal */
@@ -94,10 +114,17 @@
 
   /* Spacing */
   padding: var(--spacing-6); /* 24px */
+<<<<<<< HEAD
   border-bottom: 1px solid rgb(255 255 255 / 8%);
 
   /* Schlicht & Elegant - Subtiler Hintergrund */
   background: rgb(0 0 0 / 20%);
+=======
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+
+  /* Visual separation */
+  background: rgb(255 255 255 / 2%);
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
 }
 
 .ds-modal__title {
@@ -130,6 +157,12 @@
 
   background: none;
   background: rgb(255 255 255 / 3%);
+<<<<<<< HEAD
+=======
+
+  /* Smooth transition */
+  transition: all 0.2s ease;
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
 }
 
 .ds-modal__close:hover {
@@ -187,10 +220,17 @@
 
   /* Spacing */
   padding: var(--spacing-6); /* 24px */
+<<<<<<< HEAD
   border-top: 1px solid rgb(255 255 255 / 8%);
 
   /* Schlicht & Elegant - Subtiler Hintergrund */
   background: rgb(0 0 0 / 20%);
+=======
+  border-top: 1px solid rgb(255 255 255 / 5%);
+
+  /* Visual separation */
+  background: rgb(255 255 255 / 2%);
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
 }
 
 /* Center footer variant */
@@ -288,6 +328,14 @@ body:has(.modal-overlay--active) {
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
+<<<<<<< HEAD
+=======
+  .modal-overlay,
+  .ds-modal {
+    transition: none;
+  }
+
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   .ds-modal {
     transform: none;
   }

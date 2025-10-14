@@ -15,14 +15,22 @@
   color: var(--color-white);
 
   /* ========== VISUAL ========== */
+<<<<<<< HEAD
   background: linear-gradient(135deg, rgb(244 67 54 / 35%), rgb(255 0 0 / 80%)); /* Tief strahlend rot */
+=======
+  background: linear-gradient(135deg, rgb(244 67 54 / 15%), rgb(211 47 47 / 80%)); /* Avatar-style gradient */
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   box-shadow: var(--shadow-btn-danger);
 }
 
 /* Hover state - Brighten the gradient */
 .btn-danger:hover:not(:disabled) {
   transform: translateY(-1px);
+<<<<<<< HEAD
   background: linear-gradient(135deg, rgb(244 67 54 / 45%), rgb(255 0 0 / 90%)); /* Noch intensiver */
+=======
+  background: linear-gradient(135deg, rgb(244 67 54 / 25%), rgb(211 47 47 / 90%));
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   box-shadow: var(--shadow-btn-danger-hover);
 }
 
