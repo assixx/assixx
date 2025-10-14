@@ -1,0 +1,207 @@
+/**
+ * Tabs Navigation
+ *
+ * Tab-based navigation for switching between content sections
+ * Source: dashboard-theme.css, shifts.css
+ *
+ * Variants:
+ * - Default (Underline): Minimalist with bottom border indicator
+ * - Glass: Glassmorphic button tabs
+ *
+ * Usage:
+ * <!-- Underline Tabs (default) -->
+ * <div class="tabs">
+ *   <div class="tabs__nav">
+ *     <button class="tabs__tab tabs__tab--active">Overview</button>
+ *     <button class="tabs__tab">Details</button>
+ *     <button class="tabs__tab">Settings</button>
+ *   </div>
+ *   <div class="tabs__content tabs__content--active">Overview content</div>
+ *   <div class="tabs__content">Details content</div>
+ *   <div class="tabs__content">Settings content</div>
+ * </div>
+ *
+ * <!-- Glass Tabs -->
+ * <div class="tabs tabs--glass">
+ *   <div class="tabs__nav">
+ *     <button class="tabs__tab tabs__tab--active">Tab 1</button>
+ *     <button class="tabs__tab">Tab 2</button>
+ *   </div>
+ * </div>
+ */
+
+/* ========== BASE TABS CONTAINER ========== */
+
+.tabs {
+  width: 100%;
+}
+
+/* ========== TAB NAVIGATION (Underline variant - default) ========== */
+
+.tabs__nav {
+  display: flex;
+  gap: var(--spacing-1);
+
+  margin-bottom: var(--spacing-4);
+  padding: 0 var(--spacing-6);
+  border-bottom: 2px solid var(--glass-border);
+}
+
+/* Individual tab button */
+.tabs__tab {
+  cursor: pointer;
+
+  margin-bottom: -2px;
+  padding: var(--spacing-3);
+  border: none;
+  border-bottom: 2px solid transparent;
+
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+
+  background: none;
+
+  transition: all 0.2s ease;
+}
+
+.tabs__tab:hover:not(.tabs__tab--active) {
+  color: var(--color-primary);
+}
+
+.tabs__tab--active {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.tabs__tab:disabled {
+  cursor: not-allowed;
+  color: var(--color-text-secondary);
+  opacity: 40%;
+}
+
+/* ========== TAB CONTENT ========== */
+
+.tabs__content {
+  display: none;
+  padding: var(--spacing-6);
+}
+
+.tabs__content--active {
+  display: block;
+  animation: fade-in 0.2s ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0%;
+  }
+
+  to {
+    opacity: 100%;
+  }
+}
+
+/* ========== GLASS VARIANT ========== */
+
+.tabs--glass .tabs__nav {
+  padding: var(--spacing-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 5%);
+  backdrop-filter: blur(10px);
+}
+
+.tabs--glass .tabs__tab {
+  flex: 1;
+
+  margin-bottom: 0;
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-lg);
+
+  color: var(--color-text-secondary);
+
+  background: transparent;
+}
+
+.tabs--glass .tabs__tab:hover:not(.tabs__tab--active) {
+  color: var(--color-text-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+.tabs--glass .tabs__tab--active {
+  border-color: transparent;
+  color: var(--color-primary);
+  background: rgb(33 150 243 / 20%);
+  box-shadow: 0 1px 8px rgb(33 150 243 / 20%);
+}
+
+/* ========== COMPACT VARIANT ========== */
+
+.tabs--compact .tabs__nav {
+  margin-bottom: var(--spacing-3);
+  padding: 0 var(--spacing-3);
+}
+
+.tabs--compact .tabs__tab {
+  padding: var(--spacing-2);
+  font-size: 13px;
+}
+
+.tabs--compact .tabs__content {
+  padding: var(--spacing-4);
+}
+
+/* ========== CENTERED VARIANT ========== */
+
+.tabs--centered .tabs__nav {
+  justify-content: center;
+}
+
+/* ========== ICON TABS ========== */
+
+.tabs__tab i {
+  margin-right: 6px;
+}
+
+/* Icon only (no text) */
+.tabs__tab--icon-only {
+  padding: var(--spacing-2);
+}
+
+.tabs__tab--icon-only i {
+  margin-right: 0;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .tabs__nav {
+    gap: var(--spacing-1);
+    padding: 0 var(--spacing-3);
+  }
+
+  .tabs__tab {
+    padding: var(--spacing-2);
+    font-size: 13px;
+  }
+
+  .tabs__content {
+    padding: var(--spacing-4);
+  }
+
+  /* Glass variant on mobile */
+  .tabs--glass .tabs__nav {
+    flex-wrap: wrap;
+  }
+
+  .tabs--glass .tabs__tab {
+    flex: 1 1 calc(50% - var(--spacing-1));
+    padding: var(--spacing-2);
+    font-size: 13px;
+  }
+}

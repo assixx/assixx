@@ -1,0 +1,116 @@
+/**
+ * Table Base
+ *
+ * Foundation for all table components
+ * Source: Replaces bootstrap-tables.css with Design System patterns
+ *
+ * Usage:
+ * <table class="data-table">
+ *   <thead>
+ *     <tr>
+ *       <th>Header 1</th>
+ *       <th>Header 2</th>
+ *     </tr>
+ *   </thead>
+ *   <tbody>
+ *     <tr>
+ *       <td>Data 1</td>
+ *       <td>Data 2</td>
+ *     </tr>
+ *   </tbody>
+ * </table>
+ */
+
+/* ========== BASE TABLE CONTAINER ========== */
+
+.data-table {
+  border-collapse: collapse;
+
+  width: 100%;
+
+  /* Data table optimization: 14px for better readability (updated from 12px) */
+  font-size: 14px;
+  color: var(--color-text-primary);
+
+  background-color: transparent;
+}
+
+/* ========== TABLE CELLS ========== */
+
+.data-table th,
+.data-table td {
+  padding: var(--spacing-4) var(--spacing-4);
+  border-bottom: 1px solid var(--glass-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+/* ========== TABLE HEADER ========== */
+
+.data-table thead th {
+  /* Remove top border on first row */
+  border-top: 0;
+  border-bottom: 1px solid rgb(255 255 255 / 10%);
+
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  /* Glassmorphic header background */
+  background: rgb(255 255 255 / 3%);
+}
+
+/* ========== TABLE BODY ========== */
+
+.data-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+/* Default subtle hover (can be overridden by .data-table--hover) */
+.data-table tbody tr:hover {
+  background: rgb(255 255 255 / 2%);
+}
+
+/* Multiple tbody support (rare, but Bootstrap had it) */
+.data-table tbody + tbody {
+  border-top: 2px solid var(--glass-border);
+}
+
+/* ========== RESPONSIVE WRAPPER ========== */
+
+.table-responsive {
+  overflow-x: auto;
+  display: block;
+  width: 100%;
+
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ========== TEXT ALIGNMENT UTILITIES ========== */
+
+.data-table .text-center {
+  text-align: center;
+}
+
+.data-table .text-right {
+  text-align: right;
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .data-table {
+    font-size: 13px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: var(--spacing-3) var(--spacing-2);
+  }
+
+  .data-table thead th {
+    font-size: 12px;
+  }
+}

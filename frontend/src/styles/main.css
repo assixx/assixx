@@ -46,6 +46,7 @@
 @import "./blackboard-widget.css"; /* Dashboard widgets */
 @import "./profile-picture.css"; /* User profile component */
 @import "./user-info-update.css"; /* User info modal */
+@import "../design-system/primitives/modals/modal.base.css"; /* Design System modals */
 
 /* Container Padding Fix - WICHTIG: Am Ende laden */
 @import "./container-padding-fix.css";

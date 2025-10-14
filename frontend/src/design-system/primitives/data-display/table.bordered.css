@@ -1,0 +1,24 @@
+/**
+ * Table Bordered Variant
+ *
+ * Add borders around all cells
+ *
+ * Usage:
+ * <table class="data-table data-table--bordered">
+ */
+
+.data-table--bordered {
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+}
+
+.data-table--bordered th,
+.data-table--bordered td {
+  border: 1px solid var(--glass-border);
+}
+
+/* Remove outer borders in responsive wrapper */
+.table-responsive > .data-table--bordered {
+  border: 0;
+}

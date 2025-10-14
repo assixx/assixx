@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Root Dashboard Script
  * Handles root user dashboard functionality and admin management
@@ -136,13 +137,13 @@ async function checkEmployeeNumber(): Promise<void> {
 
     // Check if user has temporary employee number
     const employeeNumber = user.employeeNumber ?? user.employee_number ?? '';
-    if (employeeNumber.startsWith('TEMP_') || employeeNumber === '') {
+    if (employeeNumber.startsWith('TEMP-') || employeeNumber.startsWith('TEMP_') || employeeNumber === '') {
       // User has temporary employee number, show modal
       const modal = document.querySelector<HTMLElement>('#employeeNumberModal');
+      const form = document.querySelector<HTMLFormElement>('#employeeNumberForm');
       const input = document.querySelector<HTMLInputElement>('#employeeNumberInput');
-      const submitBtn = document.querySelector<HTMLButtonElement>('#submitEmployeeNumber');
 
-      if (modal === null || input === null || submitBtn === null) return;
+      if (modal === null || form === null || input === null) return;
 
       modal.style.display = 'flex';
       input.focus();
@@ -153,7 +154,8 @@ async function checkEmployeeNumber(): Promise<void> {
         target.value = target.value.replace(/[^-0-9A-Za-z]/g, '');
       });
 
-      submitBtn.addEventListener('click', () => {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
         void (async () => {
           const newEmployeeNumber = input.value.trim();
           if (newEmployeeNumber === '') {
@@ -162,12 +164,15 @@ async function checkEmployeeNumber(): Promise<void> {
           }
 
           try {
-            await apiClient.request(`${API_ENDPOINTS.USERS}/profile`, {
-              method: 'PUT',
+            await apiClient.request('/users/me', {
+              method: 'PATCH',
               body: JSON.stringify({
-                employee_number: newEmployeeNumber,
+                employeeNumber: newEmployeeNumber,
               }),
             });
+
+            // Reload user data to update cache and UI
+            await apiClient.request<UserWithEmployeeNumber>(API_ENDPOINTS.USERS_ME);
 
             showNotification('Mitarbeiternummer erfolgreich aktualisiert.', 'success');
             modal.style.display = 'none';
@@ -493,7 +498,6 @@ async function loadActivityLogs(): Promise<void> {
 
 // Helper function to get readable action labels
 function getActionLabel(action: string): string {
-  // eslint-disable-next-line max-lines
   const actionLabels = new Map<string, string>([
     ['create', 'Erstellt'],
     ['update', 'Aktualisiert'],

@@ -1,0 +1,123 @@
+/**
+ * Design System – Accent Card
+ *
+ * Card with colored top indicator bar and header.
+ * Use case: Feature cards, module cards, section cards.
+ *
+ * NOTE: @layer removed for compatibility with legacy dashboard-theme.css
+ */
+
+/* Accent Card (formerly compact-card) */
+.card-accent {
+  cursor: pointer;
+
+  position: relative;
+
+  overflow: hidden;
+
+  padding: var(--spacing-0); /* 32px */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl); /* 12px */
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  transition: all 0.2s ease;
+}
+
+/* Top Indicator Bar */
+.card-accent::before {
+  content: "";
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+
+  height: 2px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+}
+
+.card-accent:hover {
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(255 255 255 / 3%);
+}
+
+/* Header */
+.card-accent__header {
+  padding: var(--spacing-4) var(--spacing-6);
+  border-bottom: 1px solid rgb(255 255 255 / 5%);
+  border-radius: 10px 10px 0 0;
+
+  background: rgb(255 255 255 / 1%);
+  backdrop-filter: blur(10px);
+}
+
+/* Title with Side Indicator */
+.card-accent__title {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+
+  margin: 0;
+
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.card-accent__title::before {
+  content: "";
+
+  width: 4px;
+  height: 20px;
+  border-radius: 2px;
+
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+}
+
+/* Content Area */
+.card-accent__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: var(--spacing-6);
+}
+
+/* Color Variants for Top Bar */
+.card-accent--success::before {
+  background: linear-gradient(90deg, var(--color-success), #66bb6a);
+}
+
+.card-accent--success .card-accent__title::before {
+  background: linear-gradient(180deg, var(--color-success), #66bb6a);
+}
+
+.card-accent--warning::before {
+  background: linear-gradient(90deg, var(--color-warning), #ffa726);
+}
+
+.card-accent--warning .card-accent__title::before {
+  background: linear-gradient(180deg, var(--color-warning), #ffa726);
+}
+
+.card-accent--danger::before {
+  background: linear-gradient(90deg, var(--color-danger), #ef5350);
+}
+
+.card-accent--danger .card-accent__title::before {
+  background: linear-gradient(180deg, var(--color-danger), #ef5350);
+}
+
+/* No Click Variant */
+.card-accent--static {
+  cursor: default;
+}
+
+.card-accent--static:hover {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 2%);
+}

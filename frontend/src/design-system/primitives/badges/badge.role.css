@@ -1,0 +1,42 @@
+/**
+ * Role Badges
+ *
+ * Used for: User roles, permissions, access levels
+ * Source: logs.css role-badge classes
+ * Note: Roles typically use smaller badges (badge--sm)
+ */
+
+/* Root - Purple */
+.badge--role-root {
+  border-color: rgb(156 39 176 / 30%);
+  color: #9c27b0;
+  background: rgb(156 39 176 / 15%);
+}
+
+/* Admin - Light Blue */
+.badge--role-admin {
+  border-color: rgb(3 169 244 / 30%);
+  color: #03a9f4;
+  background: rgb(3 169 244 / 15%);
+}
+
+/* Employee - Blue Gray */
+.badge--role-employee {
+  border-color: rgb(96 125 139 / 30%);
+  color: #607d8b;
+  background: rgb(96 125 139 / 15%);
+}
+
+/* Manager - Deep Orange (additional role) */
+.badge--role-manager {
+  border-color: rgb(255 87 34 / 30%);
+  color: #ff5722;
+  background: rgb(255 87 34 / 15%);
+}
+
+/* Guest - Gray (additional role) */
+.badge--role-guest {
+  border-color: rgb(158 158 158 / 30%);
+  color: #9e9e9e;
+  background: rgb(158 158 158 / 15%);
+}

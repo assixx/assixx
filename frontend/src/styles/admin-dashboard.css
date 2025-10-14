@@ -1107,3 +1107,8 @@ tr:hover .badge-warning {
     font-size: 0.8rem;
   }
 }
+
+/* Fix: Logout Button Icon Visibility - MOVED TO dashboard-theme.css (global)
+ * Redundante Regel entfernt - Icon-Fix ist jetzt zentral in dashboard-theme.css Lines 1011-1037
+ * Gilt für alle Dashboards (admin, employee, root) über main.css Import
+ */

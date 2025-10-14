@@ -38,6 +38,9 @@
   --glass-saturate-medium: 150%;
   --glass-saturate-normal: 100%;
 
+  /* Accent Colors */
+  --accent-grey1a: #1a1a1a;
+
   /* Layout */
   --header-height: 60px;
   --sidebar-width-expanded: 250px;

@@ -2,7 +2,29 @@
  * Calendar System Styles - Angepasst an das Assixx-Dashboard-Design
  */
 
+/* Calendar-specific CSS Variables */
+:root {
+  --accent-grey1a: #1a1a1a;
+}
+
 /* Main content padding - REMOVED: Migrated to Tailwind utilities in calendar.html */
+
+/* Form Checkbox - Inline with other controls */
+.form-checkbox {
+  cursor: pointer;
+
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 4px;
+
+  accent-color: var(--primary-color);
+}
+
+/* Align form groups in filter bar */
+.card-body .flex {
+  align-items: flex-end;
+}
 
 /* Calendar Container */
 .calendar-card {
@@ -107,6 +129,11 @@
 
 .fc .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky > * {
   top: auto;
+}
+
+/* Dark theme background for sticky headers */
+.fc .fc-scrollgrid-section-sticky > * {
+  background: var(--accent-grey1a);
 }
 
 .fc-theme-standard .fc-scrollgrid {
@@ -878,7 +905,7 @@
 /* Override FullCalendar default styles in fullscreen mode */
 .calendar-fullscreen-mode .fc td,
 .calendar-fullscreen-mode .fc th {
-  padding-bottom: 70px;
+  padding-bottom: 60px;
   vertical-align: top;
 }
 

@@ -21,18 +21,6 @@
   max-width: none;
 }
 
-/* Header Styles */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 10px 20px;
-
-  background-color: #fff;
-  box-shadow: var(--shadow-sm);
-}
-
 /* Form Styles */
 .form-group {
   margin-bottom: 1rem;
@@ -209,6 +197,8 @@ header {
 }
 
 /* Toast notifications */
+/* DEPRECATED: Replaced by Design System (design-system/primitives/feedback/toast.css) */
+/*
 .toast-container {
   position: fixed;
   z-index: 1050;
@@ -240,6 +230,7 @@ header {
 .toast-body {
   padding: 0.75rem;
 }
+*/
 
 /* Animation utilities */
 .fade-in {

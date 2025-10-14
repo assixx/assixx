@@ -3,51 +3,67 @@
 
 /* Document Pages Styles */
 
-/* View Mode Toggle */
+/* Toggle Button Group - Using Design System Primitive */
+/* Classes: .toggle-group, .toggle-group__btn, .toggle-group__btn--active */
+/* See: /design-system/primitives/toggles/toggle-button-group.css */
+
+/* Page-specific spacing override */
+.documents-controls .toggle-group {
+  margin-left: 20px;
+}
+
+/* Legacy class names - DEPRECATED - Use .toggle-group instead */
+/* These are kept temporarily for backwards compatibility */
 .view-mode-toggle {
   display: inline-flex;
-  gap: 8px;
+  gap: var(--spacing-2);
 
-  margin-left: 20px;
-  padding: 4px;
+  padding: var(--spacing-1);
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
 }
 
-.toggle-btn {
+.toggle-btn,
+.view-mode-btn {
   cursor: pointer;
 
   display: flex;
-  gap: 6px;
+  gap: var(--spacing-1-5);
   align-items: center;
 
-  padding: 6px 12px;
+  padding: var(--spacing-1-5) var(--spacing-3);
   border: 1px solid transparent;
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-md);
 
-  font-size: 13px;
+  font-size: 0.813rem;
+  font-weight: var(--font-weight-medium);
   color: rgb(255 255 255 / 60%);
 
   background: transparent;
+
+  transition: all 0.2s ease;
 }
 
-.toggle-btn:hover {
+.toggle-btn:hover,
+.view-mode-btn:hover {
   border-color: rgb(255 255 255 / 10%);
   color: rgb(255 255 255 / 80%);
   background: rgb(255 255 255 / 5%);
 }
 
-.toggle-btn.active {
-  border-color: rgb(33 150 243 / 30%);
-  color: #2196f3;
-  background: rgb(33 150 243 / 15%);
+.toggle-btn.active,
+.view-mode-btn.active {
+  border-color: var(--color-primary-alpha-30);
+  color: var(--color-primary);
+  background: var(--color-primary-alpha-15);
 }
 
-.toggle-btn i {
-  font-size: 14px;
+.toggle-btn i,
+.view-mode-btn i {
+  font-size: 0.875rem;
 }
 
 /* Document Card with Favorite Button */
@@ -340,39 +356,10 @@
   backdrop-filter: blur(20px);
 }
 
-.search-input-wrapper {
-  position: relative;
+/* Search Input - Using Design System form-field__input-wrapper */
+.search-bar-container .form-field__input-wrapper {
   max-width: 600px;
   margin: 0 auto;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 20px 12px 45px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 8px;
-
-  font-size: 15px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.search-input:focus {
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(255 255 255 / 8%);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 15%);
-}
-
-.search-icon {
-  position: absolute;
-  top: 50%;
-  left: 15px;
-  transform: translateY(-50%);
-
-  font-size: 18px;
-  color: rgb(255 255 255 / 50%);
 }
 
 /* Loading Spinner */
@@ -412,86 +399,8 @@
   color: #2196f3;
 }
 
-/* Custom Dropdown Styles */
-.custom-dropdown {
-  position: relative;
-  min-width: 160px;
-}
-
-.dropdown-display {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 10px 15px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: 8px;
-
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.dropdown-display:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 5%);
-}
-
-.dropdown-display.active {
-  border-color: rgb(33 150 243 / 50%);
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 15%);
-}
-
-.dropdown-options {
-  position: absolute;
-  z-index: 1000;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
-  transform: translateY(-10px);
-
-  overflow-y: auto;
-
-  max-height: 240px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: 8px;
-
-  visibility: hidden;
-  opacity: 0%;
-  background: rgb(18 18 18 / 90%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
-}
-
-.dropdown-options.active {
-  transform: translateY(0);
-  visibility: visible;
-  opacity: 100%;
-}
-
-.dropdown-option {
-  cursor: pointer;
-
-  display: flex;
-  gap: 10px;
-  align-items: center;
-
-  padding: 10px 15px;
-
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.dropdown-option i {
-  width: 16px;
-  font-size: 14px;
-  color: rgb(255 255 255 / 60%);
-  text-align: center;
-}
+/* Sort Select - Using Design System form-field--inline */
+/* Custom dropdown removed - migrated to native <select> with Design System classes */
 
 /* Document Preview Modal */
 .modal {

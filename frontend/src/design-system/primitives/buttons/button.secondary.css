@@ -20,6 +20,9 @@
 
   /* No shadow on default state (lighter weight than primary) */
   box-shadow: none;
+
+  /* No transitions - instant response */
+  transition: none;
 }
 
 /* Hover state - Strengthen glass and border */

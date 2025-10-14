@@ -17,10 +17,13 @@
   align-items: center;
   justify-content: space-between;
 
+  height: 60px;
   min-height: 3.5rem; /* 56px - min-height statt height für flexibilität */
   padding: 0.5rem 1rem; /* 8px 16px */
 
-  box-shadow: var(--shadow-sm);
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 0 0 2px #000;
 }
 
 .logo-container {
@@ -274,7 +277,7 @@
   padding: var(--spacing-1) var(--spacing-2);
   border-radius: var(--radius-xl);
 
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -836,6 +839,8 @@
 
   font-size: 0.8rem;
   color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   backdrop-filter: blur(10px);
 }
@@ -1074,103 +1079,5 @@
     visibility 0.3s ease;
 }
 
-#logoutModal .logout-modal {
-  position: absolute;
-  z-index: 1001;
-  top: 35%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-
-  display: flex;
-  flex-direction: column;
-
-  width: 100%;
-  max-width: var(--alert-modal-max-width);
-  min-height: var(--alert-modal-min-height);
-  max-height: calc(100vh - 80px);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  background: #121212;
-
-  /* backdrop-filter: blur(20px) saturate(180%); */
-  box-shadow:
-    0 8px 32px #0006,
-    inset 0 1px #ffffff1a;
-}
-
-#logoutModal .logout-modal .logout-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-6);
-
-  background: #ffffff05;
-}
-
-#logoutModal .logout-modal .logout-modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-#logoutModal .logout-modal .logout-modal-body {
-  padding: var(--spacing-6);
-}
-
-#logoutModal .logout-modal .logout-message {
-  margin-top: var(--spacing-4);
-  margin-bottom: var(--spacing-4);
-
-  font-size: 1rem;
-  color: var(--text-primary);
-  text-align: center;
-}
-
-#logoutModal .logout-modal .logout-info {
-  gap: var(--spacing-2);
-  align-items: center;
-
-  margin-left: -6px;
-  padding: var(--spacing-3);
-  border-radius: var(--radius-xl);
-
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-  text-align: center;
-
-  background: rgb(33 150 243 / 10%);
-}
-
-#logoutModal .logout-modal .logout-info i {
-  font-size: 1rem;
-  color: var(--primary-color);
-}
-
-#logoutModal .logout-modal .logout-modal-footer {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--spacing-4);
-  justify-content: center;
-
-  margin: 0;
-  padding: var(--spacing-6);
-  border-top: 0;
-
-  background: #ffffff05;
-}
-
-#logoutModal .logout-modal .btn {
-  min-width: 100px;
-}
-
-#logoutModal .logout-modal .btn-danger {
-  background: linear-gradient(135deg, #eb1000, #ff0600);
-}
-
-#logoutModal .logout-modal .btn-danger:hover {
-  background: linear-gradient(135deg, #ef5350, #f44336);
-  box-shadow: 0 4px 12px rgb(244 67 54 / 30%);
-}
+/* Logout Modal - Now using Design System (ds-modal) from design-system/components/modals.css */
+/* Only base positioning kept for JavaScript compatibility */

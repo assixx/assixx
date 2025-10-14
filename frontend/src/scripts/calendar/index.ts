@@ -4,6 +4,15 @@
  * Client-side TypeScript for the company calendar feature
  */
 
+// FullCalendar imports (npm package - Best Practice 2025)
+import { Calendar } from '@fullcalendar/core';
+import type { CalendarOptions, EventClickArg, EventInput, DateSelectArg, EventHoveringArg } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import interactionPlugin, { type DateClickArg } from '@fullcalendar/interaction';
+import listPlugin from '@fullcalendar/list';
+import deLocale from '@fullcalendar/core/locales/de';
+// FullCalendar CSS is loaded via <link> tag in calendar.html (v6 doesn't export CSS in package)
 import type { User } from '../../types/api.types';
 import { canViewAllEmployees } from '../../utils/auth-helpers';
 import { $$, $all, $$id, setHTML } from '../../utils/dom-utils';
@@ -32,121 +41,8 @@ interface LegacyApiResponse<T = unknown> {
   events?: T[];
 }
 
-// FullCalendar types
-interface FullCalendarApi {
-  render(): void;
-  refetchEvents(): void;
-  getEventById(id: string): FullCalendarEvent | null;
-  getEvents(): FullCalendarEvent[];
-  addEvent(event: FullCalendarEventInput): FullCalendarEvent;
-  unselect(): void;
-  changeView(viewName: string): void;
-  view: {
-    activeStart: Date;
-    activeEnd: Date;
-  };
-  on(eventName: string, callback: (info: { start: Date; end: Date }) => void): void;
-}
-
-interface FullCalendarEvent {
-  id: string;
-  title: string;
-  start: Date | string;
-  end?: Date | string;
-  allDay?: boolean;
-  extendedProps?: Record<string, unknown>;
-  remove(): void;
-}
-
-interface FullCalendarEventInput {
-  id?: string;
-  title: string;
-  start: Date | string;
-  end?: Date | string;
-  allDay?: boolean;
-  color?: string;
-  backgroundColor?: string;
-  borderColor?: string;
-  textColor?: string;
-  classNames?: string[];
-  extendedProps?: Record<string, unknown>;
-}
-
-interface FullCalendarSelectInfo {
-  start: Date;
-  end: Date;
-  startStr: string;
-  endStr: string;
-  allDay: boolean;
-  view: {
-    type: string;
-  };
-}
-
-interface FullCalendarEventClickInfo {
-  event: FullCalendarEvent;
-  el: HTMLElement;
-  jsEvent: MouseEvent;
-  view: unknown;
-}
-
-interface FullCalendarEventMouseEnterInfo {
-  event: FullCalendarEvent;
-  el: HTMLElement;
-  jsEvent: MouseEvent;
-  view: unknown;
-}
-
-interface FullCalendarOptions {
-  plugins?: unknown[];
-  initialView: string;
-  locale?: string;
-  firstDay?: number;
-  slotMinTime?: string;
-  slotMaxTime?: string;
-  headerToolbar?: Record<string, string>;
-  buttonText?: Record<string, string>;
-  allDayText?: string;
-  events?:
-    | ((
-        fetchInfo: FullCalendarFetchInfo,
-        successCallback: (events: FullCalendarEventInput[]) => void,
-        failureCallback: (error: Error) => void,
-      ) => void)
-    | FullCalendarEventInput[];
-  editable?: boolean;
-  selectable?: boolean;
-  selectMirror?: boolean;
-  dayMaxEvents?: boolean;
-  weekends?: boolean;
-  height?: string | number;
-  nowIndicator?: boolean;
-  navLinks?: boolean;
-  dateClick?: (info: { date: Date; allDay: boolean }) => void;
-  select?: (info: FullCalendarSelectInfo) => void;
-  eventClick?: (info: FullCalendarEventClickInfo) => void;
-  eventMouseEnter?: (info: FullCalendarEventMouseEnterInfo) => void;
-  eventMouseLeave?: (info: FullCalendarEventMouseEnterInfo) => void;
-}
-
-interface FullCalendarFetchInfo {
-  start: Date;
-  end: Date;
-  startStr: string;
-  endStr: string;
-  timeZone: string;
-}
-
-interface FullCalendarConstructor {
-  Calendar: new (element: HTMLElement, options: FullCalendarOptions) => FullCalendarApi;
-}
-
-// Import FullCalendar types
-declare global {
-  interface Window {
-    FullCalendar: FullCalendarConstructor;
-  }
-}
+// FullCalendar types are now imported from @fullcalendar/core
+// No custom types needed - using official types for type safety
 
 // API Response Types for proper typing
 interface ApiV2Response<T> {
@@ -256,7 +152,7 @@ interface UserData extends User {
 }
 
 // Global variables
-let calendar: FullCalendarApi; // FullCalendar instance
+let calendar: Calendar; // FullCalendar instance
 // Always default to 'all' filter on page load
 let currentFilter = 'all';
 let currentSearch = '';
@@ -613,11 +509,11 @@ async function showUnreadEventsModal(): Promise<void> {
 /**
  * Create and show event tooltip
  */
-function showEventTooltip(info: FullCalendarEventMouseEnterInfo): void {
+function showEventTooltip(info: EventHoveringArg): void {
   const tooltip = document.createElement('div');
   tooltip.className = 'event-tooltip';
-  const description = (info.event.extendedProps?.description as string | undefined) ?? '';
-  const location = info.event.extendedProps?.location as string | undefined;
+  const description = (info.event.extendedProps.description as string | undefined) ?? '';
+  const location = info.event.extendedProps.location as string | undefined;
 
   // Clear tooltip
   while (tooltip.firstChild) {
@@ -659,7 +555,7 @@ function showEventTooltip(info: FullCalendarEventMouseEnterInfo): void {
 /**
  * Hide event tooltip
  */
-function hideEventTooltip(info: FullCalendarEventMouseEnterInfo): void {
+function hideEventTooltip(info: EventHoveringArg): void {
   const el = info.el as HTMLElement & { _tooltip?: HTMLElement };
   if (el._tooltip) {
     el._tooltip.remove();
@@ -688,7 +584,7 @@ function handleDateClick(info: { date: Date; allDay: boolean }, userRole: string
 }
 
 // Helper: Handle date select
-function handleDateSelect(info: FullCalendarSelectInfo, userRole: string | null): void {
+function handleDateSelect(info: DateSelectArg, userRole: string | null): void {
   console.info('Calendar: Date range selected:', info);
   if (canUserCreateEvents(userRole)) {
     const allDay = info.allDay && info.view.type === 'dayGridMonth';
@@ -699,12 +595,17 @@ function handleDateSelect(info: FullCalendarSelectInfo, userRole: string | null)
 }
 
 // Helper: Create calendar configuration
-function createCalendarConfig(userRole: string | null): FullCalendarOptions {
+function createCalendarConfig(userRole: string | null): CalendarOptions {
   const canCreate = canUserCreateEvents(userRole);
 
   return {
+    // Plugins - MUST be first
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
+    // Initial view
     initialView: calendarView,
-    locale: 'de',
+    // Locale configuration (German)
+    locale: deLocale,
+    // Toolbar configuration
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
@@ -718,6 +619,7 @@ function createCalendarConfig(userRole: string | null): FullCalendarOptions {
       list: 'Liste',
     },
     allDayText: 'Ganztägig',
+    // Calendar settings
     firstDay: 1,
     slotMinTime: '07:00:00',
     slotMaxTime: '20:00:00',
@@ -725,22 +627,20 @@ function createCalendarConfig(userRole: string | null): FullCalendarOptions {
     nowIndicator: true,
     dayMaxEvents: true,
     navLinks: true,
+    // Interaction settings
     selectable: canCreate,
     selectMirror: canCreate,
-    dateClick: (info: { date: Date; allDay: boolean }) => {
+    // Event handlers
+    dateClick: (info: DateClickArg) => {
       handleDateClick(info, userRole);
     },
-    select: (info: FullCalendarSelectInfo) => {
+    select: (info: DateSelectArg) => {
       handleDateSelect(info, userRole);
     },
-    events(
-      fetchInfo: FullCalendarFetchInfo,
-      successCallback: (events: FullCalendarEventInput[]) => void,
-      failureCallback: (error: Error) => void,
-    ) {
+    events(fetchInfo, successCallback, failureCallback) {
       void loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
     },
-    eventClick(info: FullCalendarEventClickInfo) {
+    eventClick(info: EventClickArg) {
       void viewEvent(Number.parseInt(info.event.id, 10));
     },
     eventMouseEnter: showEventTooltip,
@@ -763,24 +663,17 @@ function initializeCalendar(): void {
     return;
   }
 
-  console.info('Calendar: FullCalendar loaded:', typeof window.FullCalendar !== 'undefined');
-  if (typeof window.FullCalendar === 'undefined') {
-    console.info('Calendar: FullCalendar not yet loaded, waiting...');
-    setTimeout(() => {
-      initializeCalendar();
-    }, 500);
-    return;
-  }
-
   const userRole = localStorage.getItem('userRole');
   console.info('Calendar: User role for permissions:', userRole);
 
   calendarInitialized = true;
 
   try {
-    calendar = new window.FullCalendar.Calendar(calendarEl, createCalendarConfig(userRole));
+    // Initialize FullCalendar from npm package (Best Practice 2025)
+    calendar = new Calendar(calendarEl, createCalendarConfig(userRole));
     calendar.render();
     shiftCalendarIntegration.init(calendar);
+    console.info('Calendar: FullCalendar initialized successfully via npm package');
   } catch (error: unknown) {
     console.error('Error initializing calendar:', error);
     showError('Fehler beim Initialisieren des Kalenders. Bitte laden Sie die Seite neu.');
@@ -1275,7 +1168,13 @@ function setupEventListeners(): void {
 }
 
 // Helper: Build event query parameters
-function buildEventQueryParams(fetchInfo: FullCalendarFetchInfo): URLSearchParams {
+function buildEventQueryParams(fetchInfo: {
+  start: Date;
+  end: Date;
+  startStr: string;
+  endStr: string;
+  timeZone: string;
+}): URLSearchParams {
   const params = new URLSearchParams({
     start: fetchInfo.startStr,
     end: fetchInfo.endStr,
@@ -1290,7 +1189,13 @@ function buildEventQueryParams(fetchInfo: FullCalendarFetchInfo): URLSearchParam
 }
 
 // Helper: Handle 403 permission error
-async function handlePermissionError(fetchInfo: FullCalendarFetchInfo): Promise<FullCalendarEventInput[]> {
+async function handlePermissionError(fetchInfo: {
+  start: Date;
+  end: Date;
+  startStr: string;
+  endStr: string;
+  timeZone: string;
+}): Promise<EventInput[]> {
   console.error('[CALENDAR] Permission denied for filter:', currentFilter);
   currentFilter = 'personal';
   localStorage.setItem('calendarFilter', currentFilter);
@@ -1388,7 +1293,13 @@ function mapV2EventFields(event: CalendarEvent): CalendarEvent {
 /**
  * Load calendar events
  */
-async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<FullCalendarEventInput[]> {
+async function loadCalendarEvents(fetchInfo: {
+  start: Date;
+  end: Date;
+  startStr: string;
+  endStr: string;
+  timeZone: string;
+}): Promise<EventInput[]> {
   try {
     const token = getAuthToken();
     if (token === null || token === '') {
@@ -1429,7 +1340,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
     events = events.map(mapV2EventFields);
 
     console.info('[CALENDAR] Formatted events for display:', events);
-    const formattedEvents = events.map(formatEventForCalendar).filter((e): e is FullCalendarEventInput => e !== null);
+    const formattedEvents = events.map(formatEventForCalendar).filter((e): e is EventInput => e !== null);
     console.info('[CALENDAR] Events to render:', formattedEvents);
     return formattedEvents;
   } catch (error: unknown) {
@@ -1442,7 +1353,7 @@ async function loadCalendarEvents(fetchInfo: FullCalendarFetchInfo): Promise<Ful
 /**
  * Format event for FullCalendar
  */
-function formatEventForCalendar(event: CalendarEvent): FullCalendarEventInput | null {
+function formatEventForCalendar(event: CalendarEvent): EventInput | null {
   // Color based on organization level - matching the legend
   let color = event.color ?? '#3498db'; // Default blue
 
