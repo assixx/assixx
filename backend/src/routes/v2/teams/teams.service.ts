@@ -254,7 +254,7 @@ export class TeamsService {
    */
   private async validateTeamExists(id: number, tenantId: number): Promise<DbTeam> {
     const existingTeam = await Team.findById(id);
-    if (!existingTeam || existingTeam.tenant_id !== tenantId) {
+    if (existingTeam?.tenant_id !== tenantId) {
       throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
     }
     return existingTeam;
@@ -353,7 +353,7 @@ export class TeamsService {
    */
   private async validateTeamOwnership(id: number, tenantId: number): Promise<void> {
     const team = await Team.findById(id);
-    if (!team || team.tenant_id !== tenantId) {
+    if (team?.tenant_id !== tenantId) {
       throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
     }
   }
@@ -414,7 +414,7 @@ export class TeamsService {
     try {
       // Check if team exists and belongs to tenant
       const team = await Team.findById(teamId);
-      if (!team || team.tenant_id !== tenantId) {
+      if (team?.tenant_id !== tenantId) {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 
@@ -452,7 +452,7 @@ export class TeamsService {
     try {
       // Check if team exists and belongs to tenant
       const team = await Team.findById(teamId);
-      if (!team || team.tenant_id !== tenantId) {
+      if (team?.tenant_id !== tenantId) {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 
@@ -499,7 +499,7 @@ export class TeamsService {
     try {
       // Check if team exists and belongs to tenant
       const team = await Team.findById(teamId);
-      if (!team || team.tenant_id !== tenantId) {
+      if (team?.tenant_id !== tenantId) {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 

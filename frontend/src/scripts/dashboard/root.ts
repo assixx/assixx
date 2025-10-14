@@ -145,7 +145,8 @@ async function checkEmployeeNumber(): Promise<void> {
 
       if (modal === null || form === null || input === null) return;
 
-      modal.style.display = 'flex';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
       input.focus();
 
       // Allow letters, numbers and hyphens
@@ -175,7 +176,8 @@ async function checkEmployeeNumber(): Promise<void> {
             await apiClient.request<UserWithEmployeeNumber>(API_ENDPOINTS.USERS_ME);
 
             showNotification('Mitarbeiternummer erfolgreich aktualisiert.', 'success');
-            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
           } catch (error) {
             console.error('Error updating employee number:', error);
             showNotification(
@@ -460,37 +462,43 @@ async function loadActivityLogs(): Promise<void> {
     if (logsEl === null) return;
 
     if (logs.length === 0) {
-      setHTML(logsEl as HTMLElement, '<div class="no-data">Keine kürzlichen Aktivitäten</div>');
+      // Use innerHTML directly for table content
+
+      logsEl.innerHTML =
+        '<tr><td colspan="5" class="text-center text-gray-400 py-8">Keine kürzlichen Aktivitäten</td></tr>';
       return;
     }
 
     const logsHTML = logs
       .map(
-        (log) => `
-            <div class="log-entry" data-action="navigate-logs">
-                <div class="log-header">
-                    <span class="log-action">${getActionLabel(log.action)}</span>
-                    <span class="log-time">${new Date(log.createdAt).toLocaleString('de-DE')}</span>
-                </div>
-                ${
+        (log) => `<tr>
+                <td class="text-sm">${new Date(log.createdAt).toLocaleString('de-DE')}</td>
+                <td>${
                   log.userName !== undefined && log.userName !== ''
-                    ? `<div class="log-user">
-                        <i class="fas fa-user"></i> ${log.userName}
-                        ${log.userRole !== undefined && log.userRole !== '' ? `<span class="role-badge role-${log.userRole.toLowerCase()}">${getuserRoleLabel(log.userRole)}</span>` : ''}
-                    </div>`
-                    : ''
+                    ? `<span class="flex items-center gap-2"><i class="fas fa-user text-xs opacity-60"></i> ${log.userName}</span>`
+                    : '<span class="text-gray-400">-</span>'
                 }
-                ${
+                </td>
+                <td><span class="badge badge--${getActionBadgeClass(log.action)}">${getActionLabel(log.action)}</span></td>
+                <td class="text-sm text-gray-500">${
                   log.details !== undefined && log.details !== null
-                    ? `<div class="log-details">${JSON.stringify(log.details)}</div>`
-                    : ''
+                    ? `${JSON.stringify(log.details).substring(0, 50)}...`
+                    : '<span class="text-gray-400">-</span>'
                 }
-            </div>
-        `,
+                </td>
+                <td>${
+                  log.userRole !== undefined && log.userRole !== ''
+                    ? `<span class="badge badge--sm badge--role-${log.userRole.toLowerCase()}">${getuserRoleLabel(log.userRole)}</span>`
+                    : '<span class="badge badge--sm badge--success">OK</span>'
+                }
+                </td>
+            </tr>`,
       )
       .join('');
 
-    setHTML(logsEl as HTMLElement, logsHTML);
+    // Use innerHTML directly for table content to preserve TR/TD structure
+    // eslint-disable-next-line no-unsanitized/property
+    logsEl.innerHTML = logsHTML;
   } catch (error) {
     console.error('Error loading logs:', error);
   }
@@ -507,8 +515,32 @@ function getActionLabel(action: string): string {
     ['view', 'Angesehen'],
     ['assign', 'Zugewiesen'],
     ['unassign', 'Entfernt'],
+    ['role_switch_to_root', 'Wechsel zu Root'],
+    ['role_switch_to_admin', 'Wechsel zu Admin'],
+    ['role_switch_to_employee', 'Wechsel zu Mitarbeiter'],
+    ['role_switch_root_to_admin', 'Root → Admin'],
   ]);
   return actionLabels.get(action) ?? action;
+}
+
+// Helper function to get badge class for actions
+function getActionBadgeClass(action: string): string {
+  // Map actions to Design System badge classes (exact variants from Storybook)
+  const actionClasses = new Map<string, string>([
+    ['create', 'create'],
+    ['update', 'update'],
+    ['delete', 'delete'],
+    ['login', 'login'],
+    ['logout', 'logout'],
+    ['view', 'info'],
+    ['assign', 'success'],
+    ['unassign', 'danger'],
+    ['role_switch_to_root', 'info'],
+    ['role_switch_to_admin', 'info'],
+    ['role_switch_to_employee', 'info'],
+    ['role_switch_root_to_admin', 'info'],
+  ]);
+  return actionClasses.get(action) ?? 'secondary';
 }
 
 // Helper function to get readable userRole labels
@@ -523,5 +555,8 @@ function getuserRoleLabel(userRole: string): string {
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+  // Clear any stored active navigation to ensure dashboard is selected
+  localStorage.removeItem('activeNavigation');
+
   initDashboard();
 });

@@ -13,50 +13,9 @@
     <link rel="stylesheet" href="/styles/login.css" />
   </head>
   <body>
-    <!-- Quick redirect check before page renders -->
-    <script>
-      // FIRST: Check if session expired, timeout, or rate limit - clear storage before any redirect
-      const urlParamsInitial = new URLSearchParams(window.location.search);
-      if (
-        urlParamsInitial.get('session') === 'expired' ||
-        urlParamsInitial.get('timeout') === 'true' ||
-        urlParamsInitial.get('ratelimit') === 'expired'
-      ) {
-        // Clear all auth data immediately to prevent redirect loop
-        localStorage.removeItem('token');
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('userRole');
-        localStorage.removeItem('user');
-        sessionStorage.clear();
-        // Clear auth cookies
-        document.cookie.split(';').forEach(function (c) {
-          if (c.includes('token') || c.includes('Token')) {
-            document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=' + new Date(0).toUTCString() + ';path=/');
-          }
-        });
-      } else {
-        // ONLY check for existing token if NOT coming from session expired
-        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-        const userRole = localStorage.getItem('userRole');
-        if (token && userRole) {
-          // Hide login form immediately while we redirect
-          document.documentElement.style.visibility = 'hidden';
-
-          // Redirect based on role (validation happens in background after redirect)
-          switch (userRole) {
-            case 'root':
-              window.location.replace('/root-dashboard');
-              break;
-            case 'admin':
-              window.location.replace('/admin-dashboard');
-              break;
-            case 'employee':
-              window.location.replace('/employee-dashboard');
-              break;
-          }
-        }
-      }
+    <!-- Pre-login checks handled by TypeScript module -->
+    <script type="module">
+      import '/scripts/auth/login-pre-check.js';
     </script>
 
     <!-- Back to Homepage Button -->
@@ -103,41 +62,9 @@
       </div>
     </div>
 
+    <!-- Token validation handled by TypeScript module -->
     <script type="module">
-      import { BrowserFingerprint } from '../scripts/utils/browser-fingerprint.js';
-
-      // Fallback validation in case redirect failed
-      (async function validateIfNeeded() {
-        const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
-        const userRole = localStorage.getItem('userRole');
-
-        // If we still have token/role but are on login page, validate
-        if (token && userRole) {
-          try {
-            const fingerprint = await BrowserFingerprint.generate();
-            const response = await fetch('/api/auth/validate', {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'X-Browser-Fingerprint': fingerprint,
-              },
-            });
-
-            if (!response.ok || !(await response.json()).valid) {
-              // Token is invalid, clear and show login
-              localStorage.removeItem('token');
-              localStorage.removeItem('userRole');
-              localStorage.removeItem('user');
-              document.documentElement.style.visibility = 'visible';
-            }
-          } catch {
-            // On error, show login page
-            document.documentElement.style.visibility = 'visible';
-          }
-        } else {
-          // No token, show login page
-          document.documentElement.style.visibility = 'visible';
-        }
-      })();
+      import '/scripts/auth/login-token-validator.js';
     </script>
 
     <!-- TypeScript Module - Handles all login interactions -->

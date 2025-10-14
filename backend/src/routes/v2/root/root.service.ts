@@ -113,7 +113,7 @@ export class RootService {
     try {
       const admin = await userModel.findById(id, tenantId);
 
-      if (!admin || admin.role !== 'admin') {
+      if (admin?.role !== 'admin') {
         return null;
       }
 

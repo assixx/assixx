@@ -4,10 +4,9 @@
  */
 
 // Import global styles
-import '../frontend/src/styles/tailwind.css'; // Already imports design-system/index.css
+// NOTE: main.css already imports tailwind.css which includes design-system
 import '../frontend/src/styles/main.css';
 import '../frontend/src/styles/dashboard-theme.css';
-// NOTE: Design System is imported via tailwind.css - no need to import again
 
 /** @type { import('@storybook/html-vite').Preview } */
 const preview = {

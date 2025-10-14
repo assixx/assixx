@@ -58,8 +58,7 @@
    ======================================== */
 
 .ds-modal {
-  /* Animation - starts slightly scaled down */
-  transform: scale(0.95);
+  /* Animation - starts slightly scaled down and moved up */
 
   overflow: hidden; /* Prevent content overflow */
 
@@ -83,9 +82,9 @@
   transition: transform 0.3s ease;
 }
 
-/* Active state - scales to normal */
+/* Active state - animates to center and normal scale */
 .modal-overlay--active .ds-modal {
-  transform: scale(1);
+  transform: translateY(0) scale(1);
 }
 
 /* ========================================
@@ -288,6 +287,19 @@
 }
 
 /* ========================================
+   SPECIAL VARIANTS
+   ======================================== */
+
+/* Logout Modal - positioned higher on screen */
+.ds-modal--logout {
+  /* Keep it 25% higher than normal modals */
+}
+
+.modal-overlay--active .ds-modal--logout {
+  transform: translateY(-50%) scale(1);
+}
+
+/* ========================================
    ACCESSIBILITY
    ======================================== */
 
@@ -296,18 +308,20 @@ body:has(.modal-overlay--active) {
   overflow: hidden;
 }
 
-/* Reduced motion support */
+/* Reduced motion support - disable animations for accessibility */
 @media (prefers-reduced-motion: reduce) {
   .modal-overlay,
   .ds-modal {
     transition: none;
   }
 
+  /* Start at normal position without animation */
   .ds-modal {
-    transform: none;
+    transform: translateY(0) scale(1);
   }
 
+  /* Stay at normal position (no animation) */
   .modal-overlay--active .ds-modal {
-    transform: none;
+    transform: translateY(0) scale(1);
   }
 }

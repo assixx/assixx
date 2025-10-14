@@ -25,35 +25,31 @@
     <div id="navigation-container"></div>
 
     <!-- Employee Number Modal -->
-    <div id="employeeNumberModal" class="modal" style="display: none">
-      <div class="modal-content" style="max-width: 400px">
-        <div class="modal-header">
-          <h2 class="modal-title">Personalnummer eingeben</h2>
+    <div id="employeeNumberModal" class="modal hidden">
+      <div class="modal__content max-w-[400px]">
+        <div class="modal__header">
+          <h2 class="modal__title">Personalnummer eingeben</h2>
         </div>
-        <div class="modal-body">
-          <p style="margin-bottom: 20px">
+        <div class="modal__body">
+          <p class="mb-5">
             Bitte geben Sie Ihre Personalnummer ein. Diese kann bis zu 10 Zeichen lang sein und Buchstaben, Zahlen sowie Bindestriche
             enthalten.
           </p>
           <form id="employeeNumberForm">
-            <div class="form-group">
-              <label class="form-label">
-                Personalnummer
-                <span style="color: var(--error-color)">*</span>
-              </label>
+            <div class="form-field">
+              <label class="form-field__label form-field__label--required">Personalnummer</label>
               <input
                 type="text"
                 id="employeeNumberInput"
-                class="form-control"
+                class="form-field__control text-center text-sm tracking-wider"
                 placeholder="z.B. ABC-123 oder 2025-001"
                 maxlength="10"
                 pattern="[A-Za-z0-9\-]{1,10}"
                 required
-                style="text-align: center; font-size: 14px; letter-spacing: 2px"
               />
-              <small class="form-text u-color-text-secondary">Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen</small>
+              <span class="form-field__message">Erlaubt: Buchstaben, Zahlen und Bindestrich (-), max. 10 Zeichen</span>
             </div>
-            <div class="form-actions flex justify-end" style="margin-top: 24px">
+            <div class="flex justify-end mt-6">
               <button type="submit" class="btn btn-primary">Personalnummer speichern</button>
             </div>
           </form>
@@ -72,17 +68,35 @@
           <!-- Dashboard Data Container -->
           <div id="dashboard-data"></div>
 
-          <!-- Activity Logs Widget -->
-          <div class="logs-widget">
-            <div class="logs-header">
-              <h3 class="logs-title">Aktivitätsverlauf</h3>
-              <a href="/logs" class="view-all-logs">
-                <i class="fas fa-external-link-alt" style="margin-right: 6px"></i>
+          <!-- Activity Logs Card with Data Table (Design System) -->
+          <div class="card">
+            <div class="card__header flex items-center justify-between">
+              <h2 class="card__title">
+                <i class="fas fa-history mr-2"></i>
+                Aktivitätsverlauf
+              </h2>
+              <a href="/logs" class="btn btn-link">
+                <i class="fas fa-external-link-alt mr-1.5"></i>
                 Alle Logs anzeigen
               </a>
             </div>
-            <div class="logs-body" id="activity-logs">
-              <!-- Logs werden hier dynamisch eingefügt -->
+            <div class="card__body">
+              <div class="table-responsive">
+                <table class="data-table data-table--hover" id="activity-logs-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Zeit</th>
+                      <th scope="col">Benutzer</th>
+                      <th scope="col">Aktion</th>
+                      <th scope="col">Details</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="activity-logs">
+                    <!-- Logs werden hier dynamisch eingefügt -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -96,25 +110,8 @@
     <!-- Role Switch for Root -->
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
 
-    <!-- Force dashboard to be active on page load -->
-    <script type="module">
-      import { SessionManager } from '/scripts/utils/session-manager.ts';
-
-      const session = SessionManager.getInstance();
-      session.validateDashboardAccess('root');
-
-      document.addEventListener('DOMContentLoaded', () => {
-        // Clear any stored active navigation to ensure dashboard is selected
-        localStorage.removeItem('activeNavigation');
-      });
-    </script>
+    <!-- Dashboard initialization with session validation and breadcrumb -->
+    <script type="module" src="/scripts/dashboard/root-init.ts"></script>
     <script type="module" src="/scripts/dashboard/root.ts"></script>
-
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
-    </script>
   </body>
 </html>

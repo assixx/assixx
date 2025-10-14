@@ -165,7 +165,7 @@ export const filterDepartmentResults = async (
   const authReq = req as AuthenticatedRequest;
   const { user } = authReq;
 
-  if (!user || user.role !== 'admin') {
+  if (user?.role !== 'admin') {
     next();
     return;
   }

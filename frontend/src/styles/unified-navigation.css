@@ -530,11 +530,6 @@ body:has(.sidebar.collapsed) .header .logo {
   background: rgb(139 139 139 / 41%);
 }
 
-/* Hover - Icon wird primary color */
-.sidebar.collapsed .sidebar-link:hover .icon {
-  color: var(--primary-color);
-}
-
 /* Hover nur bei NICHT active */
 .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
   content: "";
