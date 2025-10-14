@@ -541,7 +541,7 @@ body:has(.sidebar.collapsed) .header .logo {
 
   position: absolute;
   z-index: -1;
-  inset: -0.55rem;
+  inset: -0.525rem;
 
   border-radius: var(--glass-card-radius);
 

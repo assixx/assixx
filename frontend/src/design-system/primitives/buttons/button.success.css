@@ -15,14 +15,22 @@
   color: var(--color-white);
 
   /* ========== VISUAL ========== */
+<<<<<<< HEAD
   background: linear-gradient(145deg, rgb(139 170 140 / 23%), rgb(29 221 39 / 80%)); /* Hellgrün zu tiefgrün */
+=======
+  background: linear-gradient(135deg, rgb(76 175 80 / 15%), rgb(46 125 50 / 80%)); /* Avatar-style gradient */
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   box-shadow: var(--shadow-btn-success);
 }
 
 /* Hover state - Brighten the gradient */
 .btn-success:hover:not(:disabled) {
   transform: translateY(-1px);
+<<<<<<< HEAD
   background: linear-gradient(145deg, rgb(139 170 140 / 35%), rgb(29 221 39 / 90%)); /* Noch intensiver */
+=======
+  background: linear-gradient(135deg, rgb(76 175 80 / 25%), rgb(46 125 50 / 90%));
+>>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   box-shadow: var(--shadow-btn-success-hover);
 }
 
