@@ -9,11 +9,7 @@
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
   },
-<<<<<<< HEAD
   "packageManager": "pnpm@10.18.3",
-=======
-  "packageManager": "pnpm@10.18.1",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   "pnpm": {
     "overrides": {
       "tmp": "^0.2.4",
@@ -92,11 +88,7 @@
     "lodash": "^4.17.21",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
-<<<<<<< HEAD
     "mysql2": "^3.15.2",
-=======
-    "mysql2": "^3.15.1",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
     "nodemailer": "^7.0.9",
     "redis": "^5.8.3",
     "swagger-jsdoc": "^6.2.8",
@@ -125,23 +117,14 @@
     "@types/lodash": "^4.17.20",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-<<<<<<< HEAD
     "@types/node": "^24.7.2",
-=======
-    "@types/node": "^24.7.0",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
     "@types/nodemailer": "^7.0.2",
     "@types/supertest": "^6.0.3",
     "@types/swagger-jsdoc": "^6.0.4",
     "@types/swagger-ui-express": "^4.1.8",
     "@types/ws": "^8.18.1",
-<<<<<<< HEAD
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
-=======
-    "@typescript-eslint/eslint-plugin": "^8.46.0",
-    "@typescript-eslint/parser": "^8.46.0",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
     "concurrently": "^9.2.1",
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
@@ -178,10 +161,6 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-<<<<<<< HEAD
     "vite": "^7.1.10"
-=======
-    "vite": "^7.1.9"
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   }
 }
