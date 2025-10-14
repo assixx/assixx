@@ -43,9 +43,6 @@
   white-space: nowrap; /* Prevent text wrapping */
 
   background: transparent; /* Variants define background */
-
-  /* ========== TRANSITIONS ========== */
-  transition: var(--transition-btn); /* Smooth all property changes */
 }
 
 /* For <a> tags styled as buttons */

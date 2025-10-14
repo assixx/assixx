@@ -612,8 +612,9 @@ class UnifiedNavigation {
       headerUserName.textContent = fullName;
       console.info('[UnifiedNav] Set header name to:', fullName);
     } else {
-      headerUserName.textContent = userData.email;
-      console.info('[UnifiedNav] Fallback to email:', userData.email);
+      // No fallback - keep empty if no name available
+      headerUserName.textContent = '';
+      console.info('[UnifiedNav] No name available, keeping empty');
     }
   }
 
@@ -1412,29 +1413,34 @@ class UnifiedNavigation {
 
   private createLogoutModal(): string {
     return `
-      <!-- Logout Confirmation Modal -->
+      <!-- Logout Confirmation Modal - Design System -->
       <div id="logoutModal" class="modal" style="display: none;">
-        <div class="modal-overlay"></div>
-        <div class="logout-modal">
-          <div class="logout-modal-header">
-            <h2>Abmeldung bestätigen</h2>
-          </div>
-          <div class="logout-modal-body">
-            <div class="logout-info">
-              <i class="fas fa-info-circle"></i>
-              <span>Alle ungespeicherten Änderungen gehen verloren.</span>
+        <div class="modal-overlay">
+          <div class="ds-modal ds-modal--sm">
+            <div class="ds-modal__header">
+              <h2 class="ds-modal__title">
+                <i class="fas fa-sign-out-alt"></i>
+                Abmeldung bestätigen
+              </h2>
             </div>
-            <p class="logout-message">Möchten Sie sich wirklich abmelden?</p>
-          </div>
-          <div class="logout-modal-footer">
-            <button class="btn btn-secondary" id="cancelLogout">
-              <i class="fas fa-times"></i>
-              Abbrechen
-            </button>
-            <button class="btn btn-danger" id="confirmLogout">
-              <i class="fas fa-sign-out-alt"></i>
-              Abmelden
-            </button>
+            <div class="ds-modal__body">
+              <p style="color: var(--color-text-secondary); margin-bottom: var(--spacing-4);">
+                Möchten Sie sich wirklich abmelden?
+              </p>
+              <p style="color: var(--color-text-secondary); font-size: 0.875rem;">
+                <i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen verloren.
+              </p>
+            </div>
+            <div class="ds-modal__footer ds-modal__footer--spaced">
+              <button class="btn btn-secondary" id="cancelLogout">
+                <i class="fas fa-times"></i>
+                Abbrechen
+              </button>
+              <button class="btn btn-danger" id="confirmLogout">
+                <i class="fas fa-sign-out-alt"></i>
+                Abmelden
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1940,27 +1946,26 @@ class UnifiedNavigation {
     const modal = $$('#logoutModal');
 
     if (modal) {
-      // Ensure modal is visible with proper z-index and positioning
+      // Show modal container
       modal.style.display = 'block';
-      modal.style.position = 'fixed';
-      modal.style.zIndex = '999999';
-      modal.style.top = '0';
-      modal.style.left = '0';
-      modal.style.width = '100%';
-      modal.style.height = '100%';
-      modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
 
-      // Also add active class if needed for CSS animations
-      modal.classList.add('active');
+      // Get overlay element and activate it (Design System CSS handles rest)
+      const overlay = modal.querySelector('.modal-overlay');
+      if (overlay) {
+        overlay.classList.add('modal-overlay--active');
+      }
 
       // Setup modal event handlers
       const confirmBtn = $$('#confirmLogout');
       const cancelBtn = $$('#cancelLogout');
-      const overlay = modal.querySelector('.modal-overlay');
 
       const closeModal = () => {
+        // Remove active class from overlay
+        if (overlay) {
+          overlay.classList.remove('modal-overlay--active');
+        }
+        // Hide modal immediately (no transitions)
         modal.style.display = 'none';
-        modal.classList.remove('active');
       };
 
       const performLogout = async () => {
@@ -1983,10 +1988,16 @@ class UnifiedNavigation {
         newCancelBtn.addEventListener('click', closeModal);
       }
 
+      // Add overlay click handler (but don't clone it, keep modal-overlay--active class)
       if (overlay) {
-        const newOverlay = overlay.cloneNode(true) as HTMLElement;
-        overlay.parentNode?.replaceChild(newOverlay, overlay);
-        newOverlay.addEventListener('click', closeModal);
+        // Remove old handler by cloning and replacing buttons above
+        // For overlay, we can safely add handler without cloning (modal is recreated on each show)
+        overlay.addEventListener('click', (e) => {
+          // Only close if clicking the overlay itself, not its children
+          if (e.target === overlay) {
+            closeModal();
+          }
+        });
       }
     } else {
       // Fallback to direct logout if modal not found

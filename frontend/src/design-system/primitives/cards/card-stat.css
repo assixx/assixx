@@ -1,0 +1,85 @@
+/**
+ * Design System – Stat Card
+ *
+ * Card for displaying statistics (number + label).
+ * Use case: Dashboard KPIs, metrics, counters.
+ *
+ * NOTE: @layer removed for compatibility with legacy dashboard-theme.css
+ */
+
+/* Stat Card */
+.card-stat {
+  padding: var(--spacing-6); /* 24px */
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-lg); /* 8px */
+
+  text-align: center;
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-md);
+
+  transition: all 0.2s ease;
+}
+
+.card-stat:hover {
+  position: relative;
+  z-index: 1;
+
+  border-color: rgb(33 150 243 / 50%);
+
+  background: rgb(255 255 255 / 3%);
+  box-shadow:
+    0 12px 40px rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 255 255 / 15%);
+}
+
+/* Stat Value (Big Number) */
+.card-stat__value {
+  margin-bottom: var(--spacing-1);
+  font-size: 2rem; /* 32px */
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* Stat Label */
+.card-stat__label {
+  font-size: 0.875rem; /* 14px */
+  color: var(--color-text-secondary);
+}
+
+/* With Icon */
+.card-stat__icon {
+  margin-bottom: var(--spacing-2);
+  font-size: 2.5rem; /* 40px */
+  color: var(--color-primary);
+  opacity: 80%;
+}
+
+/* Color Variants */
+.card-stat--success .card-stat__value,
+.card-stat--success .card-stat__icon {
+  color: var(--color-success);
+}
+
+.card-stat--success:hover {
+  border-color: rgb(76 175 80 / 50%);
+}
+
+.card-stat--warning .card-stat__value,
+.card-stat--warning .card-stat__icon {
+  color: var(--color-warning);
+}
+
+.card-stat--warning:hover {
+  border-color: rgb(255 152 0 / 50%);
+}
+
+.card-stat--danger .card-stat__value,
+.card-stat--danger .card-stat__icon {
+  color: var(--color-danger);
+}
+
+.card-stat--danger:hover {
+  border-color: rgb(244 67 54 / 50%);
+}

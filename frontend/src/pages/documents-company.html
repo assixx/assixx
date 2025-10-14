@@ -74,30 +74,17 @@
               <h2 class="section-title">Alle Firmendokumente</h2>
             </div>
             <div class="control-right">
-              <div class="custom-dropdown">
-                <div class="dropdown-display" id="sortDisplay" data-action="toggle-dropdown" data-dropdown="sort">
-                  <i class="fas fa-sort me-2"></i>
-                  <span>Neueste zuerst</span>
-                  <i class="fas fa-chevron-down ms-auto"></i>
-                </div>
-                <div class="dropdown-options" id="sortDropdown">
-                  <div class="dropdown-option" data-sort="newest">
-                    <i class="fas fa-clock"></i>
-                    <span>Neueste zuerst</span>
-                  </div>
-                  <div class="dropdown-option" data-sort="oldest">
-                    <i class="fas fa-history"></i>
-                    <span>Älteste zuerst</span>
-                  </div>
-                  <div class="dropdown-option" data-sort="name">
-                    <i class="fas fa-font"></i>
-                    <span>Nach Name</span>
-                  </div>
-                  <div class="dropdown-option" data-sort="size">
-                    <i class="fas fa-weight"></i>
-                    <span>Nach Größe</span>
-                  </div>
-                </div>
+              <div class="form-field form-field--inline">
+                <label class="form-field__label" for="sortSelect">
+                  <i class="fas fa-sort"></i>
+                  Sortieren
+                </label>
+                <select class="form-field__control form-field__control--select" id="sortSelect" name="sort">
+                  <option value="newest">Neueste zuerst</option>
+                  <option value="oldest">Älteste zuerst</option>
+                  <option value="name">Nach Name</option>
+                  <option value="size">Nach Größe</option>
+                </select>
               </div>
             </div>
           </div>

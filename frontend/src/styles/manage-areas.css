@@ -363,10 +363,6 @@
   color: var(--text-secondary);
 }
 
-.u-hidden {
-  display: none !important;
-}
-
 /* Media queries */
 @media (width <= 768px) {
   /* .main-content - REMOVED: Migrated to Tailwind responsive utilities in manage-areas.html */

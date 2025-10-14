@@ -202,11 +202,6 @@
   background: rgb(33 150 243 / 30%);
 }
 
-/* Utility Classes */
-.u-hidden {
-  display: none !important;
-}
-
 /* Animations */
 @keyframes fade-in {
   from {

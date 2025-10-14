@@ -11,24 +11,22 @@
 .btn-warning {
   /* Padding - matches other variants */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  border: 1px solid rgb(251 140 0); /* Solid orange border - avatar style */
 
   /* Colors */
-  color: var(--color-black);
+  color: var(--color-white);
 
-  background: linear-gradient(135deg, var(--color-orange-500) 0%, var(--color-orange-600) 100%);
+  background: linear-gradient(145deg, rgb(255 183 77 / 25%), rgb(255 111 0 / 80%)); /* Hell-Orange zu tief-orange */
 
-  /* Border & Shadow */
+  /* Shadow */
   box-shadow: var(--shadow-btn-warning, 0 2px 8px rgb(255 152 0 / 30%));
-
-  /* Transitions */
-  transition: var(--transition-all);
 }
 
-/* Hover State */
+/* Hover State - Brighten the gradient */
 .btn-warning:hover:not(:disabled) {
   transform: translateY(-1px);
-  color: #000;
-  background: linear-gradient(135deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%);
+  color: var(--color-white);
+  background: linear-gradient(145deg, rgb(255 183 77 / 35%), rgb(255 111 0 / 90%)); /* Noch intensiver */
   box-shadow: var(--shadow-btn-warning-hover, 0 4px 12px rgb(255 152 0 / 40%));
 }
 

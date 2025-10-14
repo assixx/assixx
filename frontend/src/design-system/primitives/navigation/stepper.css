@@ -1,0 +1,291 @@
+/**
+ * Stepper Navigation
+ *
+ * Multi-step progress indicator for wizards, onboarding, checkout flows
+ * Source: New component (not previously in codebase)
+ *
+ * Usage:
+ * <div class="stepper">
+ *   <div class="stepper__step stepper__step--completed">
+ *     <div class="stepper__indicator">
+ *       <span class="stepper__number">1</span>
+ *       <i class="fas fa-check stepper__check"></i>
+ *     </div>
+ *     <div class="stepper__label">Account</div>
+ *   </div>
+ *   <div class="stepper__connector stepper__connector--active"></div>
+ *   <div class="stepper__step stepper__step--active">
+ *     <div class="stepper__indicator">
+ *       <span class="stepper__number">2</span>
+ *       <i class="fas fa-check stepper__check"></i>
+ *     </div>
+ *     <div class="stepper__label">Profile</div>
+ *   </div>
+ *   <div class="stepper__connector"></div>
+ *   <div class="stepper__step">
+ *     <div class="stepper__indicator">
+ *       <span class="stepper__number">3</span>
+ *       <i class="fas fa-check stepper__check"></i>
+ *     </div>
+ *     <div class="stepper__label">Complete</div>
+ *   </div>
+ * </div>
+ */
+
+/* ========== BASE STEPPER CONTAINER ========== */
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-6) 0;
+}
+
+/* ========== STEP ========== */
+
+.stepper__step {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  align-items: center;
+
+  text-align: center;
+}
+
+/* Step indicator circle */
+.stepper__indicator {
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--glass-border);
+  border-radius: 50%;
+
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+
+  background: rgb(255 255 255 / 5%);
+
+  transition: all 0.3s ease;
+}
+
+/* Step number */
+.stepper__number {
+  display: block;
+}
+
+/* Checkmark icon (hidden by default) */
+.stepper__check {
+  position: absolute;
+  display: none;
+  font-size: 16px;
+}
+
+/* Step label */
+.stepper__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+
+  transition: color 0.2s ease;
+}
+
+/* Optional description */
+.stepper__description {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  opacity: 70%;
+}
+
+/* ========== CONNECTOR LINE ========== */
+
+.stepper__connector {
+  flex: 1;
+
+  height: 2px;
+  margin: 0 var(--spacing-2);
+
+  background: var(--glass-border);
+
+  transition: background 0.3s ease;
+}
+
+/* ========== STEP STATES ========== */
+
+/* Completed step */
+.stepper__step--completed .stepper__indicator {
+  border-color: var(--color-success);
+  color: #fff;
+  background: var(--color-success);
+}
+
+.stepper__step--completed .stepper__number {
+  display: none;
+}
+
+.stepper__step--completed .stepper__check {
+  display: block;
+  color: #fff;
+}
+
+.stepper__step--completed .stepper__label {
+  color: var(--color-success);
+}
+
+/* Active (current) step */
+.stepper__step--active .stepper__indicator {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgb(33 150 243 / 10%);
+  box-shadow: 0 0 0 4px rgb(33 150 243 / 10%);
+}
+
+.stepper__step--active .stepper__label {
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Inactive (upcoming) step */
+.stepper__step--inactive .stepper__indicator {
+  opacity: 50%;
+}
+
+.stepper__step--inactive .stepper__label {
+  opacity: 50%;
+}
+
+/* Error step */
+.stepper__step--error .stepper__indicator {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: rgb(244 67 54 / 10%);
+}
+
+.stepper__step--error .stepper__label {
+  color: var(--color-danger);
+}
+
+/* ========== CONNECTOR STATES ========== */
+
+/* Active connector (between completed and active) */
+.stepper__connector--active {
+  background: var(--color-success);
+}
+
+/* Completed connector */
+.stepper__connector--completed {
+  background: var(--color-success);
+}
+
+/* ========== CLICKABLE VARIANT ========== */
+
+.stepper--clickable .stepper__step {
+  cursor: pointer;
+}
+
+.stepper--clickable .stepper__step:not(.stepper__step--active):hover .stepper__indicator {
+  border-color: var(--color-primary);
+  background: rgb(255 255 255 / 10%);
+}
+
+.stepper--clickable .stepper__step:not(.stepper__step--active):hover .stepper__label {
+  color: var(--color-primary);
+}
+
+/* ========== VERTICAL VARIANT ========== */
+
+.stepper--vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.stepper--vertical .stepper__step {
+  flex-direction: row;
+  gap: var(--spacing-4);
+  width: 100%;
+  text-align: left;
+}
+
+.stepper--vertical .stepper__connector {
+  width: 2px;
+  height: 60px;
+  margin: var(--spacing-2) 0 var(--spacing-2) 19px;
+}
+
+/* ========== COMPACT VARIANT ========== */
+
+.stepper--compact .stepper__indicator {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+.stepper--compact .stepper__check {
+  font-size: 14px;
+}
+
+.stepper--compact .stepper__label {
+  font-size: 12px;
+}
+
+.stepper--compact .stepper__connector {
+  margin: 0 var(--spacing-1);
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .stepper {
+    padding: var(--spacing-4) 0;
+  }
+
+  .stepper__indicator {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .stepper__check {
+    font-size: 14px;
+  }
+
+  .stepper__label {
+    font-size: 11px;
+  }
+
+  .stepper__description {
+    display: none;
+  }
+
+  .stepper__connector {
+    margin: 0 var(--spacing-1);
+  }
+
+  /* Auto switch to vertical on very small screens */
+  @media (width <= 480px) {
+    .stepper {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .stepper__step {
+      flex-direction: row;
+      gap: var(--spacing-3);
+      width: 100%;
+      text-align: left;
+    }
+
+    .stepper__connector {
+      width: 2px;
+      height: 40px;
+      margin: 0 0 0 15px;
+    }
+  }
+}

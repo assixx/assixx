@@ -1,0 +1,21 @@
+/**
+ * Table Striped Variant
+ *
+ * Alternating row background colors for better readability
+ *
+ * Usage:
+ * <table class="data-table data-table--striped">
+ */
+
+.data-table--striped tbody tr:nth-of-type(odd) {
+  background: rgb(255 255 255 / 2%);
+}
+
+/* Preserve hover on striped tables */
+.data-table--striped tbody tr:nth-of-type(odd):hover {
+  background: rgb(255 255 255 / 4%);
+}
+
+.data-table--striped tbody tr:nth-of-type(even):hover {
+  background: rgb(255 255 255 / 3%);
+}

@@ -38,6 +38,7 @@ export interface UpdateProfileBody {
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
+  employeeNumber?: string;
 }
 
 export interface ChangePasswordBody {

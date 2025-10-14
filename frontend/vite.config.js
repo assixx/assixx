@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { readdirSync, existsSync, mkdirSync, copyFileSync } from 'fs';
 import tailwindcss from '@tailwindcss/vite';
+import simpleHtmlPlugin from 'vite-plugin-simple-html';
 
 // Get all HTML files from src/pages
 const getHtmlInputs = () => {
@@ -95,14 +96,33 @@ export default defineConfig({
   },
 
   optimizeDeps: {
-    include: ['marked', 'chart.js', 'moment'],
-    exclude: ['fullcalendar', 'fullcalendar-locales'],
+    include: [
+      'marked',
+      'chart.js',
+      'moment',
+      '@fullcalendar/core',
+      '@fullcalendar/daygrid',
+      '@fullcalendar/timegrid',
+      '@fullcalendar/interaction',
+      '@fullcalendar/list',
+    ],
   },
 
   // Custom plugins
   plugins: [
     // Tailwind CSS Plugin - MUST BE FIRST
     tailwindcss(),
+
+    // HTML Minification Plugin - SWC-based (modern, fast)
+    simpleHtmlPlugin({
+      minify: {
+        collapseWhitespaces: 'all', // Remove all whitespace
+        minifyCss: true, // Minify inline CSS
+        minifyJs: true, // Minify inline JS
+        minifyJson: true, // Minify JSON
+        removeComments: true, // Remove HTML comments (FullCalendar now bundled via npm)
+      },
+    }),
 
     // Plugin to inject font preloads into all HTML files
     {
@@ -126,33 +146,28 @@ export default defineConfig({
         },
       },
     },
-    // Plugin to handle external scripts
+    // Plugin to handle critical scripts (sidebar-init.js)
     {
-      name: 'handle-external-scripts',
+      name: 'handle-critical-scripts',
       transformIndexHtml: {
         order: 'pre',
         handler(html) {
-          // Temporarily comment out external scripts to avoid warnings
-          return html
-            .replace(
-              /<script src="\/scripts\/critical\/sidebar-init\.js"[^>]*><\/script>/g,
-              '<!-- CRITICAL_SCRIPT: $& -->',
-            )
-            .replace(/<script src="\/scripts\/lib\/fullcalendar[^"]*"[^>]*><\/script>/g, '<!-- EXTERNAL_SCRIPT: $& -->')
-            .replace(/<link[^>]*href="[^"]*fontawesome[^"]*\.css"[^>]*>/g, '<!-- EXTERNAL_STYLE: $& -->');
+          // Temporarily comment out critical scripts to avoid warnings during build
+          return html.replace(
+            /<script src="\/scripts\/critical\/sidebar-init\.js"[^>]*><\/script>/g,
+            '<!-- CRITICAL_SCRIPT: $& -->',
+          );
         },
       },
     },
     {
-      name: 'restore-external-scripts',
+      name: 'restore-critical-scripts',
+      enforce: 'post', // Run AFTER all other plugins including minification
       transformIndexHtml: {
         order: 'post',
         handler(html) {
-          // Restore external scripts after processing
-          return html
-            .replace(/<!-- CRITICAL_SCRIPT: (<script[^>]*><\/script>) -->/g, '$1')
-            .replace(/<!-- EXTERNAL_SCRIPT: (<script[^>]*><\/script>) -->/g, '$1')
-            .replace(/<!-- EXTERNAL_STYLE: (<link[^>]*>) -->/g, '$1');
+          // Restore critical scripts after processing
+          return html.replace(/<!-- CRITICAL_SCRIPT: (<script[^>]*><\/script>) -->/g, '$1');
         },
       },
     },
@@ -192,21 +207,14 @@ export default defineConfig({
           console.info('✅ Copied purify.min.js to dist/js');
         }
 
-        // Copy FullCalendar JS files
-        const fullcalendarSrc = resolve(__dirname, 'src/scripts/lib/fullcalendar.min.js');
-        const fullcalendarLocalesSrc = resolve(__dirname, 'src/scripts/lib/fullcalendar-locales.min.js');
+        // Copy FullCalendar CSS (v6 doesn't export CSS from npm package)
         const fullcalendarCssSrc = resolve(__dirname, 'src/styles/lib/fullcalendar.min.css');
-        const fontawesomeCssSrc = resolve(__dirname, 'src/styles/lib/fontawesome.min.css');
-
-        if (existsSync(fullcalendarSrc)) {
-          copyFileSync(fullcalendarSrc, resolve(scriptsDir, 'fullcalendar.min.js'));
-        }
-        if (existsSync(fullcalendarLocalesSrc)) {
-          copyFileSync(fullcalendarLocalesSrc, resolve(scriptsDir, 'fullcalendar-locales.min.js'));
-        }
         if (existsSync(fullcalendarCssSrc)) {
           copyFileSync(fullcalendarCssSrc, resolve(stylesDir, 'fullcalendar.min.css'));
         }
+
+        // Copy FontAwesome CSS (still external)
+        const fontawesomeCssSrc = resolve(__dirname, 'src/styles/lib/fontawesome.min.css');
         if (existsSync(fontawesomeCssSrc)) {
           copyFileSync(fontawesomeCssSrc, resolve(stylesDir, 'fontawesome.min.css'));
         }

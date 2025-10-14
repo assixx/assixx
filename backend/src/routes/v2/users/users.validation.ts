@@ -114,6 +114,10 @@ export const usersValidation = {
       .withMessage(
         'Invalid emergency phone number format (must start with + and contain 7-29 digits)',
       ),
+    body('employeeNumber')
+      .optional()
+      .matches(/^[-0-9A-Za-z]{1,10}$/)
+      .withMessage('Employee number: max 10 characters (letters, numbers, hyphen)'),
   ],
 
   // Change password validation

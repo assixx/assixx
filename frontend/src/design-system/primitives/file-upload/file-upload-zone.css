@@ -1,0 +1,364 @@
+/**
+ * File Upload Zone Component
+ *
+ * Drag & Drop upload area with glassmorphism styling.
+ * Progressive enhancement - works without JavaScript.
+ *
+ * USAGE:
+ *   <div class="file-upload-zone">
+ *     <input type="file" class="file-upload-zone__input" id="fileInput" multiple accept="image/*" />
+ *     <label for="fileInput" class="file-upload-zone__label">
+ *       <div class="file-upload-zone__icon">
+ *         <i class="fas fa-cloud-upload-alt"></i>
+ *       </div>
+ *       <div class="file-upload-zone__text">
+ *         <p class="file-upload-zone__title">Drag & drop files here</p>
+ *         <p class="file-upload-zone__subtitle">or click to browse</p>
+ *       </div>
+ *     </label>
+ *   </div>
+ *
+ * ACCESSIBILITY:
+ *   - Native file input for keyboard navigation
+ *   - Label connected to input for click area
+ *   - Focus visible states
+ *   - Screen reader support
+ *
+ * JAVASCRIPT INTEGRATION:
+ *   - Add .file-upload-zone--dragover when dragging over
+ *   - Add .file-upload-zone--uploading during upload
+ *   - Add .file-upload-zone--success on completion
+ *   - Add .file-upload-zone--error on failure
+ */
+
+/* ============================================================
+   BASE STRUCTURE
+   ============================================================ */
+
+.file-upload-zone {
+  /* Interaction */
+  cursor: pointer;
+  user-select: none;
+
+  /* Layout */
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 200px;
+  padding: var(--spacing-8);
+  border: 2px dashed rgb(255 255 255 / 20%);
+  border-radius: var(--radius-lg);
+
+  /* Glassmorphism */
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(10px);
+  box-shadow: var(--shadow-glass);
+
+  transition:
+    border-color var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard),
+    box-shadow var(--duration-normal) var(--ease-standard);
+}
+
+/* ============================================================
+   HIDDEN FILE INPUT
+   ============================================================ */
+
+.file-upload-zone__input {
+  pointer-events: none;
+
+  /* Visually hidden but accessible */
+  position: absolute;
+
+  width: 0;
+  height: 0;
+
+  opacity: 0%;
+}
+
+/* ============================================================
+   LABEL (Click Area)
+   ============================================================ */
+
+.file-upload-zone__label {
+  cursor: pointer;
+
+  /* Full area clickable */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+
+  /* Remove default label styling */
+  margin: 0;
+
+  font-weight: 400;
+}
+
+/* ============================================================
+   ICON
+   ============================================================ */
+
+.file-upload-zone__icon {
+  /* Icon container */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgb(33 150 243 / 20%);
+  border-radius: 50%;
+
+  /* Icon styling */
+  font-size: 2rem;
+  color: var(--color-primary);
+
+  /* Glass circle background */
+  background: rgb(33 150 243 / 10%);
+
+  /* Transition */
+  transition:
+    transform var(--duration-normal) var(--ease-standard),
+    background-color var(--duration-normal) var(--ease-standard);
+}
+
+/* ============================================================
+   TEXT CONTENT
+   ============================================================ */
+
+.file-upload-zone__text {
+  /* Text container */
+  text-align: center;
+}
+
+.file-upload-zone__title {
+  margin: 0 0 var(--spacing-2) 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+
+  /* Main instruction */
+  color: var(--color-text-primary);
+}
+
+.file-upload-zone__subtitle {
+  margin: 0;
+  font-size: var(--font-size-sm);
+
+  /* Secondary instruction */
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+   HOVER STATE
+   ============================================================ */
+
+.file-upload-zone:hover {
+  /* Highlight on hover */
+  border-color: rgb(33 150 243 / 40%);
+  background: rgb(255 255 255 / 5%);
+  box-shadow:
+    var(--shadow-glass),
+    0 0 12px rgb(33 150 243 / 20%);
+}
+
+.file-upload-zone:hover .file-upload-zone__icon {
+  /* Scale icon on hover */
+  transform: scale(1.1);
+  background: rgb(33 150 243 / 15%);
+}
+
+/* ============================================================
+   DRAG OVER STATE (JavaScript)
+   ============================================================ */
+
+.file-upload-zone--dragover {
+  /* Active drag state */
+  border-color: var(--color-primary);
+  background: rgb(33 150 243 / 10%);
+  box-shadow:
+    var(--shadow-glass),
+    0 0 20px rgb(33 150 243 / 30%);
+}
+
+.file-upload-zone--dragover .file-upload-zone__icon {
+  /* Pulse animation during drag */
+  transform: scale(1.2);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1.2);
+  }
+
+  50% {
+    transform: scale(1.3);
+  }
+}
+
+/* ============================================================
+   UPLOADING STATE (JavaScript)
+   ============================================================ */
+
+.file-upload-zone--uploading {
+  /* Disabled during upload */
+  pointer-events: none;
+  opacity: 60%;
+}
+
+.file-upload-zone--uploading .file-upload-zone__icon {
+  /* Spinner animation */
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   SUCCESS STATE (JavaScript)
+   ============================================================ */
+
+.file-upload-zone--success {
+  /* Success feedback */
+  border-color: var(--color-success);
+  background: rgb(76 175 80 / 5%);
+  box-shadow:
+    var(--shadow-glass),
+    0 0 12px rgb(76 175 80 / 20%);
+}
+
+.file-upload-zone--success .file-upload-zone__icon {
+  border-color: rgb(76 175 80 / 20%);
+
+  /* Success icon */
+  color: var(--color-success);
+  background: rgb(76 175 80 / 10%);
+}
+
+/* ============================================================
+   ERROR STATE (JavaScript)
+   ============================================================ */
+
+.file-upload-zone--error {
+  /* Error feedback */
+  border-color: var(--color-danger);
+  background: rgb(244 67 54 / 5%);
+  box-shadow:
+    var(--shadow-glass),
+    0 0 12px rgb(244 67 54 / 20%);
+}
+
+.file-upload-zone--error .file-upload-zone__icon {
+  border-color: rgb(244 67 54 / 20%);
+
+  /* Error icon */
+  color: var(--color-danger);
+  background: rgb(244 67 54 / 10%);
+}
+
+/* ============================================================
+   FOCUS STATE (Accessibility)
+   ============================================================ */
+
+.file-upload-zone__input:focus-visible + .file-upload-zone__label {
+  /* Keyboard focus */
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   DISABLED STATE
+   ============================================================ */
+
+.file-upload-zone--disabled {
+  pointer-events: none;
+  cursor: not-allowed;
+
+  /* Disabled state */
+  opacity: 50%;
+}
+
+/* ============================================================
+   SIZE VARIANTS
+   ============================================================ */
+
+/* Compact */
+.file-upload-zone--compact {
+  min-height: 120px;
+  padding: var(--spacing-4);
+}
+
+.file-upload-zone--compact .file-upload-zone__icon {
+  width: 48px;
+  height: 48px;
+  font-size: 1.5rem;
+}
+
+.file-upload-zone--compact .file-upload-zone__title {
+  font-size: var(--font-size-base);
+}
+
+/* Large */
+.file-upload-zone--large {
+  min-height: 300px;
+  padding: var(--spacing-12);
+}
+
+.file-upload-zone--large .file-upload-zone__icon {
+  width: 80px;
+  height: 80px;
+  font-size: 2.5rem;
+}
+
+.file-upload-zone--large .file-upload-zone__title {
+  font-size: var(--font-size-xl);
+}
+
+/* ============================================================
+   HELPER TEXT (Optional)
+   ============================================================ */
+
+.file-upload-zone__helper {
+  /* Additional helper text */
+  margin-top: var(--spacing-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.file-upload-zone__helper--error {
+  color: var(--color-danger);
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .file-upload-zone,
+  .file-upload-zone__icon {
+    transition: none;
+    animation: none;
+  }
+
+  .file-upload-zone--dragover .file-upload-zone__icon {
+    transform: scale(1.1);
+    animation: none;
+  }
+}

@@ -9,6 +9,10 @@
     display: none !important;
   }
 
+  .u-hidden {
+    display: none !important;
+  }
+
   /* Text Utilities */
   .text-balance {
     text-wrap: balance;

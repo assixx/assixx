@@ -1,0 +1,66 @@
+/**
+ * Design System – Toggle Button Group
+ *
+ * Mutually exclusive button group (radio-like behavior).
+ * Use case: View mode toggles, filter options, segmented controls.
+ */
+
+@layer components {
+  /* Group Container */
+  .toggle-group {
+    display: inline-flex;
+    gap: var(--spacing-2); /* 8px */
+
+    padding: var(--spacing-1); /* 4px */
+    border: 1px solid rgb(255 255 255 / 10%);
+    border-radius: var(--radius-lg); /* 8px */
+
+    background: rgb(255 255 255 / 2%);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Button */
+  .toggle-group__btn {
+    cursor: pointer;
+
+    display: flex;
+    gap: var(--spacing-1-5); /* 6px */
+    align-items: center;
+
+    padding: var(--spacing-1-5) var(--spacing-3); /* 6px 12px */
+    border: 1px solid transparent;
+    border-radius: var(--radius-md); /* 6px */
+
+    font-size: 13px;
+    font-weight: var(--font-weight-medium); /* 500 */
+    color: rgb(255 255 255 / 60%);
+
+    background: transparent;
+
+    transition: all 0.2s ease;
+  }
+
+  .toggle-group__btn:hover {
+    border-color: rgb(255 255 255 / 10%);
+    color: rgb(255 255 255 / 80%);
+    background: rgb(255 255 255 / 5%);
+  }
+
+  .toggle-group__btn.active,
+  .toggle-group__btn--active {
+    border-color: var(--color-primary-alpha-30); /* rgba(33, 150, 243, 0.3) */
+    color: var(--color-primary); /* #2196f3 */
+    background: var(--color-primary-alpha-15); /* rgba(33, 150, 243, 0.15) */
+  }
+
+  .toggle-group__btn i {
+    font-size: 14px;
+  }
+
+  /* Disabled State */
+  .toggle-group__btn:disabled {
+    cursor: not-allowed;
+    color: rgb(255 255 255 / 30%);
+    opacity: 50%;
+  }
+}

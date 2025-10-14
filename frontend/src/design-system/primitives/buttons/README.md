@@ -196,6 +196,130 @@ buttons/
 
 ---
 
+## 🎈 Floating Action Button (FAB)
+
+**Special button** for primary actions, fixed to screen corner
+
+### Basic Usage
+
+```html
+<button class="btn-float" aria-label="Add item">
+  <i class="fas fa-plus"></i>
+</button>
+```
+
+### Variants
+
+```html
+<!-- Primary (Default) -->
+<button class="btn-float" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- Success -->
+<button class="btn-float btn-float--success" aria-label="Approve">
+  <i class="fas fa-check"></i>
+</button>
+
+<!-- Danger -->
+<button class="btn-float btn-float--danger" aria-label="Delete">
+  <i class="fas fa-trash"></i>
+</button>
+
+<!-- Warning -->
+<button class="btn-float btn-float--warning" aria-label="Warning">
+  <i class="fas fa-exclamation"></i>
+</button>
+```
+
+### Sizes
+
+```html
+<!-- Small (48px) -->
+<button class="btn-float btn-float--sm" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- Default (60px) -->
+<button class="btn-float" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- Large (72px) -->
+<button class="btn-float btn-float--lg" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+```
+
+### Positions
+
+```html
+<!-- Bottom-Right (Default) -->
+<button class="btn-float" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- Bottom-Left -->
+<button class="btn-float btn-float--bottom-left" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- Top-Right -->
+<button class="btn-float btn-float--top-right" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+
+<!-- Top-Left -->
+<button class="btn-float btn-float--top-left" aria-label="Add">
+  <i class="fas fa-plus"></i>
+</button>
+```
+
+### Extended (with Text)
+
+```html
+<button class="btn-float btn-float--extended" aria-label="Create new">
+  <i class="fas fa-plus btn-float__icon"></i>
+  <span class="btn-float__label">Create new</span>
+</button>
+```
+
+**Note:** Auto-collapses to icon-only on mobile
+
+### With Notification Badge
+
+```html
+<button class="btn-float" aria-label="Messages">
+  <i class="fas fa-comment"></i>
+  <span class="btn-float__badge">3</span>
+</button>
+```
+
+### Use Cases
+
+- **Add new items** - Employees, departments, products
+- **Quick actions** - Chat, help, support
+- **Scroll to top** - Long pages
+- **Primary action** - On data table pages
+
+### Accessibility
+
+**Required:**
+
+- Always use `aria-label` for screen readers
+- FAB has built-in focus states
+- Keyboard accessible (Tab + Enter/Space)
+
+**Example:**
+
+```html
+<button class="btn-float" aria-label="Add new employee">
+  <i class="fas fa-user-plus"></i>
+</button>
+```
+
+---
+
 ## 🔄 React Migration Path
 
 This CSS structure maps directly to React components:
@@ -293,5 +417,5 @@ Before adding a new button variant:
 ---
 
 **Maintained by:** Assixx Design System Team
-**Last Updated:** 2025-10-03
+**Last Updated:** 2025-10-04
 **Version:** 1.0.0
