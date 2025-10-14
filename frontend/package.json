@@ -14,24 +14,14 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.37.0",
-<<<<<<< HEAD
     "@openapitools/openapi-generator-cli": "^2.25.0",
-=======
-    "@openapitools/openapi-generator-cli": "^2.24.0",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
     "@tailwindcss/container-queries": "0.1.1",
     "@tailwindcss/forms": "0.5.10",
     "@tailwindcss/postcss": "4.1.13",
     "@tailwindcss/typography": "0.5.19",
-<<<<<<< HEAD
     "@types/node": "^24.7.2",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
-=======
-    "@types/node": "^24.7.0",
-    "@typescript-eslint/eslint-plugin": "^8.46.0",
-    "@typescript-eslint/parser": "^8.46.0",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
     "autoprefixer": "^10.4.21",
     "cssnano": "^7.1.1",
     "eslint": "^9.37.0",
@@ -49,7 +39,6 @@
     "tailwindcss": "4.1.13",
     "terser": "^5.44.0",
     "typescript": "^5.9.3",
-<<<<<<< HEAD
     "vite": "^7.1.10",
     "vite-plugin-simple-html": "1.0.1"
   },
@@ -62,14 +51,6 @@
     "@fullcalendar/timegrid": "6.1.19",
     "chart.js": "^4.5.1",
     "dompurify": "^3.3.0",
-=======
-    "vite": "^7.1.9"
-  },
-  "dependencies": {
-    "@fortawesome/fontawesome-free": "^7.1.0",
-    "chart.js": "^4.5.0",
-    "dompurify": "^3.2.7",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
     "marked": "^16.4.0",
     "moment": "^2.30.1"
   }

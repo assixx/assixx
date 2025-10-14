@@ -75,19 +75,11 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/jest": "^30.0.0",
     "@types/lodash": "^4.17.20",
-<<<<<<< HEAD
     "@types/node": "^24.7.2",
     "@types/nodemailer": "^7.0.2",
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
-=======
-    "@types/node": "^24.7.0",
-    "@types/nodemailer": "^7.0.2",
-    "@types/supertest": "^6.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.46.0",
-    "@typescript-eslint/parser": "^8.46.0",
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
     "eslint": "^9.37.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
