@@ -1,8 +1,29 @@
 # Design System Migration - Complete Replacement Strategy
 
 Branch: `lint/refactoring`
-Goal: Replace all Bootstrap with Tailwind + Design System
-Status: Ready to start
+Status: In Progress
+
+## 🎯 MIGRATION GOALS - NO EXCEPTIONS!
+
+### ✅ END GOAL (Zero Legacy):
+1. **100% Tailwind CSS** - NO Bootstrap classes anywhere
+2. **Pure HTML** - NO inline styles (style="...")
+3. **TypeScript Modules Only** - NO inline JavaScript/vanilla JS
+4. **Design System Components** - NO custom/legacy components
+
+### ❌ WHAT MUST BE ELIMINATED:
+- Bootstrap CSS (bootstrap.min.css)
+- Bootstrap JavaScript (bootstrap.bundle.min.js)
+- Bootstrap compatibility layers (all compat/*.css files)
+- ALL inline `<script>` tags with vanilla JS
+- ALL inline style="" attributes
+- ALL non-Tailwind CSS classes
+
+### ✅ WHAT WE'RE MIGRATING TO:
+- **Tailwind CSS** for ALL styling
+- **Design System components** from Storybook
+- **TypeScript modules** for ALL JavaScript
+- **Clean HTML** with only class attributes
 
 ## Current Architecture Analysis
 
@@ -80,11 +101,17 @@ All inline JavaScript in HTML files will be migrated to TypeScript modules. No s
 - TypeScript = JavaScript with types (migration happens NOW)
 - React = UI Framework (separate project, comes LATER)
 
-**Per Page Migration (3 Steps):**
+**Per Page Migration (4 Steps):**
 
-1. HTML: Bootstrap → Design System components
-2. CSS: Inline styles → Design System/Tailwind utilities
-3. JavaScript: Inline `<script>` → TypeScript module
+1. **STORYBOOK: Copy Design System component HTML**
+   - Open http://localhost:6006
+   - Find the component you need (e.g., Buttons, Forms, Modals)
+   - Click "Show code" button in the story
+   - Copy the HTML structure exactly
+   - Use this as your template (don't reinvent!)
+2. HTML: Replace Bootstrap components with copied Design System HTML
+3. CSS: Inline styles → Design System/Tailwind utilities
+4. JavaScript: Inline `<script>` → TypeScript module
 
 **Example (signup.html):**
 
@@ -128,12 +155,12 @@ export class SignupFormController {
 
 ### Authentication
 
-- [ ] signup.html
-- [ ] login.html
+- [x] signup.html ✅ (2025-01-14)
+- [x] login.html ✅ (2025-01-14)
 
 ### Dashboards
 
-- [ ] root-dashboard.html
+- [x] root-dashboard.html ✅ (2025-01-14) - Fully migrated with Storybook components (Card + HoverTable)
 - [ ] admin-dashboard.html
 - [ ] employee-dashboard.html
 
@@ -225,16 +252,23 @@ export class SignupFormController {
 
 Note: File count varies per page based on inline JS complexity.
 
-**Acceptance Criteria:**
+**Acceptance Criteria (STRICT):**
 
+✅ **MUST HAVE:**
+- NO Bootstrap classes (.btn, .modal, .form-control, etc.)
+- NO Bootstrap JavaScript dependencies
+- NO inline styles (style="...")
+- NO inline JavaScript (<script> with code)
+- ONLY Tailwind classes for styling
+- ONLY TypeScript modules (*.ts files)
+- ONLY Design System components from Storybook
+- ALL functions have proper TypeScript types (no `any`)
+
+✅ **FUNCTIONAL:**
 - Forms submit correctly
 - Validation shows Design System error states
-- No Bootstrap classes or JS dependencies
-- All styles come from Design System or Tailwind utilities
-- All JavaScript extracted to TypeScript modules
-- No inline `<script>` tags (except module import)
 - TypeScript compiles without errors
-- Type Safety: All functions have proper types
+- No console errors in browser
 
 ### Phase 2: Dashboard Pages (Priority High)
 
@@ -465,15 +499,22 @@ modal.classList.add('modal--active');
 
 Before marking a page as complete:
 
-- [ ] Visual regression check (compare before/after screenshots)
-- [ ] All forms submit correctly
-- [ ] Validation errors display with Design System styles
+### 🔴 MIGRATION COMPLETENESS (MUST BE 100%):
+- [ ] **NO Bootstrap classes** found in HTML (search for: .btn, .modal, .form-control, .card, .table)
+- [ ] **NO inline styles** (search for: style=")
+- [ ] **NO inline JavaScript** (no <script> tags with code, only module imports allowed)
+- [ ] **ALL styles use Tailwind** (bg-*, text-*, flex, grid, etc.)
+- [ ] **ALL JavaScript in TypeScript files** (*.ts in scripts/ folder)
+- [ ] **ALL components from Storybook** (verified against http://localhost:6006)
+
+### 🟢 FUNCTIONALITY:
+- [ ] Visual regression check (looks correct)
+- [ ] Forms submit correctly
+- [ ] Validation shows Design System error states
 - [ ] Modals open/close properly
 - [ ] Tables display data correctly
-- [ ] Search/filter functionality works
-- [ ] Responsive design on mobile/tablet
+- [ ] Responsive on mobile/tablet
 - [ ] No console errors
-- [ ] No Bootstrap classes remain (except Design System overrides)
 - [ ] TypeScript compiles without errors
 - [ ] Page loads in < 3 seconds
 
@@ -509,8 +550,9 @@ Before marking a page as complete:
 ## Next Steps
 
 1. User decides starting file (recommendation: signup.html)
-2. Per page migration (3 steps):
-   - Step 1: HTML (Bootstrap → Design System)
+2. Per page migration (4 steps):
+   - Step 0: **STORYBOOK** - Copy component HTML from http://localhost:6006
+   - Step 1: HTML (Bootstrap → Design System using Storybook templates)
    - Step 2: CSS (Inline → Design System/Tailwind)
    - Step 3: TypeScript (Inline JS → TypeScript modules)
 3. User tests after each step

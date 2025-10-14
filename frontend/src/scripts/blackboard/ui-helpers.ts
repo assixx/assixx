@@ -527,7 +527,7 @@ export function handleDirectAttachFile(file: File): void {
 
   // Set title from filename if empty
   const titleInput = $$id('directAttachTitle') as HTMLInputElement | null;
-  if (titleInput && titleInput.value.length === 0) {
+  if (titleInput?.value.length === 0) {
     titleInput.value = file.name.replace(/\.[^./]+$/, ''); // Remove extension
   }
 

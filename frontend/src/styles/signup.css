@@ -470,6 +470,7 @@ body {
     0 4px 12px rgb(16 185 129 / 20%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
 }
+
 /* Help Button - Glassmorphismus */
 .help-button {
   cursor: pointer;

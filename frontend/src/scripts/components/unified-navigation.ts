@@ -1416,7 +1416,7 @@ class UnifiedNavigation {
       <!-- Logout Confirmation Modal - Design System -->
       <div id="logoutModal" class="modal" style="display: none;">
         <div class="modal-overlay">
-          <div class="ds-modal ds-modal--sm">
+          <div class="ds-modal ds-modal--sm ds-modal--logout">
             <div class="ds-modal__header">
               <h2 class="ds-modal__title">
                 <i class="fas fa-sign-out-alt"></i>
@@ -2713,7 +2713,7 @@ class UnifiedNavigation {
   }
 
   private getBadgeCount(badge: HTMLElement | null): number {
-    if (!badge || badge.style.display !== DISPLAY_INLINE_BLOCK || badge.textContent === '') {
+    if (badge?.style.display !== DISPLAY_INLINE_BLOCK || badge.textContent === '') {
       return 0;
     }
 

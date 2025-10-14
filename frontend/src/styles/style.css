@@ -12,8 +12,6 @@
 
 .container {
   margin: 0 auto;
-
-  /* padding entfernt für volle Breite wie root-dashboard */
 }
 
 /* Container full width when sidebar is collapsed */
@@ -31,30 +29,6 @@
   margin-bottom: 0.5rem;
   font-weight: 500;
 }
-
-/* Table Styles - Moved to @layer components in tailwind/compat/bootstrap-tables.css
- * to prevent specificity conflicts and enable proper dark mode support */
-
-/* Badge Styles */
-.badge {
-  display: inline-block;
-
-  padding: 0.25em 0.4em;
-  border-radius: 0.25rem;
-
-  font-size: 75%;
-  font-weight: 700;
-  line-height: 1;
-  color: #fff;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: baseline;
-}
-
-/* Card Styles */
-/* .card definition removed - now centralized in dashboard-theme.css
-   with merged properties and semantic tokens (--card-padding, --card-border-radius, --card-shadow)
-   Migration: 2025-10-02 */
 
 .card-header {
   padding: 0.75rem 1.25rem;
@@ -122,10 +96,6 @@
 .mb-3 {
   margin-bottom: 1rem !important;
 }
-
-/* .mb-4 removed - Tailwind generates native .mb-4 (16px = spacing-4)
-   Use .mb-6 for 24px spacing (Tailwind spacing-6)
-   Migration: 2025-10-02 */
 
 .mb-5 {
   margin-bottom: 3rem !important;
@@ -195,68 +165,3 @@
     padding: var(--spacing-3); /* 16px auf Mobile */
   }
 }
-
-/* Toast notifications */
-/* DEPRECATED: Replaced by Design System (design-system/primitives/feedback/toast.css) */
-/*
-.toast-container {
-  position: fixed;
-  z-index: 1050;
-  right: 20px;
-  bottom: 20px;
-}
-
-.toast {
-  overflow: hidden;
-
-  max-width: 350px;
-  margin-bottom: 10px;
-  border-radius: var(--radius-xl);
-
-  background-color: rgb(255 255 255 / 90%);
-  box-shadow: var(--shadow-md);
-}
-
-.toast-header {
-  display: flex;
-  align-items: center;
-
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid rgb(0 0 0 / 5%);
-
-  background-color: rgb(255 255 255 / 85%);
-}
-
-.toast-body {
-  padding: 0.75rem;
-}
-*/
-
-/* Animation utilities */
-.fade-in {
-  /* animation: fadeIn 0.3s; */
-}
-
-/* @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-} */
-
-.slide-in {
-  /* animation: slideIn 0.3s; */
-}
-
-/* @keyframes slideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-} */

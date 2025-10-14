@@ -246,7 +246,7 @@ export class DocumentsService {
       const document = await Document.findById(id);
 
       // Validate document exists and belongs to tenant
-      if (!document || document.tenant_id !== tenantId) {
+      if (document?.tenant_id !== tenantId) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -395,7 +395,7 @@ export class DocumentsService {
     try {
       const document = await Document.findById(id);
 
-      if (!document || document.tenant_id !== tenantId) {
+      if (document?.tenant_id !== tenantId) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -422,7 +422,7 @@ export class DocumentsService {
       // Get document
       const document = await Document.findById(id);
 
-      if (!document || document.tenant_id !== tenantId) {
+      if (document?.tenant_id !== tenantId) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -468,7 +468,7 @@ export class DocumentsService {
       // Get document
       const document = await Document.findById(id);
 
-      if (!document || document.tenant_id !== tenantId) {
+      if (document?.tenant_id !== tenantId) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -520,7 +520,7 @@ export class DocumentsService {
     try {
       const document = await Document.findById(id);
 
-      if (!document || document.tenant_id !== tenantId) {
+      if (document?.tenant_id !== tenantId) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -658,7 +658,7 @@ export class DocumentsService {
       );
     }
     const team = await Team.findById(teamId);
-    if (!team || team.tenant_id !== tenantId) {
+    if (team?.tenant_id !== tenantId) {
       throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid team ID', 400);
     }
   }

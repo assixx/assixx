@@ -467,7 +467,7 @@ export class SurveyAdminManager {
     if (type === 'single_choice' || type === 'multiple_choice') {
       optionsContainer.style.display = 'block';
       const optionList = document.querySelector(`#${questionId}_option_list`);
-      if (optionList && optionList.children.length === 0) {
+      if (optionList?.children.length === 0) {
         // Add default options
         this.addOption(questionId);
         this.addOption(questionId);

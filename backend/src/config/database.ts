@@ -82,7 +82,7 @@ function getMockCount<T>(count: number): Promise<[T, mysql.FieldPacket[]]> {
 }
 
 function getMockUserByUsername<T>(params?: unknown[]): Promise<[T, mysql.FieldPacket[]]> {
-  if (params !== undefined && params[0] === 'admin') {
+  if (params?.[0] === 'admin') {
     const adminUser = {
       id: 999,
       username: 'admin',
