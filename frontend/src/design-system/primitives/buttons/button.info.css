@@ -16,11 +16,7 @@
   /* Colors - Cyan/Light Blue */
   color: var(--color-white);
 
-<<<<<<< HEAD
   background: linear-gradient(145deg, rgb(129 212 250 / 25%), rgb(0 176 255 / 80%)); /* Hellblau zu tiefblau */
-=======
-  background: linear-gradient(135deg, rgb(0 188 212 / 15%), rgb(0 151 167 / 80%)); /* Avatar-style gradient */
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
 
   /* Shadow */
   box-shadow: var(--shadow-btn-info, 0 2px 8px rgb(0 188 212 / 30%));
@@ -29,11 +25,7 @@
 /* Hover State - Brighten the gradient */
 .btn-info:hover:not(:disabled) {
   transform: translateY(-1px);
-<<<<<<< HEAD
   background: linear-gradient(145deg, rgb(129 212 250 / 35%), rgb(0 176 255 / 90%)); /* Noch intensiver */
-=======
-  background: linear-gradient(135deg, rgb(0 188 212 / 25%), rgb(0 151 167 / 90%));
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
   box-shadow: var(--shadow-btn-info-hover, 0 4px 12px rgb(0 188 212 / 40%));
 }
 

@@ -452,8 +452,6 @@ body {
   text-decoration: underline;
 }
 
-<<<<<<< HEAD
-=======
 /* Success Message - Glassmorphismus */
 .success-message {
   display: none;
@@ -472,8 +470,6 @@ body {
     0 4px 12px rgb(16 185 129 / 20%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
 }
-
->>>>>>> f9122e86509284247e8332e1467f57e00bddbd06
 /* Help Button - Glassmorphismus */
 .help-button {
   cursor: pointer;
