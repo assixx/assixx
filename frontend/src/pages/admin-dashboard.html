@@ -35,141 +35,161 @@
         <div class="container">
           <!-- Dashboard Section -->
           <section id="dashboard-section" class="content-section">
-            <!-- Dashboard Stats Grid -->
-            <div class="dashboard-grid">
-              <div class="stat-card">
-                <div class="stat-value" id="employee-count">0</div>
-                <div class="stat-label">Mitarbeiter</div>
+            <!-- Dashboard Stats Grid - Using Design System stat cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div class="card-stat">
+                <div class="card-stat__icon">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div class="card-stat__value" id="employee-count">0</div>
+                <div class="card-stat__label">Mitarbeiter</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-value" id="document-count">0</div>
-                <div class="stat-label">Dokumente</div>
+              <div class="card-stat">
+                <div class="card-stat__icon">
+                  <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="card-stat__value" id="document-count">0</div>
+                <div class="card-stat__label">Dokumente</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-value" id="department-count">0</div>
-                <div class="stat-label">Abteilungen</div>
+              <div class="card-stat">
+                <div class="card-stat__icon">
+                  <i class="fas fa-building"></i>
+                </div>
+                <div class="card-stat__value" id="department-count">0</div>
+                <div class="card-stat__label">Abteilungen</div>
               </div>
-              <div class="stat-card">
-                <div class="stat-value" id="team-count">0</div>
-                <div class="stat-label">Teams</div>
+              <div class="card-stat">
+                <div class="card-stat__icon">
+                  <i class="fas fa-user-friends"></i>
+                </div>
+                <div class="card-stat__value" id="team-count">0</div>
+                <div class="card-stat__label">Teams</div>
               </div>
             </div>
 
-            <!-- Blackboard Widget -->
-            <div id="blackboard-widget-container" style="margin-top: 2rem" data-sidebar-state="loading">
+            <!-- Blackboard Widget - Using Design System Card -->
+            <div id="blackboard-widget-container" class="mt-8" data-sidebar-state="loading">
               <!-- Loading placeholder with same styles as final widget -->
-              <div class="blackboard-widget" style="animation: subtle-pulse 2s ease-in-out infinite">
-                <div class="blackboard-widget-header">
-                  <h3 class="blackboard-widget-title">
+              <div class="card animate-pulse">
+                <div class="card__header flex justify-between items-center">
+                  <h3 class="card__title flex items-center gap-2">
                     <i class="fas fa-thumbtack"></i>
                     Schwarzes Brett
                   </h3>
-                  <a href="/blackboard" class="blackboard-widget-link" style="opacity: 0.5">
+                  <a
+                    href="/blackboard"
+                    class="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] flex items-center gap-1 transition-colors"
+                  >
                     Alle anzeigen
                     <i class="fas fa-arrow-right"></i>
                   </a>
                 </div>
-                <div id="blackboard-widget-content" style="min-height: 200px; display: flex; align-items: center; justify-content: center">
-                  <div class="text-muted" style="text-align: center">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; margin-bottom: 1rem"></i>
-                    <p>Lade Einträge...</p>
+                <div id="blackboard-widget-content" class="card__body min-h-[200px] flex items-center justify-center">
+                  <div class="text-center">
+                    <i class="fas fa-spinner fa-spin text-3xl mb-4 text-[var(--color-text-secondary)]"></i>
+                    <p class="text-[var(--color-text-secondary)]">Lade Einträge...</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Main Grid Container -->
-            <div class="admin-grid">
-              <!-- Employee Card -->
-              <div class="card compact-card">
-                <div class="card-header">
-                  <h2 class="card-title">Mitarbeiter</h2>
-                </div>
-                <div class="compact-content">
-                  <a href="/pages/manage-employees.html" class="btn btn-secondary btn-block mb-3">Mitarbeiter verwalten</a>
-                  <div class="compact-list" id="recent-employees">
-                    <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
+            <!-- Main Grid Container - Using Tailwind Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <!-- Employee Card - Using Accent Card (Primary/Blue is default) -->
+              <div class="max-w-[350px]">
+                <div class="card-accent card-accent--static">
+                  <div class="card-accent__header">
+                    <h3 class="card-accent__title">
+                      <i class="fas fa-users" style="color: var(--color-icon-primary)"></i>
+                      Mitarbeiter
+                    </h3>
                   </div>
-                  <a href="/manage-employees" class="view-all-link" id="manage-employees-link">
-                    Alle anzeigen
-                    <span class="arrow">→</span>
-                  </a>
+                  <div class="card-accent__content">
+                    <button class="btn btn-modal w-4/5 mb-3" data-href="/pages/manage-employees.html">Mitarbeiter verwalten</button>
+                    <div class="space-y-2" id="recent-employees">
+                      <!-- Wird dynamisch gefüllt: Letzte 5 Mitarbeiter -->
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Document Card -->
-              <div class="card compact-card">
-                <div class="card-header">
-                  <h2 class="card-title">Dokumente</h2>
-                </div>
-                <div class="compact-content">
-                  <a href="/document-upload" class="btn btn-secondary btn-block mb-3">Dokument hochladen</a>
-                  <div class="compact-list" id="recent-documents">
-                    <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
+              <!-- Document Card - Using Accent Card with Success variant -->
+              <div class="max-w-[350px]">
+                <div class="card-accent card-accent--success card-accent--static">
+                  <div class="card-accent__header">
+                    <h3 class="card-accent__title">
+                      <i class="fas fa-file-alt" style="color: var(--color-icon-primary)"></i>
+                      Dokumente
+                    </h3>
                   </div>
-                  <a href="/documents-search" class="view-all-link" id="manage-documents-link">
-                    Verwalten
-                    <span class="arrow">→</span>
-                  </a>
+                  <div class="card-accent__content">
+                    <button class="btn btn-modal w-4/5 mb-3" data-href="/document-upload">Dokument hochladen</button>
+                    <div class="space-y-2" id="recent-documents">
+                      <!-- Wird dynamisch gefüllt: Letzte 5 Dokumente -->
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Department Card -->
-              <div class="card compact-card">
-                <div class="card-header">
-                  <h2 class="card-title">Abteilungen</h2>
-                </div>
-                <div class="compact-content">
-                  <a href="/manage-departments" class="btn btn-secondary btn-block mb-3">Abteilungen verwalten</a>
-                  <div class="compact-list" id="department-list">
-                    <!-- Wird dynamisch gefüllt -->
+              <!-- Department Card - Using Accent Card with Warning variant -->
+              <div class="max-w-[350px]">
+                <div class="card-accent card-accent--warning card-accent--static">
+                  <div class="card-accent__header">
+                    <h3 class="card-accent__title">
+                      <i class="fas fa-building" style="color: var(--color-icon-primary)"></i>
+                      Abteilungen
+                    </h3>
                   </div>
-                  <a href="/manage-departments" class="view-all-link" id="manage-departments-link">
-                    Verwalten
-                    <span class="arrow">→</span>
-                  </a>
+                  <div class="card-accent__content">
+                    <button class="btn btn-modal w-4/5 mb-3" data-href="/manage-departments">Abteilungen verwalten</button>
+                    <div class="space-y-2" id="department-list">
+                      <!-- Wird dynamisch gefüllt -->
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Team Card -->
-              <div class="card compact-card">
-                <div class="card-header">
-                  <h2 class="card-title">Teams</h2>
-                </div>
-                <div class="compact-content">
-                  <a href="/manage-teams" class="btn btn-secondary btn-block mb-3">Teams verwalten</a>
-                  <div class="compact-list" id="team-list">
-                    <!-- Wird dynamisch gefüllt -->
+              <!-- Team Card - Using Accent Card with Purple variant -->
+              <div class="max-w-[350px]">
+                <div class="card-accent card-accent--purple card-accent--static">
+                  <div class="card-accent__header">
+                    <h3 class="card-accent__title">
+                      <i class="fas fa-user-friends" style="color: var(--color-icon-primary)"></i>
+                      Teams
+                    </h3>
                   </div>
-                  <a href="/manage-teams" class="view-all-link">
-                    Verwalten
-                    <span class="arrow">→</span>
-                  </a>
+                  <div class="card-accent__content">
+                    <button class="btn btn-modal w-4/5 mb-3" data-href="/manage-teams">Teams verwalten</button>
+                    <div class="space-y-2" id="team-list">
+                      <!-- Wird dynamisch gefüllt -->
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <!-- Kalender Card -->
-              <div class="card compact-card">
-                <div class="card-header">
-                  <h2 class="card-title">Kalender</h2>
-                </div>
-                <div class="compact-content">
-                  <a href="/calendar" class="btn btn-secondary btn-block mb-3">Kalender öffnen</a>
-                  <div class="compact-list" id="calendar-events-list">
-                    <!-- Wird dynamisch gefüllt -->
-                    <div class="list-item">
-                      <div class="list-item-content">
-                        <strong>Nächste Termine</strong>
-                        <p class="text-secondary">Keine anstehenden Termine</p>
+              <!-- Kalender Card - Using Accent Card with Danger variant for visual variety -->
+              <div class="max-w-[350px]">
+                <div class="card-accent card-accent--danger card-accent--static">
+                  <div class="card-accent__header">
+                    <h3 class="card-accent__title">
+                      <i class="fas fa-calendar" style="color: var(--color-icon-primary)"></i>
+                      Kalender
+                    </h3>
+                  </div>
+                  <div class="card-accent__content">
+                    <button class="btn btn-modal w-4/5 mb-3" data-href="/calendar">Kalender öffnen</button>
+                    <div class="space-y-2" id="calendar-events-list">
+                      <!-- Wird dynamisch gefüllt -->
+                      <div class="p-2 rounded text-xs">
+                        <strong class="block font-semibold">Nächste Termine</strong>
+                        <p class="text-[var(--color-text-secondary)] mt-1">Keine anstehenden Termine</p>
                       </div>
                     </div>
                   </div>
-                  <a href="/calendar" class="view-all-link">
-                    Alle anzeigen
-                    <span class="arrow">→</span>
-                  </a>
                 </div>
               </div>
+
+              <!-- Placeholder for 6th card if needed -->
             </div>
           </section>
         </div>
@@ -186,39 +206,7 @@
     <!-- Role Switch for Admin -->
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
 
-    <!-- Force dashboard to be active on page load -->
-    <script type="module">
-      import { SessionManager } from '/scripts/utils/session-manager.ts';
-
-      const session = SessionManager.getInstance();
-      session.validateDashboardAccess('admin');
-
-      document.addEventListener('DOMContentLoaded', () => {
-        // Clear any stored active navigation to ensure dashboard is selected
-        localStorage.removeItem('activeNavigation');
-
-        // Dashboard section is always visible (no more section switching)
-        const dashboardSection = document.querySelector('#dashboard-section');
-        if (dashboardSection) {
-          dashboardSection.style.display = 'block';
-        }
-      });
-    </script>
-
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
-    </script>
-
-    <!-- Mark body as loaded after all scripts -->
-    <script>
-      window.addEventListener('load', function () {
-        setTimeout(() => {
-          document.body.classList.add('loaded');
-        }, 100);
-      });
-    </script>
+    <!-- Dashboard Initialization (extracted from inline) -->
+    <script type="module" src="/scripts/admin/dashboard/init.ts"></script>
   </body>
 </html>

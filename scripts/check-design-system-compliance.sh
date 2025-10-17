@@ -1,65 +1,173 @@
 #!/bin/bash
-# Design System Compliance Check
-# Prüft ob eine HTML-Datei Bootstrap/Legacy CSS verwendet
+# Design System Compliance Check v2.0
+# Enhanced for complete Bootstrap → Design System migration verification
+# Checks: Bootstrap removal, Inline styles/JS, Design System compliance, BEM notation
 
-FILE="${1:-frontend/src/pages/signup.html}"
+FILE="${1:-frontend/src/pages/admin-dashboard.html}"
 
-echo "🔍 Checking: $FILE"
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+echo ""
+echo "🔍 Design System Compliance Check v2.0"
+echo "📄 Checking: $FILE"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# 1. Bootstrap Classes (excluding Design System false positives)
-echo "❌ Bootstrap Classes:"
-# Exclude: card-body, card-header, card-title (these are Design System classes)
-grep -n "class=\"[^\"]*\(btn-default\|btn-success\|btn-info\|form-control\|input-group\|modal-dialog\|table-striped\|alert-danger\)" "$FILE" || echo "  ✅ None found"
-echo ""
+# Initialize counters
+ISSUES_FOUND=0
+WARNINGS_FOUND=0
 
-# 2. Bootstrap JS
-echo "❌ Bootstrap JavaScript:"
-grep -n "bootstrap\.bundle\|bootstrap\.min\.js\|popper\.js" "$FILE" || echo "  ✅ None found"
-echo ""
-
-# 3. Inline Styles (sollten vermieden werden)
-echo "⚠️  Inline Styles (should use Design System classes):"
-grep -n "style=\"[^\"]*\(background\|padding\|margin\|border\):" "$FILE" | head -10 || echo "  ✅ None found"
-echo ""
-
-# 4. Legacy CSS ohne Design System Tokens
-echo "⚠️  Custom CSS ohne Design System Tokens:"
-CSS_FILE="${FILE/pages/styles}"
-CSS_FILE="${CSS_FILE/.html/.css}"
-if [ -f "$CSS_FILE" ]; then
-  echo "  Checking: $CSS_FILE"
-  # Suche nach hardcoded colors/sizes ohne var(--*)
-  grep -n "^\.[a-zA-Z-].*{\|  \(color\|background\|padding\|margin\|border\): \(#\|[0-9]\)" "$CSS_FILE" | grep -v "var(--" | head -10 || echo "  ✅ All using Design System tokens"
+# 1. Bootstrap Classes (CRITICAL)
+echo -e "${RED}❌ Bootstrap Classes (Must be 0):${NC}"
+BOOTSTRAP_PATTERNS="btn-primary|btn-secondary|btn-default|btn-success|btn-info|btn-danger|btn-warning|btn-link|form-control|form-group|input-group|modal-dialog|modal-content|table-striped|alert-danger|alert-success|alert-info|alert-warning|container-fluid| row | col-md-|col-sm-|col-lg-|col-xs-|pull-right|pull-left|navbar|dropdown"
+BOOTSTRAP_FOUND=$(grep -E "class=\"[^\"]*\b($BOOTSTRAP_PATTERNS)" "$FILE" 2>/dev/null | head -5)
+if [ -n "$BOOTSTRAP_FOUND" ]; then
+  echo "$BOOTSTRAP_FOUND" | while IFS= read -r line; do
+    echo "  Line: $line"
+  done
+  ISSUES_FOUND=$((ISSUES_FOUND + 1))
 else
-  echo "  ℹ️  No CSS file found"
+  echo -e "  ${GREEN}✅ None found${NC}"
 fi
 echo ""
 
-# 5. Design System Classes (gut!)
-echo "✅ Design System Classes Found:"
-grep -o "class=\"[^\"]*\(page-container\|form-field\|btn\|alert\|card\)[^\"]*\"" "$FILE" | sort -u | head -10
-echo ""
-
-# 6. Tailwind Utility Classes (gut!)
-echo "✅ Tailwind Utilities Found:"
-grep -o "class=\"[^\"]*\(max-w-\|p-\|m-\|flex\|grid\)[^\"]*\"" "$FILE" | sort -u | head -10
-echo ""
-
-echo "📊 Summary:"
-BOOTSTRAP_COUNT=$(grep -c "btn-default\|btn-success\|form-control\|modal-dialog" "$FILE" 2>/dev/null || echo "0")
-INLINE_STYLE_COUNT=$(grep -c "style=\"" "$FILE" 2>/dev/null || echo "0")
-DESIGN_SYSTEM_COUNT=$(grep -c "page-container\|form-field\|btn\|alert\|card" "$FILE" 2>/dev/null || echo "0")
-
-echo "  Bootstrap classes: $BOOTSTRAP_COUNT"
-echo "  Inline styles: $INLINE_STYLE_COUNT"
-echo "  Design System classes: $DESIGN_SYSTEM_COUNT"
-echo ""
-
-if [ "$BOOTSTRAP_COUNT" -eq 0 ] && [ "$DESIGN_SYSTEM_COUNT" -gt 0 ]; then
-  echo "🎉 File is Design System compliant!"
-  exit 0
+# 2. Bootstrap JavaScript (CRITICAL)
+echo -e "${RED}❌ Bootstrap JavaScript:${NC}"
+BOOTSTRAP_JS=$(grep -n "bootstrap\.bundle\|bootstrap\.min\.js\|popper\.js\|bootstrap\.js" "$FILE" 2>/dev/null)
+if [ -n "$BOOTSTRAP_JS" ]; then
+  echo "$BOOTSTRAP_JS"
+  ISSUES_FOUND=$((ISSUES_FOUND + 1))
 else
-  echo "⚠️  File needs migration work"
+  echo -e "  ${GREEN}✅ None found${NC}"
+fi
+echo ""
+
+# 3. Inline Styles (CRITICAL)
+echo -e "${RED}❌ Inline Styles (style=\"\"):${NC}"
+INLINE_STYLES=$(grep -n "style=\"" "$FILE" 2>/dev/null | head -5)
+if [ -n "$INLINE_STYLES" ]; then
+  echo "$INLINE_STYLES"
+  ISSUES_FOUND=$((ISSUES_FOUND + 1))
+else
+  echo -e "  ${GREEN}✅ None found${NC}"
+fi
+echo ""
+
+# 4. Inline JavaScript (CRITICAL)
+echo -e "${RED}❌ Inline JavaScript:${NC}"
+INLINE_JS=$(grep -n "onclick=\|onload=\|onchange=\|onsubmit=\|onerror=\|onfocus=\|onblur=" "$FILE" 2>/dev/null)
+if [ -n "$INLINE_JS" ]; then
+  echo "$INLINE_JS"
+  ISSUES_FOUND=$((ISSUES_FOUND + 1))
+else
+  echo -e "  ${GREEN}✅ None found${NC}"
+fi
+echo ""
+
+# 5. Script tags with inline code (CRITICAL)
+echo -e "${RED}❌ Inline Script Blocks:${NC}"
+# Check for script tags that are not just src references
+INLINE_SCRIPTS=$(awk '/<script[^>]*>/{p=1; line=$0} p && /<\/script>/{if(length(line) > 100 || line ~ /[{};()]/) print NR": "line; p=0; line=""} p && !/<\/script>/{line=line" "$0}' "$FILE" 2>/dev/null | head -5)
+if [ -n "$INLINE_SCRIPTS" ]; then
+  echo "$INLINE_SCRIPTS"
+  ISSUES_FOUND=$((ISSUES_FOUND + 1))
+else
+  echo -e "  ${GREEN}✅ None found (only external modules)${NC}"
+fi
+echo ""
+
+# 6. text-gray-* Classes (WARNING - should use CSS variables)
+echo -e "${YELLOW}⚠️  Hardcoded Gray Classes (use CSS variables instead):${NC}"
+GRAY_CLASSES=$(grep -n "text-gray-[0-9][0-9][0-9]\|bg-gray-[0-9][0-9][0-9]\|border-gray-[0-9][0-9][0-9]" "$FILE" 2>/dev/null | head -5)
+if [ -n "$GRAY_CLASSES" ]; then
+  echo "$GRAY_CLASSES"
+  echo -e "  ${YELLOW}Should use: text-[var(--color-text-secondary)] etc.${NC}"
+  WARNINGS_FOUND=$((WARNINGS_FOUND + 1))
+else
+  echo -e "  ${GREEN}✅ None found${NC}"
+fi
+echo ""
+
+# 7. Design System Components (GOOD!)
+echo -e "${GREEN}✅ Design System Components Found:${NC}"
+# Core components
+echo "  📦 Cards:"
+grep -o "card-stat\|card-accent\|card__\|card-accent__" "$FILE" 2>/dev/null | sort -u | head -10 | sed 's/^/    /'
+
+echo "  🔘 Buttons:"
+grep -o "btn btn-[a-z]*\|btn-[a-z]*" "$FILE" 2>/dev/null | sort -u | head -10 | sed 's/^/    /'
+
+echo "  🎨 Design Tokens (CSS Variables):"
+grep -o "var(--[a-z-]*)" "$FILE" 2>/dev/null | sort -u | head -10 | sed 's/^/    /'
+echo ""
+
+# 8. BEM Notation Check
+echo -e "${BLUE}📐 BEM Notation Compliance:${NC}"
+BEM_CORRECT=$(grep -o "class=\"[^\"]*__[^\"]*\"" "$FILE" 2>/dev/null | wc -l)
+BEM_MODIFIER=$(grep -o "class=\"[^\"]*--[^\"]*\"" "$FILE" 2>/dev/null | wc -l)
+echo "  Block__Element patterns: $BEM_CORRECT found"
+echo "  Block--Modifier patterns: $BEM_MODIFIER found"
+if [ "$BEM_CORRECT" -gt 0 ] || [ "$BEM_MODIFIER" -gt 0 ]; then
+  echo -e "  ${GREEN}✅ BEM notation properly used${NC}"
+else
+  echo -e "  ${YELLOW}⚠️  No BEM patterns found${NC}"
+fi
+echo ""
+
+# 9. TypeScript Modules Check
+echo -e "${BLUE}📦 Module Scripts:${NC}"
+TS_MODULES=$(grep -c "type=\"module\".*\.ts\"" "$FILE" 2>/dev/null || echo "0")
+JS_MODULES=$(grep -c "type=\"module\".*\.js\"" "$FILE" 2>/dev/null | head -1 || echo "0")
+REGULAR_SCRIPTS=$(grep -c "<script.*src=" "$FILE" 2>/dev/null | head -1 || echo "0")
+echo "  TypeScript modules: $TS_MODULES"
+echo "  JavaScript modules: $JS_MODULES"
+CALC_REGULAR=$((REGULAR_SCRIPTS - TS_MODULES - JS_MODULES))
+echo "  Regular scripts: $CALC_REGULAR"
+if [ "$TS_MODULES" -gt 0 ]; then
+  echo -e "  ${GREEN}✅ Using TypeScript modules${NC}"
+fi
+echo ""
+
+# 10. Summary
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${BLUE}📊 COMPLIANCE SUMMARY:${NC}"
+echo ""
+
+# Count various elements for scoring
+BOOTSTRAP_COUNT=$(grep -c -E "\b($BOOTSTRAP_PATTERNS)" "$FILE" 2>/dev/null | head -1 || echo "0")
+INLINE_STYLE_COUNT=$(grep -c "style=\"" "$FILE" 2>/dev/null | head -1 || echo "0")
+INLINE_JS_COUNT=$(grep -c "onclick=\|onload=\|onchange=" "$FILE" 2>/dev/null | head -1 || echo "0")
+DESIGN_SYSTEM_COUNT=$(grep -c "card-stat\|card-accent\|btn-modal\|card__\|card-accent__" "$FILE" 2>/dev/null || echo "0")
+CSS_VAR_COUNT=$(grep -c "var(--" "$FILE" 2>/dev/null || echo "0")
+
+echo "  🚫 Bootstrap remnants: $BOOTSTRAP_COUNT"
+INLINE_STYLE_COUNT=$(echo "$INLINE_STYLE_COUNT" | head -1)
+echo "  🚫 Inline styles: $INLINE_STYLE_COUNT"
+INLINE_JS_COUNT=$(echo "$INLINE_JS_COUNT" | head -1)
+echo "  🚫 Inline JavaScript: $INLINE_JS_COUNT"
+echo "  ✅ Design System components: $DESIGN_SYSTEM_COUNT"
+echo "  ✅ CSS variables used: $CSS_VAR_COUNT"
+echo "  ⚠️  Warnings: $WARNINGS_FOUND"
+echo ""
+
+# Final verdict
+if [ "$ISSUES_FOUND" -eq 0 ]; then
+  if [ "$WARNINGS_FOUND" -eq 0 ]; then
+    echo -e "${GREEN}🎉 PERFECT! File is 100% Design System compliant!${NC}"
+    echo -e "${GREEN}   No Bootstrap, no inline styles/JS, proper BEM notation${NC}"
+    exit 0
+  else
+    echo -e "${GREEN}✅ GOOD! File is Design System compliant${NC}"
+    echo -e "${YELLOW}   Minor improvements suggested (see warnings above)${NC}"
+    exit 0
+  fi
+else
+  echo -e "${RED}❌ FAILED! File needs migration work${NC}"
+  echo -e "${RED}   Found $ISSUES_FOUND critical issues that must be fixed${NC}"
   exit 1
 fi

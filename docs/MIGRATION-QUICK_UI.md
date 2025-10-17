@@ -4,13 +4,15 @@ Branch: lint/refactoring
 
 ## 🚨 ABSOLUTE MIGRATION GOALS 🚨
 
-### ❌ ELIMINATE (100% REMOVAL):
+### ❌ ELIMINATE (100% REMOVAL)
+
 - Bootstrap CSS & JavaScript
 - Inline styles (style="...")
-- Inline JavaScript (vanilla JS in <script>)
+- Inline JavaScript (vanilla JS in < script >)
 - Legacy components
 
-### ✅ REPLACE WITH:
+### ✅ REPLACE WITH
+
 - **Tailwind CSS** - ALL styling through Tailwind classes
 - **Pure HTML** - NO inline styles
 - **TypeScript Modules** - ALL JavaScript in .ts files
@@ -20,7 +22,7 @@ Branch: lint/refactoring
 
 ### Step 0: STORYBOOK (WICHTIG!)
 
-- [ ] Open http://localhost:6006
+- [ ] Open <http://localhost:6006>
 - [ ] Find the component you need (Forms, Buttons, Modals, etc.)
 - [ ] Click "Show code" to see HTML structure
 - [ ] Copy the HTML exactly as shown
@@ -65,11 +67,13 @@ git commit -m "Migrate [filename] to Design System + TypeScript"
 ## STORYBOOK WORKFLOW EXAMPLE
 
 **Want to add a modal?**
-1. Go to http://localhost:6006
+
+1. Go to <http://localhost:6006>
 2. Navigate to "Feedback / Modals"
 3. Find "Confirmation Modal" story
 4. Click "Show code"
 5. Copy this HTML:
+
 ```html
 <div class="ds-modal ds-modal--sm">
   <div class="ds-modal__header">
@@ -79,12 +83,14 @@ git commit -m "Migrate [filename] to Design System + TypeScript"
   <div class="ds-modal__footer">...</div>
 </div>
 ```
+
 6. Paste into your HTML file
 7. Modify content only, keep structure!
 
 ## Completed Migrations
 
 ### ✅ Fully Migrated Pages (2025-01-14)
+
 - login.html - All inline JS extracted to login-pre-check.ts
 - signup.html - All inline JS extracted to TypeScript modules
 - root-dashboard.html - Complete migration with Storybook components:

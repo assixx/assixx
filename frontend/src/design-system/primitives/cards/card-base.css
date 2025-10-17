@@ -24,7 +24,7 @@
 
   /* Glassmorphism */
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-lg); /* 8px */
+  border-radius: var(--radius-xl); /* 12px - Consistent with all card components */
 
   overflow-wrap: break-word;
 

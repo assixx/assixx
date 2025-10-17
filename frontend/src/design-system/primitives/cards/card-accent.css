@@ -26,20 +26,8 @@
   transition: all 0.2s ease;
 }
 
-/* Top Indicator Bar */
-.card-accent::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-
-  height: 2px;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
-}
+/* Top Indicator Bar - REMOVED for cleaner glassmorphism design */
+/* No colored lines at the top of cards anymore */
 
 .card-accent:hover {
   border-color: rgb(33 150 243 / 50%);
@@ -56,7 +44,7 @@
   backdrop-filter: blur(10px);
 }
 
-/* Title with Side Indicator */
+/* Title - Clean without indicators */
 .card-accent__title {
   display: flex;
   gap: var(--spacing-2);
@@ -69,15 +57,7 @@
   color: var(--color-text-primary);
 }
 
-.card-accent__title::before {
-  content: "";
-
-  width: 4px;
-  height: 20px;
-  border-radius: 2px;
-
-  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
-}
+/* Side indicator removed for cleaner design */
 
 /* Content Area */
 .card-accent__content {
@@ -87,37 +67,15 @@
   padding: var(--spacing-6);
 }
 
-/* Color Variants for Top Bar */
-.card-accent--success::before {
-  background: linear-gradient(90deg, var(--color-success), #66bb6a);
-}
+/* Color Variants - All visual indicators removed */
+/* Clean glassmorphism design without colored accents */
 
-.card-accent--success .card-accent__title::before {
-  background: linear-gradient(180deg, var(--color-success), #66bb6a);
-}
-
-.card-accent--warning::before {
-  background: linear-gradient(90deg, var(--color-warning), #ffa726);
-}
-
-.card-accent--warning .card-accent__title::before {
-  background: linear-gradient(180deg, var(--color-warning), #ffa726);
-}
-
-.card-accent--danger::before {
-  background: linear-gradient(90deg, var(--color-danger), #ef5350);
-}
-
-.card-accent--danger .card-accent__title::before {
-  background: linear-gradient(180deg, var(--color-danger), #ef5350);
-}
-
-/* No Click Variant */
+/* No Click Variant - Keep hover effect for visual feedback */
 .card-accent--static {
   cursor: default;
 }
 
 .card-accent--static:hover {
-  border-color: rgb(255 255 255 / 10%);
-  background: rgb(255 255 255 / 2%);
+  border-color: rgb(33 150 243 / 50%);
+  background: rgb(255 255 255 / 3%);
 }

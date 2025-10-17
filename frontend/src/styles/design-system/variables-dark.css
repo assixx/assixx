@@ -77,6 +77,7 @@
   --color-text-primary: var(--color-white);
   --color-text-secondary: var(--color-gray-300);
   --color-warning: var(--color-orange-500);
+  --color-icon-primary: #a9d9ff; /* Light blue for all icons - consistent design */
   --glass-background-active: rgb(255 255 255 / var(--glass-opacity-medium));
   --glass-background-hover: rgb(255 255 255 / var(--glass-opacity-light));
   --glass-background: rgb(255 255 255 / var(--glass-opacity-subtle));
