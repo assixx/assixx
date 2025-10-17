@@ -25,6 +25,11 @@
    IMPORTANT: Must come AFTER Tailwind to override Tailwind's theme variables */
 @import "./design-system/variables-dark.css";
 
+/* Design System Card Components */
+@import "../design-system/primitives/cards/card-base.css";
+@import "../design-system/primitives/cards/card-stat.css";
+@import "../design-system/primitives/cards/card-accent.css";
+
 /* FontAwesome is loaded separately in HTML files */
 
 /* Theme and core styles */

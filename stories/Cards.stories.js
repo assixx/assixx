@@ -222,7 +222,10 @@ export const AccentCards = {
     container.innerHTML = `
       <div class="card-accent ${variantClass} ${staticClass}">
         <div class="card-accent__header">
-          <h3 class="card-accent__title">${args.title}</h3>
+          <h3 class="card-accent__title">
+            <i class="fas ${args.icon}" style="color: var(--color-icon-primary);"></i>
+            ${args.title}
+          </h3>
         </div>
         <div class="card-accent__content">
           <p style="color: var(--color-text-secondary); margin-bottom: 12px;">
@@ -230,7 +233,6 @@ export const AccentCards = {
           </p>
           <div style="display: flex; justify-content: center; margin-top: var(--spacing-4);">
             <button class="btn btn-modal" style="width: 80%;">
-              <i class="fas fa-${args.icon}"></i>
               ${args.buttonText}
             </button>
           </div>
@@ -399,11 +401,14 @@ export const AllVariants = {
           </h3>
           <div class="card-accent card-accent--static">
             <div class="card-accent__header">
-              <h4 class="card-accent__title">Mit Top Bar Indicator</h4>
+              <h4 class="card-accent__title">
+                <i class="fas fa-cube" style="color: var(--color-icon-primary);"></i>
+                Mit Icon im Header
+              </h4>
             </div>
             <div class="card-accent__content">
               <p style="color: var(--color-text-secondary);">
-                Use für Feature Cards und Module.
+                Use für Feature Cards und Module mit konsistenter Icon-Farbe.
               </p>
             </div>
           </div>

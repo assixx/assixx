@@ -11,7 +11,7 @@
 .card-stat {
   padding: var(--spacing-6); /* 24px */
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-lg); /* 8px */
+  border-radius: var(--radius-xl); /* 12px - Same as card-accent for consistency */
 
   text-align: center;
 
@@ -37,7 +37,7 @@
 /* Stat Value (Big Number) */
 .card-stat__value {
   margin-bottom: var(--spacing-1);
-  font-size: 2rem; /* 32px */
+  font-size: 1.5rem; /* 24px - Better for text and numbers */
   font-weight: 700;
   color: var(--color-primary);
 }
@@ -51,14 +51,12 @@
 /* With Icon */
 .card-stat__icon {
   margin-bottom: var(--spacing-2);
-  font-size: 2.5rem; /* 40px */
-  color: var(--color-primary);
-  opacity: 80%;
+  font-size: 2rem; /* 40px */
+  color: var(--color-icon-primary); /* #a9d9ff - Consistent light blue for all icons */
 }
 
-/* Color Variants */
-.card-stat--success .card-stat__value,
-.card-stat--success .card-stat__icon {
+/* Color Variants - Only for values, icons stay consistent */
+.card-stat--success .card-stat__value {
   color: var(--color-success);
 }
 
@@ -66,8 +64,7 @@
   border-color: rgb(76 175 80 / 50%);
 }
 
-.card-stat--warning .card-stat__value,
-.card-stat--warning .card-stat__icon {
+.card-stat--warning .card-stat__value {
   color: var(--color-warning);
 }
 
@@ -75,8 +72,7 @@
   border-color: rgb(255 152 0 / 50%);
 }
 
-.card-stat--danger .card-stat__value,
-.card-stat--danger .card-stat__icon {
+.card-stat--danger .card-stat__value {
   color: var(--color-danger);
 }
 

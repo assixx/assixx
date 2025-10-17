@@ -117,7 +117,7 @@
     "@types/lodash": "^4.17.20",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^24.7.2",
+    "@types/node": "^24.8.0",
     "@types/nodemailer": "^7.0.2",
     "@types/supertest": "^6.0.3",
     "@types/swagger-jsdoc": "^6.0.4",

@@ -57,7 +57,7 @@ For displaying statistics and KPI metrics.
 
 ### 3. Accent Card (`.card-accent`)
 
-Card with colored top indicator bar and header.
+Clean glassmorphism card with header structure.
 
 **Use cases:**
 
@@ -76,11 +76,9 @@ Card with colored top indicator bar and header.
 </div>
 ```
 
-**Color variants:**
+**Modifiers:**
 
-- `.card-accent--success` - Green indicator
-- `.card-accent--warning` - Orange indicator
-- `.card-accent--danger` - Red indicator
+- `.card-accent--static` - Removes hover effects (non-clickable)
 
 ## Modifiers
 
@@ -128,10 +126,9 @@ Card with colored top indicator bar and header.
 ### Accent Card
 
 ```
-▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ ← 4px top bar (::before)
 ┌─────────────────────────┐
 │ card-accent__header     │
-│ ┌─ card-accent__title   │ ← With ::before indicator
+│   card-accent__title    │ ← Clean title without indicators
 ├─────────────────────────┤
 │ card-accent__content    │
 │                         │
