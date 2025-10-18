@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 // Admin Management Main Controller
 import { $$, $all, setHTML } from '../../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
@@ -7,6 +8,7 @@ import { type Admin, admins, loadAdmins, loadTenants, deleteAdmin as deleteAdmin
 import {
   SELECTORS,
   getPositionDisplay,
+  getStatusBadge,
   getDepartmentsBadge,
   updateTenantDropdown,
   loadAndPopulateDepartments,
@@ -17,6 +19,8 @@ import {
   showPermissionsModal,
   savePermissionsHandler,
   handleFormSubmit,
+  initPositionDropdown,
+  initStatusDropdown,
 } from './forms';
 
 // Interface for global window functions
@@ -37,87 +41,196 @@ let adminForm: HTMLFormElement | null;
 let adminsTableContent: HTMLElement | null;
 let loadingDiv: HTMLElement | null;
 let emptyDiv: HTMLElement | null;
+let searchInput: HTMLInputElement | null;
+let searchClearBtn: HTMLButtonElement | null;
+
+// Search state
+let filteredAdmins: Admin[] = [];
+let selectedResultIndex = -1;
+
+// Filter state
+type AdminStatusFilter = 'active' | 'inactive' | 'archived' | 'all';
+let currentStatusFilter: AdminStatusFilter = 'active';
+
+// Constants
+const SEARCH_INPUT_HAS_VALUE_CLASS = 'search-input--has-value';
 
 // Generate HTML for a single admin table row
 function generateAdminRow(admin: Admin): string {
   console.info(`Rendering admin row - ID: ${String(admin.id)}, isActive: ${String(admin.isActive)}`);
 
-  const lastLogin =
-    admin.lastLogin !== undefined && admin.lastLogin !== ''
-      ? new Date(admin.lastLogin).toLocaleString('de-DE')
-      : 'Noch nie';
   const deptBadge = getDepartmentsBadge(admin);
+  const statusBadge = getStatusBadge(admin);
+  const employeeNumber = admin.employeeNumber ?? '-';
 
-  const statusClass = !admin.isActive ? 'table-warning' : '';
-  const statusBadge = !admin.isActive ? ' <span class="badge badge-warning">Inaktiv</span>' : '';
-
-  console.info(`Admin ${admin.username} - statusClass: ${statusClass}, statusBadge: ${statusBadge}`);
+  console.info(`Admin ${admin.username} - statusBadge: ${statusBadge}`);
 
   return `
-    <tr class="${statusClass}">
+    <tr>
       <td>${String(admin.id)}</td>
-      <td>${admin.firstName} ${admin.lastName}${statusBadge}</td>
+      <td>
+        <div class="flex items-center gap-2">
+          <div class="avatar avatar--sm avatar--color-${admin.id % 10}">
+            <span>${admin.firstName.charAt(0)}${admin.lastName.charAt(0)}</span>
+          </div>
+          <span>${admin.firstName} ${admin.lastName}</span>
+        </div>
+      </td>
       <td>${admin.email}</td>
+      <td>${employeeNumber}</td>
       <td>${getPositionDisplay(admin.position ?? '')}</td>
-      <td>${lastLogin}</td>
+      <td>${statusBadge}</td>
       <td>${deptBadge}</td>
       <td>
-        <button class="action-btn edit" data-action="edit-admin" data-admin-id="${String(admin.id)}">
-          Bearbeiten
-        </button>
-        <button class="action-btn permissions" data-action="show-permissions" data-admin-id="${String(admin.id)}">
-          Berechtigungen
-        </button>
-        <button class="action-btn delete" data-action="delete-admin" data-admin-id="${String(admin.id)}">
-          Löschen
-        </button>
+        <div class="flex gap-2">
+          <button class="btn btn-secondary btn-sm" data-action="edit-admin" data-admin-id="${String(admin.id)}">
+            <i class="fas fa-edit"></i>
+            Bearbeiten
+          </button>
+          <button class="btn btn-secondary btn-sm" data-action="show-permissions" data-admin-id="${String(admin.id)}">
+            <i class="fas fa-key"></i>
+            Berechtigungen
+          </button>
+          <button class="btn btn-danger btn-sm" data-action="delete-admin" data-admin-id="${String(admin.id)}">
+            <i class="fas fa-trash"></i>
+            Löschen
+          </button>
+        </div>
       </td>
     </tr>
   `;
 }
 
 // Render admin table
-function renderAdminTable() {
+/**
+ * Get empty state title based on filter
+ */
+function getEmptyStateTitle(): string {
+  if (currentStatusFilter === 'inactive') return 'Keine inaktiven Administratoren';
+  if (currentStatusFilter === 'archived') return 'Keine archivierten Administratoren';
+  return 'Keine Administratoren gefunden';
+}
+
+/**
+ * Get empty state description based on filter
+ */
+function getEmptyStateDescription(): string {
+  if (currentStatusFilter === 'inactive' || currentStatusFilter === 'archived') {
+    return 'Es gibt aktuell keine Administratoren in dieser Kategorie.';
+  }
+  return 'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.';
+}
+
+/**
+ * Check if add button should be hidden for current filter
+ */
+function shouldHideAddButton(): boolean {
+  return currentStatusFilter === 'inactive' || currentStatusFilter === 'archived';
+}
+
+/**
+ * Update empty state content based on current filter
+ */
+function updateEmptyStateContent(): void {
+  if (emptyDiv === null) return;
+
+  const emptyStateTitle = emptyDiv.querySelector<HTMLElement>('.empty-state__title');
+  const emptyStateDesc = emptyDiv.querySelector<HTMLElement>('.empty-state__description');
+  const emptyStateAddBtn = emptyDiv.querySelector<HTMLButtonElement>('#empty-state-add-btn');
+
+  if (emptyStateTitle !== null) {
+    emptyStateTitle.textContent = getEmptyStateTitle();
+  }
+
+  if (emptyStateDesc !== null) {
+    emptyStateDesc.textContent = getEmptyStateDescription();
+  }
+
+  if (emptyStateAddBtn !== null) {
+    if (shouldHideAddButton()) {
+      emptyStateAddBtn.classList.add('u-hidden');
+    } else {
+      emptyStateAddBtn.classList.remove('u-hidden');
+    }
+  }
+}
+
+/**
+ * Show search no results message
+ */
+function showSearchNoResults(searchValue: string): void {
+  if (adminsTableContent === null) return;
+  setHTML(
+    adminsTableContent,
+    '<div class="empty-state"><p class="empty-state__description">Keine Administratoren gefunden für "' +
+      searchValue +
+      '"</p></div>',
+  );
+}
+
+/**
+ * Show empty state with filter-specific content
+ */
+function showEmptyState(): void {
+  if (adminsTableContent === null) return;
+  setHTML(adminsTableContent, '');
+  emptyDiv?.classList.remove('u-hidden');
+  updateEmptyStateContent();
+}
+
+/**
+ * Render admin table with data
+ */
+function renderAdminTable(adminsToRender: Admin[] = admins): void {
   console.info('renderAdminTable called');
   if (adminsTableContent === null) {
     console.error('adminsTableContent not found');
     return;
   }
 
-  // Hide loading, show content
   loadingDiv?.classList.add('u-hidden');
 
-  if (admins.length === 0) {
-    setHTML(adminsTableContent, '');
-    emptyDiv?.classList.remove('u-hidden');
+  // Handle empty results
+  if (adminsToRender.length === 0) {
+    const searchValue = searchInput?.value ?? '';
+    if (searchValue !== '' && searchValue.trim() !== '') {
+      showSearchNoResults(searchValue);
+    } else {
+      showEmptyState();
+    }
     return;
   }
 
-  // Hide empty state
+  // Hide empty state and render table
   emptyDiv?.classList.add('u-hidden');
-
-  console.info('Admins to render:', admins);
+  console.info('Admins to render:', adminsToRender);
 
   const tableHTML = `
-    <table class="admin-table" id="admins-table">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>E-Mail</th>
-          <th>Position</th>
-          <th>Letzter Login</th>
-          <th>Abteilungen</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${admins.map((admin) => generateAdminRow(admin)).join('')}
-      </tbody>
-    </table>
+    <div class="data-table-wrapper">
+      <table class="data-table data-table--hover data-table--striped" id="admins-table">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">E-Mail</th>
+            <th scope="col">Personalnummer</th>
+            <th scope="col">Position</th>
+            <th scope="col">Status</th>
+            <th scope="col">Abteilungen</th>
+            <th scope="col">Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${adminsToRender.map((admin) => generateAdminRow(admin)).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   setHTML(adminsTableContent, tableHTML);
+
+  // Re-initialize tooltips for dynamically added elements
+  initDataTooltips();
 }
 
 // Load admins and render table
@@ -154,17 +267,17 @@ async function loadTenantsAndUpdate() {
 async function showDeleteConfirmationModal(admin: Admin): Promise<boolean> {
   return await new Promise<boolean>((resolve) => {
     const modal = document.createElement('div');
-    modal.className = 'modal active';
+    modal.className = 'modal-overlay modal-overlay--active';
     const modalHTML = `
-        <div class="modal-content">
-          <div class="modal-header">
-            <h3 class="modal-title">Administrator löschen</h3>
+        <div class="ds-modal ds-modal--sm">
+          <div class="ds-modal__header">
+            <h3 class="ds-modal__title">Administrator löschen</h3>
           </div>
-          <div class="modal-body">
+          <div class="ds-modal__body">
             <p>Möchten Sie den Administrator "${admin.username}" wirklich löschen?</p>
           </div>
-          <div class="modal-footer">
-            <button class="btn btn-primary" id="confirm-delete">Löschen</button>
+          <div class="ds-modal__footer">
+            <button class="btn btn-danger" id="confirm-delete">Löschen</button>
             <button class="btn btn-secondary" id="cancel-delete">Abbrechen</button>
           </div>
         </div>
@@ -229,7 +342,7 @@ async function deleteAdminHandler(adminId: number) {
 
 // Close delete modal
 function closeDeleteModal(): void {
-  deleteModal?.classList.remove('active');
+  deleteModal?.classList.remove('modal-overlay--active');
 }
 
 // Show delete modal
@@ -244,7 +357,7 @@ function showDeleteModal(adminId: number): void {
 
   if (deleteModal && deleteIdInput) {
     deleteIdInput.value = String(adminId);
-    deleteModal.classList.add('active');
+    deleteModal.classList.add('modal-overlay--active');
   }
 }
 
@@ -259,8 +372,49 @@ function setupGlobalFunctions() {
   (window as unknown as ManageAdminsWindow).savePermissionsHandler = savePermissionsHandler;
 }
 
+/**
+ * Initialize Design System tooltips from data-tooltip attributes
+ * Converts data-tooltip="text" to proper tooltip HTML structure
+ */
+function initDataTooltips() {
+  const elements = document.querySelectorAll('[data-tooltip]');
+
+  elements.forEach((element) => {
+    const tooltipText = element.getAttribute('data-tooltip');
+    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
+
+    if (tooltipText === null || tooltipText === '') {
+      return;
+    }
+
+    // Wrap element if not already wrapped
+    const isAlreadyWrapped = element.parentElement?.classList.contains('tooltip') ?? false;
+
+    if (!isAlreadyWrapped) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tooltip';
+
+      // Replace element with wrapper using element.before()
+      element.before(wrapper);
+      wrapper.appendChild(element);
+
+      // Create tooltip content
+      const tooltipContent = document.createElement('div');
+      tooltipContent.className = `tooltip__content tooltip__content--${tooltipPosition} tooltip__content--multiline`;
+      tooltipContent.setAttribute('role', 'tooltip');
+      // Use textContent for multiline support - preserves newlines
+      tooltipContent.textContent = tooltipText;
+
+      wrapper.appendChild(tooltipContent);
+    }
+  });
+}
+
 // Helper function to initialize tooltip handlers
 function initializeTooltipHandlers() {
+  // Initialize data-tooltip attributes (Design System tooltips)
+  initDataTooltips();
+
   // Event delegation for admin actions
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
@@ -300,24 +454,453 @@ function initializeTooltipHandlers() {
   });
 }
 
+// Constants for field validation states
+const FIELD_STATE_ERROR = 'is-error';
+const FIELD_STATE_SUCCESS = 'is-success';
+
 // Helper function to setup password validation
-function setupPasswordValidation() {
+/**
+ * Setup live email validation with visual feedback
+ */
+function setupEmailValidation(): void {
+  const emailField = $$(SELECTORS.ADMIN_EMAIL) as HTMLInputElement | null;
+  const emailConfirmField = $$(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement | null;
+  const emailError = $$(SELECTORS.EMAIL_ERROR);
+
+  if (emailField !== null && emailConfirmField !== null && emailError !== null) {
+    // Validate on both fields with real-time visual feedback
+    const validateEmails = (): void => {
+      const email = emailField.value;
+      const emailConfirm = emailConfirmField.value;
+
+      // Only validate if confirm field has value
+      if (emailConfirm !== '') {
+        if (email !== emailConfirm) {
+          // Show error
+          emailError.classList.remove('u-hidden');
+          emailField.classList.add(FIELD_STATE_ERROR);
+          emailField.classList.remove(FIELD_STATE_SUCCESS);
+          emailConfirmField.classList.add(FIELD_STATE_ERROR);
+          emailConfirmField.classList.remove(FIELD_STATE_SUCCESS);
+        } else {
+          // Show success
+          emailError.classList.add('u-hidden');
+          emailField.classList.remove(FIELD_STATE_ERROR);
+          emailField.classList.add(FIELD_STATE_SUCCESS);
+          emailConfirmField.classList.remove(FIELD_STATE_ERROR);
+          emailConfirmField.classList.add(FIELD_STATE_SUCCESS);
+        }
+      } else {
+        // Clear all states when confirm is empty
+        emailError.classList.add('u-hidden');
+        emailField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+        emailConfirmField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+      }
+    };
+
+    emailField.addEventListener('input', validateEmails);
+    emailConfirmField.addEventListener('input', validateEmails);
+  }
+}
+
+/**
+ * Setup live password validation with visual feedback
+ */
+function setupPasswordValidation(): void {
   const passwordField = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
   const passwordConfirmField = $$(SELECTORS.ADMIN_PASSWORD_CONFIRM) as HTMLInputElement | null;
   const passwordError = $$(SELECTORS.PASSWORD_ERROR);
 
-  if (passwordField !== null && passwordConfirmField !== null) {
-    passwordConfirmField.addEventListener('input', () => {
+  if (passwordField !== null && passwordConfirmField !== null && passwordError !== null) {
+    // Validate on both fields with real-time visual feedback
+    const validatePasswords = (): void => {
       const password = passwordField.value;
       const passwordConfirm = passwordConfirmField.value;
 
-      if (passwordConfirm !== '' && password !== passwordConfirm) {
-        if (passwordError) passwordError.style.display = 'block';
+      // Only validate if confirm field has value
+      if (passwordConfirm !== '') {
+        const passwordsMatch = password.length === passwordConfirm.length && password === passwordConfirm;
+        if (!passwordsMatch) {
+          // Show error
+          passwordError.classList.remove('u-hidden');
+          passwordField.classList.add(FIELD_STATE_ERROR);
+          passwordField.classList.remove(FIELD_STATE_SUCCESS);
+          passwordConfirmField.classList.add(FIELD_STATE_ERROR);
+          passwordConfirmField.classList.remove(FIELD_STATE_SUCCESS);
+        } else {
+          // Show success
+          passwordError.classList.add('u-hidden');
+          passwordField.classList.remove(FIELD_STATE_ERROR);
+          passwordField.classList.add(FIELD_STATE_SUCCESS);
+          passwordConfirmField.classList.remove(FIELD_STATE_ERROR);
+          passwordConfirmField.classList.add(FIELD_STATE_SUCCESS);
+        }
       } else {
-        if (passwordError) passwordError.style.display = 'none';
+        // Clear all states when confirm is empty
+        passwordError.classList.add('u-hidden');
+        passwordField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+        passwordConfirmField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
       }
-    });
+    };
+
+    passwordField.addEventListener('input', validatePasswords);
+    passwordConfirmField.addEventListener('input', validatePasswords);
   }
+}
+
+/**
+ * Filter admins based on status
+ */
+function filterByStatus(adminsList: Admin[], status: AdminStatusFilter): Admin[] {
+  switch (status) {
+    case 'active':
+      // Show only active AND not archived
+      return adminsList.filter((admin) => admin.isActive && admin.isArchived !== true);
+    case 'inactive':
+      // Show only inactive AND not archived (exclude archived!)
+      return adminsList.filter((admin) => !admin.isActive && admin.isArchived !== true);
+    case 'archived':
+      // Show only archived (regardless of isActive)
+      return adminsList.filter((admin) => admin.isArchived === true);
+    case 'all':
+      return adminsList;
+    default:
+      return adminsList;
+  }
+}
+
+/**
+ * Filter admins based on search query
+ */
+function filterBySearch(adminsList: Admin[], query: string): Admin[] {
+  const searchTerm = query.toLowerCase().trim();
+
+  if (searchTerm === '') {
+    return adminsList;
+  }
+
+  return adminsList.filter((admin) => {
+    const fullName = `${admin.firstName} ${admin.lastName}`.toLowerCase();
+    const email = admin.email.toLowerCase();
+    const position = (admin.position ?? '').toLowerCase();
+    const positionDisplay = getPositionDisplay(admin.position ?? '').toLowerCase();
+    const employeeNumber = (admin.employeeNumber ?? '').toLowerCase();
+
+    return (
+      fullName.includes(searchTerm) ||
+      email.includes(searchTerm) ||
+      employeeNumber.includes(searchTerm) ||
+      position.includes(searchTerm) ||
+      positionDisplay.includes(searchTerm)
+    );
+  });
+}
+
+/**
+ * Apply all filters (status + search)
+ */
+function applyAllFilters(query: string): Admin[] {
+  // First filter by status
+  let result = filterByStatus(admins, currentStatusFilter);
+  // Then filter by search
+  result = filterBySearch(result, query);
+  return result;
+}
+
+/**
+ * Escape special regex characters in a string
+ * Prevents regex injection attacks
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+}
+
+/**
+ * Highlight search term in text
+ * Wraps matches in <strong> tags for highlighting
+ */
+function highlightMatch(text: string, query: string): string {
+  if (query === '' || query.trim() === '') {
+    return text;
+  }
+
+  // Escape special regex characters to prevent injection
+  const escapedQuery = escapeRegex(query);
+  // eslint-disable-next-line security/detect-non-literal-regexp -- Safe: escapedQuery is sanitized by escapeRegex() which escapes all special regex characters
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return text.replace(regex, '<strong>$1</strong>');
+}
+
+/**
+ * Generate HTML for a single search result item
+ */
+function generateSearchResultItem(admin: Admin, query: string): string {
+  const fullName = `${admin.firstName} ${admin.lastName}`;
+  const position = getPositionDisplay(admin.position ?? '');
+  const employeeNumber = admin.employeeNumber ?? '';
+
+  return `
+    <div class="search-input__result-item" data-admin-id="${String(admin.id)}" data-action="edit-from-search">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-weight: 500; color: var(--color-text-primary);">
+          ${highlightMatch(fullName, query)}
+        </div>
+        <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
+          ${highlightMatch(admin.email, query)}
+        </div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;">
+          <span>${highlightMatch(position, query)}</span>
+          ${employeeNumber !== '' ? `<span>• ${highlightMatch(employeeNumber, query)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Render search results dropdown
+ */
+function renderSearchResults(results: Admin[], query: string): void {
+  const resultsContainer = document.querySelector<HTMLElement>('#admin-search-results');
+  const searchWrapper = document.querySelector<HTMLElement>('.search-input-wrapper');
+
+  if (resultsContainer === null || searchWrapper === null) {
+    return;
+  }
+
+  // If no query, hide results
+  if (query === '' || query.trim() === '') {
+    searchWrapper.classList.remove('search-input-wrapper--open');
+    setHTML(resultsContainer, '');
+    return;
+  }
+
+  // Show results dropdown
+  searchWrapper.classList.add('search-input-wrapper--open');
+
+  // If no results
+  if (results.length === 0) {
+    setHTML(
+      resultsContainer,
+      `<div class="search-input__no-results">Keine Administratoren gefunden für "${query}"</div>`,
+    );
+    return;
+  }
+
+  // Limit to 5 results for dropdown
+  const limitedResults = results.slice(0, 5);
+
+  const resultsHTML = limitedResults.map((admin) => generateSearchResultItem(admin, query)).join('');
+
+  // Add "show all" if more than 5 results
+  const showAllHTML =
+    results.length > 5
+      ? `<div class="search-input__result-item" style="font-size: 0.813rem; color: var(--color-primary); text-align: center; border-top: 1px solid rgb(255 255 255 / 5%);">
+          ${String(results.length - 5)} weitere Ergebnisse in Tabelle
+        </div>`
+      : '';
+
+  setHTML(resultsContainer, resultsHTML + showAllHTML);
+}
+
+/**
+ * Close search results dropdown
+ */
+function closeSearchResults(): void {
+  const searchWrapper = document.querySelector<HTMLElement>('.search-input-wrapper');
+  searchWrapper?.classList.remove('search-input-wrapper--open');
+}
+
+/**
+ * Handle search input changes
+ */
+function handleSearchInputChange(searchContainer: HTMLElement, query: string): void {
+  // Toggle has-value class for clear button
+  if (query !== '' && query.trim() !== '') {
+    searchContainer.classList.add(SEARCH_INPUT_HAS_VALUE_CLASS);
+  } else {
+    searchContainer.classList.remove(SEARCH_INPUT_HAS_VALUE_CLASS);
+  }
+
+  // Apply all filters (status + search)
+  filteredAdmins = applyAllFilters(query);
+  renderAdminTable(filteredAdmins);
+  renderSearchResults(filteredAdmins, query);
+  selectedResultIndex = -1;
+}
+
+/**
+ * Handle clear button click
+ */
+function handleSearchClear(searchContainer: HTMLElement): void {
+  if (searchInput !== null) {
+    searchInput.value = '';
+    searchContainer.classList.remove(SEARCH_INPUT_HAS_VALUE_CLASS);
+    // Reapply status filter (no search)
+    filteredAdmins = applyAllFilters('');
+    renderAdminTable(filteredAdmins);
+    closeSearchResults();
+    searchInput.focus();
+  }
+}
+
+/**
+ * Handle search result item click
+ */
+function handleResultItemClick(searchContainer: HTMLElement, adminId: string): void {
+  void editAdminHandler(Number.parseInt(adminId, 10));
+  closeSearchResults();
+  if (searchInput !== null) {
+    searchInput.value = '';
+    searchContainer.classList.remove(SEARCH_INPUT_HAS_VALUE_CLASS);
+  }
+}
+
+/**
+ * Handle keyboard navigation in search results
+ */
+function handleSearchKeyboard(e: KeyboardEvent, searchContainer: HTMLElement): void {
+  const resultsContainer = document.querySelector<HTMLElement>('#admin-search-results');
+  const resultItems = resultsContainer?.querySelectorAll('[data-action="edit-from-search"]');
+
+  if (resultItems === undefined || resultItems.length === 0) {
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectedResultIndex = Math.min(selectedResultIndex + 1, resultItems.length - 1);
+    updateSelectedResult(resultItems);
+    return;
+  }
+
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectedResultIndex = Math.max(selectedResultIndex - 1, -1);
+    updateSelectedResult(resultItems);
+    return;
+  }
+
+  if (e.key === 'Enter' && selectedResultIndex >= 0) {
+    e.preventDefault();
+    // eslint-disable-next-line security/detect-object-injection -- Safe: selectedResultIndex is a controlled index from our keyboard navigation (bounded by resultItems.length)
+    const selectedItem = resultItems[selectedResultIndex] as HTMLElement;
+    const adminId = selectedItem.dataset.adminId;
+    if (adminId !== undefined) {
+      handleResultItemClick(searchContainer, adminId);
+      selectedResultIndex = -1;
+    }
+    return;
+  }
+
+  if (e.key === 'Escape') {
+    closeSearchResults();
+    selectedResultIndex = -1;
+    searchInput?.blur();
+  }
+}
+
+/**
+ * Setup search input functionality
+ */
+function setupSearchInput(): void {
+  searchInput = document.querySelector<HTMLInputElement>('#admin-search');
+  searchClearBtn = document.querySelector<HTMLButtonElement>('#admin-search-clear');
+  const searchContainer = document.querySelector<HTMLElement>('#admin-search-container');
+  const searchWrapper = document.querySelector<HTMLElement>('.search-input-wrapper');
+
+  if (searchInput === null || searchContainer === null || searchWrapper === null) {
+    console.error('Search input elements not found');
+    return;
+  }
+
+  // Input changes
+  searchInput.addEventListener('input', () => {
+    const query = searchInput?.value ?? '';
+    handleSearchInputChange(searchContainer, query);
+  });
+
+  // Clear button
+  searchClearBtn?.addEventListener('click', () => {
+    handleSearchClear(searchContainer);
+  });
+
+  // Result clicks
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const resultItem = target.closest<HTMLElement>('[data-action="edit-from-search"]');
+    const adminId = resultItem?.dataset.adminId;
+    if (resultItem !== null && adminId !== undefined) {
+      handleResultItemClick(searchContainer, adminId);
+    }
+  });
+
+  // Outside clicks
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (!searchWrapper.contains(target)) {
+      closeSearchResults();
+    }
+  });
+
+  // Keyboard navigation
+  searchInput.addEventListener('keydown', (e) => {
+    handleSearchKeyboard(e, searchContainer);
+  });
+}
+
+/**
+ * Update visual selection of result items
+ */
+function updateSelectedResult(resultItems: NodeListOf<Element>): void {
+  resultItems.forEach((item, index) => {
+    const htmlItem = item as HTMLElement;
+    if (index === selectedResultIndex) {
+      htmlItem.classList.add('search-input__result-item--active');
+    } else {
+      htmlItem.classList.remove('search-input__result-item--active');
+    }
+  });
+}
+
+/**
+ * Setup status filter toggle
+ */
+function setupStatusToggle(): void {
+  const toggleGroup = document.querySelector<HTMLElement>('#admin-status-toggle');
+  if (toggleGroup === null) {
+    console.error('Status toggle group not found');
+    return;
+  }
+
+  // Handle toggle button clicks
+  toggleGroup.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.toggle-group__btn');
+    if (btn === null || btn.disabled) {
+      return;
+    }
+
+    // Get status from data attribute
+    const status = btn.dataset.status as AdminStatusFilter | undefined;
+    if (status === undefined) {
+      return;
+    }
+
+    // Update active state
+    toggleGroup.querySelectorAll('.toggle-group__btn').forEach((b) => {
+      b.classList.remove('active');
+    });
+    btn.classList.add('active');
+
+    // Update filter state
+    currentStatusFilter = status;
+
+    // Reapply all filters
+    const query = searchInput?.value ?? '';
+    filteredAdmins = applyAllFilters(query);
+    renderAdminTable(filteredAdmins);
+    renderSearchResults(filteredAdmins, query);
+  });
 }
 
 // Position dropdown no longer needed - using standard select element
@@ -352,14 +935,14 @@ function setupPermissionRadioHandlers(): void {
         const groupContainer = $$('#group-select-container');
 
         // Hide all containers first
-        if (deptContainer !== null) deptContainer.style.display = 'none';
-        if (groupContainer !== null) groupContainer.style.display = 'none';
+        deptContainer?.classList.add('hidden');
+        groupContainer?.classList.add('hidden');
 
         if (permissionType === 'specific' && deptContainer !== null) {
-          deptContainer.style.display = 'block';
+          deptContainer.classList.remove('hidden');
           await loadAndPopulateDepartments();
         } else if (permissionType === 'groups' && groupContainer !== null) {
-          groupContainer.style.display = 'block';
+          groupContainer.classList.remove('hidden');
           // TODO: Load and populate groups
         }
       })();
@@ -411,34 +994,75 @@ function initializeDOMElements(): void {
   adminsTableContent = document.querySelector('#admins-table-content');
   loadingDiv = document.querySelector('#admins-loading');
   emptyDiv = document.querySelector('#admins-empty');
+  searchInput = document.querySelector<HTMLInputElement>('#admin-search');
+  searchClearBtn = document.querySelector<HTMLButtonElement>('#admin-search-clear');
+
+  // Debug logging
+  console.info('FAB button found:', addAdminBtn !== null);
+  if (addAdminBtn === null) {
+    console.error('FAB button #add-admin-btn not found in DOM!');
+  }
 }
 
-// Attach event listeners
-function attachEventListeners(): void {
-  // Add admin button
-  addAdminBtn?.addEventListener('click', () => {
+// Attach FAB and empty state listeners
+function attachAddAdminListeners(): void {
+  // FAB button
+  if (addAdminBtn !== null) {
+    console.info('Attaching click handler to FAB button');
+    addAdminBtn.addEventListener('click', () => {
+      console.info('FAB button clicked!');
+      showAddAdminModal();
+    });
+  } else {
+    console.error('Cannot attach event listener - addAdminBtn is null!');
+  }
+
+  // Empty state add button
+  document.querySelector('#empty-state-add-btn')?.addEventListener('click', () => {
     showAddAdminModal();
   });
+}
 
-  // Modal close buttons
+// Attach modal close button listeners
+function attachModalCloseListeners(): void {
+  // Admin modal close buttons
   document.querySelector('#close-admin-modal')?.addEventListener('click', () => {
     closeAdminModal();
   });
   document.querySelector('#cancel-admin-modal')?.addEventListener('click', () => {
     closeAdminModal();
   });
+
+  // Delete modal close buttons
   document.querySelector('#close-delete-modal')?.addEventListener('click', closeDeleteModal);
   document.querySelector('#cancel-delete-modal')?.addEventListener('click', closeDeleteModal);
+}
 
-  // Delete confirmation
+// Attach permissions modal listeners
+function attachPermissionsModalListeners(): void {
+  document.querySelector('#close-permissions-modal')?.addEventListener('click', () => {
+    closePermissionsModal();
+  });
+  document.querySelector('#cancel-permissions-modal')?.addEventListener('click', () => {
+    closePermissionsModal();
+  });
+  document.querySelector('#save-permissions')?.addEventListener('click', () => {
+    void savePermissionsHandler();
+  });
+}
+
+// Attach delete confirmation listener
+function attachDeleteConfirmListener(): void {
   document.querySelector('#confirm-delete-admin')?.addEventListener('click', () => {
     const deleteInput = document.querySelector<HTMLInputElement>('#delete-admin-id');
     if (deleteInput !== null && deleteInput.value !== '') {
       void deleteAdminHandler(Number.parseInt(deleteInput.value, 10));
     }
   });
+}
 
-  // Event delegation for admin action buttons
+// Attach table action listeners (event delegation)
+function attachTableActionListeners(): void {
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
 
@@ -471,6 +1095,15 @@ function attachEventListeners(): void {
   });
 }
 
+// Attach all event listeners
+function attachEventListeners(): void {
+  attachAddAdminListeners();
+  attachModalCloseListeners();
+  attachPermissionsModalListeners();
+  attachDeleteConfirmListener();
+  attachTableActionListeners();
+}
+
 // Initialize the admin management
 (() => {
   if (!checkAuth()) return;
@@ -479,12 +1112,16 @@ function attachEventListeners(): void {
   attachEventListeners();
   setupGlobalFunctions();
   loadInitialData();
-  // setupPositionDropdown(); - No longer needed, using standard select
+  initPositionDropdown(); // Initialize custom position dropdown
+  initStatusDropdown(); // Initialize custom status dropdown
   setupPermissionRadioHandlers();
   setupDepartmentSelectionButtons();
   setupFormSubmitHandler();
   initializeTooltipHandlers();
-  setupPasswordValidation();
+  setupEmailValidation(); // Initialize live email validation
+  setupPasswordValidation(); // Initialize live password validation
+  setupSearchInput(); // Initialize search input functionality
+  setupStatusToggle(); // Initialize status filter toggle
 })();
 
 // End of file

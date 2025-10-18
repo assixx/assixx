@@ -5,6 +5,13 @@
  */
 
 /* ========================================
+   LAYER ORDER - MUST BE FIRST!
+   Define layer priority BEFORE any imports
+   utilities > components > base
+   ======================================== */
+@layer base, components, utilities;
+
+/* ========================================
    PHASE 1: TAILWIND v4 PROPER IMPLEMENTATION
    ======================================== */
 
@@ -29,6 +36,9 @@
 @import "../design-system/primitives/cards/card-base.css";
 @import "../design-system/primitives/cards/card-stat.css";
 @import "../design-system/primitives/cards/card-accent.css";
+
+/* Design System Modal Component */
+@import "../design-system/primitives/modals/modal.base.css";
 
 /* FontAwesome is loaded separately in HTML files */
 

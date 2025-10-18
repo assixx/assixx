@@ -114,6 +114,27 @@
    POSITION VARIANTS
    ======================================== */
 
+/* Top Position (appears above element) */
+.tooltip__content--top {
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.tooltip__content--top.show,
+.tooltip:hover .tooltip__content--top,
+.tooltip__trigger:hover + .tooltip__content--top,
+.tooltip__trigger:focus + .tooltip__content--top {
+  transform: translateX(-50%) translateY(0);
+}
+
+.tooltip__content--top::before {
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-top-color: rgb(30 30 30 / 95%);
+}
+
 /* Bottom Position (default) */
 .tooltip__content--bottom {
   top: calc(100% + 8px);

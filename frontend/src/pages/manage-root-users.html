@@ -29,25 +29,91 @@
         <!-- Breadcrumb Navigation -->
         <div id="breadcrumb-container"></div>
 
-        <div class="container">
+        <div class="mx-auto px-4 sm:px-6">
           <div class="card">
-            <div class="card-header">
-              <h2 class="card-title">Root User Verwaltung</h2>
-              <p class="text-secondary u-mt-text">Übersicht aller Root-Benutzer des Systems</p>
-            </div>
-            <div class="card-body">
-              <!-- Security Warning -->
-              <div class="security-warning">
-                <i class="fas fa-shield-alt"></i>
-                <div class="security-warning-text">
-                  <strong>Sicherheitshinweis:</strong>
-                  Vollzugriff auf System. Kritische Aktionen benötigen Zwei-Personen-Genehmigung.
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-shield-alt mr-2"></i>
+                Root User Verwaltung
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Übersicht aller Root-Benutzer des Systems</p>
+
+              <!-- Filter & Search Controls -->
+              <div class="flex items-center justify-between gap-4 mt-4">
+                <!-- Status Toggle Group -->
+                <div class="toggle-group" id="root-status-toggle">
+                  <button class="toggle-group__btn active" data-status="active" title="Aktive Root-Benutzer">
+                    <i class="fas fa-user-check"></i>
+                    Aktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="inactive" title="Inaktive Root-Benutzer">
+                    <i class="fas fa-user-times"></i>
+                    Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="all" title="Alle Root-Benutzer">
+                    <i class="fas fa-users"></i>
+                    Alle
+                  </button>
                 </div>
+
+                <!-- Search Input -->
+                <div class="search-input-wrapper max-w-80">
+                  <div class="search-input" id="root-search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input
+                      type="search"
+                      id="root-search"
+                      class="search-input__field"
+                      placeholder="Root-Benutzer suchen..."
+                      autocomplete="off"
+                    />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="root-search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <!-- Results Dropdown -->
+                  <div class="search-input__results" id="root-search-results">
+                    <!-- Results populated dynamically -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card__body">
+              <!-- Security Warning -->
+              <div class="alert alert--warning mb-4">
+                <div class="alert__icon">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <div class="alert__content">
+                  <div class="alert__title">Sicherheitshinweis</div>
+                  <div class="alert__message">Vollzugriff auf System. Kritische Aktionen benötigen Zwei-Personen-Genehmigung.</div>
+                </div>
+              </div>
+
+              <!-- Loading State -->
+              <div id="root-users-loading" class="spinner-container u-hidden">
+                <div class="spinner"></div>
+                <p class="mt-2 text-[var(--color-text-secondary)]">Root-Benutzer werden geladen...</p>
               </div>
 
               <!-- Root User Table -->
               <div id="rootTableContent">
                 <!-- Tabelle wird hier dynamisch eingefügt -->
+              </div>
+
+              <!-- Empty State -->
+              <div id="root-users-empty" class="empty-state u-hidden">
+                <div class="empty-state__icon">
+                  <i class="fas fa-shield-alt"></i>
+                </div>
+                <h3 class="empty-state__title">Keine Root-Benutzer gefunden</h3>
+                <p class="empty-state__description">Erstellen Sie Ihren ersten Root-Benutzer für vollständigen Systemzugriff.</p>
+                <button class="btn btn-primary" id="empty-state-add-btn">
+                  <i class="fas fa-plus"></i>
+                  Root-Benutzer hinzufügen
+                </button>
               </div>
             </div>
           </div>
@@ -55,271 +121,196 @@
       </main>
     </div>
 
-    <!-- Add Root Button -->
-    <button class="add-root-btn" data-action="show-add-root-modal">+</button>
+    <!-- Floating Action Button -->
+    <button class="btn-float" id="add-root-btn" aria-label="Root-Benutzer hinzufügen">
+      <i class="fas fa-user-shield"></i>
+    </button>
 
-    <!-- Root User Modal -->
-    <div class="modal" id="rootModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="modalTitle">Root User hinzufügen</h3>
-          <button class="modal-close" data-action="close-root-modal">&times;</button>
+    <!-- Add/Edit Root User Modal -->
+    <div id="root-modal" class="modal-overlay">
+      <form id="root-form" class="ds-modal">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="root-modal-title">Root-Benutzer hinzufügen</h3>
+          <button type="button" class="ds-modal__close" id="close-root-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form id="rootForm" style="padding: 20px">
-          <div class="form-group">
-            <label class="form-label">Vorname *</label>
-            <input type="text" id="rootFirstName" class="form-control" required />
+        <div class="ds-modal__body">
+          <input type="hidden" id="root-id" />
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-first-name">
+              Vorname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="root-first-name" name="firstName" class="form-field__control" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">Nachname *</label>
-            <input type="text" id="rootLastName" class="form-control" required />
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-last-name">
+              Nachname
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="root-last-name" name="lastName" class="form-field__control" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">E-Mail *</label>
-            <input type="email" id="rootEmail" class="form-control" required />
-            <small class="text-secondary">Wird auch als Benutzername verwendet</small>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-email">
+              E-Mail
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="root-email" name="email" class="form-field__control" required />
+            <span class="form-field__message text-[var(--color-text-secondary)]">Wird auch als Benutzername verwendet</span>
           </div>
-          <div class="form-group" id="emailConfirmGroup">
-            <label class="form-label">E-Mail wiederholen *</label>
-            <input type="email" id="rootEmailConfirm" class="form-control" required />
-            <small class="text-danger u-hidden" id="email-error">E-Mail-Adressen stimmen nicht überein</small>
-            <small class="text-danger u-hidden" id="emailMismatchError">E-Mail-Adressen stimmen nicht überein</small>
+
+          <div class="form-field" id="email-confirm-group">
+            <label class="form-field__label" for="root-email-confirm">
+              E-Mail wiederholen
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="email" id="root-email-confirm" name="emailConfirm" class="form-field__control" required />
+            <span class="form-field__message form-field__message--error u-hidden" id="email-error">
+              E-Mail-Adressen stimmen nicht überein
+            </span>
           </div>
-          <div class="form-group">
-            <label class="form-label">Personalnummer</label>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-employee-number">Personalnummer</label>
             <input
               type="text"
-              id="rootEmployeeNumber"
-              class="form-control"
+              id="root-employee-number"
+              name="employeeNumber"
+              class="form-field__control"
               placeholder="z.B. ABC-123 oder 2025-001 (optional, max 10 Zeichen)"
               maxlength="10"
               pattern="[A-Za-z0-9\-]{1,10}"
               title="Max 10 Zeichen: Buchstaben, Zahlen, Bindestrich"
             />
           </div>
-          <div class="form-group" id="passwordGroup">
-            <label class="form-label">Passwort *</label>
-            <input type="password" id="rootPassword" class="form-control" />
-          </div>
-          <div class="form-group" id="passwordConfirmGroup">
-            <label class="form-label">Passwort wiederholen *</label>
-            <input type="password" id="rootPasswordConfirm" class="form-control" />
-            <small class="text-danger u-hidden" id="password-error">Passwörter stimmen nicht überein</small>
-            <small class="text-danger u-hidden" id="passwordMismatchError">Passwörter stimmen nicht überein</small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Abteilung</label>
-            <select id="rootDepartmentId" class="form-control">
-              <option value="">Keine Abteilung zuweisen</option>
-            </select>
-            <small class="text-secondary">Optional: Abteilung für den Root-User</small>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Position *</label>
-            <div class="custom-dropdown">
-              <div class="dropdown-display" id="positionDropdownDisplay" data-action="toggle-dropdown" data-dropdown="positionDropdown">
-                <span>Position auswählen...</span>
-                <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-                  <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-              </div>
-              <div class="dropdown-options" id="positionDropdownDropdown">
-                <div class="dropdown-option" data-action="select-option" data-dropdown="positionDropdown" data-value="ceo" data-text="CEO">
-                  CEO
-                </div>
-                <div class="dropdown-option" data-action="select-option" data-dropdown="positionDropdown" data-value="cto" data-text="CTO">
-                  CTO
-                </div>
-                <div class="dropdown-option" data-action="select-option" data-dropdown="positionDropdown" data-value="cfo" data-text="CFO">
-                  CFO
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="geschaeftsfuehrer"
-                  data-text="Geschäftsführer"
-                >
-                  Geschäftsführer
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="it-administrator"
-                  data-text="IT-Administrator"
-                >
-                  IT-Administrator
-                </div>
-                <div
-                  class="dropdown-option"
-                  data-action="select-option"
-                  data-dropdown="positionDropdown"
-                  data-value="systemadministrator"
-                  data-text="Systemadministrator"
-                >
-                  Systemadministrator
-                </div>
-              </div>
-              <input type="hidden" name="position" id="positionDropdownValue" required />
+
+          <div class="form-field" id="password-group">
+            <label class="form-field__label" for="root-password">
+              Passwort
+              <span class="text-red-500">*</span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="root-password" name="password" class="form-field__control" />
+              <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="root-password-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label">Notizen</label>
-            <textarea id="rootNotes" class="form-control" rows="3"></textarea>
-          </div>
-
-          <div class="form-group u-hidden" id="activeStatusGroup">
-            <label class="form-label">
-              <input type="checkbox" id="rootIsActive" />
-              <span class="u-ml-8">Aktiv</span>
+          <div class="form-field" id="password-confirm-group">
+            <label class="form-field__label" for="root-password-confirm">
+              Passwort wiederholen
+              <span class="text-red-500">*</span>
             </label>
-            <div class="text-secondary u-mt-4" style="font-size: 12px">Deaktivierte Root-User können sich nicht anmelden</div>
+            <div class="form-field__password-wrapper">
+              <input type="password" id="root-password-confirm" name="passwordConfirm" class="form-field__control" />
+              <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="root-password-confirm-toggle">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <span class="form-field__message form-field__message--error u-hidden" id="password-error">
+              Passwörter stimmen nicht überein
+            </span>
           </div>
 
-          <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
-            <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" data-action="close-root-modal">Abbrechen</button>
+          <div class="form-field">
+            <label class="form-field__label" for="root-department-id">Abteilung</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="root-department-id" name="departmentId" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="department-dropdown">
+              <div class="dropdown__trigger" id="department-trigger">
+                <span>Keine Abteilung zuweisen</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="department-menu">
+                <div class="dropdown__option" data-value="" data-text="Keine Abteilung zuweisen">Keine Abteilung zuweisen</div>
+                <!-- Departments werden dynamisch via TypeScript geladen -->
+              </div>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)]">Optional: Abteilung für den Root-User</span>
           </div>
-        </form>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-position">
+              Position
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="root-position" name="position" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="position-dropdown">
+              <div class="dropdown__trigger" id="position-trigger">
+                <span>Position auswählen...</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="position-menu">
+                <div class="dropdown__option" data-value="ceo">CEO</div>
+                <div class="dropdown__option" data-value="cto">CTO</div>
+                <div class="dropdown__option" data-value="cfo">CFO</div>
+                <div class="dropdown__option" data-value="geschaeftsfuehrer">Geschäftsführer</div>
+                <div class="dropdown__option" data-value="it-administrator">IT-Administrator</div>
+                <div class="dropdown__option" data-value="systemadministrator">Systemadministrator</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="root-notes">Notizen</label>
+            <textarea id="root-notes" name="notes" class="form-field__control" rows="3"></textarea>
+          </div>
+
+          <div class="form-field u-hidden" id="active-status-group">
+            <label class="form-field__label" for="root-is-active">
+              Status
+              <span class="text-red-500">*</span>
+            </label>
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="root-is-active" name="isActive" class="w-4 h-4" />
+              <span>Aktiv</span>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] text-xs">
+              Deaktivierte Root-User können sich nicht anmelden
+            </span>
+          </div>
+        </div>
+
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-secondary" id="cancel-root-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">Speichern</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-root-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">Root-Benutzer löschen</h3>
+          <button class="ds-modal__close" id="close-delete-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body">
+          <p class="mb-3">Möchten Sie diesen Root-Benutzer wirklich löschen?</p>
+          <p class="text-[var(--color-text-secondary)]">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+          <input type="hidden" id="delete-root-id" />
+        </div>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-root">Löschen</button>
+        </div>
       </div>
     </div>
 
     <!-- Scripts -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
-    <script type="module" src="/scripts/manage/root-users.ts"></script>
-
-    <!-- Custom Dropdown Functions -->
-    <script>
-      // Toggle Dropdown
-
-      function toggleDropdown(type) {
-        const display = document.querySelector('#' + type + 'Display');
-        const dropdown = document.querySelector('#' + type + 'Dropdown');
-
-        if (!display || !dropdown) {
-          console.error('Dropdown elements not found for type:', type);
-          return;
-        }
-
-        // Close all other dropdowns
-        document.querySelectorAll('.dropdown-display').forEach((d) => {
-          if (d !== display) d.classList.remove('active');
-        });
-        document.querySelectorAll('.dropdown-options').forEach((d) => {
-          if (d !== dropdown) d.classList.remove('active');
-        });
-
-        display.classList.toggle('active');
-        dropdown.classList.toggle('active');
-      }
-
-      // Select Option
-
-      function selectOption(type, value, text) {
-        const display = document.querySelector('#' + type + 'Display');
-        const valueInput = document.querySelector('#' + type + 'Value');
-        const dropdown = document.querySelector('#' + type + 'Dropdown');
-
-        if (!display || !valueInput || !dropdown) {
-          console.error('Dropdown elements not found for type:', type);
-          return;
-        }
-
-        display.querySelector('span').textContent = text;
-        valueInput.value = value;
-        display.classList.remove('active');
-        dropdown.classList.remove('active');
-      }
-
-      // Click outside to close
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('.custom-dropdown')) {
-          document.querySelectorAll('.dropdown-display').forEach((d) => d.classList.remove('active'));
-          document.querySelectorAll('.dropdown-options').forEach((d) => d.classList.remove('active'));
-        }
-      });
-
-      // Handler functions for actions
-      function handleShowAddRootModal() {
-        if (window.showAddRootModal) {
-          window.showAddRootModal();
-        }
-      }
-
-      function handleCloseRootModal() {
-        if (window.closeRootModal) {
-          window.closeRootModal();
-        }
-      }
-
-      function handleToggleDropdown(target) {
-        const dropdown = target.dataset.dropdown;
-        if (dropdown) {
-          toggleDropdown(dropdown);
-        }
-      }
-
-      function handleSelectOption(target) {
-        const dropdown = target.dataset.dropdown;
-        const value = target.dataset.value;
-        const text = target.dataset.text;
-        if (dropdown && value && text) {
-          selectOption(dropdown, value, text);
-        }
-      }
-
-      // Event Delegation for data-action
-      document.addEventListener('click', function (e) {
-        const target = e.target.closest('[data-action]');
-        if (!target) return;
-
-        const action = target.dataset.action;
-
-        switch (action) {
-          case 'show-add-root-modal':
-            handleShowAddRootModal();
-            break;
-          case 'close-root-modal':
-            handleCloseRootModal();
-            break;
-          case 'toggle-dropdown':
-            handleToggleDropdown(target);
-            break;
-          case 'select-option':
-            handleSelectOption(target);
-            break;
-        }
-      });
-
-      // Modal Functions
-
-      function showAddRootModal() {
-        document.querySelector('#modalTitle').textContent = 'Root User hinzufügen';
-        document.querySelector('#rootForm').reset();
-        document.querySelector('#positionDropdownDisplay').querySelector('span').textContent = 'Position auswählen...';
-        document.querySelector('#passwordGroup').style.display = 'block';
-        document.querySelector('#passwordConfirmGroup').style.display = 'block';
-        document.querySelector('#activeStatusGroup').style.display = 'none';
-        document.querySelector('#rootModal').classList.add('active');
-      }
-
-      function closeRootModal() {
-        document.querySelector('#rootModal').classList.remove('active');
-      }
-
-      // Export functions to window for compatibility
-      window.showAddRootModal = showAddRootModal;
-      window.closeRootModal = closeRootModal;
-    </script>
-
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
-    </script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+    <script type="module" src="/scripts/manage/root-users/index.ts"></script>
   </body>
 </html>

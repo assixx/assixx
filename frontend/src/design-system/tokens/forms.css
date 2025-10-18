@@ -11,7 +11,7 @@
 :root {
   /* Grundfarben */
   --form-field-text: var(--color-text-primary);
-  --form-field-placeholder: var(--color-text-secondary);
+  --form-field-placeholder: var(--color-text-placeholder);
   --form-field-helper: var(--color-text-secondary);
   --form-field-disabled-text: rgb(255 255 255 / 60%);
 

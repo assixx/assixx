@@ -84,8 +84,8 @@
 }
 
 .search-input__field::placeholder {
-  color: var(--color-text-muted);
-  opacity: 70%;
+  color: var(--color-text-placeholder);
+  opacity: 100%;
 }
 
 /* Remove default search input styling */
@@ -291,9 +291,9 @@
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-lg);
 
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-lg);
+  background: rgb(30 30 30 / 95%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
 }
 
 .search-input-wrapper--open .search-input__results {

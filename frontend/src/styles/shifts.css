@@ -415,7 +415,7 @@
 }
 
 .shift-info-textarea::placeholder {
-  color: var(--text-secondary);
+  color: var(--color-text-placeholder);
 }
 
 /* Department Notice */

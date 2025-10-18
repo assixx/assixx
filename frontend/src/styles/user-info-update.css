@@ -114,68 +114,12 @@
   display: none !important;
 }
 
-/* Profile picture styling - only target the avatar */
-[id="user-avatar"] {
-  display: block !important;
-
-  width: 35px !important;
-  height: 35px !important;
-
-  /* border: 1px solid rgb(255 255 255 / 6%) !important; */
-  border-radius: 50% !important;
-
-  object-fit: cover !important;
-}
-
-/* Initials avatar styling */
-[id="user-avatar"].avatar-initials {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  color: #fff !important;
-}
-
-/* Show the user-avatar and its image - simplified selectors */
-.user-info [id="user-avatar"],
-[id="user-info"] [id="user-avatar"] {
-  display: block !important;
-}
-
-/* Ensure avatar images are visible - simplified */
-.user-info [id="user-avatar"] img,
-[id="user-info"] [id="user-avatar"] img {
-  display: block !important;
-}
-
-/* Header specific avatar styles - using simpler selector */
-.header-actions [id="user-avatar"] {
-  display: block !important;
-
-  width: 35px !important;
-  height: 35px !important;
-  border-radius: 50% !important;
-
-  object-fit: cover !important;
-}
-
-.header-actions [id="user-avatar"] img {
-  display: block !important;
-}
-
-.header-actions [id="user-avatar"].avatar-initials {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  font-size: 14px !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  color: #fff !important;
-}
+/* Avatar styles removed - handled by Design System (avatar.css)
+ * The unified-navigation.ts component now uses:
+ * - .avatar with .avatar--md size variant
+ * - .avatar__initials for text
+ * - .avatar--color-N for background colors (N = 0-9)
+ */
 
 /* Logout button styles moved to dashboard-theme.css to prevent conflicts */
 

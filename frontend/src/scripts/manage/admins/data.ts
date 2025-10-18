@@ -37,6 +37,7 @@ export interface AdminFormData {
   notes: string;
   role: string;
   isActive?: boolean;
+  isArchived?: boolean;
   employeeNumber?: string;
 }
 

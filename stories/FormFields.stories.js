@@ -357,3 +357,111 @@ export const SearchInput = {
     return container;
   },
 };
+
+export const PasswordToggle = {
+  args: {
+    label: 'Passwort',
+    required: true,
+    placeholder: 'Mindestens 8 Zeichen',
+    showHelper: true,
+    helperText: 'Verwenden Sie eine Kombination aus Buchstaben, Zahlen und Sonderzeichen',
+  },
+  argTypes: {
+    label: {
+      control: 'text',
+      description: 'Password field label',
+    },
+    required: {
+      control: 'boolean',
+      description: 'Mark as required',
+    },
+    placeholder: {
+      control: 'text',
+      description: 'Input placeholder',
+    },
+    showHelper: {
+      control: 'boolean',
+      description: 'Show helper text',
+    },
+    helperText: {
+      control: 'text',
+      description: 'Helper message',
+    },
+  },
+  render: (args) => {
+    const container = document.createElement('div');
+    container.style.maxWidth = '400px';
+
+    // Field wrapper
+    const field = document.createElement('div');
+    field.className = 'form-field';
+
+    // Label
+    const label = document.createElement('label');
+    label.className = 'form-field__label';
+    if (args.required) {
+      label.classList.add('form-field__label--required');
+    }
+    label.setAttribute('for', 'password');
+    label.textContent = args.label;
+
+    // Password wrapper (contains input + toggle button)
+    const passwordWrapper = document.createElement('div');
+    passwordWrapper.className = 'form-field__password-wrapper';
+
+    // Password input
+    const input = document.createElement('input');
+    input.type = 'password';
+    input.id = 'password';
+    input.name = 'password';
+    input.className = 'form-field__control';
+    input.placeholder = args.placeholder;
+
+    // Toggle button
+    const toggleButton = document.createElement('button');
+    toggleButton.type = 'button';
+    toggleButton.className = 'form-field__password-toggle';
+    toggleButton.setAttribute('aria-label', 'Passwort anzeigen');
+    toggleButton.id = 'password-toggle';
+
+    // Eye icon
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-eye';
+
+    toggleButton.appendChild(icon);
+    passwordWrapper.appendChild(input);
+    passwordWrapper.appendChild(toggleButton);
+
+    field.appendChild(label);
+    field.appendChild(passwordWrapper);
+
+    // Helper text
+    if (args.showHelper) {
+      const helper = document.createElement('p');
+      helper.className = 'form-field__message';
+      helper.textContent = args.helperText;
+      field.appendChild(helper);
+    }
+
+    container.appendChild(field);
+
+    // Add interactive toggle functionality
+    setTimeout(() => {
+      toggleButton.addEventListener('click', () => {
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.remove('fa-eye');
+          icon.classList.add('fa-eye-slash');
+          toggleButton.setAttribute('aria-label', 'Passwort verstecken');
+        } else {
+          input.type = 'password';
+          icon.classList.remove('fa-eye-slash');
+          icon.classList.add('fa-eye');
+          toggleButton.setAttribute('aria-label', 'Passwort anzeigen');
+        }
+      });
+    }, 0);
+
+    return container;
+  },
+};

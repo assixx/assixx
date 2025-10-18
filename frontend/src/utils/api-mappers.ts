@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * API Field Mappers for handling v1/v2 API differences
  * Uses the generated types from Swagger
@@ -34,6 +35,8 @@ export interface UserAPIResponse {
   employeeNumber?: string;
   is_active?: boolean;
   isActive?: boolean;
+  is_archived?: boolean;
+  isArchived?: boolean;
   created_at?: string;
   createdAt?: string;
   updated_at?: string;
@@ -66,6 +69,7 @@ export interface MappedUser {
   position?: string;
   employeeNumber?: string;
   isActive: boolean;
+  isArchived?: boolean;
   createdAt?: string;
   updatedAt?: string;
   // Availability fields
@@ -108,6 +112,7 @@ export function mapUser(user: UserAPIResponse): MappedUser {
     position: user.position ?? 'Mitarbeiter',
     employeeNumber: user.employee_number ?? user.employeeNumber ?? '',
     isActive: user.is_active ?? user.isActive ?? true,
+    isArchived: user.is_archived ?? user.isArchived ?? false,
     createdAt: user.created_at ?? user.createdAt,
     updatedAt: user.updated_at ?? user.updatedAt,
     // Map availability fields
@@ -451,7 +456,7 @@ export interface RotationPatternAPIResponse {
   name?: string;
   description?: string;
   pattern_type?: string;
-  // eslint-disable-next-line max-lines
+
   patternType?: string;
   pattern_config?: Record<string, unknown>;
   patternConfig?: Record<string, unknown>;

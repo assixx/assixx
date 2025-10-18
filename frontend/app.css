@@ -16,24 +16,6 @@
 /* Theme Configuration */
 @config './tailwind.config.js';
 
-/* Custom Utility Layers */
-@layer base {
-  /* Default theme */
-  /* Theme switching disabled until Design System is configured
-  :root {
-    @apply theme-dark;
-  }
-
-  [data-theme="light"] {
-    @apply theme-light;
-  }
-
-  [data-theme="contrast"] {
-    @apply theme-contrast;
-  }
-  */
-}
-
 @layer components {
   /* Glass Components */
   .glass {

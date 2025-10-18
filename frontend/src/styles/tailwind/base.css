@@ -1,9 +1,74 @@
 /**
  * Tailwind v4 Base Layer
  * Global resets and element styles
+ *
+ * NOTE: We don't use Tailwind's Preflight to avoid `* { padding: 0 }`
+ *       which would override utility classes like .px-4
+ *       Instead, we apply a minimal, safe reset below.
  */
 
 @layer base {
+  /* ============================================
+     MINIMAL CSS RESET (Preflight Alternative)
+     ============================================ */
+
+  /* Universal box-sizing and border reset */
+  *,
+  ::before,
+  ::after {
+    box-sizing: border-box;
+    border-color: currentcolor;
+    border-style: solid;
+    border-width: 0;
+  }
+
+  /* Remove default margins on common elements */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  blockquote,
+  pre,
+  figure,
+  dl,
+  dd {
+    margin: 0;
+  }
+
+  /* Lists reset */
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Media elements */
+  img,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Form elements normalization */
+  button,
+  input,
+  select,
+  textarea {
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  /* ============================================
+     CUSTOM BASE STYLES
+     ============================================ */
+
   /* Root setup */
   :root {
     color-scheme: dark;
@@ -97,16 +162,6 @@
 
   a:hover {
     color: var(--color-primary-hover);
-  }
-
-  /* Forms */
-  input,
-  textarea,
-  select,
-  button {
-    font-family: inherit;
-    font-size: inherit;
-    line-height: inherit;
   }
 
   /* Focus */

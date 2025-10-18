@@ -46,22 +46,7 @@
   white-space: nowrap;
 }
 
-.header-actions [id="user-info"]::before {
-  content: "";
-
-  /* background: linear-gradient(135deg, var(--primary-color), var(--primary-light)); */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-}
+/* Avatar styles removed - handled by Design System (avatar.css) */
 
 /* Role Switch Warning Banner */
 .role-switch-banner {
@@ -186,7 +171,7 @@
   align-items: center;
   justify-content: center;
 
-  width: 90%;
+  width: 85%;
   margin-top: 23px;
   margin-right: 1%;
   margin-left: 15px;
@@ -468,7 +453,7 @@ body:has(.sidebar.collapsed) .header .logo {
   margin-left: 4px;
 
   /* 20px in rem */
-  padding: 1rem;
+  padding: 0.8rem;
 
   /* 17px in rem */
 }
@@ -612,7 +597,7 @@ body:has(.sidebar.collapsed) .header .logo {
   /* display: flex; */
   align-items: center;
 
-  width: 90%;
+  width: 85%;
   min-height: 100px;
 
   /* animation: fadeInUp 0.6s ease-out; */
@@ -663,52 +648,11 @@ body:has(.sidebar.collapsed) .header .logo {
   z-index: 1;
 }
 
-/* Avatar Styles - Ohne Border */
-[id="sidebar-user-avatar"],
-.sidebar .user-avatar,
-.user-info-card .user-avatar,
-[id="user-avatar"] {
-  position: relative;
-
-  overflow: hidden;
-  flex-shrink: 0 !important;
-
-  /* display: block !important; */
-  width: 31px !important;
-  height: 31px !important;
-  margin-left: 0;
-  border: none !important;
-  border-radius: 50% !important;
-
-  object-fit: cover !important;
-}
-
-/* Header avatar specific size */
-[id="user-avatar"] {
-  width: 31px !important;
-  height: 31px !important;
-}
-
-/* Avatar with initials */
-.avatar-initials {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #fff;
-  text-transform: uppercase;
-
-  background: linear-gradient(135deg, #2196f3, #42a5f5);
-}
-
-/* Avatar padding when sidebar is collapsed */
-.sidebar.collapsed .user-avatar {
-  padding: 3px;
-}
-
-/* Avatar margin adjustment when sidebar is collapsed */
+/* Avatar Styles - Handled by Design System (avatar.css)
+ * Use .avatar with size variants: avatar--xs, avatar--sm, avatar--md, avatar--lg, avatar--xl
+ * Color variants: avatar--color-0 through avatar--color-9
+ * Initials: .avatar__initials
+ */
 
 .user-details {
   display: flex;
@@ -1052,6 +996,7 @@ body:has(.sidebar.collapsed) .header .logo {
 
 /* Storage Widget - Glassmorphismus Style */
 .storage-widget {
+  width: 95%;
   margin-top: 50px;
 }
 

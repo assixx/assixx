@@ -125,7 +125,35 @@ export class RootController {
     } catch (error: unknown) {
       logger.error('Error creating admin:', error);
 
-      if ((error as { code: string }).code === 'DUPLICATE_ENTRY') {
+      const serviceError = error as { code?: string; message?: string };
+
+      // Handle specific duplicate errors
+      if (serviceError.code === 'DUPLICATE_EMPLOYEE_NUMBER') {
+        res.status(409).json({
+          error: 'DUPLICATE_EMPLOYEE_NUMBER',
+          message: 'Employee number already exists',
+        });
+        return;
+      }
+
+      if (serviceError.code === 'DUPLICATE_EMAIL') {
+        res.status(409).json({
+          error: 'DUPLICATE_EMAIL',
+          message: 'Email already exists',
+        });
+        return;
+      }
+
+      if (serviceError.code === 'DUPLICATE_USERNAME') {
+        res.status(409).json({
+          error: 'DUPLICATE_USERNAME',
+          message: 'Username already exists',
+        });
+        return;
+      }
+
+      // Generic duplicate entry
+      if (serviceError.code === 'DUPLICATE_ENTRY') {
         res.status(409).json({
           error: 'DUPLICATE_ENTRY',
           message: 'Username or email already exists',

@@ -12,7 +12,10 @@ export interface AdminUser {
   lastName: string;
   company?: string;
   notes?: string;
+  position?: string;
+  employeeNumber?: string;
   isActive: boolean;
+  isArchived: boolean;
   tenantId: number;
   tenantName?: string;
   createdAt: Date;
@@ -41,6 +44,7 @@ export interface UpdateAdminRequest {
   company?: string;
   notes?: string;
   isActive?: boolean;
+  isArchived?: boolean;
   employeeNumber?: string;
   position?: string;
 }
@@ -79,6 +83,7 @@ export interface UpdateRootUserRequest {
   firstName?: string;
   lastName?: string;
   email?: string;
+  password?: string;
   position?: string;
   notes?: string;
   employeeNumber?: string;
