@@ -731,8 +731,8 @@
 }
 
 .message-input::placeholder {
-  color: var(--text-secondary);
-  opacity: 70%;
+  color: var(--color-text-placeholder);
+  opacity: 100%;
 }
 
 .input-actions {

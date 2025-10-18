@@ -2,7 +2,6 @@ import js from '@eslint/js';
 import typescriptPlugin from '@typescript-eslint/eslint-plugin';
 import typescript from '@typescript-eslint/parser';
 import prettierConfig from 'eslint-config-prettier';
-import htmlPlugin from 'eslint-plugin-html';
 import importPlugin from 'eslint-plugin-import-x';
 import noSecretsPlugin from 'eslint-plugin-no-secrets';
 import noUnsanitizedPlugin from 'eslint-plugin-no-unsanitized';
@@ -589,107 +588,9 @@ export default [
     },
   },
 
-  // HTML configuration - uses same strict rules as frontend TypeScript
-  {
-    files: ['**/*.html'],
-    plugins: {
-      html: htmlPlugin,
-      '@typescript-eslint': typescriptPlugin,
-      prettier,
-      'import-x': importPlugin,
-      security: securityPlugin,
-      'no-unsanitized': noUnsanitizedPlugin,
-      promise: promisePlugin,
-      sonarjs: sonarjsPlugin,
-      unicorn: unicornPlugin,
-    },
-    languageOptions: {
-      globals: {
-        console: 'readonly',
-        window: 'readonly',
-        document: 'readonly',
-        fetch: 'readonly',
-        FormData: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        alert: 'readonly',
-        confirm: 'readonly',
-        Element: 'readonly',
-        HTMLElement: 'readonly',
-        Event: 'readonly',
-        CustomEvent: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        atob: 'readonly',
-        btoa: 'readonly',
-        navigator: 'readonly',
-        screen: 'readonly',
-        crypto: 'readonly',
-        MutationObserver: 'readonly',
-        IntersectionObserver: 'readonly',
-        requestAnimationFrame: 'readonly',
-        Audio: 'readonly',
-        prompt: 'readonly',
-        performance: 'readonly',
-        URL: 'readonly',
-        URLSearchParams: 'readonly',
-        FileReader: 'readonly',
-        Blob: 'readonly',
-        event: 'readonly',
-        Toastify: 'readonly',
-        ApiClient: 'readonly',
-        apiClient: 'readonly',
-      },
-    },
-    rules: {
-      // Basic JavaScript rules (same as frontend)
-      'no-unused-vars': 'off', // Disabled for HTML files - functions are used in onclick handlers
-      'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
-      'no-undef': 'warn',
-      'no-eval': 'warn',
-      'prefer-const': 'warn',
-      'no-var': 'warn',
-      'no-implied-eval': 'warn',
-      'no-new-func': 'warn',
-      'no-script-url': 'warn',
-      'no-unsafe-finally': 'warn',
-      'require-atomic-updates': 'warn',
-
-      // Security rules (same as frontend)
-      'security/detect-eval-with-expression': 'warn',
-      'security/detect-non-literal-regexp': 'error',
-      'security/detect-unsafe-regex': 'error',
-      'security/detect-object-injection': 'warn',
-      'no-unsanitized/method': 'warn',
-      'no-unsanitized/property': 'error',
-
-      // No inline event handlers (XSS prevention)
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            "CallExpression[callee.property.name='setAttribute'][arguments.0.value='onclick']",
-          message: 'Use addEventListener instead of onclick attributes to prevent XSS',
-        },
-      ],
-
-      // Promise rules
-      'promise/always-return': 'error',
-      'promise/no-return-wrap': 'error',
-      'promise/catch-or-return': 'error',
-      'promise/no-nesting': 'error',
-
-      // SonarJS rules
-      'sonarjs/no-identical-conditions': 'error',
-      'sonarjs/no-identical-functions': 'error',
-      'sonarjs/no-identical-expressions': 'error',
-      'sonarjs/cognitive-complexity': ['warn', 10],
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
-      'sonarjs/no-duplicated-branches': 'error',
-    },
-  },
+  // HTML configuration removed - HTML files are ignored
+  // This project doesn't use inline JavaScript in HTML files
+  // All JavaScript is in separate TypeScript modules
 
   // Frontend-specific DOM rules
   {
@@ -969,6 +870,7 @@ export default [
       '**/__tests__/**',
       '**/test/**',
       '**/tests/**',
+      '**/*.html', // HTML-Dateien ignorieren - kein inline JavaScript im Projekt
     ],
   },
 ];

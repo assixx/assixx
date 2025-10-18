@@ -13,6 +13,8 @@ import { $$, setHTML } from '../../utils/dom-utils';
 import { switchRoleForRoot, switchRoleForAdmin } from '../auth/role-switch';
 import { SSEClient } from '../utils/sse-client';
 import { loadUserInfo as loadUserInfoFromAuth, logout } from '../auth/index';
+// Import avatar helpers from Design System
+import { getInitials, getColorClass } from '../../design-system/primitives/avatar/avatar.js';
 
 // Declare global type for window
 declare global {
@@ -1087,13 +1089,6 @@ class UnifiedNavigation {
     }
   }
 
-  private getInitials(firstName?: string, lastName?: string): string {
-    const firstInitial = firstName !== undefined && firstName !== '' ? firstName.charAt(0).toUpperCase() : '';
-    const lastInitial = lastName !== undefined && lastName !== '' ? lastName.charAt(0).toUpperCase() : '';
-    const initials = `${firstInitial}${lastInitial}`;
-    return initials !== '' ? initials : 'U';
-  }
-
   private updateAvatarElement(
     element: HTMLElement,
     profilePicUrl: string | null,
@@ -1101,24 +1096,30 @@ class UnifiedNavigation {
     lastName?: string,
   ): void {
     // Clear existing content
-    element.textContent = '';
+    element.innerHTML = '';
+
+    // Use unique user ID for consistent color assignment (not username, as role-switching may change it)
+    const uniqueId = String(this.userProfileData?.id ?? this.userProfileData?.email ?? 'default');
+    const fullName = `${firstName ?? ''} ${lastName ?? ''}`.trim();
 
     if (profilePicUrl !== null && profilePicUrl !== '') {
-      // Show profile picture
+      // Show profile picture using Design System avatar
+      element.className = 'avatar avatar--md';
       const img = document.createElement('img');
       img.src = profilePicUrl;
-      img.alt = 'Avatar';
-      img.style.width = '100%';
-      img.style.height = '100%';
-      img.style.objectFit = 'cover';
-      img.style.borderRadius = 'inherit';
-      element.append(img);
-      element.classList.remove('avatar-initials');
+      img.alt = fullName !== '' ? fullName : 'Avatar';
+      img.className = 'avatar__image';
+      element.appendChild(img);
     } else {
-      // Show initials
-      const initials = this.getInitials(firstName, lastName);
-      element.textContent = initials;
-      element.classList.add('avatar-initials');
+      // Show initials using Design System avatar
+      const colorClass = getColorClass(uniqueId);
+      const initials = getInitials(fullName !== '' ? fullName : uniqueId !== '' ? uniqueId : 'User');
+
+      element.className = `avatar avatar--md ${colorClass}`;
+      const initialsSpan = document.createElement('span');
+      initialsSpan.className = 'avatar__initials';
+      initialsSpan.textContent = initials;
+      element.appendChild(initialsSpan);
     }
   }
 
@@ -1364,13 +1365,28 @@ class UnifiedNavigation {
   }
 
   private createUserAvatar(profilePicture: string | null, firstName: string, lastName: string): string {
-    const avatarClass = profilePicture !== null && profilePicture !== '' ? '' : 'avatar-initials';
-    const content =
-      profilePicture !== null && profilePicture !== ''
-        ? `<img src="${profilePicture}" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover; border-radius: inherit;" />`
-        : this.getInitials(firstName, lastName);
+    // Use unique user ID for consistent color assignment (not username, as role-switching may change it)
+    const uniqueId = String(this.userProfileData?.id ?? this.userProfileData?.email ?? 'default');
+    const fullName = `${firstName} ${lastName}`.trim();
 
-    return `<div id="user-avatar" class="user-avatar ${avatarClass}">${content}</div>`;
+    // Use Design System avatar component
+    if (profilePicture !== null && profilePicture !== '') {
+      // Avatar with image
+      return `
+        <div id="user-avatar" class="avatar avatar--sm">
+          <img src="${profilePicture}" alt="${fullName}" class="avatar__image" />
+        </div>
+      `;
+    } else {
+      // Avatar with initials and color based on unique user ID
+      const colorClass = getColorClass(uniqueId);
+      const initials = getInitials(fullName);
+      return `
+        <div id="user-avatar" class="avatar avatar--sm ${colorClass}">
+          <span class="avatar__initials">${initials}</span>
+        </div>
+      `;
+    }
   }
 
   private createHeader(
@@ -1506,7 +1522,9 @@ class UnifiedNavigation {
             </nav>
 
                 <div class="user-info-card" id="sidebar-user-info-card">
-                    <div id="sidebar-user-avatar" class="user-avatar avatar-initials">${this.getInitials('', '')}</div>
+                    <div id="sidebar-user-avatar" class="avatar avatar--md avatar--color-0">
+                        <span class="avatar__initials">U</span>
+                    </div>
                     <div class="user-details">
                         <div class="company-info">
                             <div class="company-name" id="sidebar-company-name">Firmennamen lädt...</div>

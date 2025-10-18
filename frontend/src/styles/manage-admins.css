@@ -1,215 +1,51 @@
 /* Glassmorphismus Background */
 
-/* Container Styles */
-.container {
-  margin-top: -30px !important; /* Align first container with sidebar user-info-card */
-  padding: 24px;
-}
+/* ==== TABLE WITH FLOATING BUTTON PATTERN ====
+ * Following Storybook story: data-display--table-with-floating-button
+ * FAB is positioned fixed to viewport, outside table container
+ * Icon: fa-user-plus (person with plus for adding users)
+ */
 
-/* Table Styles */
-.admin-table {
-  border-collapse: collapse;
-  width: 100%;
-  background: transparent;
-}
+/* ==== CONTAINER STYLES - REPLACED WITH TAILWIND ====
+ * Using Tailwind utilities in HTML instead:
+ * - max-w-7xl mx-auto px-4 sm:px-6 lg:px-8
+ *
+ * Old .container class removed, using Tailwind responsive container
+ */
 
-.admin-table thead th {
-  padding: 10px;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+/* ==== TABLE STYLES - REPLACED ====
+ * Using Design System data-table component instead
+ * Classes provided by Design System:
+ * - .data-table, .data-table--striped, .data-table--hover
+ *
+ * See Storybook: http://localhost:6006 > DataDisplay > Tables
+ * Note: .admin-table removed, using .data-table in HTML
+ */
 
-  font-weight: 600;
-  color: #fff;
-  color: var(--text-primary);
-  text-align: left;
+/* ==== ACTION BUTTONS - REMOVED ====
+ * Using Design System button components instead:
+ * - .btn .btn-secondary .btn-sm for Edit/Permissions
+ * - .btn .btn-danger .btn-sm for Delete
+ *
+ * See Storybook: http://localhost:6006 > Inputs > Buttons
+ */
 
-  background: #2196f31a;
-}
+/* ==== FLOATING ACTION BUTTON - REMOVED ====
+ * Using Design System btn-float component instead:
+ * - .btn-float (default is bottom-right, blue)
+ *
+ * See Storybook: http://localhost:6006 > Inputs > Buttons > FAB
+ */
 
-.admin-table tbody tr {
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-  background: rgb(255 255 255 / 1%);
-}
-
-.admin-table tbody tr:hover {
-  background: rgb(255 255 255 / 3%);
-}
-
-.admin-table tbody td {
-  padding: 10px;
-  color: var(--text-primary);
-}
-
-/* Action Buttons */
-.action-btn {
-  cursor: pointer;
-
-  margin: 0 4px;
-  padding: 6px 12px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
-
-  font-size: 12px;
-  color: var(--text-secondary);
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.action-btn:hover {
-  color: var(--text-primary);
-  background: rgb(255 255 255 / 10%);
-}
-
-.action-btn.edit {
-  border-color: rgb(33 150 243 / 30%);
-}
-
-.action-btn.edit:hover {
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(33 150 243 / 20%);
-}
-
-.action-btn.delete {
-  border-color: rgb(244 67 54 / 30%);
-}
-
-.action-btn.delete:hover {
-  border-color: rgb(244 67 54 / 50%);
-  background: rgb(244 67 54 / 20%);
-}
-
-.action-btn.permissions {
-  border-color: rgb(156 39 176 / 30%);
-}
-
-.action-btn.permissions:hover {
-  border-color: rgb(156 39 176 / 50%);
-  background: rgb(156 39 176 / 20%);
-}
-
-/* Add Admin Button */
-.add-admin-btn {
-  cursor: pointer;
-
-  position: fixed;
-  right: 30px;
-  bottom: 30px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 60px;
-  height: 60px;
-  border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: 50%;
-
-  font-size: 28px;
-  color: var(--primary-color);
-
-  background: rgb(33 150 243 / 20%);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
-}
-
-.add-admin-btn:hover {
-  transform: scale(1.1);
-  background: rgb(33 150 243 / 30%);
-  box-shadow: 0 6px 24px rgb(33 150 243 / 40%);
-}
-
-/* Modal für Admin hinzufügen/bearbeiten - Design Standards konform */
-.modal {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  left: 0;
-
-  display: none;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-
-  background-color: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(10px);
-}
-
-.modal.active {
-  display: flex;
-}
-
-.modal-content {
-  overflow-y: auto;
-
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
-
-  /* animation: fade-in-up 0.3s ease-out; */
-}
-
-@keyframes fade-in-up {
-  from {
-    transform: translateY(30px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-6);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.modal-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.modal-close {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 24px;
-  color: var(--text-secondary);
-
-  background: none;
-}
-
-.modal-close:hover {
-  color: var(--error-color);
-  background-color: var(--background-dark);
-}
-
-.modal form {
-  padding: var(--spacing-6);
-}
+/* ==== MODAL STYLES - REMOVED ====
+ * Using Design System modal component instead
+ * Classes provided by Design System:
+ * - .modal, .modal--active, .modal--sm, .modal--md
+ * - .modal__overlay, .modal__content, .modal__header
+ * - .modal__title, .modal__body, .modal__footer, .modal__close
+ *
+ * See Storybook: http://localhost:6006 > Feedback > Modals
+ */
 
 /* Custom Dropdown */
 .custom-dropdown {
@@ -281,7 +117,12 @@
   border-bottom: none;
 }
 
-/* Modal Actions */
+/* ==== BUTTON GROUP - CAN USE TAILWIND ====
+ * Instead of .button-group, use Tailwind utilities:
+ * - flex gap-4 justify-between mt-5
+ *
+ * Note: Currently kept for backward compatibility
+ */
 .button-group {
   display: flex;
   gap: 15px;
@@ -289,44 +130,26 @@
   margin-top: 20px;
 }
 
-/* Button base - Using Design System */
+/* ==== BUTTON STYLES - REMOVED ====
+ * Using Design System button components instead
+ * Classes provided by Design System:
+ * - .btn, .btn-primary, .btn-secondary, .btn-danger
+ *
+ * See Storybook: http://localhost:6006 > Inputs > Buttons
+ */
 
-.btn-primary {
-  color: #fff;
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  box-shadow:
-    0 1px 4px rgb(33 150 243 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 6px 20px rgb(33 150 243 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
-}
-
-.btn-secondary {
-  border: 1px solid rgb(255 255 255 / 12%);
-  color: var(--primary-color);
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
-}
-
-.btn-secondary:hover {
-  transform: translateY(-1px);
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-}
-
-/* Status Badge */
+/* ==== STATUS BADGE - CONSIDER DESIGN SYSTEM BADGES ====
+ * Design System provides badge component:
+ * - .badge, .badge--success, .badge--warning, .badge--danger
+ *
+ * See Storybook: http://localhost:6006 > Feedback > Badges
+ * Note: Custom styles kept for specific active/inactive states
+ */
 .status-badge {
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 500;
-
-  /* display: block ruby; */
 }
 
 .status-badge.active {
@@ -345,28 +168,13 @@
 
 /* Checkbox Styling */
 
-/* Empty State */
-.empty-state {
-  padding: 60px 20px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.empty-state-icon {
-  margin-bottom: 20px;
-  font-size: 64px;
-  opacity: 50%;
-}
-
-.empty-state-text {
-  margin-bottom: 10px;
-  font-size: 18px;
-}
-
-.empty-state-subtext {
-  font-size: 14px;
-  opacity: 70%;
-}
+/* ==== EMPTY STATE STYLES - REMOVED ====
+ * Using Design System empty-state component instead
+ * Classes provided by Design System:
+ * - .empty-state, .empty-state__icon, .empty-state__title, .empty-state__description
+ *
+ * See Storybook: http://localhost:6006 > DataDisplay > EmptyState
+ */
 
 /* Department Badge Hover Effect */
 .department-badge {
@@ -509,6 +317,13 @@
 .radio-label-checked .radio-text {
   font-weight: 500;
   color: rgb(255 255 255 / 95%);
+}
+
+/* Status Row Background - Inactive Admins */
+@layer utilities {
+  .bg-yellow-50 {
+    background-color: rgb(var(--color-yellow-base) / 14%);
+  }
 }
 
 /* Checkbox Styles */

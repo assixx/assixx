@@ -169,8 +169,8 @@ export class SignupFormController {
 
 ### Management Pages
 
-- [ ] manage-admins.html
-- [ ] manage-root-users.html
+- [x] manage-admins.html ✅ (2025-01-18) - 100% Design System compliant (ds-modal, choice-card, empty-state, avatar, striped tables, button icons, TypeScript modules, no inline styles/JS, no Bootstrap)
+- [x] manage-root-users.html ✅ (2025-01-18) - 100% Design System compliant (split to data/forms/index layers, avatar, striped tables, toggle-group, search-input, TypeScript modules, no inline styles/JS, no Bootstrap)
 - [ ] manage-employees.html
 - [ ] manage-departments.html
 - [ ] manage-department-groups.html

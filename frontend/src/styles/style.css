@@ -121,10 +121,7 @@
   margin-top: 3rem !important;
 }
 
-.mx-auto {
-  margin-right: auto !important;
-  margin-left: auto !important;
-}
+/* .mx-auto removed - Tailwind generates this automatically in @layer utilities */
 
 .my-auto {
   margin-top: auto !important;

@@ -284,7 +284,7 @@
 }
 
 .comment-input::placeholder {
-  color: var(--text-secondary);
+  color: var(--color-text-placeholder);
 }
 
 .comment-list {

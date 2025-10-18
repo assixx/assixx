@@ -90,7 +90,10 @@ export class RootService {
             lastName: admin.last_name || '',
             company: admin.company,
             notes: admin.notes,
+            position: admin.position,
+            employeeNumber: admin.employee_number,
             isActive: Boolean(admin.is_active),
+            isArchived: admin.is_archived,
             tenantId: admin.tenant_id ?? 0,
             tenantName,
             createdAt: admin.created_at ?? new Date(),
@@ -135,7 +138,10 @@ export class RootService {
         lastName: admin.last_name || '',
         company: admin.company,
         notes: admin.notes,
+        position: admin.position,
+        employeeNumber: admin.employee_number,
         isActive: Boolean(admin.is_active),
+        isArchived: admin.is_archived,
         tenantId: admin.tenant_id ?? 0,
         tenantName,
         createdAt: admin.created_at ?? new Date(),
@@ -187,8 +193,24 @@ export class RootService {
 
       return adminId;
     } catch (error: unknown) {
-      const dbError = error as { code?: string };
+      const dbError = error as { code?: string; message?: string };
       if (dbError.code === 'ER_DUP_ENTRY') {
+        // Parse MySQL error message to determine which field is duplicate
+        const errorMessage = dbError.message ?? '';
+
+        if (errorMessage.includes('employee_number')) {
+          throw new ServiceError(
+            'DUPLICATE_EMPLOYEE_NUMBER',
+            'Employee number already exists',
+            error,
+          );
+        } else if (errorMessage.includes('email')) {
+          throw new ServiceError('DUPLICATE_EMAIL', 'Email already exists', error);
+        } else if (errorMessage.includes('username')) {
+          throw new ServiceError('DUPLICATE_USERNAME', 'Username already exists', error);
+        }
+
+        // Fallback for unknown duplicate
         throw new ServiceError('DUPLICATE_ENTRY', 'Username or email already exists', error);
       }
       throw new ServiceError('SERVER_ERROR', 'Failed to create admin', error);
@@ -222,6 +244,9 @@ export class RootService {
     }
     if (data.isActive !== undefined) {
       updateData.is_active = data.isActive;
+    }
+    if (data.isArchived !== undefined) {
+      updateData.is_archived = data.isArchived;
     }
     if (data.employeeNumber !== undefined) {
       updateData.employee_number = data.employeeNumber;
@@ -604,6 +629,13 @@ export class RootService {
       }
 
       const { fields, values } = this.buildRootUserUpdateFields(data);
+
+      // Hash password if provided
+      if (data.password !== undefined && data.password !== '') {
+        const hashedPassword = await bcrypt.hash(data.password, 10);
+        fields.push('password = ?');
+        values.push(hashedPassword);
+      }
 
       if (fields.length === 0) {
         return; // Nothing to update

@@ -41,6 +41,10 @@
   /* Accent Colors */
   --accent-grey1a: #1a1a1a;
 
+  /* Status Colors (RGB format for transparency support) */
+  --color-yellow-base: 249 227 0; /* RGB for warning/inactive backgrounds */
+  --color-yellow-50: rgb(249 227 0 / 14%); /* Inactive admin row background */
+
   /* Layout */
   --header-height: 60px;
   --sidebar-width-expanded: 250px;
@@ -74,6 +78,7 @@
   --color-success: var(--color-green-500);
   --color-surface: var(--color-gray-800);
   --color-text-disabled: var(--color-gray-500);
+  --color-text-placeholder: rgb(255 255 255 / 50%); /* White with 50% opacity for input placeholders */
   --color-text-primary: var(--color-white);
   --color-text-secondary: var(--color-gray-300);
   --color-warning: var(--color-orange-500);

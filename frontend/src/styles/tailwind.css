@@ -12,8 +12,9 @@
  * Do NOT import variables-dark.css here to avoid duplication!
  */
 
-/* Tailwind v4 Core */
-@import "tailwindcss";
+/* Tailwind v4 Core WITHOUT Preflight */
+@import "tailwindcss/theme";
+@import "tailwindcss/utilities";
 
 /* ============================================================
    SINGLE SOURCE OF TRUTH - All Color Tokens

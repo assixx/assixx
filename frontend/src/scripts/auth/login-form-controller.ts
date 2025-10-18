@@ -150,7 +150,7 @@ export class LoginFormController {
     // Create alert structure
     const icon = document.createElement('span');
     icon.className = 'alert__icon';
-    icon.textContent = isTimeout ? '⚠️' : '⛔';
+    icon.textContent = isTimeout ? '⚠️' : '❌';
 
     const content = document.createElement('div');
     content.className = 'alert__content';
