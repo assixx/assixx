@@ -151,12 +151,31 @@
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 10%), 0 10px 10px -5px rgb(0 0 0 / 4%);
   --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 25%);
   --shadow-inner: inset 0 2px 4px 0 rgb(0 0 0 / 6%);
+
+  /* ========== BREAKPOINTS ========== */
+  /* 2025 Best Practices: Optimized for modern screen resolutions
+   * Mobile-first approach: unprefixed = mobile, prefixes = "at breakpoint and up"
+   * Research: 1440px (QHD monitors) and 1600px+ (large desktop) are critical missing ranges
+   */
+  --breakpoint-sm: 40rem; /* 640px - Small phones (landscape) */
+  --breakpoint-md: 48rem; /* 768px - Tablets (portrait) */
+  --breakpoint-lg: 64rem; /* 1024px - Tablets (landscape), small laptops */
+  --breakpoint-xl: 80rem; /* 1280px - Standard laptops, HD monitors */
+  --breakpoint-qhd: 90rem; /* 1440px - QHD monitors (2560×1440) - CRITICAL! */
+  --breakpoint-fhd: 100rem; /* 1600px - Large desktop displays */
+  --breakpoint-2xl: 96rem; /* 1536px - Standard large displays (kept for compatibility) */
+  --breakpoint-3xl: 120rem; /* 1920px - Full HD wide displays, 4K scaled */
+
+  /* ========== LAYOUT CONSTRAINTS ========== */
+  /* Generates: max-w-card for consistent card widths */
+  --max-width-card: 100rem; /* 1404.8px - Custom card container max-width */
 }
 
 /* Custom Layers */
 @import "./tailwind/base.css";
 
 /* Component modules */
+@import "./tailwind/components/container.css";
 @import "./tailwind/components/glass.css";
 
 /* Utility layer */

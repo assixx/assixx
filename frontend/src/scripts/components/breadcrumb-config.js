@@ -83,6 +83,8 @@ export const urlMappings = {
   '/pages/manage-users': { label: BENUTZER_VERWALTEN_LABEL, icon: ICON_USERS },
   '/manage-admins': { label: ADMINS_VERWALTEN_LABEL, icon: ICON_USER_SHIELD },
   '/pages/manage-admins': { label: ADMINS_VERWALTEN_LABEL, icon: ICON_USER_SHIELD },
+  '/manage-employees': { label: 'Mitarbeiter verwalten', icon: ICON_USERS },
+  '/pages/manage-employees': { label: 'Mitarbeiter verwalten', icon: ICON_USERS },
   '/admin-config': { label: KONFIGURATION_LABEL, icon: ICON_COG },
   '/pages/admin-config': { label: KONFIGURATION_LABEL, icon: ICON_COG },
   '/survey-admin': { label: UMFRAGEN_LABEL, icon: ICON_POLL },

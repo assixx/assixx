@@ -1,10 +1,16 @@
 /* eslint-disable max-lines */
-// Admin Management Forms Layer - UI and Form Handling
+/**
+ * Admin Management - Forms Layer
+ * UI and form handling for admin management
+ */
+
 import { $, $$, $all, setHTML, setSafeHTML } from '../../../utils/dom-utils';
 import { resetPasswordToggles, resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
+import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
+// Import from types
+import type { Admin, AdminFormData } from './types';
+// Import from data layer
 import {
-  type Admin,
-  type AdminFormData,
   admins,
   tenants,
   currentAdminId,
@@ -14,7 +20,6 @@ import {
   saveAdmin as saveAdminAPI,
   updateAdminPermissions,
 } from './data';
-import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 
 // ===== CONSTANTS =====
 const MODAL_ACTIVE_CLASS = 'modal-overlay--active';

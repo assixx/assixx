@@ -27,8 +27,8 @@ export const BasicTable = () => {
   wrapper.innerHTML = `
     <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Basic Table</h3>
-      <div class="table-responsive">
-        <table class="data-table">
+      <div class="overflow-x-auto">
+        <table class="data-table ">
           <thead>
             <tr>
               <th>Name</th>
@@ -94,8 +94,8 @@ export const StripedTable = () => {
   wrapper.innerHTML = `
     <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Striped Table</h3>
-      <div class="table-responsive">
-        <table class="data-table data-table--striped">
+      <div class="overflow-x-auto">
+        <table class="data-table data-table--striped min-w-[1100px]">
           <thead>
             <tr>
               <th>Name</th>
@@ -171,8 +171,8 @@ export const HoverTable = () => {
   wrapper.innerHTML = `
     <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Hover Table (Clickable Rows)</h3>
-      <div class="table-responsive">
-        <table class="data-table data-table--hover">
+      <div class="overflow-x-auto">
+        <table class="data-table data-table--hover ">
           <thead>
             <tr>
               <th>ID</th>
@@ -241,8 +241,8 @@ export const CompactTable = () => {
   wrapper.innerHTML = `
     <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Compact Table (.data-table--sm)</h3>
-      <div class="table-responsive">
-        <table class="data-table data-table--sm data-table--striped">
+      <div class="overflow-x-auto">
+        <table class="data-table data-table--sm data-table--striped ">
           <thead>
             <tr>
               <th>Schicht-ID</th>
@@ -329,8 +329,8 @@ export const BorderedTable = () => {
   wrapper.innerHTML = `
     <div style="padding: 24px;">
       <h3 style="color: #fff; margin-bottom: 16px;">Bordered Table</h3>
-      <div class="table-responsive">
-        <table class="data-table data-table--bordered">
+      <div class="overflow-x-auto">
+        <table class="data-table data-table--bordered ">
           <thead>
             <tr>
               <th>Abteilung</th>
@@ -387,8 +387,8 @@ export const AllVariantsCombined = () => {
       <p style="color: var(--color-text-secondary); margin-bottom: 16px;">
         Striped + Hover + Compact + Bordered
       </p>
-      <div class="table-responsive">
-        <table class="data-table data-table--striped data-table--hover data-table--sm data-table--bordered">
+      <div class="overflow-x-auto">
+        <table class="data-table data-table--striped data-table--hover data-table--sm data-table--bordered ">
           <thead>
             <tr>
               <th>KVP-ID</th>
@@ -696,8 +696,8 @@ export const CompleteExample = () => {
           </button>
         </div>
 
-        <div class="table-responsive">
-          <table class="data-table data-table--striped data-table--hover">
+        <div class="overflow-x-auto">
+          <table class="data-table data-table--striped data-table--hover ">
             <thead>
               <tr>
                 <th>Name</th>
@@ -812,8 +812,8 @@ export const TableWithFloatingButton = () => {
         Standard pattern: Table for data display + FAB in bottom-right for "Add new" action
       </p>
 
-      <div class="table-responsive">
-        <table class="data-table data-table--striped data-table--hover">
+      <div class="overflow-x-auto">
+        <table class="data-table data-table--striped data-table--hover ">
           <thead>
             <tr>
               <th>Name</th>

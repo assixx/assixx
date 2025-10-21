@@ -1,15 +1,21 @@
 /* eslint-disable max-lines */
-// Admin Management Main Controller
-import { $$, $all, setHTML } from '../../../utils/dom-utils';
+/**
+ * Admin Management - Main Controller
+ * Orchestration, event handling, and business logic
+ */
+
+import { $$, $all } from '../../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
+// Import from types
+import type { Admin, AdminStatusFilter, ManageAdminsWindow } from './types';
 // Import from data layer
-import { type Admin, admins, loadAdmins, loadTenants, deleteAdmin as deleteAdminAPI } from './data';
+import { admins, loadAdmins, loadTenants, deleteAdmin as deleteAdminAPI } from './data';
+// Import from UI layer
+import { renderAdminTable, renderSearchResults, closeSearchResults, showDeleteConfirmationModal } from './ui';
 // Import from forms layer
 import {
   SELECTORS,
   getPositionDisplay,
-  getStatusBadge,
-  getDepartmentsBadge,
   updateTenantDropdown,
   loadAndPopulateDepartments,
   editAdminHandler,
@@ -23,22 +29,10 @@ import {
   initStatusDropdown,
 } from './forms';
 
-// Interface for global window functions
-interface ManageAdminsWindow extends Window {
-  editAdmin: typeof editAdminHandler | null;
-  deleteAdmin: typeof deleteAdminHandler | null;
-  showPermissionsModal: typeof showPermissionsModal | null;
-  showAddAdminModal: (() => void) | null;
-  closeAdminModal: (() => void) | null;
-  closePermissionsModal: (() => void) | null;
-  savePermissionsHandler: (() => Promise<void>) | null;
-}
-
 // DOM Elements
 let addAdminBtn: HTMLButtonElement | null;
 let deleteModal: HTMLElement | null;
 let adminForm: HTMLFormElement | null;
-let adminsTableContent: HTMLElement | null;
 let loadingDiv: HTMLElement | null;
 let emptyDiv: HTMLElement | null;
 let searchInput: HTMLInputElement | null;
@@ -49,189 +43,10 @@ let filteredAdmins: Admin[] = [];
 let selectedResultIndex = -1;
 
 // Filter state
-type AdminStatusFilter = 'active' | 'inactive' | 'archived' | 'all';
 let currentStatusFilter: AdminStatusFilter = 'active';
 
 // Constants
 const SEARCH_INPUT_HAS_VALUE_CLASS = 'search-input--has-value';
-
-// Generate HTML for a single admin table row
-function generateAdminRow(admin: Admin): string {
-  console.info(`Rendering admin row - ID: ${String(admin.id)}, isActive: ${String(admin.isActive)}`);
-
-  const deptBadge = getDepartmentsBadge(admin);
-  const statusBadge = getStatusBadge(admin);
-  const employeeNumber = admin.employeeNumber ?? '-';
-
-  console.info(`Admin ${admin.username} - statusBadge: ${statusBadge}`);
-
-  return `
-    <tr>
-      <td>${String(admin.id)}</td>
-      <td>
-        <div class="flex items-center gap-2">
-          <div class="avatar avatar--sm avatar--color-${admin.id % 10}">
-            <span>${admin.firstName.charAt(0)}${admin.lastName.charAt(0)}</span>
-          </div>
-          <span>${admin.firstName} ${admin.lastName}</span>
-        </div>
-      </td>
-      <td>${admin.email}</td>
-      <td>${employeeNumber}</td>
-      <td>${getPositionDisplay(admin.position ?? '')}</td>
-      <td>${statusBadge}</td>
-      <td>${deptBadge}</td>
-      <td>
-        <div class="flex gap-2">
-          <button class="btn btn-secondary btn-sm" data-action="edit-admin" data-admin-id="${String(admin.id)}">
-            <i class="fas fa-edit"></i>
-            Bearbeiten
-          </button>
-          <button class="btn btn-secondary btn-sm" data-action="show-permissions" data-admin-id="${String(admin.id)}">
-            <i class="fas fa-key"></i>
-            Berechtigungen
-          </button>
-          <button class="btn btn-danger btn-sm" data-action="delete-admin" data-admin-id="${String(admin.id)}">
-            <i class="fas fa-trash"></i>
-            Löschen
-          </button>
-        </div>
-      </td>
-    </tr>
-  `;
-}
-
-// Render admin table
-/**
- * Get empty state title based on filter
- */
-function getEmptyStateTitle(): string {
-  if (currentStatusFilter === 'inactive') return 'Keine inaktiven Administratoren';
-  if (currentStatusFilter === 'archived') return 'Keine archivierten Administratoren';
-  return 'Keine Administratoren gefunden';
-}
-
-/**
- * Get empty state description based on filter
- */
-function getEmptyStateDescription(): string {
-  if (currentStatusFilter === 'inactive' || currentStatusFilter === 'archived') {
-    return 'Es gibt aktuell keine Administratoren in dieser Kategorie.';
-  }
-  return 'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.';
-}
-
-/**
- * Check if add button should be hidden for current filter
- */
-function shouldHideAddButton(): boolean {
-  return currentStatusFilter === 'inactive' || currentStatusFilter === 'archived';
-}
-
-/**
- * Update empty state content based on current filter
- */
-function updateEmptyStateContent(): void {
-  if (emptyDiv === null) return;
-
-  const emptyStateTitle = emptyDiv.querySelector<HTMLElement>('.empty-state__title');
-  const emptyStateDesc = emptyDiv.querySelector<HTMLElement>('.empty-state__description');
-  const emptyStateAddBtn = emptyDiv.querySelector<HTMLButtonElement>('#empty-state-add-btn');
-
-  if (emptyStateTitle !== null) {
-    emptyStateTitle.textContent = getEmptyStateTitle();
-  }
-
-  if (emptyStateDesc !== null) {
-    emptyStateDesc.textContent = getEmptyStateDescription();
-  }
-
-  if (emptyStateAddBtn !== null) {
-    if (shouldHideAddButton()) {
-      emptyStateAddBtn.classList.add('u-hidden');
-    } else {
-      emptyStateAddBtn.classList.remove('u-hidden');
-    }
-  }
-}
-
-/**
- * Show search no results message
- */
-function showSearchNoResults(searchValue: string): void {
-  if (adminsTableContent === null) return;
-  setHTML(
-    adminsTableContent,
-    '<div class="empty-state"><p class="empty-state__description">Keine Administratoren gefunden für "' +
-      searchValue +
-      '"</p></div>',
-  );
-}
-
-/**
- * Show empty state with filter-specific content
- */
-function showEmptyState(): void {
-  if (adminsTableContent === null) return;
-  setHTML(adminsTableContent, '');
-  emptyDiv?.classList.remove('u-hidden');
-  updateEmptyStateContent();
-}
-
-/**
- * Render admin table with data
- */
-function renderAdminTable(adminsToRender: Admin[] = admins): void {
-  console.info('renderAdminTable called');
-  if (adminsTableContent === null) {
-    console.error('adminsTableContent not found');
-    return;
-  }
-
-  loadingDiv?.classList.add('u-hidden');
-
-  // Handle empty results
-  if (adminsToRender.length === 0) {
-    const searchValue = searchInput?.value ?? '';
-    if (searchValue !== '' && searchValue.trim() !== '') {
-      showSearchNoResults(searchValue);
-    } else {
-      showEmptyState();
-    }
-    return;
-  }
-
-  // Hide empty state and render table
-  emptyDiv?.classList.add('u-hidden');
-  console.info('Admins to render:', adminsToRender);
-
-  const tableHTML = `
-    <div class="data-table-wrapper">
-      <table class="data-table data-table--hover data-table--striped" id="admins-table">
-        <thead>
-          <tr>
-            <th scope="col">ID</th>
-            <th scope="col">Name</th>
-            <th scope="col">E-Mail</th>
-            <th scope="col">Personalnummer</th>
-            <th scope="col">Position</th>
-            <th scope="col">Status</th>
-            <th scope="col">Abteilungen</th>
-            <th scope="col">Aktionen</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${adminsToRender.map((admin) => generateAdminRow(admin)).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
-
-  setHTML(adminsTableContent, tableHTML);
-
-  // Re-initialize tooltips for dynamically added elements
-  initDataTooltips();
-}
 
 // Load admins and render table
 async function loadAdminsAndRender() {
@@ -243,7 +58,7 @@ async function loadAdminsAndRender() {
 
   try {
     await loadAdmins();
-    renderAdminTable();
+    renderAdminTable(admins, currentStatusFilter, initDataTooltips);
   } catch (error) {
     console.error('Fehler:', error);
     showErrorAlert('Netzwerkfehler beim Laden der Admins');
@@ -263,46 +78,6 @@ async function loadTenantsAndUpdate() {
 }
 
 // Delete handlers
-
-async function showDeleteConfirmationModal(admin: Admin): Promise<boolean> {
-  return await new Promise<boolean>((resolve) => {
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay modal-overlay--active';
-    const modalHTML = `
-        <div class="ds-modal ds-modal--sm">
-          <div class="ds-modal__header">
-            <h3 class="ds-modal__title">Administrator löschen</h3>
-          </div>
-          <div class="ds-modal__body">
-            <p>Möchten Sie den Administrator "${admin.username}" wirklich löschen?</p>
-          </div>
-          <div class="ds-modal__footer">
-            <button class="btn btn-danger" id="confirm-delete">Löschen</button>
-            <button class="btn btn-secondary" id="cancel-delete">Abbrechen</button>
-          </div>
-        </div>
-      `;
-    setHTML(modal, modalHTML);
-    document.body.appendChild(modal);
-
-    const confirmBtn = modal.querySelector('#confirm-delete');
-    const cancelBtn = modal.querySelector('#cancel-delete-modal');
-
-    const cleanup = () => {
-      modal.remove();
-    };
-
-    confirmBtn?.addEventListener('click', () => {
-      cleanup();
-      resolve(true);
-    });
-
-    cancelBtn?.addEventListener('click', () => {
-      cleanup();
-      resolve(false);
-    });
-  });
-}
 
 async function deleteAdminHandler(adminId: number) {
   console.info('deleteAdminHandler called with ID:', adminId);
@@ -608,110 +383,6 @@ function applyAllFilters(query: string): Admin[] {
 }
 
 /**
- * Escape special regex characters in a string
- * Prevents regex injection attacks
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
-}
-
-/**
- * Highlight search term in text
- * Wraps matches in <strong> tags for highlighting
- */
-function highlightMatch(text: string, query: string): string {
-  if (query === '' || query.trim() === '') {
-    return text;
-  }
-
-  // Escape special regex characters to prevent injection
-  const escapedQuery = escapeRegex(query);
-  // eslint-disable-next-line security/detect-non-literal-regexp -- Safe: escapedQuery is sanitized by escapeRegex() which escapes all special regex characters
-  const regex = new RegExp(`(${escapedQuery})`, 'gi');
-  return text.replace(regex, '<strong>$1</strong>');
-}
-
-/**
- * Generate HTML for a single search result item
- */
-function generateSearchResultItem(admin: Admin, query: string): string {
-  const fullName = `${admin.firstName} ${admin.lastName}`;
-  const position = getPositionDisplay(admin.position ?? '');
-  const employeeNumber = admin.employeeNumber ?? '';
-
-  return `
-    <div class="search-input__result-item" data-admin-id="${String(admin.id)}" data-action="edit-from-search">
-      <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="font-weight: 500; color: var(--color-text-primary);">
-          ${highlightMatch(fullName, query)}
-        </div>
-        <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
-          ${highlightMatch(admin.email, query)}
-        </div>
-        <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;">
-          <span>${highlightMatch(position, query)}</span>
-          ${employeeNumber !== '' ? `<span>• ${highlightMatch(employeeNumber, query)}</span>` : ''}
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Render search results dropdown
- */
-function renderSearchResults(results: Admin[], query: string): void {
-  const resultsContainer = document.querySelector<HTMLElement>('#admin-search-results');
-  const searchWrapper = document.querySelector<HTMLElement>('.search-input-wrapper');
-
-  if (resultsContainer === null || searchWrapper === null) {
-    return;
-  }
-
-  // If no query, hide results
-  if (query === '' || query.trim() === '') {
-    searchWrapper.classList.remove('search-input-wrapper--open');
-    setHTML(resultsContainer, '');
-    return;
-  }
-
-  // Show results dropdown
-  searchWrapper.classList.add('search-input-wrapper--open');
-
-  // If no results
-  if (results.length === 0) {
-    setHTML(
-      resultsContainer,
-      `<div class="search-input__no-results">Keine Administratoren gefunden für "${query}"</div>`,
-    );
-    return;
-  }
-
-  // Limit to 5 results for dropdown
-  const limitedResults = results.slice(0, 5);
-
-  const resultsHTML = limitedResults.map((admin) => generateSearchResultItem(admin, query)).join('');
-
-  // Add "show all" if more than 5 results
-  const showAllHTML =
-    results.length > 5
-      ? `<div class="search-input__result-item" style="font-size: 0.813rem; color: var(--color-primary); text-align: center; border-top: 1px solid rgb(255 255 255 / 5%);">
-          ${String(results.length - 5)} weitere Ergebnisse in Tabelle
-        </div>`
-      : '';
-
-  setHTML(resultsContainer, resultsHTML + showAllHTML);
-}
-
-/**
- * Close search results dropdown
- */
-function closeSearchResults(): void {
-  const searchWrapper = document.querySelector<HTMLElement>('.search-input-wrapper');
-  searchWrapper?.classList.remove('search-input-wrapper--open');
-}
-
-/**
  * Handle search input changes
  */
 function handleSearchInputChange(searchContainer: HTMLElement, query: string): void {
@@ -724,7 +395,7 @@ function handleSearchInputChange(searchContainer: HTMLElement, query: string): v
 
   // Apply all filters (status + search)
   filteredAdmins = applyAllFilters(query);
-  renderAdminTable(filteredAdmins);
+  renderAdminTable(filteredAdmins, currentStatusFilter, initDataTooltips);
   renderSearchResults(filteredAdmins, query);
   selectedResultIndex = -1;
 }
@@ -738,7 +409,7 @@ function handleSearchClear(searchContainer: HTMLElement): void {
     searchContainer.classList.remove(SEARCH_INPUT_HAS_VALUE_CLASS);
     // Reapply status filter (no search)
     filteredAdmins = applyAllFilters('');
-    renderAdminTable(filteredAdmins);
+    renderAdminTable(filteredAdmins, currentStatusFilter, initDataTooltips);
     closeSearchResults();
     searchInput.focus();
   }
@@ -898,7 +569,7 @@ function setupStatusToggle(): void {
     // Reapply all filters
     const query = searchInput?.value ?? '';
     filteredAdmins = applyAllFilters(query);
-    renderAdminTable(filteredAdmins);
+    renderAdminTable(filteredAdmins, currentStatusFilter, initDataTooltips);
     renderSearchResults(filteredAdmins, query);
   });
 }
@@ -975,7 +646,9 @@ function setupDepartmentSelectionButtons(): void {
   });
 }
 
-// Setup form submit handler
+/**
+ * Setup form submit handler
+ */
 function setupFormSubmitHandler(): void {
   adminForm?.addEventListener('submit', (e) => {
     void (async () => {
@@ -986,12 +659,13 @@ function setupFormSubmitHandler(): void {
   });
 }
 
-// Initialize DOM elements
+/**
+ * Initialize DOM elements
+ */
 function initializeDOMElements(): void {
   addAdminBtn = document.querySelector<HTMLButtonElement>('#add-admin-btn');
   deleteModal = document.querySelector('#delete-admin-modal');
   adminForm = document.querySelector<HTMLFormElement>('#admin-form');
-  adminsTableContent = document.querySelector('#admins-table-content');
   loadingDiv = document.querySelector('#admins-loading');
   emptyDiv = document.querySelector('#admins-empty');
   searchInput = document.querySelector<HTMLInputElement>('#admin-search');
