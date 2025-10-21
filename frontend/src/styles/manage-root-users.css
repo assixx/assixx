@@ -1,40 +1,17 @@
 /**
- * manage-root-users.css
- * Minimale page-specific styles - alles andere nutzt Design System
+ * Manage Root Users - Page-Specific Styles
+ * All UI components use Design System - no custom styles needed
  *
- * Migration: 2025-01-18
+ * Migration Complete: 2025-01-20
  * - Security Warning → alert--warning (Design System)
  * - Table → data-table (Design System)
  * - Buttons → btn-* (Design System)
- * - Modal → ds-modal (Design System)
- * - Dropdown → dropdown (Design System)
+ * - Modal → modal (Design System)
  * - Empty State → empty-state (Design System)
  * - Badges → badge (Design System)
- * - Info Message → alert--info (Design System)
+ * - Search Input → search-input (Design System)
+ * - Toggle Group → toggle-group (Design System)
+ *
+ * Status: 100% Design System compliant
+ * Container now defined globally in tailwind/components/container.css
  */
-
-/* Container Alignment - Page-specific */
-.container {
-  margin-top: -30px !important; /* Align first container with sidebar user-info-card */
-  padding: 24px;
-}
-
-/* Two-Person Approval Badge - Future feature for critical actions */
-.approval-badge {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-
-  padding: 4px 12px;
-  border: 1px solid rgb(33 150 243 / 30%);
-  border-radius: 12px;
-
-  font-size: 11px;
-  color: #2196f3;
-
-  background: rgb(33 150 243 / 10%);
-}
-
-.approval-badge i {
-  font-size: 10px;
-}

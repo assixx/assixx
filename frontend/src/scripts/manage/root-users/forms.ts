@@ -7,9 +7,10 @@
 import { $, $$, getData, setData, setHTML } from '../../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import { resetPasswordToggles, resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
+// Import from types
+import type { RootUser, FormValues } from './types';
+// Import from data layer
 import {
-  type RootUser,
-  type FormValues,
   currentEditId,
   setCurrentEditId,
   saveRootUser,

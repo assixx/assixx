@@ -4,38 +4,7 @@
  */
 
 import { ApiClient } from '../../../utils/api-client';
-
-// Interfaces
-export interface RootUser {
-  id: number;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  position?: string;
-  notes?: string;
-  employeeId?: string;
-  employeeNumber?: string;
-  departmentId?: number;
-  isActive: boolean | number;
-  createdAt: string;
-  updatedAt: string;
-  lastLogin?: string;
-}
-
-export interface FormValues {
-  firstName: string;
-  lastName: string;
-  email: string;
-  emailConfirm: string;
-  password: string;
-  passwordConfirm: string;
-  position: string;
-  notes: string;
-  employeeNumber: string;
-  departmentId: string;
-  isActive: boolean;
-}
+import type { RootUser, FormValues } from './types';
 
 // Module-level state
 export let currentEditId: number | null = null;

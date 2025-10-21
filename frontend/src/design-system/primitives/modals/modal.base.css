@@ -157,11 +157,22 @@
 .ds-modal__body {
   /* Scrollable content */
   overflow-y: auto;
+
+  /* Form field spacing - flex column with gap for consistent spacing between elements */
+  display: flex;
   flex: 1;
+  flex-direction: column;
+  gap: var(--spacing-4); /* 20px between form fields and content blocks */
+
   min-height: 0; /* Allow flex child to shrink */
 
   /* Spacing */
   padding: var(--spacing-6); /* 24px */
+}
+
+/* Hidden inputs should not affect modal layout */
+.ds-modal__body > input[type="hidden"] {
+  display: none;
 }
 
 /* Custom scrollbar for modal body */

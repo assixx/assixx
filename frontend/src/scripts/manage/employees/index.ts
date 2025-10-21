@@ -6,22 +6,21 @@
 
 import { ApiClient } from '../../../utils/api-client';
 import { mapUsers, type UserAPIResponse } from '../../../utils/api-mappers';
-import { showSuccessAlert, showErrorAlert, showConfirm } from '../../utils/alerts';
-import { $$, $$id } from '../../../utils/dom-utils';
+import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
+import { $$id, setSafeHTML } from '../../../utils/dom-utils';
 import type { Employee, Department, Team, WindowWithEmployeeHandlers } from './types';
+import { renderEmployeesTable, setupFormSubmitHandler, processFormField } from './ui';
 import {
-  renderEmployeesTable,
-  fillBasicFormFields,
-  fillOptionalFormFields,
-  fillAvailabilityFields,
-  setStatusAndClearPasswords,
-  processFormField,
-  setupFormSubmitHandler,
-} from './ui';
+  showAddEmployeeModal,
+  showEditEmployeeModal,
+  closeEmployeeModal,
+  showDeleteModal,
+  closeDeleteModal,
+} from './forms';
 
 class EmployeesManager {
   public apiClient: ApiClient;
-  private employees: Employee[] = [];
+  public employees: Employee[] = []; // Public for window handler access
   private currentFilter: 'all' | 'active' | 'inactive' = 'all';
   private searchTerm = '';
   public currentEmployeeId: number | null = null; // Track current employee being edited
@@ -86,66 +85,165 @@ class EmployeesManager {
     showErrorAlert('Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
   }
 
-  private async showConfirmDialog(message: string): Promise<boolean> {
-    // Use the consistent confirm dialog from alerts.ts
-    return await showConfirm(message);
+  /**
+   * Initialize all event listeners - orchestrates setup
+   */
+  private initializeEventListeners(): void {
+    this.initFloatingActionButton();
+    this.initStatusToggle();
+    this.initSearchInput();
+    this.initModalCloseButtons();
+    this.initTableActions();
+    this.initCustomDropdowns();
   }
 
-  private initializeEventListeners() {
-    // Floating Add Button
+  /**
+   * Initialize floating action button for adding employees
+   */
+  private initFloatingActionButton(): void {
     document.querySelector('.add-employee-btn')?.addEventListener('click', () => {
-      this.showEmployeeModal();
+      // Reset current employee ID for new employee
+      this.currentEmployeeId = null;
+      showAddEmployeeModal();
     });
+  }
 
-    // Filter buttons
-    document.querySelector('#show-all-employees')?.addEventListener('click', () => {
-      this.currentFilter = 'all';
+  /**
+   * Initialize status toggle group (Active/Inactive/All)
+   */
+  private initStatusToggle(): void {
+    const toggleGroup = document.querySelector('#employee-status-toggle');
+    toggleGroup?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.toggle-group__btn');
+      if (btn === null || btn.disabled) {
+        return;
+      }
+
+      const status = btn.dataset.status as 'active' | 'inactive' | 'all' | undefined;
+      if (status === undefined) {
+        return;
+      }
+
+      // Update active state
+      toggleGroup.querySelectorAll('.toggle-group__btn').forEach((b) => {
+        b.classList.remove('active');
+      });
+      btn.classList.add('active');
+
+      // Update filter state and reload
+      this.currentFilter = status;
       void this.loadEmployees();
     });
+  }
 
-    document.querySelector('#filter-employees-active')?.addEventListener('click', () => {
-      this.currentFilter = 'active';
-      void this.loadEmployees();
-    });
+  /**
+   * Initialize search input with live preview dropdown
+   */
+  private initSearchInput(): void {
+    const searchInput = $$id('employee-search');
+    if (searchInput instanceof HTMLInputElement) {
+      // Live search on input
+      searchInput.addEventListener('input', (e) => {
+        const query = (e.target as HTMLInputElement).value;
+        this.searchTerm = query;
 
-    document.querySelector('#filter-employees-inactive')?.addEventListener('click', () => {
-      this.currentFilter = 'inactive';
-      void this.loadEmployees();
-    });
+        const filtered = this.filterBySearch(this.employees);
+        renderSearchResults(filtered, query);
 
-    // Search
-    $$id('employee-search-btn')?.addEventListener('click', () => {
-      const searchInput = $$id('employee-search');
-      this.searchTerm = searchInput instanceof HTMLInputElement ? searchInput.value : '';
-      void this.loadEmployees();
-    });
-
-    // Enter key on search
-    $$id('employee-search')?.addEventListener('keypress', (e) => {
-      if (e instanceof KeyboardEvent && e.key === 'Enter') {
-        const searchInput = e.target as HTMLInputElement;
-        this.searchTerm = searchInput.value;
         void this.loadEmployees();
+      });
+
+      // Enter key submits search
+      searchInput.addEventListener('keypress', (e) => {
+        if (e instanceof KeyboardEvent && e.key === 'Enter') {
+          this.searchTerm = searchInput.value;
+          closeSearchResults();
+          void this.loadEmployees();
+        }
+      });
+    }
+
+    // Close search results when clicking outside
+    document.addEventListener('click', (e) => {
+      const searchWrapper = document.querySelector('.search-input-wrapper');
+      const target = e.target as HTMLElement;
+      if (searchWrapper !== null && !searchWrapper.contains(target)) {
+        closeSearchResults();
       }
     });
+  }
 
-    // Close modal buttons
-    document.querySelectorAll('[data-action="close-employee-modal"]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        this.hideEmployeeModal();
-      });
+  /**
+   * Initialize modal close buttons (employee modal and delete modal)
+   */
+  private initModalCloseButtons(): void {
+    // Employee modal close buttons
+    document.querySelector('#close-employee-modal')?.addEventListener('click', () => {
+      // Reset current employee ID when closing modal
+      this.currentEmployeeId = null;
+      closeEmployeeModal();
     });
 
-    // Event delegation for employee actions
+    document.querySelector('#cancel-employee-modal')?.addEventListener('click', () => {
+      // Reset current employee ID when closing modal
+      this.currentEmployeeId = null;
+      closeEmployeeModal();
+    });
+
+    // Delete modal close buttons
+    document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
+      closeDeleteModal();
+    });
+
+    document.querySelector('#cancel-delete-modal')?.addEventListener('click', () => {
+      closeDeleteModal();
+    });
+
+    // Delete confirmation button
+    document.querySelector('#confirm-delete-employee')?.addEventListener('click', () => {
+      const deleteInput = document.querySelector<HTMLInputElement>('#delete-employee-id');
+      if (deleteInput !== null && deleteInput.value !== '') {
+        void this.confirmDelete(Number.parseInt(deleteInput.value, 10));
+      }
+    });
+  }
+
+  /**
+   * Confirm delete and execute deletion
+   */
+  async confirmDelete(employeeId: number): Promise<void> {
+    try {
+      await this.deleteEmployee(employeeId);
+      closeDeleteModal();
+    } catch (error) {
+      console.error('[confirmDelete] Delete failed:', error);
+      showErrorAlert('Fehler beim Löschen des Mitarbeiters');
+    }
+  }
+
+  /**
+   * Initialize event delegation for table actions (edit, delete)
+   */
+  private initTableActions(): void {
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       const w = window as WindowWithEmployeeHandlers;
 
-      // Handle edit employee
+      // Handle edit employee (from table)
       const editBtn = target.closest<HTMLElement>('[data-action="edit-employee"]');
       if (editBtn) {
         const employeeId = editBtn.dataset.employeeId;
         if (employeeId !== undefined) {
+          void w.editEmployee?.(Number.parseInt(employeeId, 10));
+        }
+      }
+
+      // Handle edit from search results
+      const searchResultItem = target.closest<HTMLElement>('[data-action="edit-from-search"]');
+      if (searchResultItem) {
+        const employeeId = searchResultItem.dataset.employeeId;
+        if (employeeId !== undefined) {
+          closeSearchResults();
           void w.editEmployee?.(Number.parseInt(employeeId, 10));
         }
       }
@@ -157,6 +255,90 @@ class EmployeesManager {
         if (employeeId !== undefined) {
           void w.deleteEmployee?.(Number.parseInt(employeeId, 10));
         }
+      }
+    });
+  }
+
+  /**
+   * Initialize custom dropdown components (following manage-admins pattern)
+   */
+  private initCustomDropdowns(): void {
+    // Initialize all dropdowns (position, status, availability status, department, team)
+    this.initDropdown('position-dropdown', 'position-trigger', 'position-menu', 'employee-position');
+    this.initDropdown('status-dropdown', 'status-trigger', 'status-menu', 'employee-status');
+    this.initDropdown(
+      'availability-status-dropdown',
+      'availability-status-trigger',
+      'availability-status-menu',
+      'availability-status',
+    );
+    this.initDropdown('department-dropdown', 'department-trigger', 'department-menu', 'employee-department');
+    this.initDropdown('team-dropdown', 'team-trigger', 'team-menu', 'employee-team');
+  }
+
+  /**
+   * Generic dropdown initialization helper
+   */
+  private initDropdown(dropdownId: string, triggerId: string, menuId: string, hiddenInputId: string): void {
+    const trigger = $$id(triggerId);
+    const menu = $$id(menuId);
+    const dropdown = $$id(dropdownId);
+    const hiddenInput = $$id(hiddenInputId) as HTMLInputElement | null;
+
+    if (trigger === null || menu === null || dropdown === null) {
+      console.warn(`[initDropdown] Dropdown elements not found for: ${dropdownId}`);
+      return;
+    }
+
+    // Toggle menu on trigger click
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      trigger.classList.toggle('active');
+      menu.classList.toggle('active');
+    });
+
+    // Handle option selection
+    menu.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const option = target.closest('.dropdown__option');
+
+      if (option === null || !(option instanceof HTMLElement)) {
+        return;
+      }
+
+      const value = option.dataset.value ?? '';
+      const displayText = option.textContent.trim() !== '' ? option.textContent.trim() : value;
+
+      // Update hidden input
+      if (hiddenInput !== null) {
+        hiddenInput.value = value;
+      }
+
+      // Update trigger text
+      const triggerSpan = trigger.querySelector('span');
+      if (triggerSpan !== null) {
+        // Check if option contains a badge (for status dropdown)
+        const badge = option.querySelector('.badge');
+        if (badge !== null) {
+          // Clone badge for status display - use setSafeHTML for internal HTML
+          setSafeHTML(triggerSpan, badge.outerHTML);
+        } else {
+          // Plain text for position/availability
+          triggerSpan.textContent = displayText;
+        }
+      }
+
+      // Close menu
+      menu.classList.remove('active');
+      trigger.classList.remove('active');
+    });
+
+    // Close menu on outside click
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!dropdown.contains(target)) {
+        menu.classList.remove('active');
+        trigger.classList.remove('active');
       }
     });
   }
@@ -307,64 +489,6 @@ class EmployeesManager {
           status: this.deriveStatusFromAvailability(user.availabilityStatus),
         }),
       );
-  }
-
-  showEmployeeModal(isEdit = false, departmentId?: number, teamId?: number): void {
-    const modal = $$id('employee-modal');
-    if (modal !== null) {
-      modal.classList.add('active'); // Verwende .active Klasse wie bei manage-admins!
-
-      // Show/hide availability section based on mode
-      const availabilitySections = modal.querySelectorAll('.form-section');
-      availabilitySections.forEach((section) => {
-        const heading = section.querySelector('h4');
-        if (heading !== null && heading.textContent === 'Verfügbarkeit') {
-          // Show for edit mode, hide for create mode
-          (section as HTMLElement).style.display = isEdit ? 'block' : 'none';
-        }
-      });
-
-      // Load departments and teams after showing modal
-      setTimeout(() => {
-        const w = window as WindowWithEmployeeHandlers;
-
-        // Use void to handle promise without async/await in setTimeout
-        void (async () => {
-          // Load departments first
-          if (w.loadDepartmentsForEmployeeSelect !== undefined) {
-            await w.loadDepartmentsForEmployeeSelect();
-          }
-
-          // Restore department selection if provided
-          if (departmentId !== undefined) {
-            const deptSelect = $$('#employee-department-select') as HTMLSelectElement | null;
-            if (deptSelect !== null) {
-              console.info('[showEmployeeModal] Restoring department selection:', departmentId);
-              deptSelect.value = String(departmentId);
-            }
-          }
-
-          // Load teams (will be filtered by selected department)
-          await w.loadTeamsForEmployeeSelect?.();
-
-          // Restore team selection if provided
-          if (teamId !== undefined) {
-            const teamSelect = $$('#employee-team-select') as HTMLSelectElement | null;
-            if (teamSelect !== null) {
-              console.info('[showEmployeeModal] Restoring team selection:', teamId);
-              teamSelect.value = String(teamId);
-            }
-          }
-        })();
-      }, 100);
-    }
-  }
-
-  hideEmployeeModal(): void {
-    const modal = $$id('employee-modal');
-    if (modal !== null) {
-      modal.classList.remove('active'); // Verwende .active Klasse wie bei manage-admins!
-    }
   }
 
   async createEmployee(data: Partial<Employee>): Promise<Employee> {
@@ -535,11 +659,7 @@ class EmployeesManager {
       return;
     }
 
-    const confirmDelete = await this.showConfirmDialog('Sind Sie sicher, dass Sie diesen Mitarbeiter löschen möchten?');
-    if (!confirmDelete) {
-      return;
-    }
-
+    // Note: Confirmation is now handled by the delete modal (showDeleteModal)
     try {
       await this.apiClient.request(`/users/${id}`, {
         method: 'DELETE',
@@ -705,35 +825,36 @@ async function handleSaveEmployee(): Promise<void> {
   }
 }
 
-// Handle loading departments for employee select
+// Handle loading departments for employee select (custom dropdown)
 async function handleLoadDepartments(): Promise<void> {
   const departments = await employeesManager?.loadDepartments();
-  const selectElement = document.querySelector('#employee-department-select');
+  const menu = $$id('department-menu');
 
-  if (selectElement !== null && departments !== undefined) {
+  if (menu !== null && departments !== undefined) {
     // Clear existing options and add default
-    selectElement.innerHTML = '<option value="">Keine Abteilung</option>';
+    menu.innerHTML = '<div class="dropdown__option" data-value="">Keine Abteilung</div>';
 
     // Add department options
     departments.forEach((dept) => {
-      const option = document.createElement('option');
-      option.value = dept.id.toString();
+      const option = document.createElement('div');
+      option.className = 'dropdown__option';
+      option.dataset.value = dept.id.toString();
       option.textContent = dept.name;
-      selectElement.append(option);
+      menu.append(option);
     });
 
     console.info('[EmployeesManager] Loaded departments:', departments.length);
   }
 }
 
-// Handle loading teams for employee select
+// Handle loading teams for employee select (custom dropdown)
 async function handleLoadTeams(): Promise<void> {
   const teams = await employeesManager?.loadTeams();
-  const deptSelect = $$id('employee-department-select');
-  const selectedDeptId = deptSelect instanceof HTMLSelectElement ? deptSelect.value : undefined;
-  const selectElement = $$id('employee-team-select');
+  const deptInput = $$id('employee-department') as HTMLInputElement | null;
+  const selectedDeptId = deptInput?.value;
+  const menu = $$id('team-menu');
 
-  if (selectElement !== null && teams !== undefined) {
+  if (menu !== null && teams !== undefined) {
     // Filter teams by department if one is selected
     let filteredTeams = teams;
     if (selectedDeptId !== undefined && selectedDeptId !== '' && selectedDeptId !== '0') {
@@ -741,14 +862,15 @@ async function handleLoadTeams(): Promise<void> {
     }
 
     // Clear existing options and add default
-    selectElement.innerHTML = '<option value="">Kein Team</option>';
+    menu.innerHTML = '<div class="dropdown__option" data-value="">Kein Team</div>';
 
     // Add team options
     filteredTeams.forEach((team) => {
-      const option = document.createElement('option');
-      option.value = team.id.toString();
+      const option = document.createElement('div');
+      option.className = 'dropdown__option';
+      option.dataset.value = team.id.toString();
       option.textContent = team.name;
-      selectElement.append(option);
+      menu.append(option);
     });
 
     console.info('[EmployeesManager] Loaded teams:', filteredTeams.length);
@@ -774,56 +896,35 @@ function setupEditEmployeeHandler(w: WindowWithEmployeeHandlers): void {
       employeesManager.currentEmployeeId = id;
     }
 
-    // Update modal title
-    const modalTitle = $$('#modalTitle');
-    if (modalTitle) {
-      modalTitle.textContent = 'Mitarbeiter bearbeiten';
-    }
-
-    // Fill form fields
-    fillBasicFormFields(employee);
-    fillOptionalFormFields(employee);
-    fillAvailabilityFields(employee);
-    setStatusAndClearPasswords(employee);
-
-    // Store department and team IDs for restoration after loading
-    const departmentId = employee.departmentId;
-    const teamId = employee.teamId;
-
-    // Show modal in edit mode and pass department/team IDs for restoration
-    employeesManager?.showEmployeeModal(true, departmentId, teamId);
+    // Show modal in edit mode with employee data
+    showEditEmployeeModal(employee, employee.departmentId, employee.teamId);
   };
 }
 
 function setupEmployeeModalHandlers(w: WindowWithEmployeeHandlers): void {
   w.showEmployeeModal = () => {
-    // Reset form for new employee
+    // Reset current employee ID for new employee
     if (employeesManager) {
       employeesManager.currentEmployeeId = null;
     }
-    const modalTitle = $$('#modalTitle');
-    if (modalTitle) {
-      modalTitle.textContent = 'Neuen Mitarbeiter anlegen';
-    }
-    const form = $$('#employee-form') as HTMLFormElement | null;
-    if (form) {
-      form.reset();
-    }
-    // Set default status to Active for new employees
-    const isActiveSelect = $$('select[name="isActive"]') as HTMLSelectElement | null;
-    if (isActiveSelect) {
-      isActiveSelect.value = '1'; // Default to Active
-    }
-    employeesManager?.showEmployeeModal();
+    showAddEmployeeModal();
   };
 
   w.hideEmployeeModal = () => {
-    employeesManager?.hideEmployeeModal();
+    // Reset current employee ID when closing
+    if (employeesManager) {
+      employeesManager.currentEmployeeId = null;
+    }
+    closeEmployeeModal();
   };
 
   // Also expose closeEmployeeModal as alias for compatibility with HTML onclick handlers
   w.closeEmployeeModal = () => {
-    employeesManager?.hideEmployeeModal();
+    // Reset current employee ID when closing
+    if (employeesManager) {
+      employeesManager.currentEmployeeId = null;
+    }
+    closeEmployeeModal();
   };
 }
 
@@ -846,8 +947,16 @@ function setupWindowHandlers(): void {
     }
   };
 
-  w.deleteEmployee = async (id: number) => {
-    await employeesManager?.deleteEmployee(id);
+  w.deleteEmployee = (id: number): Promise<void> => {
+    // Show delete confirmation modal instead of immediate delete
+    const employee = employeesManager?.employees.find((e) => e.id === id);
+    if (employee === undefined) {
+      showErrorAlert('Mitarbeiter nicht gefunden');
+      return Promise.resolve();
+    }
+    const employeeName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+    showDeleteModal(id, employeeName);
+    return Promise.resolve();
   };
 
   w.viewEmployeeDetails = async (id: number) => {
@@ -866,6 +975,126 @@ function setupWindowHandlers(): void {
   setupFormSubmitHandler();
   setupUrlChangeHandlers();
 }
+
+// ============================================================
+// Search Preview Functions
+// ============================================================
+
+/**
+ * Escape special regex characters to prevent injection
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&');
+}
+
+/**
+ * Highlight search term in text
+ */
+function highlightMatch(text: string, query: string): string {
+  if (query === '' || query.trim() === '') {
+    return text;
+  }
+
+  const escapedQuery = escapeRegex(query);
+  // eslint-disable-next-line security/detect-non-literal-regexp -- Safe: escapedQuery is sanitized
+  const regex = new RegExp(`(${escapedQuery})`, 'gi');
+  return text.replace(regex, '<strong>$1</strong>');
+}
+
+/**
+ * Generate HTML for a single search result item
+ */
+function generateSearchResultItem(employee: Employee, query: string): string {
+  const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+  const position = employee.position ?? 'Keine Position';
+  const employeeNumber = employee.employeeNumber ?? employee.employee_number ?? '';
+
+  return `
+    <div class="search-input__result-item" data-employee-id="${String(employee.id)}" data-action="edit-from-search">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-weight: 500; color: var(--color-text-primary);">
+          ${highlightMatch(fullName, query)}
+        </div>
+        <div style="font-size: 0.813rem; color: var(--color-text-secondary);">
+          ${highlightMatch(employee.email, query)}
+        </div>
+        <div style="font-size: 0.75rem; color: var(--color-text-muted); display: flex; gap: 8px;">
+          <span>${highlightMatch(position, query)}</span>
+          ${employeeNumber !== '' ? `<span>• ${highlightMatch(employeeNumber, query)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Render search results dropdown
+ */
+function renderSearchResults(results: Employee[], query: string): void {
+  const resultsContainer = document.querySelector<HTMLElement>('#employee-search-results');
+  const searchWrapper = document.querySelector<HTMLElement>('.search-input-wrapper');
+
+  if (resultsContainer === null || searchWrapper === null) {
+    return;
+  }
+
+  // If no query, hide results
+  if (query === '' || query.trim() === '') {
+    searchWrapper.classList.remove('search-input-wrapper--open');
+    resultsContainer.innerHTML = '';
+    return;
+  }
+
+  // Show results dropdown
+  searchWrapper.classList.add('search-input-wrapper--open');
+
+  // If no results
+  if (results.length === 0) {
+    // Use DOM methods to safely create no-results message
+    const noResultsDiv = document.createElement('div');
+    noResultsDiv.className = 'search-input__no-results';
+    noResultsDiv.textContent = `Keine Mitarbeiter gefunden für "${query}"`;
+    resultsContainer.innerHTML = '';
+    resultsContainer.appendChild(noResultsDiv);
+    return;
+  }
+
+  // Limit to 5 results for dropdown
+  const limitedResults = results.slice(0, 5);
+
+  const resultsHTML = limitedResults.map((emp) => generateSearchResultItem(emp, query)).join('');
+
+  // Add "show all" if more than 5 results
+  const showAllHTML =
+    results.length > 5
+      ? `<div class="search-input__result-item" style="font-size: 0.813rem; color: var(--color-primary); text-align: center; border-top: 1px solid rgb(255 255 255 / 5%);">
+          ${String(results.length - 5)} weitere Ergebnisse in Tabelle
+        </div>`
+      : '';
+
+  // Use setSafeHTML for internally-generated HTML
+  setSafeHTML(resultsContainer, resultsHTML + showAllHTML);
+}
+
+/**
+ * Close search results dropdown
+ */
+function closeSearchResults(): void {
+  const searchWrapper = document.querySelector<HTMLElement>('.search-input-wrapper');
+  const resultsContainer = document.querySelector<HTMLElement>('#employee-search-results');
+
+  if (searchWrapper !== null) {
+    searchWrapper.classList.remove('search-input-wrapper--open');
+  }
+
+  if (resultsContainer !== null) {
+    resultsContainer.innerHTML = '';
+  }
+}
+
+// ============================================================
+// Initialize
+// ============================================================
 
 // Initialize on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', () => {

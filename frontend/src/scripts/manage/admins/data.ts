@@ -1,45 +1,11 @@
-// Admin Management Data Layer - API and Types
+/**
+ * Admin Management - Data Layer
+ * API calls, data fetching, and state management
+ */
+
 import { ApiClient } from '../../../utils/api-client';
-import { mapUsers, type MappedUser, type UserAPIResponse } from '../../../utils/api-mappers';
-
-// ===== INTERFACES & TYPES =====
-export interface Admin extends MappedUser {
-  tenantName?: string;
-  notes?: string;
-  lastLogin?: string;
-  departments?: Department[];
-  hasAllAccess?: boolean;
-}
-
-export interface Department {
-  id: number;
-  name: string;
-  description?: string;
-  can_read?: boolean;
-  can_write?: boolean;
-  can_delete?: boolean;
-}
-
-export interface Tenant {
-  id: number;
-  name?: string;
-  company_name?: string;
-  subdomain: string;
-}
-
-export interface AdminFormData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  username: string;
-  password?: string;
-  position: string;
-  notes: string;
-  role: string;
-  isActive?: boolean;
-  isArchived?: boolean;
-  employeeNumber?: string;
-}
+import { mapUsers, type UserAPIResponse } from '../../../utils/api-mappers';
+import type { Admin, Department, Tenant, AdminFormData } from './types';
 
 // ===== GLOBAL STATE =====
 export let currentAdminId: number | null = null;

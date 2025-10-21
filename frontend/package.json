@@ -19,9 +19,9 @@
     "@tailwindcss/forms": "0.5.10",
     "@tailwindcss/postcss": "4.1.13",
     "@tailwindcss/typography": "0.5.19",
-    "@types/node": "^24.8.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.1",
-    "@typescript-eslint/parser": "^8.46.1",
+    "@types/node": "^24.9.1",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
     "autoprefixer": "^10.4.21",
     "cssnano": "^7.1.1",
     "eslint": "^9.38.0",
@@ -39,7 +39,7 @@
     "tailwindcss": "4.1.13",
     "terser": "^5.44.0",
     "typescript": "^5.9.3",
-    "vite": "^7.1.10",
+    "vite": "^7.1.11",
     "vite-plugin-simple-html": "1.0.1"
   },
   "dependencies": {

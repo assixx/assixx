@@ -196,40 +196,40 @@ export function getAvailabilityBadge(employee: Employee): string {
     end: employee.availability_end ?? employee.availabilityEnd,
   });
 
-  // Farben basierend auf design-standards
+  // Farben basierend auf design-standards (BEM notation)
   // Grün = Verfügbar, Orange = Urlaub, Rot = Krank, Cyan = Schulung, Grau = Nicht verfügbar/Sonstiges
-  let badgeClass = 'badge-success';
+  let badgeClass = 'badge badge--success';
   let badgeText = 'Verfügbar';
 
   switch (status) {
     case 'vacation':
-      badgeClass = 'badge-warning';
+      badgeClass = 'badge badge--warning';
       badgeText = 'Urlaub';
       break;
     case 'sick':
-      badgeClass = 'badge-danger';
+      badgeClass = 'badge badge--danger';
       badgeText = 'Krank';
       break;
     case 'unavailable':
-      badgeClass = 'badge-secondary';
+      badgeClass = 'badge badge--secondary';
       badgeText = 'Nicht verfügbar';
       break;
     case 'training':
-      badgeClass = 'badge-info';
+      badgeClass = 'badge badge--info';
       badgeText = 'Schulung';
       break;
     case 'other':
-      badgeClass = 'badge-dark';
+      badgeClass = 'badge badge--secondary';
       badgeText = 'Sonstiges';
       break;
     case 'available':
     default:
-      badgeClass = 'badge-success';
+      badgeClass = 'badge badge--success';
       badgeText = 'Verfügbar';
       break;
   }
 
-  return `<span class="badge ${badgeClass}">${badgeText}</span>`;
+  return `<span class="${badgeClass}">${badgeText}</span>`;
 }
 
 /**
@@ -249,7 +249,7 @@ export function renderEmployeeRow(employee: Employee): string {
       <td>${employee.department_name ?? employee.departmentName ?? '-'}</td>
       <td>${employee.team_name ?? employee.teamName ?? '-'}</td>
       <td>
-        <span class="badge ${isActive ? 'badge-success' : 'badge-secondary'}">
+        <span class="${isActive ? 'badge badge--success' : 'badge badge--secondary'}">
           ${isActive ? 'Aktiv' : 'Inaktiv'}
         </span>
       </td>
@@ -263,8 +263,16 @@ export function renderEmployeeRow(employee: Employee): string {
         ${notes.length > 20 ? notes.substring(0, 20) + '...' : notes}
       </td>
       <td>
-        <button class="action-btn edit" data-action="edit-employee" data-employee-id="${employee.id}">Bearbeiten</button>
-        <button class="action-btn delete" data-action="delete-employee" data-employee-id="${employee.id}">Löschen</button>
+        <div class="flex gap-2">
+          <button class="btn btn-secondary btn-sm" data-action="edit-employee" data-employee-id="${employee.id}">
+            <i class="fas fa-edit"></i>
+            Bearbeiten
+          </button>
+          <button class="btn btn-danger btn-sm" data-action="delete-employee" data-employee-id="${employee.id}">
+            <i class="fas fa-trash"></i>
+            Löschen
+          </button>
+        </div>
       </td>
     </tr>
   `;
@@ -287,26 +295,28 @@ export function renderEmployeesTable(employees: Employee[]): void {
   }
 
   const tableHTML = `
-    <table class="employee-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>E-Mail</th>
-          <th>Position</th>
-          <th>Personalnummer</th>
-          <th>Abteilung</th>
-          <th>Team</th>
-          <th>Status</th>
-          <th>Verfügbarkeit</th>
-          <th>Geplant</th>
-          <th>Notizen</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${employees.map((employee) => renderEmployeeRow(employee)).join('')}
-      </tbody>
-    </table>
+    <div class="overflow-x-auto">
+      <table class="data-table data-table--hover data-table--striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>E-Mail</th>
+            <th>Position</th>
+            <th>Personalnummer</th>
+            <th>Abteilung</th>
+            <th>Team</th>
+            <th>Status</th>
+            <th>Verfügbarkeit</th>
+            <th>Geplant</th>
+            <th>Notizen</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${employees.map((employee) => renderEmployeeRow(employee)).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   setHTML(container, tableHTML);
@@ -351,10 +361,28 @@ export function fillOptionalFormFields(employee: Employee): void {
  * Fill availability fields
  */
 export function fillAvailabilityFields(employee: Employee): void {
-  const availabilityStatus = $$('#availability-status-select') as HTMLSelectElement | null;
-  if (availabilityStatus) {
+  // Update custom dropdown for availability status
+  const availabilityStatusInput = $$('#availability-status') as HTMLInputElement | null;
+  const availabilityStatusTrigger = $$('#availability-status-trigger');
+
+  if (availabilityStatusInput !== null && availabilityStatusTrigger !== null) {
     const status = employee.availabilityStatus ?? employee.availability_status ?? 'available';
-    availabilityStatus.value = status;
+    availabilityStatusInput.value = status;
+
+    // Update trigger text based on status
+    const statusLabels = new Map<string, string>([
+      ['available', 'Verfügbar'],
+      ['vacation', 'Urlaub'],
+      ['sick', 'Krank'],
+      ['unavailable', 'Nicht verfügbar'],
+      ['training', 'Schulung'],
+      ['other', 'Sonstiges'],
+    ]);
+
+    const triggerSpan = availabilityStatusTrigger.querySelector('span');
+    if (triggerSpan !== null) {
+      triggerSpan.textContent = statusLabels.get(status) ?? 'Verfügbar';
+    }
   }
 
   const availabilityStart = $$('input[name="availabilityStart"]') as HTMLInputElement | null;
