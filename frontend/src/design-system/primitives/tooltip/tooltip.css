@@ -282,8 +282,10 @@
    ======================================== */
 
 .tooltip__content--multiline {
+  min-width: 200px;
+  max-width: 200px;
   text-align: left;
-  white-space: normal;
+  white-space: pre-line; /* Respektiert \n als harte Zeilenumbrüche - jeder Name auf eigener Zeile */
 }
 
 /* ========================================

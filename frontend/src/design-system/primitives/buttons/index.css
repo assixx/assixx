@@ -38,6 +38,9 @@
 /* Special - Floating action button */
 @import "./button.float.css";
 
+/* Special - Action icon buttons (table actions) */
+@import "./button.action-icons.css";
+
 /* Effects - Micro-interactions */
 @import "./button.effects.css";
 

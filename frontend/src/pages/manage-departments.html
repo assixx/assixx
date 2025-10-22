@@ -14,9 +14,7 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="/styles/breadcrumb-alignment.css" />
     <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
-    <link rel="stylesheet" href="/styles/manage-departments.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
 
     <!-- Common Scripts with ApiClient -->
@@ -29,106 +27,227 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)] @container">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
           <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-              <div>
-                <h2 class="card-title">Abteilungsübersicht</h2>
-                <p class="text-secondary u-mt-text">Abteilungen erstellen und verwalten</p>
+            <!-- Card Header - Following Design System Pattern -->
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-building mr-2"></i>
+                Abteilungsübersicht
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Abteilungen erstellen und verwalten</p>
+
+              <!-- Controls Section - Inside header -->
+              <div class="flex gap-4 items-center justify-between mt-4">
+                <!-- Status Filter Toggle -->
+                <div class="toggle-group" id="department-status-toggle">
+                  <button class="toggle-group__btn active" data-status="active" title="Aktive Abteilungen">
+                    <i class="fas fa-check"></i>
+                    Aktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="inactive" title="Inaktive Abteilungen">
+                    <i class="fas fa-times"></i>
+                    Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="all" title="Alle Abteilungen">
+                    <i class="fas fa-building"></i>
+                    Alle
+                  </button>
+                </div>
+                <!-- Search Input with Results Dropdown -->
+                <div class="search-input-wrapper max-w-80">
+                  <div class="search-input" id="department-search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input
+                      type="search"
+                      id="department-search"
+                      class="search-input__field"
+                      placeholder="Abteilungen suchen..."
+                      autocomplete="off"
+                    />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="department-search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <!-- Results Dropdown -->
+                  <div class="search-input__results" id="department-search-results">
+                    <!-- Results will be populated here dynamically -->
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="table-responsive">
+
+            <div class="card__body">
+              <!-- Loading State -->
+              <div id="departments-loading" class="spinner-container u-hidden">
+                <div class="spinner"></div>
+                <p class="mt-2 text-[var(--color-text-secondary)]">Abteilungen werden geladen...</p>
+              </div>
+
+              <!-- Table Content -->
               <div id="departmentTableContent">
                 <!-- Tabelle wird hier dynamisch eingefügt -->
               </div>
+
+              <!-- Empty State -->
+              <div id="departments-empty" class="empty-state u-hidden">
+                <div class="empty-state__icon">
+                  <i class="fas fa-building"></i>
+                </div>
+                <h3 class="empty-state__title">Keine Abteilungen gefunden</h3>
+                <p class="empty-state__description">Erstellen Sie Ihre erste Abteilung mit dem + Button oben rechts</p>
+              </div>
             </div>
           </div>
+          <!-- End of card -->
         </div>
+        <!-- End of container -->
       </main>
     </div>
 
-    <!-- Department Modal -->
-    <div id="department-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="modalTitle">Neue Abteilung</h3>
-          <button class="modal-close" id="close-department-modal">&times;</button>
+    <!-- Add/Edit Department Modal -->
+    <div id="department-modal" class="modal-overlay">
+      <form id="department-form" class="ds-modal">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="department-modal-title">Neue Abteilung</h3>
+          <button type="button" class="ds-modal__close" id="close-department-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form id="department-form" style="padding: 20px">
-          <div class="form-group">
-            <label class="form-label">Name *</label>
-            <input type="text" name="name" class="form-control" required />
+        <div class="ds-modal__body">
+          <input type="hidden" id="department-id" />
+
+          <div class="form-field">
+            <label class="form-field__label" for="department-name">
+              Name
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="department-name" name="name" class="form-field__control" required />
           </div>
-          <div class="form-group">
-            <label class="form-label">Beschreibung</label>
-            <textarea name="description" class="form-control" rows="3"></textarea>
+
+          <div class="form-field">
+            <label class="form-field__label" for="department-description">Beschreibung</label>
+            <textarea id="department-description" name="description" class="form-field__control" rows="3"></textarea>
           </div>
-          <div class="form-group">
-            <label class="form-label">Bereich (Area)</label>
-            <select name="area_id" id="department-area-select" class="form-control">
-              <option value="">Kein Bereich</option>
-              <!-- Will be populated dynamically -->
-            </select>
+
+          <div class="form-field">
+            <label class="form-field__label" for="department-area">Bereich (Area)</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="department-area" name="area_id" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="area-dropdown">
+              <div class="dropdown__trigger" id="area-trigger">
+                <span>Kein Bereich</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="area-menu">
+                <div class="dropdown__option" data-value="">Kein Bereich</div>
+                <!-- Will be populated dynamically -->
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <select name="status" class="form-control">
-              <option value="active">Aktiv</option>
-              <option value="inactive">Inaktiv</option>
-            </select>
+
+          <div class="form-field">
+            <label class="form-field__label" for="department-status">
+              Status
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="department-status" name="status" value="active" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="status-dropdown">
+              <div class="dropdown__trigger" id="status-trigger">
+                <span>Aktiv</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="status-menu">
+                <div class="dropdown__option" data-value="active">
+                  <span class="badge badge--success">Aktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="inactive">
+                  <span class="badge badge--warning">Inaktiv</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label class="form-label">Sichtbarkeit</label>
-            <select name="visibility" class="form-control">
-              <option value="public">Öffentlich - Alle Mitarbeiter können diese Abteilung sehen</option>
-              <option value="private">Privat - Nur Mitglieder können diese Abteilung sehen</option>
-            </select>
+
+          <div class="form-field">
+            <label class="form-field__label" for="department-visibility">Sichtbarkeit</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="department-visibility" name="visibility" value="public" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="visibility-dropdown">
+              <div class="dropdown__trigger" id="visibility-trigger">
+                <span>Öffentlich</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="visibility-menu">
+                <div class="dropdown__option" data-value="public">
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-weight: 500">Öffentlich</span>
+                    <span style="font-size: 0.813rem; color: var(--color-text-secondary)">
+                      Alle Mitarbeiter können diese Abteilung sehen
+                    </span>
+                  </div>
+                </div>
+                <div class="dropdown__option" data-value="private">
+                  <div style="display: flex; flex-direction: column; gap: 2px">
+                    <span style="font-weight: 500">Privat</span>
+                    <span style="font-size: 0.813rem; color: var(--color-text-secondary)">Nur Mitglieder können diese Abteilung sehen</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="button-group" style="display: flex; gap: 12px; margin-top: 20px">
-            <button type="submit" class="btn btn-primary">Speichern</button>
-            <button type="button" class="btn btn-secondary" id="cancel-department-modal">Abbrechen</button>
-          </div>
-        </form>
-      </div>
+        </div>
+
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-secondary" id="cancel-department-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">Speichern</button>
+        </div>
+      </form>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="delete-department-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Abteilung löschen</h3>
-          <button class="modal-close" id="close-delete-modal">&times;</button>
+    <div id="delete-department-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">Abteilung löschen</h3>
+          <button class="ds-modal__close" id="close-delete-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="modal-body" style="padding: 24px">
-          <p>Möchten Sie diese Abteilung wirklich löschen?</p>
-          <p class="text-secondary">
+        <div class="ds-modal__body">
+          <p class="mb-3">Möchten Sie diese Abteilung wirklich löschen?</p>
+          <p class="text-[var(--color-text-secondary)]">
             Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.
           </p>
           <input type="hidden" id="delete-department-id" />
         </div>
-        <div
-          class="modal-footer"
-          style="padding: 24px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid rgba(255, 255, 255, 0.1)"
-        >
+        <div class="ds-modal__footer">
           <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
           <button type="button" class="btn btn-danger" id="confirm-delete-department">Löschen</button>
         </div>
       </div>
     </div>
 
-    <!-- Floating Add Button -->
-    <button class="add-department-btn" id="add-department-btn">+</button>
+    <!-- Floating Action Button -->
+    <button class="btn-float add-department-btn" aria-label="Abteilung hinzufügen">
+      <i class="fas fa-plus"></i>
+    </button>
 
-    <!-- Scripts -->
+    <!-- Navigation Components -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
     <!-- Breadcrumb -->
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
-    <!-- Department Management -->
-    <script type="module" src="/scripts/manage/departments.ts"></script>
+
+    <!-- Page Script -->
+    <script type="module" src="/scripts/manage/departments/index.ts"></script>
   </body>
 </html>

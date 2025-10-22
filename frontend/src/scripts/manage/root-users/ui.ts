@@ -34,13 +34,23 @@ export function renderUserRow(user: RootUser): string {
       <td>${new Date(user.createdAt).toLocaleDateString('de-DE')}</td>
       <td>
         <div class="flex gap-2">
-          <button class="btn btn-sm btn-secondary" data-action="edit-root-user" data-user-id="${user.id}">
+          <button
+            class="action-icon action-icon--edit"
+            data-action="edit-root-user"
+            data-user-id="${user.id}"
+            title="Bearbeiten"
+            aria-label="Root-User bearbeiten"
+          >
             <i class="fas fa-edit"></i>
-            Bearbeiten
           </button>
-          <button class="btn btn-sm btn-danger" data-action="delete-root-user" data-user-id="${user.id}">
+          <button
+            class="action-icon action-icon--delete"
+            data-action="delete-root-user"
+            data-user-id="${user.id}"
+            title="Löschen"
+            aria-label="Root-User löschen"
+          >
             <i class="fas fa-trash"></i>
-            Löschen
           </button>
         </div>
       </td>

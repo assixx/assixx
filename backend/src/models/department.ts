@@ -16,8 +16,11 @@ interface DbDepartment extends RowDataPacket {
   updated_at?: Date;
   // Extended fields from queries
   manager_name?: string;
+  areaName?: string;
   employee_count?: number;
+  employee_names?: string;
   team_count?: number;
+  team_names?: string;
 }
 
 interface DbUser extends RowDataPacket {
@@ -112,20 +115,50 @@ export async function findAllDepartments(
   logger.info(`Fetching all departments for tenant ${tenantId}`);
 
   try {
-    // First try with extended query
+    // Modern CTE approach (Best Practice 2025 for MySQL 8.0+)
     const query = `
-        SELECT d.*, 
+        WITH employee_counts AS (
+          SELECT
+            department_id,
+            COUNT(*) as count,
+            GROUP_CONCAT(
+              CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, username))
+              ORDER BY last_name, first_name
+              SEPARATOR '\n'
+            ) as names
+          FROM users
+          WHERE tenant_id = ?
+            AND is_active = 1
+            AND is_archived = 0
+          GROUP BY department_id
+        ),
+        team_counts AS (
+          SELECT
+            department_id,
+            COUNT(*) as count,
+            GROUP_CONCAT(name ORDER BY name SEPARATOR '\n') as names
+          FROM teams
+          GROUP BY department_id
+        )
+        SELECT
+          d.*,
           u.username as manager_name,
-          (SELECT COUNT(*) FROM users WHERE department_id = d.id AND tenant_id = d.tenant_id AND is_active = 1 AND is_archived = 0) as employee_count,
-          (SELECT COUNT(*) FROM teams WHERE department_id = d.id) as team_count
+          a.name as areaName,
+          COALESCE(ec.count, 0) as employee_count,
+          COALESCE(ec.names, '') as employee_names,
+          COALESCE(tc.count, 0) as team_count,
+          COALESCE(tc.names, '') as team_names
         FROM departments d
         LEFT JOIN users u ON d.manager_id = u.id
+        LEFT JOIN areas a ON d.area_id = a.id
+        LEFT JOIN employee_counts ec ON ec.department_id = d.id
+        LEFT JOIN team_counts tc ON tc.department_id = d.id
         WHERE d.tenant_id = ?
         ORDER BY d.name
       `;
 
-    const [rows] = await executeQuery<DbDepartment[]>(query, [tenantId]);
-    logger.info(`Retrieved ${rows.length} departments with extended info`);
+    const [rows] = await executeQuery<DbDepartment[]>(query, [tenantId, tenantId]);
+    logger.info(`Retrieved ${rows.length} departments with names in tooltips`);
 
     return rows;
   } catch (error: unknown) {
