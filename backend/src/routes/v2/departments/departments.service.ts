@@ -17,8 +17,11 @@ export interface DepartmentV2 {
   updatedAt?: string;
   // Extended fields
   managerName?: string;
+  areaName?: string;
   employeeCount?: number;
+  employeeNames?: string;
   teamCount?: number;
+  teamNames?: string;
 }
 
 export interface CreateDepartmentData {
@@ -102,8 +105,11 @@ export class DepartmentService {
         // Extended fields if available
         ...(includeExtended && {
           managerName: dept.manager_name,
+          areaName: dept.areaName,
           employeeCount: dept.employee_count ?? 0,
+          employeeNames: dept.employee_names ?? '',
           teamCount: dept.team_count ?? 0,
+          teamNames: dept.team_names ?? '',
         }),
       }));
     } catch (error: unknown) {
@@ -141,8 +147,11 @@ export class DepartmentService {
         updatedAt: department.updated_at?.toISOString(),
         // Include extended fields
         managerName: department.manager_name,
+        areaName: department.areaName,
         employeeCount: department.employee_count ?? 0,
+        employeeNames: department.employee_names ?? '',
         teamCount: department.team_count ?? 0,
+        teamNames: department.team_names ?? '',
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;

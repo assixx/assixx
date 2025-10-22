@@ -37,17 +37,32 @@ export function generateAdminRow(admin: Admin): string {
       <td>${deptBadge}</td>
       <td>
         <div class="flex gap-2">
-          <button class="btn btn-secondary btn-sm" data-action="edit-admin" data-admin-id="${String(admin.id)}">
+          <button
+            class="action-icon action-icon--edit"
+            data-action="edit-admin"
+            data-admin-id="${String(admin.id)}"
+            title="Bearbeiten"
+            aria-label="Admin bearbeiten"
+          >
             <i class="fas fa-edit"></i>
-            Bearbeiten
           </button>
-          <button class="btn btn-secondary btn-sm" data-action="show-permissions" data-admin-id="${String(admin.id)}">
+          <button
+            class="action-icon action-icon--view"
+            data-action="show-permissions"
+            data-admin-id="${String(admin.id)}"
+            title="Berechtigungen"
+            aria-label="Berechtigungen anzeigen"
+          >
             <i class="fas fa-key"></i>
-            Berechtigungen
           </button>
-          <button class="btn btn-danger btn-sm" data-action="delete-admin" data-admin-id="${String(admin.id)}">
+          <button
+            class="action-icon action-icon--delete"
+            data-action="delete-admin"
+            data-admin-id="${String(admin.id)}"
+            title="Löschen"
+            aria-label="Admin löschen"
+          >
             <i class="fas fa-trash"></i>
-            Löschen
           </button>
         </div>
       </td>

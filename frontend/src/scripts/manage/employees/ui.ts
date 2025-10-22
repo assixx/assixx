@@ -264,13 +264,23 @@ export function renderEmployeeRow(employee: Employee): string {
       </td>
       <td>
         <div class="flex gap-2">
-          <button class="btn btn-secondary btn-sm" data-action="edit-employee" data-employee-id="${employee.id}">
+          <button
+            class="action-icon action-icon--edit"
+            data-action="edit-employee"
+            data-employee-id="${employee.id}"
+            title="Bearbeiten"
+            aria-label="Mitarbeiter bearbeiten"
+          >
             <i class="fas fa-edit"></i>
-            Bearbeiten
           </button>
-          <button class="btn btn-danger btn-sm" data-action="delete-employee" data-employee-id="${employee.id}">
+          <button
+            class="action-icon action-icon--delete"
+            data-action="delete-employee"
+            data-employee-id="${employee.id}"
+            title="Löschen"
+            aria-label="Mitarbeiter löschen"
+          >
             <i class="fas fa-trash"></i>
-            Löschen
           </button>
         </div>
       </td>

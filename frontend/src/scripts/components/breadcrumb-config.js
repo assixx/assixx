@@ -203,7 +203,6 @@ export function injectStyles() {
     <style id="breadcrumb-styles">
       #breadcrumb-container,
       .breadcrumb-container {
-        margin-bottom: 24px;
         padding: 0;
       }
 

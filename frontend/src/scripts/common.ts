@@ -10,6 +10,7 @@ import { getAuthToken, removeAuthToken, parseJwt, loadUserInfo } from './auth/in
 import { initPageProtection } from './auth/page-protection';
 import { setHTML } from '../utils/dom-utils';
 import type { ApiClient } from '../utils/api-client';
+import { initModals } from './components/modals.js';
 
 // Extend window interface
 declare global {
@@ -25,6 +26,9 @@ declare global {
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize page protection first
   initPageProtection();
+
+  // Initialize global modal scroll reset component
+  initModals();
 
   void loadNavigation();
   setupEventListeners();

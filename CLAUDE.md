@@ -39,26 +39,6 @@ ALWAYS BE 100% BRUTAL HONEST
 - Use MCP Tools before anything else
 - Apply best-practice methods
 
-## 🎨 UX/UI DESIGN STANDARDS
-
-### NO MORE MODALS FOR DATA ENTRY
-
-**From now on:** All forms as **Inline Forms**, NO Modals!
-
-#### New UI Patterns
-
-1. **Split-View Pattern** - Left: List, Right: Form
-2. **Inline-Expansion Pattern** - Form expands in list
-3. **Slide-in Panel Pattern** - Sliding in from right (not modal)
-4. **Top-Form Pattern** - Form above table
-
-#### Modals only for
-
-- ❌ Delete confirmations
-- ⚠️ Critical warnings
-- ℹ️ Info dialogs
-- 🔒 Session timeouts
-
 ## START TRIGGER
 
 ### "continue with Assixx" (Normal Mode)

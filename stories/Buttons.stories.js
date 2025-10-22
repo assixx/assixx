@@ -871,3 +871,214 @@ export const FloatingActionButtonPositions = {
     return container;
   },
 };
+
+/**
+ * ACTION ICON BUTTONS
+ * Icon-only buttons for table actions with color-coded hover states
+ */
+export const ActionIcons = {
+  render: () => {
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+
+    // Header
+    const header = document.createElement('div');
+    header.style.marginBottom = '24px';
+    header.innerHTML = `
+      <h3 style="color: #fff; margin-bottom: 8px;">Action Icon Buttons</h3>
+      <p style="color: var(--color-text-secondary); font-size: 14px;">
+        Icon-only buttons for table actions with color-coded hover states.
+        <br/>Hover over each button to see the color animation.
+      </p>
+    `;
+    container.appendChild(header);
+
+    // Grid of all 4 variants
+    const grid = document.createElement('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    grid.style.gap = '24px';
+    grid.style.marginBottom = '32px';
+
+    const variants = [
+      {
+        class: 'action-icon--edit',
+        icon: 'fas fa-edit',
+        label: 'Edit (Yellow)',
+        desc: 'Modify/update actions'
+      },
+      {
+        class: 'action-icon--delete',
+        icon: 'fas fa-trash',
+        label: 'Delete (Red)',
+        desc: 'Remove/destroy actions'
+      },
+      {
+        class: 'action-icon--view',
+        icon: 'fas fa-eye',
+        label: 'View (Blue)',
+        desc: 'Preview/inspect actions'
+      },
+      {
+        class: 'action-icon--more',
+        icon: 'fas fa-ellipsis-v',
+        label: 'More (Neutral)',
+        desc: 'Additional options'
+      },
+    ];
+
+    variants.forEach(({ class: className, icon, label, desc }) => {
+      const card = document.createElement('div');
+      card.style.textAlign = 'center';
+      card.style.padding = '16px';
+      card.style.background = 'rgba(255,255,255,0.02)';
+      card.style.border = '1px solid rgba(255,255,255,0.1)';
+      card.style.borderRadius = '8px';
+      card.innerHTML = `
+        <button class="action-icon ${className}" title="${label}" aria-label="${label}">
+          <i class="${icon}"></i>
+        </button>
+        <div style="margin-top: 12px; color: #fff; font-size: 14px;">${label}</div>
+        <div style="margin-top: 4px; color: var(--color-text-secondary); font-size: 12px;">${desc}</div>
+      `;
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+
+    // Table example
+    const tableSection = document.createElement('div');
+    tableSection.style.marginTop = '32px';
+    tableSection.innerHTML = `
+      <h4 style="color: #fff; margin-bottom: 16px;">Table Example</h4>
+      <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden;">
+        <table class="data-table data-table--striped" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-size: 14px;">Name</th>
+              <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-size: 14px;">Status</th>
+              <th style="padding: 12px; text-align: left; color: var(--color-text-secondary); font-size: 14px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 12px; color: #fff;">Engineering Department</td>
+              <td style="padding: 12px;"><span class="badge badge--success">Active</span></td>
+              <td style="padding: 12px;">
+                <div class="flex gap-2">
+                  <button class="action-icon action-icon--edit" title="Bearbeiten" aria-label="Abteilung bearbeiten">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-icon action-icon--delete" title="Löschen" aria-label="Abteilung löschen">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 12px; color: #fff;">Sales Department</td>
+              <td style="padding: 12px;"><span class="badge badge--warning">Inactive</span></td>
+              <td style="padding: 12px;">
+                <div class="flex gap-2">
+                  <button class="action-icon action-icon--edit" title="Bearbeiten" aria-label="Abteilung bearbeiten">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-icon action-icon--delete" title="Löschen" aria-label="Abteilung löschen">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    `;
+    container.appendChild(tableSection);
+
+    // Accessibility note
+    const note = document.createElement('div');
+    note.style.marginTop = '24px';
+    note.style.padding = '16px';
+    note.style.background = 'rgba(59, 130, 246, 0.1)';
+    note.style.border = '1px solid rgba(59, 130, 246, 0.3)';
+    note.style.borderRadius = '8px';
+    note.innerHTML = `
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <i class="fas fa-info-circle" style="color: #3b82f6; font-size: 20px; flex-shrink: 0; margin-top: 2px;"></i>
+        <div>
+          <h5 style="color: #3b82f6; margin-bottom: 8px; font-size: 14px; font-weight: 600;">Accessibility Required</h5>
+          <p style="color: var(--color-text-secondary); font-size: 14px; line-height: 1.5;">
+            <strong>MANDATORY:</strong> Every action icon button MUST have both <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">title</code>
+            (browser tooltip) and <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;">aria-label</code> (screen reader).
+            Without these, the button is not accessible to all users.
+          </p>
+        </div>
+      </div>
+    `;
+    container.appendChild(note);
+
+    return container;
+  },
+};
+
+/**
+ * ACTION ICON STATES
+ * Different button states (default, hover, disabled)
+ */
+export const ActionIconStates = {
+  render: () => {
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+
+    // Header
+    const header = document.createElement('div');
+    header.style.marginBottom = '24px';
+    header.innerHTML = `
+      <h3 style="color: #fff; margin-bottom: 8px;">Action Icon States</h3>
+      <p style="color: var(--color-text-secondary); font-size: 14px;">
+        Different states for action icon buttons.
+      </p>
+    `;
+    container.appendChild(header);
+
+    // States grid
+    const grid = document.createElement('div');
+    grid.style.display = 'grid';
+    grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
+    grid.style.gap = '24px';
+
+    const states = [
+      { label: 'Default', disabled: false, note: 'Normal state, ready for interaction' },
+      { label: 'Hover', disabled: false, note: 'Hover over buttons to see color change' },
+      { label: 'Disabled', disabled: true, note: 'Cannot interact, reduced opacity' },
+    ];
+
+    states.forEach(({ label, disabled, note }) => {
+      const card = document.createElement('div');
+      card.style.padding = '20px';
+      card.style.background = 'rgba(255,255,255,0.02)';
+      card.style.border = '1px solid rgba(255,255,255,0.1)';
+      card.style.borderRadius = '8px';
+      card.innerHTML = `
+        <h4 style="color: #fff; margin-bottom: 12px; font-size: 16px;">${label}</h4>
+        <div style="display: flex; gap: 12px; justify-content: center; padding: 20px 0;">
+          <button class="action-icon action-icon--edit" title="Edit" aria-label="Edit" ${disabled ? 'disabled' : ''}>
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="action-icon action-icon--delete" title="Delete" aria-label="Delete" ${disabled ? 'disabled' : ''}>
+            <i class="fas fa-trash"></i>
+          </button>
+          <button class="action-icon action-icon--view" title="View" aria-label="View" ${disabled ? 'disabled' : ''}>
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+        <p style="color: var(--color-text-secondary); font-size: 13px; text-align: center;">${note}</p>
+      `;
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+
+    return container;
+  },
+};
