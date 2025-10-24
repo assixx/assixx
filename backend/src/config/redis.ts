@@ -20,7 +20,7 @@ export async function connectRedis(): Promise<RedisClientType> {
         },
       });
 
-      redisClient.on('error', (err) => {
+      redisClient.on('error', (err: Error) => {
         logger.error('Redis Client Error:', err);
       });
 

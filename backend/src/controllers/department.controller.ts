@@ -2,30 +2,20 @@
  * Department Controller
  * Handles department-related operations
  */
-import { Request, Response } from 'express';
-import { Pool } from 'mysql2/promise';
+import { Response } from 'express';
 
 import type { DepartmentCreateData, DepartmentUpdateData } from '../models/department';
 import departmentService from '../services/department.service';
+import type { AuthenticatedRequest } from '../types/request.types';
 
 // Constants
 const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
 const UNKNOWN_ERROR = 'Unknown error';
 
 // Extended Request interface with tenant database
-interface TenantRequest extends Request {
-  tenantDb?: Pool;
-  tenantId?: number | null;
-  user?: {
-    id: number;
-    tenant_id: number;
-    role: string;
-    [key: string]: unknown;
-  };
-}
 
 // Interface for create/update request bodies
-interface DepartmentCreateRequest extends TenantRequest {
+interface DepartmentCreateRequest extends AuthenticatedRequest {
   body: {
     tenant_id: number;
     name: string;
@@ -41,7 +31,7 @@ interface DepartmentCreateRequest extends TenantRequest {
   };
 }
 
-interface DepartmentUpdateRequest extends TenantRequest {
+interface DepartmentUpdateRequest extends AuthenticatedRequest {
   body: {
     name?: string;
     description?: string;
@@ -59,13 +49,13 @@ interface DepartmentUpdateRequest extends TenantRequest {
   };
 }
 
-interface DepartmentGetRequest extends TenantRequest {
+interface DepartmentGetRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
 }
 
-interface DepartmentQueryRequest extends TenantRequest {
+interface DepartmentQueryRequest extends AuthenticatedRequest {
   query: {
     search?: string;
     parent_id?: string;
@@ -130,16 +120,17 @@ class DepartmentController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       // Get tenant ID from request
-      const tenantId = req.tenantId ?? req.user?.tenant_id;
-      if (tenantId === undefined || tenantId === 0) {
+      const tenantId = req.tenantId ?? req.user.tenant_id;
+      if (tenantId === 0) {
         res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
       const filters = this.parseQueryFilters(req.query);
-      const result = await departmentService.getAll(req.tenantDb, tenantId, filters);
+      const result = await departmentService.getAll(tenantDb, tenantId, filters);
       res.json(result);
     } catch (error: unknown) {
       console.error('Error in DepartmentController.getAll:', error);
@@ -162,6 +153,7 @@ class DepartmentController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -170,13 +162,13 @@ class DepartmentController {
       }
 
       // Get tenant ID from request
-      const tenantId = req.tenantId ?? req.user?.tenant_id;
-      if (tenantId === undefined || tenantId === 0) {
+      const tenantId = req.tenantId ?? req.user.tenant_id;
+      if (tenantId === 0) {
         res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
-      const result = await departmentService.getById(req.tenantDb, id, tenantId);
+      const result = await departmentService.getById(tenantDb, id, tenantId);
       if (result === null) {
         res.status(404).json({ error: 'Nicht gefunden' });
         return;
@@ -203,6 +195,7 @@ class DepartmentController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       const departmentData: DepartmentCreateData = {
         name: req.body.name,
@@ -210,9 +203,9 @@ class DepartmentController {
         manager_id: req.body.manager_id ?? undefined,
         status: req.body.status ?? undefined,
         visibility: req.body.visibility ?? undefined,
-        tenant_id: req.user?.tenant_id ?? 0,
+        tenant_id: req.user.tenant_id,
       };
-      const result = await departmentService.create(req.tenantDb, departmentData);
+      const result = await departmentService.create(tenantDb, departmentData);
       res.status(201).json(result);
     } catch (error: unknown) {
       console.error('Error in DepartmentController.create:', error);
@@ -235,6 +228,7 @@ class DepartmentController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -250,13 +244,13 @@ class DepartmentController {
         visibility: req.body.visibility,
       };
       // Get tenant ID from request
-      const tenantId = req.tenantId ?? req.user?.tenant_id;
-      if (tenantId === undefined || tenantId === 0) {
+      const tenantId = req.tenantId ?? req.user.tenant_id;
+      if (tenantId === 0) {
         res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
-      const result = await departmentService.update(req.tenantDb, id, tenantId, updateData);
+      const result = await departmentService.update(tenantDb, id, tenantId, updateData);
       res.json(result);
     } catch (error: unknown) {
       console.error('Error in DepartmentController.update:', error);
@@ -279,6 +273,7 @@ class DepartmentController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -286,7 +281,7 @@ class DepartmentController {
         return;
       }
 
-      await departmentService.delete(req.tenantDb, id);
+      await departmentService.delete(tenantDb, id);
       res.status(204).send();
     } catch (error: unknown) {
       console.error('Error in DepartmentController.delete:', error);

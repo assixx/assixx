@@ -9,6 +9,7 @@
 import express, { NextFunction, Request, Response, Router } from 'express';
 
 import { authenticateToken } from '../../auth';
+import type { AuthenticatedRequest } from '../../types/request.types';
 import Department from '../../models/department';
 import Team, { type TeamCreateData, type TeamUpdateData } from '../../models/team';
 import User from '../../models/user';
@@ -28,15 +29,6 @@ const router: Router = express.Router();
 
 // Import models (now ES modules)
 // Extended Request interfaces
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-    tenant_id: number;
-  };
-}
 
 /* Unused interfaces - kept for future reference
 interface TeamCreateRequest extends AuthenticatedRequest {

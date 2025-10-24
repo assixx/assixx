@@ -3,30 +3,20 @@
  * Handles employee-related operations
  * NOTE: This controller was previously named UserController but renamed for consistency
  */
-import { Request, Response } from 'express';
-import { Pool } from 'mysql2/promise';
+import { Response } from 'express';
 
 import type { UserCreateData } from '../models/user';
 import employeeService from '../services/employee.service';
+import type { AuthenticatedRequest } from '../types/request.types';
 
 // Constants
 const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
 const UNKNOWN_ERROR = 'Unknown error';
 
 // Extended Request interface with tenant database
-interface TenantRequest extends Request {
-  tenantDb?: Pool;
-  tenantId?: number | null;
-  user?: {
-    id: number;
-    tenantId: number;
-    role: string;
-    [key: string]: unknown;
-  };
-}
 
 // Interface for create/update request bodies
-interface EmployeeCreateRequest extends TenantRequest {
+interface EmployeeCreateRequest extends AuthenticatedRequest {
   body: {
     tenant_id: number;
     username: string;
@@ -52,7 +42,7 @@ interface EmployeeCreateRequest extends TenantRequest {
   };
 }
 
-interface EmployeeUpdateRequest extends TenantRequest {
+interface EmployeeUpdateRequest extends AuthenticatedRequest {
   body: {
     username?: string;
     email?: string;
@@ -78,13 +68,13 @@ interface EmployeeUpdateRequest extends TenantRequest {
   };
 }
 
-interface EmployeeGetRequest extends TenantRequest {
+interface EmployeeGetRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
 }
 
-interface EmployeeQueryRequest extends TenantRequest {
+interface EmployeeQueryRequest extends AuthenticatedRequest {
   query: {
     search?: string;
     role?: 'admin' | 'user' | 'manager';
@@ -105,13 +95,13 @@ function validateTenantContext(
   req: EmployeeQueryRequest,
   res: Response,
 ): { isValid: boolean; tenantId?: number } {
-  if (req.tenantDb === undefined) {
+  if (req.tenant === undefined) {
     res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
     return { isValid: false };
   }
 
-  const tenantId = req.tenantId ?? req.user?.tenantId;
-  if (tenantId === undefined || tenantId === 0) {
+  const tenantId = req.tenantId ?? req.user.tenant_id;
+  if (tenantId === 0) {
     res.status(400).json({ error: 'Tenant ID not found' });
     return { isValid: false };
   }
@@ -212,6 +202,7 @@ class EmployeeController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -220,13 +211,13 @@ class EmployeeController {
       }
 
       // Get tenant ID from request
-      const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (tenantId === undefined || tenantId === 0) {
+      const tenantId = req.tenantId ?? req.user.tenant_id;
+      if (tenantId === 0) {
         res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
-      const result = await employeeService.getById(req.tenantDb, id, tenantId);
+      const result = await employeeService.getById(tenantDb, id, tenantId);
       if (result === null) {
         res.status(404).json({ error: 'Nicht gefunden' });
         return;
@@ -253,10 +244,11 @@ class EmployeeController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       // Get tenant ID from request
-      const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (tenantId === undefined || tenantId === 0) {
+      const tenantId = req.tenantId ?? req.user.tenant_id;
+      if (tenantId === 0) {
         res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
@@ -276,7 +268,7 @@ class EmployeeController {
         employee_id: req.body.employee_id,
         status: req.body.is_active === false ? 'inactive' : 'active',
       };
-      const result = await employeeService.create(req.tenantDb, employeeData);
+      const result = await employeeService.create(tenantDb, employeeData);
       res.status(201).json(result);
     } catch (error: unknown) {
       console.error('Error in EmployeeController.create:', error);
@@ -299,6 +291,7 @@ class EmployeeController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -324,17 +317,19 @@ class EmployeeController {
       };
       // Remove undefined values - create new object without undefined values
       const cleanedUpdateData = Object.fromEntries(
-        Object.entries(updateData as Record<string, unknown>).filter(([, v]) => v !== undefined),
+        Object.entries(updateData as Record<string, unknown>).filter(
+          ([, v]: [string, unknown]) => v !== undefined,
+        ),
       ) as Partial<UserCreateData>;
 
       // Get tenant ID from request
-      const tenantId = req.tenantId ?? req.user?.tenantId;
-      if (tenantId === undefined || tenantId === 0) {
+      const tenantId = req.tenantId ?? req.user.tenant_id;
+      if (tenantId === 0) {
         res.status(400).json({ error: 'Tenant ID not found' });
         return;
       }
 
-      const result = await employeeService.update(req.tenantDb, id, tenantId, cleanedUpdateData);
+      const result = await employeeService.update(tenantDb, id, tenantId, cleanedUpdateData);
       res.json(result);
     } catch (error: unknown) {
       console.error('Error in EmployeeController.update:', error);
@@ -357,6 +352,7 @@ class EmployeeController {
         res.status(400).json({ error: TENANT_DB_NOT_AVAILABLE });
         return;
       }
+      const tenantDb = req.tenantDb;
 
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
@@ -364,7 +360,7 @@ class EmployeeController {
         return;
       }
 
-      await employeeService.delete(req.tenantDb, id);
+      await employeeService.delete(tenantDb, id);
       res.status(204).send();
     } catch (error: unknown) {
       console.error('Error in EmployeeController.delete:', error);

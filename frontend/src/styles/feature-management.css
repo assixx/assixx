@@ -10,9 +10,6 @@
 /* Glassmorphismus Design-Standards */
 
 /* Align first container with sidebar user-info-card */
-.container {
-  margin-top: -30px !important;
-}
 
 /* Glassmorphismus für Cards */
 .card {

@@ -14,7 +14,7 @@ export interface AuthUser {
   userId: number; // Alias for id
   username: string;
   email: string;
-  role: string;
+  role: 'root' | 'admin' | 'employee';
   tenant_id: number;
   tenantName?: string;
   first_name?: string;
@@ -22,7 +22,7 @@ export interface AuthUser {
   department_id?: number | null;
   team_id?: number | null;
   position?: string | null;
-  activeRole?: string; // For role switching functionality
+  activeRole?: 'root' | 'admin' | 'employee'; // For role switching functionality
   isRoleSwitched?: boolean; // Flag to indicate if role is switched
 }
 

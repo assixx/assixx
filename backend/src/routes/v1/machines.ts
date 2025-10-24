@@ -3,6 +3,7 @@
  * API endpoints for machine management
  */
 import express, { Request, Router } from 'express';
+import type { AuthenticatedRequest } from '../../types/request.types';
 import { RowDataPacket } from 'mysql2/promise';
 
 import { authenticateToken } from '../../auth';
@@ -12,15 +13,6 @@ import { getErrorMessage } from '../../utils/errorHandler';
 const router: Router = express.Router();
 
 // Extended Request interfaces
-interface AuthenticatedRequest extends Request {
-  user: {
-    id: number;
-    username: string;
-    email: string;
-    role: string;
-    tenant_id: number;
-  };
-}
 
 // Removed unused interfaces - MachinesListRequest, MachineByIdRequest, MachineCreateRequest
 

@@ -14,10 +14,10 @@ import {
   UNKNOWN_ERROR_MESSAGE,
 } from './kvp-core.controller.js';
 import type {
+  AuthenticatedRequest,
   DepartmentStat,
   KvpGetRequest,
   KvpShareRequest,
-  TenantRequest,
 } from './kvp-core.controller.js';
 
 /**
@@ -32,7 +32,7 @@ class KvpExtendedController extends KvpCoreController {
    */
   async shareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || req.user.role === 'employee') {
+      if (req.user.role === 'employee') {
         res.status(403).json({ error: 'Nur Admins können Vorschläge teilen' });
         return;
       }
@@ -122,7 +122,7 @@ class KvpExtendedController extends KvpCoreController {
    */
   async unshareSuggestion(req: KvpShareRequest, res: Response): Promise<void> {
     try {
-      if (!req.user || req.user.role === 'employee') {
+      if (req.user.role === 'employee') {
         res.status(403).json({ error: 'Nur Admins können Teilen rückgängig machen' });
         return;
       }
@@ -251,13 +251,8 @@ class KvpExtendedController extends KvpCoreController {
    * @param req - The request object
    * @param res - The response object
    */
-  async getStatistics(req: TenantRequest, res: Response): Promise<void> {
+  async getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const { role, tenant_id: tenantId, id: userId } = req.user;
 
       if (role === 'employee') {
@@ -300,13 +295,8 @@ class KvpExtendedController extends KvpCoreController {
    * @param req - The request object
    * @param res - The response object
    */
-  async getCategories(req: TenantRequest, res: Response): Promise<void> {
+  async getCategories(_req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const [categories] = await executeQuery<RowDataPacket[]>(
         'SELECT * FROM kvp_categories ORDER BY name',
       );
@@ -332,11 +322,6 @@ class KvpExtendedController extends KvpCoreController {
    */
   async getComments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         res.status(400).json({ error: INVALID_ID_ERROR });
@@ -396,18 +381,13 @@ class KvpExtendedController extends KvpCoreController {
    * @param res - The response object
    */
   async addComment(
-    req: TenantRequest & {
+    req: AuthenticatedRequest & {
       params: { id: string };
       body: { comment: string; is_internal?: boolean };
     },
     res: Response,
   ): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         res.status(400).json({ error: INVALID_ID_ERROR });
@@ -468,11 +448,6 @@ class KvpExtendedController extends KvpCoreController {
    */
   async getAttachments(req: KvpGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         res.status(400).json({ error: INVALID_ID_ERROR });
@@ -523,7 +498,7 @@ class KvpExtendedController extends KvpCoreController {
    * @param res - The response object
    */
   async uploadAttachment(
-    req: TenantRequest & {
+    req: AuthenticatedRequest & {
       params: { id: string };
       files?: Express.Multer.File[];
     },
@@ -534,11 +509,6 @@ class KvpExtendedController extends KvpCoreController {
       console.info('User:', req.user);
       console.info('Suggestion ID:', req.params.id);
       console.info('Files received:', Array.isArray(req.files) ? req.files.length : 0);
-
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
 
       const suggestionId = Number.parseInt(req.params.id);
 
@@ -624,15 +594,10 @@ class KvpExtendedController extends KvpCoreController {
    * @param res - The response object
    */
   async downloadAttachment(
-    req: TenantRequest & { params: { attachmentId: string } },
+    req: AuthenticatedRequest & { params: { attachmentId: string } },
     res: Response,
   ): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const attachmentId = Number.parseInt(req.params.attachmentId, 10);
 
       // Get attachment details

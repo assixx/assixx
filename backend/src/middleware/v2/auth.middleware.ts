@@ -178,20 +178,31 @@ export async function authenticateV2(
       return;
     }
 
+    // Validate roles
+    const validRoles = ['root', 'admin', 'employee'] as const;
+    const role =
+      validRoles.includes(decoded.role as (typeof validRoles)[number]) ?
+        (decoded.role as 'root' | 'admin' | 'employee')
+      : 'employee';
+    const activeRole =
+      decoded.activeRole && validRoles.includes(decoded.activeRole as (typeof validRoles)[number]) ?
+        (decoded.activeRole as 'root' | 'admin' | 'employee')
+      : role;
+
     // Attach user to request with v2 field names
     (req as AuthenticatedRequest).user = {
       id: userDetails.id,
       userId: userDetails.id,
       username: userDetails.username,
       email: userDetails.email,
-      role: decoded.role, // CRITICAL: Always use the original role from JWT
+      role, // CRITICAL: Always use the original role from JWT
       tenant_id: userDetails.tenantId,
       tenantName: userDetails.tenantName,
       first_name: userDetails.firstName,
       last_name: userDetails.lastName,
       department_id: userDetails.departmentId,
       // Role switch information from JWT
-      activeRole: decoded.activeRole ?? decoded.role,
+      activeRole,
       isRoleSwitched: Boolean(decoded.isRoleSwitched), // Convert to boolean explicitly
     };
     // Add tenantId to request root for controllers

@@ -49,7 +49,7 @@ interface User {
 function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
   return errors.map((error) => ({
     field: error.type === 'field' ? error.path : 'general',
-    message: error.msg,
+    message: String(error.msg),
   }));
 }
 

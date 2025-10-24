@@ -539,18 +539,18 @@ function buildUpdateQuery(entryData: EntryUpdateData): { query: string; params: 
   type EntryValue = string | number | boolean | Date | null | string[] | undefined;
 
   const fields: [keyof EntryUpdateData, string, (val: EntryValue) => unknown][] = [
-    ['title', 'title', (v) => v],
-    ['content', 'content', (v) => v],
-    ['org_level', 'org_level', (v) => v],
-    ['org_id', 'org_id', (v) => v],
-    ['expires_at', 'expires_at', (v) => v],
-    ['priority', 'priority', (v) => v],
-    ['color', 'color', (v) => v],
-    ['status', 'status', (v) => v],
+    ['title', 'title', (v: EntryValue) => v],
+    ['content', 'content', (v: EntryValue) => v],
+    ['org_level', 'org_level', (v: EntryValue) => v],
+    ['org_id', 'org_id', (v: EntryValue) => v],
+    ['expires_at', 'expires_at', (v: EntryValue) => v],
+    ['priority', 'priority', (v: EntryValue) => v],
+    ['color', 'color', (v: EntryValue) => v],
+    ['status', 'status', (v: EntryValue) => v],
     [
       'requires_confirmation',
       'requires_confirmation',
-      (v) =>
+      (v: EntryValue) =>
         typeof v === 'boolean' ?
           v ? 1
           : 0
@@ -781,6 +781,7 @@ function buildDashboardQuery(
 export async function getDashboardEntries(
   tenant_id: number,
   userId: number,
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   limit = 3,
 ): Promise<DbBlackboardEntry[]> {
   try {

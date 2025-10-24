@@ -3,7 +3,9 @@
  * Logs to both activity_logs (for frontend) and root_logs (for audit)
  */
 import rootLog from '../models/rootLog';
-import { createLog } from '../routes/v1/logs';
+
+// V1 import disabled
+// import { createLog } from '../routes/v1/logs';
 
 interface DualLogOptions {
   // Common fields
@@ -36,23 +38,23 @@ export async function dualLog(options: DualLogOptions): Promise<void> {
     entityId,
     ipAddress,
     userAgent,
-    details,
+    // details, // Unused - was for v1 createLog
     oldValues,
     newValues,
     wasRoleSwitched = false,
   } = options;
 
-  // 1. Log to activity_logs for frontend display
-  await createLog(
-    userId,
-    tenantId,
-    action,
-    entityType,
-    entityId,
-    details ?? `${action} ${entityType}`,
-    ipAddress,
-    userAgent,
-  );
+  // 1. Log to activity_logs for frontend display - V1 DISABLED
+  // await createLog(
+  //   userId,
+  //   tenantId,
+  //   action,
+  //   entityType,
+  //   entityId,
+  //   details ?? `${action} ${entityType}`,
+  //   ipAddress,
+  //   userAgent,
+  // );
 
   // 2. Log to root_logs for detailed audit
   await rootLog.create({

@@ -99,16 +99,16 @@ export class AdminPermissionsService {
 
       if (groupPermissions.length > 0) {
         // Check if any group grants the required permission
-        const hasAccess = groupPermissions.some((perm) =>
+        const hasAccess = groupPermissions.some((perm: RowDataPacket) =>
           this.checkPermissionLevel(perm, requiredPermission),
         );
 
         if (hasAccess) {
           // Get the highest permissions from all groups
           const permissions: PermissionSet = {
-            canRead: groupPermissions.some((p) => p.can_read === 1),
-            canWrite: groupPermissions.some((p) => p.can_write === 1),
-            canDelete: groupPermissions.some((p) => p.can_delete === 1),
+            canRead: groupPermissions.some((p: RowDataPacket) => p.can_read === 1),
+            canWrite: groupPermissions.some((p: RowDataPacket) => p.can_write === 1),
+            canDelete: groupPermissions.some((p: RowDataPacket) => p.can_delete === 1),
           };
 
           return { hasAccess: true, source: 'group', permissions };
@@ -164,7 +164,7 @@ export class AdminPermissionsService {
     `;
     const [rows] = await execute<DepartmentPermissionRow[]>(query, [adminId, tenantId]);
 
-    return rows.map((row) => ({
+    return rows.map((row: DepartmentPermissionRow) => ({
       id: row.id,
       name: row.name,
       description: row.description,
@@ -194,7 +194,7 @@ export class AdminPermissionsService {
     `;
     const [rows] = await execute<GroupPermissionRow[]>(query, [adminId, tenantId]);
 
-    return rows.map((row) => ({
+    return rows.map((row: GroupPermissionRow) => ({
       id: row.id,
       name: row.name,
       description: row.description,
@@ -275,7 +275,7 @@ export class AdminPermissionsService {
       // Add new permissions
       if (departmentIds.length > 0) {
         logger.info('Adding new permissions for departments:', departmentIds);
-        const values = departmentIds.map((deptId) => [
+        const values = departmentIds.map((deptId: number) => [
           adminId,
           deptId,
           tenantId,
@@ -352,7 +352,7 @@ export class AdminPermissionsService {
 
       // Add new permissions
       if (groupIds.length > 0) {
-        const values = groupIds.map((groupId) => [
+        const values = groupIds.map((groupId: number) => [
           adminId,
           groupId,
           tenantId,

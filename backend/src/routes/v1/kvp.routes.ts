@@ -22,7 +22,7 @@ router.get(
   rateLimiter.authenticated,
   // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied via rateLimiter.authenticated middleware
   async (req, res) => {
-    await kvpController.getAll(req, res);
+    await kvpController.getAll(req as AuthenticatedRequest, res);
   },
 );
 router.get(
@@ -30,10 +30,10 @@ router.get(
   rateLimiter.authenticated,
   // codeql[js/missing-rate-limiting] - False positive: Rate limiting is applied
   async (req, res) => {
-  await kvpController.getCategories(req, res);
+  await kvpController.getCategories(req as AuthenticatedRequest, res);
 });
 router.get('/stats', rateLimiter.admin, checkRole(['admin', 'root']), async (req, res) => {
-  await kvpController.getStatistics(req, res);
+  await kvpController.getStatistics(req as AuthenticatedRequest, res);
 });
 router.get(
   '/:id',

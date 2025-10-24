@@ -19,7 +19,7 @@ export function handleValidationErrors(req: Request, res: Response, next: NextFu
     // Convert to API v2 format
     const details = errors.array().map((err) => ({
       field: err.type === 'field' ? err.path : 'unknown',
-      message: err.msg,
+      message: String(err.msg),
     }));
 
     const response = errorResponse('VALIDATION_ERROR', 'Validation failed', details);

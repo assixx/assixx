@@ -249,17 +249,23 @@ export async function authenticateToken(
   }
 
   try {
-    const decoded = await new Promise<jwt.JwtPayload>((resolve, reject) => {
-      jwt.verify(token, JWT_SECRET, (err, decoded) => {
-        if (err !== null) {
-          reject(err);
-        } else if (decoded === undefined || typeof decoded === 'string') {
-          reject(new Error('Invalid token payload'));
-        } else {
-          resolve(decoded);
-        }
-      });
-    });
+    const decoded = await new Promise<jwt.JwtPayload>(
+      (resolve: (value: jwt.JwtPayload) => void, reject: (reason?: unknown) => void) => {
+        jwt.verify(
+          token,
+          JWT_SECRET,
+          (err: jwt.VerifyErrors | null, decoded: string | jwt.JwtPayload | undefined) => {
+            if (err !== null) {
+              reject(err);
+            } else if (decoded === undefined || typeof decoded === 'string') {
+              reject(new Error('Invalid token payload'));
+            } else {
+              resolve(decoded);
+            }
+          },
+        );
+      },
+    );
 
     const user = decoded as TokenPayload & {
       activeRole?: string;

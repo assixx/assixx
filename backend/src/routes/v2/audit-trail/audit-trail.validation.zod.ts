@@ -101,7 +101,7 @@ export const GenerateReportBodySchema = z
     dateTo: DateSchema,
   })
   .refine(
-    (data) => {
+    (data: { reportType: string; dateFrom: string; dateTo: string }) => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       return dateTo >= dateFrom;
@@ -112,7 +112,7 @@ export const GenerateReportBodySchema = z
     },
   )
   .refine(
-    (data) => {
+    (data: { reportType: string; dateFrom: string; dateTo: string }) => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       const maxDate = new Date(dateFrom);

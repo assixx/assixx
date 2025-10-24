@@ -6,7 +6,7 @@
 // Re-export everything from the extended controller
 export { KvpExtendedController as KvpController } from './kvp-extended.controller.js';
 export type {
-  TenantRequest,
+  AuthenticatedRequest,
   KvpCreateRequest,
   KvpUpdateRequest,
   KvpGetRequest,

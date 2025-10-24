@@ -1,4 +1,4 @@
-import { Server } from 'http';
+import { IncomingMessage, Server } from 'http';
 import jwt from 'jsonwebtoken';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { URL } from 'url';
@@ -58,7 +58,7 @@ export class ChatWebSocketServer {
   }
 
   private init(): void {
-    this.wss.on('connection', (ws: ExtendedWebSocket, request) => {
+    this.wss.on('connection', (ws: ExtendedWebSocket, request: IncomingMessage) => {
       void this.handleConnection(ws, request);
     });
   }
@@ -109,9 +109,9 @@ export class ChatWebSocketServer {
       this.clients.set(userId, ws);
 
       // Event-Handler registrieren
-      ws.on('message', (data) => void this.handleMessage(ws, data));
+      ws.on('message', (data: WebSocketData) => void this.handleMessage(ws, data));
       ws.on('close', () => void this.handleDisconnection(ws));
-      ws.on('error', (error) => {
+      ws.on('error', (error: Error) => {
         this.handleError(ws, error);
       });
       ws.on('pong', () => {
@@ -192,7 +192,7 @@ export class ChatWebSocketServer {
       tenantId,
     ]);
 
-    return participants.map((p) => (p as { user_id: number }).user_id);
+    return participants.map((p: RowDataPacket) => (p as { user_id: number }).user_id);
   }
 
   private async saveMessage(

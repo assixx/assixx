@@ -102,7 +102,7 @@ export async function checkTenantStatus(
     // Using type guard to safely check for user existence
     const reqWithUser = req as Request & { user?: AuthUser };
 
-    if (reqWithUser.user === undefined || reqWithUser.user === null) {
+    if (reqWithUser.user === undefined) {
       next();
       return;
     }

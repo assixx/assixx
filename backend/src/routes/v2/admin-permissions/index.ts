@@ -1,7 +1,8 @@
-import { Router } from 'express';
+import { Response, Router } from 'express';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
 import { validate } from '../../../middleware/validation.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { adminPermissionsController } from './controller.js';
 import {
@@ -90,7 +91,7 @@ router.use(authenticateToken);
 router.get(
   '/my',
   validate(getMyPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.getMyPermissions(req, res);
   }),
 );
@@ -126,7 +127,7 @@ router.get(
 router.get(
   '/:adminId',
   validate(getAdminPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.getAdminPermissions(req, res);
   }),
 );
@@ -191,7 +192,7 @@ router.get(
 router.post(
   '/',
   validate(setPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.setPermissions(req, res);
   }),
 );
@@ -235,7 +236,7 @@ router.post(
 router.delete(
   '/:adminId/departments/:departmentId',
   validate(removePermissionValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.removeDepartmentPermission(req, res);
   }),
 );
@@ -279,7 +280,7 @@ router.delete(
 router.delete(
   '/:adminId/groups/:groupId',
   validate(removeGroupPermissionValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.removeGroupPermission(req, res);
   }),
 );
@@ -367,7 +368,7 @@ router.delete(
 router.post(
   '/bulk',
   validate(bulkPermissionsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.bulkUpdatePermissions(req, res);
   }),
 );
@@ -444,7 +445,7 @@ router.post(
 router.get(
   '/:adminId/check/:departmentId/:permissionLevel',
   validate(checkAccessValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.checkAccess(req, res);
   }),
 );
@@ -453,7 +454,7 @@ router.get(
 router.get(
   '/:adminId/check/:departmentId',
   validate(checkAccessValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.checkAccess(req, res);
   }),
 );

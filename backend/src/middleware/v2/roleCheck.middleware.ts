@@ -23,7 +23,7 @@ export function requireRoleV2(allowedRoles: string[]): RequestHandler {
 
     // Check if user has one of the allowed roles
     const userRole = req.user.role;
-    if (!userRole || !allowedRoles.includes(userRole)) {
+    if (!allowedRoles.includes(userRole)) {
       res
         .status(403)
         .json(errorResponse('FORBIDDEN', "You don't have permission to perform this action"));

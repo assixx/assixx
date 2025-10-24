@@ -2,27 +2,16 @@
  * Role Middleware
  * Checks if user has required role to access resource
  */
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Response } from 'express';
 
-interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    tenant_id: number;
-    role: 'root' | 'admin' | 'employee';
-  };
-}
+import type { AuthenticatedRequest } from '../types/request.types';
 
 /**
  * Middleware to check if user has one of the required roles
  * @param allowedRoles - Array of allowed roles
  */
 export function checkRole(allowedRoles: string[]) {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!allowedRoles.includes(req.user.role)) {
       res.status(403).json({
         error: 'Forbidden',
