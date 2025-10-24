@@ -3,7 +3,7 @@
  * Handles HTTP requests for admin permissions management
  */
 import { Response } from 'express';
-import { validationResult } from 'express-validator';
+import { ValidationError, validationResult } from 'express-validator';
 import { RowDataPacket } from 'mysql2/promise';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
@@ -49,9 +49,9 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
+        const validationErrors = errors.array().map((error: ValidationError) => ({
           field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
+          message: String(error.msg),
         }));
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
@@ -144,9 +144,9 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
+        const validationErrors = errors.array().map((error: ValidationError) => ({
           field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
+          message: String(error.msg),
         }));
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
@@ -217,9 +217,9 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
+        const validationErrors = errors.array().map((error: ValidationError) => ({
           field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
+          message: String(error.msg),
         }));
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
@@ -273,9 +273,9 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
+        const validationErrors = errors.array().map((error: ValidationError) => ({
           field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
+          message: String(error.msg),
         }));
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
@@ -329,9 +329,9 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
+        const validationErrors = errors.array().map((error: ValidationError) => ({
           field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
+          message: String(error.msg),
         }));
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
@@ -381,9 +381,9 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error) => ({
+        const validationErrors = errors.array().map((error: ValidationError) => ({
           field: error.type === 'field' ? error.path : 'general',
-          message: error.msg,
+          message: String(error.msg),
         }));
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;

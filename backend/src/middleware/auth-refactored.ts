@@ -113,12 +113,20 @@ async function getUserDetails(userId: number): Promise<Partial<AuthUser> | null>
       lastName: string | null;
       department_id: number | null;
     };
+
+    // Validate role
+    const validRoles = ['root', 'admin', 'employee'] as const;
+    const role =
+      validRoles.includes(user.role as (typeof validRoles)[number]) ?
+        (user.role as 'root' | 'admin' | 'employee')
+      : 'employee';
+
     return {
       id: user.id,
       userId: user.id,
       username: user.username,
       email: user.email,
-      role: user.role,
+      role,
       tenant_id: user.tenant_id,
       tenantName: user.tenantName ?? undefined,
       first_name: user.firstName ?? undefined,
@@ -403,12 +411,20 @@ export const authenticateToken: AuthenticationMiddleware = async function (
     }
 
     // Build authenticated user object
+    // Validate role - fallback to 'employee' if invalid
+    const userRole = (decoded.activeRole ?? userDetails.role) as string;
+    const validRoles = ['root', 'admin', 'employee'] as const;
+    const role =
+      validRoles.includes(userRole as (typeof validRoles)[number]) ?
+        (userRole as 'root' | 'admin' | 'employee')
+      : 'employee';
+
     const authenticatedUser: AuthUser = {
       id: userDetails.id ?? 0,
       userId: userDetails.id ?? 0,
       username: userDetails.username ?? '',
       email: userDetails.email ?? '',
-      role: decoded.activeRole ?? userDetails.role ?? '', // Support role switching
+      role, // Support role switching
       tenant_id: userDetails.tenant_id ?? 0,
       tenantName: userDetails.tenantName,
       first_name: userDetails.first_name,

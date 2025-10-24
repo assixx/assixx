@@ -2,11 +2,12 @@
  * KVP Core Controller
  * Handles core CRUD operations for KVP (Kontinuierlicher Verbesserungsprozess)
  */
-import { Request, Response } from 'express';
-import { Pool, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { Response } from 'express';
+import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import pool from '../config/database.js';
 import kvpPermissionService from '../services/kvpPermission.service.js';
+import type { AuthenticatedRequest } from '../types/request.types';
 import { query as executeQuery } from '../utils/db.js';
 
 const UNKNOWN_ERROR_MESSAGE = 'Unknown error';
@@ -14,17 +15,8 @@ const INVALID_ID_ERROR = 'Invalid ID';
 const NO_PERMISSION_ERROR = 'Keine Berechtigung';
 
 // Extended Request interface with tenant database and user
-interface TenantRequest extends Request {
-  tenantDb?: Pool;
-  user?: {
-    id: number;
-    tenant_id: number;
-    role: 'root' | 'admin' | 'employee';
-  };
-}
-
 // Interface for create/update request bodies
-interface KvpCreateRequest extends TenantRequest {
+interface KvpCreateRequest extends AuthenticatedRequest {
   body: {
     title: string;
     description: string;
@@ -36,7 +28,7 @@ interface KvpCreateRequest extends TenantRequest {
   };
 }
 
-interface KvpUpdateRequest extends TenantRequest {
+interface KvpUpdateRequest extends AuthenticatedRequest {
   body: {
     title?: string;
     description?: string;
@@ -55,13 +47,13 @@ interface KvpUpdateRequest extends TenantRequest {
   };
 }
 
-interface KvpGetRequest extends TenantRequest {
+interface KvpGetRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
 }
 
-interface KvpQueryRequest extends TenantRequest {
+interface KvpQueryRequest extends AuthenticatedRequest {
   query: {
     search?: string;
     category_id?: string;
@@ -77,7 +69,7 @@ interface KvpQueryRequest extends TenantRequest {
   };
 }
 
-interface KvpShareRequest extends TenantRequest {
+interface KvpShareRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
@@ -91,7 +83,7 @@ interface DepartmentStat {
 
 // Export interfaces for use in extended controller
 export type {
-  TenantRequest,
+  AuthenticatedRequest,
   KvpCreateRequest,
   KvpUpdateRequest,
   KvpGetRequest,
@@ -115,11 +107,6 @@ export class KvpCoreController {
    */
   async getAll(req: KvpQueryRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const queryData = await this.buildQueryData(req);
       const suggestions = await this.fetchSuggestions(queryData);
       const totalCount = await this.getTotalCount(queryData);
@@ -151,9 +138,6 @@ export class KvpCoreController {
     limitNum: number;
     offset: number;
   }> {
-    if (!req.user) {
-      throw new Error('User not authenticated');
-    }
     const { id: userId, role, tenant_id: tenantId } = req.user;
     const {
       filter,
@@ -285,7 +269,7 @@ export class KvpCoreController {
       [key: string]: unknown;
     }
 
-    return (suggestions as KvpSuggestionRow[]).map((s) => ({
+    return (suggestions as KvpSuggestionRow[]).map((s: KvpSuggestionRow) => ({
       ...s,
       description: Buffer.isBuffer(s.description) ? s.description.toString('utf8') : s.description,
       expected_benefit:
@@ -336,11 +320,6 @@ export class KvpCoreController {
    */
   async getById(req: KvpGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         res.status(400).json({ error: INVALID_ID_ERROR });
@@ -489,11 +468,6 @@ export class KvpCoreController {
    */
   async create(req: KvpCreateRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const { id: userId, tenant_id: tenantId } = req.user;
       const departmentId = await this.getUserDepartmentId(userId, req.body.department_id);
 
@@ -532,11 +506,6 @@ export class KvpCoreController {
    */
   async update(req: KvpUpdateRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         res.status(400).json({ error: INVALID_ID_ERROR });
@@ -672,11 +641,6 @@ export class KvpCoreController {
    */
   async delete(req: KvpGetRequest, res: Response): Promise<void> {
     try {
-      if (!req.user) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-      }
-
       const id = Number.parseInt(req.params.id, 10);
       if (Number.isNaN(id)) {
         res.status(400).json({ error: INVALID_ID_ERROR });

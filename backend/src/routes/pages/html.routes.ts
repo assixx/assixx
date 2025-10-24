@@ -31,7 +31,13 @@ router.get('/pages/index', rateLimiter.public, (_req: Request, res: Response) =>
   res.redirect('/index');
 }); // Redirect old URL
 router.get('/login', rateLimiter.auth, servePage('login'));
+router.get('/pages/login', rateLimiter.public, (_req: Request, res: Response) => {
+  res.redirect('/login');
+}); // Redirect old URL
 router.get('/signup', rateLimiter.auth, servePage('signup'));
+router.get('/pages/signup', rateLimiter.public, (_req: Request, res: Response) => {
+  res.redirect('/signup');
+}); // Redirect old URL
 
 // Development only - Design System Style Guide
 if (process.env.NODE_ENV !== 'production') {

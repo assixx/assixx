@@ -20,11 +20,11 @@ class DeletionWorker {
     // Setup graceful shutdown handlers
     process.on('SIGTERM', () => void this.shutdown('SIGTERM'));
     process.on('SIGINT', () => void this.shutdown('SIGINT'));
-    process.on('uncaughtException', (error) => {
+    process.on('uncaughtException', (error: Error) => {
       logger.error('Uncaught exception in deletion worker:', error);
       void this.shutdown('uncaughtException');
     });
-    process.on('unhandledRejection', (reason, promise) => {
+    process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
       logger.error('Unhandled rejection in deletion worker:', {
         reason,
         promise,
@@ -111,7 +111,7 @@ class DeletionWorker {
   }
 
   private async sleep(ms: number): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, ms));
+    await new Promise((resolve: (value: unknown) => void) => setTimeout(resolve, ms));
   }
 
   private async shutdown(signal: string): Promise<void> {

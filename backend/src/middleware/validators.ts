@@ -17,7 +17,7 @@ const handleValidationErrors = (req: Request, res: Response, next: NextFunction)
     res.status(400).json({
       message: `Validierungsfehler: ${errors
         .array()
-        .map((err) => err.msg)
+        .map((err) => String(err.msg))
         .join(', ')}`,
       errors: errors.array(),
     });

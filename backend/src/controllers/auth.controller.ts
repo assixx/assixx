@@ -6,7 +6,8 @@ import { Request, Response } from 'express';
 import { JwtPayload } from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { createLog } from '../routes/v1/logs';
+// V1 import disabled
+// import { createLog } from '../routes/v1/logs';
 import authService from '../services/auth.service';
 import userService from '../services/user.service';
 import type { AuthResult } from '../types/auth.types';
@@ -172,18 +173,18 @@ class AuthController {
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
     });
 
-    // Log successful login
+    // Log successful login - V1 DISABLED
     if (result.user !== null) {
-      await createLog(
-        result.user.id,
-        result.user.tenant_id,
-        'login',
-        'user',
-        result.user.id,
-        `Erfolgreich angemeldet`,
-        req.ip ?? 'unknown',
-        req.headers['user-agent'] ?? 'unknown',
-      );
+      // await createLog(
+      //   result.user.id,
+      //   result.user.tenant_id,
+      //   'login',
+      //   'user',
+      //   result.user.id,
+      //   `Erfolgreich angemeldet`,
+      //   req.ip ?? 'unknown',
+      //   req.headers['user-agent'] ?? 'unknown',
+      // );
 
       await this.trackLoginAttempt(req.body.username ?? 'unknown', req.ip ?? 'unknown', true);
     }
@@ -320,19 +321,19 @@ class AuthController {
   }
 
   /**
-   * Log logout action
+   * Log logout action - V1 DISABLED
    */
-  private async logLogoutAction(req: AuthenticatedRequest): Promise<void> {
-    await createLog(
-      req.user.id,
-      req.user.tenant_id,
-      'logout',
-      'user',
-      req.user.id,
-      'Abgemeldet',
-      req.ip ?? 'unknown',
-      req.headers['user-agent'] ?? 'unknown',
-    );
+  private async logLogoutAction(_req: AuthenticatedRequest): Promise<void> {
+    // await createLog(
+    //   req.user.id,
+    //   req.user.tenant_id,
+    //   'logout',
+    //   'user',
+    //   req.user.id,
+    //   'Abgemeldet',
+    //   req.ip ?? 'unknown',
+    //   req.headers['user-agent'] ?? 'unknown',
+    // );
   }
 
   /**

@@ -1,4 +1,33 @@
-// Enhanced Security Middleware für Assixx
+/**
+ * Enhanced Security Middleware für Assixx
+ *
+ * RATE LIMITING PHILOSOPHY:
+ * ========================
+ * Dev = Prod limits for realistic testing!
+ *
+ * WHY?
+ * - Find rate limit issues during development, not in production
+ * - No surprises when deploying
+ * - Test what you deploy, deploy what you test
+ *
+ * EMERGENCY OVERRIDE:
+ * If you absolutely need higher limits in dev (e.g., load testing):
+ * 1. Find the constant (e.g., API_LIMIT_DEV)
+ * 2. Change ONLY the _DEV constant
+ * 3. Add a comment explaining WHY
+ * 4. Revert it before committing!
+ *
+ * CURRENT LIMITS (Dev = Prod):
+ * - authLimiter: 5 attempts per 15 minutes (login/register)
+ * - apiLimiter: 20000 requests per 20 seconds (dashboard/data)
+ * - uploadLimiter: 100 uploads per 15 minutes
+ * - searchLimiter: 500 searches per 20 seconds
+ * - generalLimiter: 20000 requests per 20 seconds (all routes)
+ *
+ * TEST MODE:
+ * - All limiters are disabled (100000 requests)
+ * - Ensures automated tests run without rate limit issues
+ */
 import * as cors from 'cors';
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
@@ -82,7 +111,7 @@ export const validateCSRFToken = (req: Request, res: Response, next: NextFunctio
     '/signup',
   ];
 
-  if (publicEndpoints.some((endpoint) => req.path.startsWith(endpoint))) {
+  if (publicEndpoints.some((endpoint: string) => req.path.startsWith(endpoint))) {
     next();
     return;
   }
@@ -164,7 +193,7 @@ export const securityHeaders = helmet({
 // CORS with Subdomain Whitelist
 export const corsOptions: cors.CorsOptions = {
   // Safe: Express CORS library requires callback pattern, not async/await
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (origin == null || origin === '') {
       // Safe: Express CORS library requires callback pattern, not async/await
@@ -180,7 +209,7 @@ export const corsOptions: cors.CorsOptions = {
       /^http:\/\/127\.0\.0\.1:\d+$/, // Local development
     ];
 
-    const isAllowed = allowedPatterns.some((pattern) => pattern.test(origin));
+    const isAllowed = allowedPatterns.some((pattern: RegExp) => pattern.test(origin));
 
     if (isAllowed) {
       // Safe: Express CORS library requires callback pattern, not async/await
@@ -335,7 +364,17 @@ const rateLimitStyles = `
 `;
 
 // Rate limit HTML response template
-function getRateLimitHTML(retryAfter: number): string {
+// eslint-disable-next-line @typescript-eslint/no-inferrable-types -- Required by typedef rule, conflicting rules
+function getRateLimitHTML(retryAfterMinutes: number, isAuthLimit: boolean = false): string {
+  // Convert to user-friendly display
+  const displayMinutes = Math.max(1, Math.ceil(retryAfterMinutes));
+
+  const title = isAuthLimit ? 'Zu viele Login-Versuche' : 'Zu viele Anfragen';
+  const message =
+    isAuthLimit ?
+      'Sie haben die maximale Anzahl an Login-Versuchen überschritten. Aus Sicherheitsgründen wurde Ihr Zugang temporär gesperrt.'
+    : 'Sie haben die maximale Anzahl an Anfragen überschritten. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.';
+
   return `
     <!DOCTYPE html>
     <html lang="de">
@@ -349,14 +388,13 @@ function getRateLimitHTML(retryAfter: number): string {
     <body>
       <div class="rate-limit-card">
         <div class="icon">⌛</div>
-        <h1>Zu viele Anfragen</h1>
+        <h1>${title}</h1>
         <p class="message">
-          Sie haben die maximale Anzahl an Anfragen überschritten.
-          Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.
+          ${message}
         </p>
         <div class="retry-info">
           <div class="retry-label">Versuchen Sie es wieder in:</div>
-          <div class="retry-time">${retryAfter} Minuten</div>
+          <div class="retry-time">${displayMinutes} ${displayMinutes === 1 ? 'Minute' : 'Minuten'}</div>
         </div>
         <a href="/" class="btn-primary">Zurück zur Startseite</a>
       </div>
@@ -372,7 +410,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
     max,
     // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
     // Rate limiting will be based on IP address only
-    handler: (_req, res) => {
+    handler: (_req: Request, res: Response) => {
       const retryAfter = Math.ceil(windowMs / 1000 / 60); // in minutes
       res.status(429).send(getRateLimitHTML(retryAfter));
     },
@@ -382,36 +420,91 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
   });
 
 // API Rate Limiters - Enhanced with more granular controls
+// PHILOSOPHY: Dev = Prod limits for realistic testing
+// Only Test mode has unlimited requests for automated tests
+// EMERGENCY: If you need to increase dev limits temporarily, change the constant below
+const GENERAL_LIMIT_PROD = 20000; // Production limit: 20000 requests per 20 seconds
+const GENERAL_LIMIT_DEV = GENERAL_LIMIT_PROD; // Dev = Prod (change only if absolutely necessary!)
+
 export const generalLimiter = createTenantRateLimiter(
-  20 * 1000, // 20 seconds
-  process.env.NODE_ENV === 'test' ? 100000
-  : process.env.NODE_ENV === 'development' ? 80000
-  : 20000,
-); // 100000 requests per 20 seconds in test, 80000 in dev, 20000 in prod (erhöht für normale Dashboard-Nutzung)
-export const authLimiter = createTenantRateLimiter(
-  20 * 1000, // 20 seconds
-  process.env.NODE_ENV === 'test' ? 100000
-  : process.env.NODE_ENV === 'development' ? 300
-  : 50,
-); // 100000 auth attempts in test, 300 in dev, 50 in prod (per 20 seconds)
+  20 * 1000, // 20 seconds window
+  process.env.NODE_ENV === 'test' ? 100000 : GENERAL_LIMIT_DEV,
+); // Test: unlimited, Dev/Prod: 20000 per 20 sec
+// Special auth limiter with custom handler for login attempts
+// IMPORTANT: Always 5 attempts in Dev and Prod (Brute-Force protection must be realistic!)
+const AUTH_LIMIT_PROD = 5; // Production: 5 login attempts per 15 minutes
+const AUTH_LIMIT_DEV = AUTH_LIMIT_PROD; // Dev = Prod (DO NOT change unless testing specific auth flow!)
+
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes window (industry standard)
+  max: process.env.NODE_ENV === 'test' ? 100000 : AUTH_LIMIT_DEV, // Test: unlimited, Dev/Prod: 5 per 15 min
+  handler: (req: Request, res: Response) => {
+    const retryAfterMinutes = 15; // Always 15 minutes for auth
+
+    // Check if this is an API request (expects JSON)
+    if (
+      req.path.startsWith('/api/') ||
+      req.headers['content-type']?.includes('application/json') ||
+      req.headers.accept?.includes('application/json')
+    ) {
+      // Return JSON for API/AJAX requests
+      res.status(429).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message:
+            'Too many login attempts. Your account has been temporarily locked for security.',
+          retryAfter: retryAfterMinutes * 60, // in seconds
+          retryAfterMinutes: retryAfterMinutes, // in minutes for display
+        },
+        meta: {
+          timestamp: new Date().toISOString(),
+          remaining: 0,
+          limit: 5,
+        },
+      });
+    } else {
+      // Return HTML for browser navigation
+      res.status(429).send(getRateLimitHTML(retryAfterMinutes, true));
+    }
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: () => process.env.NODE_ENV === 'test',
+  skipSuccessfulRequests: false, // Count ALL attempts for security
+}); // Prevents brute force while allowing typos
+
+// Upload limiter
+const UPLOAD_LIMIT_PROD = 100; // Production: 100 uploads per 15 minutes
+const UPLOAD_LIMIT_DEV = UPLOAD_LIMIT_PROD; // Dev = Prod
 export const uploadLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === 'development' ? 200 : 100,
-); // 200 uploads per 15 minutes in dev, 100 in prod
+  process.env.NODE_ENV === 'test' ? 100000 : UPLOAD_LIMIT_DEV,
+);
 
-// Specific API endpoint rate limiters
+// Strict auth limiter (for additional auth endpoints)
+const STRICT_AUTH_LIMIT_PROD = 20; // Production: 20 per 5 minutes
+const STRICT_AUTH_LIMIT_DEV = STRICT_AUTH_LIMIT_PROD; // Dev = Prod
 export const strictAuthLimiter = createTenantRateLimiter(
   5 * 60 * 1000,
-  process.env.NODE_ENV === 'development' ? 100 : 20,
-); // 100 login attempts in dev, 20 in prod
+  process.env.NODE_ENV === 'test' ? 100000 : STRICT_AUTH_LIMIT_DEV,
+);
+
+// API limiter (for normal dashboard/data requests)
+const API_LIMIT_PROD = 500; // hier ändern!! und die 60 da unten (shiftfavbuttonbeispiel)Production: 20000 requests per 20 seconds
+const API_LIMIT_DEV = API_LIMIT_PROD; // Dev = Prod (increase only for load testing!)
 export const apiLimiter = createTenantRateLimiter(
-  20 * 1000,
-  process.env.NODE_ENV === 'development' ? 30000 : 20000,
-); // 30000 API requests per 20 seconds in dev, 20000 in prod (ERHÖHT für Dashboard)
+  60 * 1000,
+  process.env.NODE_ENV === 'test' ? 100000 : API_LIMIT_DEV,
+);
+
+// Search limiter
+const SEARCH_LIMIT_PROD = 500; // Production: 500 searches per 20 seconds
+const SEARCH_LIMIT_DEV = SEARCH_LIMIT_PROD; // Dev = Prod
 export const searchLimiter = createTenantRateLimiter(
   20 * 1000,
-  process.env.NODE_ENV === 'development' ? 1000 : 500,
-); // 1000 search requests per 20 seconds in dev, 500 in prod (ERHÖHT)
+  process.env.NODE_ENV === 'test' ? 100000 : SEARCH_LIMIT_DEV,
+);
 export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 50); // 50 bulk operations per hour
 export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 100); // 100 reports per hour
 
@@ -429,7 +522,7 @@ const createProgressiveRateLimiter = (windowMs: number, max: number): RateLimitR
     standardHeaders: true,
     legacyHeaders: false,
     // Log rate limit violations using a handler function
-    handler: (req, res: Response) => {
+    handler: (req: Request, res: Response) => {
       const authReq = req as AuthenticatedRequest;
       console.warn('Rate limit exceeded:', {
         ip: authReq.ip,
@@ -458,7 +551,7 @@ export const suspiciousActivityLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => {
+  skip: (req: Request) => {
     // Skip for authenticated users with valid sessions
     return req.headers.authorization !== undefined || 'user' in req;
   },

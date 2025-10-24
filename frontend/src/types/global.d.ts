@@ -54,6 +54,7 @@ interface ToastifyInstance {
   hideToast: () => void;
 }
 
+// eslint-disable-next-line @typescript-eslint/naming-convention -- External library uses PascalCase
 declare function Toastify(options: ToastifyOptions): ToastifyInstance;
 
 // Module declarations for libraries without types

@@ -658,7 +658,7 @@ class ShiftPlanningSystem {
     if (token === null || token === '') return null;
 
     try {
-      const response = await fetch('/api/user/profile', {
+      const response = await fetch('/api/v2/users/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -1131,7 +1131,7 @@ class ShiftPlanningSystem {
 
   async loadDepartments(areaId?: number): Promise<void> {
     try {
-      let url = '/api/departments';
+      let url = '/api/v2/departments';
       // Filter by area if specified
       if (areaId !== undefined) {
         url += `?area_id=${String(areaId)}`;
@@ -1171,7 +1171,7 @@ class ShiftPlanningSystem {
 
   async loadMachines(): Promise<void> {
     try {
-      let url = '/api/machines';
+      let url = '/api/v2/machines';
       const params: string[] = [];
 
       // Filter by department if selected
@@ -1228,7 +1228,7 @@ class ShiftPlanningSystem {
 
   private async loadTeamsV1(): Promise<void> {
     try {
-      const url = this.buildTeamsUrl('/api/teams', false);
+      const url = this.buildTeamsUrl('/api/v2/teams', false);
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${getAuthToken() ?? ''}`,
@@ -1573,8 +1573,8 @@ class ShiftPlanningSystem {
 
   async loadTeamsForMachine(machineId: number): Promise<void> {
     try {
-      // Load teams assigned to this specific machine via machine_teams junction
-      const response = await fetch(`/api/machines/${String(machineId)}/teams`, {
+      // Load teams assigned to this specific machine via machine_id filter
+      const response = await fetch(`/api/v2/teams?machine_id=${String(machineId)}`, {
         headers: {
           Authorization: `Bearer ${getAuthToken() ?? ''}`,
           'Content-Type': 'application/json',
@@ -1606,7 +1606,7 @@ class ShiftPlanningSystem {
     if (!this.useV2API) {
       // Fallback to v1 API
       try {
-        const response = await fetch(`/api/teams/${String(this.selectedContext.teamId)}/members`, {
+        const response = await fetch(`/api/v2/teams/${String(this.selectedContext.teamId)}/members`, {
           headers: {
             Authorization: `Bearer ${getAuthToken() ?? ''}`,
             'Content-Type': 'application/json',
@@ -1938,7 +1938,7 @@ class ShiftPlanningSystem {
     cellElement: HTMLElement,
   ): Promise<void> {
     try {
-      const response = await fetch('/api/shifts', {
+      const response = await fetch('/api/v2/shifts', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${getAuthToken() ?? ''}`,
@@ -3285,7 +3285,7 @@ class ShiftPlanningSystem {
   }
 
   private async loadV1Shifts(startStr: string, endStr: string): Promise<void> {
-    const response = await fetch(`/api/shifts?start=${startStr}&end=${endStr}`, {
+    const response = await fetch(`/api/v2/shifts?start=${startStr}&end=${endStr}`, {
       headers: {
         Authorization: `Bearer ${getAuthToken() ?? ''}`,
       },
@@ -5773,7 +5773,7 @@ class ShiftPlanningSystem {
 
     console.info('[SHIFTS RESET] Deleting shifts for week:', weekStart, 'to', weekEnd);
 
-    const response = await fetch('/api/shifts/bulk-delete', {
+    const response = await fetch('/api/v2/shifts/bulk-delete', {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -6129,9 +6129,13 @@ class ShiftPlanningSystem {
     const notesTextarea = document.querySelector(DOM_IDS.WEEKLY_NOTES);
     const infoRow = document.querySelector('.shift-info-row');
 
+    console.info('[SHIFTS DEBUG] updateUIForRole - userRole:', this.userRole, 'isAdmin:', this.isAdmin);
+
     if (this.isAdmin) {
+      console.info('[SHIFTS DEBUG] Configuring ADMIN UI (includes root)');
       this.configureAdminUI(employeeSidebar, notesTextarea);
     } else {
+      console.info('[SHIFTS DEBUG] Configuring EMPLOYEE UI - hiding filter row');
       this.configureEmployeeUI(adminActions, employeeSidebar, infoRow, mainPlanningArea, notesTextarea);
     }
 

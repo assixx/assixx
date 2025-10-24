@@ -6,7 +6,9 @@
  *   name: Admin
  *   description: Admin-specific operations and management
  */
-import express, { Request, Router } from 'express';
+import express, { Router } from 'express';
+
+import type { AuthenticatedRequest } from '../../types/request.types';
 import { promises as fs } from 'fs';
 import multer from 'multer';
 import path from 'path';
@@ -27,19 +29,8 @@ import { typed } from '../../utils/routeHandlers';
 const router: Router = express.Router();
 
 // Extended Request interfaces
-interface AuthenticatedAdminRequest extends Request {
-  user: {
-    id: number;
-    tenant_id: number;
-    username: string;
-    email: string;
-    role: string;
-  };
 
-  file?: Express.Multer.File;
-}
-
-interface EmployeeCreateRequest extends AuthenticatedAdminRequest {
+interface EmployeeCreateRequest extends AuthenticatedRequest {
   body: {
     username: string;
     email: string;
@@ -52,7 +43,7 @@ interface EmployeeCreateRequest extends AuthenticatedAdminRequest {
   };
 }
 
-interface EmployeeUpdateRequest extends AuthenticatedAdminRequest {
+interface EmployeeUpdateRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
@@ -68,7 +59,7 @@ interface EmployeeUpdateRequest extends AuthenticatedAdminRequest {
   };
 }
 
-interface DocumentUploadRequest extends AuthenticatedAdminRequest {
+interface DocumentUploadRequest extends AuthenticatedRequest {
   params: {
     employeeId: string;
   };

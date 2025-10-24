@@ -46,7 +46,7 @@ export const plansValidation = {
       .isInt({ min: 0 })
       .withMessage('Storage must be a non-negative integer'),
     body()
-      .custom((value) => {
+      .custom((value: unknown) => {
         const body = value as { employees?: number; admins?: number; storageGb?: number };
         return (
           body.employees !== undefined || body.admins !== undefined || body.storageGb !== undefined

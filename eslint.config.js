@@ -143,6 +143,13 @@ export default [
           allowConciseArrowFunctionExpressionsStartingWithVoid: true,
         },
       ],
+      '@typescript-eslint/typedef': [
+        'error',
+        {
+          parameter: true,
+          arrowParameter: true,
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',

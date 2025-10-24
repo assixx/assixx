@@ -1,6 +1,12 @@
 import * as dotenv from 'dotenv';
 import * as mysql from 'mysql2/promise';
-import { PoolOptions, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import {
+  PoolOptions,
+  ResultSetHeader,
+  RowDataPacket,
+  TypeCastField,
+  TypeCastNext,
+} from 'mysql2/promise';
 
 import { DatabasePool, MockDatabase } from '../types/database.types.js';
 
@@ -271,10 +277,9 @@ if (USE_MOCK_DB) {
     bigNumberStrings: false,
     dateStrings: false,
     debug: false,
-    typeCast: function (field, next) {
+    typeCast: function (field: TypeCastField, next: TypeCastNext): unknown {
       if (field.type === 'VAR_STRING' || field.type === 'STRING' || field.type === 'BLOB') {
-        const value = field.string('utf8');
-        return value ?? null;
+        return field.string('utf8');
       }
       return next();
     },
@@ -346,7 +351,7 @@ export async function closePool(): Promise<void> {
   if ('end' in pool && typeof pool.end === 'function') {
     try {
       // Give connections time to finish
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve: (value: unknown) => void) => setTimeout(resolve, 100));
       await pool.end();
       console.info('[DEBUG] Database pool closed');
     } catch (error: unknown) {

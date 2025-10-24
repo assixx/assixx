@@ -6,7 +6,7 @@
  *   - name: KVP v2
  *     description: Continuous improvement process (Kontinuierlicher Verbesserungsprozess) API v2
  */
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 
@@ -20,11 +20,19 @@ const router = Router();
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
-  destination(_req, _file, cb) {
+  destination(
+    _req: Request,
+    _file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void,
+  ) {
     const uploadDir = getUploadDirectory('kvp');
     cb(null, uploadDir);
   },
-  filename(_req, file, cb) {
+  filename(
+    _req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void,
+  ) {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
@@ -35,7 +43,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const allowedTypes = [
       'image/jpeg',
       'image/jpg',

@@ -2,27 +2,19 @@
  * Feature Controller
  * Handles feature-related operations
  */
-import { Request, Response } from 'express';
-import { Pool } from 'mysql2/promise';
+import { Response } from 'express';
 
 import featureService from '../services/feature.service';
+import type { AuthenticatedRequest } from '../types/request.types';
 
 // Constants
 const TENANT_DB_NOT_AVAILABLE = 'Tenant database not available';
 const UNKNOWN_ERROR = 'Unknown error';
 
 // Extended Request interface with tenant database
-interface TenantRequest extends Request {
-  tenantDb?: Pool;
-  user?: {
-    id: number;
-    tenantId: number;
-    [key: string]: unknown;
-  };
-}
 
 // Interface for create/update request bodies
-interface FeatureCreateRequest extends TenantRequest {
+interface FeatureCreateRequest extends AuthenticatedRequest {
   body: {
     tenant_id: number;
     name: string;
@@ -41,7 +33,7 @@ interface FeatureCreateRequest extends TenantRequest {
   };
 }
 
-interface FeatureUpdateRequest extends TenantRequest {
+interface FeatureUpdateRequest extends AuthenticatedRequest {
   body: {
     name?: string;
     description?: string;
@@ -59,13 +51,13 @@ interface FeatureUpdateRequest extends TenantRequest {
   };
 }
 
-interface FeatureGetRequest extends TenantRequest {
+interface FeatureGetRequest extends AuthenticatedRequest {
   params: {
     id: string;
   };
 }
 
-interface FeatureQueryRequest extends TenantRequest {
+interface FeatureQueryRequest extends AuthenticatedRequest {
   query: {
     search?: string;
     category?: string;
@@ -163,10 +155,10 @@ class FeatureController {
       }
 
       const featureData = {
-        tenant_id: req.user?.tenantId ?? 0,
+        tenant_id: req.user.tenant_id,
         feature_key: req.body.feature_key ?? req.body.key ?? 'new_feature',
         is_enabled: req.body.is_enabled ?? false,
-        enabled_by: req.body.is_enabled === true ? (req.user?.id ?? null) : null,
+        enabled_by: req.body.is_enabled === true ? req.user.id : null,
       };
       const result = featureService.create(req.tenantDb, featureData);
       res.status(201).json(result);

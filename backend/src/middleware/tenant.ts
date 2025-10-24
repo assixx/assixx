@@ -11,18 +11,6 @@ import { logger } from '../utils/logger';
 
 // Request interface is already extended in types/express-extensions.d.ts
 
-interface RequestWithBody extends Request {
-  body: {
-    subdomain?: string;
-    tenant_id?: number;
-    [key: string]: unknown;
-  };
-  user?: {
-    tenant_id?: number;
-    [key: string]: unknown;
-  };
-}
-
 /**
  * Extrahiert den Tenant aus der Subdomain
  * Beispiel: bosch.assixx.de -\> bosch
@@ -44,11 +32,39 @@ function getTenantFromHost(hostname: string): string | null {
 }
 
 /**
+ * Extract subdomain from request body (for login/signup)
+ */
+function getSubdomainFromBody(req: Request): string | null {
+  if (!req.body || typeof req.body !== 'object' || !('subdomain' in req.body)) {
+    return null;
+  }
+
+  const bodySubdomain = (req.body as { subdomain: unknown }).subdomain;
+  return typeof bodySubdomain === 'string' && bodySubdomain !== '' ? bodySubdomain : null;
+}
+
+/**
+ * Extract subdomain from user's tenant_id (from JWT)
+ */
+async function getSubdomainFromUser(req: Request): Promise<string | null> {
+  if (
+    !('user' in req) ||
+    !req.user ||
+    typeof req.user !== 'object' ||
+    !('tenant_id' in req.user) ||
+    typeof req.user.tenant_id !== 'number'
+  ) {
+    return null;
+  }
+
+  const tenant = await tenantModel.findById(req.user.tenant_id);
+  return tenant ? tenant.subdomain : null;
+}
+
+/**
  * Extract tenant subdomain from various sources
  */
 async function extractTenantSubdomain(req: Request): Promise<string | null> {
-  const reqWithBody = req as RequestWithBody;
-
   // 1. Try hostname first
   const hostTenant = getTenantFromHost(req.hostname);
   if (hostTenant) return hostTenant;
@@ -61,15 +77,12 @@ async function extractTenantSubdomain(req: Request): Promise<string | null> {
   if (typeof queryTenant === 'string' && queryTenant !== '') return queryTenant;
 
   // 3. Try body subdomain (for login/signup)
-  if (reqWithBody.body.subdomain && reqWithBody.body.subdomain !== '') {
-    return reqWithBody.body.subdomain;
-  }
+  const bodySubdomain = getSubdomainFromBody(req);
+  if (bodySubdomain) return bodySubdomain;
 
   // 4. Try user's tenant_id from JWT
-  if (reqWithBody.user?.tenant_id != null) {
-    const tenant = await tenantModel.findById(reqWithBody.user.tenant_id);
-    if (tenant) return tenant.subdomain;
-  }
+  const userSubdomain = await getSubdomainFromUser(req);
+  if (userSubdomain) return userSubdomain;
 
   return null;
 }
@@ -106,12 +119,13 @@ function validateTenantStatus(
  * Check if user belongs to tenant
  */
 function validateUserTenant(req: Request, tenantId: number): boolean {
-  const reqWithBody = req as RequestWithBody;
+  // If no user in request, allow (will be handled by auth middleware)
+  if (!('user' in req) || !req.user || typeof req.user !== 'object') return true;
 
-  if (!reqWithBody.user) return true;
-  if (typeof reqWithBody.user.tenant_id !== 'number') return true;
+  // Check if user has tenant_id property
+  if (!('tenant_id' in req.user) || typeof req.user.tenant_id !== 'number') return true;
 
-  return reqWithBody.user.tenant_id === tenantId;
+  return req.user.tenant_id === tenantId;
 }
 
 /**

@@ -1,6 +1,7 @@
 # Claude Code – Assixx Project Complete Guide
 
 ALWAYS BE 100% BRUTAL HONEST
+NEVER USE GIT-COMMANDS
 
 ## 🔴🔴🔴 STOP! REQUIRED READING BEFORE ANYTHING ELSE! 🔴🔴🔴
 

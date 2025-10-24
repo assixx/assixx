@@ -71,33 +71,36 @@ function generateTokens(
  * @param req - The request object
  * @param res - The response object
  */
+// eslint-disable-next-line max-lines-per-function
 export async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body as { email: string; password: string };
 
     // Validate required fields
     if (!email || !password) {
-      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Email and password are required'));
+      res
+        .status(400)
+        .json(errorResponse('VALIDATION_ERROR', 'E-Mail und Passwort sind erforderlich'));
       return;
     }
 
     // Find user by email
     const foundUser = await user.findByEmail(email);
     if (!foundUser) {
-      res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'Invalid email or password'));
+      res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'E-Mail oder Passwort falsch'));
       return;
     }
 
     // Check if user is active
     if (foundUser.status !== 'active') {
-      res.status(403).json(errorResponse('ACCOUNT_INACTIVE', 'Your account is not active'));
+      res.status(403).json(errorResponse('ACCOUNT_INACTIVE', 'Ihr Account ist nicht aktiv'));
       return;
     }
 
     // Verify password
     const isValidPassword = await bcryptjs.compare(password, foundUser.password);
     if (!isValidPassword) {
-      res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'Invalid email or password'));
+      res.status(401).json(errorResponse('INVALID_CREDENTIALS', 'E-Mail oder Passwort falsch'));
       return;
     }
 

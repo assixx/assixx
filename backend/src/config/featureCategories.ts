@@ -171,7 +171,7 @@ export function getFeaturesByCategory(): Record<string, CategoryWithFeatures> {
     result.set(categoryKey, {
       name: category.name,
       icon: category.icon,
-      features: Object.entries(category.features).map(([code, feature]) => ({
+      features: Object.entries(category.features).map(([code, feature]: [string, unknown]) => ({
         code,
         ...feature,
       })),

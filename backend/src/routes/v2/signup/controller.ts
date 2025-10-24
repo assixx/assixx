@@ -61,8 +61,7 @@ export class SignupController {
             }
 
             if ('msg' in error) {
-              // error.msg is already a string
-              message = error.msg;
+              message = String(error.msg);
             }
 
             return { field, message };
@@ -224,7 +223,7 @@ export class SignupController {
           message: 'Invalid request data',
           details: errors.array().map((error) => ({
             field: error.type === 'field' ? error.path : 'general',
-            message: error.msg,
+            message: String(error.msg),
           })),
         },
       });

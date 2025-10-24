@@ -3,34 +3,18 @@
  * Survey Controller
  * Handles survey-related operations including templates and statistics
  */
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
 import Survey from '../models/survey';
 import surveyService from '../services/survey.service';
+import type { AuthenticatedRequest } from '../types/request.types';
 import { mapQuestionType } from '../types/survey.types';
 
 // Constants
 const UNKNOWN_ERROR = 'Unknown error';
 
 // Extended Request interfaces for survey operations
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    tenant_id: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
-}
-
 interface SurveyQueryRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenant_id: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   query: {
     search?: string;
     status?: 'draft' | 'active' | 'closed' | 'archived';
@@ -43,26 +27,12 @@ interface SurveyQueryRequest extends AuthenticatedRequest {
 }
 
 interface SurveyByIdRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenant_id: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   params: {
     id: string;
   };
 }
 
 interface SurveyCreateRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenant_id: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   body: {
     title: string;
     description?: string;
@@ -81,13 +51,6 @@ interface SurveyCreateRequest extends AuthenticatedRequest {
 }
 
 interface SurveyUpdateRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenant_id: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   params: {
     id: string;
   };
@@ -110,13 +73,6 @@ interface SurveyUpdateRequest extends AuthenticatedRequest {
 }
 
 interface SurveyTemplateRequest extends AuthenticatedRequest {
-  user: {
-    id: number;
-    tenant_id: number;
-    username?: string;
-    email?: string;
-    role?: string;
-  };
   params: {
     templateId: string;
   };
@@ -201,9 +157,16 @@ class SurveyController {
 
       // Map question types before creating
       type MappedQuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
+      interface QuestionInput {
+        question_text: string;
+        question_type: string;
+        is_required?: boolean;
+        order_position?: number;
+        options?: string[];
+      }
       const surveyData = {
         ...req.body,
-        questions: req.body.questions.map((q) => ({
+        questions: req.body.questions.map((q: QuestionInput) => ({
           ...q,
           question_type: mapQuestionType(q.question_type) as MappedQuestionType,
         })),
@@ -235,9 +198,16 @@ class SurveyController {
 
       // Map question types before updating
       type MappedQuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
+      interface QuestionInput {
+        question_text: string;
+        question_type: string;
+        is_required?: boolean;
+        order_position?: number;
+        options?: string[];
+      }
       const updateData = {
         ...req.body,
-        questions: req.body.questions?.map((q) => ({
+        questions: req.body.questions?.map((q: QuestionInput) => ({
           ...q,
           question_type: mapQuestionType(q.question_type) as MappedQuestionType,
         })),
