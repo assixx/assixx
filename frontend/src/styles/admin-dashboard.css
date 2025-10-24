@@ -1,8 +1,6 @@
 /* Admin Dashboard Styles - Extracted from admin-dashboard.html */
 /* Note: main.css (with Tailwind) is now loaded directly in HTML */
 
-@import "./breadcrumb-alignment.css";
-
 /* ===============================================
    Glassmorphismus Design-Standards
    =============================================== */

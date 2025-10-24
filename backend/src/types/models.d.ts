@@ -116,7 +116,7 @@ export interface Feature {
   isActive: boolean;
   isPremium: boolean;
   price: number;
-  config: any;
+  config: Record<string, unknown> | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -221,6 +221,27 @@ export interface Shift {
   updatedAt: Date;
 }
 
+export interface SurveyQuestion {
+  id: number;
+  type: 'text' | 'number' | 'single-choice' | 'multiple-choice' | 'rating' | 'date';
+  text: string;
+  required: boolean;
+  order: number;
+  options?: string[];
+  minValue?: number;
+  maxValue?: number;
+  placeholder?: string;
+}
+
+export interface SurveyAnswer {
+  questionId: number;
+  answerType: 'text' | 'number' | 'choice' | 'date';
+  textValue?: string;
+  numberValue?: number;
+  choiceValues?: string[];
+  dateValue?: string | Date;
+}
+
 export interface Survey {
   id: number;
   title: string;
@@ -232,7 +253,7 @@ export interface Survey {
   isAnonymous: boolean;
   startsAt: Date;
   endsAt: Date | null;
-  questions: any;
+  questions: SurveyQuestion[] | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -241,7 +262,7 @@ export interface SurveyResponse {
   id: number;
   surveyId: number;
   respondentId: number | null;
-  answers: any;
+  answers: SurveyAnswer[] | null;
   completedAt: Date;
   createdAt: Date;
 }

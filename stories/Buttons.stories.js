@@ -231,6 +231,24 @@ export const Info = {
 };
 
 /**
+ * EDIT BUTTON
+ * Edit/modify actions with yellow gradient
+ * Use for: Edit, Modify, Update operations
+ * Color: Matches action-icon--edit (#fbbf24)
+ */
+export const Edit = {
+  args: {
+    label: 'Edit',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+    icon: 'fa-edit',
+  },
+  render: (args) => createButton({ ...args, variant: 'edit' }),
+};
+
+/**
  * LIGHT BUTTON
  * Light theme button with subtle styling
  * Use for: Secondary actions on dark backgrounds

@@ -296,7 +296,8 @@
   box-shadow: var(--shadow-sm);
 }
 
-.search-input-wrapper--open .search-input__results {
+.search-input-wrapper--open .search-input__results,
+.search-input__results.active {
   display: block;
 }
 

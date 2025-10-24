@@ -172,7 +172,7 @@ export class SignupFormController {
 - [x] manage-admins.html ✅ (2025-01-18) - 100% Design System compliant (ds-modal, choice-card, empty-state, avatar, striped tables, button icons, TypeScript modules, no inline styles/JS, no Bootstrap)
 - [x] manage-root-users.html ✅ (2025-01-18) - 100% Design System compliant (split to data/forms/index layers, avatar, striped tables, toggle-group, search-input, TypeScript modules, no inline styles/JS, no Bootstrap)
 - [x] manage-employees.html ✅ (2025-01-20) - 100% Design System compliant (905→374 lines -59%, ds-modal, form-field, toggle-group, search-input, avatar, striped tables, btn-float, TypeScript modules, removed 385 lines legacy CSS, no inline styles/JS, no Bootstrap)
-- [ ] manage-departments.html
+- [x] manage-departments.html ✅ (2025-01-23) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, badge with tooltip, striped tables, btn-float, TypeScript modules split to api/forms/ui/types layers, global modal scroll-reset component, no inline styles/JS, no Bootstrap)
 - [ ] manage-department-groups.html
 - [ ] manage-teams.html
 - [ ] manage-areas.html

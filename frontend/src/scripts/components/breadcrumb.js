@@ -209,17 +209,13 @@ function handleArchivedEmployees(items) {
 
 /**
  * Handle department groups breadcrumb
+ * Hierarchy: Home > Abteilungen > Abteilungsgruppen
  */
 function handleDepartmentGroups(items) {
   items.push({
-    label: ADMIN_DASHBOARD_LABEL,
-    href: ADMIN_DASHBOARD_URL,
-    icon: ICON_TACHOMETER,
-  });
-  items.push({
-    label: 'Abteilungen verwalten',
+    label: 'Abteilungen',
     href: '/manage-departments',
-    icon: 'fa-sitemap',
+    icon: 'fa-building',
   });
 }
 

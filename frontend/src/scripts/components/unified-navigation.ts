@@ -658,6 +658,30 @@ class UnifiedNavigation {
     return [...this.getAdminCoreItems(), ...this.getAdminContentItems(), ...this.getAdminCommunicationItems()];
   }
 
+  /**
+   * Get departments navigation item with submenu
+   */
+  private getDepartmentsNavItem(): NavItem {
+    return {
+      id: 'departments',
+      icon: this.getSVGIcon('building'),
+      label: 'Abteilungen',
+      url: '/manage-departments',
+      children: [
+        {
+          id: 'departments-all',
+          label: 'Alle Abteilungen',
+          url: '/manage-departments',
+        },
+        {
+          id: 'department-groups',
+          label: 'Abteilungsgruppen',
+          url: '/manage-department-groups',
+        },
+      ],
+    };
+  }
+
   private getAdminCoreItems(): NavItem[] {
     return [
       {
@@ -689,19 +713,7 @@ class UnifiedNavigation {
         url: '/manage-areas',
         section: 'areas',
       },
-      {
-        id: 'departments',
-        icon: this.getSVGIcon('building'),
-        label: 'Abteilungen',
-        url: '/manage-departments',
-        children: [
-          {
-            id: 'departments-all',
-            label: 'Alle Abteilungen',
-            url: '/manage-departments',
-          },
-        ],
-      },
+      this.getDepartmentsNavItem(),
       {
         id: 'teams',
         icon: this.getSVGIcon('team'),
@@ -874,18 +886,7 @@ class UnifiedNavigation {
         url: '/manage-areas',
         section: 'areas',
       },
-      {
-        id: 'departments',
-        icon: this.getSVGIcon('building'),
-        label: 'Abteilungen',
-        url: '/manage-departments',
-      },
-      {
-        id: 'department-groups',
-        icon: this.getSVGIcon('folder-tree'),
-        label: 'Abteilungsgruppen',
-        url: '/manage-department-groups',
-      },
+      this.getDepartmentsNavItem(),
       {
         id: 'chat',
         icon: this.getSVGIcon('chat'),
@@ -1448,7 +1449,7 @@ class UnifiedNavigation {
               </p>
             </div>
             <div class="ds-modal__footer ds-modal__footer--spaced">
-              <button class="btn btn-secondary" id="cancelLogout">
+              <button class="btn btn-dark" id="cancelLogout">
                 <i class="fas fa-times"></i>
                 Abbrechen
               </button>
@@ -2998,6 +2999,14 @@ class UnifiedNavigation {
       if (!document.hidden && this.sseClient && !this.sseClient.isConnected()) {
         console.info('[UnifiedNav] Page visible - reconnecting SSE');
         this.sseClient.connect();
+      }
+    });
+
+    // Clean up SSE connection before page unload to prevent errors
+    window.addEventListener('beforeunload', () => {
+      if (this.sseClient?.isConnected() === true) {
+        console.info('[UnifiedNav] Page unloading - closing SSE connection cleanly');
+        this.sseClient.disconnect();
       }
     });
   }

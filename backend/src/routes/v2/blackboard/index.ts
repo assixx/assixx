@@ -16,7 +16,7 @@ import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as blackboardController from './blackboard.controller.js';
-import { blackboardValidation } from './blackboard.validation.js';
+import { blackboardValidationZod } from './blackboard.validation.zod.js';
 
 const router = Router();
 
@@ -144,7 +144,7 @@ const upload = multer({
 router.get(
   '/entries',
   authenticateV2,
-  blackboardValidation.list,
+  blackboardValidationZod.list,
   typed.auth(blackboardController.listEntries),
 );
 
@@ -176,7 +176,7 @@ router.get(
 router.get(
   '/entries/:id',
   authenticateV2,
-  blackboardValidation.getById,
+  blackboardValidationZod.getById,
   typed.auth(blackboardController.getEntryById),
 );
 
@@ -208,7 +208,7 @@ router.post(
   '/entries',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidation.create,
+  blackboardValidationZod.create,
   typed.auth(blackboardController.createEntry),
 );
 
@@ -247,7 +247,7 @@ router.put(
   '/entries/:id',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidation.update,
+  blackboardValidationZod.update,
   typed.auth(blackboardController.updateEntry),
 );
 
@@ -280,7 +280,7 @@ router.delete(
   '/entries/:id',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidation.delete,
+  blackboardValidationZod.delete,
   typed.auth(blackboardController.deleteEntry),
 );
 
@@ -313,7 +313,7 @@ router.post(
   '/entries/:id/archive',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidation.archiveUnarchive,
+  blackboardValidationZod.archiveUnarchive,
   typed.auth(blackboardController.archiveEntry),
 );
 
@@ -346,7 +346,7 @@ router.post(
   '/entries/:id/unarchive',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidation.archiveUnarchive,
+  blackboardValidationZod.archiveUnarchive,
   typed.auth(blackboardController.unarchiveEntry),
 );
 
@@ -378,7 +378,7 @@ router.post(
 router.post(
   '/entries/:id/confirm',
   authenticateV2,
-  blackboardValidation.confirm,
+  blackboardValidationZod.confirm,
   typed.auth(blackboardController.confirmEntry),
 );
 
@@ -409,7 +409,7 @@ router.get(
   '/entries/:id/confirmations',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidation.getById,
+  blackboardValidationZod.getById,
   typed.auth(blackboardController.getConfirmationStatus),
 );
 
@@ -440,7 +440,7 @@ router.get(
 router.get(
   '/dashboard',
   authenticateV2,
-  blackboardValidation.dashboard,
+  blackboardValidationZod.dashboard,
   typed.auth(blackboardController.getDashboardEntries),
 );
 
@@ -503,7 +503,7 @@ router.post(
   authenticateV2,
   requireRoleV2(['admin', 'root']),
   upload.single('attachment'),
-  blackboardValidation.uploadAttachment,
+  blackboardValidationZod.uploadAttachment,
   typed.auth(blackboardController.uploadAttachment),
 );
 
@@ -533,7 +533,7 @@ router.post(
 router.get(
   '/entries/:id/attachments',
   authenticateV2,
-  blackboardValidation.getAttachments,
+  blackboardValidationZod.getAttachments,
   typed.auth(blackboardController.getAttachments),
 );
 
@@ -566,7 +566,7 @@ router.get(
 router.get(
   '/attachments/:attachmentId',
   authenticateV2,
-  blackboardValidation.downloadAttachment,
+  blackboardValidationZod.downloadAttachment,
   typed.auth(blackboardController.downloadAttachment),
 );
 
@@ -599,7 +599,7 @@ router.delete(
   '/attachments/:attachmentId',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidation.deleteAttachment,
+  blackboardValidationZod.deleteAttachment,
   typed.auth(blackboardController.deleteAttachment),
 );
 

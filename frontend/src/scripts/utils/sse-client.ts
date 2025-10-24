@@ -41,6 +41,14 @@ export class SSEClient {
 
   constructor(private url: string) {
     console.info('[SSE] Client initialized');
+
+    // Ensure clean disconnection on page unload
+    window.addEventListener('beforeunload', () => {
+      if (this.isConnected()) {
+        console.info('[SSE] Page unloading - disconnecting SSE');
+        this.disconnect();
+      }
+    });
   }
 
   connect(): void {
@@ -81,7 +89,17 @@ export class SSEClient {
     };
 
     this.eventSource.onerror = (error) => {
-      console.error('[SSE] Connection error:', error);
+      // During page unload, SSE will throw errors - this is expected
+      // The beforeunload handler in unified-navigation.ts handles clean disconnection
+      // Here we only handle real connection errors
+
+      // If the error source is closed, it's likely due to page navigation
+      const isClosedConnection = this.eventSource?.readyState === EventSource.CLOSED;
+
+      if (!isClosedConnection) {
+        console.error('[SSE] Connection error:', error);
+      }
+
       this.isConnecting = false;
 
       // Close the connection
@@ -90,8 +108,10 @@ export class SSEClient {
         this.eventSource = null;
       }
 
-      // Try to reconnect
-      this.handleReconnect();
+      // Only try to reconnect if connection wasn't intentionally closed
+      if (!isClosedConnection) {
+        this.handleReconnect();
+      }
     };
   }
 

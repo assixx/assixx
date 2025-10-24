@@ -15,27 +15,22 @@ import {
   getUsageStats,
   testFeatureAccess,
 } from './features.controller';
-import {
-  activateFeatureValidation,
-  deactivateFeatureValidation,
-  getAllFeaturesValidation,
-  getFeatureByCodeValidation,
-  getFeaturesByCategoryValidation,
-  getTenantFeaturesSummaryValidation,
-  getTenantFeaturesValidation,
-  getUsageStatsValidation,
-  testFeatureAccessValidation,
-} from './features.validation';
+import { featuresValidationZod } from './features.validation.zod';
 
 const router = Router();
 
 // Public endpoints
-router.get('/', ...security.public(), getAllFeaturesValidation, typed.auth(getAllFeatures));
+router.get(
+  '/',
+  ...security.public(),
+  featuresValidationZod.getAllFeatures,
+  typed.auth(getAllFeatures),
+);
 
 router.get(
   '/categories',
   ...security.public(),
-  getFeaturesByCategoryValidation,
+  featuresValidationZod.getFeaturesByCategory,
   typed.auth(getFeaturesByCategory),
 );
 
@@ -45,14 +40,14 @@ router.get('/my-features', ...security.user(), typed.auth(getMyFeatures));
 router.get(
   '/test/:featureCode',
   ...security.user(),
-  testFeatureAccessValidation,
+  featuresValidationZod.testFeatureAccess,
   typed.auth(testFeatureAccess),
 );
 
 router.get(
   '/usage/:featureCode',
   ...security.user(),
-  getUsageStatsValidation,
+  featuresValidationZod.getUsageStats,
   typed.auth(getUsageStats),
 );
 
@@ -60,28 +55,28 @@ router.get(
 router.get(
   '/tenant/:tenantId',
   ...security.admin(),
-  getTenantFeaturesValidation,
+  featuresValidationZod.getTenantFeatures,
   typed.auth(getTenantFeatures),
 );
 
 router.get(
   '/tenant/:tenantId/summary',
   ...security.admin(),
-  getTenantFeaturesSummaryValidation,
+  featuresValidationZod.getTenantFeaturesSummary,
   typed.auth(getTenantFeaturesSummary),
 );
 
 router.post(
   '/activate',
   ...security.admin(),
-  activateFeatureValidation,
+  featuresValidationZod.activateFeature,
   typed.auth(activateFeature),
 );
 
 router.post(
   '/deactivate',
   ...security.admin(),
-  deactivateFeatureValidation,
+  featuresValidationZod.deactivateFeature,
   typed.auth(deactivateFeature),
 );
 
@@ -89,6 +84,11 @@ router.post(
 router.get('/all-tenants', ...security.root(), typed.auth(getAllTenantsWithFeatures));
 
 // This route MUST BE LAST as it catches all GET requests
-router.get('/:code', ...security.user(), getFeatureByCodeValidation, typed.auth(getFeatureByCode));
+router.get(
+  '/:code',
+  ...security.user(),
+  featuresValidationZod.getFeatureByCode,
+  typed.auth(getFeatureByCode),
+);
 
 export default router;

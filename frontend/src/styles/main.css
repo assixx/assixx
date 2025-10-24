@@ -40,6 +40,9 @@
 /* Design System Modal Component */
 @import "../design-system/primitives/modals/modal.base.css";
 
+/* Design System Choice Cards Component */
+@import "../design-system/primitives/choice-cards/choice-card.base.css";
+
 /* FontAwesome is loaded separately in HTML files */
 
 /* Theme and core styles */

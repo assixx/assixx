@@ -208,7 +208,6 @@ class DepartmentController {
         name: req.body.name,
         description: req.body.description,
         manager_id: req.body.manager_id ?? undefined,
-        parent_id: req.body.parent_id ?? undefined,
         status: req.body.status ?? undefined,
         visibility: req.body.visibility ?? undefined,
         tenant_id: req.user?.tenant_id ?? 0,
@@ -247,7 +246,6 @@ class DepartmentController {
         name: req.body.name,
         description: req.body.description,
         manager_id: req.body.manager_id !== null ? req.body.manager_id : undefined,
-        parent_id: req.body.parent_id !== null ? req.body.parent_id : undefined,
         status: req.body.status,
         visibility: req.body.visibility,
       };

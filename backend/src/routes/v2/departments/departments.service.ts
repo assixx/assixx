@@ -8,7 +8,6 @@ export interface DepartmentV2 {
   name: string;
   description?: string;
   managerId?: number;
-  parentId?: number;
   areaId?: number; // Add areaId field (camelCase)
   status?: string;
   visibility?: string;
@@ -28,7 +27,6 @@ export interface CreateDepartmentData {
   name: string;
   description?: string;
   managerId?: number;
-  parentId?: number;
   areaId?: number; // camelCase for v2 API
   status?: string;
   visibility?: string;
@@ -38,7 +36,6 @@ export interface UpdateDepartmentData {
   name?: string;
   description?: string;
   managerId?: number;
-  parentId?: number;
   areaId?: number; // camelCase for v2 API
   status?: string;
   visibility?: string;
@@ -95,7 +92,6 @@ export class DepartmentService {
         name: dept.name,
         description: dept.description,
         managerId: dept.manager_id,
-        parentId: dept.parent_id,
         areaId: dept.area_id, // Add areaId to response
         status: dept.status,
         visibility: dept.visibility,
@@ -138,7 +134,6 @@ export class DepartmentService {
         name: department.name,
         description: department.description,
         managerId: department.manager_id,
-        parentId: department.parent_id,
         areaId: department.area_id, // Add areaId to response
         status: department.status,
         visibility: department.visibility,
@@ -172,19 +167,10 @@ export class DepartmentService {
         throw new ServiceError(400, 'Department name is required');
       }
 
-      // Validate parent department if specified
-      if (data.parentId !== undefined) {
-        const parent = await Department.findById(data.parentId, tenantId);
-        if (!parent) {
-          throw new ServiceError(400, 'Parent department not found');
-        }
-      }
-
       const departmentId = await Department.create({
         name: data.name,
         description: data.description,
         manager_id: data.managerId,
-        parent_id: data.parentId,
         area_id: data.areaId, // Add area_id field (snake_case for DB) - undefined is OK
         status: data.status ?? 'active',
         visibility: data.visibility ?? 'public',
@@ -209,22 +195,6 @@ export class DepartmentService {
   /**
    * Validate parent department for update
    */
-  private async validateParentDepartment(
-    parentId: number | undefined,
-    departmentId: number,
-    tenantId: number,
-  ): Promise<void> {
-    if (parentId === undefined) return;
-
-    if (parentId === departmentId) {
-      throw new ServiceError(400, 'Department cannot be its own parent');
-    }
-
-    const parent = await Department.findById(parentId, tenantId);
-    if (!parent) {
-      throw new ServiceError(400, 'Parent department not found');
-    }
-  }
 
   /**
    * Validate manager for department
@@ -246,7 +216,6 @@ export class DepartmentService {
     name: string;
     description: string;
     manager_id: number;
-    parent_id: number;
     area_id: number;
     status: string;
     visibility: string;
@@ -261,9 +230,6 @@ export class DepartmentService {
     }
     if (data.managerId !== undefined) {
       updateData.manager_id = data.managerId;
-    }
-    if (data.parentId !== undefined) {
-      updateData.parent_id = data.parentId;
     }
     if (data.areaId !== undefined) {
       updateData.area_id = data.areaId;
@@ -296,11 +262,8 @@ export class DepartmentService {
         throw new ServiceError(404, 'Department not found');
       }
 
-      // Run validations in parallel
-      await Promise.all([
-        this.validateParentDepartment(data.parentId, id, tenantId),
-        this.validateManager(data.managerId, tenantId),
-      ]);
+      // Validate manager if provided
+      await this.validateManager(data.managerId, tenantId);
 
       const updateData = this.buildUpdateData(data);
       const success = await Department.update(id, updateData);

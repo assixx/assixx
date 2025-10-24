@@ -13,7 +13,7 @@ import { requireRoleV2 } from '../../../middleware/v2/roleCheck.middleware';
 import { typed } from '../../../utils/routeHandlers';
 import * as rotationController from './rotation.controller';
 import * as shiftsController from './shifts.controller';
-import { shiftsValidation } from './shifts.validation';
+import { shiftsValidationZod } from './shifts.validation.zod';
 
 const router = Router();
 
@@ -96,7 +96,7 @@ const ROUTES = {
 router.get(
   '/',
   authenticateV2,
-  shiftsValidation.listShifts,
+  shiftsValidationZod.listShifts,
   typed.auth(shiftsController.listShifts),
 );
 
@@ -146,7 +146,7 @@ router.get('/templates', authenticateV2, typed.auth(shiftsController.listTemplat
 router.get(
   ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
-  shiftsValidation.getTemplateById,
+  shiftsValidationZod.getTemplateById,
   typed.auth(shiftsController.getTemplateById),
 );
 
@@ -175,7 +175,7 @@ router.post(
   '/templates',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.createTemplate,
+  shiftsValidationZod.createTemplate,
   typed.auth(shiftsController.createTemplate),
 );
 
@@ -213,7 +213,7 @@ router.put(
   ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.updateTemplate,
+  shiftsValidationZod.updateTemplate,
   typed.auth(shiftsController.updateTemplate),
 );
 
@@ -241,7 +241,7 @@ router.delete(
   ROUTES.TEMPLATE_BY_ID,
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.deleteTemplate,
+  shiftsValidationZod.deleteTemplate,
   typed.auth(shiftsController.deleteTemplate),
 );
 
@@ -277,7 +277,7 @@ router.delete(
 router.get(
   '/swap-requests',
   authenticateV2,
-  shiftsValidation.listSwapRequests,
+  shiftsValidationZod.listSwapRequests,
   typed.auth(shiftsController.listSwapRequests),
 );
 
@@ -309,7 +309,7 @@ router.get(
 router.post(
   '/swap-requests',
   authenticateV2,
-  shiftsValidation.createSwapRequest,
+  shiftsValidationZod.createSwapRequest,
   typed.auth(shiftsController.createSwapRequest),
 );
 
@@ -349,7 +349,7 @@ router.put(
   '/swap-requests/:id/status',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.updateSwapRequestStatus,
+  shiftsValidationZod.updateSwapRequestStatus,
   typed.auth(shiftsController.updateSwapRequestStatus),
 );
 
@@ -395,7 +395,7 @@ router.put(
 router.get(
   '/overtime',
   authenticateV2,
-  shiftsValidation.getOvertimeReport,
+  shiftsValidationZod.getOvertimeReport,
   typed.auth(shiftsController.getOvertimeReport),
 );
 
@@ -474,7 +474,7 @@ router.get('/favorites', authenticateV2, typed.auth(shiftsController.listFavorit
 router.post(
   '/favorites',
   authenticateV2,
-  shiftsValidation.createFavorite,
+  shiftsValidationZod.createFavorite,
   typed.auth(shiftsController.createFavorite),
 );
 
@@ -501,7 +501,7 @@ router.post(
 router.delete(
   '/favorites/:id',
   authenticateV2,
-  shiftsValidation.deleteFavorite,
+  shiftsValidationZod.deleteFavorite,
   typed.auth(shiftsController.deleteFavorite),
 );
 
@@ -894,7 +894,7 @@ router.get(
   '/export',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.exportShifts,
+  shiftsValidationZod.exportShifts,
   typed.auth(shiftsController.exportShifts),
 );
 
@@ -1036,7 +1036,7 @@ router.delete(
 router.get(
   '/:id',
   authenticateV2,
-  shiftsValidation.getShiftById,
+  shiftsValidationZod.getShiftById,
   typed.auth(shiftsController.getShiftById),
 );
 
@@ -1065,7 +1065,7 @@ router.post(
   '/',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.createShift,
+  shiftsValidationZod.createShift,
   typed.auth(shiftsController.createShift),
 );
 
@@ -1103,7 +1103,7 @@ router.put(
   '/:id',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.updateShift,
+  shiftsValidationZod.updateShift,
   typed.auth(shiftsController.updateShift),
 );
 
@@ -1131,7 +1131,7 @@ router.delete(
   '/:id',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  shiftsValidation.deleteShift,
+  shiftsValidationZod.deleteShift,
   typed.auth(shiftsController.deleteShift),
 );
 

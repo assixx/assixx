@@ -20,7 +20,16 @@ export const createGroupValidation = [
     .isLength({ max: 500 })
     .withMessage('Description must be at most 500 characters'),
   body('parentGroupId').optional().isInt({ min: 1 }).withMessage('Invalid parent group ID'),
-  body('departmentIds').optional().isArray().withMessage('departmentIds must be an array'),
+  body('departmentIds')
+    .optional()
+    .isArray()
+    .withMessage('departmentIds must be an array')
+    .custom((value: unknown[]) => {
+      if (value.length < 2) {
+        throw new Error('Mindestens 2 Abteilungen erforderlich');
+      }
+      return true;
+    }),
   body('departmentIds.*').optional().isInt({ min: 1 }).withMessage('Invalid department ID'),
 ];
 
@@ -37,6 +46,17 @@ export const updateGroupValidation = [
     .trim()
     .isLength({ max: 500 })
     .withMessage('Description must be at most 500 characters'),
+  body('departmentIds')
+    .optional()
+    .isArray()
+    .withMessage('departmentIds must be an array')
+    .custom((value: unknown[]) => {
+      if (value.length < 2) {
+        throw new Error('Mindestens 2 Abteilungen erforderlich');
+      }
+      return true;
+    }),
+  body('departmentIds.*').optional().isInt({ min: 1 }).withMessage('Invalid department ID'),
 ];
 
 export const getGroupValidation = [param('id').isInt({ min: 1 }).withMessage(INVALID_GROUP_ID)];

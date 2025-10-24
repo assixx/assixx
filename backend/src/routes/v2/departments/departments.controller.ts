@@ -139,7 +139,6 @@ export class DepartmentController {
         name: string;
         description?: string;
         managerId?: number;
-        parentId?: number;
         areaId?: number;
         status?: string;
         visibility?: string;
@@ -150,7 +149,6 @@ export class DepartmentController {
           name: body.name,
           description: body.description,
           managerId: body.managerId,
-          parentId: body.parentId,
           areaId: body.areaId,
           status: body.status,
           visibility: body.visibility,
@@ -170,7 +168,6 @@ export class DepartmentController {
           name: body.name,
           description: body.description,
           manager_id: body.managerId,
-          parent_id: body.parentId,
           status: body.status,
           visibility: body.visibility,
           created_by: req.user.email,
@@ -221,7 +218,6 @@ export class DepartmentController {
       name?: string;
       description?: string;
       managerId?: number;
-      parentId?: number;
       areaId?: number;
       status?: string;
       visibility?: string;
@@ -240,7 +236,6 @@ export class DepartmentController {
         name: oldDept?.name,
         description: oldDept?.description,
         manager_id: oldDept?.manager_id,
-        parent_id: oldDept?.parent_id,
         status: oldDept?.status,
         visibility: oldDept?.visibility,
       },
@@ -248,7 +243,6 @@ export class DepartmentController {
         name: body.name,
         description: body.description,
         manager_id: body.managerId,
-        parent_id: body.parentId,
         status: body.status,
         visibility: body.visibility,
         updated_by: req.user.email,
@@ -306,7 +300,6 @@ export class DepartmentController {
         name?: string;
         description?: string;
         managerId?: number;
-        parentId?: number;
         areaId?: number;
         status?: string;
         visibility?: string;
@@ -324,7 +317,6 @@ export class DepartmentController {
           name: body.name,
           description: body.description,
           managerId: body.managerId,
-          parentId: body.parentId,
           areaId: body.areaId,
           status: body.status,
           visibility: body.visibility,

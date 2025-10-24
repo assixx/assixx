@@ -16,7 +16,7 @@
   /* Colors - Cyan/Light Blue */
   color: var(--color-white);
 
-  background: linear-gradient(145deg, rgb(129 212 250 / 25%), rgb(0 176 255 / 80%)); /* Hellblau zu tiefblau */
+  background: linear-gradient(145deg, rgb(129 212 250 / 11%), rgb(0 176 255 / 15%)); /* Subtle cyan gradient */
 
   /* Shadow */
   box-shadow: var(--shadow-btn-info, 0 2px 8px rgb(0 188 212 / 30%));
@@ -25,7 +25,7 @@
 /* Hover State - Brighten the gradient */
 .btn-info:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: linear-gradient(145deg, rgb(129 212 250 / 35%), rgb(0 176 255 / 90%)); /* Noch intensiver */
+  background: linear-gradient(145deg, rgb(129 212 250 / 18%), rgb(0 176 255 / 25%)); /* Intensiver */
   box-shadow: var(--shadow-btn-info-hover, 0 4px 12px rgb(0 188 212 / 40%));
 }
 
