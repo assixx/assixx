@@ -12,10 +12,13 @@
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid rgb(255 255 255 / 12%); /* Subtle border */
 
-  color: var(--color-primary); /* Primary blue text */
+  color: var(--color-white); /* Primary blue text */
+
+  background:
+    linear-gradient(rgb(0 0 0 / 90%), rgb(30 30 30)) padding-box,
+    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box;
 
   /* ========== VISUAL ========== */
-  background: rgb(255 255 255 / 4%); /* Subtle glass background */
   backdrop-filter: blur(var(--blur-sm)); /* 5px blur for glass effect */
 
   /* No shadow on default state (lighter weight than primary) */
@@ -27,8 +30,9 @@
 
 /* Hover state - Strengthen glass and border */
 .btn-secondary:hover:not(:disabled) {
-  border-color: var(--color-primary); /* Solid primary border */
-  background: rgb(255 255 255 / 8%); /* Stronger glass */
+  background:
+    linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
+    linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box; /* Solid primary border */
 }
 
 /* Focus state */

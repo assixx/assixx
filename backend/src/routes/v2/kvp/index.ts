@@ -14,7 +14,7 @@ import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
 import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as kvpController from './kvp.controller.js';
-import { kvpValidation } from './kvp.validation.js';
+import { kvpValidationZod } from './kvp.validation.zod.js';
 
 const router = Router();
 
@@ -196,7 +196,7 @@ router.get('/dashboard/stats', authenticateV2, typed.auth(kvpController.getDashb
 router.post(
   '/points/award',
   authenticateV2,
-  kvpValidation.awardPoints,
+  kvpValidationZod.awardPoints,
   typed.auth(kvpController.awardPoints),
 );
 
@@ -249,7 +249,7 @@ router.post(
 router.get(
   '/points/user/:userId',
   authenticateV2,
-  kvpValidation.getUserPoints,
+  kvpValidationZod.getUserPoints,
   typed.auth(kvpController.getUserPoints),
 );
 
@@ -291,7 +291,7 @@ router.get(
 router.get(
   '/points/user',
   authenticateV2,
-  kvpValidation.getUserPoints,
+  kvpValidationZod.getUserPoints,
   typed.auth(kvpController.getUserPoints),
 );
 
@@ -357,7 +357,7 @@ router.get(
  *         $ref: '#/components/responses/UnauthorizedError'
  */
 // Suggestions CRUD endpoints
-router.get('/', authenticateV2, kvpValidation.list, typed.auth(kvpController.listSuggestions));
+router.get('/', authenticateV2, kvpValidationZod.list, typed.auth(kvpController.listSuggestions));
 /**
 
  * /api/v2/kvp/\{id\}:
@@ -394,7 +394,7 @@ router.get('/', authenticateV2, kvpValidation.list, typed.auth(kvpController.lis
 router.get(
   '/:id',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.getSuggestionById),
 );
 /**
@@ -461,7 +461,12 @@ router.get(
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  */
-router.post('/', authenticateV2, kvpValidation.create, typed.auth(kvpController.createSuggestion));
+router.post(
+  '/',
+  authenticateV2,
+  kvpValidationZod.create,
+  typed.auth(kvpController.createSuggestion),
+);
 
 /**
 
@@ -544,7 +549,7 @@ router.post('/', authenticateV2, kvpValidation.create, typed.auth(kvpController.
 router.put(
   '/:id',
   authenticateV2,
-  kvpValidation.update,
+  kvpValidationZod.update,
   typed.auth(kvpController.updateSuggestion),
 );
 
@@ -589,7 +594,7 @@ router.put(
 router.delete(
   '/:id',
   authenticateV2,
-  kvpValidation.delete,
+  kvpValidationZod.delete,
   typed.auth(kvpController.deleteSuggestion),
 );
 
@@ -651,7 +656,7 @@ router.delete(
 router.put(
   '/:id/share',
   authenticateV2,
-  kvpValidation.share,
+  kvpValidationZod.share,
   typed.auth(kvpController.shareSuggestion),
 );
 
@@ -696,7 +701,7 @@ router.put(
 router.post(
   '/:id/unshare',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.unshareSuggestion),
 );
 
@@ -739,7 +744,7 @@ router.post(
 router.get(
   '/:id/comments',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.getComments),
 );
 
@@ -797,7 +802,7 @@ router.get(
 router.post(
   '/:id/comments',
   authenticateV2,
-  kvpValidation.addComment,
+  kvpValidationZod.addComment,
   typed.auth(kvpController.addComment),
 );
 
@@ -840,7 +845,7 @@ router.post(
 router.get(
   '/:id/attachments',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   typed.auth(kvpController.getAttachments),
 );
 
@@ -910,7 +915,7 @@ router.get(
 router.post(
   '/:id/attachments',
   authenticateV2,
-  kvpValidation.getById,
+  kvpValidationZod.getById,
   upload.array('files', 5), // Max 5 files
   typed.auth(kvpController.uploadAttachments),
 );
@@ -947,7 +952,7 @@ router.post(
 router.get(
   '/attachments/:attachmentId/download',
   authenticateV2,
-  kvpValidation.attachmentId,
+  kvpValidationZod.attachmentId,
   typed.auth(kvpController.downloadAttachment),
 );
 

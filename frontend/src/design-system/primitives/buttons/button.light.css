@@ -16,7 +16,7 @@
   /* Colors */
   color: var(--color-white);
 
-  background: linear-gradient(135deg, rgb(224 224 224 / 15%), rgb(158 158 158 / 80%)); /* Avatar-style gradient */
+  background: linear-gradient(145deg, rgb(224 224 224 / 11%), rgb(158 158 158 / 15%)); /* Subtle gray gradient */
 
   /* Shadow - subtle */
   box-shadow: var(--shadow-btn-light, 0 1px 3px rgb(0 0 0 / 8%));
@@ -28,7 +28,7 @@
 /* Hover State - Brighten the gradient */
 .btn-light:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, rgb(224 224 224 / 25%), rgb(158 158 158 / 90%));
+  background: linear-gradient(145deg, rgb(224 224 224 / 18%), rgb(158 158 158 / 25%)); /* Intensiver */
   box-shadow: var(--shadow-btn-light-hover, 0 2px 6px rgb(0 0 0 / 12%));
 }
 

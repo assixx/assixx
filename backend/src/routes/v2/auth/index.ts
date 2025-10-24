@@ -11,7 +11,7 @@ import { rateLimiter } from '../../../middleware/rateLimiter';
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
 import { typed } from '../../../utils/routeHandlers';
 import { authController } from './auth.controller';
-import { authValidation } from './auth.validation';
+import { authValidationZod } from './auth.validation.zod';
 
 const router: Router = express.Router();
 
@@ -72,7 +72,7 @@ const router: Router = express.Router();
  *                         role:
  *                           type: string
  */
-router.post('/login', rateLimiter.auth, authValidation.login, typed.body(authController.login));
+router.post('/login', rateLimiter.auth, authValidationZod.login, typed.body(authController.login));
 
 /**
 
@@ -113,7 +113,7 @@ router.post('/login', rateLimiter.auth, authValidation.login, typed.body(authCon
 router.post(
   '/register',
   authenticateV2,
-  authValidation.register,
+  authValidationZod.register,
   typed.body(authController.register),
 );
 
@@ -157,7 +157,7 @@ router.post('/logout', authenticateV2, typed.auth(authController.logout));
 router.post(
   '/refresh',
   rateLimiter.auth,
-  authValidation.refresh,
+  authValidationZod.refresh,
   typed.body(authController.refresh),
 );
 

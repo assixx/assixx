@@ -168,6 +168,7 @@ export default [
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/only-throw-error': 'error',
 
       'no-eval': 'error',
@@ -533,6 +534,7 @@ export default [
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/only-throw-error': 'error',
 
       'no-eval': 'error',
@@ -824,7 +826,6 @@ export default [
       'node_modules/**',
       'node_modules_old_backup/**',
       '**/node_modules_old_backup/**',
-      '**/*.d.ts',
       'dist/**',
       'build/**',
       '*.min.js',
@@ -852,7 +853,6 @@ export default [
       'stories/**',
       'design-system/build/**',
       'frontend/public/**',
-      '**/*.d.ts',
       'backend/src/database/migrations/**/*.js',
       'database/**/*.js',
       'backend/src/server-old.js',

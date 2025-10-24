@@ -1,0 +1,221 @@
+/**
+ * Surveys API v2 Validation with Zod
+ * Replaces express-validator with Zod for survey endpoints
+ */
+import { z } from 'zod';
+
+import { validateBody, validateParams, validateQuery } from '../../../middleware/validation.zod';
+import { IdSchema, PaginationSchema } from '../../../schemas/common.schema';
+
+// ============================================================
+// CUSTOM SCHEMAS
+// ============================================================
+
+/**
+ * Survey status enum
+ */
+const SurveyStatusSchema = z.enum(['draft', 'active', 'closed'], {
+  message: 'Invalid status',
+});
+
+/**
+ * Question type enum
+ */
+const QuestionTypeSchema = z.enum(
+  ['text', 'single_choice', 'multiple_choice', 'rating', 'number'],
+  {
+    message: 'Invalid question type',
+  },
+);
+
+/**
+ * Assignment type enum
+ */
+const AssignmentTypeSchema = z.enum(['all_users', 'department', 'team', 'user'], {
+  message: 'Invalid assignment type',
+});
+
+/**
+ * Date validation that accepts null, undefined, or empty string
+ */
+const NullableDateSchema = z
+  .string()
+  .refine(
+    (val) => {
+      if (val === '') return true;
+      return !Number.isNaN(Date.parse(val));
+    },
+    { message: 'Invalid date format' },
+  )
+  .nullable()
+  .optional();
+
+/**
+ * Survey question validation schema
+ */
+const QuestionSchema = z.object({
+  questionText: z.string().min(1, 'Question text is required'),
+  questionType: QuestionTypeSchema,
+  options: z.array(z.string()).min(2, 'Choice questions need at least 2 options').optional(),
+  orderPosition: z.number().optional(),
+});
+
+/**
+ * Survey assignment validation schema
+ */
+const AssignmentSchema = z
+  .object({
+    type: AssignmentTypeSchema,
+    departmentId: IdSchema.optional(),
+    teamId: IdSchema.optional(),
+    userId: IdSchema.optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.type === 'department') return data.departmentId !== undefined;
+      if (data.type === 'team') return data.teamId !== undefined;
+      if (data.type === 'user') return data.userId !== undefined;
+      return true;
+    },
+    {
+      message: 'Required ID missing for assignment type',
+      path: ['type'],
+    },
+  );
+
+// ============================================================
+// QUERY SCHEMAS
+// ============================================================
+
+/**
+ * List surveys query parameters
+ */
+export const ListSurveysQuerySchema = PaginationSchema.extend({
+  status: SurveyStatusSchema.optional(),
+});
+
+// ============================================================
+// PARAM SCHEMAS
+// ============================================================
+
+/**
+ * Survey ID parameter validation
+ */
+export const SurveyIdParamSchema = z.object({
+  id: IdSchema,
+});
+
+/**
+ * Template ID parameter validation
+ */
+export const TemplateIdParamSchema = z.object({
+  templateId: IdSchema,
+});
+
+// ============================================================
+// BODY SCHEMAS
+// ============================================================
+
+/**
+ * Create survey request body
+ */
+export const CreateSurveyBodySchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(3, 'Title must be at least 3 characters')
+      .max(200, 'Title must not exceed 200 characters'),
+    description: z
+      .string()
+      .trim()
+      .max(1000, 'Description cannot exceed 1000 characters')
+      .optional(),
+    status: SurveyStatusSchema.optional(),
+    isAnonymous: z.boolean().optional(),
+    isMandatory: z.boolean().optional(),
+    startDate: NullableDateSchema,
+    endDate: NullableDateSchema,
+    questions: z.array(QuestionSchema).min(1, 'Questions must be a non-empty array').optional(),
+    assignments: z.array(AssignmentSchema).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) {
+        const start = new Date(data.startDate);
+        const end = new Date(data.endDate);
+        return end >= start;
+      }
+      return true;
+    },
+    {
+      message: 'End date must be after start date',
+      path: ['endDate'],
+    },
+  );
+
+/**
+ * Update survey request body (all fields optional)
+ */
+export const UpdateSurveyBodySchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(3, 'Title must be at least 3 characters')
+      .max(200, 'Title must not exceed 200 characters')
+      .optional(),
+    description: z
+      .string()
+      .trim()
+      .max(1000, 'Description cannot exceed 1000 characters')
+      .optional(),
+    status: SurveyStatusSchema.optional(),
+    isAnonymous: z.boolean().optional(),
+    isMandatory: z.boolean().optional(),
+    startDate: NullableDateSchema,
+    endDate: NullableDateSchema,
+    questions: z.array(QuestionSchema).min(1, 'Questions must be a non-empty array').optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) {
+        const start = new Date(data.startDate);
+        const end = new Date(data.endDate);
+        return end >= start;
+      }
+      return true;
+    },
+    {
+      message: 'End date must be after start date',
+      path: ['endDate'],
+    },
+  );
+
+// ============================================================
+// TYPE EXPORTS
+// ============================================================
+
+export type ListSurveysQuery = z.infer<typeof ListSurveysQuerySchema>;
+export type SurveyIdParam = z.infer<typeof SurveyIdParamSchema>;
+export type TemplateIdParam = z.infer<typeof TemplateIdParamSchema>;
+export type CreateSurveyBody = z.infer<typeof CreateSurveyBodySchema>;
+export type UpdateSurveyBody = z.infer<typeof UpdateSurveyBodySchema>;
+
+// ============================================================
+// VALIDATION MIDDLEWARE EXPORTS
+// ============================================================
+
+/**
+ * Pre-configured validation middleware for survey routes
+ */
+export const surveysValidationZod = {
+  listSurveys: validateQuery(ListSurveysQuerySchema),
+  getSurveyById: validateParams(SurveyIdParamSchema),
+  createSurvey: validateBody(CreateSurveyBodySchema),
+  updateSurvey: [validateParams(SurveyIdParamSchema), validateBody(UpdateSurveyBodySchema)],
+  deleteSurvey: validateParams(SurveyIdParamSchema),
+  getTemplates: [], // No validation needed
+  createFromTemplate: validateParams(TemplateIdParamSchema),
+  getStatistics: validateParams(SurveyIdParamSchema),
+};

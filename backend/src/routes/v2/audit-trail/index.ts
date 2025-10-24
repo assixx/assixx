@@ -11,7 +11,7 @@ import express, { RequestHandler, Router } from 'express';
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { auditTrailController } from './audit-trail.controller.js';
-import { auditTrailValidation } from './audit-trail.validation.js';
+import { auditTrailValidationZod } from './audit-trail.validation.zod.js';
 
 const router: Router = express.Router();
 
@@ -132,7 +132,7 @@ const rootAuth = [authenticateV2 as RequestHandler, requireRoleV2(['root']) as R
 router.get(
   '/',
   ...userAuth,
-  auditTrailValidation.getEntries,
+  auditTrailValidationZod.getEntries,
   typed.auth(async (req, res) => {
     await auditTrailController.getEntries(req, res);
   }),
@@ -180,7 +180,7 @@ router.get(
 router.get(
   '/stats',
   ...adminAuth,
-  auditTrailValidation.getStats,
+  auditTrailValidationZod.getStats,
   typed.auth(async (req, res) => {
     await auditTrailController.getStats(req, res);
   }),
@@ -240,7 +240,7 @@ router.get(
 router.post(
   '/reports',
   ...adminAuth,
-  auditTrailValidation.generateReport,
+  auditTrailValidationZod.generateReport,
   typed.body<{ reportType: string; dateFrom: string; dateTo: string }>(async (req, res) => {
     await auditTrailController.generateReport(req, res);
   }),
@@ -293,7 +293,7 @@ router.post(
 router.get(
   '/export',
   ...adminAuth,
-  auditTrailValidation.exportEntries,
+  auditTrailValidationZod.exportEntries,
   typed.auth(async (req, res) => {
     await auditTrailController.exportEntries(req, res);
   }),
@@ -353,7 +353,7 @@ router.get(
 router.delete(
   '/retention',
   ...rootAuth,
-  auditTrailValidation.deleteOldEntries,
+  auditTrailValidationZod.deleteOldEntries,
   typed.body<{ olderThanDays: number; confirmPassword: string }>(async (req, res) => {
     await auditTrailController.deleteOldEntries(req, res);
   }),
@@ -397,7 +397,7 @@ router.delete(
 router.get(
   '/:id',
   ...userAuth,
-  auditTrailValidation.getEntry,
+  auditTrailValidationZod.getEntry,
   typed.auth(async (req, res) => {
     await auditTrailController.getEntry(req, res);
   }),

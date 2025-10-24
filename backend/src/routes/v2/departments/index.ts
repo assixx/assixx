@@ -1,15 +1,9 @@
 import { Router } from 'express';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
-import { validate } from '../../../middleware/validation.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { departmentController } from './departments.controller.js';
-import {
-  createDepartmentValidation,
-  departmentIdValidation,
-  getDepartmentsValidation,
-  updateDepartmentValidation,
-} from './departments.validation.js';
+import { departmentsValidationZod } from './departments.validation.zod.js';
 
 const router = Router();
 
@@ -46,7 +40,7 @@ router.use(authenticateToken);
  */
 router.get(
   '/',
-  validate(getDepartmentsValidation),
+  departmentsValidationZod.list,
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartments(req, res, next);
   }),
@@ -114,7 +108,7 @@ router.get(
  */
 router.get(
   '/:id',
-  validate(departmentIdValidation),
+  departmentsValidationZod.getById,
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentById(req, res, next);
   }),
@@ -153,7 +147,7 @@ router.get(
  */
 router.post(
   '/',
-  validate(createDepartmentValidation),
+  departmentsValidationZod.create,
   typed.auth(async (req, res, next) => {
     await departmentController.createDepartment(req, res, next);
   }),
@@ -201,7 +195,7 @@ router.post(
  */
 router.put(
   '/:id',
-  validate(updateDepartmentValidation),
+  ...departmentsValidationZod.update,
   typed.auth(async (req, res, next) => {
     await departmentController.updateDepartment(req, res, next);
   }),
@@ -243,7 +237,7 @@ router.put(
  */
 router.delete(
   '/:id',
-  validate(departmentIdValidation),
+  departmentsValidationZod.getById,
   typed.auth(async (req, res, next) => {
     await departmentController.deleteDepartment(req, res, next);
   }),
@@ -283,7 +277,7 @@ router.delete(
  */
 router.get(
   '/:id/members',
-  validate(departmentIdValidation),
+  departmentsValidationZod.getById,
   typed.auth(async (req, res, next) => {
     await departmentController.getDepartmentMembers(req, res, next);
   }),

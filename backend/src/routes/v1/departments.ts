@@ -172,7 +172,6 @@ router.post(
       const departmentId = await Department.create({
         name: req.body.name,
         manager_id: req.body.manager_id,
-        parent_id: req.body.parent_id,
         tenant_id: authReq.user.tenant_id,
       });
 
@@ -472,7 +471,6 @@ router.put(
       const success = await Department.update(departmentId, {
         name: req.body.name,
         manager_id: req.body.manager_id,
-        parent_id: req.body.parent_id,
       });
 
       if (success) {

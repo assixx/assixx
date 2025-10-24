@@ -11,7 +11,7 @@ import express, { RequestHandler, Router } from 'express';
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
 import { typed } from '../../../utils/routeHandlers';
 import { machinesController } from './machines.controller';
-import { machineValidation } from './validation';
+import { machinesValidationZod } from './validation.zod';
 
 const router: Router = express.Router();
 
@@ -84,7 +84,7 @@ const router: Router = express.Router();
 router.get(
   '/',
   authenticateV2 as RequestHandler,
-  machineValidation.listMachines,
+  machinesValidationZod.listMachines,
   typed.auth((req, res) => {
     void machinesController.listMachines(req, res);
   }),
@@ -232,7 +232,7 @@ router.get(
 router.get(
   '/upcoming-maintenance',
   authenticateV2 as RequestHandler,
-  machineValidation.upcomingMaintenance,
+  machinesValidationZod.upcomingMaintenance,
   typed.auth((req, res) => {
     void machinesController.getUpcomingMaintenance(req, res);
   }),
@@ -330,7 +330,7 @@ router.post(
   '/maintenance',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
-  machineValidation.addMaintenanceRecord,
+  machinesValidationZod.addMaintenanceRecord,
   typed.auth((req, res) => {
     void machinesController.addMaintenanceRecord(req, res);
   }),
@@ -372,7 +372,7 @@ router.post(
 router.get(
   '/:id',
   authenticateV2 as RequestHandler,
-  machineValidation.machineId,
+  machinesValidationZod.getMachine,
   typed.auth((req, res) => {
     void machinesController.getMachine(req, res);
   }),
@@ -418,7 +418,7 @@ router.get(
 router.get(
   '/:id/maintenance',
   authenticateV2 as RequestHandler,
-  machineValidation.machineId,
+  machinesValidationZod.getMachine,
   typed.auth((req, res) => {
     void machinesController.getMaintenanceHistory(req, res);
   }),
@@ -560,7 +560,7 @@ router.post(
   '/',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
-  machineValidation.createMachine,
+  machinesValidationZod.createMachine,
   typed.auth((req, res) => {
     void machinesController.createMachine(req, res);
   }),
@@ -699,7 +699,7 @@ router.put(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
-  machineValidation.updateMachine,
+  machinesValidationZod.updateMachine,
   typed.auth((req, res) => {
     void machinesController.updateMachine(req, res);
   }),
@@ -748,7 +748,7 @@ router.delete(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
-  machineValidation.machineId,
+  machinesValidationZod.deleteMachine,
   typed.auth((req, res) => {
     void machinesController.deleteMachine(req, res);
   }),
@@ -797,7 +797,7 @@ router.put(
   '/:id/deactivate',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
-  machineValidation.machineId,
+  machinesValidationZod.getMachine,
   typed.auth((req, res) => {
     void machinesController.deactivateMachine(req, res);
   }),
@@ -846,7 +846,7 @@ router.put(
   '/:id/activate',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
-  machineValidation.machineId,
+  machinesValidationZod.getMachine,
   typed.auth((req, res) => {
     void machinesController.activateMachine(req, res);
   }),

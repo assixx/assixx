@@ -615,7 +615,7 @@ export const LogoutConfirmation = {
             </p>
           </div>
           <div class="ds-modal__footer ds-modal__footer--spaced">
-            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-dark">Cancel</button>
             <button class="btn btn-danger">
               <i class="fas fa-sign-out-alt"></i>
               Logout

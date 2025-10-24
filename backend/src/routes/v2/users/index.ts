@@ -8,7 +8,7 @@ import { rateLimiter } from '../../../middleware/rateLimiter';
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
 import { typed } from '../../../utils/routeHandlers';
 import { usersController } from './users.controller';
-import { usersValidation } from './users.validation';
+import { usersValidationZod } from './users.validation.zod';
 
 const router: Router = express.Router();
 
@@ -82,7 +82,7 @@ router.get(
   '/',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.list,
+  usersValidationZod.list,
   typed.auth((req, res) => usersController.listUsers(req, res)),
 );
 
@@ -153,7 +153,7 @@ router.get(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.getById,
+  usersValidationZod.getById,
   typed.auth(usersController.getUserById),
 );
 
@@ -264,7 +264,7 @@ router.post(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   rateLimiter.auth, // Stricter rate limiting for user creation
-  usersValidation.create,
+  usersValidationZod.create,
   typed.auth(usersController.createUser),
 );
 
@@ -343,7 +343,7 @@ router.put(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.update,
+  usersValidationZod.update,
   typed.auth(usersController.updateUser),
 );
 
@@ -404,7 +404,7 @@ router.put(
 router.put(
   '/me/profile',
   authenticateV2 as RequestHandler,
-  usersValidation.updateProfile,
+  usersValidationZod.updateProfile,
   typed.auth(usersController.updateCurrentUserProfile),
 );
 
@@ -513,7 +513,7 @@ router.put(
   '/me/password',
   authenticateV2 as RequestHandler,
   rateLimiter.auth, // Very strict for password changes
-  usersValidation.changePassword,
+  usersValidationZod.changePassword,
   typed.auth(usersController.changePassword),
 );
 
@@ -566,7 +566,7 @@ router.delete(
   '/:id',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.getById,
+  usersValidationZod.getById,
   typed.auth(usersController.deleteUser),
 );
 
@@ -861,7 +861,7 @@ router.put(
   '/:id/availability',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  usersValidation.updateAvailability,
+  usersValidationZod.updateAvailability,
   typed.auth(usersController.updateAvailability),
 );
 

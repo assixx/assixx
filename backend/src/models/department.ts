@@ -7,7 +7,6 @@ interface DbDepartment extends RowDataPacket {
   name: string;
   description?: string;
   manager_id?: number;
-  parent_id?: number;
   area_id?: number;
   status?: string;
   visibility?: string;
@@ -46,7 +45,6 @@ interface DepartmentCreateData {
   name: string;
   description?: string;
   manager_id?: number;
-  parent_id?: number;
   area_id?: number;
   status?: string;
   visibility?: string;
@@ -57,7 +55,6 @@ interface DepartmentUpdateData {
   name?: string;
   description?: string;
   manager_id?: number;
-  parent_id?: number;
   area_id?: number;
   status?: string;
   visibility?: string;
@@ -68,7 +65,6 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
     name,
     description,
     manager_id: managerId,
-    parent_id: parentId,
     area_id: areaId,
     status = 'active',
     visibility = 'public',
@@ -87,17 +83,17 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
 
     if (hasStatus && hasVisibility) {
       query = `
-          INSERT INTO departments (name, description, manager_id, parent_id, area_id, status, visibility, tenant_id) 
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO departments (name, description, manager_id, area_id, status, visibility, tenant_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
-      params = [name, description, managerId, parentId, areaId, status, visibility, tenantId];
+      params = [name, description, managerId, areaId, status, visibility, tenantId];
     } else {
       logger.warn('Status/visibility columns not found, using basic query');
       query = `
-          INSERT INTO departments (name, description, manager_id, parent_id, area_id, tenant_id) 
-          VALUES (?, ?, ?, ?, ?, ?)
+          INSERT INTO departments (name, description, manager_id, area_id, tenant_id)
+          VALUES (?, ?, ?, ?, ?)
         `;
-      params = [name, description, managerId, parentId, areaId, tenantId];
+      params = [name, description, managerId, areaId, tenantId];
     }
 
     const [result] = await executeQuery<ResultSetHeader>(query, params);
@@ -217,10 +213,6 @@ export async function updateDepartment(
   if (departmentData.manager_id !== undefined) {
     fields.push('manager_id = ?');
     values.push(departmentData.manager_id);
-  }
-  if (departmentData.parent_id !== undefined) {
-    fields.push('parent_id = ?');
-    values.push(departmentData.parent_id);
   }
   if (departmentData.area_id !== undefined) {
     fields.push('area_id = ?');

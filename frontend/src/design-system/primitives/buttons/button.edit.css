@@ -1,0 +1,94 @@
+/**
+ * Design System - Button Edit Variant
+ *
+ * Purpose: Edit/modify actions with yellow color scheme
+ * Use Case: Edit buttons, modify actions, update operations
+ *
+ * Color: Yellow (#fbbf24) matching action-icon--edit
+ * Pattern: Based on btn-warning and btn-info structure
+ */
+
+.btn-edit {
+  /* Padding - matches other variants */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+  border: 1px solid rgb(251 191 36); /* Solid yellow border - matches action-icon--edit */
+
+  /* Colors */
+  color: var(--color-white);
+
+  background: linear-gradient(
+    145deg,
+    rgb(251 191 36 / 11%),
+    rgb(245 158 11 / 15%)
+  ); /* Yellow-400 to Yellow-500 - subtle */
+
+  /* Shadow */
+  box-shadow: var(--shadow-btn-edit, 0 2px 8px rgb(251 191 36 / 30%));
+}
+
+/* Hover State - Brighten the gradient */
+.btn-edit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  color: var(--color-white);
+  background: linear-gradient(145deg, rgb(251 191 36 / 18%), rgb(245 158 11 / 25%)); /* Intensiver */
+  box-shadow: var(--shadow-btn-edit-hover, 0 4px 12px rgb(251 191 36 / 40%));
+}
+
+/* Active/Pressed State */
+.btn-edit:active:not(:disabled) {
+  transform: translateY(0);
+  background: #d97706; /* Yellow-600 */
+  box-shadow: var(--shadow-btn-edit-active, 0 1px 4px rgb(251 191 36 / 30%));
+}
+
+/* Focus State */
+.btn-edit:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 3px rgb(251 191 36 / 20%),
+    var(--shadow-btn-edit);
+}
+
+/* Disabled State */
+.btn-edit:disabled,
+.btn-edit.disabled {
+  cursor: not-allowed;
+
+  color: rgb(255 255 255 / 50%);
+
+  opacity: 60%;
+  background: #fef3c7; /* Yellow-100 */
+  box-shadow: none;
+}
+
+/* Loading State */
+.btn-edit.loading {
+  pointer-events: none;
+  color: transparent;
+}
+
+.btn-edit.loading::after {
+  content: "";
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  margin-left: -8px;
+  border: 2px solid var(--color-white);
+  border-top-color: transparent;
+  border-radius: 50%;
+
+  animation: spin 0.6s linear infinite;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

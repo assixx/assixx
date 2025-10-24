@@ -2,7 +2,7 @@
  * Department Groups Service v2
  * Business logic for managing hierarchical department groups
  */
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import rootLog from '../../../models/rootLog';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -45,6 +45,105 @@ interface AssignmentRow extends RowDataPacket {
  */
 export class DepartmentGroupsService {
   /**
+   * Validate group creation data (business rules)
+   */
+  private validateGroupCreationData(data: CreateGroupRequest): void {
+    if (data.departmentIds && data.departmentIds.length < 2) {
+      throw new ServiceError('VALIDATION_ERROR', 'Mindestens 2 Abteilungen erforderlich');
+    }
+  }
+
+  /**
+   * Validate no circular dependency exists for parent group
+   */
+  private async validateNoCircularDependency(
+    parentGroupId: number | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    if (!parentGroupId) return;
+
+    const hasCircular = await this.checkCircularDependency(parentGroupId, 0, tenantId);
+    if (hasCircular) {
+      throw new ServiceError('CIRCULAR_DEPENDENCY', 'Circular dependency detected');
+    }
+  }
+
+  /**
+   * Insert department members into a group
+   */
+  private async insertGroupMembers(
+    connection: PoolConnection,
+    groupId: number,
+    departmentIds: number[] | undefined,
+    tenantId: number,
+    createdBy: number,
+  ): Promise<void> {
+    if (!departmentIds || departmentIds.length === 0) return;
+
+    const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, createdBy]);
+    const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
+
+    await connection.execute(
+      `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by)
+       VALUES ${placeholders}`,
+      values.flat(),
+    );
+  }
+
+  /**
+   * Sync department members for a group (delete old, insert new)
+   */
+  private async syncGroupDepartments(
+    connection: PoolConnection,
+    groupId: number,
+    departmentIds: number[] | undefined,
+    tenantId: number,
+    updatedBy: number,
+  ): Promise<void> {
+    if (departmentIds === undefined) return;
+
+    // Validate minimum department count (business rule)
+    if (departmentIds.length < 2) {
+      throw new ServiceError('VALIDATION_ERROR', 'Mindestens 2 Abteilungen erforderlich');
+    }
+
+    // Delete existing department assignments
+    await connection.execute(
+      `DELETE FROM department_group_members
+       WHERE group_id = ? AND tenant_id = ?`,
+      [groupId, tenantId],
+    );
+
+    // Add new department assignments
+    if (departmentIds.length > 0) {
+      const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, updatedBy]);
+      const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
+
+      await connection.execute(
+        `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by)
+         VALUES ${placeholders}`,
+        values.flat(),
+      );
+    }
+  }
+
+  /**
+   * Handle errors during group operations (create/update)
+   * @param error - The error that occurred
+   * @param operation - The operation name for logging
+   */
+  private handleGroupOperationError(error: unknown, operation: string): never {
+    if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
+      throw new ServiceError('GROUP_EXISTS', 'Group name already exists');
+    }
+
+    if (error instanceof ServiceError) throw error;
+
+    logger.error(`Error ${operation} department group:`, error);
+    throw new ServiceError('SERVER_ERROR', `Failed to ${operation} group`);
+  }
+
+  /**
    * Create a new department group
    * @param data - The data object
    * @param tenantId - The tenant ID
@@ -60,13 +159,9 @@ export class DepartmentGroupsService {
     try {
       await connection.beginTransaction();
 
-      // Check for circular dependencies if parent group is specified
-      if (data.parentGroupId) {
-        const hasCircular = await this.checkCircularDependency(data.parentGroupId, 0, tenantId);
-        if (hasCircular) {
-          throw new ServiceError('CIRCULAR_DEPENDENCY', 'Circular dependency detected');
-        }
-      }
+      // Validate business rules
+      this.validateGroupCreationData(data);
+      await this.validateNoCircularDependency(data.parentGroupId, tenantId);
 
       // Create the group
       const [result] = await connection.execute<ResultSetHeader>(
@@ -78,17 +173,7 @@ export class DepartmentGroupsService {
       const groupId = result.insertId;
 
       // Add departments if provided
-      if (data.departmentIds && data.departmentIds.length > 0) {
-        const values = data.departmentIds.map((deptId) => [tenantId, groupId, deptId, createdBy]);
-
-        const placeholders = data.departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
-
-        await connection.execute(
-          `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by)
-           VALUES ${placeholders}`,
-          values.flat(),
-        );
-      }
+      await this.insertGroupMembers(connection, groupId, data.departmentIds, tenantId, createdBy);
 
       await connection.commit();
 
@@ -103,15 +188,7 @@ export class DepartmentGroupsService {
       return groupId;
     } catch (error: unknown) {
       await connection.rollback();
-
-      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
-        throw new ServiceError('GROUP_EXISTS', 'Group name already exists');
-      }
-
-      if (error instanceof ServiceError) throw error;
-
-      logger.error('Error creating department group:', error);
-      throw new ServiceError('SERVER_ERROR', 'Failed to create group');
+      this.handleGroupOperationError(error, 'creating');
     } finally {
       connection.release();
     }
@@ -138,7 +215,7 @@ export class DepartmentGroupsService {
         `SELECT dgm.group_id, d.id as dept_id, d.name as dept_name, d.description as dept_desc
          FROM department_group_members dgm
          JOIN departments d ON dgm.department_id = d.id
-         WHERE dgm.tenant_id = ? AND d.is_active = 1`,
+         WHERE dgm.tenant_id = ? AND d.status = 'active'`,
         [tenantId],
       );
 
@@ -248,8 +325,13 @@ export class DepartmentGroupsService {
     tenantId: number,
     updatedBy: number,
   ): Promise<void> {
+    const connection = await getConnection();
+
     try {
-      const [result] = await execute<ResultSetHeader>(
+      await connection.beginTransaction();
+
+      // Update the group
+      const [result] = await connection.execute<ResultSetHeader>(
         `UPDATE department_groups
          SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND tenant_id = ?`,
@@ -260,6 +342,11 @@ export class DepartmentGroupsService {
         throw new ServiceError('NOT_FOUND', 'Group not found');
       }
 
+      // Sync departments if provided
+      await this.syncGroupDepartments(connection, groupId, data.departmentIds, tenantId, updatedBy);
+
+      await connection.commit();
+
       // Log the update
       await rootLog.log(
         'department_group_updated',
@@ -268,12 +355,10 @@ export class DepartmentGroupsService {
         `Updated department group: ${data.name} (ID: ${groupId})`,
       );
     } catch (error: unknown) {
-      if ((error as { code?: string }).code === 'ER_DUP_ENTRY') {
-        throw new ServiceError('GROUP_EXISTS', 'Group name already exists');
-      }
-      if (error instanceof ServiceError) throw error;
-      logger.error('Error updating department group:', error);
-      throw new ServiceError('SERVER_ERROR', 'Failed to update group');
+      await connection.rollback();
+      this.handleGroupOperationError(error, 'updating');
+    } finally {
+      connection.release();
     }
   }
 
@@ -473,7 +558,7 @@ export class DepartmentGroupsService {
         `SELECT d.id, d.name, d.description
          FROM departments d
          JOIN department_group_members dgm ON d.id = dgm.department_id
-         WHERE dgm.group_id = ? AND dgm.tenant_id = ? AND d.is_active = 1`,
+         WHERE dgm.group_id = ? AND dgm.tenant_id = ? AND d.status = 'active'`,
         [groupId, tenantId],
       );
 
