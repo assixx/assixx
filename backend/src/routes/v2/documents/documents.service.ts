@@ -106,7 +106,7 @@ export interface DocumentListResponse {
 /**
  *
  */
-export class DocumentsService {
+class DocumentsService {
   /**
    * List documents with filters
    * @param userId - The user ID

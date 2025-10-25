@@ -66,26 +66,6 @@ export interface KVPSuggestion {
   };
 }
 
-export interface KVPComment {
-  id: number;
-  comment: string;
-  isInternal: boolean;
-  createdBy: number;
-  createdAt: string;
-  user?: {
-    firstName: string;
-    lastName: string;
-  };
-}
-
-export interface KVPAttachment {
-  id: number;
-  filename: string;
-  mimeType: string;
-  size: number;
-  createdAt: string;
-}
-
 export interface KVPUpdateData {
   title?: string;
   description?: string;
@@ -121,7 +101,7 @@ export interface AttachmentData {
 /**
  *
  */
-export class KVPService {
+class KVPService {
   /**
    * Get all categories for a tenant
    * @param _tenantId - The _tenantId parameter

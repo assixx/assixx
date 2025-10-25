@@ -43,7 +43,7 @@ interface AssignmentRow extends RowDataPacket {
 /**
  *
  */
-export class DepartmentGroupsService {
+class DepartmentGroupsService {
   /**
    * Validate group creation data (business rules)
    */
@@ -80,7 +80,7 @@ export class DepartmentGroupsService {
   ): Promise<void> {
     if (!departmentIds || departmentIds.length === 0) return;
 
-    const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, createdBy]);
+    const values = departmentIds.map((deptId: number) => [tenantId, groupId, deptId, createdBy]);
     const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
     await connection.execute(
@@ -116,7 +116,7 @@ export class DepartmentGroupsService {
 
     // Add new department assignments
     if (departmentIds.length > 0) {
-      const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, updatedBy]);
+      const values = departmentIds.map((deptId: number) => [tenantId, groupId, deptId, updatedBy]);
       const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
       await connection.execute(
@@ -221,7 +221,7 @@ export class DepartmentGroupsService {
 
       // Build assignment map
       const assignmentMap = new Map<number, GroupDepartment[]>();
-      assignments.forEach((row) => {
+      assignments.forEach((row: AssignmentRow) => {
         if (!assignmentMap.has(row.group_id)) {
           assignmentMap.set(row.group_id, []);
         }
@@ -237,7 +237,7 @@ export class DepartmentGroupsService {
       const rootGroups: DepartmentGroupWithHierarchy[] = [];
 
       // First pass: create all group objects
-      groups.forEach((row) => {
+      groups.forEach((row: GroupRow) => {
         const group: DepartmentGroupWithHierarchy = {
           id: row.id,
           name: row.name,
@@ -254,7 +254,7 @@ export class DepartmentGroupsService {
       });
 
       // Second pass: build hierarchy
-      groups.forEach((row) => {
+      groups.forEach((row: GroupRow) => {
         const group = groupMap.get(row.id);
         if (!group) return;
 
@@ -475,7 +475,7 @@ export class DepartmentGroupsService {
       }
 
       // Prepare bulk insert values
-      const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, addedBy]);
+      const values = departmentIds.map((deptId: number) => [tenantId, groupId, deptId, addedBy]);
 
       const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
@@ -548,6 +548,7 @@ export class DepartmentGroupsService {
   async getGroupDepartments(
     groupId: number,
     tenantId: number,
+    // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
     includeSubgroups = true,
   ): Promise<GroupDepartment[]> {
     try {
@@ -562,7 +563,7 @@ export class DepartmentGroupsService {
         [groupId, tenantId],
       );
 
-      directDepts.forEach((dept) => {
+      directDepts.forEach((dept: DepartmentRow) => {
         departments.set(dept.id, {
           id: dept.id,
           name: dept.name,
@@ -573,7 +574,7 @@ export class DepartmentGroupsService {
       // Get departments from subgroups if requested
       if (includeSubgroups) {
         const subgroupDepts = await this.getSubgroupDepartments(groupId, tenantId);
-        subgroupDepts.forEach((dept) => {
+        subgroupDepts.forEach((dept: GroupDepartment) => {
           departments.set(dept.id, dept);
         });
       }
@@ -615,7 +616,7 @@ export class DepartmentGroupsService {
         true, // Include nested subgroups
       );
 
-      subgroupDepts.forEach((dept) => {
+      subgroupDepts.forEach((dept: GroupDepartment) => {
         departments.set(dept.id, dept);
       });
     }

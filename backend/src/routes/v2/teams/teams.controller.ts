@@ -49,7 +49,7 @@ interface AddMachineBody {
 /**
  *
  */
-export class TeamsController {
+class TeamsController {
   /**
    *
    */

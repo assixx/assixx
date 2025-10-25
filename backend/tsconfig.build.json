@@ -23,6 +23,7 @@
     "src/__tests__/**/*",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
-    "src/routes/v1/**/*"
+    "src/routes/v1/**/*",
+    "src/routes/mocks/**/*"
   ]
 }

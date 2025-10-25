@@ -54,7 +54,7 @@ class TeamService {
     try {
       // Get tenant_id from filters or extract from tenantDb
       const teams = await Team.findAll();
-      return teams.map((team) => ({
+      return teams.map((team: DbTeam) => ({
         ...team,
         team_lead_id: team.team_lead_id,
         team_lead_name: null as string | null,

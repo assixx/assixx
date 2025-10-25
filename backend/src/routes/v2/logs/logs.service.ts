@@ -36,7 +36,7 @@ interface StatsRow extends RowDataPacket {
 /**
  *
  */
-export class LogsService {
+class LogsService {
   /**
    * Add search condition to query
    */

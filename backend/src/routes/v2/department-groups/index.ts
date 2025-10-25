@@ -2,10 +2,11 @@
  * Department Groups Routes v2
  * Handles hierarchical department group management
  */
-import { Router } from 'express';
+import { Response, Router } from 'express';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
 import { validate } from '../../../middleware/validation.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { departmentGroupsController } from './controller.js';
 import {
@@ -88,7 +89,7 @@ router.use(authenticateToken);
  */
 router.get(
   '/',
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.getGroups(req, res);
   }),
 );
@@ -131,7 +132,7 @@ router.get(
 router.get(
   '/:id',
   validate(getGroupValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.getGroupById(req, res);
   }),
 );
@@ -201,7 +202,7 @@ router.get(
 router.post(
   '/',
   validate(createGroupValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.createGroup(req, res);
   }),
 );
@@ -267,7 +268,7 @@ router.post(
 router.put(
   '/:id',
   validate(updateGroupValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.updateGroup(req, res);
   }),
 );
@@ -314,7 +315,7 @@ router.put(
 router.delete(
   '/:id',
   validate(deleteGroupValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.deleteGroup(req, res);
   }),
 );
@@ -376,7 +377,7 @@ router.delete(
 router.post(
   '/:id/departments',
   validate(addDepartmentsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.addDepartments(req, res);
   }),
 );
@@ -427,7 +428,7 @@ router.post(
 router.delete(
   '/:id/departments/:departmentId',
   validate(removeDepartmentValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.removeDepartment(req, res);
   }),
 );
@@ -483,7 +484,7 @@ router.delete(
 router.get(
   '/:id/departments',
   validate(getGroupDepartmentsValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await departmentGroupsController.getGroupDepartments(req, res);
   }),
 );

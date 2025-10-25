@@ -1,6 +1,7 @@
-import { Router } from 'express';
+import { NextFunction, Response, Router } from 'express';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { departmentController } from './departments.controller.js';
 import { departmentsValidationZod } from './departments.validation.zod.js';
@@ -41,7 +42,7 @@ router.use(authenticateToken);
 router.get(
   '/',
   departmentsValidationZod.list,
-  typed.auth(async (req, res, next) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.getDepartments(req, res, next);
   }),
 );
@@ -69,7 +70,7 @@ router.get(
  */
 router.get(
   '/stats',
-  typed.auth(async (req, res, next) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.getDepartmentStats(req, res, next);
   }),
 );
@@ -109,7 +110,7 @@ router.get(
 router.get(
   '/:id',
   departmentsValidationZod.getById,
-  typed.auth(async (req, res, next) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.getDepartmentById(req, res, next);
   }),
 );
@@ -148,7 +149,7 @@ router.get(
 router.post(
   '/',
   departmentsValidationZod.create,
-  typed.auth(async (req, res, next) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.createDepartment(req, res, next);
   }),
 );
@@ -196,7 +197,7 @@ router.post(
 router.put(
   '/:id',
   ...departmentsValidationZod.update,
-  typed.auth(async (req, res, next) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.updateDepartment(req, res, next);
   }),
 );
@@ -238,7 +239,7 @@ router.put(
 router.delete(
   '/:id',
   departmentsValidationZod.getById,
-  typed.auth(async (req, res, next) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.deleteDepartment(req, res, next);
   }),
 );
@@ -278,7 +279,7 @@ router.delete(
 router.get(
   '/:id/members',
   departmentsValidationZod.getById,
-  typed.auth(async (req, res, next) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.getDepartmentMembers(req, res, next);
   }),
 );

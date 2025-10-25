@@ -7,6 +7,7 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 
 import Document, {
+  DbDocument,
   DocumentCreateData as ModelDocumentCreateData,
   DocumentUpdateData as ModelDocumentUpdateData,
 } from '../models/document';
@@ -403,7 +404,7 @@ class DocumentService {
     try {
       const dbDocuments = await Document.findByUserId(userId);
       return dbDocuments.map(
-        (doc) =>
+        (doc: DbDocument) =>
           ({
             ...doc,
             tenant_id: doc.tenant_id,

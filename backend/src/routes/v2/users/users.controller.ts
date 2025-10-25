@@ -47,7 +47,7 @@ interface User {
  * @param errors - The errors parameter
  */
 function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
-  return errors.map((error) => ({
+  return errors.map((error: ValidationError) => ({
     field: error.type === 'field' ? error.path : 'general',
     message: String(error.msg),
   }));
@@ -505,8 +505,8 @@ export const usersController = {
   // Upload profile picture
   uploadProfilePicture: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     // Promisify the multer upload
-    await new Promise<void>((resolve, reject) => {
-      uploadMiddleware.single('profilePicture')(req, res, (err) => {
+    await new Promise<void>((resolve: () => void, reject: (reason?: unknown) => void) => {
+      uploadMiddleware.single('profilePicture')(req, res, (err: unknown) => {
         if (err !== null && err !== undefined && err !== '') {
           reject(err instanceof Error ? err : new Error(String(err)));
         } else {

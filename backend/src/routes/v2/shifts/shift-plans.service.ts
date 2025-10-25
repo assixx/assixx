@@ -59,7 +59,7 @@ interface FavoriteData {
   teamName: string;
 }
 
-export class ShiftPlansService {
+class ShiftPlansService {
   /**
    * Helper to get week number
    * @param date - Parameter description
@@ -470,7 +470,7 @@ export class ShiftPlansService {
 
       return {
         plan: dbToApi(plan as Record<string, unknown>),
-        shifts: (shifts as unknown[]).map((s) => dbToApi(s as Record<string, unknown>)),
+        shifts: (shifts as unknown[]).map((s: unknown) => dbToApi(s as Record<string, unknown>)),
         notes: [], // Empty - notes are in plan.description now
       };
     } catch (error) {

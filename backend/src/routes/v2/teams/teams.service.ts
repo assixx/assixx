@@ -29,11 +29,12 @@ export class ServiceError extends Error {
   constructor(
     public code: string,
     public message: string,
-    public statusCode = 500,
+    public statusCode?: number,
     public details?: unknown,
   ) {
     super(message);
     this.name = 'ServiceError';
+    this.statusCode = statusCode ?? 500;
   }
 }
 
@@ -63,7 +64,7 @@ export interface TeamUpdateInput {
 /**
  *
  */
-export class TeamsService {
+class TeamsService {
   /**
    * List all teams for a tenant
    * @param tenantId - The tenant ID
@@ -78,20 +79,22 @@ export class TeamsService {
       let filteredTeams = teams;
 
       if (filters?.departmentId) {
-        filteredTeams = filteredTeams.filter((team) => team.department_id === filters.departmentId);
+        filteredTeams = filteredTeams.filter(
+          (team: DbTeam) => team.department_id === filters.departmentId,
+        );
       }
 
       if (filters?.search) {
         const searchLower = filters.search.toLowerCase();
         filteredTeams = filteredTeams.filter(
-          (team) =>
+          (team: DbTeam) =>
             team.name.toLowerCase().includes(searchLower) ||
             team.description?.toLowerCase().includes(searchLower),
         );
       }
 
       // Convert to API format
-      return filteredTeams.map((team) => {
+      return filteredTeams.map((team: DbTeam) => {
         const apiTeam = dbToApi(team);
 
         // Map team_lead_id to leaderId
@@ -170,14 +173,14 @@ export class TeamsService {
       }
       apiTeam.leaderId ??= null;
 
-      apiTeam.members = members.map((member) => ({
-        id: member.id,
-        username: member.username,
-        email: member.email,
-        firstName: member.first_name,
-        lastName: member.last_name,
-        position: member.position,
-        employeeId: member.employee_id,
+      apiTeam.members = members.map((member: RowDataPacket) => ({
+        id: member.id as number,
+        username: member.username as string,
+        email: member.email as string,
+        firstName: member.first_name as string | undefined,
+        lastName: member.last_name as string | undefined,
+        position: member.position as string | undefined,
+        employeeId: member.employee_id as string | undefined,
       }));
 
       // Add machines to response
@@ -218,7 +221,9 @@ export class TeamsService {
 
       // Check for duplicate name
       const existingTeams = await Team.findAll(tenantId);
-      const duplicate = existingTeams.find((t) => t.name.toLowerCase() === data.name.toLowerCase());
+      const duplicate = existingTeams.find(
+        (t: DbTeam) => t.name.toLowerCase() === data.name.toLowerCase(),
+      );
 
       if (duplicate) {
         throw new ServiceError('CONFLICT', 'Team with this name already exists', 409);
@@ -291,7 +296,7 @@ export class TeamsService {
 
     const teams = await Team.findAll(tenantId);
     const duplicate = teams.find(
-      (t) => t.id !== teamId && t.name.toLowerCase() === name.toLowerCase(),
+      (t: DbTeam) => t.id !== teamId && t.name.toLowerCase() === name.toLowerCase(),
     );
 
     if (duplicate) {
@@ -385,10 +390,10 @@ export class TeamsService {
    * @param tenantId - The tenant ID
    * @param force - If true, removes all team members before deleting the team
    */
-  async deleteTeam(id: number, tenantId: number, force = false): Promise<{ message: string }> {
+  async deleteTeam(id: number, tenantId: number, force?: boolean): Promise<{ message: string }> {
     try {
       await this.validateTeamOwnership(id, tenantId);
-      await this.handleTeamMembersForDeletion(id, force);
+      await this.handleTeamMembersForDeletion(id, force ?? false);
 
       const success = await Team.delete(id);
       if (!success) {
@@ -420,14 +425,14 @@ export class TeamsService {
 
       const members = await Team.getTeamMembers(teamId);
 
-      return members.map((member) => ({
-        id: member.id,
-        username: member.username,
-        email: member.email,
-        firstName: member.first_name,
-        lastName: member.last_name,
-        position: member.position,
-        employeeId: member.employee_id,
+      return members.map((member: RowDataPacket) => ({
+        id: member.id as number,
+        username: member.username as string,
+        email: member.email as string,
+        firstName: member.first_name as string | undefined,
+        lastName: member.last_name as string | undefined,
+        position: member.position as string | undefined,
+        employeeId: member.employee_id as string | undefined,
       }));
     } catch (error: unknown) {
       if (error instanceof ServiceError) {

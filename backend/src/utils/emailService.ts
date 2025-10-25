@@ -26,7 +26,7 @@ function removeDangerousTags(html: string): string {
   ];
   let sanitized = html;
   for (let i = 0; i < 3; i++) {
-    dangerousTags.forEach((tag) => {
+    dangerousTags.forEach((tag: string) => {
       // eslint-disable-next-line security/detect-non-literal-regexp -- Tag is from a controlled whitelist
       const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(fullTagRegex, '');
@@ -50,7 +50,7 @@ function removeEventHandlers(html: string): string {
   ];
   let sanitized = html;
   for (let i = 0; i < 3; i++) {
-    eventHandlerPatterns.forEach((pattern) => {
+    eventHandlerPatterns.forEach((pattern: RegExp) => {
       sanitized = sanitized.replace(pattern, '');
     });
   }
@@ -66,7 +66,7 @@ function sanitizeUrls(html: string): string {
     /(?:action|formaction|data|code|codebase)\s*=\s*["']([^"']*)["']/gi,
   ];
   let sanitized = html;
-  urlPatterns.forEach((pattern) => {
+  urlPatterns.forEach((pattern: RegExp) => {
     sanitized = sanitized.replace(pattern, (match: string, url: string) => {
       const lowerUrl = url.toLowerCase().trim();
       if (
@@ -100,7 +100,7 @@ function sanitizeStyles(html: string): string {
       /@import/gi,
       /import\s*\(/gi,
     ];
-    dangerousCSS.forEach((pattern) => {
+    dangerousCSS.forEach((pattern: RegExp) => {
       cleanedStyle = cleanedStyle.replace(pattern, '');
     });
     cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
@@ -241,7 +241,7 @@ function escapeHtmlTemplate(str: string): string {
     "'": '&#39;',
   };
   // eslint-disable-next-line security/detect-object-injection -- match is from regex match, always one of the keys
-  return str.replace(/["&'<>]/g, (match) => htmlEscapes[match]);
+  return str.replace(/["&'<>]/g, (match: string) => htmlEscapes[match]);
 }
 
 /**
@@ -417,7 +417,7 @@ async function processQueue(): Promise<void> {
 
       // Kurze Pause zwischen Batches, um SMTP-Limits einzuhalten
       if (emailQueue.length > 0) {
-        await new Promise((resolve) => global.setTimeout(resolve, 1000));
+        await new Promise<void>((resolve: () => void) => global.setTimeout(resolve, 1000));
       }
     }
   } catch (error: unknown) {
@@ -603,10 +603,12 @@ async function sendBulkNotification(
  * @param type - Typ der Benachrichtigung
  * @returns Unsubscribe-Link
  */
-function generateUnsubscribeLink(email: string, type = 'all'): string {
+function generateUnsubscribeLink(email: string, type?: string): string {
+  const resolvedType = type ?? 'all';
+
   // Token generieren (würde normalerweise mit JWT o.ä. implementiert)
   const token: string = jwt.sign(
-    { email, type, purpose: 'unsubscribe' },
+    { email, type: resolvedType, purpose: 'unsubscribe' },
     process.env.JWT_SECRET ?? 'default-secret',
     { expiresIn: '30d' },
   );
@@ -615,17 +617,6 @@ function generateUnsubscribeLink(email: string, type = 'all'): string {
 }
 
 // ES module exports
-export {
-  initializeTransporter,
-  sendEmail,
-  sendNewDocumentNotification,
-  sendWelcomeEmail,
-  sendBulkNotification,
-  addToQueue,
-  processQueue,
-  generateUnsubscribeLink,
-};
-
 // Default export
 export default {
   initializeTransporter,

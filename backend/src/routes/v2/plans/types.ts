@@ -112,12 +112,12 @@ export interface DbPlan extends RowDataPacket {
   id: number;
   code: string;
   name: string;
-  description: string;
-  base_price: string | number;
-  max_employees: number | null;
-  max_admins: number | null;
-  max_storage_gb: number | null;
-  is_active: number | boolean;
+  description?: string;
+  base_price: number;
+  max_employees?: number;
+  max_admins?: number;
+  max_storage_gb: number;
+  is_active: boolean;
   sort_order: number;
   created_at: Date;
   updated_at: Date;

@@ -279,7 +279,7 @@ function applyEventFilters(
  * Process calendar events to map fields and convert buffers
  */
 function processCalendarEvents(events: DbCalendarEvent[]): void {
-  events.forEach((event) => {
+  events.forEach((event: DbCalendarEvent) => {
     // Map database column names to API property names
     event.start_time = event.start_date;
     event.end_time = event.end_date;
@@ -888,10 +888,13 @@ export async function getEventAttendees(
 export async function getDashboardEvents(
   tenantId: number,
   userId: number,
-  days = 7,
-  limit = 5,
+  days?: number,
+  limit?: number,
 ): Promise<DbCalendarEvent[]> {
   try {
+    const resolvedDays = days ?? 7;
+    const resolvedLimit = limit ?? 5;
+
     // Get user info for access control
     const {
       role,
@@ -902,7 +905,7 @@ export async function getDashboardEvents(
     // Calculate date range
     const today = new Date();
     const endDate = new Date();
-    endDate.setDate(today.getDate() + days);
+    endDate.setDate(today.getDate() + resolvedDays);
 
     // Format dates for MySQL
     const todayStr = today.toISOString().split('T')[0];
@@ -939,12 +942,12 @@ export async function getDashboardEvents(
         ORDER BY e.start_date ASC
         LIMIT ?
       `;
-    queryParams.push(Number.parseInt(limit.toString(), 10));
+    queryParams.push(Number.parseInt(resolvedLimit.toString(), 10));
 
     const [events] = await executeQuery<DbCalendarEvent[]>(query, queryParams);
 
     // Map database fields to API fields
-    events.forEach((event) => {
+    events.forEach((event: DbCalendarEvent) => {
       // Map database column names to API property names
       event.start_time = event.start_date;
       event.end_time = event.end_date;
@@ -1041,7 +1044,6 @@ function parseRecurrenceOptions(options: string[]): { count: number; until: Date
 function getIntervalDays(pattern: string): number {
   switch (pattern) {
     case 'daily':
-      // eslint-disable-next-line max-lines
       return 1;
     case 'weekly':
       return 7;

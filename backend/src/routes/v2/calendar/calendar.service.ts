@@ -61,7 +61,7 @@ export interface CalendarEventUpdateData {
 /**
  *
  */
-export class CalendarService {
+class CalendarService {
   /**
    * Get paginated list of calendar events with filter optimization
    * @param tenantId - The tenant ID

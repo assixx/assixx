@@ -23,7 +23,7 @@ const dbConfig: mysql.ConnectionOptions = {
 };
 
 // Database interfaces
-interface DbCategory extends RowDataPacket {
+export interface DbCategory extends RowDataPacket {
   id: number;
   name: string;
   description?: string;
@@ -526,7 +526,8 @@ export async function addKvpComment(
   tenantId: number,
   userId: number,
   comment: string,
-  isInternal = false,
+  // eslint-disable-next-line @typescript-eslint/no-inferrable-types -- Required by typedef rule for parameters
+  isInternal: boolean = false,
 ): Promise<number> {
   const connection = await getConnection();
   try {
@@ -684,7 +685,7 @@ export async function updateKvpSuggestion(
       return false;
     }
 
-    const setClause = fields.map((field) => `${field} = ?`).join(', ');
+    const setClause = fields.map((field: string) => `${field} = ?`).join(', ');
     const values = [...Object.values(updates), id, tenantId];
 
     const [result] = await connection.execute<ResultSetHeader>(

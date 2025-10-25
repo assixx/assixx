@@ -215,5 +215,3 @@ export function applySecurityToRouter(router: Router, defaultSecurity: RequestHa
     return originalDelete(path, ...defaultSecurity, ...handlers);
   };
 }
-
-export default security;

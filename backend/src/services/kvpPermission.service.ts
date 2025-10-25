@@ -27,7 +27,7 @@ class KvpPermissionService {
   async getAdminDepartments(adminId: number, tenantId: number): Promise<number[]> {
     try {
       const result = await adminPermissionService.getAdminDepartments(adminId, tenantId);
-      return result.departments.map((dept) => dept.id);
+      return result.departments.map((dept: { id: number }) => dept.id);
     } catch (error: unknown) {
       logger.error('Error getting admin departments:', error);
       return [];
@@ -328,21 +328,23 @@ class KvpPermissionService {
     adminId: number,
     action: string,
     entityId: number,
-    entityType = 'kvp_suggestion',
+    entityType: string | undefined,
     tenantId: number,
     oldValue?: unknown,
     newValue?: unknown,
   ): Promise<void> {
+    const resolvedEntityType = entityType ?? 'kvp_suggestion';
+
     try {
       await executeQuery(
-        `INSERT INTO admin_logs 
-         (tenant_id, admin_user_id, action, entity_type, entity_id, old_value, new_value) 
+        `INSERT INTO admin_logs
+         (tenant_id, admin_user_id, action, entity_type, entity_id, old_value, new_value)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           tenantId,
           adminId,
           action,
-          entityType,
+          resolvedEntityType,
           entityId,
           oldValue != null ? JSON.stringify(oldValue) : null,
           newValue != null ? JSON.stringify(newValue) : null,
@@ -415,7 +417,7 @@ class KvpPermissionService {
         byPriority[row.priority as string] = row.count as number;
       });
 
-      const total = Object.values(byStatus).reduce((sum, count) => sum + count, 0);
+      const total = Object.values(byStatus).reduce((sum: number, count: number) => sum + count, 0);
 
       return {
         total,

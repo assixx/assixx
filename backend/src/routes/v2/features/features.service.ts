@@ -31,6 +31,7 @@ export class FeaturesService {
    *
    * @param includeInactive - The includeInactive parameter
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   static async getAllFeatures(includeInactive = false): Promise<Feature[]> {
     try {
       const whereClause = includeInactive ? '' : 'WHERE is_active = true';
@@ -38,7 +39,7 @@ export class FeaturesService {
         `SELECT * FROM features ${whereClause} ORDER BY category, sort_order, name`,
       );
 
-      return rows.map((row) => {
+      return rows.map((row: DbFeature) => {
         const mapped = fieldMapper.dbToApi(row) as Feature;
         // Map base_price to price
         if ('base_price' in row) {
@@ -57,12 +58,13 @@ export class FeaturesService {
    *
    * @param includeInactive - The includeInactive parameter
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   static async getFeaturesByCategory(includeInactive = false): Promise<FeatureCategory[]> {
     try {
       const features = await this.getAllFeatures(includeInactive);
 
-      return features.reduce<FeatureCategory[]>((acc, feature) => {
-        const category = acc.find((c) => c.category === feature.category);
+      return features.reduce<FeatureCategory[]>((acc: FeatureCategory[], feature: Feature) => {
+        const category = acc.find((c: FeatureCategory) => c.category === feature.category);
         if (category) {
           category.features.push(feature);
         } else {
@@ -119,7 +121,7 @@ export class FeaturesService {
         [tenantId],
       );
 
-      return rows.map((row) => {
+      return rows.map((row: DbTenantFeature) => {
         const mapped = fieldMapper.dbToApi(row) as TenantFeature;
         // Parse custom_config if it's a string
         if (row.custom_config && typeof row.custom_config === 'string') {
@@ -176,7 +178,7 @@ export class FeaturesService {
         [tenantId],
       );
 
-      return rows.map((row) => {
+      return rows.map((row: DbFeature & Partial<DbTenantFeature> & { status: string }) => {
         const feature = fieldMapper.dbToApi({
           id: row.id,
           code: row.code,
@@ -389,7 +391,7 @@ export class FeaturesService {
         [tenantId, feature.id, startDate, endDate],
       );
 
-      return rows.map((row) => ({
+      return rows.map((row: DbFeatureUsageStats) => ({
         date: new Date(row.date).toISOString().split('T')[0],
         featureCode,
         usageCount: row.usage_count,
@@ -419,7 +421,7 @@ export class FeaturesService {
         features,
       };
 
-      features.forEach((feature) => {
+      features.forEach((feature: TenantFeature) => {
         switch (feature.status) {
           case 'active':
             summary.activeFeatures++;
@@ -528,7 +530,7 @@ export class FeaturesService {
 
       // Get features for each tenant
       return await Promise.all(
-        tenants.map(async (tenant) => {
+        tenants.map(async (tenant: TenantRow) => {
           const summary = await this.getTenantFeaturesSummary(tenant.id);
           return {
             id: tenant.id,

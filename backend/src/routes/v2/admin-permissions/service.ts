@@ -41,7 +41,7 @@ interface GroupPermissionRow extends RowDataPacket {
 /**
  *
  */
-export class AdminPermissionsService {
+class AdminPermissionsService {
   /**
    * Check if admin has access to a specific department
    * @param adminId - The adminId parameter

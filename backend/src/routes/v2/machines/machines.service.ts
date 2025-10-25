@@ -15,7 +15,7 @@ import {
 /**
  *
  */
-export class MachinesService {
+class MachinesService {
   // List all machines with filters
   /**
    *
@@ -24,7 +24,7 @@ export class MachinesService {
    */
   async listMachines(tenantId: number, filters: MachineFilters = {}): Promise<MachineResponse[]> {
     const machines = await machineModel.findAll(tenantId, filters);
-    return machines.map((machine) => this.formatMachineResponse(machine));
+    return machines.map((machine: Machine) => this.formatMachineResponse(machine));
   }
 
   // Get machine by ID
@@ -62,7 +62,9 @@ export class MachinesService {
       const existingMachines = await machineModel.findAll(tenantId, {
         search: data.serialNumber,
       });
-      const duplicate = existingMachines.find((m) => m.serial_number === data.serialNumber);
+      const duplicate = existingMachines.find(
+        (m: Machine) => m.serial_number === data.serialNumber,
+      );
       if (duplicate) {
         throw new ServiceError('VALIDATION_ERROR', 'Serial number already exists', {
           field: 'serialNumber',
@@ -225,7 +227,9 @@ export class MachinesService {
       const machines = await machineModel.findAll(tenantId, {
         search: data.serialNumber,
       });
-      const duplicate = machines.find((m) => m.serial_number === data.serialNumber && m.id !== id);
+      const duplicate = machines.find(
+        (m: Machine) => m.serial_number === data.serialNumber && m.id !== id,
+      );
       if (duplicate) {
         throw new ServiceError('VALIDATION_ERROR', 'Serial number already exists', {
           field: 'serialNumber',
@@ -384,7 +388,9 @@ export class MachinesService {
     await this.getMachineById(machineId, tenantId);
 
     const history = await machineModel.getMaintenanceHistory(machineId, tenantId);
-    return history.map((record) => this.formatMaintenanceResponse(record));
+    return history.map((record: MachineMaintenanceHistory) =>
+      this.formatMaintenanceResponse(record),
+    );
   }
 
   // Add maintenance record
@@ -443,7 +449,7 @@ export class MachinesService {
 
     // Get the created record
     const history = await machineModel.getMaintenanceHistory(data.machineId, tenantId);
-    const record = history.find((h) => h.id === recordId);
+    const record = history.find((h: MachineMaintenanceHistory) => h.id === recordId);
     if (!record) {
       throw new ServiceError('NOT_FOUND', 'Maintenance record not found');
     }
@@ -457,9 +463,9 @@ export class MachinesService {
    * @param tenantId - The tenant ID
    * @param days - The days parameter
    */
-  async getUpcomingMaintenance(tenantId: number, days = 30): Promise<MachineResponse[]> {
+  async getUpcomingMaintenance(tenantId: number, days: number = 30): Promise<MachineResponse[]> {
     const machines = await machineModel.getUpcomingMaintenance(tenantId, days);
-    return machines.map((machine) => this.formatMachineResponse(machine));
+    return machines.map((machine: Machine) => this.formatMachineResponse(machine));
   }
 
   // Get statistics
@@ -486,14 +492,24 @@ export class MachinesService {
    */
   async getCategories(): Promise<MachineCategory[]> {
     const categories = await machineModel.getCategories();
-    return categories.map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      description: cat.description,
-      icon: cat.icon,
-      sortOrder: cat.sort_order,
-      isActive: cat.is_active,
-    }));
+    // DB returns snake_case, we map to camelCase for API
+    return categories.map(
+      (cat: {
+        id: number;
+        name: string;
+        description?: string;
+        icon?: string;
+        sort_order: number;
+        is_active: boolean;
+      }) => ({
+        id: cat.id,
+        name: cat.name,
+        description: cat.description,
+        icon: cat.icon,
+        sortOrder: cat.sort_order,
+        isActive: cat.is_active,
+      }),
+    );
   }
 
   // Helper: Format machine response

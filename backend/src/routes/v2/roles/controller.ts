@@ -14,7 +14,7 @@ import type { RoleCheckRequest, RoleName } from './types.js';
 /**
  *
  */
-export class RolesController {
+class RolesController {
   /**
    * Get all available roles
    * @param _req - The _req parameter

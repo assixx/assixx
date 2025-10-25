@@ -84,20 +84,10 @@ export interface SurveyUpdateData {
   assignments?: AssignmentCreateData[];
 }
 
-export interface ResponseSubmitData {
-  surveyId: number;
-  answers: {
-    questionId: number;
-    answerText?: string;
-    answerNumber?: number;
-    selectedOptions?: number[];
-  }[];
-}
-
 /**
  *
  */
-export class SurveysService {
+class SurveysService {
   /**
    * List surveys based on user role
    * @param tenantId - The tenant ID
@@ -126,16 +116,23 @@ export class SurveysService {
       }
 
       // Transform to API format
-      return surveys.map((survey) => {
-        const apisurvey = dbToApi(survey);
-        return {
-          ...apisurvey,
-          responseCount: survey.response_count ?? 0,
-          completedCount: survey.completed_count ?? 0,
-          creatorFirstName: survey.creator_first_name,
-          creatorLastName: survey.creator_last_name,
-        };
-      });
+      return surveys.map(
+        (survey: {
+          response_count?: number;
+          completed_count?: number;
+          creator_first_name?: string;
+          creator_last_name?: string;
+        }) => {
+          const apisurvey = dbToApi(survey);
+          return {
+            ...apisurvey,
+            responseCount: survey.response_count ?? 0,
+            completedCount: survey.completed_count ?? 0,
+            creatorFirstName: survey.creator_first_name,
+            creatorLastName: survey.creator_last_name,
+          };
+        },
+      );
     } catch (error: unknown) {
       console.error('Error listing surveys:', error);
       throw new ServiceError('SERVER_ERROR', 'Failed to list surveys');
@@ -153,7 +150,7 @@ export class SurveysService {
   ): Promise<void> {
     if (userRole === 'employee') {
       const surveys = await survey.getAllByTenantForEmployee(tenantId, userId, {});
-      const hasAccess = surveys.some((s) => s.id === surveyId);
+      const hasAccess = surveys.some((s: { id: number }) => s.id === surveyId);
       if (!hasAccess) {
         throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
       }
@@ -162,7 +159,7 @@ export class SurveysService {
 
     if (userRole === 'admin') {
       const surveys = await survey.getAllByTenantForAdmin(tenantId, userId, {});
-      const hasAccess = surveys.some((s) => s.id === surveyId);
+      const hasAccess = surveys.some((s: { id: number }) => s.id === surveyId);
       if (!hasAccess) {
         throw new ServiceError('FORBIDDEN', "You don't have access to this survey");
       }
@@ -176,15 +173,17 @@ export class SurveysService {
     const apisurvey = dbToApi(surveyData);
 
     if (surveyData.questions) {
-      apisurvey.questions = (surveyData.questions as Record<string, unknown>[]).map((q) => ({
-        ...dbToApi(q),
-        orderPosition: q.order_position ?? q.order_index,
-      }));
+      apisurvey.questions = (surveyData.questions as Record<string, unknown>[]).map(
+        (q: Record<string, unknown>) => ({
+          ...dbToApi(q),
+          orderPosition: q.order_position ?? q.order_index,
+        }),
+      );
     }
 
     if (surveyData.assignments) {
-      apisurvey.assignments = (surveyData.assignments as Record<string, unknown>[]).map((a) =>
-        dbToApi(a),
+      apisurvey.assignments = (surveyData.assignments as Record<string, unknown>[]).map(
+        (a: Record<string, unknown>) => dbToApi(a),
       );
     }
 
@@ -246,14 +245,14 @@ export class SurveysService {
         is_mandatory: data.isMandatory ?? false,
         start_date: data.startDate,
         end_date: data.endDate,
-        questions: data.questions?.map((q, index) => ({
+        questions: data.questions?.map((q: QuestionCreateData, index: number) => ({
           question_text: q.questionText,
           question_type: q.questionType,
           is_required: q.isRequired ?? true,
           order_position: q.orderPosition ?? index + 1,
           options: q.options,
         })),
-        assignments: data.assignments?.map((a) => ({
+        assignments: data.assignments?.map((a: AssignmentCreateData) => ({
           type: a.type,
           department_id: a.departmentId,
           team_id: a.teamId,
@@ -338,14 +337,14 @@ export class SurveysService {
         is_mandatory: data.isMandatory,
         start_date: data.startDate,
         end_date: data.endDate,
-        questions: data.questions?.map((q, index) => ({
+        questions: data.questions?.map((q: QuestionCreateData, index: number) => ({
           question_text: q.questionText,
           question_type: q.questionType,
           is_required: q.isRequired ?? true,
           order_position: q.orderPosition ?? index + 1,
           options: q.options,
         })),
-        assignments: data.assignments?.map((a) => ({
+        assignments: data.assignments?.map((a: AssignmentCreateData) => ({
           type: a.type,
           department_id: a.departmentId,
           team_id: a.teamId,
@@ -455,7 +454,7 @@ export class SurveysService {
   async getSurveyTemplates(tenantId: number): Promise<unknown[]> {
     try {
       const templates = await survey.getTemplates(tenantId);
-      return templates.map((template) => dbToApi(template));
+      return templates.map((template: Record<string, unknown>) => dbToApi(template));
     } catch (error: unknown) {
       console.error('Error getting templates:', error);
       throw new ServiceError('SERVER_ERROR', 'Failed to get survey templates');
@@ -531,21 +530,25 @@ export class SurveysService {
         completionRate: statistics.completion_rate,
         firstResponse: statistics.first_response,
         lastResponse: statistics.last_response,
-        questions: statistics.questions.map((q) => ({
+        questions: statistics.questions.map((q: SurveyStatistics['questions'][number]) => ({
           id: q.id,
           questionText: q.question_text,
           questionType: q.question_type,
-          responses: q.responses?.map((r) => ({
-            answerText: r.answer_text,
-            userId: r.user_id,
-            firstName: r.first_name,
-            lastName: r.last_name,
-          })),
-          options: q.options?.map((opt) => ({
-            optionId: opt.option_id,
-            optionText: opt.option_text,
-            count: opt.count,
-          })),
+          responses: q.responses?.map(
+            (r: NonNullable<SurveyStatistics['questions'][number]['responses']>[number]) => ({
+              answerText: r.answer_text,
+              userId: r.user_id,
+              firstName: r.first_name,
+              lastName: r.last_name,
+            }),
+          ),
+          options: q.options?.map(
+            (opt: NonNullable<SurveyStatistics['questions'][number]['options']>[number]) => ({
+              optionId: opt.option_id,
+              optionText: opt.option_text,
+              count: opt.count,
+            }),
+          ),
           statistics:
             q.statistics ?
               {

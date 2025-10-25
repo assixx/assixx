@@ -76,34 +76,6 @@ export async function getConnection(): Promise<PoolConnection> {
 }
 
 /**
- * Get a transactional database connection
- * @returns Promise with connection that has transaction methods
- */
-export async function getTransactionConnection(): Promise<{
-  connection: PoolConnection;
-  commit: () => Promise<void>;
-  rollback: () => Promise<void>;
-  release: () => void;
-}> {
-  const connection = await getConnection();
-
-  await connection.beginTransaction();
-
-  return {
-    connection,
-    commit: async () => {
-      await connection.commit();
-    },
-    rollback: async () => {
-      await connection.rollback();
-    },
-    release: () => {
-      connection.release();
-    },
-  };
-}
-
-/**
  * Transaction helper function
  * @param callback - Transaction callback function
  * @returns Promise with transaction result

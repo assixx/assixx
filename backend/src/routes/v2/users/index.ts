@@ -2,10 +2,11 @@
  * Users API v2 Routes
  * Implements standardized user management endpoints with camelCase responses
  */
-import express, { RequestHandler, Router } from 'express';
+import express, { RequestHandler, Response, Router } from 'express';
 
 import { rateLimiter } from '../../../middleware/rateLimiter';
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
+import type { AuthenticatedRequest } from '../../../types/request.types';
 import { typed } from '../../../utils/routeHandlers';
 import { usersController } from './users.controller';
 import { usersValidationZod } from './users.validation.zod';
@@ -83,7 +84,7 @@ router.get(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   usersValidationZod.list,
-  typed.auth((req, res) => usersController.listUsers(req, res)),
+  typed.auth((req: AuthenticatedRequest, res: Response) => usersController.listUsers(req, res)),
 );
 
 /**
@@ -613,7 +614,7 @@ router.post(
   '/:id/archive',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  typed.auth((req, res) => usersController.archiveUser(req, res)),
+  typed.auth((req: AuthenticatedRequest, res: Response) => usersController.archiveUser(req, res)),
 );
 
 /**
@@ -659,7 +660,7 @@ router.post(
   '/:id/unarchive',
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  typed.auth((req, res) => usersController.unarchiveUser(req, res)),
+  typed.auth((req: AuthenticatedRequest, res: Response) => usersController.unarchiveUser(req, res)),
 );
 
 /**
@@ -746,7 +747,7 @@ router.post(
   '/me/profile-picture',
   authenticateV2 as RequestHandler,
   rateLimiter.upload, // Limit uploads
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await usersController.uploadProfilePicture(req, res);
   }),
 );

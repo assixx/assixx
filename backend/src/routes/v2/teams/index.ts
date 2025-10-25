@@ -7,9 +7,10 @@
  *   name: Teams v2
  *   description: Team management API v2
  */
-import { RequestHandler, Router } from 'express';
+import { RequestHandler, Response, Router } from 'express';
 
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
+import type { AuthenticatedRequest } from '../../../types/request.types';
 import { typed } from '../../../utils/routeHandlers';
 import { teamsController } from './teams.controller';
 import { teamsValidationZod } from './teams.validation.zod';
@@ -54,7 +55,7 @@ router.get(
   '/',
   authenticateV2,
   teamsValidationZod.list,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.listTeams(req, res);
   }),
 );
@@ -88,7 +89,7 @@ router.get(
   '/:id',
   authenticateV2,
   teamsValidationZod.getById,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.getTeamById(req, res);
   }),
 );
@@ -124,7 +125,7 @@ router.post(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.create,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.createTeam(req, res);
   }),
 );
@@ -167,7 +168,7 @@ router.put(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.update,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.updateTeam(req, res);
   }),
 );
@@ -206,7 +207,7 @@ router.delete(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.delete,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.deleteTeam(req, res);
   }),
 );
@@ -240,7 +241,7 @@ router.get(
   '/:id/members',
   authenticateV2,
   teamsValidationZod.getMembers,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.getTeamMembers(req, res);
   }),
 );
@@ -291,7 +292,7 @@ router.post(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.addMember,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.addTeamMember(req, res);
   }),
 );
@@ -336,7 +337,7 @@ router.delete(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.removeMember,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.removeTeamMember(req, res);
   }),
 );
@@ -387,7 +388,7 @@ router.get(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.getMembers,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.getTeamMachines(req, res);
   }),
 );
@@ -438,7 +439,7 @@ router.post(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.addMachine,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.addTeamMachine(req, res);
   }),
 );
@@ -481,7 +482,7 @@ router.delete(
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
   teamsValidationZod.removeMember,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.removeTeamMachine(req, res);
   }),
 );

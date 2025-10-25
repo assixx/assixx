@@ -116,5 +116,3 @@ export const securityV2 = {
     return stack;
   },
 };
-
-export default securityV2;

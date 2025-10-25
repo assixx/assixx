@@ -342,6 +342,7 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
 
 export async function findUsersByRole(
   role: string,
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   includeArchived = false,
   tenantId: number, // PFLICHT - nicht mehr optional!
 ): Promise<DbUser[]> {
@@ -378,7 +379,7 @@ export async function findUsersByRole(
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
     // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    return rows.map((row) => ({
+    return rows.map((row: DbUser) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),
@@ -502,7 +503,7 @@ export async function updateUser(
     const values: unknown[] = [];
 
     // Für jedes übergebene Feld Query vorbereiten
-    Object.entries(userData).forEach(([key, value]) => {
+    Object.entries(userData).forEach(([key, value]: [string, unknown]) => {
       processUpdateField(key, value, allowedFields, fields, values);
     });
 
@@ -649,7 +650,7 @@ export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
     const [rows] = await executeQuery<DbUser[]>(query, values);
 
     // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-    return rows.map((row) => ({
+    return rows.map((row: DbUser) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),
@@ -922,7 +923,7 @@ export async function updateOwnProfile(
 
     // Nur erlaubte Felder übernehmen
     const updates = new Map<string, unknown>();
-    allowedFields.forEach((field) => {
+    allowedFields.forEach((field: string) => {
       const value = userData[field as keyof UserCreateData];
       if (value !== undefined) {
         updates.set(field, value);
@@ -940,7 +941,7 @@ export async function updateOwnProfile(
     const fields = [...updates.keys()];
     const values = [...updates.values()];
     // SECURITY FIX: Escape column names with backticks to prevent SQL injection
-    const setClause = fields.map((field) => `\`${field}\` = ?`).join(', ');
+    const setClause = fields.map((field: string) => `\`${field}\` = ?`).join(', ');
 
     const query = `UPDATE users SET ${setClause} WHERE id = ?`;
     values.push(userId);
@@ -979,7 +980,7 @@ export async function findAllUsers(filters: UserFilter): Promise<DbUser[]> {
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
     // Normalize boolean fields
-    return rows.map((row) => ({
+    return rows.map((row: DbUser) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),
@@ -1003,7 +1004,7 @@ export async function findAllUsersByTenant(tenantId: number): Promise<DbUser[]> 
     );
 
     // Normalize boolean fields
-    return rows.map((row) => ({
+    return rows.map((row: DbUser) => ({
       ...row,
       is_active: normalizeMySQLBoolean(row.is_active),
       is_archived: normalizeMySQLBoolean(row.is_archived),

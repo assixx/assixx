@@ -118,22 +118,3 @@ export interface GenerateRotationRequest {
   end_date: string;
   preview?: boolean;
 }
-
-export interface RotationPatternResponse {
-  success: boolean;
-  data?: {
-    pattern?: ShiftRotationPattern;
-    patterns?: ShiftRotationPattern[];
-    assignments?: ShiftRotationAssignment[];
-    history?: ShiftRotationHistory[];
-    generatedShifts?: {
-      user_id: number;
-      date: string;
-      shift_type: 'F' | 'S' | 'N';
-    }[];
-  };
-  error?: {
-    code: string;
-    message: string;
-  };
-}

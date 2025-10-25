@@ -12,7 +12,7 @@ import jwt from 'jsonwebtoken';
 import userModel from './models/user';
 import type { DbUser } from './models/user';
 import { DatabaseUser } from './types';
-import { TokenPayload, TokenValidationResult } from './types/auth.types';
+import { TokenPayload } from './types/auth.types';
 import { AuthUser, AuthenticatedRequest } from './types/request.types';
 import { RowDataPacket, query as executeQuery } from './utils/db';
 import { normalizeMySQLBoolean } from './utils/typeHelpers';
@@ -400,25 +400,3 @@ export function authorizeRole(role: 'admin' | 'employee' | 'root') {
     handleUnauthorizedAccess(req, res, userRole);
   };
 }
-
-/**
- * Token-Validierung ohne Middleware-Kontext
- * Nützlich für Tests und andere nicht-Express-Kontexte
- */
-export function validateToken(token: string): TokenValidationResult {
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
-    return {
-      valid: true,
-      user: decoded,
-    };
-  } catch (error: unknown) {
-    return {
-      valid: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-// Export for backwards compatibility
-export { JWT_SECRET };

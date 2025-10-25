@@ -144,6 +144,7 @@
     "eslint-plugin-tsdoc": "^0.4.0",
     "eslint-plugin-unicorn": "^61.0.2",
     "jest": "^30.2.0",
+    "knip": "5.66.3",
     "markdownlint-cli": "^0.45.0",
     "nodemon": "^3.1.10",
     "playwright": "^1.56.1",

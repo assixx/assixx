@@ -116,7 +116,10 @@ const rateLimiterConfigs = {
 
 // Create rate limiter instances
 const rateLimiters = Object.entries(rateLimiterConfigs).reduce(
-  (acc, [type, config]) => ({
+  (
+    acc: Record<string, RateLimitMiddleware>,
+    [type, config]: [string, Parameters<typeof rateLimit>[0]],
+  ) => ({
     ...acc,
     [type]: rateLimit(config),
   }),
@@ -156,5 +159,3 @@ export const securityStacks = {
   uploadEndpoint: [rateLimiter.upload],
   downloadEndpoint: [rateLimiter.download],
 };
-
-export default rateLimiter;

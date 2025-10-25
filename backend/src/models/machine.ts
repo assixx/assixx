@@ -363,18 +363,20 @@ class MachineModel {
   }
 
   // Get upcoming maintenance
-  async getUpcomingMaintenance(tenantId: number, days = 30): Promise<Machine[]> {
+  async getUpcomingMaintenance(tenantId: number, days?: number): Promise<Machine[]> {
+    const resolvedDays = days ?? 30;
+
     const query = `
       SELECT m.*, d.name as department_name
       FROM machines m
       LEFT JOIN departments d ON m.department_id = d.id AND d.tenant_id = m.tenant_id
-      WHERE m.tenant_id = ? 
+      WHERE m.tenant_id = ?
         AND m.is_active = TRUE
         AND m.next_maintenance <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
         AND m.status != 'decommissioned'
       ORDER BY m.next_maintenance ASC
     `;
-    const [rows] = await executeQuery<Machine[]>(query, [tenantId, days]);
+    const [rows] = await executeQuery<Machine[]>(query, [tenantId, resolvedDays]);
     return rows;
   }
 

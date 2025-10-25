@@ -31,7 +31,7 @@ export async function submitResponse(req: AuthenticatedRequest, res: Response): 
     const { answers: rawAnswers } = req.body as { answers: FrontendAnswer[] };
 
     // Transform camelCase from frontend to snake_case for service
-    const answers: SurveyAnswer[] = rawAnswers.map((answer) => ({
+    const answers: SurveyAnswer[] = rawAnswers.map((answer: FrontendAnswer) => ({
       question_id: answer.questionId ?? answer.question_id ?? 0,
       answer_text: answer.answerText ?? answer.answer_text,
       answer_number: answer.answerNumber ?? answer.answer_number,

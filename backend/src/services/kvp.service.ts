@@ -9,7 +9,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import kvpModel from '../models/kvp';
+import kvpModel, { type DbCategory } from '../models/kvp';
 
 // Import the actual KVP model methods
 // Destructured methods are unused - commented out to fix TypeScript errors
@@ -213,7 +213,19 @@ class KvpService {
       // Categories are global, no tenant filtering needed
       const categories = await kvpModel.getCategories();
       // Add tenant_id to match the Category interface expectation
-      return categories.map((cat) => ({ ...cat, tenant_id: tenantId }));
+      // DbCategory extends RowDataPacket which has index signature, ESLint sees this as unsafe
+      // but we know the types are correct from the database schema definition
+
+      return categories.map(
+        (cat: DbCategory): Category => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description,
+          color: cat.color,
+          icon: cat.icon,
+          tenant_id: tenantId,
+        }),
+      );
     } catch (error: unknown) {
       console.error('Error in KvpService.getCategories:', error);
       throw error;

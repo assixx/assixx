@@ -8,7 +8,7 @@ import type { Notification } from '../../types/utils.types';
 /**
  *
  */
-export class NotificationService {
+class NotificationService {
   private container: HTMLElement | null = null;
   private notifications = new Map<string, Notification>();
   private defaultDuration = 2000; // 2 seconds

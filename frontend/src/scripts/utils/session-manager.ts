@@ -351,6 +351,3 @@ export class SessionManager {
     }
   }
 }
-
-// Export for use in other modules
-export default SessionManager;

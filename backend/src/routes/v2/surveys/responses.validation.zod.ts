@@ -25,7 +25,7 @@ const AnswerSchema = z.object({
   question_id: IdSchema,
   answer_text: z.string().trim().optional(),
   answer_number: z.preprocess(
-    (val) => (typeof val === 'string' ? Number.parseFloat(val) : val),
+    (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
     z.number().optional(),
   ),
   answer_date: DateSchema.optional(),

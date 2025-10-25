@@ -4,7 +4,7 @@
  * No manual maintenance needed - adapts to schema changes automatically!
  */
 import fs from 'fs/promises';
-import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import path from 'path';
 
 import { getRedisClient } from '../config/redis';
@@ -319,7 +319,7 @@ export class TenantDeletionService {
     if (connection) {
       await executeAudit(connection);
     } else {
-      await transaction(async (conn) => {
+      await transaction(async (conn: PoolConnection) => {
         const wrappedConn = wrapConnection(conn);
         await executeAudit(wrappedConn);
       });
@@ -343,7 +343,7 @@ export class TenantDeletionService {
 
     const deletionLog: DeletionLog[] = [];
 
-    return await transaction(async (conn) => {
+    return await transaction(async (conn: PoolConnection) => {
       const wrappedConn = wrapConnection(conn);
 
       try {
@@ -449,7 +449,10 @@ export class TenantDeletionService {
     deletionLog: DeletionLog[],
     exportPath: string,
   ): DeletionResult {
-    const totalDeleted = deletionLog.reduce((sum, log) => sum + log.deleted, 0);
+    const totalDeleted = deletionLog.reduce(
+      (sum: number, log: DeletionLog) => sum + log.deleted,
+      0,
+    );
 
     logger.warn(`
       ========================================
@@ -651,7 +654,7 @@ export class TenantDeletionService {
     }
 
     // Count records in each table
-    await transaction(async (conn) => {
+    await transaction(async (conn: PoolConnection) => {
       const wrappedConn = wrapConnection(conn);
       const tables = await this.getTablesWithTenantId(wrappedConn);
 

@@ -86,7 +86,7 @@ class DepartmentGroupService {
       await connection.beginTransaction();
 
       // Prepare bulk insert values
-      const values = departmentIds.map((deptId) => [tenantId, groupId, deptId, addedBy]);
+      const values = departmentIds.map((deptId: number) => [tenantId, groupId, deptId, addedBy]);
 
       const placeholders = departmentIds.map(() => '(?, ?, ?, ?)').join(', ');
 
@@ -147,9 +147,10 @@ class DepartmentGroupService {
   async getGroupDepartments(
     groupId: number,
     tenantId: number,
-    includeSubgroups = true,
+    includeSubgroups?: boolean,
   ): Promise<Department[]> {
     try {
+      const resolvedIncludeSubgroups = includeSubgroups ?? true;
       const departments = new Map<number, Department>();
 
       // Get direct departments
@@ -170,9 +171,9 @@ class DepartmentGroupService {
       });
 
       // Get departments from subgroups if requested
-      if (includeSubgroups) {
+      if (resolvedIncludeSubgroups) {
         const subgroupDepts = await this.getSubgroupDepartments(groupId, tenantId);
-        subgroupDepts.forEach((dept) => {
+        subgroupDepts.forEach((dept: Department) => {
           departments.set(dept.id, dept);
         });
       }
@@ -210,7 +211,7 @@ class DepartmentGroupService {
         true, // Include nested subgroups
       );
 
-      subgroupDepts.forEach((dept) => {
+      subgroupDepts.forEach((dept: Department) => {
         departments.set(dept.id, dept);
       });
     }

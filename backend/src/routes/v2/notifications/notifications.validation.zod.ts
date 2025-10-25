@@ -56,7 +56,7 @@ export const ListNotificationsQuerySchema = PaginationSchema.extend({
   type: NotificationTypeSchema.optional(),
   priority: PrioritySchema.optional(),
   unread: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -107,7 +107,7 @@ export const CreateNotificationBodySchema = z
     scheduled_for: DateSchema.optional(),
   })
   .refine(
-    (data) => {
+    (data: { recipient_type: string; recipient_id?: number }) => {
       return data.recipient_type === 'all' || Boolean(data.recipient_id);
     },
     {

@@ -23,7 +23,7 @@ export const ListTeamsQuerySchema = z.object({
     .max(100, 'Search term must not exceed 100 characters')
     .optional(),
   includeMembers: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,

@@ -2210,12 +2210,6 @@ body.fullscreen-mode .note {
   background: rgb(255 255 255 / 5%);
 }
 
-/* Override breadcrumb alignment for blackboard page */
-body #breadcrumb-container + .card,
-body #breadcrumb-container + * {
-  margin-top: -15px !important;
-}
-
 /* ========================================
    CSS Classes for Inline Styles Replacement
    Generated: 2025-09-17
