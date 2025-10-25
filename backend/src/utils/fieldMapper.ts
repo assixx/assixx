@@ -43,10 +43,10 @@ export const fieldMapper = {
       // Handle arrays
       else if (Array.isArray(value)) {
         // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
-        result[camelKey] = value.map((item) =>
+        result[camelKey] = value.map((item: unknown) =>
           item != null && typeof item === 'object' ?
             this.dbToApi(item as Record<string, unknown>)
-          : (item as unknown),
+          : item,
         );
       } else {
         // eslint-disable-next-line security/detect-object-injection -- camelKey is derived from safe camelCase() transformation, not user input
@@ -86,10 +86,10 @@ export const fieldMapper = {
       // Handle arrays
       else if (Array.isArray(value)) {
         // eslint-disable-next-line security/detect-object-injection -- snakeKey is derived from safe snakeCase() transformation, not user input
-        result[snakeKey] = value.map((item) =>
+        result[snakeKey] = value.map((item: unknown) =>
           item != null && typeof item === 'object' ?
             this.apiToDb(item as Record<string, unknown>)
-          : (item as unknown),
+          : item,
         );
       } else {
         // eslint-disable-next-line security/detect-object-injection -- snakeKey is derived from safe snakeCase() transformation, not user input
@@ -115,12 +115,9 @@ export const fieldMapper = {
     } else {
       // Reverse lookup for toDb
       const reverseMapping = Object.entries(customMappings).find(
-        ([_, apiField]) => apiField === field,
+        ([_dbField, apiField]: [string, string]) => apiField === field,
       );
       return reverseMapping ? reverseMapping[0] : snakeCase(field);
     }
   },
 };
-
-// Default export for convenience
-export default fieldMapper;

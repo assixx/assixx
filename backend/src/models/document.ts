@@ -144,13 +144,15 @@ export async function findDocumentsByUserId(userId: number): Promise<DbDocument[
 export async function findDocumentsByUserIdAndCategory(
   userId: number,
   category: string,
-  archived = false,
+  archived?: boolean,
 ): Promise<DbDocument[]> {
-  logger.info(`Fetching ${category} documents for user ${userId} (archived: ${archived})`);
+  const resolvedArchived = archived ?? false;
+
+  logger.info(`Fetching ${category} documents for user ${userId} (archived: ${resolvedArchived})`);
   const query =
     'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
   try {
-    const [rows] = await executeQuery<DbDocument[]>(query, [userId, category, archived]);
+    const [rows] = await executeQuery<DbDocument[]>(query, [userId, category, resolvedArchived]);
     return rows;
   } catch (error: unknown) {
     logger.error(
@@ -880,7 +882,7 @@ export async function getDocumentCountsByCategory(
     salary: 0,
   };
 
-  results.forEach((row) => {
+  results.forEach((row: CategoryCount) => {
     if (Object.prototype.hasOwnProperty.call(counts, row.category)) {
       counts[row.category] = row.count;
     }

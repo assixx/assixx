@@ -24,6 +24,7 @@ import {
   getShiftTemplates,
   getShiftsByPlan,
 } from '../models/shift';
+import type { DbShift, DbShiftTemplate } from '../models/shift-types';
 
 // Interfaces - these would typically match the Shift model interfaces
 interface ShiftEntry {
@@ -206,7 +207,7 @@ class ShiftService {
     try {
       const templates = await getShiftTemplates(tenantId);
       // Map duration_hours to durationHours for interface compatibility
-      return templates.map((template) => ({
+      return templates.map((template: DbShiftTemplate) => ({
         ...template,
         durationHours: template.duration_hours,
       }));
@@ -320,7 +321,7 @@ class ShiftService {
     try {
       const shifts = await getShiftsByPlan(planId, tenantId, userId);
       // Map DbShift to ShiftEntry
-      return shifts.map((shift) => ({
+      return shifts.map((shift: DbShift) => ({
         id: shift.id,
         tenant_id: shift.tenant_id,
         shift_plan_id: shift.plan_id, // Map plan_id to shift_plan_id

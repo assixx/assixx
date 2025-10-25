@@ -6,9 +6,10 @@
  *   name: Machines v2
  *   description: Industrial machine management API v2
  */
-import express, { RequestHandler, Router } from 'express';
+import express, { RequestHandler, Response, Router } from 'express';
 
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
+import type { AuthenticatedRequest } from '../../../types/request.types';
 import { typed } from '../../../utils/routeHandlers';
 import { machinesController } from './machines.controller';
 import { machinesValidationZod } from './validation.zod';
@@ -85,7 +86,7 @@ router.get(
   '/',
   authenticateV2 as RequestHandler,
   machinesValidationZod.listMachines,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.listMachines(req, res);
   }),
 );
@@ -139,7 +140,7 @@ router.get(
 router.get(
   '/statistics',
   authenticateV2 as RequestHandler,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.getStatistics(req, res);
   }),
 );
@@ -186,7 +187,7 @@ router.get(
 router.get(
   '/categories',
   authenticateV2 as RequestHandler,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.getCategories(req, res);
   }),
 );
@@ -233,7 +234,7 @@ router.get(
   '/upcoming-maintenance',
   authenticateV2 as RequestHandler,
   machinesValidationZod.upcomingMaintenance,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.getUpcomingMaintenance(req, res);
   }),
 );
@@ -331,7 +332,7 @@ router.post(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machinesValidationZod.addMaintenanceRecord,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.addMaintenanceRecord(req, res);
   }),
 );
@@ -373,7 +374,7 @@ router.get(
   '/:id',
   authenticateV2 as RequestHandler,
   machinesValidationZod.getMachine,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.getMachine(req, res);
   }),
 );
@@ -419,7 +420,7 @@ router.get(
   '/:id/maintenance',
   authenticateV2 as RequestHandler,
   machinesValidationZod.getMachine,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.getMaintenanceHistory(req, res);
   }),
 );
@@ -561,7 +562,7 @@ router.post(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machinesValidationZod.createMachine,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.createMachine(req, res);
   }),
 );
@@ -700,7 +701,7 @@ router.put(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machinesValidationZod.updateMachine,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.updateMachine(req, res);
   }),
 );
@@ -749,7 +750,7 @@ router.delete(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machinesValidationZod.deleteMachine,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.deleteMachine(req, res);
   }),
 );
@@ -798,7 +799,7 @@ router.put(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machinesValidationZod.getMachine,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.deactivateMachine(req, res);
   }),
 );
@@ -847,7 +848,7 @@ router.put(
   authenticateV2 as RequestHandler,
   requireRoleV2(['admin']) as RequestHandler,
   machinesValidationZod.getMachine,
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     void machinesController.activateMachine(req, res);
   }),
 );

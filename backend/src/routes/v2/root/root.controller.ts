@@ -21,7 +21,7 @@ import {
 /**
  *
  */
-export class RootController {
+class RootController {
   /**
    * @param req - The request object
    * @param res - The response object

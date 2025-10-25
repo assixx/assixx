@@ -38,7 +38,7 @@ interface ChatMessageResult {
 /**
  *
  */
-export class ChatController {
+class ChatController {
   /**
    * Helper function for unimplemented features
    */

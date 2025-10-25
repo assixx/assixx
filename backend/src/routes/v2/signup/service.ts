@@ -13,7 +13,7 @@ import type { SignupRequest, SubdomainValidation } from './types.js';
 /**
  *
  */
-export class SignupService {
+class SignupService {
   /**
    * Helper: Log registration start
    */

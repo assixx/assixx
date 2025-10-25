@@ -104,6 +104,11 @@ export function loadStaticFiles(app: Application): void {
   const uploadsPath = path.join(projectRoot, 'uploads');
   serveStatic(app, '/uploads', uploadsPath, { cacheImages: true });
 
+  // Serve favicon.ico from public directory
+  app.get('/favicon.ico', (_req: Request, res: Response): void => {
+    res.sendFile(path.join(publicPath, 'favicon.ico'));
+  });
+
   // Development-only: Storybook
   if (process.env.NODE_ENV !== 'production') {
     const storybookPath = path.join(projectRoot, 'storybook-static');

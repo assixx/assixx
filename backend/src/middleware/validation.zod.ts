@@ -11,7 +11,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-parameters */
 // Type parameters are necessary here for proper type inference from Zod schemas
 import { NextFunction, Request, Response } from 'express';
-import { ZodError, z } from 'zod';
+import { ZodError, ZodIssue, z } from 'zod';
 
 import { errorResponse } from '../utils/apiResponse';
 
@@ -20,7 +20,7 @@ import { errorResponse } from '../utils/apiResponse';
  * Converts Zod errors to our API error format
  */
 function formatZodError(error: ZodError): { field: string; message: string }[] {
-  return error.issues.map((issue) => ({
+  return error.issues.map((issue: ZodIssue) => ({
     field: issue.path.join('.') || 'root',
     message: issue.message,
   }));
@@ -165,10 +165,3 @@ export function createValidator<T extends z.ZodType>(
 
 // Re-export Zod for convenience
 export { z, type ZodError } from 'zod';
-export type ZodSchema = z.ZodType; // Alias for backwards compatibility
-
-/**
- * Type helper for extracting inferred types
- * Usage: type MyType = InferZod\<typeof mySchema\>
- */
-export type InferZod<T extends z.ZodType> = z.infer<T>;

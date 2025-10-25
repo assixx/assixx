@@ -170,7 +170,7 @@ export async function getSystemSettings(
 
   const [rows] = await executeQuery<RowDataPacket[]>(query, params);
 
-  return rows.map((row) => {
+  return rows.map((row: RowDataPacket) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
       settingValue: parseSettingValue(
@@ -379,7 +379,7 @@ export async function getTenantSettings(
 
   const [rows] = await executeQuery<RowDataPacket[]>(query, params);
 
-  return rows.map((row) => {
+  return rows.map((row: RowDataPacket) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
       settingValue: parseSettingValue(
@@ -600,7 +600,7 @@ export async function getUserSettings(
 
   const [rows] = await executeQuery<RowDataPacket[]>(query, params);
 
-  return rows.map((row) => {
+  return rows.map((row: RowDataPacket) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
       settingValue: parseSettingValue(

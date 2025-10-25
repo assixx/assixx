@@ -20,7 +20,7 @@ interface SignupResult {
 /**
  *
  */
-export class SignupController {
+class SignupController {
   /**
    * Helper: Log signup request details
    */
@@ -50,19 +50,17 @@ export class SignupController {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request data',
-          details: validationErrors.map((error) => {
-            // Access properties safely using in operator
-            let field = 'general';
-            let message = 'Validation error';
+          details: validationErrors.map((error: unknown) => {
+            // Cast to expected ValidationError shape from express-validator
+            const err = error as { type?: string; path?: string; msg?: unknown };
 
-            if ('type' in error && error.type === 'field' && 'path' in error) {
-              // error.path is already a string when type is 'field'
-              field = error.path;
-            }
-
-            if ('msg' in error) {
-              message = String(error.msg);
-            }
+            const field = err.type === 'field' && err.path !== undefined ? err.path : 'general';
+            const message =
+              err.msg !== undefined ?
+                typeof err.msg === 'string' ?
+                  err.msg
+                : JSON.stringify(err.msg)
+              : 'Validation error';
 
             return { field, message };
           }),
@@ -221,10 +219,19 @@ export class SignupController {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request data',
-          details: errors.array().map((error) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
+          details: errors.array().map((error: unknown) => {
+            // Cast to expected ValidationError shape from express-validator
+            const err = error as { type?: string; path?: string; msg?: unknown };
+            return {
+              field: err.type === 'field' && err.path !== undefined ? err.path : 'general',
+              message:
+                err.msg !== undefined ?
+                  typeof err.msg === 'string' ?
+                    err.msg
+                  : JSON.stringify(err.msg)
+                : 'Validation error',
+            };
+          }),
         },
       });
       return;

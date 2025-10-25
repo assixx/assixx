@@ -83,22 +83,3 @@ export interface UserDbFields {
   availability_end?: Date | null;
   availability_notes?: string | null;
 }
-
-// User creation data for database
-export interface UserCreateData {
-  email: string;
-  username: string;
-  password: string;
-  first_name: string;
-  last_name: string;
-  tenant_id: number;
-  role?: string;
-  department_id?: number;
-  position?: string;
-  phone?: string;
-  address?: string;
-  employee_id?: string;
-  is_active: boolean;
-  created_at: Date;
-  updated_at: Date;
-}

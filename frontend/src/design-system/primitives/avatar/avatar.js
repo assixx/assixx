@@ -91,7 +91,7 @@ export function getColorClass(username) {
  * @param {string} options.imageUrl - Optional image URL
  * @returns {HTMLElement} Avatar element
  */
-export function createAvatar(name, username, options = {}) {
+function createAvatar(name, username, options = {}) {
   const { size = 'md', status = null, shape = 'circle', imageUrl = null } = options;
 
   // Create avatar container
@@ -153,7 +153,7 @@ export function createAvatar(name, username, options = {}) {
  * @param {number} options.max - Maximum avatars to show (default: 5)
  * @returns {HTMLElement} Avatar group element
  */
-export function createAvatarGroup(users, options = {}) {
+function createAvatarGroup(users, options = {}) {
   const { size = 'md', max = 5 } = options;
 
   const group = document.createElement('div');
@@ -193,7 +193,7 @@ export function createAvatarGroup(users, options = {}) {
  * Example HTML:
  * <div class="avatar" data-avatar-name="John Doe" data-avatar-username="john.doe"></div>
  */
-export function initAvatars() {
+function initAvatars() {
   const avatars = document.querySelectorAll('[data-avatar-name]');
 
   avatars.forEach((element) => {
@@ -224,11 +224,3 @@ export function initAvatars() {
     element.replaceWith(avatar);
   });
 }
-
-export default {
-  getInitials,
-  getColorClass,
-  createAvatar,
-  createAvatarGroup,
-  initAvatars,
-};

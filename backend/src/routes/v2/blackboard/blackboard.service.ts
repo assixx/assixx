@@ -84,7 +84,7 @@ export interface AttachmentData {
 /**
  *
  */
-export class BlackboardService {
+class BlackboardService {
   /**
    * List all blackboard entries visible to the user
    * @param tenantId - The tenant ID
@@ -110,7 +110,7 @@ export class BlackboardService {
       };
 
       const result = (await blackboard.getAllEntries(tenantId, userId, options)) as {
-        entries: unknown[];
+        entries: DbBlackboardEntry[];
         pagination: {
           total: number;
           page: number;
@@ -120,7 +120,7 @@ export class BlackboardService {
       };
 
       return {
-        entries: result.entries.map((entry) => this.transformEntry(entry as DbBlackboardEntry)),
+        entries: result.entries.map((entry: DbBlackboardEntry) => this.transformEntry(entry)),
         pagination: result.pagination,
       };
     } catch (error: unknown) {
@@ -291,7 +291,7 @@ export class BlackboardService {
     tenantId: number,
   ): Promise<Record<string, unknown>[]> {
     const users = await blackboard.getConfirmationStatus(entryId, tenantId);
-    return users.map((user) => dbToApi(user));
+    return users.map((user: Record<string, unknown>) => dbToApi(user));
   }
 
   /**
@@ -303,10 +303,11 @@ export class BlackboardService {
   async getDashboardEntries(
     tenantId: number,
     userId: number,
+    // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
     limit = 3,
   ): Promise<BlackboardEntry[]> {
     const entries = await blackboard.getDashboardEntries(tenantId, userId, limit);
-    return entries.map((entry) => this.transformEntry(entry));
+    return entries.map((entry: DbBlackboardEntry) => this.transformEntry(entry));
   }
 
   /**
@@ -315,7 +316,7 @@ export class BlackboardService {
    */
   async getAllTags(tenantId: number): Promise<Record<string, unknown>[]> {
     const tags = await blackboard.getAllTags(tenantId);
-    return tags.map((tag) => dbToApi(tag));
+    return tags.map((tag: Record<string, unknown>) => dbToApi(tag));
   }
 
   /**
@@ -325,7 +326,7 @@ export class BlackboardService {
   async getEntryTags(entryId: number): Promise<string[]> {
     const tags = await blackboard.getEntryTags(entryId);
     // Return just the tag names as string array for backward compatibility
-    return tags.map((tag) => tag.name);
+    return tags.map((tag: { name: string }) => tag.name);
   }
 
   /**
@@ -355,7 +356,7 @@ export class BlackboardService {
    */
   async getEntryAttachments(entryId: number): Promise<Record<string, unknown>[]> {
     const attachments = await blackboard.getEntryAttachments(entryId);
-    return attachments.map((attachment) => dbToApi(attachment));
+    return attachments.map((attachment: Record<string, unknown>) => dbToApi(attachment));
   }
 
   /**

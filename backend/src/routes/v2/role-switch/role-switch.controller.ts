@@ -14,7 +14,7 @@ import { ServiceError, roleSwitchService } from './role-switch.service.js';
  * @param req - The request object
  * @param res - The response object
  */
-export async function switchToEmployee(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function switchToEmployee(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     // SECURITY: All values from authenticated token
     const userId = req.user.id;
@@ -44,7 +44,7 @@ export async function switchToEmployee(req: AuthenticatedRequest, res: Response)
  * @param req - The request object
  * @param res - The response object
  */
-export async function switchToOriginal(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function switchToOriginal(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     // SECURITY: All values from authenticated token
     const userId = req.user.id;
@@ -74,7 +74,7 @@ export async function switchToOriginal(req: AuthenticatedRequest, res: Response)
  * @param req - The request object
  * @param res - The response object
  */
-export async function rootToAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function rootToAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     // SECURITY: All values from authenticated token
     const userId = req.user.id;
@@ -104,7 +104,7 @@ export async function rootToAdmin(req: AuthenticatedRequest, res: Response): Pro
  * @param req - The request object
  * @param res - The response object
  */
-export function getStatus(req: AuthenticatedRequest, res: Response): void {
+function getStatus(req: AuthenticatedRequest, res: Response): void {
   try {
     // Return current role information from token
     const status = {

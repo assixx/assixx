@@ -55,20 +55,20 @@ const StatusAfterSchema = z.enum(['operational', 'needs_repair', 'decommissioned
 /**
  * List machines query parameters
  */
-export const ListMachinesQuerySchema = z.object({
+const ListMachinesQuerySchema = z.object({
   status: MachineStatusSchema.optional(),
   machineType: MachineTypeSchema.optional(),
   departmentId: IdSchema.optional(),
   search: z.string().trim().optional(),
   isActive: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
     z.boolean().optional(),
   ),
   needsMaintenance: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -79,9 +79,9 @@ export const ListMachinesQuerySchema = z.object({
 /**
  * Upcoming maintenance query parameters
  */
-export const UpcomingMaintenanceQuerySchema = z.object({
+const UpcomingMaintenanceQuerySchema = z.object({
   days: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       typeof val === 'string' || typeof val === 'number' ?
         Number.parseInt(val.toString(), 10)
       : val,
@@ -96,7 +96,7 @@ export const UpcomingMaintenanceQuerySchema = z.object({
 /**
  * Machine ID parameter validation
  */
-export const MachineIdParamSchema = z.object({
+const MachineIdParamSchema = z.object({
   id: IdSchema,
 });
 
@@ -107,7 +107,7 @@ export const MachineIdParamSchema = z.object({
 /**
  * Create machine request body
  */
-export const CreateMachineBodySchema = z.object({
+const CreateMachineBodySchema = z.object({
   name: z
     .string()
     .trim()
@@ -154,7 +154,7 @@ export const CreateMachineBodySchema = z.object({
 /**
  * Update machine request body (all fields optional)
  */
-export const UpdateMachineBodySchema = z.object({
+const UpdateMachineBodySchema = z.object({
   name: z
     .string()
     .trim()
@@ -203,7 +203,7 @@ export const UpdateMachineBodySchema = z.object({
 /**
  * Add maintenance record request body
  */
-export const AddMaintenanceRecordBodySchema = z.object({
+const AddMaintenanceRecordBodySchema = z.object({
   machineId: z.number().int().positive('Machine ID is required'),
   maintenanceType: MaintenanceTypeSchema,
   performedDate: DateSchema,
@@ -233,17 +233,6 @@ export const AddMaintenanceRecordBodySchema = z.object({
   nextMaintenanceDate: DateSchema.optional(),
   reportUrl: z.string().trim().max(500, 'Report URL must not exceed 500 characters').optional(),
 });
-
-// ============================================================
-// TYPE EXPORTS
-// ============================================================
-
-export type ListMachinesQuery = z.infer<typeof ListMachinesQuerySchema>;
-export type UpcomingMaintenanceQuery = z.infer<typeof UpcomingMaintenanceQuerySchema>;
-export type MachineIdParam = z.infer<typeof MachineIdParamSchema>;
-export type CreateMachineBody = z.infer<typeof CreateMachineBodySchema>;
-export type UpdateMachineBody = z.infer<typeof UpdateMachineBodySchema>;
-export type AddMaintenanceRecordBody = z.infer<typeof AddMaintenanceRecordBodySchema>;
 
 // ============================================================
 // VALIDATION MIDDLEWARE EXPORTS

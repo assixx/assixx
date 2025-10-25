@@ -39,7 +39,7 @@ interface DbAuditEntry extends RowDataPacket {
 /**
  *
  */
-export class AuditTrailService {
+class AuditTrailService {
   /**
    * Create a new audit entry
    * @param tenantId - The tenant ID
@@ -190,7 +190,7 @@ export class AuditTrailService {
       [...params, limit, offset],
     );
 
-    const entries = rows.map((row) => this.mapToAuditEntry(row));
+    const entries = rows.map((row: DbAuditEntry) => this.mapToAuditEntry(row));
 
     return { entries, total };
   }
@@ -249,23 +249,23 @@ export class AuditTrailService {
     byStatus: { success: number; failure: number };
   } {
     const byAction: Record<string, number> = {};
-    actionRows.forEach((row) => {
+    actionRows.forEach((row: RowDataPacket) => {
       byAction[row.action as string] = row.count as number;
     });
 
     const byResourceType: Record<string, number> = {};
-    resourceRows.forEach((row) => {
+    resourceRows.forEach((row: RowDataPacket) => {
       byResourceType[row.resource_type as string] = row.count as number;
     });
 
-    const byUser = userRows.map((row) => ({
+    const byUser = userRows.map((row: RowDataPacket) => ({
       userId: row.user_id as number,
       userName: row.user_name ? (row.user_name as string) : 'Unknown',
       count: row.count as number,
     }));
 
     const byStatus = { success: 0, failure: 0 };
-    statusRows.forEach((row) => {
+    statusRows.forEach((row: RowDataPacket) => {
       if (row.status === 'success') {
         byStatus.success = row.count as number;
       } else if (row.status === 'failure') {
@@ -378,15 +378,17 @@ export class AuditTrailService {
       params,
     );
 
-    const entries = rows.map((row) => this.mapToAuditEntry(row));
+    const entries = rows.map((row: DbAuditEntry) => this.mapToAuditEntry(row));
 
     // Calculate summary
-    const uniqueUsers = new Set(entries.map((e) => e.userId)).size;
-    const dataAccessCount = entries.filter((e) => ['read', 'export'].includes(e.action)).length;
-    const dataModificationCount = entries.filter((e) =>
+    const uniqueUsers = new Set(entries.map((e: AuditEntry) => e.userId)).size;
+    const dataAccessCount = entries.filter((e: AuditEntry) =>
+      ['read', 'export'].includes(e.action),
+    ).length;
+    const dataModificationCount = entries.filter((e: AuditEntry) =>
       ['create', 'update'].includes(e.action),
     ).length;
-    const dataDeletionCount = entries.filter((e) => e.action === 'delete').length;
+    const dataDeletionCount = entries.filter((e: AuditEntry) => e.action === 'delete').length;
 
     return {
       tenantId,

@@ -137,4 +137,3 @@ export function loadRateLimiting(app: Application): void {
 }
 
 // Export helper function for use in other loaders if needed
-export { isStaticAsset };

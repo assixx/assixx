@@ -5,10 +5,11 @@
 import bcrypt from 'bcryptjs';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import rootLog from '../../../models/rootLog';
+import rootLog, { type DbRootLog } from '../../../models/rootLog';
 import tenantModel from '../../../models/tenant.js';
-import userModel from '../../../models/user.js';
+import userModel, { type DbUser } from '../../../models/user.js';
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
+import type { DatabaseTenant } from '../../../types/models';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute } from '../../../utils/db.js';
 import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
@@ -60,7 +61,7 @@ interface TenantRow extends RowDataPacket {
 /**
  *
  */
-export class RootService {
+class RootService {
   /**
    * Get all admin users for a tenant
    * @param tenantId - The tenant ID
@@ -75,7 +76,7 @@ export class RootService {
 
       // Add tenant information
       return await Promise.all(
-        admins.map(async (admin) => {
+        admins.map(async (admin: DbUser) => {
           let tenantName: string | undefined;
           if (admin.tenant_id) {
             const tenant = await tenantModel.findById(admin.tenant_id);
@@ -336,7 +337,7 @@ export class RootService {
 
       const logs = await rootLog.getByUserId(adminId, days ?? 0);
 
-      return logs.map((log) => ({
+      return logs.map((log: DbRootLog) => ({
         id: log.id,
         userId: log.user_id,
         action: log.action,
@@ -370,7 +371,7 @@ export class RootService {
 
       // Get user counts for each tenant
       return await Promise.all(
-        tenants.map(async (tenant) => {
+        tenants.map(async (tenant: DatabaseTenant) => {
           const [adminCount] = await execute<RowDataPacket[]>(
             "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'admin'",
             [tenant.id],

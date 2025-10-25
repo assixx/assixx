@@ -2,10 +2,11 @@
  * Roles Routes v2
  * Handles role management and information
  */
-import { Router } from 'express';
+import { Response, Router } from 'express';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
 import { validate } from '../../../middleware/validation.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { rolesController } from './controller.js';
 import { checkRoleValidation, getRoleValidation } from './validation.js';
@@ -64,7 +65,7 @@ router.use(authenticateToken);
  */
 router.get(
   '/',
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     rolesController.getAllRoles(req, res);
   }),
 );
@@ -110,7 +111,7 @@ router.get(
  */
 router.get(
   '/hierarchy',
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     rolesController.getRoleHierarchy(req, res);
   }),
 );
@@ -145,7 +146,7 @@ router.get(
  */
 router.get(
   '/assignable',
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     rolesController.getAssignableRoles(req, res);
   }),
 );
@@ -190,7 +191,7 @@ router.get(
 router.get(
   '/:id',
   validate(getRoleValidation),
-  typed.auth((req, res) => {
+  typed.auth((req: AuthenticatedRequest, res: Response) => {
     rolesController.getRoleById(req, res);
   }),
 );
@@ -262,7 +263,7 @@ router.get(
 router.post(
   '/check',
   validate(checkRoleValidation),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await rolesController.checkUserRole(req, res);
   }),
 );

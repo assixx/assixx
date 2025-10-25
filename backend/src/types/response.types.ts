@@ -146,12 +146,12 @@ export function successResponse<T>(data: T, message?: string): ApiResponse<T> {
   };
 }
 
-export function errorResponse(error: string, statusCode = 500, code?: string): ErrorResponse {
+export function errorResponse(error: string, statusCode?: number, code?: string): ErrorResponse {
   return {
     success: false,
     error,
     code,
-    statusCode,
+    statusCode: statusCode ?? 500,
     timestamp: new Date().toISOString(),
   };
 }

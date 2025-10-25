@@ -5,7 +5,7 @@
  *   - name: Blackboard v2
  *     description: Company announcements and bulletin board API v2
  */
-import { Router } from 'express';
+import { Request, Router } from 'express';
 import fsCallback from 'fs';
 import multer from 'multer';
 import path from 'path';
@@ -23,7 +23,11 @@ const router = Router();
 // Configure multer for blackboard attachments
 // Note: multer requires callback-based API, cannot use async/await
 const storage = multer.diskStorage({
-  destination: (req, _file, cb) => {
+  destination: (
+    req: Request,
+    _file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void,
+  ) => {
     const authReq = req as AuthenticatedRequest;
     const tenantId = authReq.user.tenant_id;
     const baseUploadDir = getUploadDirectory('blackboard');
@@ -41,7 +45,7 @@ const storage = multer.diskStorage({
     // - tenantId: from authenticated user object, not user input
     // - path.join() prevents directory traversal attacks
     // eslint-disable-next-line security/detect-non-literal-fs-filename
-    fsCallback.mkdir(uploadDir, { recursive: true }, (error) => {
+    fsCallback.mkdir(uploadDir, { recursive: true }, (error: Error | null) => {
       if (error) {
         cb(error, '');
       } else {
@@ -49,7 +53,11 @@ const storage = multer.diskStorage({
       }
     });
   },
-  filename: (_req, file, cb) => {
+  filename: (
+    _req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void,
+  ) => {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
@@ -60,7 +68,7 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
 
     if (allowedTypes.includes(file.mimetype)) {

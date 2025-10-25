@@ -191,7 +191,7 @@ interface MessageRow extends RowDataPacket {
 /**
  *
  */
-export class ChatService {
+class ChatService {
   /**
    * Build chat users query based on user role
    */
@@ -235,7 +235,7 @@ export class ChatService {
     if (search === undefined || search === '') return users;
 
     const searchLower = search.toLowerCase();
-    return users.filter((user) => {
+    return users.filter((user: ChatUserRow) => {
       const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.toLowerCase();
       return (
         user.username.toLowerCase().includes(searchLower) ||
@@ -289,7 +289,7 @@ export class ChatService {
       const [users] = await execute<ChatUserRow[]>(query, params);
       const filteredUsers = this.filterUsersBySearch(users, search);
 
-      return filteredUsers.map((user) => this.transformToChatUser(user));
+      return filteredUsers.map((user: ChatUserRow) => this.transformToChatUser(user));
     } catch {
       throw new ServiceError('CHAT_USERS_ERROR', 'Failed to fetch chat users', 500);
     }
@@ -399,8 +399,8 @@ export class ChatService {
     unreadCount: number,
   ): Conversation {
     const convParticipants = participants
-      .filter((p) => p.conversation_id === conv.id)
-      .map((p) => ({
+      .filter((p: ParticipantRow) => p.conversation_id === conv.id)
+      .map((p: ParticipantRow) => ({
         id: p.user_id,
         userId: p.user_id,
         username: p.username,
@@ -488,7 +488,7 @@ export class ChatService {
 
       log('[Chat Service] Full query:', query);
       const [conversations] = await execute<ConversationRow[]>(query);
-      const conversationIds = conversations.map((c) => c.id);
+      const conversationIds = conversations.map((c: ConversationRow) => c.id);
 
       // Get participants and unread counts in parallel
       const [participants, unreadCounts] = await Promise.all([
@@ -497,7 +497,7 @@ export class ChatService {
       ]);
 
       // Transform conversations
-      const transformedConversations = conversations.map((conv) => {
+      const transformedConversations = conversations.map((conv: ConversationRow) => {
         const unreadCount = unreadCounts.get(conv.id) ?? 0;
         return this.transformConversation(conv, participants, unreadCount);
       });
@@ -608,7 +608,7 @@ export class ChatService {
     conversationId: number,
   ): Promise<Conversation> {
     const conversations = await this.getConversations(tenantId, creatorId, { limit: 100 });
-    const conversation = conversations.data.find((c) => c.id === conversationId);
+    const conversation = conversations.data.find((c: Conversation) => c.id === conversationId);
 
     if (!conversation) {
       throw new ServiceError('CONVERSATION_NOT_FOUND', 'Failed to retrieve conversation', 404);
@@ -825,7 +825,7 @@ export class ChatService {
       const [messages] = await execute<MessageRow[]>(messagesQuery);
 
       // Transform messages
-      const transformedMessages = messages.map((msg) => this.transformMessage(msg));
+      const transformedMessages = messages.map((msg: MessageRow) => this.transformMessage(msg));
 
       // Return with pagination
       const totalPages = Math.ceil(totalItems / limit);
@@ -984,14 +984,25 @@ export class ChatService {
 
       const [rows] = await execute<UnreadRow[]>(query);
 
-      const conversations = rows.map((row) => ({
+      const conversations = rows.map((row: UnreadRow) => ({
         conversationId: row.conversationId,
         conversationName: row.conversationName,
         unreadCount: Number(row.unreadCount),
         lastMessageTime: new Date(row.lastMessageTime),
       }));
 
-      const totalUnread = conversations.reduce((sum, conv) => sum + conv.unreadCount, 0);
+      const totalUnread = conversations.reduce(
+        (
+          sum: number,
+          conv: {
+            conversationId: number;
+            conversationName: string | null;
+            unreadCount: number;
+            lastMessageTime: Date;
+          },
+        ) => sum + conv.unreadCount,
+        0,
+      );
 
       return {
         totalUnread,
@@ -1029,7 +1040,6 @@ export class ChatService {
         );
       }
 
-      // eslint-disable-next-line max-lines
       log('[Chat Service] User is participant, updating last read message');
 
       // Get the latest message id in the conversation
@@ -1203,7 +1213,7 @@ export class ChatService {
         WHERE cp.conversation_id = ${conversationId}`,
       );
 
-      const convParticipants = participants.map((p) => ({
+      const convParticipants = participants.map((p: ConvParticipantRow) => ({
         id: p.user_id, // Add id field for frontend
         userId: p.user_id,
         username: p.username,

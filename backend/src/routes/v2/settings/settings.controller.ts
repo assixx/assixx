@@ -428,14 +428,16 @@ export const bulkUpdate = async (req: AuthenticatedRequest, res: Response): Prom
     const contextId = type === 'user' ? req.user.id : req.user.tenant_id;
 
     // Convert settings to SettingData format
-    const settingsData: SettingData[] = settings.map((setting) => ({
-      setting_key: setting.setting_key,
-      setting_value: setting.setting_value,
-      value_type: setting.value_type ? (setting.value_type as SettingType) : 'string',
-      category: setting.category ? (setting.category as SettingCategory) : 'other',
-      description: setting.description,
-      is_public: setting.is_public,
-    }));
+    const settingsData: SettingData[] = settings.map(
+      (setting: BulkUpdateRequest['settings'][number]) => ({
+        setting_key: setting.setting_key,
+        setting_value: setting.setting_value,
+        value_type: setting.value_type ? (setting.value_type as SettingType) : 'string',
+        category: setting.category ? (setting.category as SettingCategory) : 'other',
+        description: setting.description,
+        is_public: setting.is_public,
+      }),
+    );
 
     const results = await settingsService.bulkUpdateSettings(
       type,

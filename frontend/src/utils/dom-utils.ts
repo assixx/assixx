@@ -120,7 +120,7 @@ export function isVisible(selector: string): boolean {
  */
 export async function waitForElement<T extends HTMLElement = HTMLElement>(
   selector: string,
-  timeout = 5000,
+  timeout: number = 5000,
 ): Promise<T> {
   return await new Promise((resolve, reject) => {
     const element = $$(selector) as T | null;

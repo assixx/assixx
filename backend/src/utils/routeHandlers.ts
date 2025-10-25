@@ -19,7 +19,7 @@ import {
 /**
  * Type-safe wrapper for authenticated route handlers
  */
-export function authHandler(
+function authHandler(
   handler: (req: AuthenticatedRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
@@ -30,7 +30,7 @@ export function authHandler(
 /**
  * Type-safe wrapper for route handlers with params
  */
-export function paramsHandler<P extends ParamsDictionary = ParamsDictionary>(
+function paramsHandler<P extends ParamsDictionary = ParamsDictionary>(
   handler: (req: ParamsRequest<P>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<P> {
   return (async (req: Request<P>, res: Response, next: NextFunction) => {
@@ -41,7 +41,7 @@ export function paramsHandler<P extends ParamsDictionary = ParamsDictionary>(
 /**
  * Type-safe wrapper for route handlers with body
  */
-export function bodyHandler<B = unknown>(
+function bodyHandler<B = unknown>(
   handler: (req: BodyRequest<B>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<ParamsDictionary, unknown, B> {
   return (async (req: Request<ParamsDictionary, unknown, B>, res: Response, next: NextFunction) => {
@@ -52,7 +52,7 @@ export function bodyHandler<B = unknown>(
 /**
  * Type-safe wrapper for route handlers with query
  */
-export function queryHandler<Q extends ParsedQs = ParsedQs>(
+function queryHandler<Q extends ParsedQs = ParsedQs>(
   handler: (req: QueryRequest<Q>, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler<ParamsDictionary, unknown, unknown, Q> {
   return (async (
@@ -67,7 +67,7 @@ export function queryHandler<Q extends ParsedQs = ParsedQs>(
 /**
  * Type-safe wrapper for route handlers with params and body
  */
-export function paramsBodyHandler<P extends ParamsDictionary = ParamsDictionary, B = unknown>(
+function paramsBodyHandler<P extends ParamsDictionary = ParamsDictionary, B = unknown>(
   handler: (
     req: ParamsRequest<P> & BodyRequest<B>,
     res: Response,
@@ -82,7 +82,7 @@ export function paramsBodyHandler<P extends ParamsDictionary = ParamsDictionary,
 /**
  * Type-safe wrapper for full request handlers
  */
-export function fullHandler<
+function fullHandler<
   B = unknown,
   Q extends ParsedQs = ParsedQs,
   P extends ParamsDictionary = ParamsDictionary,
@@ -97,7 +97,7 @@ export function fullHandler<
 /**
  * Type-safe wrapper for public route handlers
  */
-export function publicHandler(
+function publicHandler(
   handler: (req: PublicRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
@@ -108,7 +108,7 @@ export function publicHandler(
 /**
  * Type-safe wrapper for optional auth route handlers
  */
-export function optionalAuthHandler(
+function optionalAuthHandler(
   handler: (req: OptionalAuthRequest, res: Response, next: NextFunction) => void | Promise<void>,
 ): RequestHandler {
   return (async (req: Request, res: Response, next: NextFunction) => {
@@ -119,7 +119,7 @@ export function optionalAuthHandler(
 /**
  * Generic async handler wrapper with error catching
  */
-export function asyncHandler(
+function asyncHandler(
   handler: (req: Request, res: Response, next: NextFunction) => Promise<void>,
 ): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -136,7 +136,7 @@ export function asyncHandler(
 /**
  * Combined type-safe async handler for authenticated requests
  */
-export function authAsyncHandler(
+function authAsyncHandler(
   handler: (req: AuthenticatedRequest, res: Response) => Promise<void>,
 ): RequestHandler {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -153,7 +153,7 @@ export function authAsyncHandler(
 /**
  * Controller method wrapper for authenticated requests
  */
-export function controllerAuth<T extends object>(
+function controllerAuth<T extends object>(
   controller: T,
   method: (
     this: T,
@@ -170,7 +170,7 @@ export function controllerAuth<T extends object>(
 /**
  * Controller method wrapper for params requests
  */
-export function controllerParams<P extends ParamsDictionary, T extends object>(
+function controllerParams<P extends ParamsDictionary, T extends object>(
   controller: T,
   method: (
     this: T,
@@ -210,35 +210,3 @@ export const typed = {
     params: controllerParams,
   },
 };
-
-/**
- * Type guard to check if request is authenticated
- */
-export function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user != null;
-}
-
-/**
- * Type guard to check if request has params
- */
-export function hasParams<P extends ParamsDictionary>(req: Request): req is ParamsRequest<P> {
-  return Object.keys(req.params).length > 0;
-}
-
-/**
- * Type guard to check if request has body
- */
-export function hasBody<B>(req: Request): req is BodyRequest<B> {
-  return req.body != null;
-}
-
-/**
- * Middleware wrapper that ensures type compatibility
- */
-export function middlewareWrapper(
-  middleware: (req: Request, res: Response, next: NextFunction) => void | Promise<void>,
-): RequestHandler {
-  return async (req: Request, res: Response, next: NextFunction) => {
-    await middleware(req, res, next);
-  };
-}

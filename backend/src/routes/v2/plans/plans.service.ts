@@ -104,16 +104,19 @@ export class PlansService {
    * Get all available plans
    * @param includeInactive - The includeInactive parameter
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   static async getAllPlans(includeInactive = false): Promise<PlanWithFeatures[]> {
     // Get all plans based on includeInactive filter
     const dbPlans = await PlanModel.findAll();
-    const filteredPlans = includeInactive ? dbPlans : dbPlans.filter((p) => p.is_active);
+    const filteredPlans = includeInactive ? dbPlans : dbPlans.filter((p: DbPlan) => p.is_active);
 
     return await Promise.all(
-      filteredPlans.map(async (dbPlan) => {
+      filteredPlans.map(async (dbPlan: DbPlan) => {
         const dbFeatures = await PlanModel.getPlanFeatures(dbPlan.id);
         const plan = this.dbToApiPlan(dbPlan as ModelDbPlan);
-        const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
+        const features = dbFeatures
+          .filter((f: DbPlanFeature) => f.is_included)
+          .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
         return {
           ...plan,
@@ -138,7 +141,9 @@ export class PlansService {
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
 
     const plan = this.dbToApiPlan(dbPlan);
-    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
+    const features = dbFeatures
+      .filter((f: DbPlanFeature) => f.is_included)
+      .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
     return {
       ...plan,
@@ -168,8 +173,10 @@ export class PlansService {
 
     const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan as ModelDbTenantPlan);
     const planDetails = this.dbToApiPlan(dbPlan as ModelDbPlan);
-    const features = dbFeatures.filter((f) => f.is_included).map((f) => this.dbToApiFeature(f));
-    const addons = dbAddons.map((a) => this.dbToApiAddon(a));
+    const features = dbFeatures
+      .filter((f: DbPlanFeature) => f.is_included)
+      .map((f: DbPlanFeature) => this.dbToApiFeature(f));
+    const addons = dbAddons.map((a: DbTenantAddon) => this.dbToApiAddon(a));
 
     const apiCosts: TenantCosts = {
       basePlanCost: costs.planCost,
@@ -253,7 +260,7 @@ export class PlansService {
    */
   static async getPlanFeatures(planId: number): Promise<PlanFeature[]> {
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
-    return dbFeatures.map((f) => this.dbToApiFeature(f));
+    return dbFeatures.map((f: DbPlanFeature) => this.dbToApiFeature(f));
   }
 
   /**
@@ -292,7 +299,7 @@ export class PlansService {
    */
   static async getTenantAddonDetails(tenantId: number): Promise<TenantAddon[]> {
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
-    return dbAddons.map((a) => this.dbToApiAddon(a));
+    return dbAddons.map((a: DbTenantAddon) => this.dbToApiAddon(a));
   }
 
   /**

@@ -87,14 +87,15 @@ export async function createRootLog(logData: RootLogCreateData): Promise<number>
   }
 }
 
-export async function getRootLogsByUserId(userId: number, days = 0): Promise<DbRootLog[]> {
+export async function getRootLogsByUserId(userId: number, days?: number): Promise<DbRootLog[]> {
+  const effectiveDays: number = days ?? 0;
   let query = `SELECT * FROM root_logs WHERE user_id = ?`;
   const params: unknown[] = [userId];
 
   // Wenn days > 0, dann nur Logs der letzten X Tage abrufen
-  if (days > 0) {
+  if (effectiveDays > 0) {
     query += ` AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
-    params.push(days);
+    params.push(effectiveDays);
   }
 
   // Nach Zeitstempel absteigend sortieren (neueste zuerst)

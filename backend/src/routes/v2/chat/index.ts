@@ -2,13 +2,14 @@
  * Chat API v2 Routes
  * Real-time messaging and conversations with improved standards
  */
-import express, { Router } from 'express';
+import express, { NextFunction, Request, Response, Router } from 'express';
 import { body, param, query } from 'express-validator';
 import multer from 'multer';
 import path from 'path';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
 import { createValidation } from '../../../middleware/validation.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import chatController from './chat.controller.js';
@@ -82,14 +83,22 @@ const attachmentValidation = createValidation([
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
-  destination: (_req, _file) => {
-    return getUploadDirectory('chat');
+  destination: (
+    _req: Request,
+    _file: Express.Multer.File,
+    cb: (error: Error | null, destination: string) => void,
+  ) => {
+    cb(null, getUploadDirectory('chat'));
   },
-  filename: (_req, file) => {
+  filename: (
+    _req: Request,
+    file: Express.Multer.File,
+    cb: (error: Error | null, filename: string) => void,
+  ) => {
     const sanitized = sanitizeFilename(file.originalname);
     const ext = path.extname(sanitized);
     const uniqueSuffix = `${String(Date.now())}-${String(Math.round(Math.random() * 1e9))}`;
-    return `chat-${uniqueSuffix}${ext}`;
+    cb(null, `chat-${uniqueSuffix}${ext}`);
   },
 });
 
@@ -98,7 +107,7 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB
   },
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const allowedTypes = [
       'image/jpeg',
       'image/png',
@@ -145,7 +154,7 @@ const upload = multer({
 router.get(
   '/users',
   getUsersValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getChatUsers(req, res, next);
   }),
 );
@@ -179,7 +188,7 @@ router.get(
 router.get(
   '/conversations',
   getConversationsValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getConversations(req, res, next);
   }),
 );
@@ -219,7 +228,7 @@ router.get(
 router.post(
   '/conversations',
   createConversationValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.createConversation(req, res, next);
   }),
 );
@@ -246,7 +255,7 @@ router.post(
 router.get(
   '/conversations/:id',
   conversationIdValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getConversation(req, res, next);
   }),
 );
@@ -281,7 +290,7 @@ router.get(
 router.put(
   '/conversations/:id',
   conversationIdValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.updateConversation(req, res, next);
   }),
 );
@@ -307,7 +316,7 @@ router.put(
 router.delete(
   '/conversations/:id',
   conversationIdValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.deleteConversation(req, res, next);
   }),
 );
@@ -350,7 +359,7 @@ router.delete(
 router.get(
   '/conversations/:id/messages',
   getMessagesValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getMessages(req, res, next);
   }),
 );
@@ -399,7 +408,7 @@ router.post(
   '/conversations/:id/messages',
   upload.single('attachment'),
   sendMessageValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.sendMessage(req, res, next);
   }),
 );
@@ -435,7 +444,7 @@ router.post(
  */
 router.put(
   '/messages/:id',
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.editMessage(req, res, next);
   }),
 );
@@ -460,7 +469,7 @@ router.put(
  */
 router.delete(
   '/messages/:id',
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.deleteMessage(req, res, next);
   }),
 );
@@ -486,7 +495,7 @@ router.delete(
 router.post(
   '/conversations/:id/read',
   conversationIdValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.markAsRead(req, res, next);
   }),
 );
@@ -505,7 +514,7 @@ router.post(
  */
 router.get(
   '/unread-count',
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.getUnreadCount(req, res, next);
   }),
 );
@@ -541,7 +550,7 @@ router.get(
 router.get(
   '/attachments/:filename',
   attachmentValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     void chatController.downloadAttachment(req, res, next);
   }),
 );
@@ -580,7 +589,7 @@ router.get(
 router.post(
   '/conversations/:id/participants',
   conversationIdValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.addParticipants(req, res, next);
   }),
 );
@@ -610,7 +619,7 @@ router.post(
  */
 router.delete(
   '/conversations/:id/participants/:userId',
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.removeParticipant(req, res, next);
   }),
 );
@@ -636,7 +645,7 @@ router.delete(
 router.post(
   '/conversations/:id/leave',
   conversationIdValidation,
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.leaveConversation(req, res, next);
   }),
 );
@@ -664,7 +673,7 @@ router.post(
  */
 router.get(
   '/search',
-  typed.auth((req, res, next) => {
+  typed.auth((req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     chatController.searchMessages(req, res, next);
   }),
 );

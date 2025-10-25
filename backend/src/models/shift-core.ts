@@ -349,9 +349,9 @@ export async function getShiftsByPlan(
     const [shifts] = await executeQuery<DbShift[]>(query, [planId, tenantId]);
 
     // Parse assignments string into array
-    shifts.forEach((shift) => {
+    shifts.forEach((shift: DbShift) => {
       if (shift.assignments != null && shift.assignments !== '') {
-        shift.assignedEmployees = shift.assignments.split('; ').map((assignment) => {
+        shift.assignedEmployees = shift.assignments.split('; ').map((assignment: string) => {
           const [name, status] = assignment.split(':');
           return { name, status };
         });
@@ -842,7 +842,7 @@ export async function getWeekNotes(
 
     // Convert to object keyed by date
     const notesByDate: Record<string, string> = {};
-    rows.forEach((row) => {
+    rows.forEach((row: ShiftNoteRow) => {
       notesByDate[row.date] = row.notes;
     });
 

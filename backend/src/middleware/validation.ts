@@ -3,7 +3,15 @@
  * Provides request validation using express-validator with proper TypeScript types
  */
 import { NextFunction, Request, Response } from 'express';
-import { ValidationChain, body, param, query, validationResult } from 'express-validator';
+import {
+  Meta,
+  ValidationChain,
+  ValidationError,
+  body,
+  param,
+  query,
+  validationResult,
+} from 'express-validator';
 
 import { ValidationMiddleware } from '../types/middleware.types';
 import { errorResponse } from '../utils/apiResponse';
@@ -17,7 +25,7 @@ export function handleValidationErrors(req: Request, res: Response, next: NextFu
 
   if (!errors.isEmpty()) {
     // Convert to API v2 format
-    const details = errors.array().map((err) => ({
+    const details = errors.array().map((err: ValidationError) => ({
       field: err.type === 'field' ? err.path : 'unknown',
       message: String(err.msg),
     }));
@@ -221,7 +229,10 @@ export const validationSchemas = {
     body('confirmPassword')
       .notEmpty()
       .withMessage('Password confirmation is required')
-      .custom((value, { req }) => value === (req.body as { newPassword?: string }).newPassword)
+      .custom(
+        (value: unknown, meta: Meta) =>
+          value === (meta.req.body as { newPassword?: string }).newPassword,
+      )
       .withMessage('Passwords do not match'),
     handleValidationErrors,
   ] as ValidationMiddleware,
@@ -303,5 +314,3 @@ export { validationResult } from 'express-validator';
 
 // Re-export common validators for use in routes
 export { body, param, query } from 'express-validator';
-
-export default validationSchemas;

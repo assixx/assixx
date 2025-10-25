@@ -26,7 +26,7 @@ const ERROR_MESSAGES = {
  * @param errors - The errors parameter
  */
 function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
-  return errors.map((error) => ({
+  return errors.map((error: ValidationError) => ({
     field: error.type === 'field' ? error.path : 'general',
     message: String(error.msg),
   }));

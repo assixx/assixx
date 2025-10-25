@@ -351,7 +351,7 @@ export const auditTrailController = {
       'IP Address',
     ];
 
-    const rows = entries.map((entry) => [
+    const rows = entries.map((entry: AuditEntry) => [
       entry.id,
       entry.createdAt,
       entry.userName ?? entry.userId,
@@ -363,8 +363,9 @@ export const auditTrailController = {
       entry.ipAddress ?? '',
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join(
-      '\n',
-    );
+    return [
+      headers.join(','),
+      ...rows.map((row: unknown[]) => row.map((cell: unknown) => `"${String(cell)}"`).join(',')),
+    ].join('\n');
   },
 };

@@ -168,7 +168,7 @@ class ResponsesService {
 
     // Fetch answers for each response
     const responsesWithAnswers = await Promise.all(
-      responses.map(async (response) => {
+      responses.map(async (response: RowDataPacket) => {
         const [answers] = await query<RowDataPacket[]>(
           `SELECT sa.*, sq.question_type, sq.question_text
            FROM survey_answers sa
@@ -179,7 +179,7 @@ class ResponsesService {
 
         return {
           ...response,
-          answers: answers.map((a) => ({
+          answers: answers.map((a: RowDataPacket) => ({
             ...a,
             answer_options:
               a.answer_options ? (JSON.parse(a.answer_options as string) as number[]) : undefined,
@@ -227,7 +227,7 @@ class ResponsesService {
     );
 
     // Map answers
-    response.answers = answers.map((a) => ({
+    response.answers = answers.map((a: RowDataPacket) => ({
       question_id: a.question_id as number,
       answer_text: a.answer_text as string | undefined,
       answer_number: a.answer_number as number | undefined,
@@ -420,7 +420,7 @@ class ResponsesService {
   private formatAsCSV(data: RowDataPacket[]): Buffer {
     // Simple CSV formatting
     const headers = ['Response ID', 'User', 'Completed', 'Question', 'Answer'];
-    const rows = data.map((row) => [
+    const rows = data.map((row: RowDataPacket) => [
       row.response_id as string,
       `${String(row.first_name ?? '')} ${String(row.last_name ?? '')}`.trim() ||
         String(row.username ?? ''),
@@ -431,7 +431,9 @@ class ResponsesService {
 
     const csv = [
       headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(',')),
+      ...rows.map((row: unknown[]) =>
+        row.map((cell: unknown) => `"${String(cell).replace(/"/g, '""')}"`).join(','),
+      ),
     ].join('\n');
 
     return Buffer.from(csv, 'utf-8');

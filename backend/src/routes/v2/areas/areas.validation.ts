@@ -69,7 +69,12 @@ export const updateAreaValidation = [
     .withMessage('Capacity must be a non-negative integer'),
   body('parentId')
     .optional()
-    .custom((value) => value === null || (Number.isInteger(value) && value > 0))
+    .custom(
+      (value: unknown) =>
+        value === null ||
+        value === undefined ||
+        (typeof value === 'number' && Number.isInteger(value) && value > 0),
+    )
     .withMessage('Parent ID must be null or a positive integer'),
   body('address').optional().trim().isLength({ max: 500 }).withMessage('Address too long'),
   body('isActive').optional().isBoolean().withMessage('isActive must be a boolean'),

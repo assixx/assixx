@@ -6,9 +6,10 @@
  *   name: Audit Trail v2
  *   description: Audit logging and compliance API v2
  */
-import express, { RequestHandler, Router } from 'express';
+import express, { RequestHandler, Response, Router } from 'express';
 
 import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { auditTrailController } from './audit-trail.controller.js';
 import { auditTrailValidationZod } from './audit-trail.validation.zod.js';
@@ -133,7 +134,7 @@ router.get(
   '/',
   ...userAuth,
   auditTrailValidationZod.getEntries,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await auditTrailController.getEntries(req, res);
   }),
 );
@@ -181,7 +182,7 @@ router.get(
   '/stats',
   ...adminAuth,
   auditTrailValidationZod.getStats,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await auditTrailController.getStats(req, res);
   }),
 );
@@ -241,9 +242,11 @@ router.post(
   '/reports',
   ...adminAuth,
   auditTrailValidationZod.generateReport,
-  typed.body<{ reportType: string; dateFrom: string; dateTo: string }>(async (req, res) => {
-    await auditTrailController.generateReport(req, res);
-  }),
+  typed.body<{ reportType: string; dateFrom: string; dateTo: string }>(
+    async (req: AuthenticatedRequest, res: Response) => {
+      await auditTrailController.generateReport(req, res);
+    },
+  ),
 );
 
 /**
@@ -294,7 +297,7 @@ router.get(
   '/export',
   ...adminAuth,
   auditTrailValidationZod.exportEntries,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await auditTrailController.exportEntries(req, res);
   }),
 );
@@ -354,9 +357,11 @@ router.delete(
   '/retention',
   ...rootAuth,
   auditTrailValidationZod.deleteOldEntries,
-  typed.body<{ olderThanDays: number; confirmPassword: string }>(async (req, res) => {
-    await auditTrailController.deleteOldEntries(req, res);
-  }),
+  typed.body<{ olderThanDays: number; confirmPassword: string }>(
+    async (req: AuthenticatedRequest, res: Response) => {
+      await auditTrailController.deleteOldEntries(req, res);
+    },
+  ),
 );
 
 /**
@@ -398,7 +403,7 @@ router.get(
   '/:id',
   ...userAuth,
   auditTrailValidationZod.getEntry,
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await auditTrailController.getEntry(req, res);
   }),
 );

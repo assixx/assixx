@@ -27,7 +27,7 @@ function isPathWhitelisted(path: string): boolean {
     '/health',
   ];
 
-  return whitelistedPaths.some((whitelistedPath) => {
+  return whitelistedPaths.some((whitelistedPath: string) => {
     // Safe: whitelistedPaths is a hardcoded array, not user input
     // eslint-disable-next-line security/detect-non-literal-regexp
     const regex = new RegExp('^' + whitelistedPath.replace(/:[^/]+/g, '[^/]+') + '$');
@@ -150,7 +150,7 @@ export async function requireActiveTenant(
 ): Promise<void> {
   try {
     // First check regular tenant status
-    await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve: () => void, reject: (reason?: unknown) => void) => {
       void checkTenantStatus(req, res, (err?: unknown) => {
         if (err !== null && err !== undefined && err !== '') {
           reject(
@@ -236,5 +236,3 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
     return null;
   }
 }
-
-export default checkTenantStatus;

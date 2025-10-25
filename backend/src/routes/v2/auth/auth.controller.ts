@@ -12,7 +12,6 @@ import type { AuthenticatedRequest } from '../../../types/request.types';
 import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { dbToApi } from '../../../utils/fieldMapping';
 import { logger } from '../../../utils/logger';
-import { createLog } from '../../v1/logs';
 
 // Get secrets from environment variables
 const JWT_SECRET = process.env.JWT_SECRET ?? 'default-jwt-secret';
@@ -71,8 +70,8 @@ function generateTokens(
  * @param req - The request object
  * @param res - The response object
  */
-// eslint-disable-next-line max-lines-per-function
-export async function login(req: Request, res: Response): Promise<void> {
+
+async function login(req: Request, res: Response): Promise<void> {
   try {
     const { email, password } = req.body as { email: string; password: string };
 
@@ -120,20 +119,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 
     // TODO: Update last login - need to add updateLastLogin method to User model
 
-    // Log successful login to both log systems
-    // 1. Log to activity_logs for frontend display
-    await createLog(
-      foundUser.id,
-      foundUser.tenant_id,
-      'login',
-      'user',
-      foundUser.id,
-      `Angemeldet als ${foundUser.role}`,
-      req.ip ?? req.socket.remoteAddress,
-      req.get(USER_AGENT_HEADER),
-    );
-
-    // 2. Log to root_logs for detailed audit
+    // Log successful login for audit trail
     await rootLog.create({
       tenant_id: foundUser.tenant_id,
       user_id: foundUser.id,
@@ -183,7 +169,7 @@ export async function login(req: Request, res: Response): Promise<void> {
  * @param req - The request object
  * @param res - The response object
  */
-export async function register(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function register(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const {
       email,
@@ -236,20 +222,7 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
       throw new Error('Failed to retrieve created user');
     }
 
-    // Log user creation to both log systems
-    // 1. Log to activity_logs for frontend display
-    await createLog(
-      authUser.id,
-      tenantId,
-      'create_user',
-      'user',
-      userId,
-      `Neuer Benutzer erstellt: ${email} (${role})`,
-      req.ip ?? req.socket.remoteAddress,
-      req.get(USER_AGENT_HEADER),
-    );
-
-    // 2. Log to root_logs for detailed audit
+    // Log user creation for audit trail
     await rootLog.create({
       tenant_id: tenantId,
       user_id: authUser.id, // Admin who created the user
@@ -289,27 +262,14 @@ export async function register(req: AuthenticatedRequest, res: Response): Promis
  * @param req - The request object
  * @param res - The response object
  */
-export async function logout(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function logout(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     // In a real implementation, you might want to:
     // 1. Blacklist the token
     // 2. Clear refresh token from database
     // 3. Clear any server-side sessions
 
-    // Log logout
-    // 1. Log to activity_logs for frontend display
-    await createLog(
-      req.user.id,
-      req.user.tenant_id,
-      'logout',
-      'user',
-      req.user.id,
-      'Abgemeldet',
-      req.ip ?? req.socket.remoteAddress,
-      req.get(USER_AGENT_HEADER),
-    );
-
-    // 2. Log to root_logs for detailed audit
+    // Log logout for audit trail
     await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
@@ -342,7 +302,7 @@ export async function logout(req: AuthenticatedRequest, res: Response): Promise<
  * @param req - The request object
  * @param res - The response object
  */
-export function refresh(req: Request, res: Response): void {
+function refresh(req: Request, res: Response): void {
   try {
     const { refreshToken } = req.body as { refreshToken: string };
 
@@ -394,7 +354,7 @@ export function refresh(req: Request, res: Response): void {
  * @param req - The request object
  * @param res - The response object
  */
-export function verify(req: AuthenticatedRequest, res: Response): void {
+function verify(req: AuthenticatedRequest, res: Response): void {
   try {
     const authUser = req.user;
     res.json(
@@ -419,7 +379,7 @@ export function verify(req: AuthenticatedRequest, res: Response): void {
  * @param req - The request object
  * @param res - The response object
  */
-export async function getCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
+async function getCurrentUser(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const authUser = req.user;
     const { userId, tenant_id: tenantId } = authUser;

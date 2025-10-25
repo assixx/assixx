@@ -504,6 +504,3 @@ export function requireRole(allowedRoles: string | string[]) {
     res.status(403).json(errorResponse('Insufficient permissions', 403, 'FORBIDDEN'));
   };
 }
-
-// Export for backward compatibility
-export default authenticateToken;

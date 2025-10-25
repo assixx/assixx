@@ -17,7 +17,7 @@ const INVALID_REQUEST_DATA = 'Invalid request data';
 /**
  *
  */
-export class DepartmentGroupsController {
+class DepartmentGroupsController {
   /**
    * Get all department groups with hierarchy
    * @param req - The request object

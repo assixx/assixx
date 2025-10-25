@@ -1,0 +1,76 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+
+  "entry": [
+    "backend/src/server.ts!",
+    "backend/src/app.ts!",
+    "frontend/src/main.ts!",
+    "scripts/*.{js,ts}"
+  ],
+
+  "project": [
+    "backend/src/**/*.{ts,js}!",
+    "frontend/src/**/*.{ts,js}!",
+    "!**/__tests__/**",
+    "!**/*.test.ts",
+    "!**/*.spec.ts",
+    "!backend/src/routes/mocks/**"
+  ],
+
+  "ignore": [
+    "backend/dist/**",
+    "frontend/dist/**",
+    "node_modules/**",
+    "coverage/**",
+    "storybook-static/**",
+    "backups/**",
+    "**/*.bak",
+    "**/*.generated.ts",
+    "**/*.config.{js,ts}",
+    "jest.*.{js,ts}",
+    "eslint.config.js",
+    "prettier.config.js",
+    ".storybook/**",
+    "stories/**"
+  ],
+
+  "ignoreFiles": [
+    "backend/scripts/**",
+    "database/migrations/**",
+    "backend/src/database/migrations/**"
+  ],
+
+  "ignoreBinaries": [
+    "docker-compose"
+  ],
+
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "exports": "warn",
+    "types": "warn",
+    "classMembers": "off",
+    "enumMembers": "off",
+    "duplicates": "error"
+  },
+
+  "ignoreIssues": {
+    "backend/src/controllers/**": ["exports"],
+    "backend/src/services/**": ["exports"],
+    "backend/src/models/**": ["exports"],
+    "backend/src/middleware/**": ["exports"],
+    "backend/src/types/**": ["exports", "types"],
+    "backend/src/config/**": ["exports"],
+    "backend/src/schemas/**": ["exports", "types"],
+    "backend/src/routes/v2/**/types.ts": ["exports", "types"],
+    "backend/src/routes/v2/**/*.validation.zod.ts": ["exports", "types"],
+    "frontend/src/types/**": ["exports", "types"],
+    "frontend/src/generated/**": ["exports", "types"],
+    "frontend/src/utils/api-mappers.ts": ["exports", "types"]
+  }
+}

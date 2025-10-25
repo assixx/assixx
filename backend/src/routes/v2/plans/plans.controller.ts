@@ -1,6 +1,12 @@
-import { Router } from 'express';
+import { Response, Router } from 'express';
 
 import { security } from '../../../middleware/security';
+import type {
+  AuthenticatedRequest,
+  BodyRequest,
+  ParamsRequest,
+  PublicRequest,
+} from '../../../types/request.types';
 import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { getErrorMessage } from '../../../utils/errorHandler';
 import { typed } from '../../../utils/routeHandlers';
@@ -76,7 +82,7 @@ const router = Router();
  */
 router.get(
   '/',
-  typed.public(async (req, res) => {
+  typed.public(async (req: PublicRequest, res: Response) => {
     try {
       const includeInactive = req.query.includeInactive === 'true';
       const plans = await PlansService.getAllPlans(includeInactive);
@@ -125,7 +131,7 @@ router.get(
 router.get(
   '/current',
   ...security.user(),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;
       const currentPlan = await PlansService.getCurrentPlan(tenantId);
@@ -177,7 +183,7 @@ router.get(
 router.get(
   '/addons',
   ...security.user(),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;
       const addons = await PlansService.getTenantAddons(tenantId);
@@ -251,7 +257,7 @@ router.put(
   '/addons',
   ...security.admin(),
   plansValidation.updateAddons,
-  typed.body<UpdateAddonsRequest>(async (req, res) => {
+  typed.body<UpdateAddonsRequest>(async (req: BodyRequest<UpdateAddonsRequest>, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;
       const result = await PlansService.updateAddons(tenantId, req.body, req.user.id);
@@ -310,7 +316,7 @@ router.put(
 router.get(
   '/costs',
   ...security.user(),
-  typed.auth(async (req, res) => {
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;
       const costs = await PlansService.calculateCosts(tenantId);
@@ -371,7 +377,7 @@ router.get(
 router.get(
   '/:id',
   plansValidation.getPlanById,
-  typed.params<{ id: string }>(async (req, res) => {
+  typed.params<{ id: string }>(async (req: ParamsRequest<{ id: string }>, res: Response) => {
     try {
       const planId = Number.parseInt(req.params.id, 10);
       const plan = await PlansService.getPlanById(planId);
@@ -435,7 +441,7 @@ router.get(
 router.get(
   '/:id/features',
   plansValidation.getPlanById,
-  typed.params<{ id: string }>(async (req, res) => {
+  typed.params<{ id: string }>(async (req: ParamsRequest<{ id: string }>, res: Response) => {
     try {
       const planId = Number.parseInt(req.params.id, 10);
       const features = await PlansService.getPlanFeatures(planId);
@@ -511,7 +517,7 @@ router.put(
   '/:id/upgrade',
   ...security.admin(),
   plansValidation.upgradePlan,
-  typed.body<UpgradePlanRequest>(async (req, res) => {
+  typed.body<UpgradePlanRequest>(async (req: BodyRequest<UpgradePlanRequest>, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;
       const { newPlanCode, effectiveDate } = req.body;

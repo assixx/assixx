@@ -242,6 +242,7 @@ class UserService {
    * @param tenantId - The tenant ID
    * @param archived - The archived parameter
    */
+  // eslint-disable-next-line @typescript-eslint/typedef -- Default parameter with literal value
   async archiveUser(userId: number, tenantId: number, archived = true): Promise<boolean> {
     try {
       await User.update(userId, { is_archived: archived }, tenantId);

@@ -13,6 +13,62 @@ import tsdocPlugin from 'eslint-plugin-tsdoc';
 import unicornPlugin from 'eslint-plugin-unicorn';
 
 export default [
+  // Global ignores - must be first to apply to all configs
+  {
+    ignores: [
+      'node_modules/**',
+      'node_modules_old_backup/**',
+      '**/node_modules_old_backup/**',
+      'dist/**',
+      'build/**',
+      '*.min.js',
+      '**/*.bak', // Ignore all backup files
+      'backend/dist/**',
+      'backend/src/routes/v1/**',
+      'backend/archive/**', // Archived code - not actively maintained
+      'frontend/dist/**',
+      'coverage/**',
+      '*.log',
+      'backend/logs/**',
+      '.env',
+      '.env.*',
+      'backend/**/*.js',
+      '!frontend/dist/**/*.js',
+      '!scripts/fix-esm-imports.js',
+      'scripts/fix-*.js',
+      'jest.config.js',
+      'jest.config.cjs',
+      'uploads/**',
+      '**/*.yml',
+      '**/*.yaml',
+      'frontend/src/scripts/lib/**',
+      'frontend/src/styles/lib/**',
+      'backups/**',
+      '.storybook/**',
+      'stories/**',
+      'design-system/build/**',
+      'frontend/public/**',
+      'backend/src/database/migrations/**/*.js',
+      'database/**/*.js',
+      'backend/src/server-old.js',
+      'backend/src/register-ts.js',
+      'backend/src/__tests__/**',
+      'backend/**/*.test.ts',
+      'backend/**/*.spec.ts',
+      'frontend/**/*.test.ts',
+      'frontend/**/*.spec.ts',
+      'backend/coverage/**',
+      '**/*.generated.ts',
+      '**/*.config.js',
+      '**/*.min.css',
+      'backend/src/routes/mocks/**',
+      '**/__tests__/**',
+      '**/test/**',
+      '**/tests/**',
+      '**/*.html',
+    ],
+  },
+
   // Base JavaScript configuration
   js.configs.recommended,
 
@@ -150,6 +206,9 @@ export default [
           arrowParameter: true,
         },
       ],
+      // Disable no-inferrable-types because it conflicts with typedef rule
+      // We want explicit types for better documentation and consistency
+      '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/non-nullable-type-assertion-style': 'off',
@@ -506,6 +565,21 @@ export default [
         },
       ],
       '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/typedef': [
+        'error',
+        {
+          arrayDestructuring: false,
+          arrowParameter: false,
+          memberVariableDeclaration: false,
+          objectDestructuring: false,
+          parameter: true,
+          propertyDeclaration: true,
+          variableDeclaration: false,
+        },
+      ],
+      // Disable no-inferrable-types because it conflicts with typedef rule
+      // We want explicit types for better documentation and consistency
+      '@typescript-eslint/no-inferrable-types': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
       'no-console': ['error', { allow: ['warn', 'log', 'error', 'info'] }],
@@ -827,58 +901,4 @@ export default [
       'prettier/prettier': 'error',
     },
   },
-
-  {
-    ignores: [
-      'node_modules/**',
-      'node_modules_old_backup/**',
-      '**/node_modules_old_backup/**',
-      'dist/**',
-      'build/**',
-      '*.min.js',
-      'backend/dist/**',
-      'backend/src/routes/v1/**',
-      'frontend/dist/**',
-      'coverage/**',
-      '*.log',
-      'backend/logs/**',
-      '.env',
-      '.env.*',
-      'backend/**/*.js',
-      '!frontend/dist/**/*.js',
-      '!scripts/fix-esm-imports.js',
-      'scripts/fix-*.js',
-      'jest.config.js',
-      'jest.config.cjs',
-      'uploads/**',
-      '**/*.yml',
-      '**/*.yaml',
-      'frontend/src/scripts/lib/**',
-      'frontend/src/styles/lib/**',
-      'backups/**',
-      '.storybook/**',
-      'stories/**',
-      'design-system/build/**',
-      'frontend/public/**',
-      'backend/src/database/migrations/**/*.js',
-      'database/**/*.js',
-      'backend/src/server-old.js',
-      'backend/src/register-ts.js',
-      'backend/src/__tests__/**',
-      'backend/**/*.test.ts',
-      'backend/**/*.spec.ts',
-      'frontend/**/*.test.ts',
-      'frontend/**/*.spec.ts',
-      'backend/coverage/**',
-      '**/*.generated.ts', // Falls ihr Code-Generatoren verwendet
-      '**/*.config.js', // Zusätzliche Config-Dateien
-      '**/*.min.css', // Minifizierte CSS-Dateien
-      'backend/src/routes/mocks/**',
-      '**/__tests__/**',
-      '**/test/**',
-      '**/tests/**',
-      '**/*.html', // HTML-Dateien ignorieren - kein inline JavaScript im Projekt
-    ],
-  },
 ];
-``;

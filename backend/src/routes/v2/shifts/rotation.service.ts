@@ -18,20 +18,12 @@ import type {
   ShiftRotationPattern,
 } from './rotation.types.js';
 
-interface ShiftEntry {
-  userId: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  type: string;
-}
-
 /**
  * Get all rotation patterns for a tenant
  */
 export async function getRotationPatterns(
   tenantId: number,
-  activeOnly = true,
+  activeOnly?: boolean,
 ): Promise<ShiftRotationPattern[]> {
   let query = `
     SELECT
@@ -44,7 +36,7 @@ export async function getRotationPatterns(
 
   const params: (string | number | boolean)[] = [tenantId];
 
-  if (activeOnly) {
+  if (activeOnly ?? true) {
     query += ' AND p.is_active = TRUE';
   }
 
@@ -52,7 +44,7 @@ export async function getRotationPatterns(
 
   const [rows] = await executeQuery<RowDataPacket[]>(query, params);
 
-  return rows.map((row) => {
+  return rows.map((row: RowDataPacket) => {
     const apiData = dbToApi(row);
     return {
       ...apiData,
@@ -303,7 +295,7 @@ export async function assignUsersToPattern(
 
   const [rows] = await executeQuery<RowDataPacket[]>(query, [data.pattern_id, tenantId]);
 
-  return rows.map((row) => dbToApi(row) as unknown as ShiftRotationAssignment);
+  return rows.map((row: RowDataPacket) => dbToApi(row) as unknown as ShiftRotationAssignment);
 }
 
 /**
@@ -618,7 +610,7 @@ export async function getRotationHistory(
 
   const [rows] = await executeQuery<RowDataPacket[]>(query, params);
 
-  return rows.map((row) => dbToApi(row) as unknown as ShiftRotationHistory);
+  return rows.map((row: RowDataPacket) => dbToApi(row) as unknown as ShiftRotationHistory);
 }
 
 /**
@@ -691,160 +683,4 @@ export async function deleteRotationHistory(
   } finally {
     connection.release();
   }
-}
-
-/**
- * Helper: Group shifts by week number
- */
-function groupShiftsByWeek(
-  sortedTemplate: ShiftEntry[],
-  firstWeekNumber: number,
-): { weekAShifts: ShiftEntry[]; weekBShifts: ShiftEntry[] } {
-  const weekAShifts: ShiftEntry[] = [];
-  const weekBShifts: ShiftEntry[] = [];
-
-  for (const shift of sortedTemplate) {
-    const shiftDate = new Date(shift.date);
-    const weekNumber = getISOWeekNumber(shiftDate);
-
-    if (weekNumber === firstWeekNumber) {
-      weekAShifts.push(shift);
-    } else {
-      weekBShifts.push(shift);
-    }
-  }
-
-  return { weekAShifts, weekBShifts };
-}
-
-/**
- * Helper: Find first Monday of the year
- */
-function findFirstMondayOfYear(year: number): Date {
-  const yearStart = new Date(year, 0, 1);
-  const firstMonday = new Date(yearStart);
-  const yearStartWeekday = yearStart.getDay() || 7;
-
-  if (yearStartWeekday !== 1) {
-    firstMonday.setDate(yearStart.getDate() + (8 - yearStartWeekday));
-  }
-
-  return firstMonday;
-}
-
-/**
- * Helper: Generate shift for specific date
- */
-function generateShiftForDate(
-  templateShift: ShiftEntry,
-  currentWeekMonday: Date,
-  year: number,
-): ShiftEntry | null {
-  const templateDate = new Date(templateShift.date);
-  const templateWeekday = templateDate.getDay() || 7;
-
-  const shiftDate = new Date(currentWeekMonday);
-  shiftDate.setDate(currentWeekMonday.getDate() + (templateWeekday - 1));
-
-  // Only add shifts that are actually in the target year
-  if (shiftDate.getFullYear() !== year) {
-    return null;
-  }
-
-  return {
-    userId: templateShift.userId,
-    date: shiftDate.toISOString().split('T')[0],
-    startTime: templateShift.startTime,
-    endTime: templateShift.endTime,
-    type: templateShift.type,
-  };
-}
-
-/**
- * Helper: Generate shifts for a week
- */
-function generateWeekShifts(
-  templateWeek: ShiftEntry[],
-  currentWeekMonday: Date,
-  year: number,
-): ShiftEntry[] {
-  const weekShifts: ShiftEntry[] = [];
-
-  for (const templateShift of templateWeek) {
-    const shift = generateShiftForDate(templateShift, currentWeekMonday, year);
-    if (shift !== null) {
-      weekShifts.push(shift);
-    }
-  }
-
-  return weekShifts;
-}
-
-/**
- * Generate Kontischicht pattern for entire year
- * Takes 2-week pattern and repeats it for all 52 weeks
- * @param basePattern - Array of shifts for 2 weeks (template)
- * @param year - Target year to generate shifts for
- * @param tenantId - Tenant ID for multi-tenant isolation
- * @returns Array of shifts for the entire year
- */
-export function generateKontischichtYear(
-  basePattern: ShiftEntry[],
-  year: number,
-  tenantId: number,
-): ShiftEntry[] {
-  // Sort template shifts by date
-  const sortedTemplate = [...basePattern].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-  );
-
-  if (sortedTemplate.length === 0) {
-    return [];
-  }
-
-  // Get the week numbers and group shifts
-  const firstTemplateDate = new Date(sortedTemplate[0].date);
-  const firstWeekNumber = getISOWeekNumber(firstTemplateDate);
-  const { weekAShifts, weekBShifts } = groupShiftsByWeek(sortedTemplate, firstWeekNumber);
-
-  console.info('[KONTISCHICHT] Pattern analysis:', {
-    weekACount: weekAShifts.length,
-    weekBCount: weekBShifts.length,
-    year,
-    tenantId,
-  });
-
-  const yearShifts: ShiftEntry[] = [];
-  const firstMonday = findFirstMondayOfYear(year);
-
-  // Generate shifts for all 52 weeks
-  for (let weekOffset = 0; weekOffset < 52; weekOffset++) {
-    const currentWeekMonday = new Date(firstMonday);
-    currentWeekMonday.setDate(firstMonday.getDate() + weekOffset * 7);
-
-    // Determine which pattern to use (alternating)
-    const templateWeek = weekOffset % 2 === 0 ? weekAShifts : weekBShifts;
-
-    // Generate shifts for this week
-    const weekShifts = generateWeekShifts(templateWeek, currentWeekMonday, year);
-    yearShifts.push(...weekShifts);
-  }
-
-  console.info(`[KONTISCHICHT] Generated ${yearShifts.length} shifts for year ${year}`);
-  return yearShifts;
-}
-
-/**
- * Helper function to get ISO week number
- */
-function getISOWeekNumber(date: Date): number {
-  const target = new Date(date.valueOf());
-  const dayNumber = (date.getDay() + 6) % 7;
-  target.setDate(target.getDate() - dayNumber + 3);
-  const firstThursday = target.valueOf();
-  target.setMonth(0, 1);
-  if (target.getDay() !== 4) {
-    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
-  }
-  return 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
 }

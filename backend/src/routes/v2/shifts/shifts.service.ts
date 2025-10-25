@@ -236,7 +236,7 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
 /**
  *
  */
-export class ShiftsService {
+class ShiftsService {
   // ============= SHIFTS CRUD =============
 
   /**
@@ -254,7 +254,7 @@ export class ShiftsService {
       };
 
       const shifts = await shiftModel.findAll(dbFilters);
-      return shifts.map((s) => dbShiftToApi(s));
+      return shifts.map((s: unknown) => dbShiftToApi(s as DbShiftData));
     } catch (error: unknown) {
       logger.error('Error listing shifts:', error);
       throw new ServiceError('LIST_SHIFTS_ERROR', 'Failed to list shifts');
@@ -423,7 +423,7 @@ export class ShiftsService {
   async listTemplates(tenantId: number): Promise<unknown[]> {
     try {
       const templates = await shiftModel.getTemplates(tenantId);
-      return templates.map((template) => dbToApi(template));
+      return templates.map((template: RowDataPacket) => dbToApi(template));
     } catch (error: unknown) {
       logger.error('Error listing templates:', error);
       throw new ServiceError('LIST_TEMPLATES_ERROR', 'Failed to list templates');
@@ -617,7 +617,7 @@ export class ShiftsService {
   ): Promise<unknown[]> {
     try {
       const requests = await shiftModel.getSwapRequests(tenantId, filters);
-      return requests.map((request) => dbToApi(request));
+      return requests.map((request: RowDataPacket) => dbToApi(request));
     } catch (error: unknown) {
       logger.error('Error listing swap requests:', error);
       throw new ServiceError('LIST_SWAP_REQUESTS_ERROR', 'Failed to list swap requests');
@@ -805,22 +805,37 @@ export class ShiftsService {
       'Notes',
     ];
 
-    const rows = shifts.map((shift) => [
-      shift.date,
-      shift.userName ?? shift.userId,
-      shift.startTime,
-      shift.endTime,
-      shift.breakMinutes ?? 0,
-      this.calculateHours(shift.startTime, shift.endTime, shift.breakMinutes),
-      shift.type,
-      shift.status,
-      shift.departmentName ?? shift.departmentId,
-      shift.notes ?? '',
-    ]);
+    const rows = shifts.map(
+      (shift: {
+        date?: string;
+        userName?: string;
+        userId?: number;
+        startTime?: string;
+        endTime?: string;
+        breakMinutes?: number;
+        hours?: number;
+        type?: string;
+        status?: string;
+        departmentName?: string;
+        departmentId?: number;
+        notes?: string;
+      }) => [
+        shift.date,
+        shift.userName ?? shift.userId,
+        shift.startTime,
+        shift.endTime,
+        shift.breakMinutes ?? 0,
+        this.calculateHours(shift.startTime ?? '', shift.endTime ?? '', shift.breakMinutes),
+        shift.type,
+        shift.status,
+        shift.departmentName ?? shift.departmentId,
+        shift.notes ?? '',
+      ],
+    );
 
     return [
       headers.join(','),
-      ...rows.map((row) => row.map((cell) => `"${String(cell)}"`).join(',')),
+      ...rows.map((row: unknown[]) => row.map((cell: unknown) => `"${String(cell)}"`).join(',')),
     ].join('\n');
   }
 
@@ -831,12 +846,12 @@ export class ShiftsService {
    * @param endTime - Parameter description
    * @param breakMinutes - Parameter description
    */
-  private calculateHours(startTime: string, endTime: string, breakMinutes = 0): number {
+  private calculateHours(startTime: string, endTime: string, breakMinutes?: number): number {
     const start = new Date(`2000-01-01T${startTime}`);
     const end = new Date(`2000-01-01T${endTime}`);
     const diffMs = end.getTime() - start.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
-    const breakHours = breakMinutes / 60;
+    const breakHours = (breakMinutes ?? 0) / 60;
     return Math.round((diffHours - breakHours) * 100) / 100;
   }
 
@@ -1026,7 +1041,7 @@ export class ShiftsService {
       ]);
 
       // Convert early/late/night to F/S/N for consistency
-      return rows.map((row) => {
+      return rows.map((row: RowDataPacket) => {
         const shiftRow = row as unknown as { date: string; type: string };
         return {
           date: shiftRow.date,

@@ -77,35 +77,6 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
- * Creates a secure file path within a base directory
- * @param baseDir - The base directory
- * @param filename - The filename to use
- * @returns The secure file path
- */
-export function createSecurePath(baseDir: string, filename: string): string {
-  const sanitizedFilename = sanitizeFilename(filename);
-
-  // Validate the final path
-  const validated = validatePath(sanitizedFilename, baseDir);
-  if (validated == null || validated === '') {
-    throw new Error('Invalid file path');
-  }
-
-  return validated;
-}
-
-/**
- * Checks if a file extension is allowed
- * @param filename - The filename to check
- * @param allowedExtensions - Array of allowed extensions (e.g., ['.pdf', '.jpg'])
- * @returns True if the extension is allowed
- */
-export function isAllowedExtension(filename: string, allowedExtensions: string[]): boolean {
-  const ext = path.extname(filename).toLowerCase();
-  return allowedExtensions.includes(ext);
-}
-
-/**
  * Gets the upload directory for a specific type
  * @param type - The upload type (e.g., 'documents', 'profile_pictures')
  * @returns The absolute path to the upload directory
@@ -128,45 +99,4 @@ export function getUploadDirectory(type: string): string {
   }
 
   return dir;
-}
-
-/**
- * Safely deletes a file, ensuring it's within the uploads directory
- * @param filePath - The file path to delete
- * @returns True if file was deleted, false otherwise
- */
-export async function safeDeleteFile(filePath: string): Promise<boolean> {
-  try {
-    // Validate the path is within the uploads directory
-    const uploadsDir = path.resolve(process.cwd(), 'uploads');
-    const validatedPath = validatePath(filePath, process.cwd());
-
-    // Check if path validation failed
-    if (validatedPath == null) {
-      logger.warn(`Invalid file path provided: ${filePath}`);
-      return false;
-    }
-
-    // Check if path is outside uploads directory
-    if (!validatedPath.startsWith(uploadsDir)) {
-      logger.warn(`Attempted to delete file outside uploads directory: ${filePath}`);
-      return false;
-    }
-
-    // Check if file exists before attempting to delete
-    const fs = await import('fs/promises');
-    try {
-      await fs.access(validatedPath);
-      await fs.unlink(validatedPath);
-      logger.info(`Successfully deleted file: ${validatedPath}`);
-      return true;
-    } catch {
-      // File doesn't exist or can't be accessed
-      logger.warn(`File not found or inaccessible: ${validatedPath}`);
-      return false;
-    }
-  } catch (error: unknown) {
-    logger.error(`Error in safeDeleteFile: ${String(error)}`);
-    return false;
-  }
 }

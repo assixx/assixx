@@ -403,4 +403,3 @@ export async function switchRoleForAdmin(targetRole: 'admin' | 'employee'): Prom
 }
 
 // Export for use in other modules
-export { switchRole, updateRoleUI };

@@ -11,7 +11,7 @@ interface ShiftEntry {
   type: string;
 }
 
-export class KontischichtService {
+class KontischichtService {
   /**
    * Check if a plan is a Kontischicht type plan
    * @param planName - Name of the plan
@@ -184,7 +184,7 @@ export class KontischichtService {
 
     // Auto-detect from employee count
     const uniqueEmployees = new Set(
-      data.shifts.map((s) => {
+      data.shifts.map((s: unknown) => {
         const shift = s as { userId?: number };
         return shift.userId;
       }),
@@ -217,7 +217,7 @@ export class KontischichtService {
     // Filter to only the requested period
     const start = new Date(startDate);
     const end = new Date(endDate);
-    return allShifts.filter((shift) => {
+    return allShifts.filter((shift: ShiftEntry) => {
       const shiftDate = new Date(shift.date);
       return shiftDate >= start && shiftDate <= end;
     });
@@ -232,7 +232,7 @@ export class KontischichtService {
     endDateStr: string,
   ): ShiftEntry[] {
     const yearShifts: ShiftEntry[] = [];
-    const employees = [...new Set(templateShifts.map((s) => s.userId))].slice(0, 4);
+    const employees = [...new Set(templateShifts.map((s: ShiftEntry) => s.userId))].slice(0, 4);
 
     if (employees.length !== 4) {
       console.warn('[4ER STANDARD PERIOD] Need exactly 4 employees, falling back');
@@ -273,8 +273,8 @@ export class KontischichtService {
       if (!pattern) continue;
 
       // Generate shifts for this day
-      Object.entries(pattern.shifts).forEach(([shiftType, employeeIndices]) => {
-        employeeIndices.forEach((empIdx) => {
+      Object.entries(pattern.shifts).forEach(([shiftType, employeeIndices]: [string, number[]]) => {
+        employeeIndices.forEach((empIdx: number) => {
           yearShifts.push({
             // eslint-disable-next-line security/detect-object-injection -- empIdx is from controlled array
             userId: employees[empIdx],
@@ -381,7 +381,7 @@ export class KontischichtService {
    * Generate 3er rotation pattern (3 employees, 9-day cycle)
    */
   private generate3erRotation(templateShifts: ShiftEntry[], year: number): ShiftEntry[] {
-    const employees = [...new Set(templateShifts.map((s) => s.userId))].slice(0, 3);
+    const employees = [...new Set(templateShifts.map((s: ShiftEntry) => s.userId))].slice(0, 3);
 
     if (employees.length !== 3) {
       console.warn('[3ER ROTATION] Need exactly 3 employees, falling back to standard');
@@ -430,7 +430,7 @@ export class KontischichtService {
     const yearShifts: ShiftEntry[] = [];
 
     // Analyze the template to understand the pattern
-    const employees = [...new Set(templateShifts.map((s) => s.userId))].slice(0, 4);
+    const employees = [...new Set(templateShifts.map((s: ShiftEntry) => s.userId))].slice(0, 4);
     if (employees.length !== 4) {
       console.warn('[4ER STANDARD] Need exactly 4 employees, falling back');
       return this.generateYearPatternFromTwoWeeks(templateShifts, year);
@@ -474,8 +474,8 @@ export class KontischichtService {
       if (!pattern) continue; // Skip if no pattern defined
 
       // Generate shifts for this day
-      Object.entries(pattern.shifts).forEach(([shiftType, employeeIndices]) => {
-        employeeIndices.forEach((empIdx) => {
+      Object.entries(pattern.shifts).forEach(([shiftType, employeeIndices]: [string, number[]]) => {
+        employeeIndices.forEach((empIdx: number) => {
           yearShifts.push({
             // eslint-disable-next-line security/detect-object-injection -- empIdx is from controlled array
             userId: employees[empIdx],
@@ -537,7 +537,7 @@ export class KontischichtService {
    * Generate 4er long rotation (4 employees, 4-4-4 pattern)
    */
   private generate4erLangRotation(templateShifts: ShiftEntry[], year: number): ShiftEntry[] {
-    const employees = [...new Set(templateShifts.map((s) => s.userId))].slice(0, 4);
+    const employees = [...new Set(templateShifts.map((s: ShiftEntry) => s.userId))].slice(0, 4);
 
     if (employees.length !== 4) {
       return this.generateYearPatternFromTwoWeeks(templateShifts, year);
@@ -631,7 +631,7 @@ export class KontischichtService {
    */
   private generateYearPatternFromTwoWeeks(twoWeekShifts: ShiftEntry[], year: number): ShiftEntry[] {
     const sortedTemplate = [...twoWeekShifts].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      (a: ShiftEntry, b: ShiftEntry) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
 
     if (sortedTemplate.length === 0) {

@@ -137,7 +137,7 @@ export const ExportShiftsQuerySchema = z.object({
  */
 export const UpcomingMaintenanceQuerySchema = z.object({
   days: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       typeof val === 'string' || typeof val === 'number' ?
         Number.parseInt(val.toString(), 10)
       : val,

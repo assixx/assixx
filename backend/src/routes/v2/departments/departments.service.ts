@@ -57,7 +57,7 @@ export interface DepartmentMember {
 /**
  *
  */
-export class ServiceError extends Error {
+class ServiceError extends Error {
   /**
    *
    * @param code - The code parameter
@@ -77,7 +77,7 @@ export class ServiceError extends Error {
 /**
  *
  */
-export class DepartmentService {
+class DepartmentService {
   /**
    * Get all departments for a tenant
    * @param tenantId - The tenant ID

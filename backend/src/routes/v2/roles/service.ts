@@ -12,7 +12,7 @@ import { Role, RoleCheckRequest, RoleName } from './types.js';
 /**
  *
  */
-export class RolesService {
+class RolesService {
   /**
    * Static role definitions
    */

@@ -23,7 +23,7 @@ interface Department {
 /**
  *
  */
-export class DepartmentController {
+class DepartmentController {
   /**
    * Get all departments
    * @param req - The request object

@@ -371,7 +371,9 @@ class ChatService {
 
       // Transform the results to match the expected format
       return await Promise.all(
-        conversations.map((conv) => this.transformConversation(conv, numericTenantId)),
+        conversations.map((conv: Conversation) =>
+          this.transformConversation(conv, numericTenantId),
+        ),
       );
     } catch (error: unknown) {
       console.error('Error in ChatService.getConversations:', error);
@@ -483,7 +485,7 @@ class ChatService {
     tenantId: string | number,
     userId: number,
     participantIds: number[],
-    isGroup = false,
+    isGroup?: boolean,
     name: string | null = null,
   ): Promise<ConversationCreationResult> {
     const connection = await db.promise().getConnection();
@@ -491,11 +493,19 @@ class ChatService {
     try {
       await connection.beginTransaction();
 
+      const resolvedIsGroup = isGroup ?? false;
+
       // Validate employee permissions
-      await this.validateEmployeePermission(connection, tenantId, userId, participantIds, isGroup);
+      await this.validateEmployeePermission(
+        connection,
+        tenantId,
+        userId,
+        participantIds,
+        resolvedIsGroup,
+      );
 
       // Check for existing 1:1 conversation
-      if (!isGroup && participantIds.length === 1) {
+      if (!resolvedIsGroup && participantIds.length === 1) {
         const existingId = await this.findExistingConversation(
           connection,
           tenantId,
@@ -512,7 +522,7 @@ class ChatService {
       // Create new conversation
       const [result] = await connection.query<ResultSetHeader>(
         'INSERT INTO conversations (tenant_id, is_group, name) VALUES (?, ?, ?)',
-        [tenantId, isGroup, name],
+        [tenantId, resolvedIsGroup, name],
       );
 
       const conversationId = result.insertId;
@@ -542,9 +552,12 @@ class ChatService {
     tenantId: string | number,
     conversationId: number,
     userId: number,
-    limit = 50,
-    offset = 0,
+    limit?: number,
+    offset?: number,
   ): Promise<MessagesResponse> {
+    const resolvedLimit = limit ?? 50;
+    const resolvedOffset = offset ?? 0;
+
     // Prüfe Berechtigung
     const [participant] = await db
       .promise()
@@ -586,7 +599,7 @@ class ChatService {
       WHERE m.conversation_id = ? AND m.tenant_id = ?
       ORDER BY m.created_at DESC
       LIMIT ? OFFSET ?`,
-      [conversationId, tenantId, limit, offset],
+      [conversationId, tenantId, resolvedLimit, resolvedOffset],
     );
 
     // Hole Teilnehmer für Gruppenkonversationen

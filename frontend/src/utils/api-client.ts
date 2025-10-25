@@ -442,16 +442,13 @@ if (typeof window !== 'undefined') {
 }
 
 // Global error handler for unhandled API errors
-window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason instanceof ApiError) {
-    console.error('[API] Unhandled API Error:', event.reason);
+window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
+  const reason: unknown = event.reason;
+  if (reason instanceof ApiError) {
+    console.error('[API] Unhandled API Error:', reason);
 
     // Handle specific error codes
-    if (
-      event.reason.code === 'UNAUTHORIZED' ||
-      event.reason.code === 'SESSION_EXPIRED' ||
-      event.reason.status === 401
-    ) {
+    if (reason.code === 'UNAUTHORIZED' || reason.code === 'SESSION_EXPIRED' || reason.status === 401) {
       // Token might be invalid or expired, redirect to login with session expired message
       event.preventDefault(); // Prevent console error
       apiClient.clearTokens();

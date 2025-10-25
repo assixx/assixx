@@ -7,7 +7,6 @@
 import '../styles/main.css';
 
 // Import core modules - these are still .js files
-import { initAuth } from './core/auth.js';
 import { initNavigation } from './core/navigation.js';
 import { initTheme } from './core/theme.js';
 import { initUtils } from './core/utils.js';
@@ -16,18 +15,15 @@ import { initModals } from './components/modals.js';
 import { initTooltips } from './components/tooltips.js';
 import { initDropdowns } from './components/dropdowns.js';
 // Import services - these are already TypeScript (default instances)
-import apiService from './services/api.service';
 import storageService from './services/storage.service';
 import notificationService from './services/notification.service';
 // Import types for the services
-import type { ApiService } from './services/api.service';
 import type { StorageService } from './services/storage.service';
 import type { NotificationService } from './services/notification.service';
 
 // Define the Assixx interface
 interface AssixxApp {
   // Services
-  api: ApiService;
   storage: StorageService;
   notification: NotificationService;
 
@@ -50,7 +46,6 @@ declare global {
 // Global app object
 const assixxApp: AssixxApp = {
   // Services (use the imported instances)
-  api: apiService,
   storage: storageService,
   notification: notificationService,
 
@@ -63,7 +58,6 @@ const assixxApp: AssixxApp = {
     console.info('Initializing Assixx Application...');
 
     // Initialize core modules
-    initAuth();
     initNavigation();
     initTheme();
     initUtils();
