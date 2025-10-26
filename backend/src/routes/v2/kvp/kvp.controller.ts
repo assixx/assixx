@@ -469,7 +469,7 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
 
     const attachments = await Promise.all(
       files.map(
-        async (file) =>
+        async (file: Express.Multer.File) =>
           await kvpService.addAttachment(
             suggestionId,
             {
@@ -493,11 +493,11 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
       action: 'upload_attachment',
       entity_type: 'kvp_suggestion',
       entity_id: suggestionId,
-      details: `Anhänge hochgeladen: ${files.map((f) => f.filename).join(', ')}`,
+      details: `Anhänge hochgeladen: ${files.map((f: Express.Multer.File) => f.filename).join(', ')}`,
       new_values: {
         files_count: files.length,
-        file_names: files.map((f) => f.filename).join(', '),
-        total_size: files.reduce((sum, f) => sum + f.size, 0),
+        file_names: files.map((f: Express.Multer.File) => f.filename).join(', '),
+        total_size: files.reduce((sum: number, f: Express.Multer.File) => sum + f.size, 0),
         uploaded_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,

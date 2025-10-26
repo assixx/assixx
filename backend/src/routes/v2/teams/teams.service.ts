@@ -15,6 +15,17 @@ import { execute } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';
 
+// Query result types for type safety
+interface TeamMemberResult extends RowDataPacket {
+  id: number;
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  position?: string;
+  employee_id?: string;
+}
+
 /**
  *
  */
@@ -173,14 +184,14 @@ class TeamsService {
       }
       apiTeam.leaderId ??= null;
 
-      apiTeam.members = members.map((member: RowDataPacket) => ({
-        id: member.id as number,
-        username: member.username as string,
-        email: member.email as string,
-        firstName: member.first_name as string | undefined,
-        lastName: member.last_name as string | undefined,
-        position: member.position as string | undefined,
-        employeeId: member.employee_id as string | undefined,
+      apiTeam.members = members.map((member: TeamMemberResult) => ({
+        id: member.id,
+        username: member.username,
+        email: member.email,
+        firstName: member.first_name,
+        lastName: member.last_name,
+        position: member.position,
+        employeeId: member.employee_id,
       }));
 
       // Add machines to response
@@ -425,14 +436,14 @@ class TeamsService {
 
       const members = await Team.getTeamMembers(teamId);
 
-      return members.map((member: RowDataPacket) => ({
-        id: member.id as number,
-        username: member.username as string,
-        email: member.email as string,
-        firstName: member.first_name as string | undefined,
-        lastName: member.last_name as string | undefined,
-        position: member.position as string | undefined,
-        employeeId: member.employee_id as string | undefined,
+      return members.map((member: TeamMemberResult) => ({
+        id: member.id,
+        username: member.username,
+        email: member.email,
+        firstName: member.first_name,
+        lastName: member.last_name,
+        position: member.position,
+        employeeId: member.employee_id,
       }));
     } catch (error: unknown) {
       if (error instanceof ServiceError) {

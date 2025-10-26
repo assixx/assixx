@@ -27,7 +27,7 @@ export class DocumentBase {
   protected currentViewMode: ViewMode = 'active';
   protected favoriteDocIds = new Set<number>();
 
-  constructor(scope: DocumentScope, title: string, subtitle: string, showSearch = true) {
+  constructor(scope: DocumentScope, title: string, subtitle: string, showSearch: boolean = true) {
     this.currentScope = scope;
     this.pageTitle = title;
     this.pageSubtitle = subtitle;

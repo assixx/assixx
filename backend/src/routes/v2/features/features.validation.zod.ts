@@ -39,7 +39,7 @@ const TenantIdSchema = z.number().int().positive('Invalid tenant ID');
  */
 export const GetAllFeaturesQuerySchema = z.object({
   includeInactive: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -52,7 +52,7 @@ export const GetAllFeaturesQuerySchema = z.object({
  */
 export const GetFeaturesByCategoryQuerySchema = z.object({
   includeInactive: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -68,10 +68,14 @@ export const GetUsageStatsQuerySchema = z
     startDate: DateSchema,
     endDate: DateSchema,
   })
-  .refine((data) => new Date(data.endDate) >= new Date(data.startDate), {
-    message: 'End date must be after start date',
-    path: ['endDate'],
-  });
+  .refine(
+    (data: { startDate: string; endDate: string }) =>
+      new Date(data.endDate) >= new Date(data.startDate),
+    {
+      message: 'End date must be after start date',
+      path: ['endDate'],
+    },
+  );
 
 // ============================================================
 // PARAM SCHEMAS
@@ -96,7 +100,7 @@ export const FeatureCodeUsageParamSchema = z.object({
  */
 export const TenantIdParamSchema = z.object({
   tenantId: z.preprocess(
-    (val) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
+    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
     TenantIdSchema,
   ),
 });
@@ -116,14 +120,14 @@ export const ActivateFeatureBodySchema = z.object({
       expiresAt: z
         .string()
         .refine(
-          (val) => {
+          (val: string) => {
             const isoDatePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
             return isoDatePattern.test(val);
           },
           { message: 'expiresAt must be a valid ISO 8601 date' },
         )
         .refine(
-          (val) => {
+          (val: string) => {
             const date = new Date(val);
             return date > new Date();
           },

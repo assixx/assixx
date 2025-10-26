@@ -14,6 +14,21 @@ import { logger } from '../../../utils/logger.js';
 import { adminPermissionsService } from './service.js';
 import { BulkPermissionsRequest, PermissionLevel, SetPermissionsRequest } from './types.js';
 
+// Error detail interface for type safety
+interface ErrorDetail {
+  field: string;
+  message: string;
+}
+
+// Helper function to safely extract error message from ValidationError
+// ValidationError.msg is typed as 'any' in express-validator
+function mapValidationError(error: ValidationError): ErrorDetail {
+  return {
+    field: error.type === 'field' ? error.path : 'general',
+    message: String(error.msg as unknown),
+  };
+}
+
 // Constants for error messages
 const VALIDATION_ERROR = 'VALIDATION_ERROR';
 const FORBIDDEN_ERROR = 'FORBIDDEN';
@@ -49,10 +64,7 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error: ValidationError) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: String(error.msg),
-        }));
+        const validationErrors = errors.array().map(mapValidationError);
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
@@ -144,10 +156,7 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error: ValidationError) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: String(error.msg),
-        }));
+        const validationErrors = errors.array().map(mapValidationError);
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
@@ -217,10 +226,7 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error: ValidationError) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: String(error.msg),
-        }));
+        const validationErrors = errors.array().map(mapValidationError);
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
@@ -273,10 +279,7 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error: ValidationError) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: String(error.msg),
-        }));
+        const validationErrors = errors.array().map(mapValidationError);
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
@@ -329,10 +332,7 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error: ValidationError) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: String(error.msg),
-        }));
+        const validationErrors = errors.array().map(mapValidationError);
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }
@@ -381,10 +381,7 @@ export const adminPermissionsController = {
       // Check validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map((error: ValidationError) => ({
-          field: error.type === 'field' ? error.path : 'general',
-          message: String(error.msg),
-        }));
+        const validationErrors = errors.array().map(mapValidationError);
         res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
         return;
       }

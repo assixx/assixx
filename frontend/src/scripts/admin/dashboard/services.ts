@@ -98,7 +98,7 @@ export class EmployeeService {
     this.apiClient = ApiClient.getInstance();
   }
 
-  async loadRecentEmployees(limit = 5): Promise<MappedUser[]> {
+  async loadRecentEmployees(limit: number = 5): Promise<MappedUser[]> {
     try {
       // First ensure we have all employees loaded and cached
       await this.loadAllEmployees();
@@ -268,7 +268,7 @@ export class DocumentService {
     this.apiClient = ApiClient.getInstance();
   }
 
-  async loadRecentDocuments(limit = 5): Promise<Document[]> {
+  async loadRecentDocuments(limit: number = 5): Promise<Document[]> {
     try {
       // First ensure we have all documents loaded and cached
       await this.loadAllDocuments();
@@ -322,7 +322,7 @@ export class BlackboardService {
     this.apiClient = ApiClient.getInstance();
   }
 
-  async loadPreview(limit = 3): Promise<BlackboardEntryExtended[]> {
+  async loadPreview(limit: number = 3): Promise<BlackboardEntryExtended[]> {
     try {
       const authToken = getAuthToken();
       if (authToken === null || authToken === '') {
@@ -337,7 +337,7 @@ export class BlackboardService {
     }
   }
 
-  async loadWidget(limit = 3): Promise<BlackboardEntryExtended[]> {
+  async loadWidget(limit: number = 3): Promise<BlackboardEntryExtended[]> {
     try {
       const authToken = getAuthToken();
       if (authToken === null || authToken === '') {

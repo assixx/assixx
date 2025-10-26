@@ -11,6 +11,10 @@ import { fillBasicFormFields, fillOptionalFormFields, fillAvailabilityFields, se
 // ===== CONSTANTS =====
 const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
 
+// Field state classes for validation feedback (Design System)
+const FIELD_STATE_ERROR = 'is-error';
+const FIELD_STATE_SUCCESS = 'is-success';
+
 // Password toggle cleanup controller (prevent memory leaks)
 let passwordToggleCleanup: AbortController | null = null;
 
@@ -29,6 +33,13 @@ export const SELECTORS = {
   STATUS_INPUT: 'employee-status',
   AVAILABILITY_TRIGGER: 'availability-status-trigger',
   AVAILABILITY_INPUT: 'availability-status',
+  // Validation selectors (with # prefix for $$() compatibility)
+  EMPLOYEE_EMAIL: '#employee-email',
+  EMPLOYEE_EMAIL_CONFIRM: '#employee-email-confirm',
+  EMPLOYEE_PASSWORD: '#employee-password',
+  EMPLOYEE_PASSWORD_CONFIRM: '#employee-password-confirm',
+  EMAIL_ERROR: '#email-error',
+  PASSWORD_ERROR: '#password-error',
 } as const;
 
 // ===== HELPER FUNCTIONS =====
@@ -83,8 +94,147 @@ export function resetCustomDropdowns(): void {
  * Clear all form validation states
  */
 export function clearFieldValidationStates(): void {
-  // TODO: Implement if needed for employee form validation
-  // Following manage-admins pattern
+  const emailField = document.querySelector(SELECTORS.EMPLOYEE_EMAIL);
+  const emailConfirmField = document.querySelector(SELECTORS.EMPLOYEE_EMAIL_CONFIRM);
+  const passwordField = document.querySelector(SELECTORS.EMPLOYEE_PASSWORD);
+  const passwordConfirmField = document.querySelector(SELECTORS.EMPLOYEE_PASSWORD_CONFIRM);
+
+  // Remove validation classes
+  emailField?.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+  emailConfirmField?.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+  passwordField?.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+  passwordConfirmField?.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+
+  // Hide error messages
+  document.querySelector(SELECTORS.EMAIL_ERROR)?.classList.add('u-hidden');
+  document.querySelector(SELECTORS.PASSWORD_ERROR)?.classList.add('u-hidden');
+}
+
+/**
+ * Setup live email validation with visual feedback
+ * Following manage-root-users pattern
+ */
+function setupEmailValidation(): void {
+  const emailField = document.querySelector<HTMLInputElement>(SELECTORS.EMPLOYEE_EMAIL);
+  const emailConfirmField = document.querySelector<HTMLInputElement>(SELECTORS.EMPLOYEE_EMAIL_CONFIRM);
+  const emailError = document.querySelector(SELECTORS.EMAIL_ERROR);
+
+  if (emailField !== null && emailConfirmField !== null && emailError !== null) {
+    const validateEmails = (): void => {
+      const email = emailField.value;
+      const emailConfirm = emailConfirmField.value;
+
+      if (emailConfirm !== '') {
+        if (email !== emailConfirm) {
+          // Mismatch: Show error state
+          emailError.classList.remove('u-hidden');
+          emailField.classList.add(FIELD_STATE_ERROR);
+          emailField.classList.remove(FIELD_STATE_SUCCESS);
+          emailConfirmField.classList.add(FIELD_STATE_ERROR);
+          emailConfirmField.classList.remove(FIELD_STATE_SUCCESS);
+        } else {
+          // Match: Show success state
+          emailError.classList.add('u-hidden');
+          emailField.classList.remove(FIELD_STATE_ERROR);
+          emailField.classList.add(FIELD_STATE_SUCCESS);
+          emailConfirmField.classList.remove(FIELD_STATE_ERROR);
+          emailConfirmField.classList.add(FIELD_STATE_SUCCESS);
+        }
+      } else {
+        // Neutral: Clear all states
+        emailError.classList.add('u-hidden');
+        emailField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+        emailConfirmField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+      }
+    };
+
+    // Live validation on input
+    emailField.addEventListener('input', validateEmails);
+    emailConfirmField.addEventListener('input', validateEmails);
+  }
+}
+
+/**
+ * Setup live password validation with visual feedback
+ * Following manage-root-users pattern
+ */
+function setupPasswordValidation(): void {
+  const passwordField = document.querySelector<HTMLInputElement>(SELECTORS.EMPLOYEE_PASSWORD);
+  const passwordConfirmField = document.querySelector<HTMLInputElement>(SELECTORS.EMPLOYEE_PASSWORD_CONFIRM);
+  const passwordError = document.querySelector(SELECTORS.PASSWORD_ERROR);
+
+  if (passwordField !== null && passwordConfirmField !== null && passwordError !== null) {
+    const validatePasswords = (): void => {
+      const password = passwordField.value;
+      const passwordConfirm = passwordConfirmField.value;
+
+      if (passwordConfirm !== '') {
+        const passwordsMatch = password.length === passwordConfirm.length && password === passwordConfirm;
+        if (!passwordsMatch) {
+          // Mismatch: Show error state
+          passwordError.classList.remove('u-hidden');
+          passwordField.classList.add(FIELD_STATE_ERROR);
+          passwordField.classList.remove(FIELD_STATE_SUCCESS);
+          passwordConfirmField.classList.add(FIELD_STATE_ERROR);
+          passwordConfirmField.classList.remove(FIELD_STATE_SUCCESS);
+        } else {
+          // Match: Show success state
+          passwordError.classList.add('u-hidden');
+          passwordField.classList.remove(FIELD_STATE_ERROR);
+          passwordField.classList.add(FIELD_STATE_SUCCESS);
+          passwordConfirmField.classList.remove(FIELD_STATE_ERROR);
+          passwordConfirmField.classList.add(FIELD_STATE_SUCCESS);
+        }
+      } else {
+        // Neutral: Clear all states
+        passwordError.classList.add('u-hidden');
+        passwordField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+        passwordConfirmField.classList.remove(FIELD_STATE_ERROR, FIELD_STATE_SUCCESS);
+      }
+    };
+
+    // Live validation on input
+    passwordField.addEventListener('input', validatePasswords);
+    passwordConfirmField.addEventListener('input', validatePasswords);
+  }
+}
+
+/**
+ * Initialize validation listeners for email and password fields
+ * Call this on page load to enable live validation
+ */
+export function setupValidationListeners(): void {
+  setupEmailValidation();
+  setupPasswordValidation();
+}
+
+// ===== SUBMIT-TIME VALIDATION =====
+
+/**
+ * Validate password requirements on submit
+ * Must match backend PasswordSchema: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
+ */
+export function validatePasswordOnSubmit(password: string): { valid: boolean; message: string } {
+  // Check length
+  if (password.length > 0 && password.length < 8) {
+    return { valid: false, message: 'Passwort muss mindestens 8 Zeichen lang sein!' };
+  }
+
+  // Check complexity
+  if (password.length > 0) {
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
+    if (!hasLowercase || !hasUppercase || !hasNumber) {
+      return {
+        valid: false,
+        message: 'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten!',
+      };
+    }
+  }
+
+  return { valid: true, message: '' };
 }
 
 /**

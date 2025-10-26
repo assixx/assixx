@@ -1,13 +1,8 @@
 /* eslint-disable max-lines */
 /**
  * API Field Mappers for handling v1/v2 API differences
- * Uses the generated types from Swagger
+ * Maps between snake_case (API v1/v2) and camelCase (Frontend)
  */
-
-import type { components } from '../generated/api-types';
-
-// Type from our generated Swagger types
-export type SwaggerUser = components['schemas']['User'];
 
 // Union type for API responses that might have snake_case or camelCase
 export interface UserAPIResponse {

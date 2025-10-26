@@ -19,7 +19,7 @@ import { getInitials, getColorClass } from '../../design-system/primitives/avata
 // Declare global type for window
 declare global {
   interface Window {
-    UnifiedNavigation: typeof UnifiedNavigation;
+    UnifiedNavigation?: typeof UnifiedNavigation;
     unifiedNav?: UnifiedNavigation;
   }
 }
@@ -1549,7 +1549,7 @@ class UnifiedNavigation {
         `;
   }
 
-  private createMenuItem(item: NavItem, isActive = false): string {
+  private createMenuItem(item: NavItem, isActive: boolean = false): string {
     const activeClass = isActive ? 'active' : '';
     const hasChildren = item.children && item.children.length > 0;
     const hasSubmenu = item.hasSubmenu === true && item.submenu !== undefined && item.submenu.length > 0;
@@ -2956,7 +2956,9 @@ class UnifiedNavigation {
 
         switch (action) {
           case 'dismiss-role-banner':
-            window.dismissRoleSwitchBanner();
+            if (window.dismissRoleSwitchBanner !== undefined) {
+              window.dismissRoleSwitchBanner();
+            }
             break;
 
           case 'navigate-blackboard':
@@ -3257,8 +3259,8 @@ if (document.readyState === 'loading') {
 // Extend Window interface for global functions
 declare global {
   interface Window {
-    UnifiedNavigation: typeof UnifiedNavigation;
-    dismissRoleSwitchBanner: () => void;
+    UnifiedNavigation?: typeof UnifiedNavigation;
+    dismissRoleSwitchBanner?: () => void;
   }
 }
 

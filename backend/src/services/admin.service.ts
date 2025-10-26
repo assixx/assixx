@@ -59,10 +59,8 @@ class AdminLogService {
       // Use getByUserId if user_id is provided, otherwise return empty array
       if (filters.user_id != null && filters.user_id !== 0) {
         const logs = await rootLog.getByUserId(filters.user_id);
-        return logs.map((log: DbRootLog) => ({
-          ...log,
-          created_at: log.timestamp as Date,
-        }));
+        // DbRootLog already has created_at, no transformation needed
+        return logs as AdminLogData[];
       }
       return [];
     } catch (error: unknown) {

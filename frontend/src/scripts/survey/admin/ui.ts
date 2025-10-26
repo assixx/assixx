@@ -277,7 +277,7 @@ export function createQuestionHtml(questionId: string, questionNumber: number): 
   `;
 }
 
-export function createOptionHtml(optionText = ''): string {
+export function createOptionHtml(optionText: string = ''): string {
   return `
     <div class="option-item">
       <input type="text" class="option-input" placeholder="Option eingeben..." value="${escapeHtml(optionText)}">

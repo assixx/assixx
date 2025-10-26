@@ -285,11 +285,11 @@ export function validateEmails(): boolean {
   const emailError = $$(SELECTORS.EMAIL_ERROR);
 
   if (email !== emailConfirm) {
-    if (emailError) emailError.style.display = 'block';
+    if (emailError) emailError.classList.remove('u-hidden');
     showErrorAlert('Die E-Mail-Adressen stimmen nicht überein!');
     return false;
   }
-  if (emailError) emailError.style.display = 'none';
+  if (emailError) emailError.classList.add('u-hidden');
   return true;
 }
 
@@ -298,9 +298,28 @@ export function validateEmails(): boolean {
  */
 function validatePasswordLength(password: string, errorElement: HTMLElement | null): boolean {
   if (password.length > 0 && password.length < 8) {
-    if (errorElement) errorElement.style.display = 'block';
+    if (errorElement) errorElement.classList.remove('u-hidden');
     showErrorAlert('Passwort muss mindestens 8 Zeichen lang sein!');
     return false;
+  }
+  return true;
+}
+
+/**
+ * Validate password complexity (uppercase, lowercase, number)
+ * Must match backend PasswordSchema: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
+ */
+function validatePasswordComplexity(password: string, errorElement: HTMLElement | null): boolean {
+  if (password.length > 0) {
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
+    if (!hasLowercase || !hasUppercase || !hasNumber) {
+      if (errorElement) errorElement.classList.remove('u-hidden');
+      showErrorAlert('Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten!');
+      return false;
+    }
   }
   return true;
 }
@@ -311,7 +330,7 @@ function validatePasswordLength(password: string, errorElement: HTMLElement | nu
 function validatePasswordMatch(password: string, passwordConfirm: string, errorElement: HTMLElement | null): boolean {
   // eslint-disable-next-line security/detect-possible-timing-attacks -- Safe: client-side UX validation only, not comparing secrets
   if (password !== passwordConfirm) {
-    if (errorElement) errorElement.style.display = 'block';
+    if (errorElement) errorElement.classList.remove('u-hidden');
     showErrorAlert('Die Passwörter stimmen nicht überein!');
     return false;
   }
@@ -333,10 +352,11 @@ export function validatePasswords(): boolean {
 
   if (isPasswordProvided) {
     if (!validatePasswordLength(password, passwordError)) return false;
+    if (!validatePasswordComplexity(password, passwordError)) return false;
     if (!validatePasswordMatch(password, passwordConfirm, passwordError)) return false;
   }
 
-  if (passwordError) passwordError.style.display = 'none';
+  if (passwordError) passwordError.classList.add('u-hidden');
   return true;
 }
 
@@ -502,15 +522,11 @@ export function setActiveStatus(isActive: boolean): void {
 export function hideEditModeElements(): void {
   // Show email/password fields in edit mode (Admin can change them)
   // Only hide error messages
-  const elements = [
-    { selector: SELECTORS.EMAIL_ERROR, display: 'none' },
-    { selector: SELECTORS.PASSWORD_ERROR, display: 'none' },
-  ];
+  const emailError = $$(SELECTORS.EMAIL_ERROR);
+  const passwordError = $$(SELECTORS.PASSWORD_ERROR);
 
-  elements.forEach(({ selector, display }) => {
-    const element = $$(selector);
-    if (element) element.style.display = display;
-  });
+  if (emailError) emailError.classList.add('u-hidden');
+  if (passwordError) passwordError.classList.add('u-hidden');
 
   // Ensure email/password groups are visible
   const emailConfirmGroup = $$('#email-confirm-group');
@@ -619,6 +635,7 @@ export function clearFormFields(): void {
 
 /**
  * Clear validation states from form fields
+ * NOTE: Live validation is handled in index.ts (setupEmailValidation, setupPasswordValidation)
  */
 export function clearFieldValidationStates(): void {
   const emailField = $$(SELECTORS.ADMIN_EMAIL);
@@ -690,8 +707,8 @@ export function resetFormVisibility(): void {
 export function resetErrorMessages(): void {
   const emailError = $$(SELECTORS.EMAIL_ERROR);
   const passwordError = $$(SELECTORS.PASSWORD_ERROR);
-  if (emailError) emailError.style.display = 'none';
-  if (passwordError) passwordError.style.display = 'none';
+  if (emailError) emailError.classList.add('u-hidden');
+  if (passwordError) passwordError.classList.add('u-hidden');
 }
 
 export function resetPermissionSettings(): void {
@@ -880,7 +897,7 @@ export async function savePermissionsHandler(): Promise<void> {
 /**
  * Highlight field with error state temporarily
  */
-function highlightFieldError(selector: string, duration = 3000): void {
+function highlightFieldError(selector: string, duration: number = 3000): void {
   const field = $$(selector) as HTMLInputElement | null;
   if (field !== null) {
     field.classList.add('is-error');

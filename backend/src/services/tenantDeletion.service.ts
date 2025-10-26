@@ -46,6 +46,11 @@ interface QueueRow extends RowDataPacket {
   ip_address?: string;
 }
 
+interface LegalHoldResult extends RowDataPacket {
+  reason: string;
+  active: number;
+}
+
 interface DeletionResult {
   success: boolean;
   tablesAffected: number;
@@ -644,13 +649,13 @@ export class TenantDeletionService {
     };
 
     // Check blockers
-    const [legalHolds] = await query<RowDataPacket[]>(
+    const [legalHolds] = await query<LegalHoldResult[]>(
       'SELECT * FROM legal_holds WHERE tenant_id = ? AND active = 1',
       [tenantId],
     );
 
     if (legalHolds.length > 0) {
-      report.blockers.push(`Legal hold active: ${legalHolds[0].reason as string}`);
+      report.blockers.push(`Legal hold active: ${legalHolds[0].reason}`);
     }
 
     // Count records in each table

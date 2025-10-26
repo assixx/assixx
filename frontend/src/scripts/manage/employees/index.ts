@@ -16,6 +16,8 @@ import {
   closeEmployeeModal,
   showDeleteModal,
   closeDeleteModal,
+  setupValidationListeners,
+  validatePasswordOnSubmit,
 } from './forms';
 
 class EmployeesManager {
@@ -527,7 +529,8 @@ class EmployeesManager {
     });
 
     // If teamId was provided, assign the user to the team
-    if (teamId !== undefined) {
+    // Only assign if teamId is a valid number (not undefined, null, 0, or empty string)
+    if (teamId !== undefined && typeof teamId === 'number' && teamId > 0) {
       try {
         console.info('[createEmployee] Assigning user to team:', teamId);
         // Use the same endpoint as manage-teams
@@ -737,33 +740,24 @@ function setupUrlChangeHandlers(): void {
 
   // Override pushState and replaceState
   const originalPushState = window.history.pushState.bind(window.history);
-  window.history.pushState = function (...args) {
+  window.history.pushState = function (...args: Parameters<typeof window.history.pushState>) {
     originalPushState.apply(window.history, args);
     setTimeout(checkAndLoadEmployees, 100);
   };
 
   const originalReplaceState = window.history.replaceState.bind(window.history);
-  window.history.replaceState = function (...args) {
+  window.history.replaceState = function (...args: Parameters<typeof window.history.replaceState>) {
     originalReplaceState.apply(window.history, args);
     setTimeout(checkAndLoadEmployees, 100);
   };
 }
 
-// Save employee handler
-async function handleSaveEmployee(): Promise<void> {
-  console.info('[saveEmployee] Function called');
-  const form = $$id('employee-form');
-  if (!(form instanceof HTMLFormElement)) {
-    console.error('[saveEmployee] Form not found or not a form element');
-    return;
-  }
-  console.info('[saveEmployee] Form found, processing data...');
-
+/**
+ * Extract form data and process fields
+ */
+function extractFormDataToRecord(form: HTMLFormElement, isUpdate: boolean): Record<string, unknown> {
   const formData = new FormData(form);
   const data: Record<string, unknown> = {};
-
-  // Check if we're creating or updating
-  const isUpdate = employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined;
 
   formData.forEach((value, key) => {
     if (typeof value === 'string') {
@@ -777,7 +771,13 @@ async function handleSaveEmployee(): Promise<void> {
     data.availabilityEnd = null;
   }
 
-  // Ensure required fields
+  return data;
+}
+
+/**
+ * Validate required employee fields
+ */
+function validateRequiredEmployeeFields(data: Record<string, unknown>): { valid: boolean; message?: string } {
   if (
     typeof data.email !== 'string' ||
     data.email.length === 0 ||
@@ -786,39 +786,90 @@ async function handleSaveEmployee(): Promise<void> {
     typeof data.lastName !== 'string' ||
     data.lastName.length === 0
   ) {
-    showErrorAlert('Bitte füllen Sie alle Pflichtfelder aus');
-    return;
+    return { valid: false, message: 'Bitte füllen Sie alle Pflichtfelder aus' };
   }
+  return { valid: true };
+}
 
-  // Set role to 'employee' for new users
+/**
+ * Validate employee password if provided
+ */
+function validateEmployeePasswordField(data: Record<string, unknown>): { valid: boolean; message?: string } {
+  if (typeof data.password === 'string' && data.password !== '') {
+    const passwordValidation = validatePasswordOnSubmit(data.password);
+    if (!passwordValidation.valid) {
+      return { valid: false, message: passwordValidation.message };
+    }
+  }
+  return { valid: true };
+}
+
+/**
+ * Prepare employee data for save operation
+ */
+function prepareEmployeeDataForSave(data: Record<string, unknown>): void {
   data.role = 'employee';
-  // Set username to email (required by backend)
   data.username = data.email;
-  // Convert isActive to boolean if present
   if (data.isActive !== undefined) {
     data.isActive = data.isActive === '1' || data.isActive === true;
   }
+}
+
+/**
+ * Perform employee save operation and close modal
+ */
+async function performEmployeeSave(data: Record<string, unknown>, form: HTMLFormElement): Promise<void> {
+  console.info('[saveEmployee] Starting save operation...');
+
+  if (employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined) {
+    console.info('[saveEmployee] Updating employee ID:', employeesManager.currentEmployeeId);
+    await employeesManager.updateEmployee(employeesManager.currentEmployeeId, data as Partial<Employee>);
+  } else {
+    console.info('[saveEmployee] Creating new employee...');
+    await employeesManager?.createEmployee(data as Partial<Employee>);
+  }
+
+  console.info('[saveEmployee] Save successful, closing modal...');
+  const w = window as WindowWithEmployeeHandlers;
+  w.hideEmployeeModal?.();
+  form.reset();
+
+  if (employeesManager !== null) {
+    employeesManager.currentEmployeeId = null;
+  }
+}
+
+/**
+ * Save employee handler - orchestrates the save workflow
+ */
+async function handleSaveEmployee(): Promise<void> {
+  console.info('[saveEmployee] Function called');
+  const form = $$id('employee-form');
+  if (!(form instanceof HTMLFormElement)) {
+    console.error('[saveEmployee] Form not found or not a form element');
+    return;
+  }
+  console.info('[saveEmployee] Form found, processing data...');
+
+  const isUpdate = employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined;
+  const data = extractFormDataToRecord(form, isUpdate);
+
+  const requiredValidation = validateRequiredEmployeeFields(data);
+  if (!requiredValidation.valid) {
+    showErrorAlert(requiredValidation.message ?? 'Validation error');
+    return;
+  }
+
+  const passwordValidation = validateEmployeePasswordField(data);
+  if (!passwordValidation.valid) {
+    showErrorAlert(passwordValidation.message ?? 'Password validation error');
+    return;
+  }
+
+  prepareEmployeeDataForSave(data);
 
   try {
-    console.info('[saveEmployee] Starting save operation...');
-    // Check if we're updating or creating
-    if (employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined) {
-      console.info('[saveEmployee] Updating employee ID:', employeesManager.currentEmployeeId);
-      // Update existing employee
-      await employeesManager.updateEmployee(employeesManager.currentEmployeeId, data as Partial<Employee>);
-    } else {
-      console.info('[saveEmployee] Creating new employee...');
-      // Create new employee
-      await employeesManager?.createEmployee(data as Partial<Employee>);
-    }
-    console.info('[saveEmployee] Save successful, closing modal...');
-    const w = window as WindowWithEmployeeHandlers;
-    w.hideEmployeeModal?.();
-    form.reset();
-    // Reset current employee ID
-    if (employeesManager) {
-      employeesManager.currentEmployeeId = null;
-    }
+    await performEmployeeSave(data, form);
   } catch (error) {
     console.error('Error saving employee:', error);
     employeesManager?.handleEmployeeSaveError(error);
@@ -1102,6 +1153,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (window.location.pathname === '/admin-dashboard' || window.location.pathname === '/manage-employees') {
     employeesManager = new EmployeesManager();
     setupWindowHandlers();
+
+    // Setup live email/password validation
+    setupValidationListeners();
   }
 });
 

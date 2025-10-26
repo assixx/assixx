@@ -3,7 +3,7 @@
  * RESTful API endpoints for calendar management
  */
 import { Router } from 'express';
-import { body, param, query } from 'express-validator';
+import { type Meta, body, param, query } from 'express-validator';
 
 import { apiLimiter } from '../../../middleware/security-enhanced.js';
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
@@ -21,6 +21,15 @@ interface CalendarEventBody {
   orgId?: number;
 }
 
+/**
+ * Helper to safely get request body from express-validator Meta
+ * Meta.req.body is typed as 'any' - this helper makes it explicit
+ */
+function getRequestBody(meta: Meta): CalendarEventBody {
+  // express-validator's meta.req.body is typed as any - unavoidable
+  return meta.req.body as CalendarEventBody;
+}
+
 const router = Router();
 
 // All routes require authentication
@@ -34,8 +43,8 @@ const eventValidation = createValidation([
     .notEmpty()
     .isISO8601()
     .withMessage('Valid end time is required')
-    .custom((value, { req }) => {
-      const body = req.body as CalendarEventBody;
+    .custom((value: unknown, meta: Meta) => {
+      const body = getRequestBody(meta);
       const startTime = body.startTime ?? '';
       const start = new Date(startTime);
       const end = new Date(value as string);
@@ -50,8 +59,8 @@ const eventValidation = createValidation([
   body('orgId')
     .optional()
     .isInt({ min: 1 })
-    .custom((value, { req }) => {
-      const body = req.body as CalendarEventBody;
+    .custom((value: unknown, meta: Meta) => {
+      const body = getRequestBody(meta);
       if (body.orgLevel === 'department' || body.orgLevel === 'team') {
         return value !== undefined;
       }
@@ -76,8 +85,8 @@ const updateEventValidation = createValidation([
   body('endTime')
     .optional()
     .isISO8601()
-    .custom((value, { req }) => {
-      const body = req.body as CalendarEventBody;
+    .custom((value: unknown, meta: Meta) => {
+      const body = getRequestBody(meta);
       if (body.startTime && value) {
         const start = new Date(body.startTime);
         const end = new Date(value as string);

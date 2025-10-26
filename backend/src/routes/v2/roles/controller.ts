@@ -3,7 +3,7 @@
  * HTTP request handlers for roles API
  */
 import { Response } from 'express';
-import { validationResult } from 'express-validator';
+import { ValidationError, validationResult } from 'express-validator';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -54,7 +54,7 @@ class RolesController {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request data',
-          details: errors.array().map((error) => ({
+          details: errors.array().map((error: ValidationError) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: String(error.msg),
           })),
@@ -170,7 +170,7 @@ class RolesController {
         error: {
           code: 'VALIDATION_ERROR',
           message: 'Invalid request data',
-          details: errors.array().map((error) => ({
+          details: errors.array().map((error: ValidationError) => ({
             field: error.type === 'field' ? error.path : 'general',
             message: String(error.msg),
           })),

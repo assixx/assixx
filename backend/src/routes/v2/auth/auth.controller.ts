@@ -13,6 +13,25 @@ import { errorResponse, successResponse } from '../../../utils/apiResponse';
 import { dbToApi } from '../../../utils/fieldMapping';
 import { logger } from '../../../utils/logger';
 
+// JWT Payload interface for type safety
+interface JwtPayload extends jwt.JwtPayload {
+  id: number;
+  email: string;
+  role: string;
+  tenantId: number;
+  type: 'access' | 'refresh';
+}
+
+// Request body interfaces
+interface LoginRequestBody {
+  email: string;
+  password: string;
+}
+
+interface RefreshRequestBody {
+  refreshToken: string;
+}
+
 // Get secrets from environment variables
 const JWT_SECRET = process.env.JWT_SECRET ?? 'default-jwt-secret';
 const JWT_REFRESH_SECRET =
@@ -71,9 +90,12 @@ function generateTokens(
  * @param res - The response object
  */
 
-async function login(req: Request, res: Response): Promise<void> {
+async function login(
+  req: Request<unknown, unknown, LoginRequestBody>,
+  res: Response,
+): Promise<void> {
   try {
-    const { email, password } = req.body as { email: string; password: string };
+    const { email, password } = req.body;
 
     // Validate required fields
     if (!email || !password) {
@@ -302,9 +324,9 @@ async function logout(req: AuthenticatedRequest, res: Response): Promise<void> {
  * @param req - The request object
  * @param res - The response object
  */
-function refresh(req: Request, res: Response): void {
+function refresh(req: Request<unknown, unknown, RefreshRequestBody>, res: Response): void {
   try {
-    const { refreshToken } = req.body as { refreshToken: string };
+    const { refreshToken } = req.body;
 
     if (!refreshToken) {
       res.status(400).json(errorResponse('MISSING_TOKEN', 'Refresh token is required'));
@@ -312,7 +334,7 @@ function refresh(req: Request, res: Response): void {
     }
 
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as jwt.JwtPayload;
+    const decoded = jwt.verify(refreshToken, JWT_REFRESH_SECRET) as JwtPayload;
 
     // Ensure it's a refresh token, not an access token
     if (decoded.type !== 'refresh') {
@@ -323,10 +345,10 @@ function refresh(req: Request, res: Response): void {
     // Generate new access token
     const accessToken = jwt.sign(
       {
-        id: decoded.id as number,
-        email: decoded.email as string,
-        tenantId: decoded.tenantId as number,
-        role: decoded.role as string,
+        id: decoded.id,
+        email: decoded.email,
+        tenantId: decoded.tenantId,
+        role: decoded.role,
         type: 'access' as const,
       },
       JWT_SECRET,

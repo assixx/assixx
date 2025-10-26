@@ -25,6 +25,18 @@ interface AreaRow extends RowDataPacket {
   employee_count?: number;
 }
 
+// Stats query result interfaces
+interface AreaStatsResult extends RowDataPacket {
+  total_areas: number;
+  active_areas: number;
+  total_capacity: number;
+}
+
+interface AreaTypeStatsResult extends RowDataPacket {
+  type: string;
+  count: number;
+}
+
 /**
  * Apply type filter to query
  */
@@ -431,7 +443,7 @@ export async function getAreaStats(tenantId: number): Promise<{
   activeAreas: number;
   totalCapacity: number;
 }> {
-  const [stats] = await execute<RowDataPacket[]>(
+  const [stats] = await execute<AreaStatsResult[]>(
     `
     SELECT
       COUNT(*) as total_areas,
@@ -443,7 +455,7 @@ export async function getAreaStats(tenantId: number): Promise<{
     [tenantId],
   );
 
-  const [typeStats] = await execute<RowDataPacket[]>(
+  const [typeStats] = await execute<AreaTypeStatsResult[]>(
     `
     SELECT type, COUNT(*) as count
     FROM areas
@@ -454,17 +466,17 @@ export async function getAreaStats(tenantId: number): Promise<{
   );
 
   const byType: Record<string, number> = {};
-  typeStats.forEach((row: RowDataPacket) => {
-    const typeKey = row.type as string;
-    const count = row.count as number;
+  typeStats.forEach((row: AreaTypeStatsResult) => {
+    const typeKey = row.type;
+    const count = row.count;
     // Safe: typeKey comes from database query results, not user input
     // eslint-disable-next-line security/detect-object-injection
     byType[typeKey] = count;
   });
 
-  const totalAreas = (stats[0].total_areas as number) || 0;
-  const activeAreas = (stats[0].active_areas as number) || 0;
-  const totalCapacity = (stats[0].total_capacity as number) || 0;
+  const totalAreas = stats[0].total_areas || 0;
+  const activeAreas = stats[0].active_areas || 0;
+  const totalCapacity = stats[0].total_capacity || 0;
 
   return {
     totalAreas,

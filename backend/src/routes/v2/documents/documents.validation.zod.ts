@@ -40,11 +40,11 @@ const TagsArraySchema = z
 const TagsJsonStringSchema = z
   .string()
   .refine(
-    (val) => {
+    (val: string) => {
       try {
         const tags = JSON.parse(val) as unknown;
         if (!Array.isArray(tags)) return false;
-        return tags.every((tag) => typeof tag === 'string' && tag.length <= 50);
+        return tags.every((tag: unknown) => typeof tag === 'string' && tag.length <= 50);
       } catch {
         return false;
       }
@@ -67,21 +67,21 @@ export const ListDocumentsQuerySchema = PaginationSchema.extend({
   teamId: IdSchema.optional(),
   departmentId: IdSchema.optional(),
   year: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       typeof val === 'string' || typeof val === 'number' ?
         Number.parseInt(val.toString(), 10)
       : val,
     z.number().int().min(2000).max(2100).optional(),
   ),
   month: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       typeof val === 'string' || typeof val === 'number' ?
         Number.parseInt(val.toString(), 10)
       : val,
     z.number().int().min(1).max(12).optional(),
   ),
   isArchived: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -125,7 +125,7 @@ export const CreateDocumentBodySchema = z.object({
   month: z.number().int().min(1).max(12).optional(),
   tags: TagsJsonStringSchema,
   isPublic: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -156,7 +156,7 @@ export const UpdateDocumentBodySchema = z.object({
   expiresAt: z
     .string()
     .refine(
-      (val) => {
+      (val: string) => {
         const date = new Date(val);
         return !Number.isNaN(date.getTime());
       },

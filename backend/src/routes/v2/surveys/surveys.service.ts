@@ -29,6 +29,17 @@ export interface AssignmentCreateData {
   userId?: number | null;
 }
 
+// Survey query result type (from model functions)
+interface SurveyQueryResult {
+  id: number;
+  response_count?: number;
+  completed_count?: number;
+  creator_first_name?: string;
+  creator_last_name?: string;
+  // Add other fields as needed by dbToApi
+  [key: string]: unknown;
+}
+
 interface SurveyStatisticsResponse {
   surveyId: number;
   totalResponses: number;
@@ -102,7 +113,7 @@ class SurveysService {
     filters: SurveyFilters = {},
   ): Promise<unknown[]> {
     try {
-      let surveys;
+      let surveys: SurveyQueryResult[];
 
       if (userRole === 'root') {
         // Root can see all surveys
@@ -116,23 +127,16 @@ class SurveysService {
       }
 
       // Transform to API format
-      return surveys.map(
-        (survey: {
-          response_count?: number;
-          completed_count?: number;
-          creator_first_name?: string;
-          creator_last_name?: string;
-        }) => {
-          const apisurvey = dbToApi(survey);
-          return {
-            ...apisurvey,
-            responseCount: survey.response_count ?? 0,
-            completedCount: survey.completed_count ?? 0,
-            creatorFirstName: survey.creator_first_name,
-            creatorLastName: survey.creator_last_name,
-          };
-        },
-      );
+      return surveys.map((survey: SurveyQueryResult) => {
+        const apisurvey = dbToApi(survey);
+        return {
+          ...apisurvey,
+          responseCount: survey.response_count ?? 0,
+          completedCount: survey.completed_count ?? 0,
+          creatorFirstName: survey.creator_first_name,
+          creatorLastName: survey.creator_last_name,
+        };
+      });
     } catch (error: unknown) {
       console.error('Error listing surveys:', error);
       throw new ServiceError('SERVER_ERROR', 'Failed to list surveys');

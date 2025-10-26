@@ -184,7 +184,7 @@ export class LoginFormController {
   /**
    * Show info message
    */
-  private showInfo(message: string, persistent = false): void {
+  private showInfo(message: string, persistent: boolean = false): void {
     // Remove existing messages
     const existingInfo = document.querySelectorAll('.alert-info, .temp-alert-info');
     existingInfo.forEach((info) => {

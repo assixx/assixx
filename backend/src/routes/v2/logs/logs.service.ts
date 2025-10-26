@@ -1,7 +1,13 @@
-import { RowDataPacket, ResultSetHeader } from "mysql2";
-import { query as executeQuery } from "../../../utils/db.js";
-import { logger } from "../../../utils/logger.js";
-import type { LogsResponse, LogsListResponse, LogsFilterParams, LogsStatsResponse } from "./types.js";
+import { ResultSetHeader, RowDataPacket } from 'mysql2';
+
+import { query as executeQuery } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
+import type {
+  LogsFilterParams,
+  LogsListResponse,
+  LogsResponse,
+  LogsStatsResponse,
+} from './types.js';
 
 interface DbLogRow extends RowDataPacket {
   id: number;
@@ -33,6 +39,18 @@ interface StatsRow extends RowDataPacket {
   user_name?: string;
 }
 
+// Specific result types for stats queries
+interface TopActionResult extends RowDataPacket {
+  action: string | null;
+  count: number | null;
+}
+
+interface TopUserResult extends RowDataPacket {
+  user_id: number | null;
+  user_name: string | null;
+  count: number | null;
+}
+
 /**
  *
  */
@@ -43,11 +61,13 @@ class LogsService {
   private addSearchCondition(
     search: string | undefined,
     conditions: string[],
-    params: unknown[]
+    params: unknown[],
   ): void {
-    if (search === undefined || search === "") return;
+    if (search === undefined || search === '') return;
 
-    conditions.push('(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)');
+    conditions.push(
+      '(u.username LIKE ? OR u.email LIKE ? OR rl.action LIKE ? OR rl.entity_type LIKE ?)',
+    );
     const searchPattern = `%${search}%`;
     params.push(searchPattern, searchPattern, searchPattern, searchPattern);
   }
@@ -59,9 +79,9 @@ class LogsService {
     value: unknown,
     condition: string,
     conditions: string[],
-    params: unknown[]
+    params: unknown[],
   ): void {
-    if (value === undefined || value === "") return;
+    if (value === undefined || value === '') return;
     conditions.push(condition);
     params.push(value);
   }
@@ -85,7 +105,7 @@ class LogsService {
       { value: endDate, condition: 'rl.created_at <= ?' },
     ];
 
-    filterMappings.forEach(({ value, condition }) => {
+    filterMappings.forEach(({ value, condition }: { value: unknown; condition: string }) => {
       this.addFilterCondition(value, condition, conditions, params);
     });
 
@@ -120,7 +140,7 @@ class LogsService {
     whereClause: string,
     params: unknown[],
     limit: number,
-    offset: number
+    offset: number,
   ): Promise<DbLogRow[]> {
     const logsQuery = `SELECT
         rl.*,
@@ -138,10 +158,7 @@ class LogsService {
     logger.info(`[Logs v2 Service] Logs query: ${logsQuery}`);
     logger.info(`[Logs v2 Service] Logs query params:`, [...params, limit, offset]);
 
-    const [logs] = await executeQuery<DbLogRow[]>(
-      logsQuery,
-      [...params, limit, offset]
-    );
+    const [logs] = await executeQuery<DbLogRow[]>(logsQuery, [...params, limit, offset]);
 
     return logs;
   }
@@ -155,7 +172,9 @@ class LogsService {
 
     const { page = 1, limit = 50 } = filters;
     const offset = (page - 1) * limit;
-    logger.info(`[Logs v2 Service] Calculated offset: ${offset} from page: ${page}, limit: ${limit}`);
+    logger.info(
+      `[Logs v2 Service] Calculated offset: ${offset} from page: ${page}, limit: ${limit}`,
+    );
 
     const { whereClause, params } = this.buildWhereClause(filters);
 
@@ -164,15 +183,15 @@ class LogsService {
       const logs = await this.getLogRecords(whereClause, params, limit, offset);
 
       return {
-        logs: logs.map(log => this.formatLogResponse(log)),
+        logs: logs.map((log: DbLogRow) => this.formatLogResponse(log)),
         pagination: {
           total,
           page,
           limit,
           offset,
           totalPages: Math.ceil(total / limit),
-          hasMore: offset + limit < total
-        }
+          hasMore: offset + limit < total,
+        },
       };
     } catch (error: unknown) {
       logger.error('[Logs v2 Service] Error fetching logs - Detailed error:', error);
@@ -197,23 +216,23 @@ class LogsService {
           SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) as today_logs
          FROM root_logs
          WHERE tenant_id = ?`,
-        [tenantId]
+        [tenantId],
       );
 
       // Top actions - FILTERED BY TENANT
-      const [topActions] = await executeQuery<StatsRow[]>(
-        `SELECT action, COUNT(*) as count 
-         FROM root_logs 
+      const [topActions] = await executeQuery<TopActionResult[]>(
+        `SELECT action, COUNT(*) as count
+         FROM root_logs
          WHERE tenant_id = ?
-         GROUP BY action 
-         ORDER BY count DESC 
+         GROUP BY action
+         ORDER BY count DESC
          LIMIT 10`,
-        [tenantId]
+        [tenantId],
       );
 
       // Top users - FILTERED BY TENANT
-      const [topUsers] = await executeQuery<StatsRow[]>(
-        `SELECT 
+      const [topUsers] = await executeQuery<TopUserResult[]>(
+        `SELECT
           rl.user_id,
           u.username as user_name,
           COUNT(*) as count
@@ -223,7 +242,7 @@ class LogsService {
          GROUP BY rl.user_id, u.username
          ORDER BY count DESC
          LIMIT 10`,
-        [tenantId]
+        [tenantId],
       );
 
       const stats = basicStats[0];
@@ -232,15 +251,15 @@ class LogsService {
         todayLogs: stats.today_logs ?? 0,
         uniqueUsers: stats.unique_users ?? 0,
         uniqueTenants: stats.unique_tenants ?? 0,
-        topActions: topActions.map(row => ({
+        topActions: topActions.map((row: TopActionResult) => ({
           action: row.action ?? 'unknown',
-          count: row.count ?? 0
+          count: row.count ?? 0,
         })),
-        topUsers: topUsers.map(row => ({
+        topUsers: topUsers.map((row: TopUserResult) => ({
           userId: row.user_id ?? 0,
           userName: row.user_name ?? 'Unknown',
-          count: row.count ?? 0
-        }))
+          count: row.count ?? 0,
+        })),
       };
     } catch (error: unknown) {
       logger.error('[Logs v2] Error fetching stats:', error);
@@ -303,7 +322,7 @@ class LogsService {
     try {
       const [result] = await executeQuery<ResultSetHeader>(
         `DELETE FROM root_logs WHERE ${whereClause}`,
-        params
+        params,
       );
       return result.affectedRows;
     } catch (error: unknown) {
@@ -328,12 +347,22 @@ class LogsService {
       action: log.action,
       entityType: log.entity_type,
       entityId: log.entity_id,
-      oldValues: log.old_values ? (typeof log.old_values === 'string' ? JSON.parse(log.old_values) as Record<string, unknown> : log.old_values) : undefined,
-      newValues: log.new_values ? (typeof log.new_values === 'string' ? JSON.parse(log.new_values) as Record<string, unknown> : log.new_values) : undefined,
+      oldValues:
+        log.old_values ?
+          typeof log.old_values === 'string' ?
+            (JSON.parse(log.old_values) as Record<string, unknown>)
+          : log.old_values
+        : undefined,
+      newValues:
+        log.new_values ?
+          typeof log.new_values === 'string' ?
+            (JSON.parse(log.new_values) as Record<string, unknown>)
+          : log.new_values
+        : undefined,
       ipAddress: log.ip_address,
       userAgent: log.user_agent,
       wasRoleSwitched: Boolean(log.was_role_switched),
-      createdAt: log.created_at.toISOString()
+      createdAt: log.created_at.toISOString(),
     };
   }
 }

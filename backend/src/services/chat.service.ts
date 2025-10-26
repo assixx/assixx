@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Chat Service
  * Handles chat-related business logic
@@ -123,6 +124,46 @@ interface CountResult extends RowDataPacket {
   count: number;
 }
 
+// Query result interfaces for type safety
+interface UserRoleDeptResult extends RowDataPacket {
+  role: string;
+  department_id: number | null;
+}
+
+interface UserRoleResult extends RowDataPacket {
+  role: string;
+}
+
+interface IdResult extends RowDataPacket {
+  id: number;
+}
+
+interface ConversationWithLastMessage extends RowDataPacket {
+  id: number;
+  name?: string | null;
+  is_group: boolean | number;
+  created_at: Date;
+  updated_at?: Date;
+  display_name?: string;
+  unread_count: number;
+  profile_image_url?: string | null;
+  // Flattened last message fields
+  last_message_id?: number | null;
+  last_message_content?: string | null;
+  last_message_created_at?: Date | null;
+  last_message_sender_id?: number | null;
+  last_message_sender_username?: string | null;
+}
+
+interface ConversationGroupInfo extends RowDataPacket {
+  is_group: boolean | number;
+  participant_count: number;
+}
+
+interface UserUsernameResult extends RowDataPacket {
+  username: string;
+}
+
 /**
  *
  */
@@ -219,15 +260,15 @@ class ChatService {
       const [currentUserInfo] = await db
         .promise()
         .query<
-          RowDataPacket[]
+          UserRoleDeptResult[]
         >(`SELECT role, department_id FROM users WHERE id = ? AND tenant_id = ?`, [numericUserId, numericTenantId]);
 
       if (currentUserInfo.length === 0) {
         throw new Error('Current user not found');
       }
 
-      const userRole = currentUserInfo[0].role as string;
-      const userDepartmentId = currentUserInfo[0].department_id as number | null;
+      const userRole = currentUserInfo[0].role;
+      const userDepartmentId = currentUserInfo[0].department_id;
 
       // Build query based on user role and department
       const { query, params: additionalParams } = this.buildUsersQuery(userRole, userDepartmentId);
@@ -302,22 +343,25 @@ class ChatService {
   /**
    * Transform conversation data with participants and last message
    */
-  private async transformConversation(conv: Conversation, tenantId: number): Promise<Conversation> {
+  private async transformConversation(
+    conv: ConversationWithLastMessage,
+    tenantId: number,
+  ): Promise<Conversation> {
     const participants = await this.getConversationParticipants(conv.id, tenantId);
 
     // Transform last_message fields into proper object
     const lastMessage =
       conv.last_message_id != null ?
         {
-          id: conv.last_message_id as number,
-          content: conv.last_message_content as string,
-          created_at: conv.last_message_created_at as Date,
-          sender_id: conv.last_message_sender_id as number,
+          id: conv.last_message_id,
+          content: conv.last_message_content ?? '',
+          created_at: conv.last_message_created_at ?? new Date(),
+          sender_id: conv.last_message_sender_id ?? 0,
           conversation_id: conv.id,
           is_read: false,
           sender: {
-            id: conv.last_message_sender_id as number,
-            username: conv.last_message_sender_username as string,
+            id: conv.last_message_sender_id ?? 0,
+            username: conv.last_message_sender_username ?? '',
           },
         }
       : null;
@@ -394,7 +438,7 @@ class ChatService {
     participantIds: number[],
     isGroup: boolean,
   ): Promise<void> {
-    const [currentUserInfo] = await connection.query<RowDataPacket[]>(
+    const [currentUserInfo] = await connection.query<UserRoleResult[]>(
       `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
       [userId, tenantId],
     );
@@ -403,11 +447,11 @@ class ChatService {
       throw new Error('Current user not found');
     }
 
-    const userRole = currentUserInfo[0].role as string;
+    const userRole = currentUserInfo[0].role;
 
     // Employee permission check for non-group conversations
     if (userRole === 'employee' && !isGroup) {
-      const [targetUserInfo] = await connection.query<RowDataPacket[]>(
+      const [targetUserInfo] = await connection.query<UserRoleResult[]>(
         `SELECT role FROM users WHERE id = ? AND tenant_id = ?`,
         [participantIds[0], tenantId],
       );
@@ -427,7 +471,7 @@ class ChatService {
     userId: number,
     targetUserId: number,
   ): Promise<number | null> {
-    const [existing] = await connection.query<RowDataPacket[]>(
+    const [existing] = await connection.query<IdResult[]>(
       `SELECT c.id
        FROM conversations c
        INNER JOIN conversation_participants cp1 ON c.id = cp1.conversation_id
@@ -445,7 +489,7 @@ class ChatService {
       [tenantId, userId, targetUserId],
     );
 
-    return existing.length > 0 ? (existing[0].id as number) : null;
+    return existing.length > 0 ? existing[0].id : null;
   }
 
   /**
@@ -653,19 +697,19 @@ class ChatService {
     const [senderInfo] = await db
       .promise()
       .query<
-        RowDataPacket[]
+        UserRoleResult[]
       >(`SELECT role FROM users WHERE id = ? AND tenant_id = ?`, [senderId, tenantId]);
 
     if (senderInfo.length === 0) {
       throw new Error('Sender not found');
     }
 
-    const senderRole = senderInfo[0].role as string;
+    const senderRole = senderInfo[0].role;
 
     // Für Employees: Prüfe ob sie überhaupt in dieser Konversation schreiben dürfen
     if (senderRole === 'employee') {
       // Prüfe ob bereits Nachrichten von einem Admin in dieser Konversation existieren
-      const [adminMessages] = await db.promise().query<RowDataPacket[]>(
+      const [adminMessages] = await db.promise().query<CountResult[]>(
         `SELECT COUNT(*) as count
          FROM messages m
          JOIN users u ON m.sender_id = u.id
@@ -785,7 +829,7 @@ class ChatService {
   async markConversationAsRead(conversationId: number, userId: number): Promise<void> {
     try {
       // First, get all unread messages in this conversation for this user
-      const [messages] = await db.promise().query<RowDataPacket[]>(
+      const [messages] = await db.promise().query<IdResult[]>(
         `SELECT m.id
          FROM messages m
          LEFT JOIN message_status ms ON m.id = ms.message_id AND ms.user_id = ?
@@ -838,7 +882,7 @@ class ChatService {
       await connection.beginTransaction();
 
       // Check if conversation exists and if user is participant
-      const [conversation] = await connection.query<RowDataPacket[]>(
+      const [conversation] = await connection.query<ConversationGroupInfo[]>(
         `SELECT c.is_group,
                 COUNT(DISTINCT cp.user_id) as participant_count
          FROM conversations c
@@ -855,8 +899,8 @@ class ChatService {
         throw new Error('Conversation not found or access denied');
       }
 
-      const isGroup = conversation[0].is_group as boolean;
-      const participantCount = conversation[0].participant_count as number;
+      const isGroup = Boolean(conversation[0].is_group);
+      const participantCount = conversation[0].participant_count;
 
       if (!isGroup || participantCount <= 2) {
         // For 1:1 chats or groups with only 2 participants left, delete everything
@@ -966,18 +1010,14 @@ class ChatService {
     // Add system message about new participant
     const [userInfo] = await db
       .promise()
-      .execute<RowDataPacket[]>('SELECT username FROM users WHERE id = ?', [userId]);
+      .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ?', [userId]);
 
     if (userInfo.length > 0) {
       await db
         .promise()
         .execute(
           'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
-          [
-            conversationId,
-            addedBy,
-            `${String(userInfo[0].username)} wurde zur Unterhaltung hinzugefügt`,
-          ],
+          [conversationId, addedBy, `${userInfo[0].username} wurde zur Unterhaltung hinzugefügt`],
         );
     }
   }
@@ -1018,18 +1058,14 @@ class ChatService {
     // Add system message about removed participant
     const [userInfo] = await db
       .promise()
-      .execute<RowDataPacket[]>('SELECT username FROM users WHERE id = ?', [userId]);
+      .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ?', [userId]);
 
     if (userInfo.length > 0) {
       await db
         .promise()
         .execute(
           'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
-          [
-            conversationId,
-            removedBy,
-            `${String(userInfo[0].username)} hat die Unterhaltung verlassen`,
-          ],
+          [conversationId, removedBy, `${userInfo[0].username} hat die Unterhaltung verlassen`],
         );
     }
   }

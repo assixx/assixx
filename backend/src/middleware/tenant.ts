@@ -32,14 +32,25 @@ function getTenantFromHost(hostname: string): string | null {
 }
 
 /**
+ * Helper to safely get request body as unknown
+ * Express types req.body as 'any' - this helper makes it explicit
+ * Note: req.body implicit any is unavoidable due to Express typing
+ */
+function getRequestBody(req: Request): unknown {
+  return req.body;
+}
+
+/**
  * Extract subdomain from request body (for login/signup)
  */
 function getSubdomainFromBody(req: Request): string | null {
-  if (!req.body || typeof req.body !== 'object' || !('subdomain' in req.body)) {
+  const body = getRequestBody(req);
+
+  if (body === null || body === undefined || typeof body !== 'object' || !('subdomain' in body)) {
     return null;
   }
 
-  const bodySubdomain = (req.body as { subdomain: unknown }).subdomain;
+  const bodySubdomain = (body as { subdomain: unknown }).subdomain;
   return typeof bodySubdomain === 'string' && bodySubdomain !== '' ? bodySubdomain : null;
 }
 

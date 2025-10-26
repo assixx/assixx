@@ -109,7 +109,7 @@ class KVPService {
   async getCategories(_tenantId: number): Promise<unknown[]> {
     try {
       const categories = await kvpModel.getCategories();
-      return categories.map((category) => dbToApi(category));
+      return categories.map((category: Record<string, unknown>) => dbToApi(category));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get categories', error);
     }
@@ -151,22 +151,28 @@ class KVPService {
       if (filters.search !== undefined && filters.search !== '') {
         const searchLower = filters.search.toLowerCase();
         filteredSuggestions = suggestions.filter(
-          (s) =>
-            s.title.toLowerCase().includes(searchLower) ||
-            s.description.toLowerCase().includes(searchLower),
+          (s: Record<string, unknown>) =>
+            String(s.title).toLowerCase().includes(searchLower) ||
+            String(s.description).toLowerCase().includes(searchLower),
         );
       }
 
       // Apply specific filters based on 'filter' parameter
       if (filters.filter === 'mine') {
         // Only show user's own suggestions
-        filteredSuggestions = filteredSuggestions.filter((s) => s.submitted_by === userId);
+        filteredSuggestions = filteredSuggestions.filter(
+          (s: Record<string, unknown>) => s.submitted_by === userId,
+        );
       } else if (filters.filter === 'team') {
         // Only show team suggestions
-        filteredSuggestions = filteredSuggestions.filter((s) => s.org_level === 'team');
+        filteredSuggestions = filteredSuggestions.filter(
+          (s: Record<string, unknown>) => s.org_level === 'team',
+        );
       } else if (filters.filter === 'department') {
         // Only show department suggestions
-        filteredSuggestions = filteredSuggestions.filter((s) => s.org_level === 'department');
+        filteredSuggestions = filteredSuggestions.filter(
+          (s: Record<string, unknown>) => s.org_level === 'department',
+        );
       }
       // Note: 'all' shows everything the user has access to (default behavior)
 
@@ -177,7 +183,9 @@ class KVPService {
       );
 
       return {
-        suggestions: paginatedSuggestions.map((suggestion) => dbToApi(suggestion)),
+        suggestions: paginatedSuggestions.map((suggestion: Record<string, unknown>) =>
+          dbToApi(suggestion),
+        ),
         pagination: {
           currentPage: filters.page ?? 1,
           totalPages: Math.ceil(filteredSuggestions.length / (filters.limit ?? 20)),
@@ -395,7 +403,7 @@ class KVPService {
 
     try {
       const comments = await kvpModel.getComments(suggestionId, userRole);
-      return comments.map((comment) => dbToApi(comment));
+      return comments.map((comment: Record<string, unknown>) => dbToApi(comment));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get comments', error);
     }
@@ -457,7 +465,7 @@ class KVPService {
 
     try {
       const attachments = await kvpModel.getAttachments(suggestionId);
-      return attachments.map((attachment) => dbToApi(attachment));
+      return attachments.map((attachment: Record<string, unknown>) => dbToApi(attachment));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get attachments', error);
     }

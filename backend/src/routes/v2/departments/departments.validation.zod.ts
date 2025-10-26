@@ -34,7 +34,7 @@ const StatusSchema = z.enum(['active', 'inactive'], {
  */
 export const GetDepartmentsQuerySchema = z.object({
   includeExtended: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,

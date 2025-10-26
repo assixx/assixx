@@ -83,7 +83,7 @@ class DepartmentService {
    * @param tenantId - The tenant ID
    * @param includeExtended - The includeExtended parameter
    */
-  async getDepartments(tenantId: number, includeExtended = true): Promise<DepartmentV2[]> {
+  async getDepartments(tenantId: number, includeExtended: boolean = true): Promise<DepartmentV2[]> {
     try {
       const departments = await Department.findAll(tenantId);
 
@@ -123,7 +123,7 @@ class DepartmentService {
     try {
       // Get all departments to get extended info
       const departments = await Department.findAll(tenantId);
-      const department = departments.find((d) => d.id === id);
+      const department = departments.find((d: DbDepartment) => d.id === id);
 
       if (!department) {
         throw new ServiceError(404, 'Department not found');

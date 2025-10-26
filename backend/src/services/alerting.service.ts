@@ -35,6 +35,12 @@ interface PagerDutyIncident {
   group?: string;
 }
 
+interface PagerDutyResponse {
+  incident: {
+    id: string;
+  };
+}
+
 /**
  *
  */
@@ -63,7 +69,7 @@ export class AlertingService {
             color,
             title: alert.title,
             text: alert.message,
-            fields: Object.entries(alert.fields ?? {}).map(([k, v]) => ({
+            fields: Object.entries(alert.fields ?? {}).map(([k, v]: [string, unknown]) => ({
               title: k,
               value: String(v),
               short: true,
@@ -212,18 +218,20 @@ export class AlertingService {
         },
       };
 
-      const response = await axios.post('https://api.pagerduty.com/incidents', payload, {
-        headers: {
-          Authorization: `Token token=${process.env.PAGERDUTY_TOKEN}`,
-          Accept: 'application/vnd.pagerduty+json;version=2',
-          'Content-Type': 'application/json',
-          From: process.env.PAGERDUTY_EMAIL ?? 'assixx@example.com',
+      const response = await axios.post<PagerDutyResponse>(
+        'https://api.pagerduty.com/incidents',
+        payload,
+        {
+          headers: {
+            Authorization: `Token token=${process.env.PAGERDUTY_TOKEN}`,
+            Accept: 'application/vnd.pagerduty+json;version=2',
+            'Content-Type': 'application/json',
+            From: process.env.PAGERDUTY_EMAIL ?? 'assixx@example.com',
+          },
         },
-      });
-
-      logger.info(
-        `PagerDuty incident created: ${(response.data as { incident: { id: string } }).incident.id}`,
       );
+
+      logger.info(`PagerDuty incident created: ${response.data.incident.id}`);
 
       // Log alert to database
       await this.logAlert(
@@ -271,13 +279,16 @@ export class AlertingService {
             severity: 'critical',
             title,
             message,
-            fields: Object.entries(details).reduce<Record<string, string>>((acc, [key, value]) => {
-              // Use Object.defineProperty to avoid object injection warning
-              // ESLint disable needed: This is safe as we control the input from our own code
-              // eslint-disable-next-line security/detect-object-injection
-              acc[key] = String(value);
-              return acc;
-            }, {}),
+            fields: Object.entries(details).reduce<Record<string, string>>(
+              (acc: Record<string, string>, [key, value]: [string, unknown]) => {
+                // Use Object.defineProperty to avoid object injection warning
+                // ESLint disable needed: This is safe as we control the input from our own code
+                // eslint-disable-next-line security/detect-object-injection
+                acc[key] = String(value);
+                return acc;
+              },
+              {},
+            ),
           });
         } catch (error: unknown) {
           logger.error('Slack critical alert failed:', error);
@@ -292,7 +303,7 @@ export class AlertingService {
             severity: 'critical',
             title,
             message,
-            facts: Object.entries(details).map(([name, value]) => ({
+            facts: Object.entries(details).map(([name, value]: [string, unknown]) => ({
               name,
               value: String(value),
             })),

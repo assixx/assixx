@@ -69,7 +69,7 @@ class AvailabilityService {
       query += ' ORDER BY ea.start_date DESC';
 
       const [rows] = await execute<RowDataPacket[]>(query, params);
-      return rows.map((row) => snakeToCamel(row)) as EmployeeAvailability[];
+      return rows.map((row: RowDataPacket) => snakeToCamel(row)) as EmployeeAvailability[];
     } catch (error: unknown) {
       console.error('Error in AvailabilityService.getAll:', error);
       throw error;
@@ -120,7 +120,7 @@ class AvailabilityService {
       `;
 
       const [rows] = await execute<RowDataPacket[]>(query, [tenantId]);
-      return rows.map((row) => snakeToCamel(row)) as RowDataPacket[];
+      return rows.map((row: RowDataPacket) => snakeToCamel(row)) as RowDataPacket[];
     } catch (error: unknown) {
       console.error('Error in AvailabilityService.getCurrentStatus:', error);
       throw error;
@@ -324,7 +324,7 @@ class AvailabilityService {
         endDate,
       ]);
 
-      return rows.map((row) => snakeToCamel(row)) as RowDataPacket[];
+      return rows.map((row: RowDataPacket) => snakeToCamel(row)) as RowDataPacket[];
     } catch (error: unknown) {
       console.error('Error in AvailabilityService.getAvailabilitySummary:', error);
       throw error;

@@ -157,7 +157,15 @@ export class FeaturesService {
    */
   static async getFeaturesWithTenantInfo(tenantId: number): Promise<FeatureWithTenantInfo[]> {
     try {
-      const [rows] = await query<(DbFeature & Partial<DbTenantFeature> & { status: string })[]>(
+      // Query result interface with all selected fields
+      interface FeatureWithTenantStatusRow extends DbFeature {
+        tf_is_active: number | boolean | null;
+        activated_at: Date | null;
+        expires_at: Date | null;
+        status: string;
+      }
+
+      const [rows] = await query<FeatureWithTenantStatusRow[]>(
         `
         SELECT
           f.*,
@@ -178,14 +186,14 @@ export class FeaturesService {
         [tenantId],
       );
 
-      return rows.map((row: DbFeature & Partial<DbTenantFeature> & { status: string }) => {
+      return rows.map((row: FeatureWithTenantStatusRow) => {
         const feature = fieldMapper.dbToApi({
           id: row.id,
           code: row.code,
           name: row.name,
           description: row.description,
           category: row.category,
-          price: row.price,
+          base_price: row.base_price,
           is_active: row.is_active,
           created_at: row.created_at,
           updated_at: row.updated_at,
@@ -203,7 +211,7 @@ export class FeaturesService {
           updatedAt: feature.updatedAt,
         };
 
-        if (row.tf_is_active !== null && row.tf_is_active !== undefined) {
+        if (row.tf_is_active !== null) {
           result.tenantFeature = {
             status: row.status,
             isActive: Boolean(row.tf_is_active),

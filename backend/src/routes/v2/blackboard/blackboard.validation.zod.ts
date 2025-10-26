@@ -73,7 +73,7 @@ export const ListEntriesQuerySchema = PaginationSchema.extend({
   sortDir: SortDirSchema.optional(),
   priority: PrioritySchema.optional(),
   requiresConfirmation: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -86,7 +86,7 @@ export const ListEntriesQuerySchema = PaginationSchema.extend({
  */
 export const DashboardQuerySchema = z.object({
   limit: z.preprocess(
-    (val) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
+    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
     z.number().int().min(1).max(10, 'Limit must be between 1 and 10').optional(),
   ),
 });

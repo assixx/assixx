@@ -5,6 +5,19 @@
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 import rootLog from '../../../models/rootLog';
+import {
+  NotificationPreferencesRow,
+  NotificationsRow,
+} from '../../../types/database-rows.types.js';
+import {
+  DateCountResult,
+  IdResult,
+  PriorityCountResult,
+  ReadRateResult,
+  TotalCountResult,
+  TypeCountResult,
+  UnreadCountResult,
+} from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
@@ -55,7 +68,7 @@ async function getNotificationCounts(
     WHERE ${conditions.join(' AND ')}
     ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
   `;
-  const [[countResult]] = await executeQuery<RowDataPacket[]>(countQuery, [userId, ...params]);
+  const [[countResult]] = await executeQuery<TotalCountResult[]>(countQuery, [userId, ...params]);
 
   const unreadQuery = `
     SELECT COUNT(*) as unread
@@ -63,9 +76,12 @@ async function getNotificationCounts(
     LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
     WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
   `;
-  const [[unreadResult]] = await executeQuery<RowDataPacket[]>(unreadQuery, [userId, ...params]);
+  const [[unreadResult]] = await executeQuery<UnreadCountResult[]>(unreadQuery, [
+    userId,
+    ...params,
+  ]);
 
-  return { total: Number(countResult.total), unreadCount: Number(unreadResult.unread) };
+  return { total: countResult.total, unreadCount: unreadResult.unread_count };
 }
 
 /**
@@ -110,7 +126,7 @@ export async function listNotifications(
   const totalPages = Math.ceil(total / limit);
 
   return {
-    notifications: rows.map((row) => dbToApi(row)),
+    notifications: rows.map((row: RowDataPacket) => dbToApi(row)),
     total,
     page,
     totalPages,
@@ -214,7 +230,7 @@ export async function markAllAsRead(
   tenantId: number,
 ): Promise<{ updated: number }> {
   // Get all unread notifications for user
-  const [unreadNotifications] = await executeQuery<RowDataPacket[]>(
+  const [unreadNotifications] = await executeQuery<IdResult[]>(
     `SELECT n.id FROM notifications n
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
      WHERE n.tenant_id = ?
@@ -255,15 +271,16 @@ export async function deleteNotification(
   userAgent?: string,
 ): Promise<void> {
   // Check if notification exists
-  const [rows2] = await executeQuery<RowDataPacket[]>(
+  const [rows2] = await executeQuery<NotificationsRow[]>(
     `SELECT * FROM notifications WHERE id = ? AND tenant_id = ?`,
     [notificationId, tenantId],
   );
-  const notification = rows2[0] as RowDataPacket | undefined;
 
-  if (!notification) {
+  if (rows2.length === 0) {
     throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
   }
+
+  const notification = rows2[0];
 
   // Check permissions - admin can delete any, users only their own
   if (
@@ -297,13 +314,12 @@ export async function deleteNotification(
  */
 export async function getPreferences(userId: number, tenantId: number): Promise<unknown> {
   try {
-    const [rows] = await executeQuery<RowDataPacket[]>(
+    const [rows] = await executeQuery<NotificationPreferencesRow[]>(
       `SELECT * FROM notification_preferences WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
       [userId, tenantId],
     );
-    const prefs = rows[0] as RowDataPacket | undefined;
 
-    if (!prefs) {
+    if (rows.length === 0) {
       // Return default preferences if none exist
       return {
         email_notifications: true,
@@ -318,6 +334,7 @@ export async function getPreferences(userId: number, tenantId: number): Promise<
       };
     }
 
+    const prefs = rows[0];
     let notificationTypes: Record<string, unknown> = {};
     if (prefs.preferences) {
       try {
@@ -359,13 +376,12 @@ export async function updatePreferences(
   userAgent?: string,
 ): Promise<void> {
   // Check if preferences exist
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<IdResult[]>(
     `SELECT id FROM notification_preferences WHERE user_id = ? AND tenant_id = ? AND notification_type = 'general'`,
     [userId, tenantId],
   );
-  const existing = rows[0] as RowDataPacket | undefined;
 
-  if (existing) {
+  if (rows.length > 0) {
     // Update existing
     await executeQuery(
       `UPDATE notification_preferences
@@ -417,25 +433,25 @@ export async function updatePreferences(
  */
 export async function getStatistics(tenantId: number): Promise<unknown> {
   // Total notifications
-  const [[totalResult]] = await executeQuery<RowDataPacket[]>(
+  const [[totalResult]] = await executeQuery<TotalCountResult[]>(
     `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = ?`,
     [tenantId],
   );
 
   // By type
-  const [byTypeRows] = await executeQuery<RowDataPacket[]>(
+  const [byTypeRows] = await executeQuery<TypeCountResult[]>(
     `SELECT type, COUNT(*) as count FROM notifications WHERE tenant_id = ? GROUP BY type`,
     [tenantId],
   );
 
   // By priority
-  const [byPriorityRows] = await executeQuery<RowDataPacket[]>(
+  const [byPriorityRows] = await executeQuery<PriorityCountResult[]>(
     `SELECT priority, COUNT(*) as count FROM notifications WHERE tenant_id = ? GROUP BY priority`,
     [tenantId],
   );
 
   // Read rate
-  const [[readRateResult]] = await executeQuery<RowDataPacket[]>(
+  const [[readRateResult]] = await executeQuery<ReadRateResult[]>(
     `SELECT
       COUNT(DISTINCT n.id) as total_notifications,
       COUNT(DISTINCT nrs.notification_id) as read_notifications
@@ -451,7 +467,7 @@ export async function getStatistics(tenantId: number): Promise<unknown> {
     : 0;
 
   // Trends (last 30 days)
-  const [trendsRows] = await executeQuery<RowDataPacket[]>(
+  const [trendsRows] = await executeQuery<DateCountResult[]>(
     `SELECT
       DATE(created_at) as date,
       COUNT(*) as count
@@ -463,23 +479,23 @@ export async function getStatistics(tenantId: number): Promise<unknown> {
   );
 
   const byType: Record<string, number> = {};
-  byTypeRows.forEach((row) => {
-    byType[String(row.type)] = Number(row.count);
+  byTypeRows.forEach((row: TypeCountResult) => {
+    byType[row.type] = row.count;
   });
 
   const byPriority: Record<string, number> = {};
-  byPriorityRows.forEach((row) => {
-    byPriority[String(row.priority)] = Number(row.count);
+  byPriorityRows.forEach((row: PriorityCountResult) => {
+    byPriority[row.priority] = row.count;
   });
 
   return {
-    total: Number(totalResult.total),
+    total: totalResult.total,
     byType,
     byPriority,
     readRate,
-    trends: trendsRows.map((row) => ({
-      date: String(row.date),
-      count: Number(row.count),
+    trends: trendsRows.map((row: DateCountResult) => ({
+      date: row.date,
+      count: row.count,
     })),
   };
 }
@@ -491,7 +507,7 @@ export async function getStatistics(tenantId: number): Promise<unknown> {
  */
 export async function getPersonalStats(userId: number, tenantId: number): Promise<unknown> {
   // Total notifications for user
-  const [[totalResult]] = await executeQuery<RowDataPacket[]>(
+  const [[totalResult]] = await executeQuery<TotalCountResult[]>(
     `SELECT COUNT(*) as total FROM notifications n
      WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
@@ -501,8 +517,8 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
   );
 
   // Unread count
-  const [[unreadResult]] = await executeQuery<RowDataPacket[]>(
-    `SELECT COUNT(*) as unread FROM notifications n
+  const [[unreadResult]] = await executeQuery<UnreadCountResult[]>(
+    `SELECT COUNT(*) as unread_count FROM notifications n
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
      WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
@@ -513,7 +529,7 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
   );
 
   // By type
-  const [byTypeRows] = await executeQuery<RowDataPacket[]>(
+  const [byTypeRows] = await executeQuery<TypeCountResult[]>(
     `SELECT n.type, COUNT(*) as count FROM notifications n
      WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
@@ -524,13 +540,13 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
   );
 
   const byType: Record<string, number> = {};
-  byTypeRows.forEach((row) => {
-    byType[String(row.type)] = Number(row.count);
+  byTypeRows.forEach((row: TypeCountResult) => {
+    byType[row.type] = row.count;
   });
 
   return {
-    total: Number(totalResult.total),
-    unread: Number(unreadResult.unread),
+    total: totalResult.total,
+    unread: unreadResult.unread_count,
     byType,
   };
 }

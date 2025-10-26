@@ -34,7 +34,7 @@ export class ServiceError extends Error {
   constructor(
     public code: string,
     public message: string,
-    public statusCode = 500,
+    public statusCode: number = 500,
     public details?: { field: string; message: string }[],
   ) {
     super(message);
@@ -112,7 +112,9 @@ export class UsersService {
     const users = await userModel.search(searchFilters);
 
     // Sanitize and convert to camelCase
-    const sanitizedUsers = users.map((user) => dbToApi(sanitizeUser(user)));
+    const sanitizedUsers = users.map((user: Record<string, unknown>) =>
+      dbToApi(sanitizeUser(user)),
+    );
 
     return {
       data: sanitizedUsers,

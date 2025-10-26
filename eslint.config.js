@@ -511,6 +511,11 @@ export default [
 
       'prettier/prettier': 'error',
 
+      // Disable no-undef for TypeScript - TypeScript handles this better with type checking
+      // ESLint's no-undef doesn't understand TypeScript's global declarations (.d.ts files)
+      // See: https://typescript-eslint.io/linting/troubleshooting/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-runtime-errors
+      'no-undef': 'off',
+
       // Enterprise Standards for Frontend (stricter than backend)
       'max-lines': [
         'warn',

@@ -59,7 +59,7 @@ function createSurveyHandlers(
   userId: number,
 ): Record<string, (data: NotificationData) => void> {
   return {
-    ['survey.created']: (data) => {
+    ['survey.created']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending NEW_SURVEY to user ${userId}`);
         res.write(
@@ -75,7 +75,7 @@ function createSurveyHandlers(
         );
       }
     },
-    ['survey.updated']: (data) => {
+    ['survey.updated']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending SURVEY_UPDATED to user ${userId}`);
         res.write(
@@ -99,7 +99,7 @@ function createDocumentHandler(
   userId: number,
 ): Record<string, (data: NotificationData) => void> {
   return {
-    ['document.uploaded']: (data) => {
+    ['document.uploaded']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.document) {
         logger.info(`[SSE] Sending NEW_DOCUMENT to user ${userId}`);
         res.write(
@@ -127,7 +127,7 @@ function createAdminHandlers(
   userId: number,
 ): Record<string, (data: NotificationData) => void> {
   return {
-    ['kvp.submitted']: (data) => {
+    ['kvp.submitted']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.kvp) {
         logger.info(`[SSE] Sending NEW_KVP to user ${userId}`);
         res.write(
@@ -143,7 +143,7 @@ function createAdminHandlers(
         );
       }
     },
-    ['survey.created']: (data) => {
+    ['survey.created']: (data: NotificationData) => {
       if (data.tenantId === tenantId && data.survey) {
         logger.info(`[SSE] Sending NEW_SURVEY_CREATED to admin ${userId}`);
         res.write(
@@ -200,9 +200,11 @@ function setupCleanupHandlers(
 ): void {
   const cleanup = (): void => {
     clearInterval(heartbeat);
-    Object.entries(handlers).forEach(([event, handler]) => {
-      eventBus.off(event, handler);
-    });
+    Object.entries(handlers).forEach(
+      ([event, handler]: [string, (data: NotificationData) => void]) => {
+        eventBus.off(event, handler);
+      },
+    );
   };
 
   req.on('close', () => {
@@ -233,9 +235,11 @@ export function stream(req: AuthenticatedRequest, res: Response): void {
   const handlers = createNotificationHandlers(res, tenantId, userId, role);
 
   // Register handlers
-  Object.entries(handlers).forEach(([event, handler]) => {
-    eventBus.on(event, handler);
-  });
+  Object.entries(handlers).forEach(
+    ([event, handler]: [string, (data: NotificationData) => void]) => {
+      eventBus.on(event, handler);
+    },
+  );
 
   // Log connection stats
   const activeListeners = Object.keys(handlers).length;

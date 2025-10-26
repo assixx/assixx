@@ -36,6 +36,37 @@ interface DbAuditEntry extends RowDataPacket {
   created_at: Date;
 }
 
+// Query result types for type safety
+interface UserUsernameRoleResult extends RowDataPacket {
+  username: string;
+  role: string;
+}
+
+interface CountResult extends RowDataPacket {
+  total: number;
+}
+
+interface ActionCountResult extends RowDataPacket {
+  action: string;
+  count: number;
+}
+
+interface ResourceTypeCountResult extends RowDataPacket {
+  resource_type: string;
+  count: number;
+}
+
+interface UserCountResult extends RowDataPacket {
+  user_id: number;
+  user_name: string | null;
+  count: number;
+}
+
+interface StatusCountResult extends RowDataPacket {
+  status: 'success' | 'failure';
+  count: number;
+}
+
 /**
  *
  */
@@ -59,7 +90,7 @@ class AuditTrailService {
 
     try {
       // Get user details for audit
-      const [userRows] = await connection.execute<RowDataPacket[]>(
+      const [userRows] = await connection.execute<UserUsernameRoleResult[]>(
         `SELECT username, role FROM users WHERE id = ? AND tenant_id = ?`,
         [userId, tenantId],
       );
@@ -162,11 +193,11 @@ class AuditTrailService {
     const whereClause = conditions.join(' AND ');
 
     // Get total count
-    const [countRows] = await execute<RowDataPacket[]>(
+    const [countRows] = await execute<CountResult[]>(
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
-    const total = countRows[0].total as number;
+    const total = countRows[0].total;
 
     // Get paginated entries
     const validSortFields = ['created_at', 'action', 'user_id', 'resource_type'];
@@ -238,10 +269,10 @@ class AuditTrailService {
   }
 
   private transformStatsResults(
-    actionRows: RowDataPacket[],
-    resourceRows: RowDataPacket[],
-    userRows: RowDataPacket[],
-    statusRows: RowDataPacket[],
+    actionRows: ActionCountResult[],
+    resourceRows: ResourceTypeCountResult[],
+    userRows: UserCountResult[],
+    statusRows: StatusCountResult[],
   ): {
     byAction: Record<string, number>;
     byResourceType: Record<string, number>;
@@ -249,27 +280,27 @@ class AuditTrailService {
     byStatus: { success: number; failure: number };
   } {
     const byAction: Record<string, number> = {};
-    actionRows.forEach((row: RowDataPacket) => {
-      byAction[row.action as string] = row.count as number;
+    actionRows.forEach((row: ActionCountResult) => {
+      byAction[row.action] = row.count;
     });
 
     const byResourceType: Record<string, number> = {};
-    resourceRows.forEach((row: RowDataPacket) => {
-      byResourceType[row.resource_type as string] = row.count as number;
+    resourceRows.forEach((row: ResourceTypeCountResult) => {
+      byResourceType[row.resource_type] = row.count;
     });
 
-    const byUser = userRows.map((row: RowDataPacket) => ({
-      userId: row.user_id as number,
-      userName: row.user_name ? (row.user_name as string) : 'Unknown',
-      count: row.count as number,
+    const byUser = userRows.map((row: UserCountResult) => ({
+      userId: row.user_id,
+      userName: row.user_name ?? 'Unknown',
+      count: row.count,
     }));
 
     const byStatus = { success: 0, failure: 0 };
-    statusRows.forEach((row: RowDataPacket) => {
+    statusRows.forEach((row: StatusCountResult) => {
       if (row.status === 'success') {
-        byStatus.success = row.count as number;
-      } else if (row.status === 'failure') {
-        byStatus.failure = row.count as number;
+        byStatus.success = row.count;
+      } else {
+        byStatus.failure = row.count;
       }
     });
 
@@ -281,29 +312,29 @@ class AuditTrailService {
     const { whereClause, params } = this.buildStatsWhereClause(filter);
 
     // Get all required data
-    const [totalRows] = await execute<RowDataPacket[]>(
+    const [totalRows] = await execute<CountResult[]>(
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
 
-    const [actionRows] = await execute<RowDataPacket[]>(
+    const [actionRows] = await execute<ActionCountResult[]>(
       `SELECT action, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY action`,
       params,
     );
 
-    const [resourceRows] = await execute<RowDataPacket[]>(
+    const [resourceRows] = await execute<ResourceTypeCountResult[]>(
       `SELECT resource_type, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY resource_type`,
       params,
     );
 
-    const [userRows] = await execute<RowDataPacket[]>(
+    const [userRows] = await execute<UserCountResult[]>(
       `SELECT user_id, user_name, COUNT(*) as count
        FROM audit_trail WHERE ${whereClause}
        GROUP BY user_id, user_name ORDER BY count DESC LIMIT 10`,
       params,
     );
 
-    const [statusRows] = await execute<RowDataPacket[]>(
+    const [statusRows] = await execute<StatusCountResult[]>(
       `SELECT status, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY status`,
       params,
     );
@@ -316,7 +347,7 @@ class AuditTrailService {
     );
 
     return {
-      totalEntries: totalRows[0].total as number,
+      totalEntries: totalRows[0].total,
       byAction,
       byResourceType,
       byUser,

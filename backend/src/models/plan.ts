@@ -1,6 +1,12 @@
 import { ResultSetHeader, RowDataPacket, execute as executeQuery } from '../utils/db';
 import { logger } from '../utils/logger';
 
+// Query result interfaces
+interface TenantCostResult extends RowDataPacket {
+  plan_cost: number | string | null; // DECIMAL can be string or number
+  addon_cost: number | string; // SUM result, COALESCE ensures not null
+}
+
 export interface DbPlan extends RowDataPacket {
   id: number;
   code: string;
@@ -276,11 +282,11 @@ export async function calculateTenantCost(tenantId: number): Promise<{
         GROUP BY t.id, tp.custom_price, p.base_price
       `;
 
-    const [queryResult] = await executeQuery<RowDataPacket[]>(query, [tenantId]);
+    const [queryResult] = await executeQuery<TenantCostResult[]>(query, [tenantId]);
     const data = queryResult[0];
 
     const planCost = Number.parseFloat(String(data.plan_cost ?? 0));
-    const addonCost = Number.parseFloat(String(data.addon_cost ?? 0));
+    const addonCost = Number.parseFloat(String(data.addon_cost));
 
     return {
       planCost,

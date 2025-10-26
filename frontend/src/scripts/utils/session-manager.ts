@@ -200,7 +200,7 @@ export class SessionManager {
     console.info('Session extended');
   }
 
-  public logout(isTimeout = false): void {
+  public logout(isTimeout: boolean = false): void {
     // Clear session data
     if (this.removeAuthTokenCallback) {
       this.removeAuthTokenCallback();

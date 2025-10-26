@@ -85,6 +85,7 @@ export const generateCSRFTokenMiddleware = (
 ): void => {
   try {
     const token = generateToken(req as AuthenticatedRequest, res);
+    // Note: res.locals implicit any is unavoidable due to Express typing
     res.locals.csrfToken = token;
     next();
   } catch (error: unknown) {
@@ -122,8 +123,9 @@ export const validateCSRFToken = (req: Request, res: Response, next: NextFunctio
 
 // CSRF Token Response Helper
 export const attachCSRFToken = (_req: Request, res: Response, next: NextFunction): void => {
-  if (res.locals.csrfToken != null) {
-    res.setHeader('X-CSRF-Token', res.locals.csrfToken as string);
+  // Note: res.locals implicit any is unavoidable due to Express typing
+  if (res.locals.csrfToken !== null && res.locals.csrfToken !== undefined) {
+    res.setHeader('X-CSRF-Token', String(res.locals.csrfToken));
   }
   next();
 };
@@ -364,7 +366,7 @@ const rateLimitStyles = `
 `;
 
 // Rate limit HTML response template
-// eslint-disable-next-line @typescript-eslint/no-inferrable-types -- Required by typedef rule, conflicting rules
+
 function getRateLimitHTML(retryAfterMinutes: number, isAuthLimit: boolean = false): string {
   // Convert to user-friendly display
   const displayMinutes = Math.max(1, Math.ceil(retryAfterMinutes));

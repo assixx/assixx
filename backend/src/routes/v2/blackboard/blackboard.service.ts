@@ -412,8 +412,8 @@ class BlackboardService {
 
     // Transform tags from objects to string array if present
     if (entry.tags && Array.isArray(entry.tags)) {
-      transformed.tags = entry.tags.map((tag: unknown) =>
-        typeof tag === 'string' ? tag : (tag as { name: string }).name,
+      transformed.tags = (entry.tags as (string | { name: string })[]).map(
+        (tag: string | { name: string }) => (typeof tag === 'string' ? tag : tag.name),
       );
     }
 

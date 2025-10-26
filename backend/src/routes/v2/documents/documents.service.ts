@@ -43,7 +43,7 @@ export class ServiceError extends Error {
   constructor(
     public code: string,
     public message: string,
-    public statusCode = 500,
+    public statusCode: number = 500,
     public details?: unknown,
   ) {
     super(message);
@@ -145,8 +145,8 @@ class DocumentsService {
       };
 
       // Get documents based on user role
-      let documents;
-      let totalCount;
+      let documents: DbDocument[];
+      let totalCount: number;
 
       if (user.role === 'admin' || user.role === 'root') {
         // Admins can see all documents in their tenant
@@ -162,7 +162,7 @@ class DocumentsService {
 
       // Get read status for each document
       const documentsWithStatus = await Promise.all(
-        documents.map(async (doc) => {
+        documents.map(async (doc: DbDocument) => {
           const isRead = await Document.isReadByUser(doc.id, userId, tenantId);
           const apiDoc = dbToApi(doc);
 
@@ -540,9 +540,9 @@ class DocumentsService {
 
       return {
         content: document.file_content ?? Buffer.from(''),
-        originalName: String(document.original_name ?? document.filename),
-        mimeType: String(document.mime_type ?? 'application/octet-stream'),
-        fileSize: Number(document.file_size ?? 0),
+        originalName: document.original_name ?? document.filename ?? '',
+        mimeType: document.mime_type ?? 'application/octet-stream',
+        fileSize: document.file_size ?? 0,
       };
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
@@ -614,7 +614,7 @@ class DocumentsService {
 
       case 'team': {
         if (!document.team_id) return false;
-        const teamMembers = await Team.getTeamMembers(Number(document.team_id));
+        const teamMembers = await Team.getTeamMembers(document.team_id);
         return teamMembers.some((member: { id: number }) => member.id === userId);
       }
 

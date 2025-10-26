@@ -9,6 +9,47 @@ import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 
+// Query result types for type safety
+interface SystemSettingResult extends RowDataPacket {
+  id: number;
+  setting_key: string;
+  setting_value: string | null;
+  value_type: string;
+  category?: string | null;
+  description?: string | null;
+  is_public: boolean | number;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+interface TenantSettingResult extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  setting_key: string;
+  setting_value: string | null;
+  value_type: string;
+  category?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+interface UserSettingResult extends RowDataPacket {
+  id: number;
+  user_id: number;
+  tenant_id: number;
+  team_id?: number | null;
+  setting_key: string;
+  setting_value: string | null;
+  value_type: string;
+  category?: string | null;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+interface IdOnlyResult extends RowDataPacket {
+  id: number;
+}
+
 const DEFAULT_CATEGORY = 'other';
 const SETTING_NOT_FOUND_MSG = 'Setting not found';
 
@@ -168,15 +209,12 @@ export async function getSystemSettings(
 
   query += ` ORDER BY category, setting_key`;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+  const [rows] = await executeQuery<SystemSettingResult[]>(query, params);
 
-  return rows.map((row: RowDataPacket) => {
+  return rows.map((row: SystemSettingResult) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
-      settingValue: parseSettingValue(
-        row.setting_value as string | null,
-        row.value_type as SettingType,
-      ),
+      settingValue: parseSettingValue(row.setting_value, row.value_type as SettingType),
       isPublic: Boolean(row.is_public),
     });
   });
@@ -197,7 +235,7 @@ export async function getSystemSetting(
   }
 > {
   // Check if setting is public or user has permission
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<SystemSettingResult[]>(
     `SELECT * FROM system_settings WHERE setting_key = ?`,
     [key],
   );
@@ -214,10 +252,7 @@ export async function getSystemSetting(
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {
-    settingValue: parseSettingValue(
-      setting.setting_value as string | null,
-      setting.value_type as SettingType,
-    ),
+    settingValue: parseSettingValue(setting.setting_value, setting.value_type as SettingType),
     isPublic: Boolean(setting.is_public),
   });
 }
@@ -247,7 +282,7 @@ export async function upsertSystemSetting(
   const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
   // Check if setting exists
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<IdOnlyResult[]>(
     `SELECT id FROM system_settings WHERE setting_key = ?`,
     [data.setting_key],
   );
@@ -320,7 +355,7 @@ export async function deleteSystemSetting(
     throw new ServiceError('FORBIDDEN', 'Only root can delete system settings', 403);
   }
 
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<SystemSettingResult[]>(
     `SELECT * FROM system_settings WHERE setting_key = ?`,
     [key],
   );
@@ -377,15 +412,12 @@ export async function getTenantSettings(
 
   query += ` ORDER BY category, setting_key`;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+  const [rows] = await executeQuery<TenantSettingResult[]>(query, params);
 
-  return rows.map((row: RowDataPacket) => {
+  return rows.map((row: TenantSettingResult) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
-      settingValue: parseSettingValue(
-        row.setting_value as string | null,
-        row.value_type as SettingType,
-      ),
+      settingValue: parseSettingValue(row.setting_value, row.value_type as SettingType),
     });
   });
 }
@@ -403,7 +435,7 @@ export async function getTenantSetting(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   }
 > {
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<TenantSettingResult[]>(
     `SELECT * FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
     [key, tenantId],
   );
@@ -415,10 +447,7 @@ export async function getTenantSetting(
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {
-    settingValue: parseSettingValue(
-      setting.setting_value as string | null,
-      setting.value_type as SettingType,
-    ),
+    settingValue: parseSettingValue(setting.setting_value, setting.value_type as SettingType),
   });
 }
 
@@ -447,7 +476,7 @@ export async function upsertTenantSetting(
   const serializedValue = serializeSettingValue(data.setting_value, data.value_type ?? 'string');
 
   // Check if setting exists
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<IdOnlyResult[]>(
     `SELECT id FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
     [data.setting_key, tenantId],
   );
@@ -518,7 +547,7 @@ export async function deleteTenantSetting(
     throw new ServiceError('FORBIDDEN', 'Only admins can delete tenant settings', 403);
   }
 
-  const [settingRows] = await executeQuery<RowDataPacket[]>(
+  const [settingRows] = await executeQuery<TenantSettingResult[]>(
     `SELECT * FROM tenant_settings WHERE setting_key = ? AND tenant_id = ?`,
     [key, tenantId],
   );
@@ -598,15 +627,12 @@ export async function getUserSettings(
 
   query += ` ORDER BY team_id DESC, category, setting_key`;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+  const [rows] = await executeQuery<UserSettingResult[]>(query, params);
 
-  return rows.map((row: RowDataPacket) => {
+  return rows.map((row: UserSettingResult) => {
     const apiData = dbToApi(row);
     return Object.assign({}, apiData, {
-      settingValue: parseSettingValue(
-        row.setting_value as string | null,
-        row.value_type as SettingType,
-      ),
+      settingValue: parseSettingValue(row.setting_value, row.value_type as SettingType),
     });
   });
 }
@@ -624,7 +650,7 @@ export async function getUserSetting(
     settingValue: string | number | boolean | Record<string, unknown> | null;
   }
 > {
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<UserSettingResult[]>(
     `SELECT * FROM user_settings WHERE setting_key = ? AND user_id = ?`,
     [key, userId],
   );
@@ -636,10 +662,7 @@ export async function getUserSetting(
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {
-    settingValue: parseSettingValue(
-      setting.setting_value as string | null,
-      setting.value_type as SettingType,
-    ),
+    settingValue: parseSettingValue(setting.setting_value, setting.value_type as SettingType),
   });
 }
 
@@ -666,7 +689,7 @@ export async function upsertUserSetting(
   const settingTeamId = data.team_id !== undefined ? data.team_id : teamId;
 
   // Check if setting exists
-  const [rows] = await executeQuery<RowDataPacket[]>(
+  const [rows] = await executeQuery<IdOnlyResult[]>(
     `SELECT id FROM user_settings
      WHERE setting_key = ? AND user_id = ? AND tenant_id = ?
      AND (team_id = ? OR (team_id IS NULL AND ? IS NULL))`,
@@ -721,7 +744,7 @@ export async function deleteUserSetting(
   key: string,
   userId: number,
 ): Promise<{ success: boolean }> {
-  const [settingRows] = await executeQuery<RowDataPacket[]>(
+  const [settingRows] = await executeQuery<UserSettingResult[]>(
     `SELECT * FROM user_settings WHERE setting_key = ? AND user_id = ?`,
     [key, userId],
   );
@@ -758,7 +781,7 @@ export async function getAdminUserSettings(
   }
 
   // Verify user belongs to same tenant
-  const [userRows] = await executeQuery<RowDataPacket[]>(
+  const [userRows] = await executeQuery<IdOnlyResult[]>(
     `SELECT id FROM users WHERE id = ? AND tenant_id = ?`,
     [targetUserId, tenantId],
   );

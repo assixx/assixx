@@ -21,6 +21,7 @@ interface AccessCheckResult {
 
 interface ExtendedDocument extends DbDocument {
   recipient_type?: 'user' | 'team' | 'department' | 'company';
+  isPublic?: boolean;
 }
 
 // Helper function to attach document to request
@@ -90,7 +91,7 @@ const checkDepartmentHeadAccess = async (
   const user = await userModel.findById(userId, tenantId);
   const documentOwner = await userModel.findById(document.user_id, tenantId);
 
-  if (user && documentOwner && user.department === documentOwner.department) {
+  if (user && documentOwner && user.department_id === documentOwner.department_id) {
     return { hasAccess: true, reason: 'Department head access granted' };
   }
 
@@ -254,13 +255,16 @@ export const checkPublicDocumentAccess = async (
   try {
     const { documentId } = req.params;
 
-    const document = await documentModel.findById(Number.parseInt(documentId, 10));
-    if (!document) {
+    const docResult = await documentModel.findById(Number.parseInt(documentId, 10));
+    if (!docResult) {
       res.status(404).json({
         error: 'Dokument nicht gefunden',
       });
       return;
     }
+
+    // Type as ExtendedDocument to access isPublic field
+    const document = docResult as ExtendedDocument;
 
     // Prüfe, ob das Dokument öffentlich ist
     if (document.isPublic !== true) {

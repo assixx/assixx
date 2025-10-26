@@ -427,8 +427,8 @@ export class ApiError extends Error {
 // Declare global types
 declare global {
   interface Window {
-    ApiClient: typeof ApiClient;
-    apiClient: ApiClient;
+    ApiClient?: typeof ApiClient;
+    apiClient?: ApiClient;
   }
 }
 

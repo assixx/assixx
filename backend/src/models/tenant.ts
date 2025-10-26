@@ -28,6 +28,10 @@ interface DbFeature extends RowDataPacket {
   feature_id?: number;
 }
 
+interface IdResult extends RowDataPacket {
+  id: number;
+}
+
 interface TenantCreateData {
   company_name: string;
   subdomain: string;
@@ -118,13 +122,13 @@ async function createRootUser(
 }
 
 async function assignBasicPlan(connection: PoolConnection, tenantId: number): Promise<void> {
-  const [plans] = await connection.query<RowDataPacket[]>(
+  const [plans] = await connection.query<IdResult[]>(
     'SELECT id FROM plans WHERE code = ? AND is_active = true',
     ['basic'],
   );
 
   if (plans.length > 0) {
-    const basicPlanId = plans[0].id as number;
+    const basicPlanId = plans[0].id;
 
     await connection.query(
       `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
@@ -200,7 +204,7 @@ async function activateTrialFeatures(
 
   // TEMPORÄR: Aktiviere ALLE Features für Beta-Test
   // TODO: Vor Beta-Test auf Plan-basierte Features umstellen
-  const [features] = await conn.query<RowDataPacket[]>(`SELECT id FROM features`);
+  const [features] = await conn.query<IdResult[]>(`SELECT id FROM features`);
 
   // Aktiviere alle Features für 14 Tage Trial
   for (const feature of features) {
@@ -489,11 +493,10 @@ export async function deleteTenant(tenantId: number): Promise<boolean> {
     logger.warn(`Starting complete deletion of tenant ${tenantId}`);
 
     // Get all user IDs for this tenant (for file cleanup)
-    const [users] = await connection.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE tenant_id = ?',
-      [tenantId],
-    );
-    const userIds = users.map((u) => u.id as number);
+    const [users] = await connection.query<IdResult[]>('SELECT id FROM users WHERE tenant_id = ?', [
+      tenantId,
+    ]);
+    const userIds = users.map((u: IdResult) => u.id);
 
     // Delete in correct order to respect foreign key constraints
     await deleteChatData(connection, tenantId, userIds);

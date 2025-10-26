@@ -31,6 +31,7 @@ interface DbBlackboardEntry extends RowDataPacket {
   author_full_name?: string;
   attachment_count?: number;
   attachments?: DbBlackboardAttachment[];
+  tags?: DbBlackboardTag[]; // Tags loaded dynamically
 }
 
 interface DbBlackboardTag extends RowDataPacket {

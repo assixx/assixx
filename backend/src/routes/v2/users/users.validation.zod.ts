@@ -66,14 +66,14 @@ export const UsersListQuerySchema = PaginationSchema.extend({
   search: z.string().trim().optional(),
   role: RoleSchema.optional(),
   isActive: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
     z.boolean().optional(),
   ),
   isArchived: z.preprocess(
-    (val) =>
+    (val: unknown) =>
       val === 'true' ? true
       : val === 'false' ? false
       : val,
@@ -152,14 +152,22 @@ export const ChangePasswordBodySchema = z
     newPassword: PasswordSchema,
     confirmPassword: z.string(),
   })
-  .refine((data) => data.newPassword !== data.currentPassword, {
-    message: 'New password must be different from current password',
-    path: ['newPassword'],
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
+  .refine(
+    (data: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+      data.newPassword !== data.currentPassword,
+    {
+      message: 'New password must be different from current password',
+      path: ['newPassword'],
+    },
+  )
+  .refine(
+    (data: { currentPassword: string; newPassword: string; confirmPassword: string }) =>
+      data.newPassword === data.confirmPassword,
+    {
+      message: 'Passwords do not match',
+      path: ['confirmPassword'],
+    },
+  );
 
 /**
  * Update availability request body
@@ -169,7 +177,7 @@ export const UpdateAvailabilityBodySchema = z.object({
   availabilityStart: z
     .string()
     .refine(
-      (val) => {
+      (val: string) => {
         const isoDatePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
         return isoDatePattern.test(val);
       },
@@ -179,7 +187,7 @@ export const UpdateAvailabilityBodySchema = z.object({
   availabilityEnd: z
     .string()
     .refine(
-      (val) => {
+      (val: string) => {
         const isoDatePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
         return isoDatePattern.test(val);
       },

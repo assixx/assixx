@@ -43,6 +43,55 @@ interface JoinConversationData {
   conversationId: number;
 }
 
+// ============================================================================
+// Database Query Result Interfaces
+// ============================================================================
+
+interface ConversationParticipantResult extends RowDataPacket {
+  user_id: number;
+}
+
+interface UserInfoResult extends RowDataPacket {
+  id: number;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture_url: string | null;
+}
+
+interface MessageInfoResult extends RowDataPacket {
+  sender_id: number;
+  conversation_id: number;
+}
+
+interface MessageDetailsResult extends RowDataPacket {
+  id: number;
+  conversation_id: number;
+  content: string;
+  sender_id: number;
+  created_at: Date | string;
+}
+
+interface MessageWithSenderResult extends RowDataPacket {
+  queue_id: number; // From message_delivery_queue.id
+  message_id: number;
+  conversation_id: number;
+  content: string;
+  sender_id: number;
+  recipient_id: number; // From message_delivery_queue.recipient_id
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture_url: string | null;
+  created_at: Date | string;
+}
+
+interface NotificationQueueResult extends RowDataPacket {
+  queue_id: number;
+  recipient_id: number;
+  message_id: number;
+  attempts: number;
+}
+
 export class ChatWebSocketServer {
   private wss: WebSocketServer;
   private clients: Map<number, ExtendedWebSocket>;
@@ -186,13 +235,13 @@ export class ChatWebSocketServer {
       AND c.tenant_id = ?
       AND cp.tenant_id = ?
     `;
-    const [participants] = await query<RowDataPacket[]>(participantQuery, [
+    const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
       conversationId,
       tenantId,
       tenantId,
     ]);
 
-    return participants.map((p: RowDataPacket) => (p as { user_id: number }).user_id);
+    return participants.map((p: ConversationParticipantResult) => p.user_id);
   }
 
   private async saveMessage(
@@ -228,7 +277,7 @@ export class ChatWebSocketServer {
       SELECT id, username, first_name, last_name, profile_picture_url
       FROM users WHERE id = ?
     `;
-    const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [userId]);
+    const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [userId]);
     return senderInfo[0] as
       | {
           id: number;
@@ -374,7 +423,7 @@ export class ChatWebSocketServer {
         AND cp.tenant_id = ?
         AND cp.user_id != ?
       `;
-      const [participants] = await query<RowDataPacket[]>(participantQuery, [
+      const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
         conversationId,
         ws.tenantId,
         ws.tenantId,
@@ -383,7 +432,7 @@ export class ChatWebSocketServer {
 
       // Typing-Event an andere Teilnehmer senden
       for (const participant of participants) {
-        const userId = participant.user_id as number;
+        const userId = participant.user_id;
         const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
@@ -425,10 +474,10 @@ export class ChatWebSocketServer {
       const messageQuery = `
         SELECT sender_id, conversation_id FROM messages WHERE id = ?
       `;
-      const [messageInfo] = await query<RowDataPacket[]>(messageQuery, [messageId]);
+      const [messageInfo] = await query<MessageInfoResult[]>(messageQuery, [messageId]);
 
       if (messageInfo.length > 0) {
-        const senderId = messageInfo[0].sender_id as number;
+        const senderId = messageInfo[0].sender_id;
         const senderWs = this.clients.get(senderId);
 
         if (senderWs && senderWs.readyState === WebSocket.OPEN) {
@@ -468,7 +517,7 @@ export class ChatWebSocketServer {
         AND cp.tenant_id = ?
         AND cp.user_id != ?
       `;
-      const [participants] = await query<RowDataPacket[]>(participantQuery, [
+      const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
         conversationId,
         ws.tenantId,
         ws.tenantId,
@@ -476,7 +525,7 @@ export class ChatWebSocketServer {
       ]);
 
       for (const participant of participants) {
-        const userId = participant.user_id as number;
+        const userId = participant.user_id;
         const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
@@ -523,7 +572,7 @@ export class ChatWebSocketServer {
         JOIN conversations c ON cp1.conversation_id = c.id
         WHERE cp1.user_id = ? AND c.tenant_id = ? AND cp2.user_id != ?
       `;
-      const [relatedUsers] = await query<RowDataPacket[]>(conversationsQuery, [
+      const [relatedUsers] = await query<ConversationParticipantResult[]>(conversationsQuery, [
         userId,
         tenantId,
         userId,
@@ -531,7 +580,7 @@ export class ChatWebSocketServer {
 
       // Status an alle verbundenen Benutzer senden
       for (const user of relatedUsers) {
-        const userId = user.user_id as number;
+        const userId = user.user_id;
         const clientWs = this.clients.get(userId);
         if (clientWs && clientWs.readyState === WebSocket.OPEN) {
           this.sendMessage(clientWs, {
@@ -582,7 +631,7 @@ export class ChatWebSocketServer {
         AND m.delivery_status = 'scheduled'
       `;
 
-      const [scheduledMessages] = await query<RowDataPacket[]>(scheduledQuery);
+      const [scheduledMessages] = await query<MessageDetailsResult[]>(scheduledQuery);
 
       for (const message of scheduledMessages) {
         // Nachricht als zugestellt markieren
@@ -596,7 +645,7 @@ export class ChatWebSocketServer {
           SELECT user_id FROM conversation_participants
           WHERE conversation_id = ?
         `;
-        const [participants] = await query<RowDataPacket[]>(participantQuery, [
+        const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
           message.conversation_id,
         ]);
 
@@ -605,7 +654,7 @@ export class ChatWebSocketServer {
           SELECT first_name, last_name, profile_picture_url
           FROM users WHERE id = ?
         `;
-        const [senderInfo] = await query<RowDataPacket[]>(senderQuery, [message.sender_id]);
+        const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [message.sender_id]);
         const sender = senderInfo[0] as
           | {
               id: number;
@@ -618,10 +667,10 @@ export class ChatWebSocketServer {
 
         const UNKNOWN_USER_NAME = 'Unbekannter Benutzer';
         const messageData = {
-          id: message.id as number,
-          conversation_id: message.conversation_id as number,
-          content: message.content as string,
-          sender_id: message.sender_id as number,
+          id: message.id,
+          conversation_id: message.conversation_id,
+          content: message.content,
+          sender_id: message.sender_id,
           sender_name:
             sender ?
               [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
@@ -644,7 +693,7 @@ export class ChatWebSocketServer {
         };
 
         for (const participant of participants) {
-          const userId = participant.user_id as number;
+          const userId = participant.user_id;
           const clientWs = this.clients.get(userId);
           if (clientWs && clientWs.readyState === WebSocket.OPEN) {
             this.sendMessage(clientWs, {
@@ -669,7 +718,7 @@ export class ChatWebSocketServer {
   /**
    * Get queued messages from database
    */
-  private async getQueuedMessages(): Promise<RowDataPacket[]> {
+  private async getQueuedMessages(): Promise<MessageWithSenderResult[]> {
     const queueQuery = `
       SELECT
         mdq.id as queue_id,
@@ -690,14 +739,14 @@ export class ChatWebSocketServer {
       LIMIT 50
     `;
 
-    const [queuedMessages] = await query<RowDataPacket[]>(queueQuery);
+    const [queuedMessages] = await query<MessageWithSenderResult[]>(queueQuery);
     return queuedMessages;
   }
 
   /**
    * Build message data object from database row
    */
-  private buildMessageDataFromRow(message: RowDataPacket): {
+  private buildMessageDataFromRow(message: MessageWithSenderResult): {
     id: number;
     conversation_id: number;
     content: string;
@@ -717,17 +766,19 @@ export class ChatWebSocketServer {
     }[];
   } {
     return {
-      id: message.message_id as number,
-      conversation_id: message.conversation_id as number,
-      content: message.content as string,
-      sender_id: message.sender_id as number,
+      id: message.message_id,
+      conversation_id: message.conversation_id,
+      content: message.content,
+      sender_id: message.sender_id,
       sender_name:
-        `${String(message.first_name ?? '')} ${String(message.last_name ?? '')}`.trim() ||
-        'Unbekannter Benutzer',
-      first_name: (message.first_name ?? '') as string,
-      last_name: (message.last_name ?? '') as string,
-      profile_picture_url: (message.profile_picture_url ?? null) as string | null,
-      created_at: message.created_at as string,
+        `${message.first_name ?? ''} ${message.last_name ?? ''}`.trim() || 'Unbekannter Benutzer',
+      first_name: message.first_name ?? '',
+      last_name: message.last_name ?? '',
+      profile_picture_url: message.profile_picture_url ?? null,
+      created_at:
+        typeof message.created_at === 'string' ?
+          message.created_at
+        : message.created_at.toISOString(),
       delivery_status: 'delivered',
       is_read: false,
       attachments: [],
@@ -737,7 +788,7 @@ export class ChatWebSocketServer {
   /**
    * Deliver message to recipient
    */
-  private async deliverMessage(message: RowDataPacket): Promise<void> {
+  private async deliverMessage(message: MessageWithSenderResult): Promise<void> {
     // Update status to processing
     await execute<ResultSetHeader>(
       'UPDATE message_delivery_queue SET status = "processing", last_attempt = NOW(), attempts = attempts + 1 WHERE id = ?',
@@ -748,7 +799,7 @@ export class ChatWebSocketServer {
     const messageData = this.buildMessageDataFromRow(message);
 
     // Send to recipient if online
-    const recipientId = message.recipient_id as number;
+    const recipientId = message.recipient_id;
     const recipientWs = this.clients.get(recipientId);
     if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
       this.sendMessage(recipientWs, {
@@ -772,8 +823,8 @@ export class ChatWebSocketServer {
   /**
    * Handle message delivery failure
    */
-  private async handleDeliveryFailure(message: RowDataPacket): Promise<void> {
-    const [result] = await query<RowDataPacket[]>(
+  private async handleDeliveryFailure(message: MessageWithSenderResult): Promise<void> {
+    const [result] = await query<NotificationQueueResult[]>(
       'SELECT attempts FROM message_delivery_queue WHERE id = ?',
       [message.queue_id],
     );
@@ -800,7 +851,7 @@ export class ChatWebSocketServer {
   /**
    * Process single message from queue
    */
-  private async processSingleMessage(message: RowDataPacket): Promise<void> {
+  private async processSingleMessage(message: MessageWithSenderResult): Promise<void> {
     try {
       await this.deliverMessage(message);
     } catch (error: unknown) {

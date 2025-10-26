@@ -508,13 +508,20 @@ export const usersController = {
     await new Promise<void>((resolve: () => void, reject: (reason?: unknown) => void) => {
       uploadMiddleware.single('profilePicture')(req, res, (err: unknown) => {
         if (err !== null && err !== undefined && err !== '') {
-          reject(err instanceof Error ? err : new Error(String(err)));
+          const errMessage =
+            err instanceof Error ? err.message
+            : typeof err === 'string' ? err
+            : JSON.stringify(err);
+          reject(err instanceof Error ? err : new Error(errMessage));
         } else {
           resolve();
         }
       });
     }).catch((error: unknown) => {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message
+        : typeof error === 'string' ? error
+        : JSON.stringify(error);
       res.status(400).json(errorResponse('BAD_REQUEST', errorMessage));
     });
 

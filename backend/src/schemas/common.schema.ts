@@ -13,7 +13,7 @@ import { z } from 'zod';
  * Handles both string and number inputs
  */
 export const IdSchema = z.preprocess(
-  (val) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
+  (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
   z.number().int().positive('ID must be a positive integer'),
 );
 
@@ -67,19 +67,19 @@ export const StatusSchema = z.enum(['active', 'inactive']);
  * Transforms string inputs to numbers automatically
  */
 export const PaginationSchema = z.object({
-  page: z.preprocess((val) => {
+  page: z.preprocess((val: unknown) => {
     if (typeof val === 'string' || typeof val === 'number') {
       return Number.parseInt(val.toString(), 10);
     }
     return 1;
   }, z.number().int().min(1).default(1)),
-  limit: z.preprocess((val) => {
+  limit: z.preprocess((val: unknown) => {
     if (typeof val === 'string' || typeof val === 'number') {
       return Number.parseInt(val.toString(), 10);
     }
     return 10;
   }, z.number().int().min(1).max(100).default(10)),
-  offset: z.preprocess((val) => {
+  offset: z.preprocess((val: unknown) => {
     if (typeof val === 'string' || typeof val === 'number') {
       return Number.parseInt(val.toString(), 10);
     }
@@ -105,7 +105,7 @@ export const SearchQuerySchema = PaginationSchema.extend({
  * Using refine instead of regex to avoid false positive security warnings
  */
 export const DateSchema = z.string().refine(
-  (val) => {
+  (val: string) => {
     // ISO 8601 date format: YYYY-MM-DDTHH:mm:ss[.sss][Z]
     const isoDatePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
     return isoDatePattern.test(val);
@@ -119,7 +119,7 @@ export const DateSchema = z.string().refine(
 export const OptionalDateSchema = z
   .string()
   .refine(
-    (val) => {
+    (val: string) => {
       const isoDatePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
       return isoDatePattern.test(val);
     },
@@ -146,7 +146,7 @@ export const TenantIdSchema = z
   .number()
   .int()
   .positive('Invalid tenant ID')
-  .refine((val) => val !== 0, 'Tenant ID cannot be 0');
+  .refine((val: number) => val !== 0, 'Tenant ID cannot be 0');
 
 // ============================================================
 // FILE UPLOAD - File validation schemas
