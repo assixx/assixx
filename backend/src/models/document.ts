@@ -7,7 +7,11 @@ interface DbDocument extends RowDataPacket {
   id: number;
   user_id: number;
   file_name: string;
+  filename?: string;
+  original_name?: string;
   file_content?: Buffer;
+  file_size?: number;
+  mime_type?: string;
   category: string;
   description?: string;
   year?: number;
@@ -17,6 +21,10 @@ interface DbDocument extends RowDataPacket {
   download_count?: number;
   last_downloaded?: Date;
   tenant_id: number;
+  created_by?: number;
+  recipient_type?: string;
+  team_id?: number | null;
+  department_id?: number | null;
   // Extended fields from joins
   first_name?: string;
   last_name?: string;
@@ -79,6 +87,10 @@ interface DocumentCountFilter {
 
 interface CountResult extends RowDataPacket {
   total: number;
+}
+
+interface TotalSizeResult extends RowDataPacket {
+  total_size: number | string | null; // SUM of OCTET_LENGTH can be string or number or null
 }
 
 export async function createDocument({
@@ -644,7 +656,7 @@ export async function countDocumentsByTenant(tenant_id: number): Promise<number>
 // Get total storage used by tenant (in bytes)
 export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
   try {
-    const [rows] = await executeQuery<RowDataPacket[]>(
+    const [rows] = await executeQuery<TotalSizeResult[]>(
       'SELECT SUM(OCTET_LENGTH(file_content)) as total_size FROM documents WHERE tenant_id = ?',
       [tenant_id],
     );

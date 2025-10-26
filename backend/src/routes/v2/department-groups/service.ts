@@ -5,6 +5,7 @@
 import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import rootLog from '../../../models/rootLog';
+import { CountResult } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute, getConnection } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
@@ -375,7 +376,7 @@ class DepartmentGroupsService {
       await connection.beginTransaction();
 
       // Check if any admin has permissions on this group
-      const [permissions] = await connection.execute<RowDataPacket[]>(
+      const [permissions] = await connection.execute<CountResult[]>(
         `SELECT COUNT(*) as count FROM admin_group_permissions
          WHERE group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
@@ -389,7 +390,7 @@ class DepartmentGroupsService {
       }
 
       // Check if group has subgroups
-      const [subgroups] = await connection.execute<RowDataPacket[]>(
+      const [subgroups] = await connection.execute<CountResult[]>(
         `SELECT COUNT(*) as count FROM department_groups
          WHERE parent_group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],

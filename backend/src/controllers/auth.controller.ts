@@ -16,6 +16,22 @@ import { errorResponse, successResponse } from '../types/response.types';
 import { query as executeQuery } from '../utils/db';
 import { logger } from '../utils/logger';
 
+// Helper to safely get request body as unknown
+// Express types req.body as 'any' - this helper makes it explicit
+function getRequestBody(req: Request): unknown {
+  return req.body;
+}
+
+// Query result interfaces
+interface TenantNameResult extends RowDataPacket {
+  company_name: string | null | undefined;
+  name: string | null | undefined;
+}
+
+interface FingerprintResult extends RowDataPacket {
+  fingerprint: string | null | undefined;
+}
+
 // Type guard to check if request has authenticated user
 /**
  *
@@ -91,16 +107,16 @@ class AuthController {
       // Get tenant name - handle both column names for compatibility
       let tenantName = '';
       try {
-        const [tenantRows] = await executeQuery<RowDataPacket[]>(
-          'SELECT * FROM tenants WHERE id = ?',
+        const [tenantRows] = await executeQuery<TenantNameResult[]>(
+          'SELECT company_name, name FROM tenants WHERE id = ?',
           [req.user.tenant_id],
         );
 
         if (tenantRows.length > 0) {
           // Check company_name first, fall back to name if empty
           // Use nullish coalescing and proper string checks
-          const companyName = tenantRows[0].company_name as string | null | undefined;
-          const name = tenantRows[0].name as string | null | undefined;
+          const companyName = tenantRows[0].company_name;
+          const name = tenantRows[0].name;
 
           if (companyName !== null && companyName !== undefined && companyName.trim() !== '') {
             tenantName = companyName;
@@ -445,7 +461,7 @@ class AuthController {
       }
 
       // Check session in database
-      const [sessions] = await executeQuery<RowDataPacket[]>(
+      const [sessions] = await executeQuery<FingerprintResult[]>(
         'SELECT fingerprint FROM user_sessions WHERE user_id = ? AND session_id = ? AND expires_at > NOW()',
         [user.id, sessionId],
       );
@@ -458,7 +474,7 @@ class AuthController {
         return;
       }
 
-      const storedFingerprint = sessions[0].fingerprint as string | null | undefined;
+      const storedFingerprint = sessions[0].fingerprint;
       if (
         storedFingerprint !== null &&
         storedFingerprint !== undefined &&
@@ -490,7 +506,7 @@ class AuthController {
    */
   forgotPassword(req: Request, res: Response): void {
     try {
-      const requestBody = req.body as { email?: unknown };
+      const requestBody = getRequestBody(req) as { email?: unknown };
       const email = typeof requestBody.email === 'string' ? requestBody.email : 'undefined';
 
       // TODO: Implement password reset logic
@@ -528,7 +544,7 @@ class AuthController {
    */
   async refreshToken(req: Request, res: Response): Promise<void> {
     try {
-      const requestBody = req.body as { refreshToken?: unknown };
+      const requestBody = getRequestBody(req) as { refreshToken?: unknown };
       const refreshToken = requestBody.refreshToken;
 
       if (typeof refreshToken !== 'string' || refreshToken.trim() === '') {

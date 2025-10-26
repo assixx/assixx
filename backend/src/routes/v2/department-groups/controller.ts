@@ -11,6 +11,21 @@ import { logger } from '../../../utils/logger.js';
 import { departmentGroupsService } from './service.js';
 import { AddDepartmentsRequest, CreateGroupRequest, UpdateGroupRequest } from './types.js';
 
+// Error detail interface for type safety
+interface ErrorDetail {
+  field: string;
+  message: string;
+}
+
+// Helper function to safely extract error message from ValidationError
+// ValidationError.msg is typed as 'any' in express-validator
+function mapValidationError(error: ValidationError): ErrorDetail {
+  return {
+    field: error.type === 'field' ? error.path : 'general',
+    message: String(error.msg as unknown),
+  };
+}
+
 // Constants
 const INVALID_REQUEST_DATA = 'Invalid request data';
 
@@ -105,10 +120,7 @@ class DepartmentGroupsController {
         error: {
           code: 'VALIDATION_ERROR',
           message: INVALID_REQUEST_DATA,
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
+          details: errors.array().map(mapValidationError),
         },
       });
       return;
@@ -176,10 +188,7 @@ class DepartmentGroupsController {
         error: {
           code: 'VALIDATION_ERROR',
           message: INVALID_REQUEST_DATA,
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
+          details: errors.array().map(mapValidationError),
         },
       });
       return;
@@ -246,10 +255,7 @@ class DepartmentGroupsController {
         error: {
           code: 'VALIDATION_ERROR',
           message: INVALID_REQUEST_DATA,
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
+          details: errors.array().map(mapValidationError),
         },
       });
       return;
@@ -311,10 +317,7 @@ class DepartmentGroupsController {
         error: {
           code: 'VALIDATION_ERROR',
           message: INVALID_REQUEST_DATA,
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
+          details: errors.array().map(mapValidationError),
         },
       });
       return;
@@ -382,10 +385,7 @@ class DepartmentGroupsController {
         error: {
           code: 'VALIDATION_ERROR',
           message: INVALID_REQUEST_DATA,
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
+          details: errors.array().map(mapValidationError),
         },
       });
       return;
@@ -442,10 +442,7 @@ class DepartmentGroupsController {
         error: {
           code: 'VALIDATION_ERROR',
           message: INVALID_REQUEST_DATA,
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
+          details: errors.array().map(mapValidationError),
         },
       });
       return;

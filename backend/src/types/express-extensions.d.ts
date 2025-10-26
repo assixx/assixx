@@ -37,6 +37,13 @@ declare global {
       clientIp?: string;
       userAgent?: string;
     }
+
+    interface Response {
+      locals: {
+        csrfToken?: string;
+        [key: string]: unknown;
+      };
+    }
   }
 }
 

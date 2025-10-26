@@ -15,7 +15,7 @@ import { initModals } from './components/modals.js';
 // Extend window interface
 declare global {
   interface Window {
-    apiClient: ApiClient;
+    apiClient?: ApiClient;
   }
 }
 

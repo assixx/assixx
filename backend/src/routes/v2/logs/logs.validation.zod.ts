@@ -23,7 +23,7 @@ export const ListLogsQuerySchema = PaginationSchema.extend({
   endDate: DateSchema.optional(),
   search: z.string().trim().optional(),
   offset: z.preprocess(
-    (val) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
+    (val: unknown) => (typeof val === 'string' ? Number.parseInt(val, 10) : val),
     z.number().int().min(0, 'Offset must be a non-negative integer').optional(),
   ),
 });

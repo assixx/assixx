@@ -6,20 +6,13 @@
 // Import styles
 import '../styles/main.css';
 
-// Import core modules - these are still .js files
-import { initNavigation } from './core/navigation.js';
-import { initTheme } from './core/theme.js';
-import { initUtils } from './core/utils.js';
 // Import components - these are still .js files
 import { initModals } from './components/modals.js';
 import { initTooltips } from './components/tooltips.js';
 import { initDropdowns } from './components/dropdowns.js';
 // Import services - these are already TypeScript (default instances)
-import storageService from './services/storage.service';
-import notificationService from './services/notification.service';
-// Import types for the services
-import type { StorageService } from './services/storage.service';
-import type { NotificationService } from './services/notification.service';
+import storageService, { StorageService } from './services/storage.service';
+import notificationService, { NotificationService } from './services/notification.service';
 
 // Define the Assixx interface
 interface AssixxApp {
@@ -57,11 +50,6 @@ const assixxApp: AssixxApp = {
   init() {
     console.info('Initializing Assixx Application...');
 
-    // Initialize core modules
-    initNavigation();
-    initTheme();
-    initUtils();
-
     // Initialize UI components
     initModals();
     initTooltips();
@@ -82,7 +70,7 @@ const assixxApp: AssixxApp = {
       case 'dashboard':
         void import('./pages/dashboard.js')
 
-          .then((module) => {
+          .then((module: { initDashboard?: () => void }) => {
             if (typeof module.initDashboard === 'function') {
               module.initDashboard();
             }

@@ -16,6 +16,28 @@ import { logger } from '../utils/logger';
 
 const INVALID_CREDENTIALS_MSG = 'Ungültige Anmeldedaten';
 
+// Query result types for type safety
+interface TenantIdResult extends RowDataPacket {
+  id: number;
+}
+
+interface RefreshTokenWithUserResult extends RowDataPacket {
+  // From oauth_tokens
+  id: number;
+  token: string;
+  user_id: number;
+  tenant_id: number;
+  // From users JOIN
+  username: string;
+  email: string;
+  role: string;
+  first_name: string | null;
+  last_name: string | null;
+  department_id: number | null;
+  position: string | null;
+  is_active: boolean | number;
+}
+
 /**
  *
  */
@@ -45,7 +67,7 @@ class AuthService {
     username: string,
   ): Promise<{ success: boolean; tenantId?: number }> {
     // Get tenant by subdomain
-    const [tenantRows] = await execute<RowDataPacket[]>(
+    const [tenantRows] = await execute<TenantIdResult[]>(
       'SELECT id FROM tenants WHERE subdomain = ?',
       [tenantSubdomain],
     );
@@ -55,7 +77,7 @@ class AuthService {
       return { success: false };
     }
 
-    const tenantId = tenantRows[0].id as number;
+    const tenantId = tenantRows[0].id;
 
     // Check if user belongs to the specified tenant
     if (userTenantId !== tenantId) {
@@ -443,7 +465,7 @@ class AuthService {
   } | null> {
     try {
       // Get all non-revoked, non-expired refresh tokens from database
-      const [tokens] = await execute<RowDataPacket[]>(
+      const [tokens] = await execute<RefreshTokenWithUserResult[]>(
         `SELECT ot.*, u.username, u.email, u.role, u.first_name, u.last_name,
                 u.department_id, u.is_active, u.position
          FROM oauth_tokens ot
@@ -455,9 +477,9 @@ class AuthService {
       );
 
       // Find matching token by comparing hashes
-      let validToken = null;
+      let validToken: RefreshTokenWithUserResult | null = null;
       for (const token of tokens) {
-        const isMatch = await bcrypt.compare(refreshToken, token.token as string);
+        const isMatch = await bcrypt.compare(refreshToken, token.token);
         if (isMatch) {
           validToken = token;
           break;
@@ -469,7 +491,11 @@ class AuthService {
       }
 
       // Check if user is active
-      if (validToken.is_active == null || validToken.is_active === false) {
+      const isActive =
+        typeof validToken.is_active === 'boolean' ?
+          validToken.is_active
+        : Boolean(validToken.is_active);
+      if (!isActive) {
         return null;
       }
 
@@ -481,15 +507,15 @@ class AuthService {
 
       // Create user object for token generation
       const user = {
-        id: validToken.user_id as number,
-        username: validToken.username as string,
-        email: validToken.email as string,
-        role: validToken.role as string,
-        tenant_id: validToken.tenant_id as number,
-        first_name: validToken.first_name as string | null,
-        last_name: validToken.last_name as string | null,
-        department_id: validToken.department_id as number | null,
-        position: validToken.position as string | null,
+        id: validToken.user_id,
+        username: validToken.username,
+        email: validToken.email,
+        role: validToken.role,
+        tenant_id: validToken.tenant_id,
+        first_name: validToken.first_name,
+        last_name: validToken.last_name,
+        department_id: validToken.department_id,
+        position: validToken.position,
       };
 
       // Generate new access token
@@ -497,8 +523,8 @@ class AuthService {
 
       // Generate new refresh token
       const newRefreshToken = await this.generateRefreshToken(
-        validToken.user_id as number,
-        validToken.tenant_id as number,
+        validToken.user_id,
+        validToken.tenant_id,
       );
 
       // Create a complete user object with all required fields
@@ -507,7 +533,7 @@ class AuthService {
         first_name: user.first_name ?? '',
         last_name: user.last_name ?? '',
         password: '', // Not needed for mapping
-        is_active: validToken.is_active as boolean,
+        is_active: isActive,
         is_archived: false,
         profile_picture: null,
         phone: null,

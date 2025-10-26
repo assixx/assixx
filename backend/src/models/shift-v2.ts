@@ -18,6 +18,26 @@ import {
   formatDateOnlyForMysql,
 } from './shift-types';
 
+// Query result types for type safety
+interface DateResult extends RowDataPacket {
+  date: string | Date;
+}
+
+interface CountResult extends RowDataPacket {
+  count: number;
+}
+
+interface IdResult extends RowDataPacket {
+  id: number;
+}
+
+interface OvertimeSummaryResult extends RowDataPacket {
+  totalShifts: number;
+  totalHours: number | null;
+  overtimeHours: number | null;
+  breakHours: number | null;
+}
+
 // ============= V2 API HELPER FUNCTIONS =============
 
 /**
@@ -201,12 +221,12 @@ async function getCurrentShiftDate(
       (data.end_time != null && data.end_time !== '')) &&
     (data.date == null || data.date === '')
   ) {
-    const [currentShift] = await executeQuery<RowDataPacket[]>(
+    const [currentShift] = await executeQuery<DateResult[]>(
       'SELECT date FROM shifts WHERE id = ? AND tenant_id = ?',
       [id, tenantId],
     );
     if (currentShift.length > 0) {
-      const formattedDate = formatDateOnlyForMysql(currentShift[0].date as string | Date);
+      const formattedDate = formatDateOnlyForMysql(currentShift[0].date);
       return formattedDate ?? undefined;
     }
   }
@@ -472,7 +492,7 @@ export async function update(
 export async function deleteShift(id: number, tenantId: number): Promise<void> {
   try {
     // Check if shift has assignments
-    const [assignments] = await executeQuery<RowDataPacket[]>(
+    const [assignments] = await executeQuery<CountResult[]>(
       'SELECT COUNT(*) as count FROM shift_assignments WHERE shift_id = ?',
       [id],
     );
@@ -650,7 +670,7 @@ export async function getSwapRequests(
 export async function createSwapRequest(data: V2SwapRequestData): Promise<number> {
   try {
     // First, we need to find the assignment_id for this shift and user
-    const [assignments] = await executeQuery<RowDataPacket[]>(
+    const [assignments] = await executeQuery<IdResult[]>(
       'SELECT id FROM shift_assignments WHERE shift_id = ? AND user_id = ? AND tenant_id = ?',
       [data.shift_id, data.requested_by, data.tenant_id],
     );
@@ -659,7 +679,7 @@ export async function createSwapRequest(data: V2SwapRequestData): Promise<number
       throw new Error('No assignment found for this shift and user');
     }
 
-    const assignmentId = assignments[0].id as number;
+    const assignmentId = assignments[0].id;
 
     const query = `
       INSERT INTO shift_swap_requests
@@ -755,7 +775,7 @@ async function getOvertimeSummary(
   startDate: string,
   endDate: string,
   tenantId: number,
-): Promise<RowDataPacket[]> {
+): Promise<OvertimeSummaryResult[]> {
   const query = `
     SELECT
       COUNT(*) as totalShifts,
@@ -793,7 +813,7 @@ async function getOvertimeSummary(
       AND status IN ('completed', 'in_progress')
   `;
 
-  const [result] = await executeQuery<RowDataPacket[]>(query, [
+  const [result] = await executeQuery<OvertimeSummaryResult[]>(query, [
     tenantId,
     userId,
     formatDateOnlyForMysql(startDate),
@@ -874,13 +894,11 @@ export async function getOvertimeByUser(
 
     return {
       summary: {
-        totalShifts: (result[0].totalShifts as number) || 0,
-        totalHours: Number.parseFloat(String(result[0].totalHours)) || 0,
-        overtimeHours: Number.parseFloat(String(result[0].overtimeHours)) || 0,
-        breakHours: Number.parseFloat(String(result[0].breakHours)) || 0,
-        netHours:
-          (Number.parseFloat(String(result[0].totalHours)) || 0) -
-          (Number.parseFloat(String(result[0].breakHours)) || 0),
+        totalShifts: result[0].totalShifts || 0,
+        totalHours: result[0].totalHours ?? 0,
+        overtimeHours: result[0].overtimeHours ?? 0,
+        breakHours: result[0].breakHours ?? 0,
+        netHours: (result[0].totalHours ?? 0) - (result[0].breakHours ?? 0),
       },
       shifts,
     };

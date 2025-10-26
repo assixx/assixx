@@ -373,13 +373,13 @@ function setupUrlChangeHandlers(): void {
 
   // Also check when section parameter changes
   const originalPushState = window.history.pushState.bind(window.history);
-  window.history.pushState = function (...args) {
+  window.history.pushState = function (...args: Parameters<typeof window.history.pushState>) {
     originalPushState.apply(window.history, args);
     setTimeout(checkTeamsVisibility, 100);
   };
 
   const originalReplaceState = window.history.replaceState.bind(window.history);
-  window.history.replaceState = function (...args) {
+  window.history.replaceState = function (...args: Parameters<typeof window.history.replaceState>) {
     originalReplaceState.apply(window.history, args);
     setTimeout(checkTeamsVisibility, 100);
   };

@@ -138,7 +138,7 @@ export const UpdateSuggestionBodySchema = z.object({
     .max(100, 'Estimated cost cannot exceed 100 characters')
     .optional(),
   actualSavings: z.preprocess(
-    (val) => (typeof val === 'string' ? Number.parseFloat(val) : val),
+    (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
     z.number().min(0, 'Actual savings must be a non-negative number').optional(),
   ),
   status: StatusSchema.optional(),

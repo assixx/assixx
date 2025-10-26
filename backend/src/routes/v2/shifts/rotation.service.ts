@@ -18,6 +18,25 @@ import type {
   ShiftRotationPattern,
 } from './rotation.types.js';
 
+// Query result interfaces
+interface RotationPatternResult extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  name: string;
+  description?: string;
+  pattern_type: 'fixed' | 'rotating';
+  pattern_config: string | PatternConfig; // JSON string or parsed object
+  is_active: boolean | number;
+  created_by: number;
+  created_at: Date;
+  updated_at: Date;
+  created_by_name?: string; // From LEFT JOIN users
+}
+
+interface AssignmentIdResult extends RowDataPacket {
+  id: number;
+}
+
 /**
  * Get all rotation patterns for a tenant
  */
@@ -42,16 +61,16 @@ export async function getRotationPatterns(
 
   query += ' ORDER BY p.created_at DESC';
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, params);
+  const [rows] = await executeQuery<RotationPatternResult[]>(query, params);
 
-  return rows.map((row: RowDataPacket) => {
+  return rows.map((row: RotationPatternResult) => {
     const apiData = dbToApi(row);
     return {
       ...apiData,
       patternConfig:
         typeof row.pattern_config === 'string' ?
           (JSON.parse(row.pattern_config) as PatternConfig)
-        : (row.pattern_config as PatternConfig),
+        : row.pattern_config,
     } as ShiftRotationPattern;
   });
 }
@@ -72,7 +91,7 @@ export async function getRotationPattern(
     WHERE p.id = ? AND p.tenant_id = ?
   `;
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, [patternId, tenantId]);
+  const [rows] = await executeQuery<RotationPatternResult[]>(query, [patternId, tenantId]);
 
   if (rows.length === 0) {
     throw new ServiceError('NOT_FOUND', 'Rotation pattern not found', 404);
@@ -85,7 +104,7 @@ export async function getRotationPattern(
     patternConfig:
       typeof row.pattern_config === 'string' ?
         (JSON.parse(row.pattern_config) as PatternConfig)
-      : (row.pattern_config as PatternConfig),
+      : row.pattern_config,
   } as ShiftRotationPattern;
 }
 
@@ -238,7 +257,7 @@ export async function assignUsersToPattern(
       AND (ends_at IS NULL OR ends_at > NOW())
     `;
 
-    const [existing] = await executeQuery<RowDataPacket[]>(checkQuery, [
+    const [existing] = await executeQuery<AssignmentIdResult[]>(checkQuery, [
       tenantId,
       data.pattern_id,
       userId,

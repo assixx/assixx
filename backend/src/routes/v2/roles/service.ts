@@ -9,6 +9,11 @@ import { execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import { Role, RoleCheckRequest, RoleName } from './types.js';
 
+// Query result interfaces
+interface UserRoleResult extends RowDataPacket {
+  role: string;
+}
+
 /**
  *
  */
@@ -92,7 +97,7 @@ class RolesService {
   }> {
     try {
       // Get user's current role from database
-      const [rows] = await execute<RowDataPacket[]>('SELECT role FROM users WHERE id = ?', [
+      const [rows] = await execute<UserRoleResult[]>('SELECT role FROM users WHERE id = ?', [
         request.userId,
       ]);
 

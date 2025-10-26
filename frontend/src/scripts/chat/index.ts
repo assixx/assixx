@@ -1080,7 +1080,8 @@ class ChatClient {
 
       this.ws.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data as string) as WebSocketMessage;
+          const data: string = event.data as string;
+          const message: WebSocketMessage = JSON.parse(data) as WebSocketMessage;
           this.handleWebSocketMessage(message);
         } catch (error) {
           console.error('❌ Error parsing WebSocket message:', error);

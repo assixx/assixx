@@ -15,14 +15,14 @@
   color: var(--color-white);
 
   /* ========== VISUAL ========== */
-  background: linear-gradient(145deg, rgb(244 67 54 / 11%), rgb(255 0 0 / 15%)); /* Subtle red gradient */
+  background: linear-gradient(145deg, #f44336b0, #ff000052);
   box-shadow: var(--shadow-btn-danger);
 }
 
 /* Hover state - Brighten the gradient */
 .btn-danger:hover:not(:disabled) {
   transform: translateY(-1px);
-  background: linear-gradient(145deg, rgb(244 67 54 / 18%), rgb(255 0 0 / 25%)); /* Intensiver */
+  background: linear-gradient(145deg, #f4433685, #ff000031);
   box-shadow: var(--shadow-btn-danger-hover);
 }
 

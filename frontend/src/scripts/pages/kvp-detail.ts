@@ -10,13 +10,6 @@ import { showSuccessAlert, showErrorAlert, showConfirm } from '../utils/alerts';
 import { type KvpSuggestion, type Comment, type Attachment, getStatusText, getShareLevelText } from './kvp-detail-ui';
 import { KvpDetailRenderer } from './kvp-detail-renderer';
 
-// Extend Window interface for openLightbox function
-declare global {
-  interface Window {
-    openLightbox?: (url: string) => void;
-  }
-}
-
 interface User {
   id: number;
   role: 'root' | 'admin' | 'employee';
@@ -299,12 +292,8 @@ class KvpDetailPage {
   private setupCustomEventListeners(): void {
     // Listen for share event from modal
     window.addEventListener('shareKvp', (event: Event) => {
-      const customEvent = event as CustomEvent;
-      interface ShareDetail {
-        orgLevel: 'company' | 'department' | 'team';
-        orgId: number | null;
-      }
-      const detail = customEvent.detail as ShareDetail;
+      const customEvent = event as CustomEvent<ShareKvpDetail>;
+      const detail = customEvent.detail;
       void this.shareSuggestion(detail.orgLevel, detail.orgId);
     });
 
@@ -316,13 +305,10 @@ class KvpDetailPage {
     // Status change listener for custom dropdown
     document.addEventListener('statusChange', (e: Event) => {
       void (async () => {
-        const customEvent = e as CustomEvent;
-        interface StatusChangeDetail {
-          status: string;
-        }
-
-        const detail = customEvent.detail as StatusChangeDetail | null;
-        if (detail?.status !== undefined && detail.status !== '') {
+        const customEvent = e as CustomEvent<StatusChangeDetail>;
+        const detail = customEvent.detail;
+        // detail.status is always defined (typed as string)
+        if (detail.status !== '') {
           await this.updateStatus(detail.status);
         }
       })();

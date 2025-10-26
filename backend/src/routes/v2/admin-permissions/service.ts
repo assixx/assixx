@@ -38,6 +38,16 @@ interface GroupPermissionRow extends RowDataPacket {
   can_delete: number;
 }
 
+interface PermissionResult extends RowDataPacket {
+  can_read: number;
+  can_write: number;
+  can_delete: number;
+}
+
+interface RoleResult extends RowDataPacket {
+  role: string;
+}
+
 /**
  *
  */
@@ -62,7 +72,7 @@ class AdminPermissionsService {
         FROM admin_department_permissions
         WHERE admin_user_id = ? AND department_id = ? AND tenant_id = ?
       `;
-      const [directPermissions] = await execute<RowDataPacket[]>(directQuery, [
+      const [directPermissions] = await execute<PermissionResult[]>(directQuery, [
         adminId,
         departmentId,
         tenantId,
@@ -91,7 +101,7 @@ class AdminPermissionsService {
         AND dgm.department_id = ?
         AND agp.tenant_id = ?
       `;
-      const [groupPermissions] = await execute<RowDataPacket[]>(groupQuery, [
+      const [groupPermissions] = await execute<PermissionResult[]>(groupQuery, [
         adminId,
         departmentId,
         tenantId,
@@ -99,16 +109,16 @@ class AdminPermissionsService {
 
       if (groupPermissions.length > 0) {
         // Check if any group grants the required permission
-        const hasAccess = groupPermissions.some((perm: RowDataPacket) =>
+        const hasAccess = groupPermissions.some((perm: PermissionResult) =>
           this.checkPermissionLevel(perm, requiredPermission),
         );
 
         if (hasAccess) {
           // Get the highest permissions from all groups
           const permissions: PermissionSet = {
-            canRead: groupPermissions.some((p: RowDataPacket) => p.can_read === 1),
-            canWrite: groupPermissions.some((p: RowDataPacket) => p.can_write === 1),
-            canDelete: groupPermissions.some((p: RowDataPacket) => p.can_delete === 1),
+            canRead: groupPermissions.some((p: PermissionResult) => p.can_read === 1),
+            canWrite: groupPermissions.some((p: PermissionResult) => p.can_write === 1),
+            canDelete: groupPermissions.some((p: PermissionResult) => p.can_delete === 1),
           };
 
           return { hasAccess: true, source: 'group', permissions };
@@ -128,7 +138,7 @@ class AdminPermissionsService {
    * @param tenantId - The tenant ID
    */
   private async getAdminRole(adminId: number, tenantId: number): Promise<boolean> {
-    const [adminRows] = await execute<RowDataPacket[]>(
+    const [adminRows] = await execute<RoleResult[]>(
       'SELECT role FROM users WHERE id = ? AND tenant_id = ?',
       [adminId, tenantId],
     );
@@ -520,7 +530,10 @@ class AdminPermissionsService {
    * @param permission - The permission parameter
    * @param requiredLevel - The requiredLevel parameter
    */
-  private checkPermissionLevel(permission: RowDataPacket, requiredLevel: PermissionLevel): boolean {
+  private checkPermissionLevel(
+    permission: PermissionResult,
+    requiredLevel: PermissionLevel,
+  ): boolean {
     switch (requiredLevel) {
       case 'read':
         return permission.can_read === 1;

@@ -2,14 +2,16 @@
  * Survey Responses Service
  * Business logic for survey responses
  */
-import { ServiceError } from '../../../utils/ServiceError';
 import {
-  PoolConnection,
-  ResultSetHeader,
-  RowDataPacket,
-  query,
-  transaction,
-} from '../../../utils/db';
+  IdResult,
+  SurveyAnswerWithQuestionResult,
+  SurveyExportResult,
+  SurveyFlagsResult,
+  SurveyResponseWithUserResult,
+  TotalCountResult,
+} from '../../../types/query-results.types.js';
+import { ServiceError } from '../../../utils/ServiceError';
+import { PoolConnection, ResultSetHeader, query, transaction } from '../../../utils/db';
 
 export interface SurveyAnswer {
   question_id: number;
@@ -40,7 +42,7 @@ class ResponsesService {
     answers: SurveyAnswer[],
   ): Promise<number> {
     // Check if survey exists and is active
-    const [surveys] = await query<RowDataPacket[]>(
+    const [surveys] = await query<SurveyFlagsResult[]>(
       `SELECT id, status, allow_multiple_responses
        FROM surveys
        WHERE id = ? AND tenant_id = ? AND status = 'active'`,
@@ -55,7 +57,7 @@ class ResponsesService {
 
     // Check if user already responded (if multiple responses not allowed)
     if (!survey.allow_multiple_responses) {
-      const [existingResponses] = await query<RowDataPacket[]>(
+      const [existingResponses] = await query<IdResult[]>(
         `SELECT id FROM survey_responses
          WHERE survey_id = ? AND user_id = ? AND tenant_id = ?`,
         [surveyId, userId, tenantId] as unknown[],
@@ -132,7 +134,7 @@ class ResponsesService {
     }
 
     // Check if survey is anonymous
-    const [surveyInfo] = await query<RowDataPacket[]>(
+    const [surveyInfo] = await query<SurveyFlagsResult[]>(
       `SELECT is_anonymous FROM surveys WHERE id = ? AND tenant_id = ?`,
       [surveyId, tenantId] as unknown[],
     );
@@ -144,18 +146,18 @@ class ResponsesService {
     const isAnonymous = Boolean(surveyInfo[0].is_anonymous);
 
     // Get total count
-    const [countResult] = await query<RowDataPacket[]>(
+    const [countResult] = await query<TotalCountResult[]>(
       `SELECT COUNT(*) as total
        FROM survey_responses
        WHERE survey_id = ? AND tenant_id = ?`,
       [surveyId, tenantId] as unknown[],
     );
 
-    const total = countResult[0].total as number;
+    const total = countResult[0].total;
     const offset = (options.page - 1) * options.limit;
 
     // Get responses with user info (if not anonymous)
-    const [responses] = await query<RowDataPacket[]>(
+    const [responses] = await query<SurveyResponseWithUserResult[]>(
       `SELECT sr.*,
        ${isAnonymous ? 'NULL as first_name, NULL as last_name, NULL as username' : 'u.first_name, u.last_name, u.username'}
        FROM survey_responses sr
@@ -167,29 +169,48 @@ class ResponsesService {
     );
 
     // Fetch answers for each response
-    const responsesWithAnswers = await Promise.all(
-      responses.map(async (response: RowDataPacket) => {
-        const [answers] = await query<RowDataPacket[]>(
+    const responsesWithAnswers: SurveyResponse[] = await Promise.all(
+      responses.map(async (dbResponse: SurveyResponseWithUserResult): Promise<SurveyResponse> => {
+        const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
           `SELECT sa.*, sq.question_type, sq.question_text
            FROM survey_answers sa
            JOIN survey_questions sq ON sa.question_id = sq.id
            WHERE sa.response_id = ? AND sa.tenant_id = ?`,
-          [response.id, tenantId],
+          [dbResponse.id, tenantId],
         );
 
         return {
-          ...response,
-          answers: answers.map((a: RowDataPacket) => ({
-            ...a,
-            answer_options:
-              a.answer_options ? (JSON.parse(a.answer_options as string) as number[]) : undefined,
-          })),
+          id: dbResponse.id,
+          survey_id: dbResponse.survey_id,
+          user_id: dbResponse.user_id,
+          started_at:
+            typeof dbResponse.started_at === 'string' ?
+              dbResponse.started_at
+            : dbResponse.started_at.toISOString(),
+          completed_at:
+            dbResponse.completed_at === null ? null
+            : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
+            : dbResponse.completed_at.toISOString(),
+          status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
+          answers: answers.map(
+            (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
+              question_id: a.question_id,
+              answer_text: a.answer_text ?? undefined,
+              answer_number: a.answer_number ?? undefined,
+              answer_date:
+                a.answer_date === null ? undefined
+                : typeof a.answer_date === 'string' ? a.answer_date
+                : a.answer_date.toISOString(),
+              answer_options:
+                a.answer_options ? (JSON.parse(a.answer_options) as number[]) : undefined,
+            }),
+          ),
         };
       }),
     );
 
     return {
-      responses: responsesWithAnswers as SurveyResponse[],
+      responses: responsesWithAnswers,
       total,
     };
   }
@@ -202,7 +223,7 @@ class ResponsesService {
     userId: number,
     tenantId: number,
   ): Promise<SurveyResponse | null> {
-    const [responses] = await query<RowDataPacket[]>(
+    const [responses] = await query<SurveyResponseWithUserResult[]>(
       `SELECT sr.*
        FROM survey_responses sr
        WHERE sr.survey_id = ? AND sr.user_id = ? AND sr.tenant_id = ?
@@ -215,26 +236,44 @@ class ResponsesService {
       return null;
     }
 
-    const response = responses[0] as SurveyResponse;
+    const dbResponse = responses[0];
 
     // Get answers
-    const [answers] = await query<RowDataPacket[]>(
+    const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
       `SELECT sa.*, sq.question_type
        FROM survey_answers sa
        JOIN survey_questions sq ON sa.question_id = sq.id
        WHERE sa.response_id = ? AND sa.tenant_id = ?`,
-      [response.id, tenantId] as unknown[],
+      [dbResponse.id, tenantId] as unknown[],
     );
 
-    // Map answers
-    response.answers = answers.map((a: RowDataPacket) => ({
-      question_id: a.question_id as number,
-      answer_text: a.answer_text as string | undefined,
-      answer_number: a.answer_number as number | undefined,
-      answer_date: a.answer_date as string | undefined,
-      answer_options:
-        a.answer_options ? (JSON.parse(a.answer_options as string) as number[]) : undefined,
-    }));
+    // Create properly typed response
+    const response: SurveyResponse = {
+      id: dbResponse.id,
+      survey_id: dbResponse.survey_id,
+      user_id: dbResponse.user_id,
+      started_at:
+        typeof dbResponse.started_at === 'string' ?
+          dbResponse.started_at
+        : dbResponse.started_at.toISOString(),
+      completed_at:
+        dbResponse.completed_at === null ? null
+        : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
+        : dbResponse.completed_at.toISOString(),
+      status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
+      answers: answers.map(
+        (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
+          question_id: a.question_id,
+          answer_text: a.answer_text ?? undefined,
+          answer_number: a.answer_number ?? undefined,
+          answer_date:
+            a.answer_date === null ? undefined
+            : typeof a.answer_date === 'string' ? a.answer_date
+            : a.answer_date.toISOString(),
+          answer_options: a.answer_options ? (JSON.parse(a.answer_options) as number[]) : undefined,
+        }),
+      ),
+    };
 
     return response;
   }
@@ -249,7 +288,7 @@ class ResponsesService {
     userRole: string,
     userId: number,
   ): Promise<SurveyResponse> {
-    const [responses] = await query<RowDataPacket[]>(
+    const [responses] = await query<SurveyResponseWithUserResult[]>(
       `SELECT sr.*, u.first_name, u.last_name, u.username
        FROM survey_responses sr
        LEFT JOIN users u ON sr.user_id = u.id
@@ -261,15 +300,15 @@ class ResponsesService {
       throw new ServiceError('NOT_FOUND', 'Antwort nicht gefunden');
     }
 
-    const response = responses[0] as SurveyResponse;
+    const dbResponse = responses[0];
 
     // Check permissions (user can only see their own response unless admin/root)
-    if (userRole !== 'root' && userRole !== 'admin' && response.user_id !== userId) {
+    if (userRole !== 'root' && userRole !== 'admin' && dbResponse.user_id !== userId) {
       throw new ServiceError('FORBIDDEN', 'Keine Berechtigung');
     }
 
     // Get answers (similar to getUserResponse)
-    const [answers] = await query<RowDataPacket[]>(
+    const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
       `SELECT sa.*, sq.question_type
        FROM survey_answers sa
        JOIN survey_questions sq ON sa.question_id = sq.id
@@ -277,7 +316,33 @@ class ResponsesService {
       [responseId, tenantId],
     );
 
-    response.answers = answers as SurveyAnswer[];
+    // Create properly typed response
+    const response: SurveyResponse = {
+      id: dbResponse.id,
+      survey_id: dbResponse.survey_id,
+      user_id: dbResponse.user_id,
+      started_at:
+        typeof dbResponse.started_at === 'string' ?
+          dbResponse.started_at
+        : dbResponse.started_at.toISOString(),
+      completed_at:
+        dbResponse.completed_at === null ? null
+        : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
+        : dbResponse.completed_at.toISOString(),
+      status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
+      answers: answers.map(
+        (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
+          question_id: a.question_id,
+          answer_text: a.answer_text ?? undefined,
+          answer_number: a.answer_number ?? undefined,
+          answer_date:
+            a.answer_date === null ? undefined
+            : typeof a.answer_date === 'string' ? a.answer_date
+            : a.answer_date.toISOString(),
+          answer_options: a.answer_options ? (JSON.parse(a.answer_options) as number[]) : undefined,
+        }),
+      ),
+    };
 
     return response;
   }
@@ -293,7 +358,7 @@ class ResponsesService {
     answers: SurveyAnswer[],
   ): Promise<void> {
     // Check if response exists and belongs to user
-    const [responses] = await query<RowDataPacket[]>(
+    const [responses] = await query<SurveyFlagsResult[]>(
       `SELECT sr.*, s.allow_edit_responses
        FROM survey_responses sr
        JOIN surveys s ON sr.survey_id = s.id
@@ -376,8 +441,8 @@ class ResponsesService {
     }
 
     // Get survey with questions
-    const [surveys] = await query<RowDataPacket[]>(
-      `SELECT * FROM surveys WHERE id = ? AND tenant_id = ?`,
+    const [surveys] = await query<IdResult[]>(
+      `SELECT id FROM surveys WHERE id = ? AND tenant_id = ?`,
       [surveyId, tenantId] as unknown[],
     );
 
@@ -386,7 +451,7 @@ class ResponsesService {
     }
 
     // Get all responses with answers
-    const [responses] = await query<RowDataPacket[]>(
+    const [responses] = await query<SurveyExportResult[]>(
       `SELECT
         sr.id as response_id,
         sr.user_id,
@@ -417,15 +482,14 @@ class ResponsesService {
     }
   }
 
-  private formatAsCSV(data: RowDataPacket[]): Buffer {
+  private formatAsCSV(data: SurveyExportResult[]): Buffer {
     // Simple CSV formatting
     const headers = ['Response ID', 'User', 'Completed', 'Question', 'Answer'];
-    const rows = data.map((row: RowDataPacket) => [
-      row.response_id as string,
-      `${String(row.first_name ?? '')} ${String(row.last_name ?? '')}`.trim() ||
-        String(row.username ?? ''),
-      row.completed_at as string,
-      row.question_text as string,
+    const rows = data.map((row: SurveyExportResult) => [
+      String(row.response_id),
+      `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() || (row.username ?? ''),
+      row.completed_at ? String(row.completed_at) : '',
+      row.question_text,
       String(row.answer_text ?? row.answer_number ?? row.answer_date ?? row.answer_options ?? ''),
     ]);
 
@@ -439,7 +503,7 @@ class ResponsesService {
     return Buffer.from(csv, 'utf-8');
   }
 
-  private formatAsExcel(data: RowDataPacket[]): Buffer {
+  private formatAsExcel(data: SurveyExportResult[]): Buffer {
     // For now, return CSV format with Excel mime type
     // In production, you would use a library like exceljs
     return this.formatAsCSV(data);

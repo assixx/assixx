@@ -6,7 +6,7 @@
  *   name: Documents v2
  *   description: Document management API v2
  */
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import multer from 'multer';
 
 import rootLog from '../../../models/rootLog';
@@ -37,7 +37,7 @@ const upload = multer({
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  fileFilter: (_req, file, cb) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     // Only allow PDF files
     if (file.mimetype === 'application/pdf') {
       // Multer requires callback-style, cannot use async/await

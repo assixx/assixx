@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Root Service v2
  * Business logic for root user operations and tenant management
@@ -9,7 +10,9 @@ import rootLog, { type DbRootLog } from '../../../models/rootLog';
 import tenantModel from '../../../models/tenant.js';
 import userModel, { type DbUser } from '../../../models/user.js';
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
+import { UsersRow } from '../../../types/database-rows.types.js';
 import type { DatabaseTenant } from '../../../types/models';
+import { CountResult, IdResult } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute } from '../../../utils/db.js';
 import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
@@ -44,22 +47,63 @@ function isMySQLError(error: unknown): error is MySQLError {
   );
 }
 
-interface TenantRow extends RowDataPacket {
-  id: number;
-  company_name: string;
-  subdomain: string;
-  current_plan?: string;
-  status: string;
-  max_users?: number;
-  max_admins?: number;
-  industry?: string;
-  country?: string;
-  created_at: Date;
-  updated_at: Date;
+// ============================================================================
+// CUSTOM QUERY RESULT INTERFACES (for JOINs and complex queries)
+// ============================================================================
+
+/**
+ * Result for feature code query (JOIN between tenant_features and features)
+ */
+interface FeatureCodeResult extends RowDataPacket {
+  code: string;
 }
 
 /**
- *
+ * Result for deletion queue query with JOINed tenant and user info
+ */
+interface DeletionQueueWithDetails extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  status: string;
+  created_by: number;
+  created_at: Date | string;
+  approved_by: number | null;
+  approved_at: Date | string | null;
+  scheduled_for: Date | string | null;
+  reason: string;
+  error_message: string | null;
+  cooling_off_hours: number;
+  company_name: string;
+  requested_by_name: string;
+}
+
+/**
+ * Result for deletion requests query with JOINed details
+ */
+interface DeletionRequestWithDetails extends RowDataPacket {
+  id: number;
+  tenant_id: number;
+  company_name: string;
+  subdomain: string;
+  created_by: number;
+  requester_name: string;
+  requester_email: string;
+  created_at: Date | string;
+  reason: string;
+  status: string;
+}
+
+/**
+ * Helper: Convert MySQL Date|string to Date
+ */
+function toDate(value: Date | string | null | undefined): Date | undefined {
+  if (!value) return undefined;
+  return typeof value === 'string' ? new Date(value) : value;
+}
+
+/**
+ * Root Service - Manages root-level operations
+ * All database queries now use typed Row interfaces from database-rows.types.ts
  */
 class RootService {
   /**
@@ -343,7 +387,7 @@ class RootService {
         action: log.action,
         entityType: log.entity_type ?? '',
         entityId: log.entity_id,
-        description: log.description as string | undefined,
+        description: log.details ?? undefined,
         ipAddress: log.ip_address,
         userAgent: log.user_agent,
         createdAt: log.created_at,
@@ -372,17 +416,20 @@ class RootService {
       // Get user counts for each tenant
       return await Promise.all(
         tenants.map(async (tenant: DatabaseTenant) => {
-          const [adminCount] = await execute<RowDataPacket[]>(
+          const [adminCount] = await execute<CountResult[]>(
             "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'admin'",
             [tenant.id],
           );
 
-          const [employeeCount] = await execute<RowDataPacket[]>(
+          const [employeeCount] = await execute<CountResult[]>(
             "SELECT COUNT(*) as count FROM users WHERE tenant_id = ? AND role = 'employee'",
             [tenant.id],
           );
 
-          const [storageUsed] = await execute<RowDataPacket[]>(
+          interface StorageTotalResult extends RowDataPacket {
+            total: number;
+          }
+          const [storageUsed] = await execute<StorageTotalResult[]>(
             'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
             [tenant.id],
           );
@@ -393,15 +440,15 @@ class RootService {
             subdomain: tenant.subdomain,
             currentPlan: tenant.current_plan ?? undefined,
             status: tenant.status as Tenant['status'],
-            maxUsers: (tenant as TenantRow).max_users,
-            maxAdmins: (tenant as TenantRow).max_admins,
-            industry: (tenant as TenantRow).industry,
-            country: (tenant as TenantRow).country,
+            maxUsers: 0, // TODO: Get from plan limits
+            maxAdmins: 0, // TODO: Get from plan limits
+            industry: undefined, // Removed from schema
+            country: undefined, // Removed from schema
             createdAt: tenant.created_at,
             updatedAt: tenant.updated_at,
-            adminCount: (adminCount[0] as { count: number }).count,
-            employeeCount: (employeeCount[0] as { count: number }).count,
-            storageUsed: (storageUsed[0] as { total: number }).total,
+            adminCount: adminCount[0].count,
+            employeeCount: employeeCount[0].count,
+            storageUsed: storageUsed[0].total,
           };
         }),
       );
@@ -416,7 +463,7 @@ class RootService {
    */
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
     try {
-      const [users] = await execute<RowDataPacket[]>(
+      const [users] = await execute<UsersRow[]>(
         `SELECT
           id, username, email, first_name, last_name,
           position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
@@ -426,20 +473,22 @@ class RootService {
         [tenantId],
       );
 
-      return users.map((user: RowDataPacket) => ({
-        id: user.id as number,
-        username: user.username as string,
-        email: user.email as string,
-        firstName: user.first_name as string,
-        lastName: user.last_name as string,
-        position: (user.position as string | null) ?? undefined,
-        notes: (user.notes as string | null) ?? undefined,
-        employeeNumber: (user.employee_number as string | null) ?? undefined,
-        departmentId: (user.department_id as number | null) ?? undefined,
+      return users.map((user: UsersRow) => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.first_name ?? '',
+        lastName: user.last_name ?? '',
+        position: user.position ?? undefined,
+        notes: user.notes ?? undefined,
+        employeeNumber: user.employee_number,
+        departmentId: user.department_id ?? undefined,
         isActive: Boolean(user.is_active),
-        employeeId: user.employee_id as string,
-        createdAt: user.created_at as Date,
-        updatedAt: user.updated_at as Date,
+        employeeId: user.employee_id ?? '',
+        createdAt:
+          typeof user.created_at === 'string' ? new Date(user.created_at) : user.created_at,
+        updatedAt:
+          typeof user.updated_at === 'string' ? new Date(user.updated_at) : user.updated_at,
       }));
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root users', error);
@@ -453,7 +502,7 @@ class RootService {
    */
   async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     try {
-      const [users] = await execute<RowDataPacket[]>(
+      const [users] = await execute<UsersRow[]>(
         `SELECT
           id, username, email, first_name, last_name,
           position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
@@ -468,19 +517,21 @@ class RootService {
 
       const user = users[0];
       return {
-        id: user.id as number,
-        username: user.username as string,
-        email: user.email as string,
-        firstName: user.first_name as string,
-        lastName: user.last_name as string,
-        position: (user.position as string | null) ?? undefined,
-        notes: (user.notes as string | null) ?? undefined,
-        employeeNumber: (user.employee_number as string | null) ?? undefined,
-        departmentId: (user.department_id as number | null) ?? undefined,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        firstName: user.first_name ?? '',
+        lastName: user.last_name ?? '',
+        position: user.position ?? undefined,
+        notes: user.notes ?? undefined,
+        employeeNumber: user.employee_number,
+        departmentId: user.department_id ?? undefined,
         isActive: Boolean(user.is_active),
-        employeeId: user.employee_id as string,
-        createdAt: user.created_at as Date,
-        updatedAt: user.updated_at as Date,
+        employeeId: user.employee_id ?? '',
+        createdAt:
+          typeof user.created_at === 'string' ? new Date(user.created_at) : user.created_at,
+        updatedAt:
+          typeof user.updated_at === 'string' ? new Date(user.updated_at) : user.updated_at,
       };
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root user', error);
@@ -491,7 +542,7 @@ class RootService {
    * Validate email doesn't exist
    */
   private async checkEmailExists(email: string, tenantId: number): Promise<void> {
-    const [existing] = await execute<RowDataPacket[]>(
+    const [existing] = await execute<IdResult[]>(
       'SELECT id FROM users WHERE email = ? AND tenant_id = ?',
       [email, tenantId],
     );
@@ -505,9 +556,13 @@ class RootService {
    * Get tenant subdomain
    */
   private async getTenantSubdomain(tenantId: number): Promise<string> {
-    const [tenantData] = await execute<TenantRow[]>('SELECT subdomain FROM tenants WHERE id = ?', [
-      tenantId,
-    ]);
+    interface SubdomainResult extends RowDataPacket {
+      subdomain: string;
+    }
+    const [tenantData] = await execute<SubdomainResult[]>(
+      'SELECT subdomain FROM tenants WHERE id = ?',
+      [tenantId],
+    );
     return tenantData[0]?.subdomain ?? 'DEFAULT';
   }
 
@@ -673,7 +728,7 @@ class RootService {
       }
 
       // Check if at least one root user will remain
-      const [rootCount] = await execute<RowDataPacket[]>(
+      const [rootCount] = await execute<CountResult[]>(
         "SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = ? AND id != ?",
         [tenantId, id],
       );
@@ -704,12 +759,12 @@ class RootService {
       const employees = await userModel.findByRole('employee', false, tenantId);
 
       // Get tenant count (for multi-tenant overview)
-      const [tenantCount] = await execute<RowDataPacket[]>(
+      const [tenantCount] = await execute<CountResult[]>(
         "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
       );
 
       // Get active features
-      const [features] = await execute<RowDataPacket[]>(
+      const [features] = await execute<FeatureCodeResult[]>(
         `SELECT f.code
          FROM tenant_features tf
          JOIN features f ON tf.feature_id = f.id
@@ -717,7 +772,7 @@ class RootService {
         [tenantId],
       );
 
-      const activeFeatures = features.map((f: RowDataPacket) => f.code as string);
+      const activeFeatures = features.map((f: FeatureCodeResult) => f.code);
 
       // Simple system health check
       const systemHealth = {
@@ -730,7 +785,7 @@ class RootService {
         adminCount: admins.length,
         employeeCount: employees.length,
         totalUsers: admins.length + employees.length + 1, // +1 for root
-        tenantCount: (tenantCount[0] as { count: number }).count,
+        tenantCount: tenantCount[0].count,
         activeFeatures,
         systemHealth,
       };
@@ -761,12 +816,15 @@ class RootService {
       const totalStorage = storageLimits[tenant.current_plan ?? 'basic'] ?? storageLimits.basic;
 
       // Get storage breakdown
-      const [documents] = await execute<RowDataPacket[]>(
+      interface StorageTotalResult extends RowDataPacket {
+        total: number;
+      }
+      const [documents] = await execute<StorageTotalResult[]>(
         'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
         [tenantId],
       );
 
-      const [attachments] = await execute<RowDataPacket[]>(
+      const [attachments] = await execute<StorageTotalResult[]>(
         `SELECT COALESCE(SUM(ka.file_size), 0) as total
          FROM kvp_attachments ka
          JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
@@ -774,14 +832,14 @@ class RootService {
         [tenantId],
       );
 
-      const [logs] = await execute<RowDataPacket[]>(
+      const [logs] = await execute<StorageTotalResult[]>(
         "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
         [tenantId],
       );
 
-      const documentsSize = Number(documents[0].total);
-      const attachmentsSize = Number(attachments[0].total);
-      const logsSize = Number(logs[0].total);
+      const documentsSize = documents[0].total;
+      const attachmentsSize = attachments[0].total;
+      const logsSize = logs[0].total;
       const backupsSize = 0; // Placeholder
 
       const usedStorage = documentsSize + attachmentsSize + logsSize + backupsSize;
@@ -858,7 +916,7 @@ class RootService {
     currentUserId?: number,
   ): Promise<TenantDeletionStatus | null> {
     try {
-      const [deletions] = await execute<RowDataPacket[]>(
+      const [deletions] = await execute<DeletionQueueWithDetails[]>(
         `SELECT
           dq.*,
           t.company_name,
@@ -881,12 +939,11 @@ class RootService {
       // CRITICAL: Two-person principle - creator cannot approve their own deletion request
       const isCreator = currentUserId ? deletion.created_by === currentUserId : false;
       const canApprove = deletion.status === 'pending_approval' && !isCreator;
-      const canCancel =
-        ['pending_approval', 'approved'].includes(deletion.status as string) && isCreator;
+      const canCancel = ['pending_approval', 'approved'].includes(deletion.status) && isCreator;
 
       return {
-        queueId: deletion.id as number,
-        tenantId: deletion.tenant_id as number,
+        queueId: deletion.id,
+        tenantId: deletion.tenant_id,
         status: deletion.status as
           | 'cancelled'
           | 'pending'
@@ -895,15 +952,18 @@ class RootService {
           | 'completed'
           | 'failed'
           | 'stopped',
-        requestedBy: deletion.created_by as number,
-        requestedByName: deletion.requested_by_name as string,
-        requestedAt: deletion.created_at as Date,
-        approvedBy: (deletion.approved_by as number | null) ?? undefined,
-        approvedAt: (deletion.approved_at as Date | null) ?? undefined,
-        scheduledFor: (deletion.scheduled_for as Date | null) ?? undefined,
-        reason: deletion.reason as string,
-        errorMessage: (deletion.error_message as string | null) ?? undefined,
-        coolingOffHours: deletion.cooling_off_hours as number,
+        requestedBy: deletion.created_by,
+        requestedByName: deletion.requested_by_name,
+        requestedAt:
+          typeof deletion.created_at === 'string' ?
+            new Date(deletion.created_at)
+          : deletion.created_at,
+        approvedBy: deletion.approved_by ?? undefined,
+        approvedAt: toDate(deletion.approved_at),
+        scheduledFor: toDate(deletion.scheduled_for),
+        reason: deletion.reason,
+        errorMessage: deletion.error_message ?? undefined,
+        coolingOffHours: deletion.cooling_off_hours,
         canCancel,
         canApprove,
       };
@@ -917,7 +977,7 @@ class RootService {
    */
   async getAllDeletionRequests(): Promise<DeletionApproval[]> {
     try {
-      const [deletions] = await execute<RowDataPacket[]>(
+      const [deletions] = await execute<DeletionRequestWithDetails[]>(
         `SELECT
           q.*,
           t.company_name,
@@ -930,18 +990,20 @@ class RootService {
         ORDER BY q.created_at DESC`,
       );
 
-      return deletions.map((d: RowDataPacket) => ({
-        queueId: d.id as number,
-        tenantId: d.tenant_id as number,
-        companyName: d.company_name as string,
-        subdomain: d.subdomain as string,
-        requesterId: d.created_by as number,
-        requesterName: d.requester_name as string,
-        requesterEmail: d.requester_email as string,
-        requestedAt: d.created_at as Date,
-        reason: d.reason as string,
-        status: d.status as string,
-      }));
+      return deletions.map(
+        (d: DeletionRequestWithDetails): DeletionApproval => ({
+          queueId: d.id,
+          tenantId: d.tenant_id,
+          companyName: d.company_name,
+          subdomain: d.subdomain,
+          requesterId: d.created_by,
+          requesterName: d.requester_name,
+          requesterEmail: d.requester_email,
+          requestedAt: typeof d.created_at === 'string' ? new Date(d.created_at) : d.created_at,
+          reason: d.reason,
+          status: d.status,
+        }),
+      );
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get deletion requests', error);
     }
@@ -953,7 +1015,7 @@ class RootService {
    */
   async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     try {
-      const [approvals] = await execute<RowDataPacket[]>(
+      const [approvals] = await execute<DeletionRequestWithDetails[]>(
         `SELECT
           q.*,
           t.company_name,
@@ -969,18 +1031,20 @@ class RootService {
         [currentUserId],
       );
 
-      return approvals.map((a: RowDataPacket) => ({
-        queueId: a.id as number,
-        tenantId: a.tenant_id as number,
-        companyName: a.company_name as string,
-        subdomain: a.subdomain as string,
-        requesterId: a.created_by as number,
-        requesterName: a.requester_name as string,
-        requesterEmail: a.requester_email as string,
-        requestedAt: a.created_at as Date,
-        reason: a.reason as string,
-        status: a.status as string,
-      }));
+      return approvals.map(
+        (a: DeletionRequestWithDetails): DeletionApproval => ({
+          queueId: a.id,
+          tenantId: a.tenant_id,
+          companyName: a.company_name,
+          subdomain: a.subdomain,
+          requesterId: a.created_by,
+          requesterName: a.requester_name,
+          requesterEmail: a.requester_email,
+          requestedAt: typeof a.created_at === 'string' ? new Date(a.created_at) : a.created_at,
+          reason: a.reason,
+          status: a.status,
+        }),
+      );
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get pending approvals', error);
     }

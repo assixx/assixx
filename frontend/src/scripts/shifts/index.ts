@@ -4399,7 +4399,7 @@ class ShiftPlanningSystem {
   // Helper function to create employee element
   private createEmployeeElement(
     employee: { id: number; first_name?: string; last_name?: string; is_active?: boolean },
-    draggable = true,
+    draggable: boolean = true,
   ): HTMLDivElement {
     const employeeDiv = document.createElement('div');
     employeeDiv.className = 'employee-item';
@@ -5724,7 +5724,7 @@ class ShiftPlanningSystem {
   }
 
   // Main save schedule function (refactored)
-  async saveSchedule(isUpdate = false): Promise<void> {
+  async saveSchedule(isUpdate: boolean = false): Promise<void> {
     console.info('[SHIFTS SAVE DEBUG] saveSchedule called, isUpdate:', isUpdate);
     console.info('[SHIFTS SAVE DEBUG] currentPlanId:', this.currentPlanId);
     console.info('[SHIFTS SAVE DEBUG] useV2API:', this.useV2API);

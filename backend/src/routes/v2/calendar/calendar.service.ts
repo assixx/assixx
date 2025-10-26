@@ -10,8 +10,18 @@ import type {
   EventCreateData,
   EventUpdateData,
 } from '../../../models/calendar.js';
+import { RowDataPacket } from '../../../utils/db.js';
 import { dbToApiEvent } from '../../../utils/fieldMapping.js';
 import { ServiceError } from '../users/users.service.js';
+
+// Query result interfaces
+interface UnreadEventResult extends RowDataPacket {
+  id: number;
+  title: string;
+  startTime: Date;
+  requires_response: number | boolean;
+  response_status: string;
+}
 
 export interface CalendarFilters {
   status?: 'active' | 'cancelled';
@@ -643,7 +653,7 @@ class CalendarService {
    */
   private generateCSV(events: CalendarEvent[]): string {
     const headers = ['Title', 'Description', 'Location', 'Start', 'End', 'All Day', 'Status'];
-    const rows: string[][] = events.map((event) => [
+    const rows: string[][] = events.map((event: CalendarEvent) => [
       event.title,
       this.convertDescriptionToString(event.description),
       event.location ?? '',
@@ -653,9 +663,10 @@ class CalendarService {
       event.status ?? 'confirmed',
     ]);
 
-    return [headers.join(','), ...rows.map((row) => row.map((cell) => `"${cell}"`).join(','))].join(
-      '\n',
-    );
+    return [
+      headers.join(','),
+      ...rows.map((row: string[]) => row.map((cell: string) => `"${cell}"`).join(',')),
+    ].join('\n');
   }
 
   /**
@@ -699,20 +710,17 @@ class CalendarService {
 
       // Import the query function
       const { query: executeQuery } = await import('../../../utils/db.js');
-      const [result] = await executeQuery(query, [tenantId, userId]);
-
-      // Type guard to ensure result is an array
-      const events: CalendarEvent[] = Array.isArray(result) ? (result as CalendarEvent[]) : [];
+      const [events] = await executeQuery<UnreadEventResult[]>(query, [tenantId, userId]);
 
       // Count total unread events
       const totalUnread = events.length;
 
       return {
         totalUnread,
-        eventsRequiringResponse: events.map((event) => ({
+        eventsRequiringResponse: events.map((event: UnreadEventResult) => ({
           id: event.id,
           title: event.title,
-          startTime: event.startTime as string,
+          startTime: event.startTime.toISOString(),
           requiresResponse: true,
         })),
       };
@@ -731,7 +739,7 @@ class CalendarService {
    */
   private generateICS(events: CalendarEvent[]): string {
     const icsEvents = events
-      .map((event) => {
+      .map((event: CalendarEvent) => {
         const uid = `${event.id}@assixx.com`;
         const dtstart = event.start_date
           .toISOString()

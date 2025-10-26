@@ -116,10 +116,9 @@ export class SSEClient {
   }
 
   private updateSurveyBadge(): void {
-    if (window.unifiedNav !== undefined && 'updatePendingSurveys' in window.unifiedNav) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      void (window.unifiedNav as any).updatePendingSurveys();
-    }
+    // Call updatePendingSurveys if unifiedNav is available
+    // Type is defined in global.d.ts as UnifiedNavigation
+    window.unifiedNav?.updatePendingSurveys();
   }
 
   private handleConnected(data: SSEMessage): void {

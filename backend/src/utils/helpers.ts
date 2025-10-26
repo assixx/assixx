@@ -33,7 +33,7 @@ interface PaginationResponse {
  * @param length - Length of the string
  * @returns Random string
  */
-export function generateRandomString(length = 32): string {
+export function generateRandomString(length: number = 32): string {
   return crypto.randomBytes(length).toString('hex');
 }
 

@@ -512,8 +512,9 @@ async function showUnreadEventsModal(): Promise<void> {
 function showEventTooltip(info: EventHoveringArg): void {
   const tooltip = document.createElement('div');
   tooltip.className = 'event-tooltip';
-  const description = (info.event.extendedProps.description as string | undefined) ?? '';
-  const location = info.event.extendedProps.location as string | undefined;
+  const extendedProps = info.event.extendedProps as CalendarEventExtendedProps;
+  const description = extendedProps.description ?? '';
+  const location = extendedProps.location;
 
   // Clear tooltip
   while (tooltip.firstChild) {
@@ -637,7 +638,11 @@ function createCalendarConfig(userRole: string | null): CalendarOptions {
     select: (info: DateSelectArg) => {
       handleDateSelect(info, userRole);
     },
-    events(fetchInfo, successCallback, failureCallback) {
+    events(
+      fetchInfo: { start: Date; end: Date; startStr: string; endStr: string; timeZone: string },
+      successCallback: (events: EventInput[]) => void,
+      failureCallback: (error: Error) => void,
+    ) {
       void loadCalendarEvents(fetchInfo).then(successCallback).catch(failureCallback);
     },
     eventClick(info: EventClickArg) {
@@ -1668,7 +1673,7 @@ async function fetchEventData(eventId: number, token: string): Promise<CalendarE
 }
 
 // Helper: Normalize event data from API response
-function normalizeEventData(data: unknown, alwaysV2 = true): CalendarEvent {
+function normalizeEventData(data: unknown, alwaysV2: boolean = true): CalendarEvent {
   let eventData: CalendarEvent;
 
   if (typeof data === 'object' && data !== null && 'data' in data) {

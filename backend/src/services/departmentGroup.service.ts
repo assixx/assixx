@@ -2,7 +2,15 @@
  * Department Group Service
  * Manages hierarchical department groups
  */
-import { ResultSetHeader, RowDataPacket, execute, getConnection } from '../utils/db';
+import {
+  CountResult,
+  DepartmentGroupPartialResult,
+  DepartmentPartialResult,
+  DepartmentWithGroupIdResult,
+  IdResult,
+  ParentGroupIdResult,
+} from '../types/query-results.types.js';
+import { ResultSetHeader, execute, getConnection } from '../utils/db';
 import { logger } from '../utils/logger.js';
 
 interface DepartmentGroup {
@@ -49,7 +57,7 @@ class DepartmentGroupService {
       }
 
       const [result] = await execute<ResultSetHeader>(
-        `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by) 
+        `INSERT INTO department_groups (tenant_id, name, description, parent_group_id, created_by)
          VALUES (?, ?, ?, ?, ?)`,
         [tenantId, name, description, parentGroupId, createdBy],
       );
@@ -92,7 +100,7 @@ class DepartmentGroupService {
 
       // Insert with ON DUPLICATE KEY UPDATE to handle existing assignments
       await connection.execute(
-        `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by) 
+        `INSERT INTO department_group_members (tenant_id, group_id, department_id, added_by)
          VALUES ${placeholders}
          ON DUPLICATE KEY UPDATE added_by = VALUES(added_by), added_at = CURRENT_TIMESTAMP`,
         values.flat(),
@@ -126,7 +134,7 @@ class DepartmentGroupService {
       const placeholders = departmentIds.map(() => '?').join(', ');
 
       const [result] = await execute<ResultSetHeader>(
-        `DELETE FROM department_group_members 
+        `DELETE FROM department_group_members
          WHERE group_id = ? AND tenant_id = ? AND department_id IN (${placeholders})`,
         [groupId, tenantId, ...departmentIds],
       );
@@ -154,7 +162,7 @@ class DepartmentGroupService {
       const departments = new Map<number, Department>();
 
       // Get direct departments
-      const [directDepts] = await execute<RowDataPacket[]>(
+      const [directDepts] = await execute<DepartmentPartialResult[]>(
         `SELECT d.id, d.name, d.description
          FROM departments d
          JOIN department_group_members dgm ON d.id = dgm.department_id
@@ -162,11 +170,11 @@ class DepartmentGroupService {
         [groupId, tenantId],
       );
 
-      directDepts.forEach((dept: RowDataPacket) => {
-        departments.set(dept.id as number, {
-          id: dept.id as number,
-          name: dept.name as string,
-          description: (dept.description as string | null) ?? undefined,
+      directDepts.forEach((dept: DepartmentPartialResult) => {
+        departments.set(dept.id, {
+          id: dept.id,
+          name: dept.name,
+          description: dept.description ?? undefined,
         });
       });
 
@@ -197,8 +205,8 @@ class DepartmentGroupService {
     const departments = new Map<number, Department>();
 
     // Get all subgroups
-    const [subgroups] = await execute<RowDataPacket[]>(
-      `SELECT id FROM department_groups 
+    const [subgroups] = await execute<IdResult[]>(
+      `SELECT id FROM department_groups
        WHERE parent_group_id = ? AND tenant_id = ?`,
       [parentGroupId, tenantId],
     );
@@ -206,7 +214,7 @@ class DepartmentGroupService {
     // For each subgroup, get its departments
     for (const subgroup of subgroups) {
       const subgroupDepts = await this.getGroupDepartments(
-        subgroup.id as number,
+        subgroup.id,
         tenantId,
         true, // Include nested subgroups
       );
@@ -226,16 +234,16 @@ class DepartmentGroupService {
   async getGroupHierarchy(tenantId: number): Promise<DepartmentGroup[]> {
     try {
       // Get all groups
-      const [groups] = await execute<RowDataPacket[]>(
-        `SELECT id, name, description, parent_group_id 
-         FROM department_groups 
-         WHERE tenant_id = ? 
+      const [groups] = await execute<DepartmentGroupPartialResult[]>(
+        `SELECT id, name, description, parent_group_id
+         FROM department_groups
+         WHERE tenant_id = ?
          ORDER BY parent_group_id NULLS FIRST, name`,
         [tenantId],
       );
 
       // Get all department assignments
-      const [assignments] = await execute<RowDataPacket[]>(
+      const [assignments] = await execute<DepartmentWithGroupIdResult[]>(
         `SELECT dgm.group_id, d.id as dept_id, d.name as dept_name, d.description as dept_desc
          FROM department_group_members dgm
          JOIN departments d ON dgm.department_id = d.id
@@ -245,14 +253,14 @@ class DepartmentGroupService {
 
       // Build assignment map
       const assignmentMap = new Map<number, Department[]>();
-      assignments.forEach((row: RowDataPacket) => {
-        if (!assignmentMap.has(row.group_id as number)) {
-          assignmentMap.set(row.group_id as number, []);
+      assignments.forEach((row: DepartmentWithGroupIdResult) => {
+        if (!assignmentMap.has(row.group_id)) {
+          assignmentMap.set(row.group_id, []);
         }
-        assignmentMap.get(row.group_id as number)?.push({
-          id: row.dept_id as number,
-          name: row.dept_name as string,
-          description: (row.dept_desc as string | null) ?? undefined,
+        assignmentMap.get(row.group_id)?.push({
+          id: row.dept_id,
+          name: row.dept_name,
+          description: row.dept_desc ?? undefined,
         });
       });
 
@@ -261,26 +269,26 @@ class DepartmentGroupService {
       const rootGroups: DepartmentGroup[] = [];
 
       // First pass: create all group objects
-      groups.forEach((row: RowDataPacket) => {
+      groups.forEach((row: DepartmentGroupPartialResult) => {
         const group: DepartmentGroup = {
-          id: row.id as number,
-          name: row.name as string,
-          description: (row.description as string | null) ?? undefined,
-          parent_group_id: (row.parent_group_id as number | null) ?? undefined,
-          departments: assignmentMap.get(row.id as number) ?? [],
+          id: row.id,
+          name: row.name,
+          description: row.description ?? undefined,
+          parent_group_id: row.parent_group_id ?? undefined,
+          departments: assignmentMap.get(row.id) ?? [],
           subgroups: [],
         };
-        groupMap.set(row.id as number, group);
+        groupMap.set(row.id, group);
       });
 
       // Second pass: build hierarchy
-      groups.forEach((row: RowDataPacket) => {
-        const group = groupMap.get(row.id as number);
+      groups.forEach((row: DepartmentGroupPartialResult) => {
+        const group = groupMap.get(row.id);
         if (!group) return;
         if (row.parent_group_id === null) {
           rootGroups.push(group);
         } else {
-          const parent = groupMap.get(row.parent_group_id as number);
+          const parent = groupMap.get(row.parent_group_id);
           if (parent) {
             parent.subgroups?.push(group);
           }
@@ -309,8 +317,8 @@ class DepartmentGroupService {
   ): Promise<boolean> {
     try {
       const [result] = await execute<ResultSetHeader>(
-        `UPDATE department_groups 
-         SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP 
+        `UPDATE department_groups
+         SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND tenant_id = ?`,
         [name, description, groupId, tenantId],
       );
@@ -337,37 +345,37 @@ class DepartmentGroupService {
       await connection.beginTransaction();
 
       // Check if any admin has permissions on this group
-      const [permissions] = await connection.execute(
-        `SELECT COUNT(*) as count FROM admin_group_permissions 
+      const [permissions] = await connection.execute<CountResult[]>(
+        `SELECT COUNT(*) as count FROM admin_group_permissions
          WHERE group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
 
-      if ((permissions as RowDataPacket[])[0].count > 0) {
+      if (permissions[0].count > 0) {
         throw new Error('Cannot delete group with active admin permissions');
       }
 
       // Check if group has subgroups
-      const [subgroups] = await connection.execute(
-        `SELECT COUNT(*) as count FROM department_groups 
+      const [subgroups] = await connection.execute<CountResult[]>(
+        `SELECT COUNT(*) as count FROM department_groups
          WHERE parent_group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
 
-      if ((subgroups as RowDataPacket[])[0].count > 0) {
+      if (subgroups[0].count > 0) {
         throw new Error('Cannot delete group with subgroups');
       }
 
       // Delete department assignments
       await connection.execute(
-        `DELETE FROM department_group_members 
+        `DELETE FROM department_group_members
          WHERE group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
 
       // Delete the group
       const [result] = await connection.execute(
-        `DELETE FROM department_groups 
+        `DELETE FROM department_groups
          WHERE id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
@@ -396,8 +404,8 @@ class DepartmentGroupService {
   ): Promise<boolean> {
     if (groupId === targetId) return true;
 
-    const [parents] = await execute<RowDataPacket[]>(
-      `SELECT parent_group_id FROM department_groups 
+    const [parents] = await execute<ParentGroupIdResult[]>(
+      `SELECT parent_group_id FROM department_groups
        WHERE id = ? AND tenant_id = ?`,
       [groupId, tenantId],
     );
@@ -406,11 +414,7 @@ class DepartmentGroupService {
       return false;
     }
 
-    return await this.checkCircularDependency(
-      parents[0].parent_group_id as number,
-      targetId,
-      tenantId,
-    );
+    return await this.checkCircularDependency(parents[0].parent_group_id, targetId, tenantId);
   }
 }
 

@@ -154,6 +154,40 @@ export interface SurveyStatistics {
   }[];
 }
 
+// Query result types for type safety
+interface UserDepartmentResult extends RowDataPacket {
+  department_id: number | null;
+}
+
+interface UserTeamResult extends RowDataPacket {
+  team_id: number;
+}
+
+interface AnswerOptionsResult extends RowDataPacket {
+  answer_options: string | number[]; // JSON string or parsed array
+}
+
+interface TextResponseResult extends RowDataPacket {
+  answer_text: string | null;
+  user_id: number | null;
+  first_name: string | null;
+  last_name: string | null;
+}
+
+interface NumericStatsResult extends RowDataPacket {
+  average: number | null;
+  min: number | null;
+  max: number | null;
+  total_responses: number;
+}
+
+interface SurveyStatsResult extends RowDataPacket {
+  total_responses: number | string;
+  completed_responses: number | string;
+  first_response: Date | null;
+  last_response: Date | null;
+}
+
 /**
  * Insert survey questions
  */
@@ -325,7 +359,7 @@ export async function getAllSurveysByTenantForEmployee(
   const offset = (page - 1) * limit;
 
   // First get employee's department info
-  const [userInfo] = await typedQuery<RowDataPacket[]>(
+  const [userInfo] = await typedQuery<UserDepartmentResult[]>(
     `SELECT department_id FROM users WHERE id = ? AND tenant_id = ?`,
     [employeeUserId, tenantId],
   );
@@ -337,12 +371,12 @@ export async function getAllSurveysByTenantForEmployee(
   const { department_id: departmentId } = userInfo[0];
 
   // Get employee's team IDs from user_teams table
-  const [userTeams] = await typedQuery<RowDataPacket[]>(
+  const [userTeams] = await typedQuery<UserTeamResult[]>(
     `SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?`,
     [employeeUserId, tenantId],
   );
 
-  const teamIds: number[] = userTeams.map((team) => team.team_id as number);
+  const teamIds: number[] = userTeams.map((team: UserTeamResult) => team.team_id);
 
   // Build the query with dynamic team IDs
   const teamCondition =
@@ -754,7 +788,7 @@ async function getChoiceQuestionStats(
       : (question.options as unknown[])
     : [];
 
-  const [answers] = await typedQuery<RowDataPacket[]>(
+  const [answers] = await typedQuery<AnswerOptionsResult[]>(
     `
       SELECT sa.answer_options
       FROM survey_answers sa
@@ -765,11 +799,11 @@ async function getChoiceQuestionStats(
   );
 
   const optionCounts: Record<number, number> = {};
-  answers.forEach((answer) => {
+  answers.forEach((answer: AnswerOptionsResult) => {
     const selectedOptions =
       typeof answer.answer_options === 'string' ?
         (JSON.parse(answer.answer_options) as number[])
-      : (answer.answer_options as number[]);
+      : answer.answer_options;
 
     if (Array.isArray(selectedOptions)) {
       selectedOptions.forEach((optionIndex: number) => {
@@ -790,7 +824,7 @@ async function getChoiceQuestionStats(
 async function getTextQuestionResponses(
   questionId: number,
 ): Promise<QuestionStatistic['responses']> {
-  const [textResponses] = await typedQuery<RowDataPacket[]>(
+  const [textResponses] = await typedQuery<TextResponseResult[]>(
     `
       SELECT
         sa.answer_text,
@@ -804,18 +838,18 @@ async function getTextQuestionResponses(
     `,
     [questionId],
   );
-  return textResponses.map((row) => ({
-    answer_text: String(row.answer_text ?? ''),
-    user_id: row.user_id as number | null,
-    first_name: row.first_name as string | null,
-    last_name: row.last_name as string | null,
+  return textResponses.map((row: TextResponseResult) => ({
+    answer_text: row.answer_text ?? '',
+    user_id: row.user_id,
+    first_name: row.first_name,
+    last_name: row.last_name,
   }));
 }
 
 async function getRatingQuestionStats(
   questionId: number,
 ): Promise<QuestionStatistic['statistics']> {
-  const [numericStats] = await typedQuery<RowDataPacket[]>(
+  const [numericStats] = await typedQuery<NumericStatsResult[]>(
     `
       SELECT
         AVG(sa.answer_number) as average,
@@ -829,10 +863,10 @@ async function getRatingQuestionStats(
   );
   const numStats = numericStats[0];
   return {
-    average: numStats.average as number | null,
-    min: numStats.min as number | null,
-    max: numStats.max as number | null,
-    total_responses: (numStats.total_responses as number) || 0,
+    average: numStats.average,
+    min: numStats.min,
+    max: numStats.max,
+    total_responses: numStats.total_responses || 0,
   };
 }
 
@@ -841,7 +875,7 @@ export async function getSurveyStatistics(
   tenantId: number,
 ): Promise<SurveyStatistics> {
   try {
-    const [stats] = await typedQuery<RowDataPacket[]>(
+    const [stats] = await typedQuery<SurveyStatsResult[]>(
       `
         SELECT
           COUNT(DISTINCT sr.id) as total_responses,
@@ -884,18 +918,17 @@ export async function getSurveyStatistics(
       questionStats.push(questionStat);
     }
 
+    const totalResponses = Number.parseInt(String(stats[0].total_responses)) || 0;
+    const completedResponses = Number.parseInt(String(stats[0].completed_responses)) || 0;
+
     return {
       survey_id: surveyId,
-      total_responses: Number.parseInt(String(stats[0].total_responses)) || 0,
-      completed_responses: Number.parseInt(String(stats[0].completed_responses)) || 0,
+      total_responses: totalResponses,
+      completed_responses: completedResponses,
       completion_rate:
-        (stats[0].total_responses as number) > 0 ?
-          Math.round(
-            ((stats[0].completed_responses as number) / (stats[0].total_responses as number)) * 100,
-          )
-        : 0,
-      first_response: stats[0].first_response as Date | null,
-      last_response: stats[0].last_response as Date | null,
+        totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0,
+      first_response: stats[0].first_response,
+      last_response: stats[0].last_response,
       questions: questionStats,
     };
   } catch (error: unknown) {

@@ -2,7 +2,9 @@
 .blackboard-widget {
   margin-bottom: 2rem;
   padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 10%);
+
+  /* Explicit border to override Tailwind reset - prevent FOUC */
+  border: 1px solid rgb(255 255 255 / 10%) !important;
   border-radius: var(--radius-xl);
 
   background: hsl(0deg 0% 100% / 2%);
@@ -22,6 +24,9 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+
+  /* Prevent Tailwind border flash */
+  border: none !important;
 }
 
 .blackboard-widget-title {
@@ -29,8 +34,10 @@
   gap: 0.5rem;
   align-items: center;
 
-  font-size: 1.2rem;
+  /* Fixed font-size to prevent FOUC - override any inherited styles */
+  font-size: 1.2rem !important;
   font-weight: 600;
+  line-height: 1.5;
   color: var(--primary-color);
 }
 

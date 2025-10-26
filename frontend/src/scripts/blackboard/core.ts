@@ -800,13 +800,15 @@ async function loadDepartmentsAndTeams(): Promise<void> {
     if (deptResult.status === 'fulfilled') {
       departments = deptResult.value;
     } else {
-      console.error('Error loading departments:', deptResult.reason);
+      const reason: unknown = deptResult.reason;
+      console.error('Error loading departments:', reason);
     }
 
     if (teamResult.status === 'fulfilled') {
       teams = teamResult.value;
     } else {
-      console.error('Error loading teams:', teamResult.reason);
+      const reason: unknown = teamResult.reason;
+      console.error('Error loading teams:', reason);
     }
   } catch (error) {
     console.error('Error loading departments and teams:', error);
@@ -1085,7 +1087,7 @@ function getPriorityIcon(priority: string): string {
   return icons[priority] ?? icons.medium;
 }
 
-function createPaginationButton(text: string, page: number, className = 'btn-secondary'): HTMLButtonElement {
+function createPaginationButton(text: string, page: number, className: string = 'btn-secondary'): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = `btn btn-sm ${className}`;
 

@@ -2,7 +2,7 @@
  * Notifications v2 Routes
  * Defines all notification-related endpoints
  */
-import { Router } from 'express';
+import { Request, Response, Router } from 'express';
 
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
@@ -93,12 +93,12 @@ router.delete(
 );
 
 // SSE Stream endpoint for real-time notifications
-router.get('/stream', authenticateV2, (req, res) => {
+router.get('/stream', authenticateV2, (req: Request, res: Response) => {
   stream(req as AuthenticatedRequest, res);
 });
 
 // SSE Statistics endpoint for monitoring
-router.get('/stream/stats', authenticateV2, (req, res) => {
+router.get('/stream/stats', authenticateV2, (req: Request, res: Response) => {
   getStats(req as AuthenticatedRequest, res);
 });
 

@@ -63,6 +63,10 @@ interface GetDocumentsOptions {
   offset: number;
 }
 
+interface TotalCountResult extends RowDataPacket {
+  total: number;
+}
+
 interface DocumentsResponse {
   data: DocumentData[];
   pagination: {
@@ -214,8 +218,8 @@ class DocumentService {
   private async getDocumentCount(query: string, params: (number | undefined)[]): Promise<number> {
     const countQuery =
       query.replace('SELECT', 'SELECT COUNT(*) as total FROM (SELECT') + ') as subquery';
-    const [countRows] = await executeQuery<RowDataPacket[]>(countQuery, params);
-    return Array.isArray(countRows) && countRows.length > 0 ? (countRows[0].total as number) : 0;
+    const [countRows] = await executeQuery<TotalCountResult[]>(countQuery, params);
+    return Array.isArray(countRows) && countRows.length > 0 ? countRows[0].total : 0;
   }
 
   /**

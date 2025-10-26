@@ -91,7 +91,7 @@ export function getColorClass(username) {
  * @param {string} options.imageUrl - Optional image URL
  * @returns {HTMLElement} Avatar element
  */
-function createAvatar(name, username, options = {}) {
+export function createAvatar(name, username, options = {}) {
   const { size = 'md', status = null, shape = 'circle', imageUrl = null } = options;
 
   // Create avatar container
@@ -142,85 +142,4 @@ function createAvatar(name, username, options = {}) {
   avatar.appendChild(srText);
 
   return avatar;
-}
-
-/**
- * Create avatar group with stacked avatars
- *
- * @param {Array} users - Array of user objects { name, username, imageUrl }
- * @param {Object} options - Configuration options
- * @param {string} options.size - Size variant (xs, sm, md, lg, xl)
- * @param {number} options.max - Maximum avatars to show (default: 5)
- * @returns {HTMLElement} Avatar group element
- */
-function createAvatarGroup(users, options = {}) {
-  const { size = 'md', max = 5 } = options;
-
-  const group = document.createElement('div');
-  group.className = 'avatar-group';
-
-  if (size !== 'md') {
-    group.classList.add(`avatar-group--${size}`);
-  }
-
-  // Show first N avatars
-  const visibleUsers = users.slice(0, max);
-  visibleUsers.forEach((user) => {
-    const avatar = createAvatar(user.name, user.username, {
-      size,
-      imageUrl: user.imageUrl,
-    });
-    group.appendChild(avatar);
-  });
-
-  // Show count if there are more users
-  const remaining = users.length - max;
-  if (remaining > 0) {
-    const count = document.createElement('div');
-    count.className = 'avatar-group__count';
-    count.textContent = `+${remaining}`;
-    count.title = `${remaining} more`;
-    group.appendChild(count);
-  }
-
-  return group;
-}
-
-/**
- * Initialize all avatars in the document
- * Converts data attributes to avatar elements
- *
- * Example HTML:
- * <div class="avatar" data-avatar-name="John Doe" data-avatar-username="john.doe"></div>
- */
-function initAvatars() {
-  const avatars = document.querySelectorAll('[data-avatar-name]');
-
-  avatars.forEach((element) => {
-    const name = element.dataset.avatarName;
-    const username = element.dataset.avatarUsername || name;
-    const status = element.dataset.avatarStatus || null;
-    const imageUrl = element.dataset.avatarImage || null;
-
-    // Get size from existing class
-    let size = 'md';
-    if (element.classList.contains('avatar--xs')) size = 'xs';
-    else if (element.classList.contains('avatar--sm')) size = 'sm';
-    else if (element.classList.contains('avatar--lg')) size = 'lg';
-    else if (element.classList.contains('avatar--xl')) size = 'xl';
-
-    // Get shape
-    const shape = element.classList.contains('avatar--square') ? 'square' : 'circle';
-
-    // Create avatar
-    const avatar = createAvatar(name, username, {
-      size,
-      status,
-      shape,
-      imageUrl,
-    });
-
-    // Replace element content
-    element.replaceWith(avatar);
-  });
 }

@@ -11,7 +11,17 @@ import rootLog from '../../../models/rootLog';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { getUploadDirectory, validatePath } from '../../../utils/pathSecurity.js';
-import chatService from './chat.service.js';
+import {
+  createConversation,
+  deleteConversation,
+  getChatUsers,
+  getConversation,
+  getConversations,
+  getMessages,
+  getUnreadCount,
+  markConversationAsRead,
+  sendMessage,
+} from './chat.service.js';
 import type {
   ConversationFilters,
   CreateConversationData,
@@ -62,7 +72,7 @@ class ChatController {
       const userId = user.id;
       const search = req.query.search as string | undefined;
 
-      const users = await chatService.getChatUsers(tenantId, userId, search);
+      const users = await getChatUsers(tenantId, userId, search);
 
       res.json(
         successResponse({
@@ -102,7 +112,7 @@ class ChatController {
         limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
       };
 
-      const result = await chatService.getConversations(tenantId, userId, filters);
+      const result = await getConversations(tenantId, userId, filters);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
@@ -142,7 +152,7 @@ class ChatController {
         isGroup: body.isGroup,
       };
 
-      const result = await chatService.createConversation(tenantId, userId, data);
+      const result = await createConversation(tenantId, userId, data);
 
       // Log conversation creation
       await rootLog.create({
@@ -195,7 +205,7 @@ class ChatController {
         limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 50,
       };
 
-      const result = await chatService.getMessages(tenantId, conversationId, userId, filters);
+      const result = await getMessages(tenantId, conversationId, userId, filters);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
@@ -243,7 +253,7 @@ class ChatController {
         return;
       }
 
-      const result = await chatService.sendMessage(tenantId, conversationId, userId, data);
+      const result = await sendMessage(tenantId, conversationId, userId, data);
 
       // Log message sending
       await rootLog.create({
@@ -290,7 +300,7 @@ class ChatController {
       const tenantId = user.tenant_id;
       const userId = user.id;
 
-      const unreadSummary = await chatService.getUnreadCount(tenantId, userId);
+      const unreadSummary = await getUnreadCount(tenantId, userId);
 
       res.json(successResponse(unreadSummary));
     } catch (error: unknown) {
@@ -312,7 +322,7 @@ class ChatController {
       const conversationId = Number.parseInt(req.params.id);
       logError('[Chat Controller] markAsRead - conversationId:', conversationId, 'userId:', userId);
 
-      const result = await chatService.markConversationAsRead(conversationId, userId);
+      const result = await markConversationAsRead(conversationId, userId);
 
       res.json(successResponse(result));
     } catch (error: unknown) {
@@ -338,7 +348,7 @@ class ChatController {
       const userRole = user.role;
       const conversationId = Number.parseInt(req.params.id);
 
-      await chatService.deleteConversation(conversationId, userId, userRole);
+      await deleteConversation(conversationId, userId, userRole);
 
       // Log conversation deletion
       await rootLog.create({
@@ -434,7 +444,7 @@ class ChatController {
       const conversationId = Number.parseInt(req.params.id);
 
       // Get single conversation
-      const conversation = await chatService.getConversation(tenantId, conversationId, userId);
+      const conversation = await getConversation(tenantId, conversationId, userId);
 
       if (!conversation) {
         res.status(404).json(errorResponse('NOT_FOUND', 'Conversation not found'));

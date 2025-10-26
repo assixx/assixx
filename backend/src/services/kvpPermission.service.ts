@@ -2,7 +2,14 @@
  * KVP Permission Service
  * Handles permission checks and department visibility for KVP suggestions
  */
-import { RowDataPacket, query as executeQuery } from '../utils/db';
+import {
+  KvpSuggestionDetailsResult,
+  PriorityCountResult,
+  StatusCountResult,
+  TotalSavingsResult,
+  UserDepartmentIdResult,
+} from '../types/query-results.types.js';
+import { query as executeQuery } from '../utils/db';
 import { logger } from '../utils/logger.js';
 import adminPermissionService from './adminPermission.service.js';
 
@@ -34,8 +41,10 @@ class KvpPermissionService {
     }
   }
 
-  private async getSuggestionDetails(suggestionId: number): Promise<RowDataPacket | null> {
-    const [suggestions] = await executeQuery<RowDataPacket[]>(
+  private async getSuggestionDetails(
+    suggestionId: number,
+  ): Promise<KvpSuggestionDetailsResult | null> {
+    const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
       `SELECT tenant_id, department_id, org_level, org_id, submitted_by
        FROM kvp_suggestions
        WHERE id = ?`,
@@ -46,7 +55,7 @@ class KvpPermissionService {
 
   private async canEmployeeViewSuggestion(
     userId: number,
-    suggestion: RowDataPacket,
+    suggestion: KvpSuggestionDetailsResult,
   ): Promise<boolean> {
     // Can see own suggestions
     if (suggestion.submitted_by === userId) return true;
@@ -55,7 +64,7 @@ class KvpPermissionService {
     if (suggestion.org_level === 'company') return true;
 
     // Can see department suggestions if in same department
-    const [userInfo] = await executeQuery<RowDataPacket[]>(
+    const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
       'SELECT department_id FROM users WHERE id = ?',
       [userId],
     );
@@ -69,7 +78,7 @@ class KvpPermissionService {
 
   private async canAdminViewSuggestion(
     userId: number,
-    suggestion: RowDataPacket,
+    suggestion: KvpSuggestionDetailsResult,
     tenantId: number,
   ): Promise<boolean> {
     // Can see company-wide
@@ -77,7 +86,7 @@ class KvpPermissionService {
 
     // Check if admin manages this department
     const adminDepts = await this.getAdminDepartments(userId, tenantId);
-    return adminDepts.includes(suggestion.department_id as number);
+    return suggestion.department_id !== null && adminDepts.includes(suggestion.department_id);
   }
 
   /**
@@ -132,9 +141,9 @@ class KvpPermissionService {
   ): Promise<boolean> {
     try {
       // Get suggestion details
-      const [suggestions] = await executeQuery<RowDataPacket[]>(
-        `SELECT tenant_id, department_id, org_level, org_id, submitted_by, status, shared_by 
-         FROM kvp_suggestions 
+      const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
+        `SELECT tenant_id, department_id, org_level, org_id, submitted_by, status, shared_by
+         FROM kvp_suggestions
          WHERE id = ?`,
         [suggestionId],
       );
@@ -161,7 +170,7 @@ class KvpPermissionService {
 
       // For department suggestions, check admin permissions
       const adminDepts = await this.getAdminDepartments(userId, tenantId);
-      return adminDepts.includes(suggestion.department_id as number);
+      return suggestion.department_id !== null && adminDepts.includes(suggestion.department_id);
     } catch (error: unknown) {
       logger.error('Error checking edit permission:', error);
       return false;
@@ -174,12 +183,12 @@ class KvpPermissionService {
     queryParams: (string | number)[],
   ): Promise<void> {
     // Get user's department
-    const [userInfo] = await executeQuery<RowDataPacket[]>(
+    const [userInfo] = await executeQuery<UserDepartmentIdResult[]>(
       'SELECT department_id FROM users WHERE id = ?',
       [userId],
     );
 
-    const userDeptId = userInfo[0]?.department_id as number | null;
+    const userDeptId = userInfo[0]?.department_id;
 
     // Employee sees: own + department + company-wide
     const visibilityConditions = [
@@ -289,9 +298,9 @@ class KvpPermissionService {
   ): Promise<boolean> {
     try {
       // Get suggestion details
-      const [suggestions] = await executeQuery<RowDataPacket[]>(
-        `SELECT tenant_id, department_id, org_level 
-         FROM kvp_suggestions 
+      const [suggestions] = await executeQuery<KvpSuggestionDetailsResult[]>(
+        `SELECT tenant_id, department_id, org_level
+         FROM kvp_suggestions
          WHERE id = ?`,
         [suggestionId],
       );
@@ -307,7 +316,7 @@ class KvpPermissionService {
 
       // Check if admin manages this department
       const adminDepts = await this.getAdminDepartments(adminId, tenantId);
-      return adminDepts.includes(suggestion.department_id as number);
+      return suggestion.department_id !== null && adminDepts.includes(suggestion.department_id);
     } catch (error: unknown) {
       logger.error('Error checking share permission:', error);
       return false;
@@ -381,8 +390,8 @@ class KvpPermissionService {
       }
 
       // Get counts by status
-      const [statusCounts] = await executeQuery<RowDataPacket[]>(
-        `SELECT status, COUNT(*) as count 
+      const [statusCounts] = await executeQuery<StatusCountResult[]>(
+        `SELECT status, COUNT(*) as count
          FROM kvp_suggestions s
          WHERE ${whereClause}
          GROUP BY status`,
@@ -390,8 +399,8 @@ class KvpPermissionService {
       );
 
       // Get counts by priority
-      const [priorityCounts] = await executeQuery<RowDataPacket[]>(
-        `SELECT priority, COUNT(*) as count 
+      const [priorityCounts] = await executeQuery<PriorityCountResult[]>(
+        `SELECT priority, COUNT(*) as count
          FROM kvp_suggestions s
          WHERE ${whereClause}
          GROUP BY priority`,
@@ -399,8 +408,8 @@ class KvpPermissionService {
       );
 
       // Get total savings
-      const [savings] = await executeQuery<RowDataPacket[]>(
-        `SELECT COALESCE(SUM(actual_savings), 0) as total_savings 
+      const [savings] = await executeQuery<TotalSavingsResult[]>(
+        `SELECT COALESCE(SUM(actual_savings), 0) as total_savings
          FROM kvp_suggestions s
          WHERE ${whereClause} AND status = 'implemented'`,
         params,
@@ -408,13 +417,13 @@ class KvpPermissionService {
 
       // Build result
       const byStatus: Record<string, number> = {};
-      statusCounts.forEach((row: RowDataPacket) => {
-        byStatus[row.status as string] = row.count as number;
+      statusCounts.forEach((row: StatusCountResult) => {
+        byStatus[row.status] = row.count;
       });
 
       const byPriority: Record<string, number> = {};
-      priorityCounts.forEach((row: RowDataPacket) => {
-        byPriority[row.priority as string] = row.count as number;
+      priorityCounts.forEach((row: PriorityCountResult) => {
+        byPriority[row.priority] = row.count;
       });
 
       const total = Object.values(byStatus).reduce((sum: number, count: number) => sum + count, 0);
@@ -423,7 +432,10 @@ class KvpPermissionService {
         total,
         byStatus,
         byPriority,
-        totalSavings: Number.parseFloat(savings[0].total_savings as string) || 0,
+        totalSavings:
+          typeof savings[0].total_savings === 'string' ?
+            Number.parseFloat(savings[0].total_savings) || 0
+          : savings[0].total_savings,
       };
     } catch (error: unknown) {
       logger.error('Error getting suggestion stats:', error);

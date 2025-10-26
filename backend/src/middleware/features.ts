@@ -10,6 +10,11 @@ export interface FeatureCheckOptions {
   customErrorMessage?: string;
 }
 
+// Query result interfaces
+interface TenantIdResult extends RowDataPacket {
+  id: number;
+}
+
 // Type guard to check if request is authenticated
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
   return 'user' in req && req.user != null;
@@ -35,7 +40,7 @@ async function extractTenantId(
     }
 
     // Must be a subdomain - look it up
-    const [tenantRows] = await query<RowDataPacket[]>(
+    const [tenantRows] = await query<TenantIdResult[]>(
       'SELECT id FROM tenants WHERE subdomain = ?',
       [req.tenantId],
     );
@@ -50,7 +55,7 @@ async function extractTenantId(
       };
     }
 
-    return { tenantId: tenantRows[0].id as number };
+    return { tenantId: tenantRows[0].id };
   }
 
   // Fallback to JWT tenant_id

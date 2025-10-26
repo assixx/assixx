@@ -41,7 +41,7 @@ const AssignmentTypeSchema = z.enum(['all_users', 'department', 'team', 'user'],
 const NullableDateSchema = z
   .string()
   .refine(
-    (val) => {
+    (val: string) => {
       if (val === '') return true;
       return !Number.isNaN(Date.parse(val));
     },
@@ -71,7 +71,12 @@ const AssignmentSchema = z
     userId: IdSchema.optional(),
   })
   .refine(
-    (data) => {
+    (data: {
+      type: 'all_users' | 'department' | 'team' | 'user';
+      departmentId?: number;
+      teamId?: number;
+      userId?: number;
+    }) => {
       if (data.type === 'department') return data.departmentId !== undefined;
       if (data.type === 'team') return data.teamId !== undefined;
       if (data.type === 'user') return data.userId !== undefined;
@@ -140,7 +145,17 @@ export const CreateSurveyBodySchema = z
     assignments: z.array(AssignmentSchema).optional(),
   })
   .refine(
-    (data) => {
+    (data: {
+      title: string;
+      description?: string;
+      status?: 'draft' | 'active' | 'closed';
+      isAnonymous?: boolean;
+      isMandatory?: boolean;
+      startDate?: string | null;
+      endDate?: string | null;
+      questions?: unknown[];
+      assignments?: unknown[];
+    }) => {
       if (data.startDate && data.endDate) {
         const start = new Date(data.startDate);
         const end = new Date(data.endDate);
@@ -178,7 +193,16 @@ export const UpdateSurveyBodySchema = z
     questions: z.array(QuestionSchema).min(1, 'Questions must be a non-empty array').optional(),
   })
   .refine(
-    (data) => {
+    (data: {
+      title?: string;
+      description?: string;
+      status?: 'draft' | 'active' | 'closed';
+      isAnonymous?: boolean;
+      isMandatory?: boolean;
+      startDate?: string | null;
+      endDate?: string | null;
+      questions?: unknown[];
+    }) => {
       if (data.startDate && data.endDate) {
         const start = new Date(data.startDate);
         const end = new Date(data.endDate);

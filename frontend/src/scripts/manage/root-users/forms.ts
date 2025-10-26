@@ -137,7 +137,7 @@ export function setupValidationListeners(): void {
 /**
  * Highlight field with error state and auto-remove after duration
  */
-function highlightFieldError(selector: string, duration = 3000): void {
+function highlightFieldError(selector: string, duration: number = 3000): void {
   const field = $$(selector) as HTMLInputElement | null;
   if (field !== null) {
     field.classList.add(FIELD_STATE_ERROR);
@@ -292,6 +292,24 @@ function validatePasswordLength(password: string): boolean {
 }
 
 /**
+ * Validate password complexity (uppercase, lowercase, number)
+ * Must match backend PasswordSchema: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
+ */
+function validatePasswordComplexity(password: string): boolean {
+  if (password.length > 0) {
+    const hasLowercase = /[a-z]/.test(password);
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
+    if (!hasLowercase || !hasUppercase || !hasNumber) {
+      showErrorAlert('Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten!');
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Validate password match
  */
 function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
@@ -310,6 +328,7 @@ function validatePasswordMatch(password: string, passwordConfirm: string): boole
  */
 function validatePasswordCreate(values: FormValues): boolean {
   if (!validatePasswordLength(values.password)) return false;
+  if (!validatePasswordComplexity(values.password)) return false;
   if (!validatePasswordMatch(values.password, values.passwordConfirm)) return false;
   return true;
 }
@@ -322,6 +341,7 @@ function validatePasswordEdit(values: FormValues): boolean {
 
   if (isPasswordProvided) {
     if (!validatePasswordLength(values.password)) return false;
+    if (!validatePasswordComplexity(values.password)) return false;
     if (!validatePasswordMatch(values.password, values.passwordConfirm)) return false;
   }
 

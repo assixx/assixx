@@ -97,10 +97,27 @@ interface DbPointsSummary extends RowDataPacket {
   suggestions_awarded: number;
 }
 
+// Raw query result from database
+interface DashboardStatsResult extends RowDataPacket {
+  total_suggestions: number;
+  new_suggestions: number;
+  in_progress_count: number; // SQL returns this field name
+  implemented: number;
+  rejected: number;
+  avg_savings: number | null;
+}
+
+// User organization info query result
+interface UserOrgInfoResult extends RowDataPacket {
+  team_id: number | null;
+  department_id: number | null;
+}
+
 interface DbDashboardStats extends RowDataPacket {
   total_suggestions: number;
   new_suggestions: number;
   in_progress: number;
+  in_progress_count?: number; // Alias for in_progress (for compatibility)
   implemented: number;
   rejected: number;
   avg_savings: number | null;
@@ -205,7 +222,7 @@ async function getUserOrgInfo(
   userId: number,
   tenantId: number,
 ): Promise<{ teamId: number | null; departmentId: number | null }> {
-  const [userInfo] = await connection.execute<RowDataPacket[]>(
+  const [userInfo] = await connection.execute<UserOrgInfoResult[]>(
     `SELECT ut.team_id, u.department_id
      FROM users u
      LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
@@ -215,8 +232,8 @@ async function getUserOrgInfo(
 
   if (userInfo.length > 0) {
     return {
-      teamId: userInfo[0].team_id as number | null,
-      departmentId: userInfo[0].department_id as number | null,
+      teamId: userInfo[0].team_id,
+      departmentId: userInfo[0].department_id,
     };
   }
 
@@ -347,7 +364,7 @@ export async function getKvpSuggestionById(
     let userDepartmentId: number | null = null;
 
     if (userRole === 'employee') {
-      const [userInfo] = await connection.execute<RowDataPacket[]>(
+      const [userInfo] = await connection.execute<UserOrgInfoResult[]>(
         `SELECT ut.team_id, u.department_id
          FROM users u
          LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
@@ -356,8 +373,8 @@ export async function getKvpSuggestionById(
       );
 
       if (userInfo.length > 0) {
-        userTeamId = userInfo[0].team_id as number | null;
-        userDepartmentId = userInfo[0].department_id as number | null;
+        userTeamId = userInfo[0].team_id;
+        userDepartmentId = userInfo[0].department_id;
       }
     }
 
@@ -526,7 +543,7 @@ export async function addKvpComment(
   tenantId: number,
   userId: number,
   comment: string,
-  // eslint-disable-next-line @typescript-eslint/no-inferrable-types -- Required by typedef rule for parameters
+
   isInternal: boolean = false,
 ): Promise<number> {
   const connection = await getConnection();
@@ -631,7 +648,7 @@ export async function awardKvpPoints(
 export async function getKvpDashboardStats(tenantId: number): Promise<DbDashboardStats> {
   const connection = await getConnection();
   try {
-    const [stats] = await connection.execute<DbDashboardStats[]>(
+    const [stats] = await connection.execute<DashboardStatsResult[]>(
       `
         SELECT
           COUNT(*) as total_suggestions,
@@ -651,8 +668,8 @@ export async function getKvpDashboardStats(tenantId: number): Promise<DbDashboar
     return {
       total_suggestions: result.total_suggestions,
       new_suggestions: result.new_suggestions,
-      in_progress: result.in_progress_count as number,
-      in_progress_count: result.in_progress_count as number,
+      in_progress: result.in_progress_count,
+      in_progress_count: result.in_progress_count,
       implemented: result.implemented,
       rejected: result.rejected,
       avg_savings:

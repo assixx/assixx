@@ -11,7 +11,7 @@
 /* eslint-disable @typescript-eslint/no-unnecessary-type-parameters */
 // Type parameters are necessary here for proper type inference from Zod schemas
 import { NextFunction, Request, Response } from 'express';
-import { ZodError, ZodIssue, z } from 'zod';
+import { ZodError, z } from 'zod';
 
 import { errorResponse } from '../utils/apiResponse';
 
@@ -20,10 +20,19 @@ import { errorResponse } from '../utils/apiResponse';
  * Converts Zod errors to our API error format
  */
 function formatZodError(error: ZodError): { field: string; message: string }[] {
-  return error.issues.map((issue: ZodIssue) => ({
+  // eslint-disable-next-line @typescript-eslint/typedef -- z.ZodIssue is deprecated, type is auto-inferred from error.issues
+  return error.issues.map((issue) => ({
     field: issue.path.join('.') || 'root',
     message: issue.message,
   }));
+}
+
+/**
+ * Helper to safely get request body as unknown
+ * Express types req.body as 'any' - this helper makes it explicit
+ */
+function getRequestBody(req: Request): unknown {
+  return req.body;
 }
 
 /**
@@ -34,7 +43,7 @@ function formatZodError(error: ZodError): { field: string; message: string }[] {
 export function validateBody<T extends z.ZodType>(schema: T) {
   return (req: Request, res: Response, next: NextFunction): void => {
     // Use safeParse instead of parse to avoid throwing
-    const result = schema.safeParse(req.body);
+    const result = schema.safeParse(getRequestBody(req));
 
     if (!result.success) {
       const details = formatZodError(result.error);
@@ -44,7 +53,8 @@ export function validateBody<T extends z.ZodType>(schema: T) {
     }
 
     // Replace body with validated and transformed data
-    req.body = result.data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+    req.body = result.data as any;
     next();
   };
 }
@@ -124,14 +134,15 @@ export function validate(options: { body?: z.ZodType; query?: z.ZodType; params?
 
       // Validate body last (most complex)
       if (options.body) {
-        const bodyResult = options.body.safeParse(req.body);
+        const bodyResult = options.body.safeParse(getRequestBody(req));
         if (!bodyResult.success) {
           const details = formatZodError(bodyResult.error);
           const response = errorResponse('VALIDATION_ERROR', 'Validation failed', details);
           res.status(400).json(response);
           return;
         }
-        req.body = bodyResult.data;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+        req.body = bodyResult.data as any;
       }
 
       next();

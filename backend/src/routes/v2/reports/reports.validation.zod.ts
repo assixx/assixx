@@ -122,7 +122,7 @@ export const AttendanceReportQuerySchema = z
     teamId: IdSchema.optional(),
   })
   .refine(
-    (data) => {
+    (data: { dateFrom: string; dateTo: string; departmentId?: number; teamId?: number }) => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       return dateTo >= dateFrom;
@@ -133,7 +133,7 @@ export const AttendanceReportQuerySchema = z
     },
   )
   .refine(
-    (data) => {
+    (data: { dateFrom: string; dateTo: string; departmentId?: number; teamId?: number }) => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       const daysDiff = (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24);
@@ -194,7 +194,15 @@ export const CustomReportBodySchema = z
     groupBy: GroupBySchema.optional(),
   })
   .refine(
-    (data) => {
+    (data: {
+      name: string;
+      description?: string;
+      metrics: string[];
+      dateFrom: string;
+      dateTo: string;
+      filters?: { departmentIds?: number[]; teamIds?: number[] };
+      groupBy?: string;
+    }) => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       return dateTo >= dateFrom;
