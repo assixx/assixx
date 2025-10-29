@@ -3,19 +3,21 @@
  *
  * Search input field with leading icon, trailing clear button, and loading state.
  * Progressive enhancement - works without JavaScript.
+ *
+ * NOTE: This story demonstrates the CSS-only version.
+ * - Auto-show/hide clear button
+ * - Debounced search
+ * - Loading state management
  */
-
-import { initSearchInput } from "../frontend/src/design-system/primitives/search-input/search-input.js";
 
 export default {
   title: "Design System/Search Input",
   tags: ["autodocs"],
+
   parameters: {
-    layout: "centered",
-    backgrounds: {
-      default: "assixx-dark",
-    },
+    layout: "centered"
   },
+
   argTypes: {
     placeholder: {
       control: "text",
@@ -39,6 +41,12 @@ export default {
       description: "Loading state",
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**
@@ -80,10 +88,6 @@ export const BasicSearch = {
     // Initialize JavaScript
     setTimeout(() => {
       const searchElement = wrapper.querySelector(".search-input");
-      initSearchInput(searchElement, {
-        onSearch: (value) => console.log("Search:", value),
-        onClear: () => console.log("Cleared"),
-      });
     }, 0);
 
     return wrapper;
@@ -139,7 +143,6 @@ export const SizeVariants = {
     // Initialize JavaScript for all
     setTimeout(() => {
       wrapper.querySelectorAll(".search-input").forEach((el) => {
-        initSearchInput(el);
       });
     }, 0);
 
@@ -234,7 +237,6 @@ export const States = {
     // Initialize JavaScript
     setTimeout(() => {
       wrapper.querySelectorAll(".search-input:not(.search-input--disabled)").forEach((el) => {
-        initSearchInput(el);
       });
     }, 0);
 
@@ -278,7 +280,6 @@ export const WithResults = {
     // Initialize JavaScript
     setTimeout(() => {
       const searchElement = wrapper.querySelector(".search-input");
-      initSearchInput(searchElement);
     }, 0);
 
     return wrapper;
@@ -327,10 +328,6 @@ export const GlobalSearch = {
     // Initialize JavaScript
     setTimeout(() => {
       const searchElement = wrapper.querySelector(".search-input");
-      initSearchInput(searchElement, {
-        onSearch: (value) => console.log("Global search:", value),
-        debounce: 500,
-      });
     }, 0);
 
     return wrapper;
@@ -375,10 +372,6 @@ export const UserFilter = {
     // Initialize JavaScript
     setTimeout(() => {
       const searchElement = wrapper.querySelector(".search-input");
-      initSearchInput(searchElement, {
-        onSearch: (value) => console.log("Filter users:", value),
-        debounce: 300,
-      });
     }, 0);
 
     return wrapper;
@@ -485,7 +478,6 @@ export const AllVariants = {
     // Initialize JavaScript
     setTimeout(() => {
       wrapper.querySelectorAll(".search-input:not(.search-input--disabled)").forEach((el) => {
-        initSearchInput(el);
       });
     }, 0);
 

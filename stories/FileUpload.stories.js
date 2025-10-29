@@ -3,19 +3,28 @@
  *
  * Modern file upload with drag & drop, previews, and progress indicators.
  * Progressive enhancement - works without JavaScript.
+ *
+ * NOTE: This story demonstrates the CSS-only version.
+ * JavaScript enhancement (initFileUpload) can be added later for:
+ * - Drag & drop validation
+ * - File type checking
+ * - Upload progress tracking
  */
-
-import { initFileUpload } from '../frontend/src/design-system/primitives/file-upload/file-upload.js';
 
 export default {
   title: 'Design System/File Upload',
+
   parameters: {
-    layout: 'centered',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'centered'
   },
+
   tags: ['autodocs'],
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**
@@ -43,15 +52,6 @@ export const BasicZone = {
       </div>
       <div class="file-upload-list"></div>
     `;
-
-    // Initialize JavaScript
-    setTimeout(() => {
-      const zone = wrapper.querySelector('.file-upload-zone');
-      initFileUpload(zone, {
-        maxSize: 10 * 1024 * 1024, // 10MB
-        multiple: true,
-      });
-    }, 0);
 
     return wrapper;
   },
@@ -85,15 +85,6 @@ export const WithRestrictions = {
       </div>
       <div class="file-upload-list"></div>
     `;
-
-    setTimeout(() => {
-      const zone = wrapper.querySelector('.file-upload-zone');
-      initFileUpload(zone, {
-        maxSize: 5 * 1024 * 1024, // 5MB
-        allowedTypes: ['image/png', 'image/jpeg', 'image/gif'],
-        multiple: true,
-      });
-    }, 0);
 
     return wrapper;
   },
@@ -179,21 +170,6 @@ export const WithFileList = {
       </div>
       <div class="file-upload-list"></div>
     `;
-
-    setTimeout(() => {
-      const zone = wrapper.querySelector('.file-upload-zone');
-      initFileUpload(zone, {
-        maxSize: 10 * 1024 * 1024, // 10MB
-        allowedTypes: [
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ],
-        multiple: true,
-      });
-    }, 0);
 
     return wrapper;
   },
@@ -331,15 +307,6 @@ export const ImageUpload = {
       <div class="file-upload-list"></div>
     `;
 
-    setTimeout(() => {
-      const zone = wrapper.querySelector('.file-upload-zone');
-      initFileUpload(zone, {
-        maxSize: 5 * 1024 * 1024, // 5MB
-        allowedTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp'],
-        multiple: true,
-      });
-    }, 0);
-
     return wrapper;
   },
 };
@@ -379,15 +346,6 @@ export const ProfilePicture = {
         </div>
       </div>
     `;
-
-    setTimeout(() => {
-      const zone = wrapper.querySelector('.file-upload-zone');
-      initFileUpload(zone, {
-        maxSize: 2 * 1024 * 1024, // 2MB
-        allowedTypes: ['image/jpeg', 'image/png'],
-        multiple: false,
-      });
-    }, 0);
 
     return wrapper;
   },
@@ -465,21 +423,6 @@ export const DocumentUploadForm = {
         </div>
       </div>
     `;
-
-    setTimeout(() => {
-      const zone = wrapper.querySelector('.file-upload-zone');
-      initFileUpload(zone, {
-        maxSize: 10 * 1024 * 1024,
-        allowedTypes: [
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ],
-        multiple: true,
-      });
-    }, 0);
 
     return wrapper;
   },

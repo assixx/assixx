@@ -741,6 +741,12 @@ class RootService {
         );
       }
 
+      // Delete user's related data first (to avoid foreign key constraints)
+      await execute('DELETE FROM oauth_tokens WHERE user_id = ?', [id]);
+      await execute('DELETE FROM user_teams WHERE user_id = ?', [id]);
+      await execute('DELETE FROM user_departments WHERE user_id = ?', [id]);
+
+      // Now delete the user
       await execute('DELETE FROM users WHERE id = ?', [id]);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;

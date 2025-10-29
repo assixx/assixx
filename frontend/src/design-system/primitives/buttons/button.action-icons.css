@@ -100,6 +100,27 @@
   background: rgb(255 255 255 / 10%);
 }
 
+/* ========== TOGGLE VARIANT (Orange/Green) ========== */
+
+.action-icon--toggle:hover {
+  color: #f97316; /* Tailwind orange-500 */
+  background: rgb(249 115 22 / 10%);
+}
+
+.action-icon--toggle:active {
+  color: #ea580c; /* Tailwind orange-600 */
+}
+
+/* Success state for active items */
+.action-icon--toggle[data-status="inactive"]:hover {
+  color: #10b981; /* Tailwind green-500 */
+  background: rgb(16 185 129 / 10%);
+}
+
+.action-icon--toggle[data-status="inactive"]:active {
+  color: #059669; /* Tailwind green-600 */
+}
+
 /* ========== FOCUS STATE ========== */
 
 .action-icon:focus-visible {

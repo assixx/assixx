@@ -7,12 +7,12 @@
 
 export default {
   title: 'Design System/Badges',
-  parameters: {
-    backgrounds: {
-      default: 'assixx-dark',
-    },
-  },
   tags: ['autodocs'],
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  },
 };
 
 /**

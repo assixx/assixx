@@ -85,6 +85,12 @@
 /* Collapse - Standalone expandable sections */
 @import "./primitives/collapse/index.css";
 
+/* ========== COMPOSED COMPONENTS ========== */
+/* Higher-level components composed from primitives */
+
+/* Confirm Modal - Confirmation dialogs for critical actions */
+@import "./components/confirm-modal/confirm-modal.css";
+
 /* ========== UTILITIES ========== */
 /* Helper classes for layout and common patterns */
 /* Future: Will be added as needed */

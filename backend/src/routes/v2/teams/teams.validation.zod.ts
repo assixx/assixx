@@ -100,6 +100,11 @@ export const UpdateTeamBodySchema = z.object({
     .nullable()
     .optional(),
   leaderId: z.number().int().positive('Leader ID must be a positive integer').nullable().optional(),
+  status: z
+    .enum(['active', 'inactive'], {
+      message: 'Status must be either "active" or "inactive"',
+    })
+    .optional(),
 });
 
 /**

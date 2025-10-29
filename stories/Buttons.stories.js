@@ -8,12 +8,11 @@
 export default {
   title: 'Design System/Buttons',
   tags: ['autodocs'],
+
   parameters: {
-    layout: 'centered',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'centered'
   },
+
   argTypes: {
     label: {
       control: 'text',
@@ -46,6 +45,12 @@ export default {
       defaultValue: false,
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 // Helper function to create button HTML
@@ -911,10 +916,10 @@ export const ActionIcons = {
     `;
     container.appendChild(header);
 
-    // Grid of all 4 variants
+    // Grid of all variants
     const grid = document.createElement('div');
     grid.style.display = 'grid';
-    grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+    grid.style.gridTemplateColumns = 'repeat(3, 1fr)';
     grid.style.gap = '24px';
     grid.style.marginBottom = '32px';
 
@@ -924,6 +929,20 @@ export const ActionIcons = {
         icon: 'fas fa-edit',
         label: 'Edit (Yellow)',
         desc: 'Modify/update actions'
+      },
+      {
+        class: 'action-icon--toggle',
+        icon: 'fas fa-times-circle',
+        label: 'Toggle (Orange)',
+        desc: 'Deactivate/activate',
+        dataStatus: 'active'
+      },
+      {
+        class: 'action-icon--toggle',
+        icon: 'fas fa-check-circle',
+        label: 'Toggle (Green)',
+        desc: 'Activate (inactive)',
+        dataStatus: 'inactive'
       },
       {
         class: 'action-icon--delete',
@@ -945,7 +964,7 @@ export const ActionIcons = {
       },
     ];
 
-    variants.forEach(({ class: className, icon, label, desc }) => {
+    variants.forEach(({ class: className, icon, label, desc, dataStatus }) => {
       const card = document.createElement('div');
       card.style.textAlign = 'center';
       card.style.padding = '16px';
@@ -953,7 +972,7 @@ export const ActionIcons = {
       card.style.border = '1px solid rgba(255,255,255,0.1)';
       card.style.borderRadius = '8px';
       card.innerHTML = `
-        <button class="action-icon ${className}" title="${label}" aria-label="${label}">
+        <button class="action-icon ${className}" ${dataStatus ? `data-status="${dataStatus}"` : ''} title="${label}" aria-label="${label}">
           <i class="${icon}"></i>
         </button>
         <div style="margin-top: 12px; color: #fff; font-size: 14px;">${label}</div>
@@ -987,6 +1006,9 @@ export const ActionIcons = {
                   <button class="action-icon action-icon--edit" title="Bearbeiten" aria-label="Abteilung bearbeiten">
                     <i class="fas fa-edit"></i>
                   </button>
+                  <button class="action-icon action-icon--toggle" data-status="active" title="Deaktivieren" aria-label="Abteilung deaktivieren">
+                    <i class="fas fa-times-circle"></i>
+                  </button>
                   <button class="action-icon action-icon--delete" title="Löschen" aria-label="Abteilung löschen">
                     <i class="fas fa-trash"></i>
                   </button>
@@ -1000,6 +1022,9 @@ export const ActionIcons = {
                 <div class="flex gap-2">
                   <button class="action-icon action-icon--edit" title="Bearbeiten" aria-label="Abteilung bearbeiten">
                     <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="action-icon action-icon--toggle" data-status="inactive" title="Aktivieren" aria-label="Abteilung aktivieren">
+                    <i class="fas fa-check-circle"></i>
                   </button>
                   <button class="action-icon action-icon--delete" title="Löschen" aria-label="Abteilung löschen">
                     <i class="fas fa-trash"></i>

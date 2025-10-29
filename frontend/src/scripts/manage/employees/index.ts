@@ -9,15 +9,22 @@ import { mapUsers, type UserAPIResponse } from '../../../utils/api-mappers';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import { $$id, setSafeHTML } from '../../../utils/dom-utils';
 import type { Employee, Department, Team, WindowWithEmployeeHandlers } from './types';
-import { renderEmployeesTable, setupFormSubmitHandler, processFormField } from './ui';
+import { renderEmployeesTable, setupFormSubmitHandler } from './ui';
+import { setEmployeesManager } from './data';
 import {
   showAddEmployeeModal,
-  showEditEmployeeModal,
   closeEmployeeModal,
-  showDeleteModal,
   closeDeleteModal,
   setupValidationListeners,
-  validatePasswordOnSubmit,
+  setupEditEmployee,
+  setupDeleteEmployee,
+  setupShowEmployeeModal,
+  setupHideEmployeeModal,
+  setupCloseEmployeeModal,
+  setupSaveEmployee,
+  setupLoadEmployeesTable,
+  setupViewEmployeeDetails,
+  setupLoadDropdowns,
 } from './forms';
 
 class EmployeesManager {
@@ -752,281 +759,6 @@ function setupUrlChangeHandlers(): void {
   };
 }
 
-/**
- * Extract form data and process fields
- */
-function extractFormDataToRecord(form: HTMLFormElement, isUpdate: boolean): Record<string, unknown> {
-  const formData = new FormData(form);
-  const data: Record<string, unknown> = {};
-
-  formData.forEach((value, key) => {
-    if (typeof value === 'string') {
-      processFormField(data, key, value, isUpdate);
-    }
-  });
-
-  // Special handling: if availabilityStatus is 'available', set dates to null
-  if (data.availabilityStatus === 'available') {
-    data.availabilityStart = null;
-    data.availabilityEnd = null;
-  }
-
-  return data;
-}
-
-/**
- * Validate required employee fields
- */
-function validateRequiredEmployeeFields(data: Record<string, unknown>): { valid: boolean; message?: string } {
-  if (
-    typeof data.email !== 'string' ||
-    data.email.length === 0 ||
-    typeof data.firstName !== 'string' ||
-    data.firstName.length === 0 ||
-    typeof data.lastName !== 'string' ||
-    data.lastName.length === 0
-  ) {
-    return { valid: false, message: 'Bitte füllen Sie alle Pflichtfelder aus' };
-  }
-  return { valid: true };
-}
-
-/**
- * Validate employee password if provided
- */
-function validateEmployeePasswordField(data: Record<string, unknown>): { valid: boolean; message?: string } {
-  if (typeof data.password === 'string' && data.password !== '') {
-    const passwordValidation = validatePasswordOnSubmit(data.password);
-    if (!passwordValidation.valid) {
-      return { valid: false, message: passwordValidation.message };
-    }
-  }
-  return { valid: true };
-}
-
-/**
- * Prepare employee data for save operation
- */
-function prepareEmployeeDataForSave(data: Record<string, unknown>): void {
-  data.role = 'employee';
-  data.username = data.email;
-  if (data.isActive !== undefined) {
-    data.isActive = data.isActive === '1' || data.isActive === true;
-  }
-}
-
-/**
- * Perform employee save operation and close modal
- */
-async function performEmployeeSave(data: Record<string, unknown>, form: HTMLFormElement): Promise<void> {
-  console.info('[saveEmployee] Starting save operation...');
-
-  if (employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined) {
-    console.info('[saveEmployee] Updating employee ID:', employeesManager.currentEmployeeId);
-    await employeesManager.updateEmployee(employeesManager.currentEmployeeId, data as Partial<Employee>);
-  } else {
-    console.info('[saveEmployee] Creating new employee...');
-    await employeesManager?.createEmployee(data as Partial<Employee>);
-  }
-
-  console.info('[saveEmployee] Save successful, closing modal...');
-  const w = window as WindowWithEmployeeHandlers;
-  w.hideEmployeeModal?.();
-  form.reset();
-
-  if (employeesManager !== null) {
-    employeesManager.currentEmployeeId = null;
-  }
-}
-
-/**
- * Save employee handler - orchestrates the save workflow
- */
-async function handleSaveEmployee(): Promise<void> {
-  console.info('[saveEmployee] Function called');
-  const form = $$id('employee-form');
-  if (!(form instanceof HTMLFormElement)) {
-    console.error('[saveEmployee] Form not found or not a form element');
-    return;
-  }
-  console.info('[saveEmployee] Form found, processing data...');
-
-  const isUpdate = employeesManager?.currentEmployeeId !== null && employeesManager?.currentEmployeeId !== undefined;
-  const data = extractFormDataToRecord(form, isUpdate);
-
-  const requiredValidation = validateRequiredEmployeeFields(data);
-  if (!requiredValidation.valid) {
-    showErrorAlert(requiredValidation.message ?? 'Validation error');
-    return;
-  }
-
-  const passwordValidation = validateEmployeePasswordField(data);
-  if (!passwordValidation.valid) {
-    showErrorAlert(passwordValidation.message ?? 'Password validation error');
-    return;
-  }
-
-  prepareEmployeeDataForSave(data);
-
-  try {
-    await performEmployeeSave(data, form);
-  } catch (error) {
-    console.error('Error saving employee:', error);
-    employeesManager?.handleEmployeeSaveError(error);
-  }
-}
-
-// Handle loading departments for employee select (custom dropdown)
-async function handleLoadDepartments(): Promise<void> {
-  const departments = await employeesManager?.loadDepartments();
-  const menu = $$id('department-menu');
-
-  if (menu !== null && departments !== undefined) {
-    // Clear existing options and add default
-    menu.innerHTML = '<div class="dropdown__option" data-value="">Keine Abteilung</div>';
-
-    // Add department options
-    departments.forEach((dept) => {
-      const option = document.createElement('div');
-      option.className = 'dropdown__option';
-      option.dataset.value = dept.id.toString();
-      option.textContent = dept.name;
-      menu.append(option);
-    });
-
-    console.info('[EmployeesManager] Loaded departments:', departments.length);
-  }
-}
-
-// Handle loading teams for employee select (custom dropdown)
-async function handleLoadTeams(): Promise<void> {
-  const teams = await employeesManager?.loadTeams();
-  const deptInput = $$id('employee-department') as HTMLInputElement | null;
-  const selectedDeptId = deptInput?.value;
-  const menu = $$id('team-menu');
-
-  if (menu !== null && teams !== undefined) {
-    // Filter teams by department if one is selected
-    let filteredTeams = teams;
-    if (selectedDeptId !== undefined && selectedDeptId !== '' && selectedDeptId !== '0') {
-      filteredTeams = teams.filter((team) => team.departmentId === Number.parseInt(selectedDeptId, 10));
-    }
-
-    // Clear existing options and add default
-    menu.innerHTML = '<div class="dropdown__option" data-value="">Kein Team</div>';
-
-    // Add team options
-    filteredTeams.forEach((team) => {
-      const option = document.createElement('div');
-      option.className = 'dropdown__option';
-      option.dataset.value = team.id.toString();
-      option.textContent = team.name;
-      menu.append(option);
-    });
-
-    console.info('[EmployeesManager] Loaded teams:', filteredTeams.length);
-  }
-}
-
-// Setup window handlers
-function setupEditEmployeeHandler(w: WindowWithEmployeeHandlers): void {
-  w.editEmployee = async (id: number) => {
-    const employee = await employeesManager?.getEmployeeDetails(id);
-    if (employee === null || employee === undefined) return;
-
-    console.info('Edit employee:', employee);
-    console.info('Employee details:', {
-      employeeNumber: employee.employeeNumber,
-      departmentId: employee.departmentId,
-      teamId: employee.teamId,
-      isActive: employee.isActive,
-    });
-
-    // Set current employee ID for update
-    if (employeesManager) {
-      employeesManager.currentEmployeeId = id;
-    }
-
-    // Show modal in edit mode with employee data
-    showEditEmployeeModal(employee, employee.departmentId, employee.teamId);
-  };
-}
-
-function setupEmployeeModalHandlers(w: WindowWithEmployeeHandlers): void {
-  w.showEmployeeModal = () => {
-    // Reset current employee ID for new employee
-    if (employeesManager) {
-      employeesManager.currentEmployeeId = null;
-    }
-    showAddEmployeeModal();
-  };
-
-  w.hideEmployeeModal = () => {
-    // Reset current employee ID when closing
-    if (employeesManager) {
-      employeesManager.currentEmployeeId = null;
-    }
-    closeEmployeeModal();
-  };
-
-  // Also expose closeEmployeeModal as alias for compatibility with HTML onclick handlers
-  w.closeEmployeeModal = () => {
-    // Reset current employee ID when closing
-    if (employeesManager) {
-      employeesManager.currentEmployeeId = null;
-    }
-    closeEmployeeModal();
-  };
-}
-
-function setupWindowHandlers(): void {
-  const w = window as WindowWithEmployeeHandlers;
-
-  w.loadEmployeesTable = async () => {
-    console.info('[EmployeesManager] loadEmployeesTable called');
-    await employeesManager?.loadEmployees();
-  };
-
-  setupEditEmployeeHandler(w);
-
-  w.viewEmployeeDetails = async (id: number) => {
-    const employee = await employeesManager?.getEmployeeDetails(id);
-    if (employee !== null) {
-      console.info('View employee:', employee);
-      // TODO: Show employee details modal
-      showErrorAlert('Detailansicht noch nicht implementiert');
-    }
-  };
-
-  w.deleteEmployee = (id: number): Promise<void> => {
-    // Show delete confirmation modal instead of immediate delete
-    const employee = employeesManager?.employees.find((e) => e.id === id);
-    if (employee === undefined) {
-      showErrorAlert('Mitarbeiter nicht gefunden');
-      return Promise.resolve();
-    }
-    const employeeName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
-    showDeleteModal(id, employeeName);
-    return Promise.resolve();
-  };
-
-  w.viewEmployeeDetails = async (id: number) => {
-    // Vorerst zur Bearbeiten-Funktion weiterleiten
-    // TODO: Implementiere separate Detail-Ansicht
-    await w.editEmployee?.(id);
-  };
-
-  setupEmployeeModalHandlers(w);
-
-  w.saveEmployee = handleSaveEmployee;
-  w.loadDepartmentsForEmployeeSelect = handleLoadDepartments;
-  w.loadTeamsForEmployeeSelect = handleLoadTeams;
-
-  // Setup form submit handler and URL change handlers
-  setupFormSubmitHandler();
-  setupUrlChangeHandlers();
-}
-
 // ============================================================
 // Search Preview Functions
 // ============================================================
@@ -1152,10 +884,27 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize on admin dashboard or manage-employees page
   if (window.location.pathname === '/admin-dashboard' || window.location.pathname === '/manage-employees') {
     employeesManager = new EmployeesManager();
-    setupWindowHandlers();
+
+    // Make employeesManager available to data.ts and forms.ts
+    setEmployeesManager(employeesManager);
+
+    // Setup all window handlers
+    setupEditEmployee();
+    setupDeleteEmployee();
+    setupShowEmployeeModal();
+    setupHideEmployeeModal();
+    setupCloseEmployeeModal();
+    setupSaveEmployee();
+    setupLoadEmployeesTable();
+    setupViewEmployeeDetails();
+    setupLoadDropdowns();
 
     // Setup live email/password validation
     setupValidationListeners();
+
+    // Setup form submit handler and URL change handlers
+    setupFormSubmitHandler();
+    setupUrlChangeHandlers();
   }
 });
 

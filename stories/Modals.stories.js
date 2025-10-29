@@ -7,13 +7,18 @@
 
 export default {
   title: 'Design System/Modals',
+
   parameters: {
-    layout: 'fullscreen',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'fullscreen'
   },
+
   tags: ['autodocs'],
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

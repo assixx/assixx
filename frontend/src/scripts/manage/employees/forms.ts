@@ -5,8 +5,10 @@
 
 import { $$id, setSafeHTML } from '../../../utils/dom-utils';
 import { resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
+import { showErrorAlert } from '../../utils/alerts';
 import type { Employee, WindowWithEmployeeHandlers } from './types';
 import { fillBasicFormFields, fillOptionalFormFields, fillAvailabilityFields, setStatusAndClearPasswords } from './ui';
+import { getEmployeesManager, handleSaveEmployee, handleLoadDepartments, handleLoadTeams } from './data';
 
 // ===== CONSTANTS =====
 const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
@@ -209,33 +211,7 @@ export function setupValidationListeners(): void {
 }
 
 // ===== SUBMIT-TIME VALIDATION =====
-
-/**
- * Validate password requirements on submit
- * Must match backend PasswordSchema: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/
- */
-export function validatePasswordOnSubmit(password: string): { valid: boolean; message: string } {
-  // Check length
-  if (password.length > 0 && password.length < 8) {
-    return { valid: false, message: 'Passwort muss mindestens 8 Zeichen lang sein!' };
-  }
-
-  // Check complexity
-  if (password.length > 0) {
-    const hasLowercase = /[a-z]/.test(password);
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-
-    if (!hasLowercase || !hasUppercase || !hasNumber) {
-      return {
-        valid: false,
-        message: 'Passwort muss mindestens einen Großbuchstaben, einen Kleinbuchstaben und eine Zahl enthalten!',
-      };
-    }
-  }
-
-  return { valid: true, message: '' };
-}
+// Note: validatePasswordOnSubmit moved to data.ts to avoid circular dependency
 
 /**
  * Update dropdown trigger text from menu option
@@ -455,5 +431,146 @@ export function closeDeleteModal(): void {
   }
 }
 
-// Note: Form submit handling (handleSaveEmployee) remains in index.ts
-// because it needs access to EmployeesManager instance for API calls
+// ===== WINDOW HANDLER SETUP FUNCTIONS =====
+
+/**
+ * Setup Edit Employee Window Handler
+ * Opens modal in edit mode with employee data pre-populated
+ */
+export function setupEditEmployee(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.editEmployee = async (id: number) => {
+    const employeesManager = getEmployeesManager();
+    const employee = await employeesManager?.getEmployeeDetails(id);
+    if (employee === null || employee === undefined) return;
+
+    console.info('Edit employee:', employee);
+    console.info('Employee details:', {
+      employeeNumber: employee.employeeNumber,
+      departmentId: employee.departmentId,
+      teamId: employee.teamId,
+      isActive: employee.isActive,
+    });
+
+    // Set current employee ID for update
+    if (employeesManager) {
+      employeesManager.currentEmployeeId = id;
+    }
+
+    // Show modal in edit mode with employee data
+    showEditEmployeeModal(employee, employee.departmentId, employee.teamId);
+  };
+}
+
+/**
+ * Setup Show Employee Modal Window Handler
+ * Opens modal in ADD mode with clean/reset form
+ */
+export function setupShowEmployeeModal(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.showEmployeeModal = () => {
+    // Reset current employee ID for new employee
+    const employeesManager = getEmployeesManager();
+    if (employeesManager) {
+      employeesManager.currentEmployeeId = null;
+    }
+    showAddEmployeeModal();
+  };
+}
+
+/**
+ * Setup Hide Employee Modal Window Handler
+ * Closes the employee modal
+ */
+export function setupHideEmployeeModal(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.hideEmployeeModal = () => {
+    // Reset current employee ID when closing
+    const employeesManager = getEmployeesManager();
+    if (employeesManager) {
+      employeesManager.currentEmployeeId = null;
+    }
+    closeEmployeeModal();
+  };
+}
+
+/**
+ * Setup Close Employee Modal Window Handler
+ * Alias for hideEmployeeModal for compatibility with HTML onclick handlers
+ */
+export function setupCloseEmployeeModal(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.closeEmployeeModal = () => {
+    // Reset current employee ID when closing
+    const employeesManager = getEmployeesManager();
+    if (employeesManager) {
+      employeesManager.currentEmployeeId = null;
+    }
+    closeEmployeeModal();
+  };
+}
+
+/**
+ * Setup Delete Employee Window Handler
+ * Shows delete confirmation modal
+ */
+export function setupDeleteEmployee(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.deleteEmployee = (id: number): Promise<void> => {
+    // Show delete confirmation modal instead of immediate delete
+    const employeesManager = getEmployeesManager();
+    const employee = employeesManager?.employees.find((e) => e.id === id);
+    if (employee === undefined) {
+      showErrorAlert('Mitarbeiter nicht gefunden');
+      return Promise.resolve();
+    }
+    const employeeName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+    showDeleteModal(id, employeeName);
+    return Promise.resolve();
+  };
+}
+
+/**
+ * Setup View Employee Details Window Handler
+ * Currently redirects to edit mode (TODO: implement separate detail view)
+ */
+export function setupViewEmployeeDetails(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.viewEmployeeDetails = async (id: number) => {
+    // Vorerst zur Bearbeiten-Funktion weiterleiten
+    // TODO: Implementiere separate Detail-Ansicht
+    await w.editEmployee?.(id);
+  };
+}
+
+/**
+ * Setup Load Employees Table Window Handler
+ * Triggers employee list reload
+ */
+export function setupLoadEmployeesTable(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.loadEmployeesTable = async () => {
+    console.info('[EmployeesManager] loadEmployeesTable called');
+    const employeesManager = getEmployeesManager();
+    await employeesManager?.loadEmployees();
+  };
+}
+
+/**
+ * Setup Save Employee Window Handler
+ * Delegates to handleSaveEmployee from data.ts
+ */
+export function setupSaveEmployee(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.saveEmployee = handleSaveEmployee;
+}
+
+/**
+ * Setup Load Dropdowns Window Handlers
+ * Sets up department and team dropdown loaders
+ */
+export function setupLoadDropdowns(): void {
+  const w = window as WindowWithEmployeeHandlers;
+  w.loadDepartmentsForEmployeeSelect = handleLoadDepartments;
+  w.loadTeamsForEmployeeSelect = handleLoadTeams;
+}

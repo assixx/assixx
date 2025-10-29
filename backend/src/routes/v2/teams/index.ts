@@ -481,7 +481,7 @@ router.delete(
   '/:id/machines/:machineId',
   authenticateV2,
   requireRoleV2(['admin', 'root']) as RequestHandler,
-  teamsValidationZod.removeMember,
+  teamsValidationZod.removeMachine,
   typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await teamsController.removeTeamMachine(req, res);
   }),

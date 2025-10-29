@@ -1,3 +1,4 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
 import js from '@eslint/js';
 import typescriptPlugin from '@typescript-eslint/eslint-plugin';
 import typescript from '@typescript-eslint/parser';
@@ -9,6 +10,7 @@ import prettier from 'eslint-plugin-prettier';
 import promisePlugin from 'eslint-plugin-promise';
 import securityPlugin from 'eslint-plugin-security';
 import sonarjsPlugin from 'eslint-plugin-sonarjs';
+import storybook from 'eslint-plugin-storybook';
 import tsdocPlugin from 'eslint-plugin-tsdoc';
 import unicornPlugin from 'eslint-plugin-unicorn';
 
@@ -67,15 +69,9 @@ export default [
       '**/tests/**',
       '**/*.html',
     ],
-  },
-
-  // Base JavaScript configuration
-  js.configs.recommended,
-
-  // Prettier configuration
-  prettierConfig,
-
-  // Complexity rules werden von sonarjs/cognitive-complexity gehandhabt
+  }, // Base JavaScript configuration
+  js.configs.recommended, // Prettier configuration
+  prettierConfig, // Complexity rules werden von sonarjs/cognitive-complexity gehandhabt
 
   // TypeScript configuration for backend
   {
@@ -291,9 +287,7 @@ export default [
       'import-x/no-cycle': 'error',
       'import-x/no-self-import': 'error',
     },
-  },
-
-  // Security configuration for all TypeScript/JavaScript files
+  }, // Security configuration for all TypeScript/JavaScript files
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -325,9 +319,7 @@ export default [
         },
       ],
     },
-  },
-
-  // Promise Plugin Configuration
+  }, // Promise Plugin Configuration
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -347,9 +339,7 @@ export default [
       'promise/no-return-in-finally': 'error',
       'promise/valid-params': 'error',
     },
-  },
-
-  // SonarJS Plugin Configuration
+  }, // SonarJS Plugin Configuration
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -383,9 +373,7 @@ export default [
       'sonarjs/prefer-object-literal': 'error',
       'sonarjs/prefer-single-boolean-return': 'error',
     },
-  },
-
-  // Unicorn Plugin - Cherry-picked best rules
+  }, // Unicorn Plugin - Cherry-picked best rules
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -396,9 +384,7 @@ export default [
       'unicorn/no-new-buffer': 'error', // Security: deprecated API
       'unicorn/prefer-number-properties': 'warn', // Type safety: Number.isNaN vs isNaN
     },
-  },
-
-  // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
+  }, // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
   {
     files: [
       '**/controllers/**/*.ts',
@@ -409,9 +395,7 @@ export default [
       '**/config/*.ts',
     ],
     // JSDoc entfernt - wir nutzen nur TSDoc
-  },
-
-  // No-Secrets Plugin
+  }, // No-Secrets Plugin
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     plugins: {
@@ -429,9 +413,7 @@ export default [
         },
       ],
     },
-  },
-
-  // TypeScript configuration for frontend
+  }, // TypeScript configuration for frontend
   {
     files: ['frontend/**/*.ts', 'frontend/**/*.tsx'],
     languageOptions: {
@@ -674,9 +656,7 @@ export default [
       'import-x/no-cycle': 'error',
       'import-x/no-self-import': 'error',
     },
-  },
-
-  // HTML configuration removed - HTML files are ignored
+  }, // HTML configuration removed - HTML files are ignored
   // This project doesn't use inline JavaScript in HTML files
   // All JavaScript is in separate TypeScript modules
 
@@ -687,9 +667,7 @@ export default [
       // Keep essential DOM modernization
       'unicorn/prefer-modern-dom-apis': 'error', // DOM modernization
     },
-  },
-
-  // Test files configuration
+  }, // Test files configuration
   {
     files: ['**/*.test.ts', '**/*.spec.ts', '**/__tests__/**/*.ts', '**/*.test.js', '**/*.spec.js'],
     languageOptions: {
@@ -733,9 +711,7 @@ export default [
         },
       ],
     },
-  },
-
-  // Remaining configurations for JS files, configs, etc.
+  }, // Remaining configurations for JS files, configs, etc.
   // ... (Diese Teile waren bereits gut und wurden unverändert übernommen)
 
   {
@@ -784,7 +760,6 @@ export default [
       'prefer-promise-reject-errors': 'error',
     },
   },
-
   {
     files: [
       'frontend/src/scripts/**/*.js',
@@ -851,7 +826,6 @@ export default [
       'no-console': 'off',
     },
   },
-
   {
     files: ['frontend/vite.config.js', 'frontend/postcss.config.js'],
     languageOptions: {
@@ -859,7 +833,6 @@ export default [
       sourceType: 'module',
     },
   },
-
   {
     files: [
       'eslint.config.js',
@@ -877,7 +850,6 @@ export default [
       },
     },
   },
-
   {
     files: ['**/jest.config.js', '**/jest.config.cjs'],
     languageOptions: {
@@ -891,7 +863,6 @@ export default [
       },
     },
   },
-
   {
     files: ['jest.globalSetup.js', 'jest.globalTeardown.js'],
     languageOptions: {
@@ -906,4 +877,5 @@ export default [
       'prettier/prettier': 'error',
     },
   },
+  ...storybook.configs['flat/recommended'],
 ];

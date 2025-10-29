@@ -3,6 +3,21 @@
  * Shared type definitions used across teams management modules
  */
 
+import type { ApiClient } from '../../../utils/api-client';
+
+/**
+ * Interface describing the TeamsManager methods needed by data.ts and forms.ts
+ * Avoids circular dependencies while maintaining type safety
+ */
+export interface ITeamsManager {
+  apiClient: ApiClient;
+  getTeamDetails(id: number): Promise<Team | null>;
+  deleteTeam(id: number): void;
+  updateTeam(id: number, teamData: Partial<Team>): Promise<Team>;
+  createTeam(teamData: Partial<Team>): Promise<Team>;
+  loadTeams(): Promise<void>;
+}
+
 export interface TeamMember {
   id: number;
   username: string;
@@ -25,6 +40,8 @@ export interface Team {
   shiftModelId?: number;
   memberCount?: number;
   memberNames?: string;
+  machineCount?: number;
+  machineNames?: string;
   maxMembers?: number;
   teamType?: 'production' | 'quality' | 'maintenance' | 'logistics' | 'administration' | 'other';
   status: 'active' | 'inactive' | 'restructuring';
@@ -58,7 +75,6 @@ export interface WindowWithTeamHandlers extends Window {
   editTeam?: (id: number) => Promise<void>;
   viewTeamDetails?: (id: number) => Promise<void>;
   deleteTeam?: (id: number) => void;
-  toggleTeamStatus?: (id: number, status: string) => Promise<void>;
   showTeamModal?: () => Promise<void>;
   closeTeamModal?: () => void;
   saveTeam?: () => Promise<void>;

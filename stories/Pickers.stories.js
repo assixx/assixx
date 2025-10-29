@@ -5,10 +5,16 @@
 
 export default {
   title: 'Design System/Pickers',
+
   parameters: {
-    backgrounds: { default: 'dark' },
-    layout: 'padded',
+    layout: 'padded'
   },
+
+  globals: {
+    backgrounds: {
+      value: "dark"
+    }
+  }
 };
 
 /**

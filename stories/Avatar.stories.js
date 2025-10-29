@@ -8,12 +8,11 @@
 export default {
   title: "Design System/Avatar",
   tags: ["autodocs"],
+
   parameters: {
-    layout: "centered",
-    backgrounds: {
-      default: "assixx-dark",
-    },
+    layout: "centered"
   },
+
   argTypes: {
     name: {
       control: "text",
@@ -43,6 +42,12 @@ export default {
       description: "Optional image URL",
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

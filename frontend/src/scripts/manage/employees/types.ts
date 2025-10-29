@@ -3,7 +3,27 @@
  * Shared type definitions used across employee management modules
  */
 
+import type { ApiClient } from '../../../utils/api-client';
 import type { User } from '../../../types/api.types';
+
+/**
+ * Interface describing the EmployeesManager methods needed by data.ts and forms.ts
+ * Avoids circular dependencies while maintaining type safety
+ */
+export interface IEmployeesManager {
+  apiClient: ApiClient;
+  employees: Employee[];
+  currentEmployeeId: number | null;
+  getEmployeeDetails(id: number): Promise<Employee | null>;
+  deleteEmployee(id: number): Promise<void>;
+  updateEmployee(id: number, data: Partial<Employee>): Promise<Employee>;
+  createEmployee(data: Partial<Employee>): Promise<Employee>;
+  loadEmployees(): Promise<void>;
+  loadDepartments(): Promise<Department[]>;
+  loadTeams(): Promise<Team[]>;
+  handleEmployeeSaveError(error: unknown): void;
+  confirmDelete(employeeId: number): Promise<void>;
+}
 
 export interface Employee extends User {
   employeeId?: string;

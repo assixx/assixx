@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 interface ApiConfig {
   version?: 'v1' | 'v2';
   useAuth?: boolean;
@@ -20,6 +21,38 @@ interface ApiResponse<T = unknown> {
       totalPages: number;
     };
   };
+}
+
+/**
+ * Helper: Decode JWT token to extract payload
+ */
+function decodeJWT(token: string): { exp?: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+    return JSON.parse(atob(parts[1])) as { exp?: number };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Helper: Check if token expires within the next X seconds
+ * @param token - JWT access token
+ * @param thresholdSeconds - Seconds before expiry to consider "soon" (default: 600 = 10 minutes)
+ */
+function isTokenExpiringSoon(token: string, thresholdSeconds: number = 600): boolean {
+  const decoded = decodeJWT(token);
+  if (decoded?.exp === undefined) {
+    return false; // Can't determine, assume not expiring
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const timeUntilExpiry = decoded.exp - now;
+
+  return timeUntilExpiry < thresholdSeconds && timeUntilExpiry > 0;
 }
 
 export class ApiClient {
@@ -122,11 +155,45 @@ export class ApiClient {
     return false;
   }
 
+  /**
+   * Check if token should be proactively refreshed before making a request
+   * Reduces cognitive complexity by extracting this logic
+   */
+  private async proactivelyRefreshTokenIfNeeded(endpoint: string, headers: Record<string, string>): Promise<void> {
+    // Early return if token is null or endpoint should be skipped
+    if (
+      this.token === null ||
+      endpoint === '/auth/refresh' || // Prevent infinite loop
+      endpoint === '/auth/login' || // Skip for login
+      endpoint === '/auth/logout' // Skip for logout
+    ) {
+      return;
+    }
+
+    // Check if token expires soon
+    if (!isTokenExpiringSoon(this.token, 600)) {
+      return; // Token still fresh, no refresh needed
+    }
+
+    console.info('[API] Token expires soon (<10 min), proactively refreshing...');
+    const refreshed = await this.refreshAccessToken();
+    if (refreshed) {
+      console.info('[API] Token proactively refreshed, continuing with request');
+      // Update headers with new token (guaranteed non-null after successful refresh)
+      headers.Authorization = `Bearer ${this.token}`;
+    } else {
+      console.warn('[API] Proactive token refresh failed');
+    }
+  }
+
   async request<T = unknown>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
     const version = this.determineVersion(endpoint, config);
     const baseApiPath = '/api/v2'; // Always v2
     const url = `${this.baseUrl}${baseApiPath}${endpoint}`;
     const headers = this.buildHeaders(options, config, version);
+
+    // PROACTIVE TOKEN REFRESH: Ensure active users always have a fresh token (resets timer on activity)
+    await this.proactivelyRefreshTokenIfNeeded(endpoint, headers);
 
     try {
       console.info(`[API ${version}] ${options.method ?? 'GET'} ${url}`);
@@ -333,6 +400,27 @@ export class ApiClient {
       this.clearTokens();
       window.location.href = '/login?session=expired';
       return false;
+    }
+  }
+
+  /**
+   * Check if current token expires soon and proactively refresh it
+   * Should be called on page load to ensure fresh token for active users
+   */
+  async ensureFreshToken(): Promise<void> {
+    if (this.token === null) {
+      return; // No token, nothing to refresh
+    }
+
+    if (isTokenExpiringSoon(this.token, 600)) {
+      // 600s = 10 minutes
+      console.info('[API] Token expires soon on page load, proactively refreshing...');
+      const refreshed = await this.refreshAccessToken();
+      if (refreshed) {
+        console.info('[API] Token refreshed successfully on page load');
+      } else {
+        console.warn('[API] Token refresh failed on page load');
+      }
     }
   }
 

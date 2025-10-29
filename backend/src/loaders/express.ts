@@ -12,8 +12,9 @@ import morgan from 'morgan';
  */
 export function loadExpress(app: Application): void {
   // Trust proxy - important for getting correct IPs in Docker/Nginx setup
-  app.set('trust proxy', true);
-
+  if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
   // Request logging
   if (process.env.NODE_ENV !== 'test') {
     app.use(morgan('combined'));

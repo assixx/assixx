@@ -180,6 +180,40 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
 // Convert to Map for safer access (prevents object injection)
 const accessControlMap = new Map<string, ('root' | 'admin' | 'employee')[]>(Object.entries(accessControlData));
 
+// ===== TOKEN TIMER HELPER FUNCTIONS =====
+
+/**
+ * Decode JWT token to extract payload (exp claim)
+ * @param token - JWT access token
+ */
+function decodeJWT(token: string): { exp?: number } | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return null;
+    }
+
+    // Decode base64url payload (second part)
+    return JSON.parse(atob(parts[1])) as { exp?: number };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Format seconds to MM:SS
+ * @param seconds - Remaining seconds
+ */
+function formatTokenTime(seconds: number): string {
+  if (seconds <= 0) {
+    return '00:00';
+  }
+
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
 class UnifiedNavigation {
   private currentUser: TokenPayload | null = null;
   private currentRole: 'admin' | 'employee' | 'root' | null = null;
@@ -257,12 +291,17 @@ class UnifiedNavigation {
   }
 
   private init(): void {
+    // Proactively refresh token if it expires soon (ensures fresh token on page load)
+    // Fire and forget - don't block navigation initialization
+    void apiClient.ensureFreshToken();
+
     this.setupInitialState();
     this.setupEventHandlers();
     this.initializeSSE();
     this.setupBadgeUpdates();
     this.setupRoleSwitchListener();
     this.setupStorageListener();
+    this.setupTokenTimer();
   }
 
   private setupInitialState(): void {
@@ -406,6 +445,76 @@ class UnifiedNavigation {
       console.info('[UnifiedNav] Already on correct dashboard, refreshing navigation only');
       // Just refresh navigation if we're already on the right page
       this.refresh();
+    }
+  }
+
+  /**
+   * Setup token timer - updates every second
+   */
+  private setupTokenTimer(): void {
+    // Initial update
+    this.updateTokenTimer();
+
+    // Update every second
+    window.setInterval(() => {
+      this.updateTokenTimer();
+    }, 1000);
+
+    // Listen for token refresh (when access token changes in localStorage)
+    window.addEventListener('storage', (event) => {
+      if (event.key === 'accessToken' && event.newValue !== event.oldValue) {
+        // Token was refreshed, update timer immediately
+        this.updateTokenTimer();
+      }
+    });
+  }
+
+  /**
+   * Update token timer display
+   */
+  private updateTokenTimer(): void {
+    const token = localStorage.getItem('accessToken');
+    const timerElement = $$('#token-timer');
+
+    if (timerElement === null) {
+      return;
+    }
+
+    // No token = not logged in
+    if (token === null || token === '') {
+      timerElement.textContent = '--:--';
+      timerElement.classList.remove('token-timer--warning');
+      return;
+    }
+
+    // Decode JWT to get expiration
+    const decoded = decodeJWT(token);
+    if (decoded?.exp === undefined) {
+      timerElement.textContent = '--:--';
+      timerElement.classList.remove('token-timer--warning');
+      return;
+    }
+
+    // Calculate remaining time
+    const now = Math.floor(Date.now() / 1000); // Current time in seconds
+    const remaining = decoded.exp - now;
+
+    // Update display
+    timerElement.textContent = formatTokenTime(remaining);
+
+    // Visual warning if less than 5 minutes (300 seconds)
+    if (remaining < 300 && remaining > 0) {
+      timerElement.classList.add('token-timer--warning');
+    } else {
+      timerElement.classList.remove('token-timer--warning');
+    }
+
+    // Token expired
+    if (remaining <= 0) {
+      timerElement.textContent = '00:00';
+      timerElement.classList.add('token-timer--expired');
+    } else {
+      timerElement.classList.remove('token-timer--expired');
     }
   }
 
@@ -1415,6 +1524,7 @@ class UnifiedNavigation {
         <div class="header-content">
           <div class="header-actions">
             ${roleSwitchDropdown}
+            <span id="token-timer" class="token-timer">--:--</span>
             <div id="user-info">
               ${userAvatar}
               <span id="user-name">${this.escapeHtml(displayName)}</span>
