@@ -7,13 +7,18 @@
 
 export default {
   title: 'Design System/Containers',
+
   parameters: {
-    layout: 'padded',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'padded'
   },
+
   tags: ['autodocs'],
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

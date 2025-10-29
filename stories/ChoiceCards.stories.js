@@ -9,13 +9,18 @@
 
 export default {
   title: 'Design System/Choice Cards',
+
   parameters: {
-    layout: 'padded',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'padded'
   },
+
   tags: ['autodocs'],
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

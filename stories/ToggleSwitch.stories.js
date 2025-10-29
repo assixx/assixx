@@ -7,13 +7,18 @@
 
 export default {
   title: 'Design System/Toggle Switch',
+
   parameters: {
-    layout: 'centered',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'centered'
   },
+
   tags: ['autodocs'],
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

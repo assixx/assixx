@@ -8,12 +8,11 @@
 export default {
   title: "Design System/Empty States",
   tags: ["autodocs"],
+
   parameters: {
-    layout: "centered",
-    backgrounds: {
-      default: "assixx-dark",
-    },
+    layout: "centered"
   },
+
   argTypes: {
     icon: {
       control: "text",
@@ -37,6 +36,12 @@ export default {
       description: "Empty state size",
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

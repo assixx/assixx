@@ -3,9 +3,12 @@
  *
  * Wayfinding and content organization primitives
  * Phase 6 of Design System
+ *
+ * NOTE: This story demonstrates the CSS-only version.
+ * - Auto-initialization
+ * - Keyboard navigation
+ * - Animation timing
  */
-
-import { autoInitAccordions } from '../frontend/src/design-system/primitives/navigation/accordion.js';
 
 export default {
   title: 'Design System/Navigation',
@@ -709,7 +712,6 @@ export const AccordionDefault = () => {
   `;
 
   // Initialize accordions
-  setTimeout(() => autoInitAccordions(), 0);
 
   return wrapper;
 };
@@ -769,7 +771,6 @@ export const AccordionFlush = () => {
   `;
 
   // Initialize accordions
-  setTimeout(() => autoInitAccordions(), 0);
 
   return wrapper;
 };
@@ -818,7 +819,6 @@ export const AccordionBordered = () => {
   `;
 
   // Initialize accordions
-  setTimeout(() => autoInitAccordions(), 0);
 
   return wrapper;
 };
@@ -867,7 +867,6 @@ export const AccordionCompact = () => {
   `;
 
   // Initialize accordions
-  setTimeout(() => autoInitAccordions(), 0);
 
   return wrapper;
 };

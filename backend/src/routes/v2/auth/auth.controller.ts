@@ -358,6 +358,7 @@ function refresh(req: Request<unknown, unknown, RefreshRequestBody>, res: Respon
     res.json(
       successResponse({
         accessToken,
+        refreshToken, // Return the same refresh token (still valid for 7 days)
       }),
     );
   } catch (error: unknown) {

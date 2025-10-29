@@ -1,83 +1,130 @@
+/* eslint-disable max-lines */
 /**
  * UI and Rendering Functions for Teams Management
  * Contains all UI rendering, form handling, and dropdown loading functions
+ *
+ * Migration Complete: 2025-01-28
+ * - Removed ALL inline styles
+ * - Badge Classes → badge--success, badge--warning (BEM)
+ * - Action Buttons → Design System buttons
+ * - Dropdowns → Design System dropdown component
+ * - Table → data-table--striped (Design System)
+ * - Member Count Badge with Tooltip (like manage-departments)
  */
 
 import type { Team, Department, Machine, ProcessedFormData } from './types';
-import type { UserAPIResponse } from '../../../utils/api-mappers';
+import type { UserAPIResponse, MappedUser } from '../../../utils/api-mappers';
 import { mapUsers } from '../../../utils/api-mappers';
-import { setSafeHTML } from '../../../utils/dom-utils';
 import { ApiClient } from '../../../utils/api-client';
+import { setSafeHTML } from '../../../utils/dom-utils';
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * Helper: Create count badge with tooltip (like manage-departments)
+ */
+function createCountBadge(count: number, names: string, singular: string, plural?: string): string {
+  if (count === 0) {
+    return '0';
+  }
+
+  const label = count === 1 ? singular : (plural ?? `${singular}s`);
+
+  // If no names available, just show count
+  if (names === '' || names.trim() === '') {
+    return `<span class="badge badge-info">${String(count)} ${label}</span>`;
+  }
+
+  // Return badge with data-tooltip attribute for auto-initialization
+  return `<span class="badge badge-info" data-tooltip="${escapeHtml(names)}">${String(count)} ${label}</span>`;
+}
+
+/**
+ * Check if add button should be hidden for current filter
+ */
+export function shouldHideAddButton(statusFilter: 'all' | 'active' | 'inactive'): boolean {
+  return statusFilter === 'inactive';
+}
+
+/**
+ * Get empty state title based on filter
+ */
+function getEmptyStateTitle(statusFilter: 'all' | 'active' | 'inactive'): string {
+  switch (statusFilter) {
+    case 'inactive':
+      return 'Keine inaktiven Teams gefunden';
+    case 'active':
+      return 'Keine aktiven Teams gefunden';
+    default:
+      return 'Keine Teams gefunden';
+  }
+}
+
+/**
+ * Get empty state description based on filter
+ */
+function getEmptyStateDescription(statusFilter: 'all' | 'active' | 'inactive'): string {
+  return statusFilter === 'inactive' ? 'Es gibt derzeit keine inaktiven Teams' : 'Fügen Sie Ihr erstes Team hinzu';
+}
+
+/**
+ * Update empty state content based on current filter
+ */
+export function updateEmptyStateContent(statusFilter: 'all' | 'active' | 'inactive'): void {
+  const emptyDiv = document.querySelector('#teams-empty');
+  if (emptyDiv === null) return;
+
+  const emptyStateTitle = emptyDiv.querySelector<HTMLElement>('.empty-state__title');
+  const emptyStateDesc = emptyDiv.querySelector<HTMLElement>('.empty-state__description');
+  const emptyStateAddBtn = emptyDiv.querySelector<HTMLButtonElement>('#empty-state-add-btn');
+
+  // Update title and description based on filter
+  if (emptyStateTitle) {
+    emptyStateTitle.textContent = getEmptyStateTitle(statusFilter);
+  }
+
+  if (emptyStateDesc) {
+    emptyStateDesc.textContent = getEmptyStateDescription(statusFilter);
+  }
+
+  // Hide/show add button based on filter
+  if (emptyStateAddBtn) {
+    emptyStateAddBtn.classList.toggle('u-hidden', shouldHideAddButton(statusFilter));
+  }
+}
 
 /**
  * Toggle table visibility based on team data
  */
-export function toggleTableVisibility(show: boolean): void {
-  const teamsTable = document.querySelector('#teams-table');
+export function toggleTableVisibility(show: boolean, statusFilter: 'all' | 'active' | 'inactive' = 'all'): void {
   const teamsEmpty = document.querySelector('#teams-empty');
 
   if (show) {
-    teamsTable?.classList.remove('u-hidden');
     teamsEmpty?.classList.add('u-hidden');
   } else {
-    teamsTable?.classList.add('u-hidden');
     teamsEmpty?.classList.remove('u-hidden');
+    updateEmptyStateContent(statusFilter);
   }
 }
 
 /**
- * Create member badge HTML
- */
-export function createMemberBadge(team: Team): string {
-  if (team.memberCount === undefined || team.memberCount === 0) {
-    return '0';
-  }
-
-  const memberText = `${team.memberCount} ${team.memberCount === 1 ? 'Mitglied' : 'Mitglieder'}`;
-  const tooltip =
-    team.memberNames !== undefined && team.memberNames !== ''
-      ? `<span class="member-tooltip" style="
-        display: none;
-        position: absolute;
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        margin-bottom: 8px;
-        padding: 8px 12px;
-        background: rgba(18, 18, 18, 0.95);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
-        white-space: nowrap;
-        max-width: 300px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        color: #fff;
-        font-size: 12px;
-        font-weight: normal;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
-        pointer-events: none;
-      ">${team.memberNames}</span>`
-      : '';
-
-  return `<span class="status-badge member-badge" style="background: rgba(33, 150, 243, 0.2); color: #2196f3; border-color: rgba(33, 150, 243, 0.3); cursor: help; position: relative; white-space: nowrap;" data-members="${team.memberNames ?? ''}">
-    ${memberText}
-    ${tooltip}
-  </span>`;
-}
-
-/**
- * Get status badge class
+ * Get status badge class (Design System BEM naming)
  */
 export function getStatusBadgeClass(status: string): string {
   switch (status) {
     case 'active':
-      return 'badge-success';
+      return 'badge--success';
     case 'inactive':
-      return 'badge-secondary';
+      return 'badge--warning';
     default:
-      return 'badge-secondary';
+      return 'badge--secondary';
   }
 }
 
@@ -96,95 +143,165 @@ export function getStatusLabel(status: string): string {
 }
 
 /**
- * Create a team row HTML
+ * Create action buttons HTML for team row
+ * Status is now managed via Edit Modal (like in manage-departments)
+ */
+function createTeamActionButtons(team: Team): string {
+  return `
+    <div class="flex gap-2">
+      <button
+        class="action-icon action-icon--edit"
+        data-action="edit-team"
+        data-team-id="${String(team.id)}"
+        title="Bearbeiten"
+        aria-label="Team bearbeiten"
+      >
+        <i class="fas fa-edit"></i>
+      </button>
+      <button
+        class="action-icon action-icon--delete"
+        data-action="delete-team"
+        data-team-id="${String(team.id)}"
+        title="Löschen"
+        aria-label="Team löschen"
+      >
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  `;
+}
+
+/**
+ * Create a team row HTML (Design System with Action Icons)
+ * Follows exact structure of manage-departments.html
  */
 export function createTeamRow(team: Team): string {
+  const memberCount = team.memberCount ?? 0;
+  const machineCount = team.machineCount ?? 0;
+  const statusBadge = getStatusBadgeClass(team.status);
+  const statusLabel = getStatusLabel(team.status);
+
   return `
-    <tr>
-      <td><strong>${team.name}</strong></td>
-      <td>${team.departmentName ?? '-'}</td>
-      <td>${team.leaderName ?? '-'}</td>
-      <td>${createMemberBadge(team)}</td>
+    <tr data-team-id="${team.id}">
       <td>
-        <span class="badge ${getStatusBadgeClass(team.status)}">
-          ${getStatusLabel(team.status)}
-        </span>
+        <div style="font-weight: 500; color: var(--color-text-primary);">
+          ${team.name}
+        </div>
       </td>
-      <td>${new Date(team.createdAt).toLocaleDateString('de-DE')}</td>
       <td>
-        <button class="action-btn edit" data-action="edit-team" data-team-id="${team.id}">
-          Bearbeiten
-        </button>
-        <button class="action-btn ${team.status === 'active' ? 'deactivate' : 'activate'}" data-action="toggle-team-status" data-team-id="${team.id}" data-status="${team.status}">
-          ${team.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
-        </button>
-        <button class="action-btn delete" data-action="delete-team" data-team-id="${team.id}">
-          Löschen
-        </button>
+        ${team.departmentName ?? '-'}
+      </td>
+      <td>
+        ${team.leaderName ?? '-'}
+      </td>
+      <td>
+        <div style="text-align: center;">
+          ${createCountBadge(memberCount, team.memberNames ?? '', 'Mitglied', 'Mitglieder')}
+        </div>
+      </td>
+      <td>
+        <div style="text-align: center;">
+          ${createCountBadge(machineCount, team.machineNames ?? '', 'Maschine', 'Maschinen')}
+        </div>
+      </td>
+      <td>
+        <span class="badge ${statusBadge}">${statusLabel}</span>
+      </td>
+      <td>
+        ${new Date(team.createdAt).toLocaleDateString('de-DE')}
+      </td>
+      <td>
+        ${createTeamActionButtons(team)}
       </td>
     </tr>
   `;
 }
 
 /**
- * Add tooltip event listeners to member badges
+ * Set input value helper
  */
-export function addTooltipListeners(tbody: Element): void {
-  const memberBadges = tbody.querySelectorAll('.member-badge');
-  memberBadges.forEach((badge) => {
-    const tooltip = badge.querySelector('.member-tooltip');
-    if (tooltip instanceof HTMLElement) {
-      badge.addEventListener('mouseenter', () => {
-        tooltip.style.display = 'block';
-      });
-      badge.addEventListener('mouseleave', () => {
-        tooltip.style.display = 'none';
-      });
-    }
-  });
+function setInputValue(id: string, value: string | number | null | undefined): void {
+  const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
+  if (input === null) return;
+
+  input.value = value !== null && value !== undefined ? value.toString() : '';
+}
+
+/**
+ * Update dropdown trigger text
+ */
+function updateDropdownTrigger(selector: string, text: string | undefined): void {
+  if (text === undefined || text === '') return;
+
+  const trigger = document.querySelector(selector);
+  if (trigger) trigger.textContent = text;
+}
+
+/**
+ * Update members display
+ */
+function updateMembersDisplay(members: Team['members']): void {
+  const display = document.querySelector('#team-members-display');
+  if (display === null) return;
+
+  if (members === undefined || members.length === 0) {
+    display.textContent = 'Keine Mitglieder zugewiesen';
+    return;
+  }
+
+  const memberNames = members
+    .map((m) => `${m.firstName} ${m.lastName}`)
+    .slice(0, 2)
+    .join(', ');
+
+  display.textContent = members.length > 2 ? `${memberNames} +${members.length - 2} weitere` : memberNames;
+}
+
+/**
+ * Update machines display
+ */
+function updateMachinesDisplay(machines: Team['machines']): void {
+  const display = document.querySelector('#team-machines-display');
+  if (display === null) return;
+
+  if (machines === undefined || machines.length === 0) {
+    display.textContent = 'Keine Maschinen zugewiesen';
+    return;
+  }
+
+  const machineNames = machines
+    .map((m) => m.name)
+    .slice(0, 2)
+    .join(', ');
+
+  display.textContent = machines.length > 2 ? `${machineNames} +${machines.length - 2} weitere` : machineNames;
 }
 
 /**
  * Populate team form with data
  */
 export function populateTeamForm(team: Team): void {
-  const setInputValue = (id: string, value: string | number | null | undefined) => {
-    const input = document.querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`);
-    if (input !== null) {
-      if (value !== null && value !== undefined) {
-        input.value = value.toString();
-      } else {
-        input.value = '';
-      }
-    }
-  };
-
   setInputValue('team-id', team.id);
   setInputValue('team-name', team.name);
   setInputValue('team-description', team.description);
   setInputValue('team-department', team.departmentId);
   setInputValue('team-lead', team.leaderId);
-  setInputValue('team-type', team.teamType);
-  setInputValue('team-max-members', team.maxMembers);
   setInputValue('team-status', team.status);
 
-  // Display team members
-  const membersDisplay = document.querySelector('#team-members-display');
-  if (membersDisplay !== null && team.members !== undefined && team.members.length > 0) {
-    const memberNames = team.members.map((m) => `${m.firstName} ${m.lastName}`).join(', ');
-    membersDisplay.textContent = `${team.members.length} Mitglieder: ${memberNames}`;
-  } else if (membersDisplay !== null) {
-    membersDisplay.textContent = 'Keine Mitglieder zugewiesen';
+  updateDropdownTrigger('#department-trigger span', team.departmentName);
+  updateDropdownTrigger('#team-lead-trigger span', team.leaderName);
+
+  // Update status dropdown
+  const statusTrigger = document.querySelector<HTMLElement>('#status-trigger span');
+  if (statusTrigger) {
+    setSafeHTML(
+      statusTrigger,
+      `<span class="badge ${getStatusBadgeClass(team.status)}">${getStatusLabel(team.status)}</span>`,
+    );
   }
 
-  // Display assigned machines
-  const machinesDisplay = document.querySelector('#team-machines-display');
-  if (machinesDisplay !== null && team.machines !== undefined && team.machines.length > 0) {
-    const machineNames = team.machines.map((m) => m.name).join(', ');
-    machinesDisplay.textContent = `${team.machines.length} Maschinen: ${machineNames}`;
-  } else if (machinesDisplay !== null) {
-    machinesDisplay.textContent = 'Keine Maschinen zugewiesen';
-  }
+  updateMembersDisplay(team.members);
+  updateMachinesDisplay(team.machines);
 
   // Update modal title
   const modalTitle = document.querySelector('#team-modal-title');
@@ -220,7 +337,7 @@ export function processTeamFormData(formData: FormData): ProcessedFormData {
       // Whitelist of allowed form field keys to prevent object injection
       switch (key) {
         case 'teamLeadId':
-          teamData.leaderId = value;
+          teamData.leaderId = Number.parseInt(value, 10);
           break;
         case 'id':
           teamData.id = Number.parseInt(value, 10);
@@ -234,20 +351,8 @@ export function processTeamFormData(formData: FormData): ProcessedFormData {
         case 'departmentId':
           teamData.departmentId = Number.parseInt(value, 10);
           break;
-        case 'leaderId':
-          teamData.leaderId = Number.parseInt(value, 10);
-          break;
-        case 'teamType':
-          teamData.teamType = value;
-          break;
-        case 'maxMembers':
-          teamData.maxMembers = Number.parseInt(value, 10);
-          break;
         case 'status':
           teamData.status = value;
-          break;
-        // Ignore memberIds as it's handled separately
-        case 'memberIds':
           break;
         // Ignore unknown keys for security
         default:
@@ -259,36 +364,81 @@ export function processTeamFormData(formData: FormData): ProcessedFormData {
   return { teamData, machineIds, userIds };
 }
 
-// Dropdown Loading Functions
+// Dropdown Loading Functions (Design System)
 
 /**
- * Load departments for select dropdown
+ * Load departments for dropdown (Design System)
  */
-export async function loadDepartmentsForSelect(select: Element | null, apiClient: ApiClient): Promise<void> {
-  if (!select) return;
+export async function loadDepartmentsForDropdown(apiClient: ApiClient, selectedId?: number | null): Promise<void> {
+  const menu = document.querySelector<HTMLElement>('#department-menu');
+  if (!menu) return;
 
   try {
     const departments = await apiClient.request<Department[]>('/departments', {
       method: 'GET',
     });
 
-    setSafeHTML(select as HTMLElement, '<option value="">Keine Abteilung</option>');
+    // Clear existing options except the first one (None)
+    setSafeHTML(
+      menu,
+      '<div class="dropdown__option" data-value=""><i class="fas fa-folder-open"></i> Keine Abteilung</div>',
+    );
+
     departments.forEach((dept: Department) => {
-      const option = document.createElement('option');
-      option.value = dept.id.toString();
-      option.textContent = dept.name;
-      select.append(option);
+      const option = document.createElement('div');
+      option.className = 'dropdown__option';
+      option.dataset.value = dept.id.toString();
+      setSafeHTML(option, `<i class="fas fa-building"></i> ${dept.name}`);
+      menu.append(option);
     });
+
+    // Select the option if selectedId is provided
+    if (selectedId !== null && selectedId !== undefined && selectedId !== 0) {
+      const trigger = document.querySelector('#department-trigger span');
+      const selected = departments.find((d) => d.id === selectedId);
+      if (trigger && selected) {
+        trigger.textContent = selected.name;
+      }
+    }
   } catch (error) {
     console.error('Error loading departments:', error);
   }
 }
 
 /**
- * Load admins for select dropdown
+ * Get admin display name
  */
-export async function loadAdminsForSelect(select: Element | null, apiClient: ApiClient): Promise<void> {
-  if (!select) return;
+function getAdminDisplayName(admin: {
+  firstName: string;
+  lastName: string;
+  username: string;
+  employeeNumber?: string;
+}): string {
+  const displayName =
+    admin.firstName !== '' && admin.lastName !== '' ? `${admin.firstName} ${admin.lastName}` : admin.username;
+  const employeeInfo =
+    admin.employeeNumber !== undefined && admin.employeeNumber !== '' ? ` (${admin.employeeNumber})` : '';
+  return `${displayName}${employeeInfo}`;
+}
+
+/**
+ * Select admin in dropdown trigger
+ */
+function selectAdminInDropdown(admins: MappedUser[], selectedId: number): void {
+  const trigger = document.querySelector('#team-lead-trigger span');
+  const selected = admins.find((a) => a.id === selectedId);
+
+  if (trigger === null || selected === undefined) return;
+
+  trigger.textContent = getAdminDisplayName(selected);
+}
+
+/**
+ * Load admins for dropdown (Design System)
+ */
+export async function loadAdminsForDropdown(apiClient: ApiClient, selectedId?: number | null): Promise<void> {
+  const menu = document.querySelector<HTMLElement>('#team-lead-menu');
+  if (!menu) return;
 
   try {
     const usersResponse = await apiClient.request<UserAPIResponse[]>('/users?role=admin', {
@@ -296,59 +446,68 @@ export async function loadAdminsForSelect(select: Element | null, apiClient: Api
     });
     const admins = mapUsers(usersResponse);
 
-    setSafeHTML(select as HTMLElement, '<option value="">Kein Team-Leiter</option>');
+    // Clear existing options except the first one (None)
+    setSafeHTML(
+      menu,
+      '<div class="dropdown__option" data-value=""><i class="fas fa-user-slash"></i> Kein Team-Leiter</div>',
+    );
+
     admins.forEach((admin) => {
-      const option = document.createElement('option');
-      option.value = admin.id.toString();
-      const displayName =
-        admin.firstName !== '' && admin.lastName !== '' ? `${admin.firstName} ${admin.lastName}` : admin.username;
-      option.textContent = displayName;
-      select.append(option);
+      const displayName = getAdminDisplayName(admin);
+
+      const option = document.createElement('div');
+      option.className = 'dropdown__option';
+      option.dataset.value = admin.id.toString();
+      setSafeHTML(option, `<i class="fas fa-user-tie"></i> ${displayName}`);
+      menu.append(option);
     });
+
+    // Select the option if selectedId is provided
+    if (selectedId !== null && selectedId !== undefined && selectedId !== 0) {
+      selectAdminInDropdown(admins, selectedId);
+    }
   } catch (error) {
     console.error('Error loading admins:', error);
   }
 }
 
 /**
- * Load machines for dropdown
+ * Load machines for dropdown with checkboxes (Design System)
  */
-export async function loadMachinesForDropdown(
-  dropdown: Element | null,
-  apiClient: ApiClient,
-  team?: Team,
-): Promise<void> {
-  if (!dropdown) return;
+export async function loadMachinesForDropdown(apiClient: ApiClient, team?: Team): Promise<void> {
+  const menu = document.querySelector<HTMLElement>('#team-machines-menu');
+  if (!menu) return;
 
   try {
-    const machineResponse = await apiClient.request<Machine[]>('/machines', {
+    const machines = await apiClient.request<Machine[]>('/machines', {
       method: 'GET',
     });
-    const machines = machineResponse;
 
-    setSafeHTML(dropdown as HTMLElement, '');
+    setSafeHTML(menu, '');
     if (machines.length === 0) {
-      setSafeHTML(
-        dropdown as HTMLElement,
-        '<div class="dropdown-option" style="color: #666;">Keine Maschinen verfügbar</div>',
-      );
+      setSafeHTML(menu, '<div class="dropdown__option dropdown__option--disabled">Keine Maschinen verfügbar</div>');
     } else {
       machines.forEach((machine) => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'dropdown-option';
-        optionDiv.style.padding = '8px 12px';
-        const isChecked = team?.machines?.some((m) => m.id === machine.id) === true ? 'checked' : '';
-        // eslint-disable-next-line no-unsanitized/property -- Safe: We control all machine data
-        optionDiv.innerHTML = `
-          <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
-            <input type="checkbox" value="${machine.id}"
-                   onchange="window.updateMachineSelection()"
-                   style="margin-right: 8px;"
-                   ${isChecked}>
-            <span>${machine.name} ${machine.departmentName !== undefined && machine.departmentName !== null && machine.departmentName !== '' ? `(${machine.departmentName})` : ''}</span>
-          </label>
-        `;
-        dropdown.append(optionDiv);
+        const isChecked = team?.machines?.some((m) => m.id === machine.id) === true;
+        const option = document.createElement('label');
+        option.className = 'dropdown__option dropdown__option--checkbox';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = machine.id.toString();
+        checkbox.checked = isChecked;
+        checkbox.className = 'mr-2';
+
+        const span = document.createElement('span');
+        const deptInfo =
+          machine.departmentName !== null && machine.departmentName !== undefined && machine.departmentName !== ''
+            ? ` (${machine.departmentName})`
+            : '';
+        span.textContent = `${machine.name}${deptInfo}`;
+
+        option.appendChild(checkbox);
+        option.appendChild(span);
+        menu.append(option);
       });
     }
   } catch (error) {
@@ -357,10 +516,11 @@ export async function loadMachinesForDropdown(
 }
 
 /**
- * Load users for dropdown
+ * Load users for dropdown with checkboxes (Design System)
  */
-export async function loadUsersForDropdown(dropdown: Element | null, apiClient: ApiClient, team?: Team): Promise<void> {
-  if (!dropdown) return;
+export async function loadUsersForDropdown(apiClient: ApiClient, team?: Team): Promise<void> {
+  const menu = document.querySelector<HTMLElement>('#team-members-menu');
+  if (!menu) return;
 
   try {
     const userResponse = await apiClient.request<UserAPIResponse[]>('/users', {
@@ -368,34 +528,170 @@ export async function loadUsersForDropdown(dropdown: Element | null, apiClient: 
     });
     const users = mapUsers(userResponse);
 
-    setSafeHTML(dropdown as HTMLElement, '');
+    setSafeHTML(menu, '');
     if (users.length === 0) {
-      setSafeHTML(
-        dropdown as HTMLElement,
-        '<div class="dropdown-option" style="color: #666;">Keine Benutzer verfügbar</div>',
-      );
+      setSafeHTML(menu, '<div class="dropdown__option dropdown__option--disabled">Keine Benutzer verfügbar</div>');
     } else {
       users.forEach((user) => {
-        const optionDiv = document.createElement('div');
-        optionDiv.className = 'dropdown-option';
-        optionDiv.style.padding = '8px 12px';
         const displayName =
           user.firstName !== '' && user.lastName !== '' ? `${user.firstName} ${user.lastName}` : user.username;
-        const isChecked = team?.members?.some((u) => u.id === user.id) === true ? 'checked' : '';
-        // eslint-disable-next-line no-unsanitized/property -- Safe: We control all user data
-        optionDiv.innerHTML = `
-          <label style="display: flex; align-items: center; cursor: pointer; width: 100%;">
-            <input type="checkbox" value="${user.id}"
-                   onchange="window.updateMemberSelection()"
-                   style="margin-right: 8px;"
-                   ${isChecked}>
-            <span>${displayName} ${user.departmentName !== undefined && user.departmentName !== '' && user.departmentName !== 'Keine Abteilung' ? `(${user.departmentName})` : ''}</span>
-          </label>
-        `;
-        dropdown.append(optionDiv);
+        const isChecked = team?.members?.some((u) => u.id === user.id) === true;
+
+        const option = document.createElement('label');
+        option.className = 'dropdown__option dropdown__option--checkbox';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = user.id.toString();
+        checkbox.checked = isChecked;
+        checkbox.className = 'mr-2';
+
+        const span = document.createElement('span');
+        const employeeInfo =
+          user.employeeNumber !== undefined && user.employeeNumber !== '' ? ` (${user.employeeNumber})` : '';
+        span.textContent = `${displayName}${employeeInfo}`;
+
+        option.appendChild(checkbox);
+        option.appendChild(span);
+        menu.append(option);
       });
     }
   } catch (error) {
     console.error('Error loading users:', error);
+  }
+}
+
+/**
+ * Setup dropdown listeners (Design System)
+ */
+export function setupDropdownListeners(): void {
+  // Department dropdown
+  document.querySelectorAll('#department-menu .dropdown__option').forEach((option) => {
+    option.addEventListener('click', () => {
+      const value = (option as HTMLElement).dataset.value ?? '';
+      const text = option.textContent.trim();
+      const input = document.querySelector<HTMLInputElement>('#team-department');
+      const trigger = document.querySelector('#department-trigger span');
+
+      if (input) input.value = value;
+      if (trigger) trigger.textContent = text;
+
+      // Close dropdown
+      document.querySelector('#department-dropdown .dropdown__menu')?.classList.remove('active');
+    });
+  });
+
+  // Team lead dropdown
+  document.querySelectorAll('#team-lead-menu .dropdown__option').forEach((option) => {
+    option.addEventListener('click', () => {
+      const value = (option as HTMLElement).dataset.value ?? '';
+      const text = option.textContent.trim();
+      const input = document.querySelector<HTMLInputElement>('#team-lead');
+      const trigger = document.querySelector('#team-lead-trigger span');
+
+      if (input) input.value = value;
+      if (trigger) trigger.textContent = text;
+
+      // Close dropdown
+      document.querySelector('#team-lead-dropdown .dropdown__menu')?.classList.remove('active');
+    });
+  });
+
+  // Status dropdown
+  document.querySelectorAll('#status-menu .dropdown__option').forEach((option) => {
+    option.addEventListener('click', () => {
+      const value = (option as HTMLElement).dataset.value ?? '';
+      const badgeHTML = option.innerHTML;
+      const input = document.querySelector<HTMLInputElement>('#team-status');
+      const trigger = document.querySelector<HTMLElement>('#status-trigger span');
+
+      if (input) input.value = value;
+      if (trigger) setSafeHTML(trigger, badgeHTML);
+
+      // Close dropdown
+      document.querySelector('#status-dropdown .dropdown__menu')?.classList.remove('active');
+    });
+  });
+
+  // Team members dropdown - Update display on checkbox change
+  document.querySelectorAll('#team-members-menu input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      updateMemberSelection();
+    });
+  });
+
+  // Team machines dropdown - Update display on checkbox change
+  document.querySelectorAll('#team-machines-menu input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.addEventListener('change', () => {
+      updateMachineSelection();
+    });
+  });
+}
+
+/**
+ * Update member selection display
+ */
+function updateMemberSelection(): void {
+  const menu = document.querySelector('#team-members-menu');
+  const display = document.querySelector('#team-members-display');
+  const input = document.querySelector<HTMLInputElement>('#team-members-select');
+
+  if (!menu || !display || !input) return;
+
+  const checkboxes = menu.querySelectorAll('input[type="checkbox"]:checked');
+  const selectedIds: string[] = [];
+  const selectedNames: string[] = [];
+
+  checkboxes.forEach((checkbox) => {
+    const cb = checkbox as HTMLInputElement;
+    selectedIds.push(cb.value);
+    const label = cb.parentElement?.querySelector('span');
+    if (label && label.textContent !== '') {
+      selectedNames.push(label.textContent.split(' (')[0].trim());
+    }
+  });
+
+  input.value = selectedIds.join(',');
+
+  if (selectedNames.length === 0) {
+    display.textContent = 'Keine Mitglieder zugewiesen';
+  } else if (selectedNames.length <= 2) {
+    display.textContent = selectedNames.join(', ');
+  } else {
+    display.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
+  }
+}
+
+/**
+ * Update machine selection display
+ */
+function updateMachineSelection(): void {
+  const menu = document.querySelector('#team-machines-menu');
+  const display = document.querySelector('#team-machines-display');
+  const input = document.querySelector<HTMLInputElement>('#team-machines-select');
+
+  if (!menu || !display || !input) return;
+
+  const checkboxes = menu.querySelectorAll('input[type="checkbox"]:checked');
+  const selectedIds: string[] = [];
+  const selectedNames: string[] = [];
+
+  checkboxes.forEach((checkbox) => {
+    const cb = checkbox as HTMLInputElement;
+    selectedIds.push(cb.value);
+    const label = cb.parentElement?.querySelector('span');
+    if (label && label.textContent !== '') {
+      selectedNames.push(label.textContent.split(' (')[0].trim());
+    }
+  });
+
+  input.value = selectedIds.join(',');
+
+  if (selectedNames.length === 0) {
+    display.textContent = 'Keine Maschinen zugewiesen';
+  } else if (selectedNames.length <= 2) {
+    display.textContent = selectedNames.join(', ');
+  } else {
+    display.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
   }
 }

@@ -8,12 +8,16 @@
 export default {
   title: 'Design System/Tokens',
   tags: ['autodocs'],
+
   parameters: {
-    layout: 'fullscreen',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'fullscreen'
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

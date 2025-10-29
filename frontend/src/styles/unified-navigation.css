@@ -39,6 +39,38 @@
   border-radius: 20px;
 }
 
+/* Token Timer */
+.token-timer {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(255 255 255 / 80%);
+  letter-spacing: 0.05em;
+
+  transition: color 0.3s ease;
+}
+
+.token-timer--warning {
+  font-weight: 600;
+  color: #fbbf24; /* Amber/Yellow warning color */
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+.token-timer--expired {
+  font-weight: 700;
+  color: #ef4444; /* Red error color */
+}
+
+@keyframes pulse-warning {
+  0%,
+  100% {
+    opacity: 100%;
+  }
+
+  50% {
+    opacity: 60%;
+  }
+}
+
 .header-actions [id="user-name"] {
   overflow: hidden;
   max-width: 200px;

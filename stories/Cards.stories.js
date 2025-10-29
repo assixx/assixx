@@ -6,13 +6,13 @@
 
 export default {
   title: 'Design System/Cards',
+
   parameters: {
-    layout: 'padded',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'padded'
   },
+
   tags: ['autodocs'],
+
   argTypes: {
     clickable: {
       control: 'boolean',
@@ -41,6 +41,12 @@ export default {
       table: { defaultValue: { summary: 'false' } },
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

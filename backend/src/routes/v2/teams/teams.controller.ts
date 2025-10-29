@@ -36,6 +36,7 @@ interface UpdateTeamBody {
   description?: string;
   departmentId?: number;
   leaderId?: number;
+  status?: 'active' | 'inactive';
 }
 
 interface AddMemberBody {
@@ -222,6 +223,7 @@ class TeamsController {
         description: body.description,
         departmentId: body.departmentId,
         leaderId: body.leaderId,
+        status: body.status,
       };
 
       // Note: This check is necessary as the type system doesn't guarantee user exists
@@ -249,12 +251,14 @@ class TeamsController {
           description: (oldTeam as Team | null)?.description,
           department_id: (oldTeam as Team | null)?.departmentId,
           leader_id: (oldTeam as Team | null)?.leaderId,
+          status: (oldTeam as Team | null)?.status,
         },
         new_values: {
           name: updateData.name,
           description: updateData.description,
           department_id: updateData.departmentId,
           leader_id: updateData.leaderId,
+          status: updateData.status,
           updated_by: req.user.email,
         },
         ip_address: req.ip ?? req.socket.remoteAddress,

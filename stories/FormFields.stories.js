@@ -6,13 +6,13 @@
 
 export default {
   title: 'Design System/Form Fields',
+
   parameters: {
-    layout: 'padded',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'padded'
   },
+
   tags: ['autodocs'],
+
   argTypes: {
     label: {
       control: 'text',
@@ -31,6 +31,12 @@ export default {
       description: 'Input placeholder',
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 const createField = ({

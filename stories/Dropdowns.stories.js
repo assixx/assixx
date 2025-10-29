@@ -7,13 +7,13 @@
 
 export default {
   title: 'Design System/Dropdowns',
+
   parameters: {
-    layout: 'padded',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'padded'
   },
+
   tags: ['autodocs'],
+
   argTypes: {
     label: {
       control: 'text',
@@ -24,6 +24,12 @@ export default {
       description: 'Default selected value',
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

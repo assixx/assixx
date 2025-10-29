@@ -3,10 +3,15 @@
  *
  * Standalone expandable/collapsible sections.
  * Simpler than accordion - for single expandable content.
+ *
+ * NOTE: This story demonstrates the CSS-only version.
+ * JavaScript enhancement (initCollapse) can be added later for:
+ * - Smooth animations
+ * - Keyboard navigation
+ * - ARIA state management
  */
 
 import '../frontend/src/design-system/index.css';
-import { initCollapse } from '../frontend/src/design-system/primitives/collapse/collapse.js';
 
 export default {
   title: 'Design System/Collapse',
@@ -73,12 +78,6 @@ export const BasicCollapse = () => {
   content2.appendChild(body2);
   container.appendChild(trigger2);
   container.appendChild(content2);
-
-  // Initialize
-  setTimeout(() => {
-    initCollapse(trigger1, content1);
-    initCollapse(trigger2, content2);
-  }, 0);
 
   return container;
 };
@@ -169,12 +168,6 @@ export const CardVariant = () => {
   card2.appendChild(content2);
   container.appendChild(card2);
 
-  // Initialize
-  setTimeout(() => {
-    initCollapse(trigger1, content1);
-    initCollapse(trigger2, content2);
-  }, 0);
-
   return container;
 };
 
@@ -224,20 +217,6 @@ export const DataAttributeAPI = () => {
       </div>
     </div>
   `;
-
-  // Initialize collapses manually
-  setTimeout(() => {
-    // Data attribute triggers
-    const triggers = container.querySelectorAll('[data-collapse-trigger]');
-    triggers.forEach((trigger) => {
-      const targetId = trigger.getAttribute('data-collapse-trigger');
-      const content = container.querySelector(`#${targetId}`);
-      if (content) {
-        const initialState = trigger.getAttribute('data-collapse-initial') || 'closed';
-        initCollapse(trigger, content, { initialState });
-      }
-    });
-  }, 0);
 
   return container;
 };
@@ -314,13 +293,6 @@ export const SizeVariants = () => {
   wrapper3.appendChild(content3);
   container.appendChild(wrapper3);
 
-  // Initialize
-  setTimeout(() => {
-    initCollapse(trigger1, content1);
-    initCollapse(trigger2, content2);
-    initCollapse(trigger3, content3);
-  }, 0);
-
   return container;
 };
 
@@ -375,13 +347,6 @@ export const AllVariants = () => {
   createSection('Card Style', 'collapse--card', 'Glassmorphism card with hover effects.', '<span class="collapse__trigger-icon"><i class="fas fa-info-circle"></i><span>Product information</span></span>');
   createSection('Bordered', 'collapse--bordered', 'Minimal style with bottom border.', 'Technical specifications');
   createSection('Filled', 'collapse--filled', 'Subtle background for visual grouping.', 'Shipping information');
-
-  // Initialize all
-  setTimeout(() => {
-    triggers.forEach((trigger, i) => {
-      initCollapse(trigger, contents[i]);
-    });
-  }, 0);
 
   return container;
 };

@@ -1,0 +1,229 @@
+/**
+ * Confirm Modal Component
+ * Glassmorphic confirmation dialogs for user actions
+ *
+ * Usage:
+ *   <div class="confirm-modal">
+ *     <div class="confirm-modal__icon">
+ *       <i class="fas fa-exclamation-triangle"></i>
+ *     </div>
+ *     <h3 class="confirm-modal__title">Confirm Action</h3>
+ *     <p class="confirm-modal__message">Are you sure you want to proceed?</p>
+ *     <div class="confirm-modal__actions">
+ *       <button class="confirm-modal__btn confirm-modal__btn--cancel">Cancel</button>
+ *       <button class="confirm-modal__btn confirm-modal__btn--confirm">Confirm</button>
+ *     </div>
+ *   </div>
+ *
+ * Variants:
+ *   .confirm-modal--warning  (Yellow/Orange - warnings)
+ *   .confirm-modal--danger   (Red - destructive actions)
+ *   .confirm-modal--info     (Blue - informational)
+ *   .confirm-modal--success  (Green - positive confirmations)
+ */
+
+/* ========== BASE MODAL ========== */
+
+.confirm-modal {
+  position: relative;
+
+  max-width: 500px;
+  padding: 30px;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--glass-card-radius);
+
+  background: linear-gradient(135deg, rgb(30 30 40 / 95%) 0%, rgb(20 20 30 / 95%) 100%);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
+}
+
+/* ========== ICON ========== */
+
+.confirm-modal__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+
+  font-size: 28px;
+  color: #fff;
+
+  background: rgb(255 255 255 / 10%);
+}
+
+/* ========== TITLE ========== */
+
+.confirm-modal__title {
+  margin: 0 0 15px;
+
+  font-size: 24px;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
+
+/* ========== MESSAGE ========== */
+
+.confirm-modal__message {
+  margin: 0 0 25px;
+
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 90%);
+  text-align: center;
+}
+
+/* ========== ACTIONS (Buttons) ========== */
+
+.confirm-modal__actions {
+  display: flex;
+  gap: 15px;
+  justify-content: flex-end;
+}
+
+.confirm-modal__btn {
+  cursor: pointer;
+
+  padding: 10px 20px;
+  border: none;
+  border-radius: var(--radius-xl);
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition: all 0.3s ease;
+}
+
+.confirm-modal__btn:disabled {
+  cursor: not-allowed;
+  opacity: 50%;
+}
+
+/* ========== CANCEL BUTTON ========== */
+
+.confirm-modal__btn--cancel {
+  border: 1px solid rgb(255 255 255 / 20%);
+  color: #fff;
+  background: rgb(255 255 255 / 10%);
+}
+
+.confirm-modal__btn--cancel:hover:not(:disabled) {
+  background: rgb(255 255 255 / 15%);
+}
+
+/* ========== CONFIRM BUTTON (Default Blue) ========== */
+
+.confirm-modal__btn--confirm {
+  color: #fff;
+  background: linear-gradient(135deg, #00d4ff 0%, #09c 100%);
+}
+
+.confirm-modal__btn--confirm:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgb(0 212 255 / 30%);
+}
+
+/* ========== VARIANT: WARNING (Orange/Yellow) ========== */
+
+.confirm-modal--warning .confirm-modal__icon {
+  color: #fb923c; /* Tailwind orange-400 */
+  background: linear-gradient(135deg, rgb(251 146 60 / 20%), rgb(249 115 22 / 20%));
+}
+
+.confirm-modal--warning .confirm-modal__title {
+  color: #fb923c;
+}
+
+.confirm-modal--warning .confirm-modal__btn--confirm {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+}
+
+.confirm-modal--warning .confirm-modal__btn--confirm:hover:not(:disabled) {
+  box-shadow: 0 5px 15px rgb(251 146 60 / 30%);
+}
+
+/* ========== VARIANT: DANGER (Red) ========== */
+
+.confirm-modal--danger .confirm-modal__icon {
+  color: #ef4444; /* Tailwind red-500 */
+  background: linear-gradient(135deg, rgb(239 68 68 / 20%), rgb(220 38 38 / 20%));
+}
+
+.confirm-modal--danger .confirm-modal__title {
+  color: #ef4444;
+}
+
+.confirm-modal--danger .confirm-modal__btn--confirm {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.confirm-modal--danger .confirm-modal__btn--confirm:hover:not(:disabled) {
+  box-shadow: 0 5px 15px rgb(239 68 68 / 30%);
+}
+
+/* ========== VARIANT: INFO (Blue) ========== */
+
+.confirm-modal--info .confirm-modal__icon {
+  color: #3b82f6; /* Tailwind blue-500 */
+  background: linear-gradient(135deg, rgb(59 130 246 / 20%), rgb(37 99 235 / 20%));
+}
+
+.confirm-modal--info .confirm-modal__title {
+  color: #3b82f6;
+}
+
+.confirm-modal--info .confirm-modal__btn--confirm {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+}
+
+.confirm-modal--info .confirm-modal__btn--confirm:hover:not(:disabled) {
+  box-shadow: 0 5px 15px rgb(59 130 246 / 30%);
+}
+
+/* ========== VARIANT: SUCCESS (Green) ========== */
+
+.confirm-modal--success .confirm-modal__icon {
+  color: #22c55e; /* Tailwind green-500 */
+  background: linear-gradient(135deg, rgb(34 197 94 / 20%), rgb(22 163 74 / 20%));
+}
+
+.confirm-modal--success .confirm-modal__title {
+  color: #22c55e;
+}
+
+.confirm-modal--success .confirm-modal__btn--confirm {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+}
+
+.confirm-modal--success .confirm-modal__btn--confirm:hover:not(:disabled) {
+  box-shadow: 0 5px 15px rgb(34 197 94 / 30%);
+}
+
+/* ========== RESPONSIVE ========== */
+
+@media (width <= 768px) {
+  .confirm-modal {
+    max-width: 90%;
+    padding: 20px;
+  }
+
+  .confirm-modal__title {
+    font-size: 20px;
+  }
+
+  .confirm-modal__message {
+    font-size: 14px;
+  }
+
+  .confirm-modal__actions {
+    flex-direction: column-reverse;
+  }
+
+  .confirm-modal__btn {
+    width: 100%;
+  }
+}

@@ -2,10 +2,14 @@
  * Tooltip Component Stories
  *
  * Interactive examples of tooltip component with all variants.
+ *
+ * NOTE: This story demonstrates the CSS-only version.
+ * - Auto-positioning
+ * - Keyboard triggers
+ * - Dynamic content
  */
 
 import '../frontend/src/design-system/index.css';
-import { initTooltip, autoInitTooltips } from '../frontend/src/design-system/primitives/tooltip/tooltip.js';
 
 export default {
   title: 'Design System/Tooltip',
@@ -34,7 +38,6 @@ export const BasicTooltip = () => {
 
   container.appendChild(button);
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };
@@ -62,7 +65,6 @@ export const AllPositions = () => {
     container.appendChild(button);
   });
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };
@@ -96,7 +98,6 @@ export const SemanticVariants = () => {
     container.appendChild(button);
   });
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };
@@ -127,7 +128,6 @@ export const SizeVariants = () => {
     container.appendChild(button);
   });
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };
@@ -219,7 +219,6 @@ export const OnIconsAndInputs = () => {
 
   container.appendChild(formDiv);
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };
@@ -316,19 +315,7 @@ export const JavaScriptAPI = () => {
 
   // Initialize tooltip with JS
   setTimeout(() => {
-    const tooltip = initTooltip(button, {
-      content: 'Controlled via JavaScript API',
-      position: 'bottom',
-      variant: 'info',
-      delay: 0, // No delay for manual control
-    });
-
-    showBtn.addEventListener('click', () => tooltip.show());
-    hideBtn.addEventListener('click', () => tooltip.hide());
-    toggleBtn.addEventListener('click', () => tooltip.toggle());
-    updateBtn.addEventListener('click', () => {
-      tooltip.updateContent(`Updated at ${new Date().toLocaleTimeString()}`);
-    });
+    // Placeholder for tooltip initialization
   }, 0);
 
   return container;
@@ -361,7 +348,6 @@ export const LongText = () => {
   container.appendChild(button1);
   container.appendChild(button2);
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };
@@ -472,7 +458,6 @@ export const FormValidation = () => {
   phoneGroup.appendChild(phoneDiv);
   container.appendChild(phoneGroup);
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };
@@ -597,7 +582,6 @@ export const AllVariants = () => {
   iconsSection.appendChild(iconsContainer);
   container.appendChild(iconsSection);
 
-  setTimeout(() => autoInitTooltips(), 0);
 
   return container;
 };

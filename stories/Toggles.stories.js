@@ -6,13 +6,13 @@
 
 export default {
   title: 'Design System/Toggles',
+
   parameters: {
-    layout: 'padded',
-    backgrounds: {
-      default: 'assixx-dark',
-    },
+    layout: 'padded'
   },
+
   tags: ['autodocs'],
+
   argTypes: {
     withIcons: {
       control: 'boolean',
@@ -23,6 +23,12 @@ export default {
       description: 'Index of default active button (0-based)',
     },
   },
+
+  globals: {
+    backgrounds: {
+      value: "assixx-dark"
+    }
+  }
 };
 
 /**

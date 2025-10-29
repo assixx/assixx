@@ -19,6 +19,8 @@ interface DbTeam extends RowDataPacket {
   team_lead_name?: string;
   member_count?: number;
   member_names?: string;
+  machine_count?: number;
+  machine_names?: string;
 }
 
 interface DbTeamMember extends RowDataPacket {
@@ -88,10 +90,15 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
              d.name AS department_name,
              CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name,
              (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) AS member_count,
-             (SELECT GROUP_CONCAT(CONCAT(users.first_name, ' ', users.last_name) SEPARATOR ', ')
+             (SELECT GROUP_CONCAT(CONCAT(users.first_name, ' ', users.last_name) SEPARATOR '\n')
               FROM user_teams ut2
               LEFT JOIN users ON ut2.user_id = users.id
-              WHERE ut2.team_id = t.id) AS member_names
+              WHERE ut2.team_id = t.id) AS member_names,
+             (SELECT COUNT(*) FROM machine_teams mt WHERE mt.team_id = t.id) AS machine_count,
+             (SELECT GROUP_CONCAT(machines.name SEPARATOR '\n')
+              FROM machine_teams mt2
+              LEFT JOIN machines ON mt2.machine_id = machines.id
+              WHERE mt2.team_id = t.id) AS machine_names
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN users u ON t.team_lead_id = u.id

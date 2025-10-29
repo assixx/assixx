@@ -173,8 +173,8 @@ export class SignupFormController {
 - [x] manage-root-users.html ✅ (2025-01-18) - 100% Design System compliant (split to data/forms/index layers, avatar, striped tables, toggle-group, search-input, TypeScript modules, no inline styles/JS, no Bootstrap)
 - [x] manage-employees.html ✅ (2025-01-20) - 100% Design System compliant (905→374 lines -59%, ds-modal, form-field, toggle-group, search-input, avatar, striped tables, btn-float, TypeScript modules, removed 385 lines legacy CSS, no inline styles/JS, no Bootstrap)
 - [x] manage-departments.html ✅ (2025-01-23) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, badge with tooltip, striped tables, btn-float, TypeScript modules split to api/forms/ui/types layers, global modal scroll-reset component, no inline styles/JS, no Bootstrap)
-- [ ] manage-department-groups.html
-- [ ] manage-teams.html
+- [x] manage-department-groups.html ✅ (2025-01-15) - 100% Design System compliant (ds-modal, form-field, search-input, dropdown, empty-state, btn-float, TypeScript modules split to api/forms/ui/types/index layers, hierarchical group tree, no inline styles/JS, no Bootstrap)
+- [x] manage-teams.html ✅ (2025-01-28) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to data/forms/ui/types/index layers, multi-select dropdowns with checkboxes, no inline styles/JS, no Bootstrap)
 - [ ] manage-areas.html
 - [ ] manage-machines.html
 

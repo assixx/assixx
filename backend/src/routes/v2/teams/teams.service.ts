@@ -120,17 +120,18 @@ class TeamsService {
           delete apiTeam.teamLeadName;
         }
 
+        // Map isActive (boolean) to status (string)
+        if ('isActive' in apiTeam) {
+          apiTeam.status = apiTeam.isActive ? 'active' : 'inactive';
+        } else {
+          apiTeam.status = 'active'; // Default fallback
+        }
+
         // Convert empty strings to null for optional fields
         if (apiTeam.description === '') {
           apiTeam.description = null;
         }
         apiTeam.leaderId ??= null;
-
-        // Include member count if requested
-        if (filters?.includeMembers) {
-          // This would need to be implemented in the model
-          apiTeam.memberCount = 0; // Placeholder
-        }
 
         return apiTeam;
       });
@@ -138,6 +139,54 @@ class TeamsService {
       logger.error(`Error listing teams: ${(error as Error).message}`);
       throw new ServiceError('SERVER_ERROR', 'Failed to list teams', 500);
     }
+  }
+
+  /**
+   * Map team leader fields (teamLeadId → leaderId, teamLeadName → leaderName)
+   */
+  private mapTeamLeaderFields(apiTeam: Record<string, unknown>): void {
+    if ('teamLeadId' in apiTeam) {
+      apiTeam.leaderId = apiTeam.teamLeadId;
+      delete apiTeam.teamLeadId;
+    }
+
+    if ('teamLeadName' in apiTeam) {
+      apiTeam.leaderName = apiTeam.teamLeadName;
+      delete apiTeam.teamLeadName;
+    }
+  }
+
+  /**
+   * Map isActive boolean to status string and normalize optional fields
+   */
+  private normalizeTeamFields(apiTeam: Record<string, unknown>): void {
+    // Map isActive (boolean) to status (string)
+    if ('isActive' in apiTeam) {
+      apiTeam.status = apiTeam.isActive ? 'active' : 'inactive';
+    } else {
+      apiTeam.status = 'active'; // Default fallback
+    }
+
+    // Convert empty strings to null for optional fields
+    if (apiTeam.description === '') {
+      apiTeam.description = null;
+    }
+    apiTeam.leaderId ??= null;
+  }
+
+  /**
+   * Map team member from DB format to API format
+   */
+  private mapTeamMember(member: TeamMemberResult): Record<string, unknown> {
+    return {
+      id: member.id,
+      username: member.username,
+      email: member.email,
+      firstName: member.first_name,
+      lastName: member.last_name,
+      position: member.position,
+      employeeId: member.employee_id,
+    };
   }
 
   /**
@@ -158,43 +207,19 @@ class TeamsService {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 
-      // Get team members
+      // Get team members and machines
       const members = await Team.getTeamMembers(id);
-
-      // Get team machines
       const machines = await Team.getTeamMachines(id);
 
+      // Convert to API format
       const apiTeam = dbToApi(team);
 
-      // Map team_lead_id to leaderId
-      if ('teamLeadId' in apiTeam) {
-        apiTeam.leaderId = apiTeam.teamLeadId;
-        delete apiTeam.teamLeadId;
-      }
+      // Apply field mappings
+      this.mapTeamLeaderFields(apiTeam);
+      this.normalizeTeamFields(apiTeam);
 
-      // Map team_lead_name to leaderName
-      if ('teamLeadName' in apiTeam) {
-        apiTeam.leaderName = apiTeam.teamLeadName;
-        delete apiTeam.teamLeadName;
-      }
-
-      // Convert empty strings to null for optional fields
-      if (apiTeam.description === '') {
-        apiTeam.description = null;
-      }
-      apiTeam.leaderId ??= null;
-
-      apiTeam.members = members.map((member: TeamMemberResult) => ({
-        id: member.id,
-        username: member.username,
-        email: member.email,
-        firstName: member.first_name,
-        lastName: member.last_name,
-        position: member.position,
-        employeeId: member.employee_id,
-      }));
-
-      // Add machines to response
+      // Add related data
+      apiTeam.members = members.map((m: TeamMemberResult) => this.mapTeamMember(m));
       apiTeam.machines = machines;
 
       return apiTeam;
@@ -324,8 +349,12 @@ class TeamsService {
     if (data.leaderId !== undefined) updateData.team_lead_id = data.leaderId;
     if (data.status !== undefined) {
       updateData.is_active = data.status === 'active' ? 1 : 0;
+      logger.info(
+        `[DEBUG] Setting is_active to ${updateData.is_active} from status: ${data.status}`,
+      );
     }
 
+    logger.info(`[DEBUG] buildUpdateData result: ${JSON.stringify(updateData)}`);
     return updateData;
   }
 
@@ -335,6 +364,8 @@ class TeamsService {
     tenantId: number,
   ): Promise<Record<string, unknown>> {
     try {
+      logger.info(`[DEBUG] updateTeam called with data: ${JSON.stringify(data)}`);
+
       // Validate team exists
       const existingTeam = await this.validateTeamExists(id, tenantId);
 

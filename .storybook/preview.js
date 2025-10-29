@@ -25,27 +25,28 @@ const preview = {
 
     // Backgrounds - Match Assixx dark theme
     backgrounds: {
-      default: 'assixx-dark',
-      values: [
-        {
+      options: {
+        "assixx-dark": {
           name: 'assixx-dark',
           value: '#000000',
         },
-        {
+
+        "assixx-gradient": {
           name: 'assixx-gradient',
           value:
             'linear-gradient(5deg, transparent 0%, rgba(0, 142, 255, 0.1) 25%, rgba(1, 0, 4, 0.51) 60%, rgba(0, 0, 4, 0.6) 90%, black 100%)',
         },
-        {
+
+        light: {
           name: 'light',
           value: '#ffffff',
-        },
-      ],
+        }
+      }
     },
 
     // Viewport presets
     viewport: {
-      viewports: {
+      options: {
         mobile: {
           name: 'Mobile',
           styles: { width: '375px', height: '667px' },
@@ -87,6 +88,12 @@ const preview = {
 
   // Tags
   tags: ['autodocs'],
+
+  initialGlobals: {
+    backgrounds: {
+      value: 'assixx-dark'
+    }
+  }
 };
 
 export default preview;

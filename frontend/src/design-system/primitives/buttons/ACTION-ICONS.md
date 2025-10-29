@@ -74,6 +74,35 @@ Icon-only action buttons with **color-coded hover states** for quick table actio
 
 ---
 
+### Toggle (Orange/Green Hover)
+
+```html
+<!-- Deactivate (Orange) -->
+<button
+  class="action-icon action-icon--toggle"
+  data-status="active"
+  title="Deaktivieren"
+  aria-label="Eintrag deaktivieren"
+>
+  <i class="fas fa-times-circle"></i>
+</button>
+
+<!-- Activate (Green) -->
+<button
+  class="action-icon action-icon--toggle"
+  data-status="inactive"
+  title="Aktivieren"
+  aria-label="Eintrag aktivieren"
+>
+  <i class="fas fa-check-circle"></i>
+</button>
+```
+
+**Hover Color:** `#f97316` (Orange-500) for active → deactivate | `#10b981` (Green-500) for inactive → activate
+**Usage:** Toggle status, activate/deactivate actions
+
+---
+
 ## 💡 Usage
 
 ### In Tables
@@ -203,12 +232,14 @@ Already included via `@import "./button.action-icons.css"` in `index.css`
 
 ## 🎨 Color Reference
 
-| Variant | Hover Color  | RGB                         |
-| ------- | ------------ | --------------------------- |
-| Edit    | Yellow-400   | `#fbbf24`                   |
-| Delete  | Red-500      | `#ef4444`                   |
-| View    | Blue-500     | `#3b82f6`                   |
-| More    | Text Primary | `var(--color-text-primary)` |
+| Variant      | Hover Color  | RGB                         |
+| ------------ | ------------ | --------------------------- |
+| Edit         | Yellow-400   | `#fbbf24`                   |
+| Delete       | Red-500      | `#ef4444`                   |
+| View         | Blue-500     | `#3b82f6`                   |
+| More         | Text Primary | `var(--color-text-primary)` |
+| Toggle (off) | Orange-500   | `#f97316`                   |
+| Toggle (on)  | Green-500    | `#10b981`                   |
 
 ---
 

@@ -2,31 +2,31 @@
 /**
  * Admin Teams Management
  * Handles team CRUD operations for admin dashboard
+ *
+ * Migration Complete: 2025-01-28
+ * - Filter Buttons → Toggle Group (Design System)
+ * - Search Input → Design System Component with clear button and results dropdown
+ * - Modal Toggle → modal-overlay--active (Design System)
+ * - Dropdowns → .active class toggle (Design System)
  */
 
 import { ApiClient } from '../../../utils/api-client';
 import { mapTeams, type TeamAPIResponse, type MappedTeam } from '../../../utils/api-mappers';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
-import type { Team, TeamMember, Machine, WindowWithTeamHandlers } from './types';
-import {
-  toggleTableVisibility,
-  createTeamRow,
-  addTooltipListeners,
-  populateTeamForm,
-  processTeamFormData,
-  loadDepartmentsForSelect,
-  loadAdminsForSelect,
-  loadMachinesForDropdown,
-  loadUsersForDropdown,
-} from './ui';
+import type { Team, WindowWithTeamHandlers } from './types';
+import { toggleTableVisibility, createTeamRow } from './ui';
+import { setTeamsManager } from './data';
+import { setupEditTeam, setupDeleteTeam, setupShowTeamModal, setupCloseTeamModal, setupSaveTeam } from './forms';
 
 // Constants
 const DELETE_TEAM_MODAL_ID = '#delete-team-modal';
+const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
 
 class TeamsManager {
   public apiClient: ApiClient; // Made public for access in global functions
   private teams: Team[] = [];
-  private currentFilter: 'all' | 'active' | 'inactive' = 'all';
+  private filteredTeams: Team[] = [];
+  private currentFilter: 'all' | 'active' | 'inactive' = 'active'; // Default to active
   private searchTerm = '';
   private useV2API = true; // Default to v2 API
 
@@ -42,6 +42,11 @@ class TeamsManager {
   private initializeEventListeners() {
     // Add button
     document.querySelector('#add-team-btn')?.addEventListener('click', () => {
+      void (window as WindowWithTeamHandlers).showTeamModal?.();
+    });
+
+    // Empty state add button
+    document.querySelector('#empty-state-add-btn')?.addEventListener('click', () => {
       void (window as WindowWithTeamHandlers).showTeamModal?.();
     });
 
@@ -68,45 +73,35 @@ class TeamsManager {
     });
     document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
       const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
-      if (modal) modal.classList.remove('active');
+      if (modal) modal.classList.remove(MODAL_ACTIVE_CLASS);
     });
     document.querySelector('#cancel-delete-modal')?.addEventListener('click', () => {
       const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
-      if (modal) modal.classList.remove('active');
+      if (modal) modal.classList.remove(MODAL_ACTIVE_CLASS);
     });
 
-    // Filter buttons
-    document.querySelector('#show-all-teams')?.addEventListener('click', () => {
-      this.currentFilter = 'all';
-      void this.loadTeams();
-    });
-
-    document.querySelector('#filter-teams-active')?.addEventListener('click', () => {
-      this.currentFilter = 'active';
-      void this.loadTeams();
-    });
-
-    document.querySelector('#filter-teams-inactive')?.addEventListener('click', () => {
-      this.currentFilter = 'inactive';
-      void this.loadTeams();
-    });
-
-    // Search
-    document.querySelector('#team-search-btn')?.addEventListener('click', () => {
-      const searchInput = document.querySelector<HTMLInputElement>('#team-search');
-      this.searchTerm = searchInput !== null ? searchInput.value : '';
-      void this.loadTeams();
-    });
-
-    // Enter key on search
-    document.querySelector('#team-search')?.addEventListener('keypress', (e) => {
-      const keyboardEvent = e as KeyboardEvent;
-      if (keyboardEvent.key === 'Enter') {
-        const searchInput = e.target as HTMLInputElement;
-        this.searchTerm = searchInput.value;
-        void this.loadTeams();
+    // Force Delete Warning Modal
+    document.querySelector('#confirm-force-delete')?.addEventListener('click', () => {
+      const teamIdInput = document.querySelector<HTMLInputElement>('#force-delete-team-id');
+      if (teamIdInput !== null && teamIdInput.value !== '') {
+        void this.executeForceDelete(Number.parseInt(teamIdInput.value, 10));
       }
     });
+    document.querySelector('#cancel-force-delete')?.addEventListener('click', () => {
+      this.closeForceDeleteModal();
+    });
+    // Close force delete modal when clicking outside
+    document.querySelector('#force-delete-warning-modal')?.addEventListener('click', (e) => {
+      if ((e.target as HTMLElement).id === 'force-delete-warning-modal') {
+        this.closeForceDeleteModal();
+      }
+    });
+
+    // Toggle Group - Status Filter (Design System)
+    this.initStatusToggle();
+
+    // Search Input (Design System)
+    this.initSearchInput();
 
     // Event delegation for team actions
     document.addEventListener('click', (e) => {
@@ -115,16 +110,216 @@ class TeamsManager {
     });
   }
 
-  private handleDropdownToggle(target: HTMLElement): void {
-    const dropdownToggle = target.closest<HTMLElement>('[data-action="toggle-dropdown"]');
-    if (!dropdownToggle) return;
-
-    const dropdownId = dropdownToggle.dataset.dropdown;
-    const windowWithToggle = window as WindowWithTeamHandlers & { toggleDropdown?: (dropdownId: string) => void };
-
-    if (dropdownId !== undefined && dropdownId !== '' && 'toggleDropdown' in windowWithToggle) {
-      windowWithToggle.toggleDropdown(dropdownId);
+  /**
+   * Initialize status toggle buttons (Design System Toggle Group)
+   */
+  private initStatusToggle(): void {
+    const toggleGroup = document.querySelector('#team-status-toggle');
+    if (toggleGroup === null) {
+      console.warn('[initStatusToggle] Toggle group not found');
+      return;
     }
+
+    toggleGroup.addEventListener('click', (e) => {
+      const button = (e.target as HTMLElement).closest<HTMLElement>('.toggle-group__btn');
+      if (button === null) return;
+
+      const status = button.dataset.status as 'all' | 'active' | 'inactive' | undefined;
+      if (status === undefined) return;
+
+      // Update active button
+      toggleGroup.querySelectorAll('.toggle-group__btn').forEach((btn) => {
+        btn.classList.remove('active');
+      });
+      button.classList.add('active');
+
+      // Update filter and re-render
+      this.currentFilter = status;
+      this.filterAndRenderTeams();
+    });
+  }
+
+  /**
+   * Initialize search input with live search (Design System)
+   */
+  private initSearchInput(): void {
+    const searchInput = document.querySelector('#team-search');
+    const searchContainer = document.querySelector('#team-search-container');
+    const clearButton = document.querySelector('#team-search-clear');
+    const resultsContainer = document.querySelector('#team-search-results');
+
+    if (searchInput === null || !(searchInput instanceof HTMLInputElement)) {
+      console.warn('[initSearchInput] Search input not found');
+      return;
+    }
+
+    // Input event - live search
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value;
+      this.searchTerm = query;
+
+      // Toggle has-value class
+      if (query.length > 0) {
+        searchContainer?.classList.add('search-input--has-value');
+      } else {
+        searchContainer?.classList.remove('search-input--has-value');
+      }
+
+      // Apply filters and re-render
+      this.filterAndRenderTeams();
+
+      // Render search results preview
+      if (query.length > 0 && resultsContainer !== null) {
+        this.renderSearchResults(this.filteredTeams);
+      } else {
+        this.closeSearchResults();
+      }
+    });
+
+    // Clear button
+    clearButton?.addEventListener('click', () => {
+      searchInput.value = '';
+      this.searchTerm = '';
+      searchContainer?.classList.remove('search-input--has-value');
+      this.filterAndRenderTeams();
+      this.closeSearchResults();
+      searchInput.focus();
+    });
+
+    // Close results on outside click
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (
+        searchContainer !== null &&
+        !searchContainer.contains(target) &&
+        resultsContainer !== null &&
+        !resultsContainer.contains(target)
+      ) {
+        this.closeSearchResults();
+      }
+    });
+  }
+
+  /**
+   * Render search results preview dropdown
+   */
+  private renderSearchResults(teams: Team[]): void {
+    const resultsContainer = document.querySelector('#team-search-results');
+    if (resultsContainer === null) return;
+
+    const limitedResults = teams.slice(0, 5); // Max 5 results
+
+    if (limitedResults.length === 0) {
+      resultsContainer.innerHTML = `
+        <div class="search-input__result-item search-input__result-item--empty">
+          Keine Teams gefunden
+        </div>
+      `;
+      resultsContainer.classList.add('active');
+      return;
+    }
+
+    const html = limitedResults
+      .map(
+        (team) => `
+        <div class="search-input__result-item" data-action="edit-team" data-team-id="${team.id}">
+          <i class="fas fa-users-cog text-blue-500"></i>
+          <span>${team.name}</span>
+          ${team.departmentName !== undefined && team.departmentName !== '' ? `<span class="text-[var(--color-text-secondary)] text-sm ml-2">→ ${team.departmentName}</span>` : ''}
+        </div>
+      `,
+      )
+      .join('');
+
+    // eslint-disable-next-line no-unsanitized/property -- Safe: We control all data in html
+    resultsContainer.innerHTML = html;
+    resultsContainer.classList.add('active');
+
+    // Handle result click - open edit modal
+    resultsContainer.querySelectorAll('.search-input__result-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        const teamId = (item as HTMLElement).dataset.teamId;
+        if (teamId !== undefined && teamId !== '') {
+          const w = window as unknown as WindowWithTeamHandlers;
+          if (w.editTeam !== undefined) {
+            void w.editTeam(Number.parseInt(teamId, 10));
+          }
+          this.closeSearchResults();
+
+          // Clear search input
+          const searchInput = document.querySelector<HTMLInputElement>('#team-search-input');
+          const searchContainer = document.querySelector<HTMLElement>('.search-input-wrapper');
+          if (searchInput !== null) {
+            searchInput.value = '';
+          }
+          if (searchContainer !== null) {
+            searchContainer.classList.remove('search-input--has-value');
+          }
+        }
+      });
+    });
+  }
+
+  /**
+   * Close search results dropdown
+   */
+  private closeSearchResults(): void {
+    const resultsContainer = document.querySelector('#team-search-results');
+    resultsContainer?.classList.remove('active');
+  }
+
+  /**
+   * Filter teams by status and search term
+   */
+  private filterTeams(): Team[] {
+    let filtered = this.teams;
+
+    // Filter by status
+    if (this.currentFilter !== 'all') {
+      filtered = filtered.filter((team) => team.status === this.currentFilter);
+    }
+
+    // Filter by search term
+    if (this.searchTerm.length > 0) {
+      const searchLower = this.searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (team) =>
+          team.name.toLowerCase().includes(searchLower) ||
+          (team.departmentName?.toLowerCase().includes(searchLower) ?? false) ||
+          (team.leaderName?.toLowerCase().includes(searchLower) ?? false),
+      );
+    }
+
+    return filtered;
+  }
+
+  /**
+   * Filter and render teams
+   */
+  private filterAndRenderTeams(): void {
+    this.filteredTeams = this.filterTeams();
+    this.renderTeamsTable();
+  }
+
+  private handleDropdownToggle(target: HTMLElement): void {
+    const dropdownTrigger = target.closest<HTMLElement>('.dropdown__trigger');
+    if (!dropdownTrigger) return;
+
+    const dropdown = dropdownTrigger.parentElement;
+    if (!dropdown) return;
+
+    const menu = dropdown.querySelector('.dropdown__menu');
+    if (!menu) return;
+
+    // Toggle active class
+    menu.classList.toggle('active');
+
+    // Close other dropdowns
+    document.querySelectorAll('.dropdown__menu.active').forEach((otherMenu) => {
+      if (otherMenu !== menu) {
+        otherMenu.classList.remove('active');
+      }
+    });
   }
 
   private handleEditTeam(target: HTMLElement, w: WindowWithTeamHandlers): void {
@@ -134,17 +329,6 @@ class TeamsManager {
     const teamId = editBtn.dataset.teamId;
     if (teamId !== undefined && w.editTeam) {
       void w.editTeam(Number.parseInt(teamId, 10));
-    }
-  }
-
-  private handleToggleTeamStatus(target: HTMLElement, w: WindowWithTeamHandlers): void {
-    const toggleBtn = target.closest<HTMLElement>('[data-action="toggle-team-status"]');
-    if (!toggleBtn) return;
-
-    const teamId = toggleBtn.dataset.teamId;
-    const status = toggleBtn.dataset.status;
-    if (teamId !== undefined && status !== undefined && w.toggleTeamStatus) {
-      void w.toggleTeamStatus(Number.parseInt(teamId, 10), status);
     }
   }
 
@@ -163,63 +347,80 @@ class TeamsManager {
 
     this.handleDropdownToggle(target);
     this.handleEditTeam(target, w);
-    this.handleToggleTeamStatus(target, w);
     this.handleDeleteTeam(target, w);
   }
 
   async loadTeams(): Promise<void> {
     try {
-      const params: Record<string, string> = {};
-
-      if (this.currentFilter !== 'all') {
-        params.status = this.currentFilter;
-      }
-
-      if (this.searchTerm.length > 0) {
-        params.search = this.searchTerm;
-      }
+      // Show loading
+      const loadingEl = document.querySelector('#teams-loading');
+      loadingEl?.classList.remove('u-hidden');
 
       // ApiClient adds /api/v2 or /api prefix automatically based on feature flag
       const response = await this.apiClient.request<TeamAPIResponse[]>('/teams', {
         method: 'GET',
       });
 
+      // Hide loading
+      loadingEl?.classList.add('u-hidden');
+
       // Map response through api-mappers for consistent field names (only for v2)
-      // Handle both v2 (with mappers) and v1 responses
       if (this.useV2API) {
-        // Map through api-mappers for consistent field names
-        // TypeScript workaround for mapTeams import issue
         const mapFunction = mapTeams as (teams: TeamAPIResponse[]) => MappedTeam[];
         const mappedData = mapFunction(response);
         this.teams = mappedData as Team[];
       } else {
         this.teams = response as Team[];
       }
-      this.renderTeamsTable();
+
+      this.filterAndRenderTeams();
     } catch (error) {
+      // Hide loading
+      const loadingEl = document.querySelector('#teams-loading');
+      loadingEl?.classList.add('u-hidden');
+
       console.error('Error loading teams:', error);
       showErrorAlert('Fehler beim Laden der Teams');
     }
   }
 
   private renderTeamsTable() {
-    const tbody = document.querySelector('#teams-table-body');
-    if (tbody === null) return;
+    const tableContent = document.querySelector('#teams-table-content');
+    if (tableContent === null) return;
 
-    if (this.teams.length === 0) {
-      toggleTableVisibility(false);
-      tbody.innerHTML = '';
+    if (this.filteredTeams.length === 0) {
+      toggleTableVisibility(false, this.currentFilter);
+      tableContent.innerHTML = '';
       return;
     }
 
-    toggleTableVisibility(true);
+    toggleTableVisibility(true, this.currentFilter);
 
-    const tableHTML = this.teams.map((team) => createTeamRow(team)).join('');
+    const tableHTML = `
+      <table class="data-table data-table--striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Abteilung</th>
+            <th>Team-Lead</th>
+            <th>Mitglieder</th>
+            <th>Maschinen</th>
+            <th>Status</th>
+            <th>Erstellt am</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${this.filteredTeams.map((team) => createTeamRow(team)).join('')}
+        </tbody>
+      </table>
+    `;
 
     // eslint-disable-next-line no-unsanitized/property -- Safe: We control all data in tableHTML
-    tbody.innerHTML = tableHTML;
+    tableContent.innerHTML = tableHTML;
 
-    addTooltipListeners(tbody);
+    // Initialize tooltips after rendering table
+    initDataTooltips();
   }
 
   async createTeam(teamData: Partial<Team>): Promise<Team> {
@@ -270,13 +471,13 @@ class TeamsManager {
     deleteInput.value = id.toString();
 
     // Show the modal
-    modal.classList.add('active');
+    modal.classList.add(MODAL_ACTIVE_CLASS);
   }
 
   private closeDeleteModal(): void {
     const modal = document.querySelector(DELETE_TEAM_MODAL_ID);
-    if (modal !== null) {
-      modal.classList.remove('active');
+    if (modal) {
+      modal.classList.remove(MODAL_ACTIVE_CLASS);
     }
   }
 
@@ -286,20 +487,49 @@ class TeamsManager {
     await this.loadTeams();
   }
 
-  private async handleForceDelete(id: number, memberCount: number | string): Promise<void> {
-    const confirmMsg = `Das Team hat ${memberCount} Mitglieder. Möchten Sie das Team trotzdem löschen? Alle Mitglieder werden automatisch aus dem Team entfernt.`;
+  private showForceDeleteWarning(id: number, memberCount: number | string): void {
+    const modal = document.querySelector('#force-delete-warning-modal');
+    const messageEl = document.querySelector('#force-delete-warning-message');
+    const teamIdInput = document.querySelector<HTMLInputElement>('#force-delete-team-id');
 
-    if (!confirm(confirmMsg)) {
+    if (modal === null || messageEl === null || teamIdInput === null) {
+      showErrorAlert('Force-Delete-Modal nicht gefunden');
       return;
     }
 
-    await this.apiClient.request(`/teams/${id}?force=true`, {
-      method: 'DELETE',
-    });
+    // Update message with member count
+    const message = `Das Team hat ${memberCount} Mitglieder. Möchten Sie das Team trotzdem löschen? Alle Mitglieder werden automatisch aus dem Team entfernt.`;
+    messageEl.textContent = message;
 
-    showSuccessAlert('Team und alle Mitgliederzuordnungen erfolgreich gelöscht');
+    // Store team ID
+    teamIdInput.value = id.toString();
+
+    // Close the first delete modal and show warning modal
     this.closeDeleteModal();
-    await this.loadTeams();
+    modal.classList.add(MODAL_ACTIVE_CLASS);
+  }
+
+  private closeForceDeleteModal(): void {
+    const modal = document.querySelector('#force-delete-warning-modal');
+    if (modal) {
+      modal.classList.remove(MODAL_ACTIVE_CLASS);
+    }
+  }
+
+  async executeForceDelete(id: number): Promise<void> {
+    try {
+      await this.apiClient.request(`/teams/${id}?force=true`, {
+        method: 'DELETE',
+      });
+
+      showSuccessAlert('Team und alle Mitgliederzuordnungen erfolgreich gelöscht');
+      this.closeForceDeleteModal();
+      await this.loadTeams();
+    } catch (error) {
+      console.error('Error force deleting team:', error);
+      showErrorAlert('Fehler beim Löschen des Teams');
+      this.closeForceDeleteModal();
+    }
   }
 
   private handleDeleteError(error: unknown): void {
@@ -327,13 +557,8 @@ class TeamsManager {
       const errorObj = error as { message?: string; code?: string; details?: { memberCount?: number } };
 
       if (errorObj.message?.includes('Cannot delete team with members') === true) {
-        try {
-          const memberCount = errorObj.details?.memberCount ?? 'einige';
-          await this.handleForceDelete(id, memberCount);
-        } catch (forceError) {
-          console.error('Error force deleting team:', forceError);
-          showErrorAlert('Fehler beim Löschen des Teams');
-        }
+        const memberCount = errorObj.details?.memberCount ?? 'einige';
+        this.showForceDeleteWarning(id, memberCount);
       } else {
         this.handleDeleteError(error);
       }
@@ -356,387 +581,59 @@ class TeamsManager {
 // Initialize when DOM is ready
 let teamsManager: TeamsManager | null = null;
 
-function setupUrlChangeHandlers(): void {
-  const checkTeamsVisibility = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const section = urlParams.get('section');
-    if (section === 'teams') {
-      void teamsManager?.loadTeams();
-    }
-  };
-
-  // Check on initial load
-  checkTeamsVisibility();
-
-  // Listen for URL changes
-  window.addEventListener('popstate', checkTeamsVisibility);
-
-  // Also check when section parameter changes
-  const originalPushState = window.history.pushState.bind(window.history);
-  window.history.pushState = function (...args: Parameters<typeof window.history.pushState>) {
-    originalPushState.apply(window.history, args);
-    setTimeout(checkTeamsVisibility, 100);
-  };
-
-  const originalReplaceState = window.history.replaceState.bind(window.history);
-  window.history.replaceState = function (...args: Parameters<typeof window.history.replaceState>) {
-    originalReplaceState.apply(window.history, args);
-    setTimeout(checkTeamsVisibility, 100);
-  };
-}
-
-// Window handler functions
-function setupSelectDropdownOption(): void {
-  (
-    window as WindowWithTeamHandlers & {
-      selectDropdownOption?: (fieldId: string, value: string, displayText: string) => void;
-    }
-  ).selectDropdownOption = (fieldId: string, value: string, displayText: string) => {
-    const input = document.querySelector<HTMLInputElement>(`#${fieldId}-select`);
-    const display = document.querySelector(`#${fieldId}-display`);
-
-    if (input !== null) {
-      input.value = value;
-    }
-    if (display !== null) {
-      const span = display.querySelector('span');
-      if (span !== null) span.textContent = displayText;
-    }
-
-    // Close dropdown
-    const dropdown = document.querySelector(`#${fieldId}-dropdown`);
-    if (dropdown !== null) {
-      dropdown.classList.remove('active');
-    }
-  };
-}
-
-function setupWindowHandlers(): void {
-  setupLoadTeamsTable();
-  setupToggleDropdown();
-  setupUpdateMemberSelection();
-  setupUpdateMachineSelection();
-  setupSelectDropdownOption();
-}
-
-function setupEditTeam(): void {
-  const w = window as unknown as WindowWithTeamHandlers;
-  w.editTeam = async (id: number) => {
-    if (!teamsManager) return;
-
-    const team = await teamsManager.getTeamDetails(id);
-    if (team === null) return;
-
-    const modal = document.querySelector('#team-modal');
-    if (modal === null) return;
-
-    modal.classList.add('active');
-
-    // Load all dropdowns in parallel
-    const apiClient = teamsManager.apiClient;
-    await Promise.all([
-      loadDepartmentsForSelect(document.querySelector<HTMLSelectElement>('#team-department'), apiClient),
-      loadAdminsForSelect(document.querySelector<HTMLSelectElement>('#team-lead'), apiClient),
-      loadMachinesForDropdown(document.querySelector('#team-machines-dropdown'), apiClient, team),
-      loadUsersForDropdown(document.querySelector('#team-members-dropdown'), apiClient, team),
-    ]);
-
-    // Populate form with team data
-    populateTeamForm(team);
-  };
-}
-
-function setupViewTeamDetails(): void {
-  const w = window as unknown as WindowWithTeamHandlers;
-  w.viewTeamDetails = async (id: number) => {
-    const team = await teamsManager?.getTeamDetails(id);
-    if (team !== null) {
-      // TODO: Open details modal
-      console.info('View team:', team);
-      showErrorAlert('Detailansicht noch nicht implementiert');
-    }
-  };
-}
-
-function setupDeleteTeam(): void {
-  const w = window as unknown as WindowWithTeamHandlers;
-  w.deleteTeam = (id: number) => {
-    teamsManager?.deleteTeam(id);
-  };
-}
-
-function setupToggleTeamStatus(): void {
-  const w = window as unknown as WindowWithTeamHandlers;
-  w.toggleTeamStatus = async (id: number, currentStatus: string) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    const response = await teamsManager?.apiClient.request<{ success: boolean; message: string }>(`/teams/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status: newStatus }),
-    });
-
-    if (response?.success === true) {
-      showSuccessAlert(`Team status successfully changed to ${newStatus}`);
-      void teamsManager?.loadTeams();
-    }
-  };
-}
-
-function setupShowTeamModal(): void {
-  const w = window as unknown as WindowWithTeamHandlers;
-  w.showTeamModal = async () => {
-    if (!teamsManager) return;
-
-    const modal = document.querySelector('#team-modal');
-    if (modal === null) return;
-
-    modal.classList.add('active');
-
-    // Load all dropdowns in parallel
-    const apiClient = teamsManager.apiClient;
-    await Promise.all([
-      loadDepartmentsForSelect(document.querySelector('#team-department'), apiClient),
-      loadAdminsForSelect(document.querySelector('#team-lead'), apiClient),
-      loadMachinesForDropdown(document.querySelector('#team-machines-dropdown'), apiClient),
-      loadUsersForDropdown(document.querySelector('#team-members-dropdown'), apiClient),
-    ]);
-
-    // Reset form
-    const form = document.querySelector<HTMLFormElement>('#team-form');
-    if (form !== null) {
-      form.reset();
-    }
-  };
-}
-
-function setupCloseTeamModal(): void {
-  const w = window as unknown as WindowWithTeamHandlers;
-  w.closeTeamModal = () => {
-    const modal = document.querySelector('#team-modal');
-    if (modal !== null) {
-      modal.classList.remove('active');
-    }
-  };
-}
-
-async function updateTeamMembers(
-  teamId: number,
-  currentMembers: TeamMember[],
-  selectedUserIds: number[],
-): Promise<void> {
-  const currentMemberIds = currentMembers.map((m) => m.id);
-  const membersToAdd = selectedUserIds.filter((id) => !currentMemberIds.includes(id));
-  const membersToRemove = currentMemberIds.filter((id) => !selectedUserIds.includes(id));
-
-  for (const userId of membersToAdd) {
-    try {
-      await teamsManager?.apiClient.request(`/teams/${teamId}/members`, {
-        method: 'POST',
-        body: JSON.stringify({ userId }),
-      });
-    } catch (error) {
-      console.error(`Error adding member ${userId}:`, error);
-    }
-  }
-
-  for (const userId of membersToRemove) {
-    try {
-      await teamsManager?.apiClient.request(`/teams/${teamId}/members/${userId}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      console.error(`Error removing member ${userId}:`, error);
-    }
-  }
-
-  console.info(`[TeamsManager] Updated members: +${membersToAdd.length} -${membersToRemove.length}`);
-}
-
-async function updateTeamMachines(
-  teamId: number,
-  currentMachines: Machine[],
-  selectedMachineIds: number[],
-): Promise<void> {
-  const currentMachineIds = currentMachines.map((m) => m.id);
-  const machinesToAdd = selectedMachineIds.filter((id) => !currentMachineIds.includes(id));
-  const machinesToRemove = currentMachineIds.filter((id) => !selectedMachineIds.includes(id));
-
-  for (const machineId of machinesToAdd) {
-    try {
-      await teamsManager?.apiClient.request(`/teams/${teamId}/machines`, {
-        method: 'POST',
-        body: JSON.stringify({ machineId }),
-      });
-    } catch (error) {
-      console.error(`Error adding machine ${machineId}:`, error);
-    }
-  }
-
-  for (const machineId of machinesToRemove) {
-    try {
-      await teamsManager?.apiClient.request(`/teams/${teamId}/machines/${machineId}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      console.error(`Error removing machine ${machineId}:`, error);
-    }
-  }
-
-  console.info(`[TeamsManager] Updated machines: +${machinesToAdd.length} -${machinesToRemove.length}`);
-}
-
-async function updateTeamRelations(
-  savedTeam: Team,
-  teamData: Record<string, string | number>,
-  userIds: number[],
-  machineIds: number[],
-): Promise<void> {
-  // Handle team members and machines for existing teams
-  if ('id' in teamData) {
-    const currentTeam = await teamsManager?.getTeamDetails(Number(teamData.id));
-    if (currentTeam) {
-      await Promise.all([
-        updateTeamMembers(savedTeam.id, currentTeam.members ?? [], userIds),
-        updateTeamMachines(savedTeam.id, currentTeam.machines ?? [], machineIds),
-      ]);
-    }
-  } else {
-    // For new teams, add all selected members and machines
-    await Promise.all([updateTeamMembers(savedTeam.id, [], userIds), updateTeamMachines(savedTeam.id, [], machineIds)]);
-  }
-}
-
-function setupSaveTeam(): void {
-  const w = window as unknown as WindowWithTeamHandlers;
-  w.saveTeam = async () => {
-    const form = document.querySelector<HTMLFormElement>('#team-form');
-    if (form === null) return;
-
-    const formData = new FormData(form);
-    const { teamData, machineIds, userIds } = processTeamFormData(formData);
-
-    try {
-      const savedTeam = await ('id' in teamData
-        ? teamsManager?.updateTeam(Number(teamData.id), teamData)
-        : teamsManager?.createTeam(teamData));
-
-      if (savedTeam) {
-        await updateTeamRelations(savedTeam, teamData, userIds, machineIds);
-      }
-
-      w.closeTeamModal?.();
-      await teamsManager?.loadTeams();
-    } catch (error) {
-      console.error('Error saving team:', error);
-    }
-  };
-}
-
-// Handler functions extracted from DOMContentLoaded
-function setupLoadTeamsTable(): void {
-  (window as WindowWithTeamHandlers & { loadTeamsTable?: () => void }).loadTeamsTable = () => {
-    console.info('[TeamsManager] loadTeamsTable called');
-    void teamsManager?.loadTeams();
-  };
-}
-
-function setupToggleDropdown(): void {
-  (window as WindowWithTeamHandlers & { toggleDropdown?: (dropdownId: string) => void }).toggleDropdown = (
-    dropdownId: string,
-  ) => {
-    const dropdown = document.querySelector<HTMLElement>(`#${dropdownId}-dropdown`);
-    if (dropdown !== null) {
-      const isVisible = dropdown.style.display !== 'none';
-      dropdown.style.display = isVisible ? 'none' : 'block';
-    }
-  };
-}
-
-function setupUpdateMemberSelection(): void {
-  (window as WindowWithTeamHandlers & { updateMemberSelection?: () => void }).updateMemberSelection = () => {
-    const memberDropdown = document.querySelector('#team-members-dropdown');
-    const memberDisplay = document.querySelector('#team-members-display');
-    const memberInput = document.querySelector<HTMLInputElement>('#team-members-select');
-
-    if (memberDropdown === null || memberDisplay === null || memberInput === null) {
-      return;
-    }
-
-    const checkboxes = memberDropdown.querySelectorAll('input[type="checkbox"]:checked');
-    const selectedIds: string[] = [];
-    const selectedNames: string[] = [];
-
-    checkboxes.forEach((checkbox) => {
-      const input = checkbox as HTMLInputElement;
-      selectedIds.push(input.value);
-      const label = checkbox.parentElement?.querySelector('span');
-      if (label && label.textContent.length > 0) {
-        selectedNames.push(label.textContent.split(' (')[0]);
-      }
-    });
-
-    memberInput.value = selectedIds.join(',');
-
-    if (selectedNames.length === 0) {
-      memberDisplay.textContent = 'Keine Mitglieder zugewiesen';
-    } else if (selectedNames.length <= 3) {
-      memberDisplay.textContent = selectedNames.join(', ');
-    } else {
-      memberDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
-    }
-  };
-}
-
-function setupUpdateMachineSelection(): void {
-  (window as WindowWithTeamHandlers & { updateMachineSelection?: () => void }).updateMachineSelection = () => {
-    const machineDropdown = document.querySelector('#team-machines-dropdown');
-    const machineDisplay = document.querySelector('#team-machines-display');
-    const machineInput = document.querySelector<HTMLInputElement>('#team-machines-select');
-
-    if (machineDropdown === null || machineDisplay === null || machineInput === null) {
-      return;
-    }
-
-    const checkboxes = machineDropdown.querySelectorAll('input[type="checkbox"]:checked');
-    const selectedIds: string[] = [];
-    const selectedNames: string[] = [];
-
-    checkboxes.forEach((checkbox) => {
-      const input = checkbox as HTMLInputElement;
-      selectedIds.push(input.value);
-      const label = checkbox.parentElement?.querySelector('span');
-      if (label && label.textContent.length > 0) {
-        selectedNames.push(label.textContent.split(' (')[0]);
-      }
-    });
-
-    machineInput.value = selectedIds.join(',');
-
-    if (selectedNames.length === 0) {
-      machineDisplay.textContent = 'Keine Maschinen zugewiesen';
-    } else if (selectedNames.length <= 3) {
-      machineDisplay.textContent = selectedNames.join(', ');
-    } else {
-      machineDisplay.textContent = `${selectedNames.slice(0, 2).join(', ')} +${selectedNames.length - 2} weitere`;
-    }
-  };
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   // Only initialize if we're on the manage-teams page
   if (window.location.pathname === '/manage-teams' || window.location.pathname.includes('manage-teams')) {
     teamsManager = new TeamsManager();
 
+    // Make teamsManager available to data.ts and forms.ts
+    setTeamsManager(teamsManager);
+
     // Setup all window handlers
-    setupWindowHandlers();
     setupEditTeam();
-    setupViewTeamDetails();
     setupDeleteTeam();
-    setupToggleTeamStatus();
     setupShowTeamModal();
     setupCloseTeamModal();
     setupSaveTeam();
-    setupUrlChangeHandlers();
   }
 });
+
+/**
+ * Initialize Design System tooltips from data-tooltip attributes
+ * Converts data-tooltip="text" to proper tooltip HTML structure
+ */
+function initDataTooltips(): void {
+  const elements = document.querySelectorAll('[data-tooltip]');
+
+  elements.forEach((element) => {
+    const tooltipText = element.getAttribute('data-tooltip');
+    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
+
+    if (tooltipText === null || tooltipText === '') {
+      return;
+    }
+
+    // Wrap element if not already wrapped
+    const isAlreadyWrapped = element.parentElement?.classList.contains('tooltip') ?? false;
+
+    if (!isAlreadyWrapped) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'tooltip';
+
+      // Replace element with wrapper using element.before()
+      element.before(wrapper);
+      wrapper.appendChild(element);
+
+      // Create tooltip content
+      const tooltipContent = document.createElement('div');
+      tooltipContent.className = `tooltip__content tooltip__content--${tooltipPosition} tooltip__content--multiline`;
+      tooltipContent.setAttribute('role', 'tooltip');
+      // Use textContent for multiline support - preserves newlines
+      tooltipContent.textContent = tooltipText;
+
+      wrapper.appendChild(tooltipContent);
+    }
+  });
+}
 
 export { TeamsManager };
