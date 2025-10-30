@@ -360,13 +360,16 @@ class DepartmentController {
         return;
       }
 
+      // Get force parameter from query string (e.g., /departments/123?force=true)
+      const force = req.query.force === 'true';
+
       // Get department data before deletion for logging
       const deletedDepartment = await departmentService.getDepartmentById(
         departmentId,
         req.user.tenant_id,
       );
 
-      await departmentService.deleteDepartment(departmentId, req.user.tenant_id);
+      await departmentService.deleteDepartment(departmentId, req.user.tenant_id, force);
 
       // Log department deletion
       await rootLog.create({

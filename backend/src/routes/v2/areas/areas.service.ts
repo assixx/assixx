@@ -412,22 +412,191 @@ export async function updateArea(
  * @param id - The resource ID
  * @param tenantId - The tenant ID
  */
-export async function deleteArea(id: number, tenantId: number): Promise<void> {
+/**
+ * Check for area dependencies
+ * @param id - The area ID
+ * @param tenantId - The tenant ID
+ * @returns Object with dependency counts
+ */
+async function checkAreaDependencies(
+  id: number,
+  tenantId: number,
+): Promise<{
+  children: number;
+  departments: number;
+  machines: number;
+  shifts: number;
+  shiftPlans: number;
+  shiftFavorites: number;
+  total: number;
+}> {
+  const [children] = await execute<RowDataPacket[]>(
+    'SELECT id FROM areas WHERE parent_id = ? AND tenant_id = ?',
+    [id, tenantId],
+  );
+
+  const [departments] = await execute<RowDataPacket[]>(
+    'SELECT id FROM departments WHERE area_id = ? AND tenant_id = ?',
+    [id, tenantId],
+  );
+
+  const [machines] = await execute<RowDataPacket[]>(
+    'SELECT id FROM machines WHERE area_id = ? AND tenant_id = ?',
+    [id, tenantId],
+  );
+
+  const [shifts] = await execute<RowDataPacket[]>(
+    'SELECT id FROM shifts WHERE area_id = ? AND tenant_id = ?',
+    [id, tenantId],
+  );
+
+  const [shiftPlans] = await execute<RowDataPacket[]>(
+    'SELECT id FROM shift_plans WHERE area_id = ? AND tenant_id = ?',
+    [id, tenantId],
+  );
+
+  const [shiftFavorites] = await execute<RowDataPacket[]>(
+    'SELECT id FROM shift_favorites WHERE area_id = ? AND tenant_id = ?',
+    [id, tenantId],
+  );
+
+  return {
+    children: children.length,
+    departments: departments.length,
+    machines: machines.length,
+    shifts: shifts.length,
+    shiftPlans: shiftPlans.length,
+    shiftFavorites: shiftFavorites.length,
+    total:
+      children.length +
+      departments.length +
+      machines.length +
+      shifts.length +
+      shiftPlans.length +
+      shiftFavorites.length,
+  };
+}
+
+/**
+ * Remove area dependencies (SET NULL or DELETE)
+ * @param id - The area ID
+ * @param tenantId - The tenant ID
+ * @param deps - Dependency counts
+ */
+async function removeAreaDependencies(
+  id: number,
+  tenantId: number,
+  deps: Awaited<ReturnType<typeof checkAreaDependencies>>,
+): Promise<void> {
+  if (deps.children > 0) {
+    await execute('UPDATE areas SET parent_id = NULL WHERE parent_id = ? AND tenant_id = ?', [
+      id,
+      tenantId,
+    ]);
+  }
+
+  if (deps.departments > 0) {
+    await execute('UPDATE departments SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+      id,
+      tenantId,
+    ]);
+  }
+
+  if (deps.machines > 0) {
+    await execute('UPDATE machines SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+      id,
+      tenantId,
+    ]);
+  }
+
+  if (deps.shifts > 0) {
+    await execute('UPDATE shifts SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+      id,
+      tenantId,
+    ]);
+  }
+
+  if (deps.shiftPlans > 0) {
+    await execute('UPDATE shift_plans SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
+      id,
+      tenantId,
+    ]);
+  }
+
+  if (deps.shiftFavorites > 0) {
+    await execute('DELETE FROM shift_favorites WHERE area_id = ? AND tenant_id = ?', [
+      id,
+      tenantId,
+    ]);
+  }
+}
+
+/**
+ * Build dependency details object for error response
+ * @param deps - Dependency counts
+ * @returns Details object with all non-zero dependencies
+ */
+function buildDependencyDetails(
+  deps: Awaited<ReturnType<typeof checkAreaDependencies>>,
+): Record<string, number> {
+  const details: Record<string, number> = { totalDependencies: deps.total };
+
+  // Build details object with explicit property assignment (safe from injection)
+  if (deps.children > 0) details.childAreas = deps.children;
+  if (deps.departments > 0) details.departments = deps.departments;
+  if (deps.machines > 0) details.machines = deps.machines;
+  if (deps.shifts > 0) details.shifts = deps.shifts;
+  if (deps.shiftPlans > 0) details.shiftPlans = deps.shiftPlans;
+  if (deps.shiftFavorites > 0) details.shiftFavorites = deps.shiftFavorites;
+
+  return details;
+}
+
+/**
+ * Handle area dependencies before deletion
+ * @param id - The area ID
+ * @param tenantId - The tenant ID
+ * @param force - If true, removes/nullifies all dependencies before deleting
+ * @throws ServiceError if dependencies exist and force is false
+ */
+async function handleAreaDependenciesForDeletion(
+  id: number,
+  tenantId: number,
+  force: boolean,
+): Promise<void> {
+  const deps = await checkAreaDependencies(id, tenantId);
+
+  if (deps.total === 0) {
+    return;
+  }
+
+  if (!force) {
+    const details = buildDependencyDetails(deps);
+    throw new ServiceError('BAD_REQUEST', 'Cannot delete area with dependencies', details);
+  }
+
+  await removeAreaDependencies(id, tenantId, deps);
+}
+
+/**
+ * Delete an area
+ * @param id - The area ID
+ * @param tenantId - The tenant ID
+ * @param force - If true, removes/nullifies all dependencies before deleting
+ */
+export async function deleteArea(
+  id: number,
+  tenantId: number,
+  force: boolean = false,
+): Promise<void> {
   // Check if area exists
   const existing = await getAreaById(id, tenantId);
   if (!existing) {
     throw new ServiceError('NOT_FOUND', 'Area not found', 404);
   }
 
-  // Check if area has children
-  const [children] = await execute<RowDataPacket[]>(
-    'SELECT id FROM areas WHERE parent_id = ? AND tenant_id = ?',
-    [id, tenantId],
-  );
-
-  if (children.length > 0) {
-    throw new ServiceError('HAS_CHILDREN', 'Cannot delete area with child areas', 400);
-  }
+  // Handle dependencies (throws error if dependencies exist and force is false)
+  await handleAreaDependenciesForDeletion(id, tenantId, force);
 
   // Hard delete - wirklich löschen
   await execute('DELETE FROM areas WHERE id = ? AND tenant_id = ?', [id, tenantId]);

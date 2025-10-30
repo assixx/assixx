@@ -236,6 +236,25 @@
       </div>
     </div>
 
+    <!-- Force Delete Warning Modal (Confirm Modal Warning variant) -->
+    <div id="force-delete-warning-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--warning">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Abteilung hat Abhängigkeiten</h3>
+        <p class="confirm-modal__message" id="force-delete-warning-message">
+          Diese Abteilung wird von anderen Elementen verwendet. Möchten Sie die Abteilung trotzdem löschen? Alle Zuordnungen werden
+          entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-force-delete">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--confirm" id="confirm-force-delete">Abteilung löschen</button>
+        </div>
+        <input type="hidden" id="force-delete-department-id" />
+      </div>
+    </div>
+
     <!-- Floating Action Button -->
     <button class="btn-float add-department-btn" aria-label="Abteilung hinzufügen">
       <i class="fas fa-plus"></i>
