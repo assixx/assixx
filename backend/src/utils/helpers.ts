@@ -4,7 +4,7 @@
  */
 import crypto from 'crypto';
 
-import { PAGINATION } from './constants';
+import { PAGINATION } from './constants.js';
 
 // Interfaces
 interface QueryParams {

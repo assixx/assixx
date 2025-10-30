@@ -9,6 +9,7 @@ import type { User, Tenant } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
 // Import role switch function
 import { apiClient } from '../../utils/api-client';
+import { tokenManager } from '../../utils/token-manager';
 import { $$, setHTML } from '../../utils/dom-utils';
 import { switchRoleForRoot, switchRoleForAdmin } from '../auth/role-switch';
 import { SSEClient } from '../utils/sse-client';
@@ -182,23 +183,7 @@ const accessControlMap = new Map<string, ('root' | 'admin' | 'employee')[]>(Obje
 
 // ===== TOKEN TIMER HELPER FUNCTIONS =====
 
-/**
- * Decode JWT token to extract payload (exp claim)
- * @param token - JWT access token
- */
-function decodeJWT(token: string): { exp?: number } | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
-
-    // Decode base64url payload (second part)
-    return JSON.parse(atob(parts[1])) as { exp?: number };
-  } catch {
-    return null;
-  }
-}
+// decodeJWT removed - TokenManager handles this internally
 
 /**
  * Format seconds to MM:SS
@@ -293,7 +278,7 @@ class UnifiedNavigation {
   private init(): void {
     // Proactively refresh token if it expires soon (ensures fresh token on page load)
     // Fire and forget - don't block navigation initialization
-    void apiClient.ensureFreshToken();
+    void tokenManager.refreshIfNeeded();
 
     this.setupInitialState();
     this.setupEventHandlers();
@@ -449,71 +434,42 @@ class UnifiedNavigation {
   }
 
   /**
-   * Setup token timer - updates every second
+   * Setup token timer - subscribes to TokenManager updates
+   * TokenManager handles the 1-second interval internally
    */
   private setupTokenTimer(): void {
-    // Initial update
-    this.updateTokenTimer();
-
-    // Update every second
-    window.setInterval(() => {
-      this.updateTokenTimer();
-    }, 1000);
-
-    // Listen for token refresh (when access token changes in localStorage)
-    window.addEventListener('storage', (event) => {
-      if (event.key === 'accessToken' && event.newValue !== event.oldValue) {
-        // Token was refreshed, update timer immediately
-        this.updateTokenTimer();
-      }
+    // Subscribe to TokenManager's timer updates (fired every second)
+    tokenManager.onTimerUpdate((remainingSeconds: number) => {
+      this.updateTokenDisplay(remainingSeconds);
     });
   }
 
   /**
-   * Update token timer display
+   * Update token timer display (called by TokenManager every second)
+   * @param remainingSeconds - Seconds until token expires
    */
-  private updateTokenTimer(): void {
-    const token = localStorage.getItem('accessToken');
+  private updateTokenDisplay(remainingSeconds: number): void {
     const timerElement = $$('#token-timer');
 
     if (timerElement === null) {
       return;
     }
 
-    // No token = not logged in
-    if (token === null || token === '') {
-      timerElement.textContent = '--:--';
-      timerElement.classList.remove('token-timer--warning');
-      return;
-    }
+    // Update display text
+    timerElement.textContent = formatTokenTime(remainingSeconds);
 
-    // Decode JWT to get expiration
-    const decoded = decodeJWT(token);
-    if (decoded?.exp === undefined) {
-      timerElement.textContent = '--:--';
-      timerElement.classList.remove('token-timer--warning');
-      return;
-    }
-
-    // Calculate remaining time
-    const now = Math.floor(Date.now() / 1000); // Current time in seconds
-    const remaining = decoded.exp - now;
-
-    // Update display
-    timerElement.textContent = formatTokenTime(remaining);
-
-    // Visual warning if less than 5 minutes (300 seconds)
-    if (remaining < 300 && remaining > 0) {
-      timerElement.classList.add('token-timer--warning');
-    } else {
-      timerElement.classList.remove('token-timer--warning');
-    }
-
-    // Token expired
-    if (remaining <= 0) {
-      timerElement.textContent = '00:00';
+    // Update CSS classes based on remaining time
+    if (remainingSeconds === 0) {
+      // Token expired - show red
       timerElement.classList.add('token-timer--expired');
+      timerElement.classList.remove('token-timer--warning');
+    } else if (remainingSeconds < 300) {
+      // < 5 minutes - show warning (yellow)
+      timerElement.classList.add('token-timer--warning');
+      timerElement.classList.remove('token-timer--expired');
     } else {
+      // > 5 minutes - normal (white)
+      timerElement.classList.remove('token-timer--warning');
       timerElement.classList.remove('token-timer--expired');
     }
   }
@@ -701,10 +657,15 @@ class UnifiedNavigation {
 
     if (employeeNumber !== undefined) {
       console.info('[UnifiedNav] Setting employee number to:', employeeNumber);
+      // Set display flex and center content
+      sidebarEmployeeNumber.style.display = 'flex';
+      sidebarEmployeeNumber.style.justifyContent = 'center';
+
       if (employeeNumber !== '000001') {
-        sidebarEmployeeNumber.textContent = `Personalnummer: ${employeeNumber}`;
+        // Show only ID with letter-spacing (no label)
+        setHTML(sidebarEmployeeNumber, `<span style="letter-spacing: 2px;">${employeeNumber}</span>`);
       } else {
-        sidebarEmployeeNumber.textContent = 'Personalnummer: Temporär';
+        setHTML(sidebarEmployeeNumber, '<span style="letter-spacing: 2px;">Temporär</span>');
         sidebarEmployeeNumber.style.color = 'var(--warning-color)';
       }
     }
@@ -1559,7 +1520,7 @@ class UnifiedNavigation {
               </p>
             </div>
             <div class="ds-modal__footer ds-modal__footer--spaced">
-              <button class="btn btn-dark" id="cancelLogout">
+              <button class="btn btn-light" id="cancelLogout">
                 <i class="fas fa-times"></i>
                 Abbrechen
               </button>

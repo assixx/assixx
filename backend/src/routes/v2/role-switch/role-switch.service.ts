@@ -4,8 +4,8 @@
  */
 import jwt from 'jsonwebtoken';
 
-import rootLog from '../../../models/rootLog';
-import userModel, { DbUser } from '../../../models/user.js';
+import rootLog from '../../../models/rootLog.js';
+import userModel, { DbUser } from '../../../models/user/index.js';
 
 // Use same JWT_SECRET as auth middleware
 const JWT_SECRET = process.env.JWT_SECRET ?? '';

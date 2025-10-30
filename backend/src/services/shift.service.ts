@@ -9,6 +9,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
+import type { DbShift, DbShiftTemplate } from '../models/shift-types.js';
 import {
   assignEmployeeToShift,
   createShift,
@@ -23,8 +24,7 @@ import {
   getShiftPlans,
   getShiftTemplates,
   getShiftsByPlan,
-} from '../models/shift';
-import type { DbShift, DbShiftTemplate } from '../models/shift-types';
+} from '../models/shift.js';
 
 // Interfaces - these would typically match the Shift model interfaces
 interface ShiftEntry {

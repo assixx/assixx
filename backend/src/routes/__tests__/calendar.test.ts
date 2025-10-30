@@ -5,8 +5,8 @@
 import { Pool } from 'mysql2/promise';
 import request from 'supertest';
 
-import { asTestRows } from '../../__tests__/mocks/db-types';
-import app from '../../app';
+import { asTestRows } from '../../__tests__/mocks/db-types.js';
+import app from '../../app.js';
 import {
   cleanupTestData,
   createTestDatabase,
@@ -15,7 +15,7 @@ import {
   createTestTenant,
   createTestUser,
   getAuthToken,
-} from '../mocks/database';
+} from '../mocks/database.js';
 
 describe('Calendar API Endpoints', () => {
   let testDb: Pool;

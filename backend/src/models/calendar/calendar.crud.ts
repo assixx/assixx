@@ -2,11 +2,11 @@
  * Calendar CRUD Operations
  * Main business logic for calendar event management
  */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../utils/db';
-import { logger } from '../../utils/logger';
-import user from '../user';
-import { addEventAttendee } from './calendar.attendees';
-import { generateRecurringEvents } from './calendar.recurring';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../utils/db.js';
+import { logger } from '../../utils/logger.js';
+import user from '../user/index.js';
+import { addEventAttendee } from './calendar.attendees.js';
+import { generateRecurringEvents } from './calendar.recurring.js';
 import {
   DbCalendarEvent,
   EventCreateData,
@@ -14,7 +14,7 @@ import {
   EventUpdateData,
   EventsListResponse,
   UserInfo,
-} from './calendar.types';
+} from './calendar.types.js';
 import {
   applyEventFilters,
   buildEventUpdateQuery,
@@ -22,7 +22,7 @@ import {
   formatDateForMysql,
   getEventCount,
   processCalendarEvents,
-} from './calendar.utils';
+} from './calendar.utils.js';
 
 // Query result interfaces
 interface UserIdResult extends RowDataPacket {

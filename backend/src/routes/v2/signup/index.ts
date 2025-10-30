@@ -5,9 +5,7 @@
 import { Request, Response, Router } from 'express';
 
 import { apiLimiter, authLimiter } from '../../../middleware/security-enhanced.js';
-import { validate } from '../../../middleware/validation.js';
 import { signupController } from './controller.js';
-import { checkSubdomainValidation, signupValidation } from './validation.js';
 
 const router = Router();
 
@@ -128,7 +126,6 @@ const router = Router();
 router.post(
   '/',
   authLimiter, // Rate limiting for registration
-  validate(signupValidation),
   async (req: Request, res: Response) => {
     console.info('[SIGNUP ROUTE] Request received');
     console.info('[SIGNUP ROUTE] Body:', req.body);
@@ -204,7 +201,6 @@ router.post(
 router.get(
   '/check-subdomain/:subdomain',
   apiLimiter, // Rate limiting for API calls
-  validate(checkSubdomainValidation),
   async (req: Request, res: Response) => {
     await signupController.checkSubdomain(req, res);
   },

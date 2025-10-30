@@ -8,12 +8,12 @@
  */
 import { Router } from 'express';
 
-import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
-import { requireRoleV2 } from '../../../middleware/v2/roleCheck.middleware';
-import { typed } from '../../../utils/routeHandlers';
-import * as rotationController from './rotation.controller';
-import * as shiftsController from './shifts.controller';
-import { shiftsValidationZod } from './shifts.validation.zod';
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { requireRoleV2 } from '../../../middleware/v2/roleCheck.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as rotationController from './rotation.controller.js';
+import * as shiftsController from './shifts.controller.js';
+import { shiftsValidationZod } from './shifts.validation.zod.js';
 
 const router = Router();
 

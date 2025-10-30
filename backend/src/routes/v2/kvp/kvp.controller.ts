@@ -4,7 +4,7 @@
  */
 import { Response } from 'express';
 
-import rootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';

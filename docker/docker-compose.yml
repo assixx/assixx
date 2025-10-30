@@ -78,6 +78,7 @@ services:
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:ro
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
       - ../tsconfig.json:/app/tsconfig.json:delegated
+      - ../tsconfig.base.json:/app/tsconfig.base.json:delegated
       - ../tsconfig.test.json:/app/tsconfig.test.json:delegated
       - ../eslint.config.js:/app/eslint.config.js:delegated
       - ../jest.config.js:/app/jest.config.js:delegated
@@ -160,6 +161,7 @@ services:
       - ../pnpm-lock.yaml:/app/pnpm-lock.yaml:delegated
       - ../pnpm-workspace.yaml:/app/pnpm-workspace.yaml:delegated
       - ../tsconfig.json:/app/tsconfig.json:delegated
+      - ../tsconfig.base.json:/app/tsconfig.base.json:delegated
       - ../.env:/app/.env:ro
       - /app/node_modules
       - ../exports:/exports

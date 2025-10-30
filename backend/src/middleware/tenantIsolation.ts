@@ -4,9 +4,9 @@
  */
 import { NextFunction, Response } from 'express';
 
-import type { AuthenticatedRequest } from '../types/request.types';
-import { errorResponse } from '../types/response.types';
-import { logger } from '../utils/logger';
+import type { AuthenticatedRequest } from '../types/request.types.js';
+import { errorResponse } from '../types/response.types.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Extracts tenant ID string from various request sources

@@ -8,11 +8,11 @@
  */
 import express, { RequestHandler, Response, Router } from 'express';
 
-import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { typed } from '../../../utils/routeHandlers';
-import { machinesController } from './machines.controller';
-import { machinesValidationZod } from './validation.zod';
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { machinesController } from './machines.controller.js';
+import { machinesValidationZod } from './validation.zod.js';
 
 const router: Router = express.Router();
 

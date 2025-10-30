@@ -1,7 +1,7 @@
 // Import all functions for default export
-import * as shiftCore from './shift-core';
-import { formatDateForMysql, formatDateOnlyForMysql } from './shift-types';
-import * as shiftV2 from './shift-v2';
+import * as shiftCore from './shift-core.js';
+import { formatDateForMysql, formatDateOnlyForMysql } from './shift-types.js';
+import * as shiftV2 from './shift-v2.js';
 
 /**
  * Shift Model
@@ -39,7 +39,7 @@ export {
   type V2SwapRequestData,
   type V2SwapRequestFilters,
   type V2SwapRequestResult,
-} from './shift-types';
+} from './shift-types.js';
 
 // Re-export all core functions from shift-core
 export {
@@ -58,7 +58,7 @@ export {
   getEmployeeShifts,
   getShiftsForDateRange,
   getWeekNotes,
-} from './shift-core';
+} from './shift-core.js';
 
 // Re-export all v2 functions from shift-v2
 export {
@@ -77,7 +77,7 @@ export {
   getSwapRequestById,
   updateSwapRequestStatus,
   getOvertimeByUser,
-} from './shift-v2';
+} from './shift-v2.js';
 
 // Default export with all functions (maintains backwards compatibility)
 export default {

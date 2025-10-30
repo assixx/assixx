@@ -1,5 +1,5 @@
 // TypeScript Utility Functions for Type Safety
-import { DatabaseUser, User } from '../types/models';
+import { DatabaseUser, User } from '../types/models.js';
 
 /**
  * Converts database user format to application user format

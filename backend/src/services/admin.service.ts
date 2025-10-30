@@ -7,7 +7,7 @@ import { Pool } from 'mysql2/promise';
 import rootLog, {
   type DbRootLog,
   type RootLogCreateData as ModelRootLogCreateData,
-} from '../models/rootLog';
+} from '../models/rootLog.js';
 
 /**
  * Admin Log Service

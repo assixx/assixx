@@ -10,8 +10,8 @@
  */
 import { z } from 'zod';
 
-import { validateBody } from '../../../middleware/validation.zod';
-import { EmailSchema, PasswordSchema } from '../../../schemas/common.schema';
+import { validateBody } from '../../../middleware/validation.zod.js';
+import { EmailSchema, PasswordSchema } from '../../../schemas/common.schema.js';
 
 // ============================================================
 // CUSTOM SCHEMAS

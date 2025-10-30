@@ -4,7 +4,7 @@
  */
 import { RowDataPacket } from 'mysql2';
 
-import rootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';

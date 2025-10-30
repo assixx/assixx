@@ -2,9 +2,9 @@ import bcrypt from 'bcryptjs';
 import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import { pool } from '../../database';
-import type { PublicRequest } from '../../types/request.types';
-import { authenticateToken } from '../auth-refactored';
+import { pool } from '../../database.js';
+import type { PublicRequest } from '../../types/request.types.js';
+import { authenticateToken } from '../auth-refactored.js';
 
 /**
  * Integration Tests for Authentication Middleware

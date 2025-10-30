@@ -7,11 +7,11 @@
  */
 import express, { Router } from 'express';
 
-import { rateLimiter } from '../../../middleware/rateLimiter';
-import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
-import { typed } from '../../../utils/routeHandlers';
-import { authController } from './auth.controller';
-import { authValidationZod } from './auth.validation.zod';
+import { rateLimiter } from '../../../middleware/rateLimiter.js';
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { authController } from './auth.controller.js';
+import { authValidationZod } from './auth.validation.zod.js';
 
 const router: Router = express.Router();
 

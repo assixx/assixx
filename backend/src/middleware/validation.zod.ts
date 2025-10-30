@@ -13,7 +13,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { ZodError, z } from 'zod';
 
-import { errorResponse } from '../utils/apiResponse';
+import { errorResponse } from '../utils/apiResponse.js';
 
 /**
  * Custom error formatter for Zod errors

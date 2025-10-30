@@ -10,8 +10,8 @@ import {
   SurveyResponseWithUserResult,
   TotalCountResult,
 } from '../../../types/query-results.types.js';
-import { ServiceError } from '../../../utils/ServiceError';
-import { PoolConnection, ResultSetHeader, query, transaction } from '../../../utils/db';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { PoolConnection, ResultSetHeader, query, transaction } from '../../../utils/db.js';
 
 export interface SurveyAnswer {
   question_id: number;

@@ -5,12 +5,20 @@
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
-import type { Attachment } from 'nodemailer/lib/mailer';
 import path from 'path';
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import Feature from '../models/feature';
-import { logger } from './logger';
+import Feature from '../models/feature.js';
+import { logger } from './logger.js';
+
+// Type definition for attachment (from nodemailer)
+interface Attachment {
+  filename?: string;
+  content?: string | Buffer;
+  path?: string;
+  contentType?: string;
+  cid?: string;
+}
 
 function removeDangerousTags(html: string): string {
   const dangerousTags = [

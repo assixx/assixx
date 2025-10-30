@@ -2,7 +2,7 @@
  * Calendar Types & Interfaces
  * Single source of truth for all calendar-related TypeScript types
  */
-import { RowDataPacket } from '../../utils/db';
+import { RowDataPacket } from '../../utils/db.js';
 
 /**
  * Database representation of a calendar event

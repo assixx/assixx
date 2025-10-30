@@ -4,10 +4,10 @@
  */
 import bcrypt from 'bcryptjs';
 
-import { ResultSetHeader, query as executeQuery } from '../../utils/db';
-import { logger } from '../../utils/logger';
-import { findUserById } from './user.crud';
-import { PasswordChangeResult, ProfileUpdateResult, UserCreateData } from './user.types';
+import { ResultSetHeader, query as executeQuery } from '../../utils/db.js';
+import { logger } from '../../utils/logger.js';
+import { findUserById } from './user.crud.js';
+import { PasswordChangeResult, ProfileUpdateResult, UserCreateData } from './user.types.js';
 
 /**
  * Update user profile picture

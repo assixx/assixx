@@ -15,14 +15,14 @@ import { z } from 'zod';
 // VALIDATION MIDDLEWARE EXPORTS
 // ============================================================
 
-import { validateBody, validateParams, validateQuery } from '../../../middleware/validation.zod';
+import { validateBody, validateParams, validateQuery } from '../../../middleware/validation.zod.js';
 import {
   EmailSchema,
   IdSchema,
   PaginationSchema,
   PasswordSchema,
   RoleSchema,
-} from '../../../schemas/common.schema';
+} from '../../../schemas/common.schema.js';
 
 // CUSTOM VALIDATORS
 

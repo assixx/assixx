@@ -21,7 +21,7 @@ import {
   removeEventAttendee,
   respondToEvent,
   updateEvent,
-} from '../models/calendar';
+} from '../models/calendar.js';
 
 // UserInfo is defined below
 

@@ -5,7 +5,7 @@
 
 import request from "supertest";
 import { Pool } from "mysql2/promise";
-import app from "../../app";
+import app from "../../app.js";
 import {
   createTestDatabase,
   cleanupTestData,
@@ -14,8 +14,8 @@ import {
   createTestDepartment,
   createTestTeam,
   getAuthToken,
-} from "../mocks/database";
-import { asTestRows } from "../../__tests__/mocks/db-types";
+} from "../mocks/database.js";
+import { asTestRows } from "../../__tests__/mocks/db-types.js";
 
 describe("Survey API Endpoints", () => {
   let testDb: Pool;

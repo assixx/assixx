@@ -4,10 +4,10 @@
  */
 import { NextFunction, Request, Response } from 'express';
 
-import tenantModel from '../models/tenant';
-import { DatabaseTenant } from '../types/models';
-import { TenantInfo, TenantTrialStatus } from '../types/tenant.types';
-import { logger } from '../utils/logger';
+import tenantModel from '../models/tenant.js';
+import { DatabaseTenant } from '../types/models.js';
+import { TenantInfo, TenantTrialStatus } from '../types/tenant.types.js';
+import { logger } from '../utils/logger.js';
 
 // Request interface is already extended in types/express-extensions.d.ts
 

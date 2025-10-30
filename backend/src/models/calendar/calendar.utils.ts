@@ -2,9 +2,9 @@
  * Calendar Utility Functions
  * Pure functions for data formatting, filtering, and processing
  */
-import { RowDataPacket, query as executeQuery } from '../../utils/db';
-import user from '../user';
-import { CountResult, DbCalendarEvent } from './calendar.types';
+import { RowDataPacket, query as executeQuery } from '../../utils/db.js';
+import user from '../user/index.js';
+import { CountResult, DbCalendarEvent } from './calendar.types.js';
 
 /**
  * Format datetime strings for MySQL (remove 'Z' and convert to local format)

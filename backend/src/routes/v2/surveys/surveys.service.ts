@@ -2,7 +2,7 @@
  * surveys API v2 Service Layer
  * Business logic for survey management
  */
-import rootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog.js';
 import survey, { SurveyStatistics } from '../../../models/survey.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { eventBus } from '../../../utils/eventBus.js';

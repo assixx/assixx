@@ -4,13 +4,13 @@
  */
 import { RowDataPacket } from 'mysql2';
 
-import rootLog from '../../../models/rootLog';
-import shiftModel from '../../../models/shift';
-import { ServiceError } from '../../../utils/ServiceError';
-import { execute } from '../../../utils/db';
-import { apiToDb, dbToApi } from '../../../utils/fieldMapping';
-import { logger } from '../../../utils/logger';
-import { shiftPlansService } from './shift-plans.service';
+import rootLog from '../../../models/rootLog.js';
+import shiftModel from '../../../models/shift.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { execute } from '../../../utils/db.js';
+import { apiToDb, dbToApi } from '../../../utils/fieldMapping.js';
+import { logger } from '../../../utils/logger.js';
+import { shiftPlansService } from './shift-plans.service.js';
 
 interface ShiftFilters {
   date?: string;

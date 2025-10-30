@@ -7,14 +7,14 @@ import { JwtPayload } from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
 // V1 import disabled
-// import { createLog } from '../routes/v1/logs';
-import authService from '../services/auth.service';
-import userService from '../services/user.service';
-import type { AuthResult } from '../types/auth.types';
-import type { AuthenticatedRequest } from '../types/request.types';
-import { errorResponse, successResponse } from '../types/response.types';
-import { query as executeQuery } from '../utils/db';
-import { logger } from '../utils/logger';
+// import { createLog } from '../routes/v1/logs.js';
+import authService from '../services/auth.service.js';
+import userService from '../services/user.service.js';
+import type { AuthResult } from '../types/auth.types.js';
+import type { AuthenticatedRequest } from '../types/request.types.js';
+import { errorResponse, successResponse } from '../types/response.types.js';
+import { query as executeQuery } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
 
 // Helper to safely get request body as unknown
 // Express types req.body as 'any' - this helper makes it explicit

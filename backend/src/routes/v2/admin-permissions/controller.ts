@@ -3,7 +3,7 @@
  * Handles HTTP requests for admin permissions management
  */
 import { Response } from 'express';
-import { ValidationError, validationResult } from 'express-validator';
+// Removed express-validator - using Zod validation in routes
 import { RowDataPacket } from 'mysql2/promise';
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
@@ -14,29 +14,14 @@ import { logger } from '../../../utils/logger.js';
 import { adminPermissionsService } from './service.js';
 import { BulkPermissionsRequest, PermissionLevel, SetPermissionsRequest } from './types.js';
 
-// Error detail interface for type safety
-interface ErrorDetail {
-  field: string;
-  message: string;
-}
-
-// Helper function to safely extract error message from ValidationError
-// ValidationError.msg is typed as 'any' in express-validator
-function mapValidationError(error: ValidationError): ErrorDetail {
-  return {
-    field: error.type === 'field' ? error.path : 'general',
-    message: String(error.msg as unknown),
-  };
-}
+// Validation helper removed - using Zod validation in routes
 
 // Constants for error messages
-const VALIDATION_ERROR = 'VALIDATION_ERROR';
 const FORBIDDEN_ERROR = 'FORBIDDEN';
 const NOT_FOUND_ERROR = 'NOT_FOUND';
 const SERVER_ERROR = 'SERVER_ERROR';
 const ROOT_ACCESS_REQUIRED = 'Root access required';
 const ADMIN_NOT_FOUND = 'Admin not found';
-const INVALID_INPUT = 'Invalid input';
 
 // SQL Queries
 const GET_ADMIN_TENANT_QUERY = "SELECT tenant_id FROM users WHERE id = ? AND role = 'admin'";
@@ -61,13 +46,7 @@ export const adminPermissionsController = {
       logger.info('[Admin Permissions v2] User id:', req.user.id);
       logger.info('[Admin Permissions v2] User tenantId:', req.user.tenant_id);
 
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map(mapValidationError);
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -153,13 +132,7 @@ export const adminPermissionsController = {
    */
   async setPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map(mapValidationError);
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -223,13 +196,7 @@ export const adminPermissionsController = {
    */
   async removeDepartmentPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map(mapValidationError);
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -276,13 +243,7 @@ export const adminPermissionsController = {
    */
   async removeGroupPermission(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map(mapValidationError);
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {
@@ -329,13 +290,7 @@ export const adminPermissionsController = {
    */
   async bulkUpdatePermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map(mapValidationError);
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root' || !req.tenantId) {
@@ -378,13 +333,7 @@ export const adminPermissionsController = {
    */
   async checkAccess(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      // Check validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map(mapValidationError);
-        res.status(400).json(errorResponse(VALIDATION_ERROR, INVALID_INPUT, validationErrors));
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       // Check permissions
       if (req.user.role !== 'root') {

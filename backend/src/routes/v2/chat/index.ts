@@ -3,12 +3,17 @@
  * Real-time messaging and conversations with improved standards
  */
 import express, { NextFunction, Request, Response, Router } from 'express';
-import { body, param, query } from 'express-validator';
 import multer from 'multer';
 import path from 'path';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
-import { createValidation } from '../../../middleware/validation.js';
+import {
+  validate,
+  validateBody,
+  validateParams,
+  validateQuery,
+  z,
+} from '../../../middleware/validation.zod.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
@@ -19,67 +24,74 @@ const router: Router = express.Router();
 // All routes require authentication
 router.use(authenticateToken);
 
-// Validation schemas
-const getUsersValidation = createValidation([
-  query('search')
-    .optional()
-    .trim()
-    .isLength({ min: 2 })
-    .withMessage('Search term must be at least 2 characters'),
-]);
+// Validation schemas (Zod)
+const getUsersValidation = validateQuery(
+  z.object({
+    search: z.string().min(2, 'Search term must be at least 2 characters').optional(),
+  }),
+);
 
-const getConversationsValidation = createValidation([
-  query('page').optional().isInt({ min: 1 }).withMessage('Invalid page number'),
-  query('limit')
-    .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100'),
-  query('search').optional().trim(),
-  query('isGroup').optional().isBoolean(),
-  query('hasUnread').optional().isBoolean(),
-]);
+const getConversationsValidation = validateQuery(
+  z.object({
+    page: z.coerce.number().int().min(1, 'Invalid page number').optional(),
+    limit: z.coerce.number().int().min(1).max(100, 'Limit must be between 1 and 100').optional(),
+    search: z.string().optional(),
+    isGroup: z.coerce.boolean().optional(),
+    hasUnread: z.coerce.boolean().optional(),
+  }),
+);
 
-const createConversationValidation = createValidation([
-  body('participantIds').isArray({ min: 1 }).withMessage('At least one participant is required'),
-  body('participantIds.*').isInt({ min: 1 }).withMessage('Invalid participant ID'),
-  body('name')
-    .optional()
-    .trim()
-    .isLength({ min: 1, max: 100 })
-    .withMessage('Conversation name must be between 1 and 100 characters'),
-  body('isGroup').optional().isBoolean(),
-]);
+const createConversationValidation = validateBody(
+  z.object({
+    participantIds: z
+      .array(z.number().int().min(1, 'Invalid participant ID'))
+      .min(1, 'At least one participant is required'),
+    name: z
+      .string()
+      .min(1)
+      .max(100, 'Conversation name must be between 1 and 100 characters')
+      .optional(),
+    isGroup: z.boolean().optional(),
+  }),
+);
 
-const getMessagesValidation = createValidation([
-  param('id').isInt({ min: 1 }).withMessage('Invalid conversation ID'),
-  query('page').optional().isInt({ min: 1 }).withMessage('Invalid page number'),
-  query('limit')
-    .optional()
-    .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100'),
-  query('search').optional().trim(),
-  query('startDate').optional().isISO8601(),
-  query('endDate').optional().isISO8601(),
-  query('hasAttachment').optional().isBoolean(),
-]);
+const getMessagesValidation = validate({
+  params: z.object({
+    id: z.coerce.number().int().min(1, 'Invalid conversation ID'),
+  }),
+  query: z.object({
+    page: z.coerce.number().int().min(1, 'Invalid page number').optional(),
+    limit: z.coerce.number().int().min(1).max(100, 'Limit must be between 1 and 100').optional(),
+    search: z.string().optional(),
+    startDate: z.iso.datetime().optional(),
+    endDate: z.iso.datetime().optional(),
+    hasAttachment: z.coerce.boolean().optional(),
+  }),
+});
 
-const sendMessageValidation = createValidation([
-  param('id').isInt({ min: 1 }).withMessage('Invalid conversation ID'),
-  body('message')
-    .optional()
-    .trim()
-    .isLength({ max: 5000 })
-    .withMessage('Message cannot exceed 5000 characters'),
-]);
+const sendMessageValidation = validate({
+  params: z.object({
+    id: z.coerce.number().int().min(1, 'Invalid conversation ID'),
+  }),
+  body: z.object({
+    message: z.string().max(5000, 'Message cannot exceed 5000 characters').optional(),
+  }),
+});
 
-const conversationIdValidation = createValidation([
-  param('id').isInt({ min: 1 }).withMessage('Invalid conversation ID'),
-]);
+const conversationIdValidation = validateParams(
+  z.object({
+    id: z.coerce.number().int().min(1, 'Invalid conversation ID'),
+  }),
+);
 
-const attachmentValidation = createValidation([
-  param('filename').notEmpty().withMessage('Filename is required'),
-  query('download').optional().isBoolean(),
-]);
+const attachmentValidation = validate({
+  params: z.object({
+    filename: z.string().min(1, 'Filename is required'),
+  }),
+  query: z.object({
+    download: z.coerce.boolean().optional(),
+  }),
+});
 
 // Multer configuration for file uploads
 const storage = multer.diskStorage({

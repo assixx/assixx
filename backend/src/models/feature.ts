@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { RowDataPacket, query as executeQuery } from '../utils/db';
-import { logger } from '../utils/logger';
+import { RowDataPacket, query as executeQuery } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
 
 // Database interfaces
 interface DbFeature extends RowDataPacket {

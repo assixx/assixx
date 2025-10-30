@@ -6,12 +6,12 @@ import bcryptjs from 'bcryptjs';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import rootLog from '../../../models/rootLog';
-import user from '../../../models/user';
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { errorResponse, successResponse } from '../../../utils/apiResponse';
-import { dbToApi } from '../../../utils/fieldMapping';
-import { logger } from '../../../utils/logger';
+import rootLog from '../../../models/rootLog.js';
+import user from '../../../models/user/index.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
+import { logger } from '../../../utils/logger.js';
 
 // JWT Payload interface for type safety
 interface JwtPayload extends jwt.JwtPayload {

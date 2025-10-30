@@ -4,10 +4,10 @@
  */
 import { Response } from 'express';
 
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { ServiceError } from '../../../utils/ServiceError';
-import { errorResponse, successResponse } from '../../../utils/apiResponse';
-import { SurveyAnswer, responsesService } from './responses.service';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { SurveyAnswer, responsesService } from './responses.service.js';
 
 interface FrontendAnswer {
   questionId?: number;

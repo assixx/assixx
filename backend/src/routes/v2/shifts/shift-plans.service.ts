@@ -4,11 +4,11 @@
  */
 import { RowDataPacket } from 'mysql2';
 
-import { ServiceError } from '../../../utils/ServiceError';
-import { execute, query } from '../../../utils/db';
-import { dbToApi } from '../../../utils/fieldMapping';
-import { logger } from '../../../utils/logger';
-import { kontischichtService } from './kontischicht.service';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { execute, query } from '../../../utils/db.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
+import { logger } from '../../../utils/logger.js';
+import { kontischichtService } from './kontischicht.service.js';
 
 interface ShiftPlanData {
   startDate: string;

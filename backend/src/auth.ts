@@ -9,13 +9,13 @@ import crypto from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-import userModel from './models/user';
-import type { DbUser } from './models/user';
-import { DatabaseUser } from './types';
-import { TokenPayload } from './types/auth.types';
-import { AuthUser, AuthenticatedRequest } from './types/request.types';
-import { RowDataPacket, query as executeQuery } from './utils/db';
-import { normalizeMySQLBoolean } from './utils/typeHelpers';
+import userModel from './models/user/index.js';
+import type { DbUser } from './models/user/index.js';
+import { TokenPayload } from './types/auth.types.js';
+import { DatabaseUser } from './types/index.js';
+import { AuthUser, AuthenticatedRequest } from './types/request.types.js';
+import { RowDataPacket, query as executeQuery } from './utils/db.js';
+import { normalizeMySQLBoolean } from './utils/typeHelpers.js';
 
 // Konstante für das JWT-Secret aus der Umgebungsvariable
 const JWT_SECRET: string = process.env.JWT_SECRET ?? '';

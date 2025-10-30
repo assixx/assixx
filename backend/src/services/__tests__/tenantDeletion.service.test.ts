@@ -1,10 +1,10 @@
 import * as fs from 'fs/promises';
 
-import { getRedisClient } from '../../config/redis';
-import { pool } from '../../database';
-import { emailService } from '../../utils/emailService';
-import { logger } from '../../utils/logger';
-import { tenantDeletionService } from '../tenantDeletion.service';
+import { getRedisClient } from '../../config/redis.js';
+import { pool } from '../../database.js';
+import { emailService } from '../../utils/emailService.js';
+import { logger } from '../../utils/logger.js';
+import { tenantDeletionService } from '../tenantDeletion.service.js';
 
 /**
  * Integration Tests for TenantDeletionService

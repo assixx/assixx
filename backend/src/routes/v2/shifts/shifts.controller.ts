@@ -4,10 +4,10 @@
  */
 import { Response } from 'express';
 
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { ServiceError } from '../../../utils/ServiceError';
-import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse';
-import { shiftsService } from './shifts.service';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
+import { shiftsService } from './shifts.service.js';
 
 // Constants
 const ERROR_CODES = {

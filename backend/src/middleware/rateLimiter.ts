@@ -9,7 +9,7 @@ import {
   RateLimitMiddleware,
   RateLimiterMiddleware,
   RateLimiterType,
-} from '../types/security.types';
+} from '../types/security.types.js';
 
 // Check if we're in test environment
 const isTestEnv = process.env.NODE_ENV === 'test';
@@ -36,6 +36,7 @@ const createRateLimitHandler = (message: string) => {
 };
 
 // Rate limiter configurations
+// Using 'satisfies' to ensure all RateLimiterType keys are present while maintaining type inference
 const rateLimiterConfigs = {
   // Public endpoints (login, signup, password reset)
   [RateLimiterType.PUBLIC]: {
@@ -112,12 +113,15 @@ const rateLimiterConfigs = {
     skip: () => isTestEnv, // Skip rate limiting in tests
     // Remove custom keyGenerator to use default IP handling (IPv4/IPv6 compatible)
   },
-};
+} satisfies Record<RateLimiterType, Parameters<typeof rateLimit>[0]>;
 
 // Create rate limiter instances
-const rateLimiters = Object.entries(rateLimiterConfigs).reduce(
+// Object.entries loses the enum type, so we explicitly type the accumulator and cast the initial value
+const rateLimiters = Object.entries(rateLimiterConfigs).reduce<
+  Record<RateLimiterType, RateLimitMiddleware>
+>(
   (
-    acc: Record<string, RateLimitMiddleware>,
+    acc: Record<RateLimiterType, RateLimitMiddleware>,
     [type, config]: [string, Parameters<typeof rateLimit>[0]],
   ) => ({
     ...acc,

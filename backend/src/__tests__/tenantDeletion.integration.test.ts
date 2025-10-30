@@ -6,12 +6,12 @@ import * as fs from 'fs/promises';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
-import app from '../app';
-import { getRedisClient } from '../config/redis';
-// import { closeDatabaseConnection, connectDatabase } from '../database'; // These functions don't exist anymore
-import { tenantDeletionService } from '../services/tenantDeletion.service';
-import { query } from '../utils/db';
-import { emailService } from '../utils/emailService';
+import app from '../app.js';
+import { getRedisClient } from '../config/redis.js';
+// import { closeDatabaseConnection, connectDatabase } from '../database.js'; // These functions don't exist anymore
+import { tenantDeletionService } from '../services/tenantDeletion.service.js';
+import { query } from '../utils/db.js';
+import { emailService } from '../utils/emailService.js';
 
 // Mock external services
 jest.mock('../utils/emailService');

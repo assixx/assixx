@@ -206,7 +206,7 @@ class DepartmentService {
   private async validateManager(managerId: number | undefined, tenantId: number): Promise<void> {
     if (managerId === undefined) return;
 
-    const User = (await import('../../../models/user.js')).default;
+    const User = (await import('../../../models/user/index.js')).default;
     const manager = await User.findById(managerId, tenantId);
     if (!manager) {
       throw new ServiceError(400, 'Manager not found');

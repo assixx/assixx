@@ -1,8 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import PlanModel from '../../../models/plan';
+import PlanModel from '../../../models/plan.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import RootLog from '../../../models/rootLog';
-import { query } from '../../../utils/db';
+import RootLog from '../../../models/rootLog.js';
+import { query } from '../../../utils/db.js';
 import {
   CostCalculation,
   CurrentPlanResponse,
@@ -19,11 +19,10 @@ import {
   TenantCosts,
   TenantPlan,
   UpdateAddonsRequest,
-} from './types';
+} from './types.js';
 
 // Type helper to cast Model types to our types
 type ModelDbPlan = DbPlan & { description?: string };
-type ModelDbTenantPlan = DbTenantPlan & { expires_at?: Date | null };
 
 /**
  * Plans service with static methods
@@ -171,8 +170,8 @@ export class PlansService {
     const dbAddons = await PlanModel.getTenantAddons(tenantId);
     const costs = await PlanModel.calculateTenantCost(tenantId);
 
-    const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan as ModelDbTenantPlan);
-    const planDetails = this.dbToApiPlan(dbPlan as ModelDbPlan);
+    const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan);
+    const planDetails = this.dbToApiPlan(dbPlan);
     const features = dbFeatures
       .filter((f: DbPlanFeature) => f.is_included)
       .map((f: DbPlanFeature) => this.dbToApiFeature(f));

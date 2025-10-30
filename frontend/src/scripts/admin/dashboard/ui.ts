@@ -42,7 +42,7 @@ export class DashboardUI {
     if (container === null) return;
 
     if (employees.length === 0) {
-      setHTML(container, '<p class="text-muted">Keine neuen Mitarbeiter</p>');
+      setHTML(container, '<p class="p-2 text-muted">Keine neuen Mitarbeiter</p>');
       return;
     }
 
@@ -64,7 +64,7 @@ export class DashboardUI {
     if (container === null) return;
 
     if (documents.length === 0) {
-      setHTML(container, '<p class="text-muted">Keine neuen Dokumente</p>');
+      setHTML(container, '<p class="p-2 text-muted">Keine neuen Dokumente</p>');
       return;
     }
 
@@ -86,7 +86,7 @@ export class DashboardUI {
     if (container === null) return;
 
     if (departments.length === 0) {
-      setHTML(container, '<p class="text-muted">Keine Abteilungen vorhanden</p>');
+      setHTML(container, '<p class="p-2 text-muted">Keine Abteilungen vorhanden</p>');
       return;
     }
 
@@ -108,7 +108,7 @@ export class DashboardUI {
     if (container === null) return;
 
     if (teams.length === 0) {
-      setHTML(container, '<p class="text-muted">Keine Teams vorhanden</p>');
+      setHTML(container, '<p class="p-2 text-muted">Keine Teams vorhanden</p>');
       return;
     }
 

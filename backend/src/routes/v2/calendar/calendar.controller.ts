@@ -10,7 +10,7 @@ import { NextFunction, Response } from 'express';
 
 import type { CalendarEvent } from '../../../models/calendar.js';
 import calendarModel from '../../../models/calendar.js';
-import rootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { ServiceError } from '../users/users.service.js';

@@ -5,16 +5,16 @@
 import express, { Application } from 'express';
 
 // Import all loaders in the correct order
-import { loadAPIRoutes } from './loaders/api-routes';
-import { loadErrorHandler } from './loaders/error-handler';
-import { loadExpress } from './loaders/express';
-import { loadHealthCheck } from './loaders/health';
-import { loadLegacyCompat } from './loaders/legacy-compat';
-import { loadMiddleware } from './loaders/middleware';
-import { loadPageRoutes } from './loaders/page-routes';
-import { loadRateLimiting } from './loaders/rate-limiting';
-import { loadSecurity } from './loaders/security';
-import { loadStaticFiles } from './loaders/static-files';
+import { loadAPIRoutes } from './loaders/api-routes.js';
+import { loadErrorHandler } from './loaders/error-handler.js';
+import { loadExpress } from './loaders/express.js';
+import { loadHealthCheck } from './loaders/health.js';
+import { loadLegacyCompat } from './loaders/legacy-compat.js';
+import { loadMiddleware } from './loaders/middleware.js';
+import { loadPageRoutes } from './loaders/page-routes.js';
+import { loadRateLimiting } from './loaders/rate-limiting.js';
+import { loadSecurity } from './loaders/security.js';
+import { loadStaticFiles } from './loaders/static-files.js';
 
 // Create Express application
 const app: Application = express();

@@ -12,7 +12,7 @@
  *
  * USAGE EXAMPLE:
  * ```typescript
- * import { CountResult, UserWithDepartment } from './query-results.types';
+ * import { CountResult, UserWithDepartment } from './query-results.types.js';
  *
  * // COUNT query
  * const [rows] = await connection.execute<CountResult[]>(

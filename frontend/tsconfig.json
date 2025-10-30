@@ -1,36 +1,47 @@
 {
-  "compilerOptions": {
-    // Language and Environment
-    "target": "ES2020",
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "jsx": "preserve",
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx Frontend Configuration - Vite with TypeScript",
 
-    // Modules
+  // ============================================================
+  // EXTENDS BASE CONFIGURATION
+  // Inherits all strict rules from tsconfig.base.json
+  // ============================================================
+  "extends": "../tsconfig.base.json",
+
+  "compilerOptions": {
+    // ============================================================
+    // BUNDLER MODULE SYSTEM
+    // Best Practice 2025: Use "bundler" for Vite/Rollup/Webpack
+    //
+    // bundler mode:
+    // - NO .js extensions required in imports! (Bundler resolves)
+    // - Understands package.json "exports"
+    // - Optimized for build tools, not Node.js runtime
+    // - Allows importing .ts files directly
+    //
+    // THIS FIXES THE ERROR: "need explicit file extensions"
+    // ============================================================
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
 
-    // JavaScript Support
-    "allowJs": true,
-    "checkJs": false,
+    // ============================================================
+    // TARGET LIBRARY
+    // Frontend NEEDS DOM types for browser APIs
+    // ============================================================
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
 
-    // Emit
+    // ============================================================
+    // BUNDLER FEATURES
+    // ============================================================
     "noEmit": true,
-    "sourceMap": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
 
-    // Type Checking
-    "strict": true,
-    "strictNullChecks": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
-    "forceConsistentCasingInFileNames": true,
-
-    // Path Mapping
+    // ============================================================
+    // PATH MAPPING
+    // Enables cleaner imports: '@scripts/utils' instead of '../../utils'
+    // ============================================================
     "baseUrl": "./src",
     "paths": {
       "@/*": ["./*"],
@@ -40,6 +51,11 @@
       "@types/*": ["types/*"]
     }
   },
+
+  // ============================================================
+  // INCLUDE/EXCLUDE PATTERNS
+  // ============================================================
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.js", "src/**/*.jsx", "src/**/*.vue"],
+
   "exclude": ["node_modules", "dist"]
 }

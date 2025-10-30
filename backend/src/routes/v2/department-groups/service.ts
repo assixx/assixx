@@ -4,7 +4,7 @@
  */
 import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import rootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog.js';
 import { CountResult } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute, getConnection } from '../../../utils/db.js';

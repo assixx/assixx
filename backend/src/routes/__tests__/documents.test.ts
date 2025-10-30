@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 
-import { asTestRows } from '../../__tests__/mocks/db-types';
-import app from '../../app';
-import { pool } from '../../database';
+import { asTestRows } from '../../__tests__/mocks/db-types.js';
+import app from '../../app.js';
+import { pool } from '../../database.js';
 
 /**
  * Document Upload Test - Mit echter Test-Datenbank

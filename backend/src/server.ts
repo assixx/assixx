@@ -7,9 +7,9 @@ import fs from 'fs';
 import http, { Server } from 'http';
 import path from 'path';
 
-import app from './app';
-import { logger } from './utils/logger';
-import { ChatWebSocketServer } from './websocket';
+import app from './app.js';
+import { logger } from './utils/logger.js';
+import { ChatWebSocketServer } from './websocket.js';
 
 /**
  * Server Entry Point

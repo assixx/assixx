@@ -2,7 +2,7 @@
  * User Type Definitions
  * Single source of truth for all user-related TypeScript types
  */
-import { RowDataPacket } from '../../utils/db';
+import { RowDataPacket } from '../../utils/db.js';
 
 /**
  * Database representation of a user (snake_case to match DB schema)

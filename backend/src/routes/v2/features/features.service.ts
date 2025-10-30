@@ -1,9 +1,9 @@
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import RootLog from '../../../models/rootLog';
-import { ServiceError as ServiceErrorClass } from '../../../utils/ServiceError';
-import { ResultSetHeader, RowDataPacket, execute, query } from '../../../utils/db';
-import { fieldMapper } from '../../../utils/fieldMapper';
-import { logger } from '../../../utils/logger';
+import RootLog from '../../../models/rootLog.js';
+import { ServiceError as ServiceErrorClass } from '../../../utils/ServiceError.js';
+import { ResultSetHeader, RowDataPacket, execute, query } from '../../../utils/db.js';
+import { fieldMapper } from '../../../utils/fieldMapper.js';
+import { logger } from '../../../utils/logger.js';
 import {
   ActivationOptions,
   DbFeature,
@@ -17,7 +17,7 @@ import {
   TenantFeature,
   TenantFeaturesSummary,
   TenantWithFeatures,
-} from './types';
+} from './types.js';
 
 /**
  * Features service with static methods

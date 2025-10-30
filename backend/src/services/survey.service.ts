@@ -4,7 +4,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import survey from '../models/survey';
+import survey from '../models/survey.js';
 
 // Interfaces
 interface SurveyData {

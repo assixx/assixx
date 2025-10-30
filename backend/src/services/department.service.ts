@@ -8,7 +8,7 @@ import department, {
   DepartmentCreateData,
   DbDepartment as DepartmentData,
   DepartmentUpdateData,
-} from '../models/department';
+} from '../models/department.js';
 
 /**
  * Department Service

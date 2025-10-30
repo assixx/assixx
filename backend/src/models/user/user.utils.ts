@@ -2,10 +2,10 @@
  * User Utility Functions
  * Pure functions for data formatting, filtering, and query building
  */
-import { query as executeQuery } from '../../utils/db';
-import { generateEmployeeId, generateTempEmployeeId } from '../../utils/employeeIdGenerator';
-import { logger } from '../../utils/logger';
-import { SubdomainResult, UserCreateData, UserFilter } from './user.types';
+import { query as executeQuery } from '../../utils/db.js';
+import { generateEmployeeId, generateTempEmployeeId } from '../../utils/employeeIdGenerator.js';
+import { logger } from '../../utils/logger.js';
+import { SubdomainResult, UserCreateData, UserFilter } from './user.types.js';
 
 /**
  * Generate initial employee ID for user creation
@@ -25,9 +25,8 @@ export async function generateInitialEmployeeId(
   );
 
   if (tenantResult.length > 0) {
-    // Defensive check: subdomain is NOT NULL in schema but fallback for safety
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const subdomain = tenantResult[0].subdomain ?? 'DEFAULT';
+    // subdomain is NOT NULL in schema, type system guarantees this
+    const subdomain = tenantResult[0].subdomain;
     const { tempId } = generateTempEmployeeId(subdomain, role ?? 'employee');
     return tempId;
   }
@@ -54,9 +53,8 @@ export async function updateTemporaryEmployeeId(
     );
 
     if (tenantResult.length > 0) {
-      // Defensive check: subdomain is NOT NULL in schema but fallback for safety
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      const subdomain = tenantResult[0].subdomain ?? 'DEFAULT';
+      // subdomain is NOT NULL in schema, type system guarantees this
+      const subdomain = tenantResult[0].subdomain;
       const newEmployeeId = generateEmployeeId(subdomain, role ?? 'employee', userId);
       await executeQuery('UPDATE users SET employee_id = ? WHERE id = ?', [newEmployeeId, userId]);
     }

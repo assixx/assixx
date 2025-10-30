@@ -14,7 +14,7 @@ import {
   ParamsRequest,
   PublicRequest,
   QueryRequest,
-} from '../types/request.types';
+} from '../types/request.types.js';
 
 /**
  * Type-safe wrapper for authenticated route handlers

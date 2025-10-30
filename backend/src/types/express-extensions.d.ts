@@ -1,8 +1,8 @@
 // Express Request Extensions Type Definitions
 import { Pool } from 'mysql2/promise';
 
-import { AuthUser } from './request.types';
-import { TenantInfo } from './tenant.types';
+import { AuthUser } from './request.types.js';
+import { TenantInfo } from './tenant.types.js';
 
 declare global {
   namespace Express {

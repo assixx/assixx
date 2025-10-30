@@ -24,10 +24,6 @@ COPY frontend/package.json ./frontend/
 # Der Lockfile ist bereits im Root kopiert, daher nur pnpm install vom Root aus
 RUN pnpm install --frozen-lockfile
 
-# Scripts directory für ESM support
-COPY scripts/package.json ./scripts/
-COPY scripts/fix-esm-imports.js ./scripts/
-
 # Der Rest wird über Volumes gemountet
 
 # Port

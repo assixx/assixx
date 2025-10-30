@@ -1,7 +1,7 @@
 import type { ResultSetHeader } from 'mysql2';
 
-import { pool } from '../../database';
-import { Blackboard } from '../blackboard';
+import { pool } from '../../database.js';
+import { Blackboard } from '../blackboard.js';
 
 /**
  * Integration Tests for Blackboard Model

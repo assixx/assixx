@@ -6,8 +6,8 @@ import bcrypt from 'bcryptjs';
 import fs from 'fs/promises';
 import path from 'path';
 
-import userModel from '../../../models/user';
-import { apiToDb, dbToApi } from '../../../utils/fieldMapping';
+import userModel from '../../../models/user/index.js';
+import { apiToDb, dbToApi } from '../../../utils/fieldMapping.js';
 import {
   CreateUserBody,
   ListUsersQuery,
@@ -15,7 +15,7 @@ import {
   UpdateProfileBody,
   UpdateUserBody,
   UserDbFields,
-} from './users.types';
+} from './users.types.js';
 
 // Constants
 const USER_NOT_FOUND_MESSAGE = 'User not found';
