@@ -1,5 +1,9 @@
+import type { RowDataPacket } from 'mysql2';
+
+// Model classes are exported as PascalCase objects for backward compatibility
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import Department, { DbDepartment } from '../../../models/department.js';
+import { execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 
 // API v2 Types
@@ -281,11 +285,245 @@ class DepartmentService {
   }
 
   /**
+   * Helper: Count dependencies in a single table
+   * @param tableName - Table name to check
+   * @param departmentId - Department ID
+   * @param tenantId - Tenant ID
+   * @returns Count of dependent records
+   */
+  private async countDependencies(
+    tableName: string,
+    departmentId: number,
+    tenantId: number,
+  ): Promise<number> {
+    const [rows] = await execute<RowDataPacket[]>(
+      `SELECT id FROM ${tableName} WHERE department_id = ? AND tenant_id = ?`,
+      [departmentId, tenantId],
+    );
+    return rows.length;
+  }
+
+  /**
+   * Check all foreign key dependencies for a department
+   * @param id - Department ID
+   * @param tenantId - Tenant ID
+   * @returns Object with dependency counts
+   */
+  private async checkDepartmentDependencies(
+    id: number,
+    tenantId: number,
+  ): Promise<{
+    users: number;
+    teams: number;
+    machines: number;
+    shifts: number;
+    shiftPlans: number;
+    shiftFavorites: number;
+    kvpSuggestions: number;
+    documents: number;
+    calendarEvents: number;
+    surveyAssignments: number;
+    adminPermissions: number;
+    departmentGroupMembers: number;
+    documentPermissions: number;
+    total: number;
+  }> {
+    // Check all dependencies in parallel for better performance
+    const [
+      users,
+      teams,
+      machines,
+      shifts,
+      shiftPlans,
+      shiftFavorites,
+      kvpSuggestions,
+      documents,
+      calendarEvents,
+      surveyAssignments,
+      adminPermissions,
+      departmentGroupMembers,
+      documentPermissions,
+    ] = await Promise.all([
+      this.countDependencies('users', id, tenantId),
+      this.countDependencies('teams', id, tenantId),
+      this.countDependencies('machines', id, tenantId),
+      this.countDependencies('shifts', id, tenantId),
+      this.countDependencies('shift_plans', id, tenantId),
+      this.countDependencies('shift_favorites', id, tenantId),
+      this.countDependencies('kvp_suggestions', id, tenantId),
+      this.countDependencies('documents', id, tenantId),
+      this.countDependencies('calendar_events', id, tenantId),
+      this.countDependencies('survey_assignments', id, tenantId),
+      this.countDependencies('admin_department_permissions', id, tenantId),
+      this.countDependencies('department_group_members', id, tenantId),
+      this.countDependencies('document_permissions', id, tenantId),
+    ]);
+
+    const total =
+      users +
+      teams +
+      machines +
+      shifts +
+      shiftPlans +
+      shiftFavorites +
+      kvpSuggestions +
+      documents +
+      calendarEvents +
+      surveyAssignments +
+      adminPermissions +
+      departmentGroupMembers +
+      documentPermissions;
+
+    return {
+      users,
+      teams,
+      machines,
+      shifts,
+      shiftPlans,
+      shiftFavorites,
+      kvpSuggestions,
+      documents,
+      calendarEvents,
+      surveyAssignments,
+      adminPermissions,
+      departmentGroupMembers,
+      documentPermissions,
+      total,
+    };
+  }
+
+  /**
+   * Build dependency details object for error response
+   * @param deps - Dependency counts
+   * @returns Details object with non-zero counts
+   */
+  private buildDependencyDetails(
+    deps: Awaited<ReturnType<DepartmentService['checkDepartmentDependencies']>>,
+  ): Record<string, number> {
+    // Use Object.entries to avoid dynamic key access (security/detect-object-injection)
+    return {
+      totalDependencies: deps.total,
+      ...Object.entries(deps)
+        .filter(([key, value]: [string, unknown]): boolean => {
+          // Exclude 'total' (already included) and only include numbers > 0
+          return key !== 'total' && typeof value === 'number' && value > 0;
+        })
+        .reduce<Record<string, number>>(
+          (
+            acc: Record<string, number>,
+            [key, value]: [string, unknown],
+          ): Record<string, number> => {
+            return { ...acc, [key]: value as number };
+          },
+          {},
+        ),
+    };
+  }
+
+  /**
+   * Helper: Remove dependency from a single table (SET NULL or DELETE)
+   * @param tableName - Table name
+   * @param operation - 'UPDATE' (SET NULL) or 'DELETE'
+   * @param departmentId - Department ID
+   * @param tenantId - Tenant ID
+   */
+  private async removeDependencyFrom(
+    tableName: string,
+    operation: 'UPDATE' | 'DELETE',
+    departmentId: number,
+    tenantId: number,
+  ): Promise<void> {
+    if (operation === 'UPDATE') {
+      await execute(
+        `UPDATE ${tableName} SET department_id = NULL WHERE department_id = ? AND tenant_id = ?`,
+        [departmentId, tenantId],
+      );
+    } else {
+      await execute(`DELETE FROM ${tableName} WHERE department_id = ? AND tenant_id = ?`, [
+        departmentId,
+        tenantId,
+      ]);
+    }
+  }
+
+  /**
+   * Remove all department dependencies (SET NULL or DELETE)
+   * @param id - Department ID
+   * @param tenantId - Tenant ID
+   * @param deps - Dependency counts
+   */
+  private async removeDepartmentDependencies(
+    id: number,
+    tenantId: number,
+    deps: Awaited<ReturnType<DepartmentService['checkDepartmentDependencies']>>,
+  ): Promise<void> {
+    // Define table cleanup strategy: 'UPDATE' preserves data, 'DELETE' removes completely
+    const cleanupStrategies: { table: string; operation: 'UPDATE' | 'DELETE'; count: number }[] = [
+      { table: 'users', operation: 'UPDATE', count: deps.users },
+      { table: 'teams', operation: 'UPDATE', count: deps.teams },
+      { table: 'machines', operation: 'UPDATE', count: deps.machines },
+      { table: 'shifts', operation: 'UPDATE', count: deps.shifts },
+      { table: 'shift_plans', operation: 'UPDATE', count: deps.shiftPlans },
+      { table: 'shift_favorites', operation: 'DELETE', count: deps.shiftFavorites },
+      { table: 'kvp_suggestions', operation: 'UPDATE', count: deps.kvpSuggestions },
+      { table: 'documents', operation: 'UPDATE', count: deps.documents },
+      { table: 'calendar_events', operation: 'UPDATE', count: deps.calendarEvents },
+      { table: 'survey_assignments', operation: 'DELETE', count: deps.surveyAssignments },
+      { table: 'admin_department_permissions', operation: 'DELETE', count: deps.adminPermissions },
+      {
+        table: 'department_group_members',
+        operation: 'DELETE',
+        count: deps.departmentGroupMembers,
+      },
+      { table: 'document_permissions', operation: 'DELETE', count: deps.documentPermissions },
+    ];
+
+    // Execute all cleanup operations in parallel for performance
+    await Promise.all(
+      cleanupStrategies
+        .filter((strategy: { count: number }): boolean => strategy.count > 0)
+        .map(
+          (strategy: { table: string; operation: 'UPDATE' | 'DELETE' }): Promise<void> =>
+            this.removeDependencyFrom(strategy.table, strategy.operation, id, tenantId),
+        ),
+    );
+  }
+
+  /**
+   * Handle department dependencies for deletion
+   * @param id - Department ID
+   * @param tenantId - Tenant ID
+   * @param force - If true, remove all dependencies before deleting
+   */
+  private async handleDepartmentDependenciesForDeletion(
+    id: number,
+    tenantId: number,
+    force: boolean,
+  ): Promise<void> {
+    const deps = await this.checkDepartmentDependencies(id, tenantId);
+
+    // No dependencies - safe to delete
+    if (deps.total === 0) {
+      return;
+    }
+
+    // Has dependencies but force=false - throw error with details
+    if (!force) {
+      const details = this.buildDependencyDetails(deps);
+      throw new ServiceError(400, 'Cannot delete department with dependencies', details);
+    }
+
+    // Force delete - remove all dependencies
+    await this.removeDepartmentDependencies(id, tenantId, deps);
+  }
+
+  /**
    * Delete a department
    * @param id - The resource ID
    * @param tenantId - The tenant ID
+   * @param force - If true, remove all dependencies before deleting
    */
-  async deleteDepartment(id: number, tenantId: number): Promise<void> {
+  async deleteDepartment(id: number, tenantId: number, force: boolean = false): Promise<void> {
     try {
       // Check if department exists
       const existing = await Department.findById(id, tenantId);
@@ -293,13 +531,8 @@ class DepartmentService {
         throw new ServiceError(404, 'Department not found');
       }
 
-      // Check if department has members
-      const members = await Department.getUsersByDepartment(id);
-      if (members.length > 0) {
-        throw new ServiceError(400, 'Cannot delete department with assigned users', {
-          userCount: members.length,
-        });
-      }
+      // Handle all dependencies (checks 13 foreign keys)
+      await this.handleDepartmentDependenciesForDeletion(id, tenantId, force);
 
       const success = await Department.delete(id);
 

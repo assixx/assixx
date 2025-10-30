@@ -3,21 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bereiche verwalten - Assixx</title>
+    <title>Bereichsverwaltung - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="/styles/main.css" />
-    <!-- TAILWIND + GLOBAL STYLES -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script src="/scripts/critical/sidebar-init.js"></script>
 
     <!-- Unified Navigation CSS - Load immediately to prevent FOUC -->
+    <link rel="stylesheet" href="/styles/main.css" />
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
-    <!-- Dashboard Styles -->
-    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
-    <link rel="stylesheet" href="/styles/manage-areas.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
 
     <!-- Common Scripts with ApiClient -->
@@ -30,33 +25,78 @@
     <!-- Main Layout with Sidebar -->
     <div class="layout-container">
       <!-- Main Content Area -->
-      <main class="flex-1 min-h-[calc(100vh-60px)] ml-0 p-[var(--spacing-4)] md:p-4 bg-[var(--background-primary)]">
+      <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)] @container">
         <!-- Breadcrumb -->
         <div id="breadcrumb-container"></div>
 
         <div class="container">
           <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
-              <div>
-                <h2 class="card-title">Bereichsübersicht</h2>
-                <p class="text-secondary">Verwalten Sie alle Bereiche, Standorte und Zonen</p>
+            <!-- Card Header - Following Design System Pattern -->
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-map-marked-alt mr-2"></i>
+                Bereichsübersicht
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Bereiche und Standorte verwalten</p>
+
+              <!-- Controls Section - Inside header -->
+              <div class="flex gap-4 items-center justify-between mt-4">
+                <!-- Status Filter Toggle -->
+                <div class="toggle-group" id="area-status-toggle">
+                  <button class="toggle-group__btn active" data-status="active" title="Aktive Bereiche">
+                    <i class="fas fa-check"></i>
+                    Aktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="inactive" title="Inaktive Bereiche">
+                    <i class="fas fa-times"></i>
+                    Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="all" title="Alle Bereiche">
+                    <i class="fas fa-map-marked-alt"></i>
+                    Alle
+                  </button>
+                </div>
+                <!-- Search Input with Results Dropdown -->
+                <div class="search-input-wrapper max-w-80">
+                  <div class="search-input" id="area-search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input type="search" id="area-search" class="search-input__field" placeholder="Bereiche suchen..." autocomplete="off" />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="area-search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <!-- Results Dropdown -->
+                  <div class="search-input__results" id="area-search-results">
+                    <!-- Results will be populated here dynamically -->
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="table-responsive">
-              <div id="areas-loading" class="loading u-hidden">
+            <div class="card__body">
+              <!-- Loading State -->
+              <div id="areas-loading" class="spinner-container u-hidden">
                 <div class="spinner"></div>
-                <p>Bereiche werden geladen...</p>
+                <p class="mt-2 text-[var(--color-text-secondary)]">Bereiche werden geladen...</p>
               </div>
 
+              <!-- Table Content -->
               <div id="areas-table-content">
-                <!-- Tabelle wird hier dynamisch eingefügt -->
+                <!-- Table wird hier dynamisch eingefügt -->
               </div>
 
+              <!-- Empty State -->
               <div id="areas-empty" class="empty-state u-hidden">
-                <div class="empty-state-icon">📍</div>
-                <div class="empty-state-title">Keine Bereiche gefunden</div>
-                <div class="empty-state-text">Erstellen Sie Ihren ersten Bereich, um Standorte und Zonen zu verwalten.</div>
+                <div class="empty-state__icon">
+                  <i class="fas fa-map-marked-alt"></i>
+                </div>
+                <h3 class="empty-state__title">Keine Bereiche gefunden</h3>
+                <p class="empty-state__description">Erstellen Sie Ihren ersten Bereich</p>
+                <button class="btn btn-primary" id="empty-state-add-btn">
+                  <i class="fas fa-plus"></i>
+                  Bereich hinzufügen
+                </button>
               </div>
             </div>
           </div>
@@ -67,96 +107,158 @@
     </div>
 
     <!-- Add/Edit Area Modal -->
-    <div id="area-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title" id="area-modal-title">Neuer Bereich</h3>
-          <button class="modal-close" id="close-area-modal">&times;</button>
+    <div id="area-modal" class="modal-overlay">
+      <form id="area-form" class="ds-modal">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="area-modal-title">Neuer Bereich</h3>
+          <button type="button" class="ds-modal__close" id="close-area-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <form id="area-form">
-          <div class="modal-body">
-            <input type="hidden" id="area-id" />
+        <div class="ds-modal__body">
+          <input type="hidden" id="area-id" />
 
-            <div class="form-group">
-              <label class="form-label" for="area-name">Name *</label>
-              <input type="text" id="area-name" name="name" class="form-control" required />
-            </div>
+          <div class="form-field">
+            <label class="form-field__label" for="area-name">
+              Name
+              <span class="text-red-500">*</span>
+            </label>
+            <input type="text" id="area-name" name="name" class="form-field__control" required />
+          </div>
 
-            <div class="form-group">
-              <label class="form-label" for="area-description">Beschreibung</label>
-              <textarea id="area-description" name="description" class="form-control" rows="3"></textarea>
-            </div>
+          <div class="form-field">
+            <label class="form-field__label" for="area-description">Beschreibung</label>
+            <textarea id="area-description" name="description" class="form-field__control" rows="3"></textarea>
+          </div>
 
-            <div class="form-group">
-              <label class="form-label" for="area-type">Typ *</label>
-              <select id="area-type" name="type" class="form-control" required>
-                <option value="">Bitte wählen...</option>
-                <option value="building">Gebäude</option>
-                <option value="warehouse">Lager</option>
-                <option value="office">Büro</option>
-                <option value="production">Produktion</option>
-                <option value="outdoor">Außenbereich</option>
-                <option value="other">Sonstiges</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="area-capacity">Kapazität</label>
-              <input type="number" id="area-capacity" name="capacity" class="form-control" min="0" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="area-address">Adresse</label>
-              <input type="text" id="area-address" name="address" class="form-control" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="area-parent">Übergeordneter Bereich</label>
-              <select id="area-parent" name="parent_id" class="form-control">
-                <option value="">Kein übergeordneter Bereich</option>
-                <!-- Wird dynamisch gefüllt -->
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="area-status">Status</label>
-              <select id="area-status" name="status" class="form-control">
-                <option value="active">Aktiv</option>
-                <option value="inactive">Inaktiv</option>
-                <option value="maintenance">Wartung</option>
-              </select>
+          <div class="form-field">
+            <label class="form-field__label" for="area-type">
+              Typ
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="area-type" name="type" value="other" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="type-dropdown">
+              <div class="dropdown__trigger" id="type-trigger">
+                <span>Sonstiges</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="type-menu">
+                <div class="dropdown__option" data-value="building">Gebäude</div>
+                <div class="dropdown__option" data-value="warehouse">Lager</div>
+                <div class="dropdown__option" data-value="office">Büro</div>
+                <div class="dropdown__option" data-value="production">Produktion</div>
+                <div class="dropdown__option" data-value="outdoor">Außenbereich</div>
+                <div class="dropdown__option" data-value="other">Sonstiges</div>
+              </div>
             </div>
           </div>
 
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="cancel-area-modal">Abbrechen</button>
-            <button type="submit" class="btn btn-primary">Speichern</button>
+          <div class="form-field">
+            <label class="form-field__label" for="area-capacity">Kapazität</label>
+            <input type="number" id="area-capacity" name="capacity" class="form-field__control" min="0" />
           </div>
-        </form>
-      </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="area-address">Adresse</label>
+            <input type="text" id="area-address" name="address" class="form-field__control" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="area-parent">Übergeordneter Bereich</label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="area-parent" name="parent_id" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="parent-dropdown">
+              <div class="dropdown__trigger" id="parent-trigger">
+                <span>Kein übergeordneter Bereich</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="parent-menu">
+                <div class="dropdown__option" data-value="">Kein übergeordneter Bereich</div>
+                <!-- Will be populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label class="form-field__label" for="area-status">
+              Status
+              <span class="text-red-500">*</span>
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="area-status" name="status" value="active" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="status-dropdown">
+              <div class="dropdown__trigger" id="status-trigger">
+                <span>Aktiv</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="status-menu">
+                <div class="dropdown__option" data-value="active">
+                  <span class="badge badge--success">Aktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="inactive">
+                  <span class="badge badge--warning">Inaktiv</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-secondary" id="cancel-area-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">Speichern</button>
+        </div>
+      </form>
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="delete-area-modal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3 class="modal-title">Bereich löschen</h3>
-          <button class="modal-close" id="close-delete-modal">&times;</button>
+    <div id="delete-area-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--sm">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">Bereich löschen</h3>
+          <button class="ds-modal__close" id="close-delete-modal">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
-        <div class="modal-body">
-          <p>Möchten Sie diesen Bereich wirklich löschen?</p>
-          <p class="text-secondary">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <div class="ds-modal__body">
+          <p class="mb-3" id="delete-area-message">Möchten Sie diesen Bereich wirklich löschen?</p>
+          <p class="text-[var(--color-text-secondary)]">
+            Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Daten werden gelöscht.
+          </p>
           <input type="hidden" id="delete-area-id" />
         </div>
-        <div class="modal-footer">
+        <div class="ds-modal__footer">
           <button type="button" class="btn btn-secondary" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-primary" id="confirm-delete-area">Löschen</button>
+          <button type="button" class="btn btn-danger" id="confirm-delete-area">Löschen</button>
         </div>
       </div>
     </div>
 
-    <!-- Floating Add Button -->
-    <button id="add-area-btn" class="add-area-btn">+</button>
+    <!-- Force Delete Warning Modal (Confirm Modal Warning variant) -->
+    <div id="force-delete-warning-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--warning">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Bereich hat Abhängigkeiten</h3>
+        <p class="confirm-modal__message" id="force-delete-warning-message">
+          Dieser Bereich wird von anderen Elementen verwendet. Möchten Sie den Bereich trotzdem löschen? Alle Zuordnungen werden entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-force-delete">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--confirm" id="confirm-force-delete">Bereich löschen</button>
+        </div>
+        <input type="hidden" id="force-delete-area-id" />
+      </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button class="btn-float" id="add-area-btn" aria-label="Bereich hinzufügen">
+      <i class="fas fa-plus"></i>
+    </button>
 
     <!-- Navigation Components -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
@@ -165,6 +267,6 @@
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
 
     <!-- Page Script -->
-    <script type="module" src="/scripts/manage/areas.ts"></script>
+    <script type="module" src="/scripts/manage/areas/index.ts"></script>
   </body>
 </html>

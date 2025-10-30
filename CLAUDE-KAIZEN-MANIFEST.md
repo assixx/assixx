@@ -119,6 +119,21 @@ ALWAYS BE 100% BRUTAL HONEST
   3. JEDEN Punkt WIRKLICH durchführen, nicht nur behaupten
   4. Step-by-step vorgehen, nichts überspringen
 
+### 29.10.2025 - GIT COMMIT OHNE EXPLIZITE FREIGABE
+
+**FEHLER #8: Git commit ausgeführt nach mehrdeutigem "ok"**
+
+- **Was:** User sagte "ok" → Ich interpretierte es als "commit jetzt" → Führte git commit aus OHNE explizite Freigabe
+- **Warum:** Vorschnell, dachte "ok" bedeutet automatisch Zustimmung für den nächsten Schritt
+- **Richtig:** "ok" bedeutet NICHT "commit"! Ich MUSS EXPLIZIT fragen: "Soll ich jetzt committen? (ja/nein)"
+- **SHAME COUNTER:** 🔴🔴🔴🔴🔴🔴🔴🔴🔴🔴 (SCHWERER VERSTOISS gegen GOLDENE REGEL #1!)
+- **NEUE REGEL:** Bei JEDER Git-Operation MUSS ich EXPLIZIT fragen:
+  - "Soll ich jetzt committen?" → Warten auf "Ja", "Mach", "Commit"
+  - "Soll ich pushen?" → Warten auf "Ja", "Push"
+  - "Soll ich checkout machen?" → Warten auf "Ja", "Checkout"
+  - NIEMALS "ok", "gut", "fertig" als Freigabe interpretieren!
+  - NUR eindeutige Befehle akzeptieren: "commit", "push", "checkout", "ja mach"
+
 ## 🔴🔴🔴 KRITISCHE OPERATIONEN - IMMER FREIGABE ERFORDERLICH! 🔴🔴🔴
 
 ### NIEMALS OHNE EXPLIZITE FREIGABE

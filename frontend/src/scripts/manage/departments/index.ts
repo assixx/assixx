@@ -1,10 +1,11 @@
+/* eslint-disable max-lines */
 /**
  * Department Management - Main Controller
  * Handles department CRUD operations for admin dashboard
  */
 
 import { ApiClient } from '../../../utils/api-client';
-import { showErrorAlert } from '../../utils/alerts';
+import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import { $$id, setSafeHTML } from '../../../utils/dom-utils';
 import type { Department, DepartmentStatusFilter, WindowWithDepartmentHandlers } from './types';
 import { renderDepartmentsTable, setupFormSubmitHandler, renderSearchResults, closeSearchResults } from './ui';
@@ -159,21 +160,80 @@ class DepartmentsManager {
     document.querySelector('#confirm-delete-department')?.addEventListener('click', () => {
       const deleteInput = document.querySelector<HTMLInputElement>('#delete-department-id');
       if (deleteInput !== null && deleteInput.value !== '') {
-        void this.confirmDelete(Number.parseInt(deleteInput.value, 10));
+        void this.confirmDeleteDepartment(Number.parseInt(deleteInput.value, 10));
+      }
+    });
+
+    // Force Delete modal close buttons
+    document.querySelector('#cancel-force-delete')?.addEventListener('click', () => {
+      this.closeForceDeleteModal();
+    });
+
+    // Force Delete confirmation button
+    document.querySelector('#confirm-force-delete')?.addEventListener('click', () => {
+      const forceDeleteIdInput = document.querySelector<HTMLInputElement>('#force-delete-department-id');
+      if (forceDeleteIdInput !== null && forceDeleteIdInput.value !== '') {
+        void this.executeForceDelete(Number.parseInt(forceDeleteIdInput.value, 10));
+      }
+    });
+
+    // Close on outside click
+    document.querySelector('#delete-department-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        closeDeleteModal();
+      }
+    });
+
+    document.querySelector('#force-delete-warning-modal')?.addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        this.closeForceDeleteModal();
       }
     });
   }
 
   /**
-   * Confirm delete and execute deletion
+   * Show delete confirmation modal (first stage)
    */
-  async confirmDelete(departmentId: number): Promise<void> {
+  showConfirmDeleteModal(departmentId: number): void {
+    const department = this.departments.find((d) => d.id === departmentId);
+    if (department === undefined) {
+      showErrorAlert('Abteilung nicht gefunden');
+      return;
+    }
+
+    const modal = document.querySelector('#delete-department-modal');
+    const messageEl = document.querySelector('#delete-department-message');
+    const deleteIdInput = document.querySelector<HTMLInputElement>('#delete-department-id');
+
+    if (modal !== null && messageEl !== null && deleteIdInput !== null) {
+      messageEl.textContent = `Möchten Sie die Abteilung "${department.name}" wirklich löschen?`;
+      deleteIdInput.value = departmentId.toString();
+      modal.classList.add('modal-overlay--active');
+    }
+  }
+
+  /**
+   * Confirm delete and handle dependencies (second stage if needed)
+   */
+  async confirmDeleteDepartment(departmentId: number): Promise<void> {
     try {
-      await this.deleteDepartment(departmentId);
-      closeDeleteModal();
+      await this.api.delete(departmentId);
+      await this.handleDeleteSuccess();
     } catch (error) {
-      console.error('[confirmDelete] Delete failed:', error);
-      showErrorAlert('Fehler beim Löschen der Abteilung');
+      const errorObj = error as { message?: string; code?: string; details?: Record<string, unknown> };
+
+      // Check if error is due to dependencies
+      if (
+        errorObj.code === 'DEPT_400' ||
+        errorObj.message?.includes('dependencies') === true ||
+        errorObj.message?.includes('Abhängigkeiten') === true
+      ) {
+        const details = errorObj.details ?? {};
+        const totalDependencies = typeof details.totalDependencies === 'number' ? details.totalDependencies : 0;
+        this.showForceDeleteWarning(departmentId, totalDependencies, details);
+      } else {
+        this.handleDeleteError(error);
+      }
     }
   }
 
@@ -378,11 +438,111 @@ class DepartmentsManager {
   }
 
   /**
-   * Delete department
+   * Delete department (now just called by confirmDeleteDepartment)
    */
   async deleteDepartment(id: number): Promise<void> {
     await this.api.delete(id);
     await this.loadDepartments();
+  }
+
+  /**
+   * Handle successful deletion
+   */
+  private async handleDeleteSuccess(): Promise<void> {
+    showSuccessAlert('Abteilung erfolgreich gelöscht');
+    closeDeleteModal();
+    await this.loadDepartments();
+  }
+
+  /**
+   * Handle delete errors
+   */
+  private handleDeleteError(error: unknown): void {
+    console.error('Error deleting department:', error);
+    showErrorAlert('Fehler beim Löschen der Abteilung');
+  }
+
+  /**
+   * Build user-friendly dependency message from details object
+   */
+  private buildDependencyMessage(details: Record<string, unknown>): string {
+    // Static list of dependencies (safe from injection - keys are constants)
+    const dependencies = [
+      { key: 'users' as const, label: 'Benutzer' },
+      { key: 'teams' as const, label: 'Teams' },
+      { key: 'machines' as const, label: 'Maschinen' },
+      { key: 'shifts' as const, label: 'Schichten' },
+      { key: 'shiftPlans' as const, label: 'Schichtpläne' },
+      { key: 'shiftFavorites' as const, label: 'Favoriten' },
+      { key: 'kvpSuggestions' as const, label: 'KVP-Vorschläge' },
+      { key: 'documents' as const, label: 'Dokumente' },
+      { key: 'calendarEvents' as const, label: 'Kalendereinträge' },
+      { key: 'surveyAssignments' as const, label: 'Umfragen' },
+      { key: 'adminPermissions' as const, label: 'Admin-Berechtigungen' },
+      { key: 'departmentGroupMembers' as const, label: 'Abteilungsgruppen' },
+      { key: 'documentPermissions' as const, label: 'Dokument-Berechtigungen' },
+    ] as const;
+
+    const messages = dependencies
+      .map(({ key, label }) => {
+        // Safe: key is a compile-time constant from static array above
+        // eslint-disable-next-line security/detect-object-injection
+        const count = details[key];
+        return typeof count === 'number' && count > 0 ? `${count} ${label}` : null;
+      })
+      .filter((msg): msg is string => msg !== null);
+
+    return messages.join(', ');
+  }
+
+  /**
+   * Show force delete warning modal
+   */
+  private showForceDeleteWarning(id: number, totalDependencies: number, details: Record<string, unknown>): void {
+    const modal = document.querySelector('#force-delete-warning-modal');
+    const messageEl = document.querySelector('#force-delete-warning-message');
+    const departmentIdInput = document.querySelector<HTMLInputElement>('#force-delete-department-id');
+
+    if (modal === null || messageEl === null || departmentIdInput === null) {
+      showErrorAlert('Force-Delete-Modal nicht gefunden');
+      return;
+    }
+
+    const dependencyList = this.buildDependencyMessage(details);
+    const message = `Diese Abteilung wird von ${totalDependencies} ${totalDependencies === 1 ? 'Element' : 'Elementen'} verwendet (${dependencyList}). Möchten Sie die Abteilung trotzdem löschen? Alle Zuordnungen werden automatisch entfernt.`;
+
+    messageEl.textContent = message;
+    departmentIdInput.value = id.toString();
+
+    // Close the first delete modal and show warning modal
+    closeDeleteModal();
+    modal.classList.add('modal-overlay--active');
+  }
+
+  /**
+   * Close force delete modal
+   */
+  private closeForceDeleteModal(): void {
+    const modal = document.querySelector('#force-delete-warning-modal');
+    if (modal) {
+      modal.classList.remove('modal-overlay--active');
+    }
+  }
+
+  /**
+   * Execute force delete (with force=true parameter)
+   */
+  async executeForceDelete(id: number): Promise<void> {
+    try {
+      await this.api.delete(id, true);
+      showSuccessAlert('Abteilung und alle Zuordnungen erfolgreich gelöscht');
+      this.closeForceDeleteModal();
+      await this.loadDepartments();
+    } catch (error) {
+      console.error('Error force deleting department:', error);
+      showErrorAlert('Fehler beim Löschen der Abteilung');
+      this.closeForceDeleteModal();
+    }
   }
 
   /**

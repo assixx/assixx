@@ -68,17 +68,21 @@ export class DepartmentAPI {
 
   /**
    * Delete department
+   * @param id - The department ID
+   * @param force - If true, removes all dependencies before deleting
    */
-  async delete(id: number): Promise<void> {
+  async delete(id: number, force: boolean = false): Promise<void> {
     try {
-      await this.apiClient.request(`/departments/${id}`, {
+      const url = force ? `/departments/${id}?force=true` : `/departments/${id}`;
+      await this.apiClient.request(url, {
         method: 'DELETE',
       });
 
-      showSuccessAlert('Abteilung erfolgreich gelöscht');
+      // Don't show success alert here - let the caller handle it
+      // (different messages for normal vs force delete)
     } catch (error) {
       console.error('Error deleting department:', error);
-      showErrorAlert('Fehler beim Löschen der Abteilung');
+      // Don't show error alert here - let the caller handle specific error cases
       throw error;
     }
   }

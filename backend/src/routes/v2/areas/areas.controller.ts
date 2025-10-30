@@ -6,8 +6,8 @@ import { Response } from 'express';
 
 import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
-import { errorResponse, successResponse } from '../../../types/response.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { getErrorMessage } from '../../../utils/errorHandler.js';
 import {
   createArea,
@@ -30,7 +30,10 @@ export async function getAreasController(req: AuthenticatedRequest, res: Respons
   try {
     const filters: AreaFilters = {
       type: req.query.type as string,
-      isActive: req.query.isActive === 'false' ? false : true,
+      isActive:
+        req.query.isActive === 'true' ? true
+        : req.query.isActive === 'false' ? false
+        : undefined, // Don't filter by default - return all areas
       parentId:
         req.query.parentId !== undefined && req.query.parentId !== '' ?
           Number.parseInt(req.query.parentId as string)
@@ -43,7 +46,7 @@ export async function getAreasController(req: AuthenticatedRequest, res: Respons
     res.json(successResponse(areas, 'Areas retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
+    res.status(500).json(errorResponse('SERVER_ERROR', message));
   }
 }
 
@@ -63,7 +66,7 @@ export async function getAreaHierarchyController(
     res.json(successResponse(hierarchy, 'Area hierarchy retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
+    res.status(500).json(errorResponse('SERVER_ERROR', message));
   }
 }
 
@@ -81,21 +84,21 @@ export async function getAreaByIdController(
     const areaId = Number.parseInt(req.params.id);
 
     if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('Invalid area ID', 400));
+      res.status(400).json(errorResponse('BAD_REQUEST', 'Invalid area ID'));
       return;
     }
 
     const area = await getAreaById(areaId, req.user.tenant_id);
 
     if (!area) {
-      res.status(404).json(errorResponse('Area not found', 404));
+      res.status(404).json(errorResponse('NOT_FOUND', 'Area not found'));
       return;
     }
 
     res.json(successResponse(area, 'Area retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
+    res.status(500).json(errorResponse('SERVER_ERROR', message));
   }
 }
 
@@ -112,7 +115,7 @@ export async function createAreaController(
   try {
     // Only admin and root can create areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
-      res.status(403).json(errorResponse('Access denied', 403));
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
@@ -143,10 +146,18 @@ export async function createAreaController(
     res.status(201).json(successResponse(newArea, 'Area created successfully'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
+      res
+        .status(error.statusCode)
+        .json(
+          errorResponse(
+            error.code,
+            error.message,
+            error.details as { field: string; message: string }[] | undefined,
+          ),
+        );
     } else {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse(message, 500));
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
     }
   }
 }
@@ -164,14 +175,14 @@ export async function updateAreaController(
   try {
     // Only admin and root can update areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
-      res.status(403).json(errorResponse('Access denied', 403));
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
     const areaId = Number.parseInt(req.params.id);
 
     if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('Invalid area ID', 400));
+      res.status(400).json(errorResponse('BAD_REQUEST', 'Invalid area ID'));
       return;
     }
 
@@ -214,10 +225,18 @@ export async function updateAreaController(
     res.json(successResponse(updatedArea, 'Area updated successfully'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
+      res
+        .status(error.statusCode)
+        .json(
+          errorResponse(
+            error.code,
+            error.message,
+            error.details as { field: string; message: string }[] | undefined,
+          ),
+        );
     } else {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse(message, 500));
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
     }
   }
 }
@@ -235,21 +254,24 @@ export async function deleteAreaController(
   try {
     // Only admin and root can delete areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
-      res.status(403).json(errorResponse('Access denied', 403));
+      res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
     const areaId = Number.parseInt(req.params.id);
 
     if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('Invalid area ID', 400));
+      res.status(400).json(errorResponse('BAD_REQUEST', 'Invalid area ID'));
       return;
     }
+
+    // Get force parameter from query string (e.g., /areas/123?force=true)
+    const force = req.query.force === 'true';
 
     // Get area data before deletion for logging
     const deletedArea = await getAreaById(areaId, req.user.tenant_id);
 
-    await deleteArea(areaId, req.user.tenant_id);
+    await deleteArea(areaId, req.user.tenant_id, force);
 
     // Log area deletion
     await rootLog.create({
@@ -275,10 +297,19 @@ export async function deleteAreaController(
     res.json(successResponse(null, 'Area deleted successfully'));
   } catch (error: unknown) {
     if (error instanceof ServiceError) {
-      res.status(error.statusCode).json(errorResponse(error.message, error.statusCode));
+      // IMPORTANT: Pass error.details to frontend so warning modal can show dependency counts
+      res
+        .status(error.statusCode)
+        .json(
+          errorResponse(
+            error.code,
+            error.message,
+            error.details as { field: string; message: string }[] | undefined,
+          ),
+        );
     } else {
       const message = getErrorMessage(error);
-      res.status(500).json(errorResponse(message, 500));
+      res.status(500).json(errorResponse('SERVER_ERROR', message));
     }
   }
 }
@@ -299,6 +330,6 @@ export async function getAreaStatsController(
     res.json(successResponse(stats, 'Area statistics retrieved successfully'));
   } catch (error: unknown) {
     const message = getErrorMessage(error);
-    res.status(500).json(errorResponse(message, 500));
+    res.status(500).json(errorResponse('SERVER_ERROR', message));
   }
 }
