@@ -286,6 +286,23 @@ export const Dark = {
 };
 
 /**
+ * MANAGE BUTTON
+ * Management actions with subtle blue highlight
+ * Use for: Dashboard card actions, Admin management panels
+ * Color: Blue with low opacity background (#2196f3 variants)
+ */
+export const Manage = {
+  args: {
+    label: 'Manage Items',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+  },
+  render: (args) => createButton({ ...args, variant: 'manage' }),
+};
+
+/**
  * LINK BUTTON
  * Text-only button that looks like a link
  * Use for: Inline actions, Learn more, Minimal UI
@@ -316,7 +333,7 @@ export const Sizes = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info'],
+      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -374,7 +391,7 @@ export const WithIcons = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info'],
+      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -419,7 +436,7 @@ export const Loading = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info'],
+      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -460,7 +477,7 @@ export const Disabled = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info'],
+      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -533,6 +550,7 @@ export const AllVariants = {
       { variant: 'info', label: 'Info' },
       { variant: 'light', label: 'Light' },
       { variant: 'dark', label: 'Dark' },
+      { variant: 'manage', label: 'Manage' },
       { variant: 'link', label: 'Link' },
       { variant: 'status-active', label: 'Status Active' },
       { variant: 'status-inactive', label: 'Status Inactive' },

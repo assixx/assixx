@@ -6,10 +6,10 @@ import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
-import type { AuthenticatedRequest, PublicRequest } from '../../types/request.types';
-import { errorResponse } from '../../utils/apiResponse';
-import { query as executeQuery } from '../../utils/db';
-import { dbToApi } from '../../utils/fieldMapping';
+import type { AuthenticatedRequest, PublicRequest } from '../../types/request.types.js';
+import { errorResponse } from '../../utils/apiResponse.js';
+import { query as executeQuery } from '../../utils/db.js';
+import { dbToApi } from '../../utils/fieldMapping.js';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? '';
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET ?? '';

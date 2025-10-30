@@ -6,12 +6,12 @@
 import bcrypt from 'bcryptjs';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import rootLog, { type DbRootLog } from '../../../models/rootLog';
+import rootLog, { type DbRootLog } from '../../../models/rootLog.js';
 import tenantModel from '../../../models/tenant.js';
-import userModel, { type DbUser } from '../../../models/user.js';
+import userModel, { type DbUser } from '../../../models/user/index.js';
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
 import { UsersRow } from '../../../types/database-rows.types.js';
-import type { DatabaseTenant } from '../../../types/models';
+import type { DatabaseTenant } from '../../../types/models.js';
 import { CountResult, IdResult } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute } from '../../../utils/db.js';

@@ -6,7 +6,7 @@ import { Request } from 'express';
 import { ParamsDictionary } from 'express-serve-static-core';
 import { ParsedQs } from 'qs';
 
-import { TenantInfo } from './tenant.types';
+import { TenantInfo } from './tenant.types.js';
 
 // User object that gets attached to authenticated requests
 export interface AuthUser {

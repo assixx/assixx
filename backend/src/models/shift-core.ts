@@ -3,7 +3,7 @@
  * Shift Core Operations
  * Core shift management operations (v1 API)
  */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
 import {
   type CountResult,
   type DbEmployeeAvailability,
@@ -25,8 +25,8 @@ import {
   type ShiftQueryResult,
   type ShiftTemplateData,
   formatDateOnlyForMysql,
-} from './shift-types';
-import User from './user';
+} from './shift-types.js';
+import User from './user/index.js';
 
 /**
  * Get all shift templates for a tenant

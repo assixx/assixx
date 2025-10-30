@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import { security } from '../../../middleware/security';
-import { typed } from '../../../utils/routeHandlers';
+import { security } from '../../../middleware/security.js';
+import { typed } from '../../../utils/routeHandlers.js';
 import {
   activateFeature,
   deactivateFeature,
@@ -14,8 +14,8 @@ import {
   getTenantFeaturesSummary,
   getUsageStats,
   testFeatureAccess,
-} from './features.controller';
-import { featuresValidationZod } from './features.validation.zod';
+} from './features.controller.js';
+import { featuresValidationZod } from './features.validation.zod.js';
 
 const router = Router();
 

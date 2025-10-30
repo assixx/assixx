@@ -4,7 +4,7 @@ import {
   getEventAttendees,
   removeEventAttendee,
   respondToEvent,
-} from './calendar.attendees';
+} from './calendar.attendees.js';
 import {
   canManageEvent,
   checkEventExists,
@@ -14,8 +14,8 @@ import {
   getDashboardEvents,
   getEventById,
   updateEvent,
-} from './calendar.crud';
-import { generateRecurringEvents } from './calendar.recurring';
+} from './calendar.crud.js';
+import { generateRecurringEvents } from './calendar.recurring.js';
 
 /**
  * Calendar Module - Barrel Export
@@ -35,7 +35,7 @@ export type {
   UserInfo,
   EventsListResponse,
   CreateEventFn,
-} from './calendar.types';
+} from './calendar.types.js';
 
 // Export CRUD operations
 export {
@@ -47,7 +47,7 @@ export {
   deleteEvent,
   getDashboardEvents,
   canManageEvent,
-} from './calendar.crud';
+} from './calendar.crud.js';
 
 // Export attendee operations
 export {
@@ -55,10 +55,10 @@ export {
   removeEventAttendee,
   respondToEvent,
   getEventAttendees,
-} from './calendar.attendees';
+} from './calendar.attendees.js';
 
 // Export recurring event operations
-export { generateRecurringEvents } from './calendar.recurring';
+export { generateRecurringEvents } from './calendar.recurring.js';
 
 // Export utility functions (if needed externally)
 export {
@@ -68,7 +68,7 @@ export {
   applyDateAndSearchFilters,
   applyEventFilters,
   getEventCount,
-} from './calendar.utils';
+} from './calendar.utils.js';
 
 /**
  * Default export for backward compatibility

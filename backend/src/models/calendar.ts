@@ -17,7 +17,7 @@
  */
 
 // Re-export everything from the calendar module
-export * from './calendar/index';
+export * from './calendar/index.js';
 
 // Re-export default export for backward compatibility
-export { default } from './calendar/index';
+export { default } from './calendar/index.js';

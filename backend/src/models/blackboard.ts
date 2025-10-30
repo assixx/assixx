@@ -3,9 +3,9 @@
  * Blackboard Model
  * Handles database operations for the blackboard entries and confirmations
  */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
-import { logger } from '../utils/logger';
-import User from './user';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
+import User from './user/index.js';
 
 // Database interfaces
 interface DbBlackboardEntry extends RowDataPacket {

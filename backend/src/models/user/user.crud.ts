@@ -2,11 +2,11 @@
  * User CRUD Operations
  * Main business logic for user management
  */
-import { ResultSetHeader, query as executeQuery } from '../../utils/db';
-import { logger } from '../../utils/logger';
-import { normalizeMySQLBoolean } from '../../utils/typeHelpers';
-import { autoResetExpiredAvailability } from './user.availability';
-import { DbUser, UserCreateData, UserFilter } from './user.types';
+import { ResultSetHeader, query as executeQuery } from '../../utils/db.js';
+import { logger } from '../../utils/logger.js';
+import { normalizeMySQLBoolean } from '../../utils/typeHelpers.js';
+import { autoResetExpiredAvailability } from './user.availability.js';
+import { DbUser, UserCreateData, UserFilter } from './user.types.js';
 import {
   buildFilterConditions,
   buildOrderByClause,
@@ -15,7 +15,7 @@ import {
   generateInitialEmployeeId,
   processUpdateField,
   updateTemporaryEmployeeId,
-} from './user.utils';
+} from './user.utils.js';
 
 /**
  * Create a new user

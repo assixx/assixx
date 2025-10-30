@@ -8,14 +8,14 @@ import { Pool } from 'mysql2/promise';
 import request from 'supertest';
 
 import '../../../../__tests__/test-env-setup';
-import app from '../../../../app';
+import app from '../../../../app.js';
 import {
   cleanupTestData,
   closeTestDatabase,
   createTestDatabase,
   createTestTenant,
   createTestUser,
-} from '../../../mocks/database';
+} from '../../../mocks/database.js';
 
 describe('Authentication API v2 Endpoints', () => {
   let testDb: Pool;

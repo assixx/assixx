@@ -7,12 +7,12 @@ import fs from 'fs/promises';
 import { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import path from 'path';
 
-import { getRedisClient } from '../config/redis';
-import { DbUser } from '../models/user';
-import { execute, query, transaction } from '../utils/db';
-import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper';
-import emailService from '../utils/emailService';
-import { logger } from '../utils/logger';
+import { getRedisClient } from '../config/redis.js';
+import { DbUser } from '../models/user/index.js';
+import { execute, query, transaction } from '../utils/db.js';
+import { ConnectionWrapper as DbConnectionWrapper, wrapConnection } from '../utils/dbWrapper.js';
+import emailService from '../utils/emailService.js';
+import { logger } from '../utils/logger.js';
 
 type ConnectionWrapper = DbConnectionWrapper;
 

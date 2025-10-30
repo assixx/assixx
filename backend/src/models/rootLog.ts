@@ -1,5 +1,5 @@
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
-import { logger } from '../utils/logger';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
 
 // Database interfaces
 interface DbRootLog extends RowDataPacket {

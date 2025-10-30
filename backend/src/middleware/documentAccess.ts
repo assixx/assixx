@@ -4,7 +4,7 @@
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 
 import documentModel, { type DbDocument } from '../models/document.js';
-import userModel from '../models/user.js';
+import userModel from '../models/user/index.js';
 import type { DocumentRequest } from '../types/request.types.js';
 import { logger } from '../utils/logger.js';
 

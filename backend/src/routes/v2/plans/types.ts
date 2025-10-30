@@ -131,6 +131,10 @@ export interface DbPlanFeature {
   is_included: number | boolean;
 }
 
+// Database result type for tenant plans
+// Note: expires_at and custom_price are optional to match the model definition
+// expires_at: allows for plans without expiration
+// custom_price: allows for plans without custom pricing
 export interface DbTenantPlan {
   id: number;
   tenant_id: number;
@@ -139,8 +143,8 @@ export interface DbTenantPlan {
   plan_name: string;
   status: string;
   started_at: Date;
-  expires_at: Date | null;
-  custom_price: number | null;
+  expires_at?: Date | null;
+  custom_price?: number | null;
   billing_cycle: string;
 }
 

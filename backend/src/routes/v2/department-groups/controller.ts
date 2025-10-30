@@ -3,7 +3,8 @@
  * HTTP request handlers for department groups API
  */
 import { Response } from 'express';
-import { ValidationError, validationResult } from 'express-validator';
+
+// Removed express-validator - using Zod validation in routes
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -11,23 +12,7 @@ import { logger } from '../../../utils/logger.js';
 import { departmentGroupsService } from './service.js';
 import { AddDepartmentsRequest, CreateGroupRequest, UpdateGroupRequest } from './types.js';
 
-// Error detail interface for type safety
-interface ErrorDetail {
-  field: string;
-  message: string;
-}
-
-// Helper function to safely extract error message from ValidationError
-// ValidationError.msg is typed as 'any' in express-validator
-function mapValidationError(error: ValidationError): ErrorDetail {
-  return {
-    field: error.type === 'field' ? error.path : 'general',
-    message: String(error.msg as unknown),
-  };
-}
-
-// Constants
-const INVALID_REQUEST_DATA = 'Invalid request data';
+// Validation helper removed - using Zod validation in routes
 
 /**
  *
@@ -112,19 +97,7 @@ class DepartmentGroupsController {
       return;
     }
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: INVALID_REQUEST_DATA,
-          details: errors.array().map(mapValidationError),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const groupId = await departmentGroupsService.createGroup(
@@ -180,19 +153,7 @@ class DepartmentGroupsController {
       return;
     }
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: INVALID_REQUEST_DATA,
-          details: errors.array().map(mapValidationError),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const groupId = Number.parseInt(req.params.id);
@@ -247,19 +208,7 @@ class DepartmentGroupsController {
       return;
     }
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: INVALID_REQUEST_DATA,
-          details: errors.array().map(mapValidationError),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const groupId = Number.parseInt(req.params.id);
@@ -309,19 +258,7 @@ class DepartmentGroupsController {
       return;
     }
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: INVALID_REQUEST_DATA,
-          details: errors.array().map(mapValidationError),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const groupId = Number.parseInt(req.params.id);
@@ -377,19 +314,7 @@ class DepartmentGroupsController {
       return;
     }
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: INVALID_REQUEST_DATA,
-          details: errors.array().map(mapValidationError),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const groupId = Number.parseInt(req.params.id);
@@ -434,19 +359,7 @@ class DepartmentGroupsController {
    * @param res - The response object
    */
   async getGroupDepartments(req: AuthenticatedRequest, res: Response): Promise<void> {
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: INVALID_REQUEST_DATA,
-          details: errors.array().map(mapValidationError),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const groupId = Number.parseInt(req.params.id);

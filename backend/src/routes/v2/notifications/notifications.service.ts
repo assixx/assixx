@@ -4,7 +4,7 @@
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import rootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog.js';
 import {
   NotificationPreferencesRow,
   NotificationsRow,

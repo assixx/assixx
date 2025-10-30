@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx Base Configuration - Shared TypeScript Rules",
+  "compilerOptions": {
+    // ============================================================
+    // STRICT TYPE CHECKING
+    // Best Practice 2025: Maximum Type Safety
+    // ============================================================
+    "strict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": false,
+    "noImplicitThis": true,
+    "noImplicitAny": true,
+    "alwaysStrict": true,
+
+    // ============================================================
+    // CODE QUALITY & UNUSED CODE DETECTION
+    // Best Practice 2025: Catch unused code early
+    // ============================================================
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // ============================================================
+    // TARGET & LIBRARY
+    // ES2022 for modern JavaScript features
+    // Note: Individual projects add DOM for browser targets
+    // ============================================================
+    "target": "ES2022",
+    "lib": ["ES2022"],
+
+    // ============================================================
+    // MODULE SYSTEM
+    // Note: 'module' and 'moduleResolution' are set per-project
+    // Backend uses NodeNext, Frontend uses ESNext/bundler
+    // ============================================================
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // ============================================================
+    // FILE SYSTEM & CASING
+    // Critical for cross-platform development (Windows/Mac/Linux)
+    // ============================================================
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+
+    // ============================================================
+    // OUTPUT CONFIGURATION
+    // Source maps for debugging
+    // ============================================================
+    "sourceMap": true,
+    "removeComments": true,
+
+    // ============================================================
+    // JAVASCRIPT SUPPORT
+    // Allow .js files in TypeScript projects
+    // ============================================================
+    "allowJs": true,
+    "checkJs": false
+  }
+}

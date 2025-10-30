@@ -1,11 +1,11 @@
 import { Response } from 'express';
 
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { errorResponse, successResponse } from '../../../types/response.types';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../types/response.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { getErrorMessage } from '../../../utils/errorHandler';
-import { FeaturesService } from './features.service';
-import type { FeatureActivationRequest, FeatureDeactivationRequest } from './types';
+import { getErrorMessage } from '../../../utils/errorHandler.js';
+import { FeaturesService } from './features.service.js';
+import type { FeatureActivationRequest, FeatureDeactivationRequest } from './types.js';
 
 const HTTP_STATUS_FORBIDDEN = 403;
 const ACCESS_DENIED_MESSAGE = 'Access denied';

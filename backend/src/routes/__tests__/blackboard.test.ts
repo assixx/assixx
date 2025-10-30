@@ -6,9 +6,9 @@ import { jest } from '@jest/globals';
 import express from 'express';
 import request from 'supertest';
 
-import { authenticateToken } from '../../middleware/auth';
-import blackboardModel from '../../models/blackboard';
-import blackboardRoutes from '../blackboard';
+import { authenticateToken } from '../../middleware/auth.js';
+import blackboardModel from '../../models/blackboard.js';
+import blackboardRoutes from '../blackboard.js';
 
 // Mock dependencies
 jest.mock('../../middleware/auth');

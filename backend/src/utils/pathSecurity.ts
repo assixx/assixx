@@ -4,7 +4,7 @@
  */
 import path from 'path';
 
-import { logger } from './logger';
+import { logger } from './logger.js';
 
 /**
  * Validates and sanitizes a file path to prevent directory traversal attacks

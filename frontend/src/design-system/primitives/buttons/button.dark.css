@@ -9,24 +9,17 @@
  */
 
 .btn-dark {
-  /* Padding - matches other variants */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-  border: 1px solid rgb(48 48 48); /* Solid gray border - avatar style */
-
-  /* Colors */
+  padding: var(--spacing-2) var(--spacing-4);
+  border: 1px solid rgb(17 17 17);
   color: var(--color-white);
-
-  background: linear-gradient(135deg, rgb(66 66 66 / 15%), rgb(33 33 33 / 80%)); /* Avatar-style gradient */
-
-  /* Shadow */
-  box-shadow: var(--shadow-btn-dark, 0 2px 8px rgb(0 0 0 / 30%));
+  background: linear-gradient(145deg, rgb(34 34 34), rgb(0 0 0));
 }
 
 /* Hover State - Brighten the gradient */
 .btn-dark:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: linear-gradient(135deg, rgb(66 66 66 / 25%), rgb(33 33 33 / 90%));
-  box-shadow: var(--shadow-btn-dark-hover, 0 4px 12px rgb(0 0 0 / 40%));
+  border: 1px solid rgb(17 17 17);
+  color: var(--color-white);
+  background: linear-gradient(145deg, rgb(34 34 34), rgb(0 0 0));
 }
 
 /* Active/Pressed State */

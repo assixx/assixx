@@ -2,9 +2,9 @@
  * Shift V2 API Operations
  * V2 API shift management operations
  */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db';
-import { logger } from '../utils/logger';
-import { getShiftTemplates } from './shift-core';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
+import { getShiftTemplates } from './shift-core.js';
 import {
   type DbShiftTemplate,
   type V2ShiftData,
@@ -16,7 +16,7 @@ import {
   calculateDurationHours,
   formatDateForMysql,
   formatDateOnlyForMysql,
-} from './shift-types';
+} from './shift-types.js';
 
 // Query result types for type safety
 interface DateResult extends RowDataPacket {

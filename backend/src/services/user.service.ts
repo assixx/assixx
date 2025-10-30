@@ -5,9 +5,9 @@
  */
 import bcrypt from 'bcryptjs';
 
-import User from '../models/user';
-import type { DbUser } from '../models/user';
-import { logger } from '../utils/logger';
+import User from '../models/user/index.js';
+import type { DbUser } from '../models/user/index.js';
+import { logger } from '../utils/logger.js';
 
 // Import types from User model
 

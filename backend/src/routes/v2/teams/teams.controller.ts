@@ -4,7 +4,7 @@
  */
 import { Response } from 'express';
 
-import rootLog from '../../../models/rootLog';
+import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';

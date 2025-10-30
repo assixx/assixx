@@ -9,7 +9,7 @@ import {
   TotalSavingsResult,
   UserDepartmentIdResult,
 } from '../types/query-results.types.js';
-import { query as executeQuery } from '../utils/db';
+import { query as executeQuery } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 import adminPermissionService from './adminPermission.service.js';
 

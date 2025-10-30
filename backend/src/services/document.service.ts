@@ -10,10 +10,10 @@ import Document, {
   DbDocument,
   DocumentCreateData as ModelDocumentCreateData,
   DocumentUpdateData as ModelDocumentUpdateData,
-} from '../models/document';
-import { RowDataPacket, query as executeQuery } from '../utils/db';
-import { formatPaginationResponse } from '../utils/helpers';
-import { logger } from '../utils/logger';
+} from '../models/document.js';
+import { RowDataPacket, query as executeQuery } from '../utils/db.js';
+import { formatPaginationResponse } from '../utils/helpers.js';
+import { logger } from '../utils/logger.js';
 
 /**
  * Document Service

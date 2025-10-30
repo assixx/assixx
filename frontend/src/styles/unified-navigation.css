@@ -41,9 +41,16 @@
 
 /* Token Timer */
 .token-timer {
-  font-size: 0.875rem;
+  display: inline-block;
+
+  min-width: 45px; /* Reserve space for "00:00" format */
+
+  /* Prevent layout shift when timer updates (different digit widths) */
+  font-size: 1rem;
   font-weight: 500;
+  font-variant-numeric: tabular-nums; /* Zahlen gleich breit */
   color: rgb(255 255 255 / 80%);
+  text-align: center;
   letter-spacing: 0.05em;
 
   transition: color 0.3s ease;

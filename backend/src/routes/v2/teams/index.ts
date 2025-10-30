@@ -9,11 +9,11 @@
  */
 import { RequestHandler, Response, Router } from 'express';
 
-import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { typed } from '../../../utils/routeHandlers';
-import { teamsController } from './teams.controller';
-import { teamsValidationZod } from './teams.validation.zod';
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { teamsController } from './teams.controller.js';
+import { teamsValidationZod } from './teams.validation.zod.js';
 
 const router = Router();
 

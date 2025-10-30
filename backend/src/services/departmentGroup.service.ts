@@ -10,7 +10,7 @@ import {
   IdResult,
   ParentGroupIdResult,
 } from '../types/query-results.types.js';
-import { ResultSetHeader, execute, getConnection } from '../utils/db';
+import { ResultSetHeader, execute, getConnection } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
 interface DepartmentGroup {

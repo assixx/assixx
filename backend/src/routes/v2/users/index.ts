@@ -4,12 +4,12 @@
  */
 import express, { RequestHandler, Response, Router } from 'express';
 
-import { rateLimiter } from '../../../middleware/rateLimiter';
-import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware';
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { typed } from '../../../utils/routeHandlers';
-import { usersController } from './users.controller';
-import { usersValidationZod } from './users.validation.zod';
+import { rateLimiter } from '../../../middleware/rateLimiter.js';
+import { authenticateV2, requireRoleV2 } from '../../../middleware/v2/auth.middleware.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { usersController } from './users.controller.js';
+import { usersValidationZod } from './users.validation.zod.js';
 
 const router: Router = express.Router();
 

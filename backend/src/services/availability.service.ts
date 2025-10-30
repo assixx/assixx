@@ -2,9 +2,9 @@
  * Employee Availability Service
  * Handles employee availability management (vacation, sick leave, etc.)
  */
-import { EmployeeAvailability } from '../types/models';
-import { ResultSetHeader, RowDataPacket, execute } from '../utils/db';
-import { camelToSnake, snakeToCamel } from '../utils/typeHelpers';
+import { EmployeeAvailability } from '../types/models.js';
+import { ResultSetHeader, RowDataPacket, execute } from '../utils/db.js';
+import { camelToSnake, snakeToCamel } from '../utils/typeHelpers.js';
 
 interface AvailabilityFilter {
   tenant_id: number;

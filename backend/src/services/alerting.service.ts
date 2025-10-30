@@ -4,8 +4,8 @@
  */
 import axios from 'axios';
 
-import { execute } from '../utils/db';
-import { logger } from '../utils/logger';
+import { execute } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
 
 interface SlackAlert {
   channel: string;

@@ -6,10 +6,10 @@ import express from 'express';
 import { Pool } from 'mysql2/promise';
 import request from 'supertest';
 
-import { asTestRows } from '../../__tests__/mocks/db-types';
-import app from '../../app';
+import { asTestRows } from '../../__tests__/mocks/db-types.js';
+import app from '../../app.js';
 // We'll need to export the app
-import { cleanupTestData, createTestDatabase } from '../mocks/database';
+import { cleanupTestData, createTestDatabase } from '../mocks/database.js';
 
 // Test data
 const validSignupData = {

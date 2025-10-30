@@ -6,11 +6,11 @@ import { NextFunction, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { TokenPayload } from '../types/auth.types';
-import { AuthenticationMiddleware } from '../types/middleware.types';
-import { AuthUser, AuthenticatedRequest, PublicRequest } from '../types/request.types';
-import { errorResponse } from '../types/response.types';
-import { query as executeQuery } from '../utils/db';
+import { TokenPayload } from '../types/auth.types.js';
+import { AuthenticationMiddleware } from '../types/middleware.types.js';
+import { AuthUser, AuthenticatedRequest, PublicRequest } from '../types/request.types.js';
+import { errorResponse } from '../types/response.types.js';
+import { query as executeQuery } from '../utils/db.js';
 
 // Get JWT secret with proper fallback
 const JWT_SECRET = process.env.JWT_SECRET ?? '';

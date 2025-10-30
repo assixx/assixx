@@ -3,9 +3,10 @@
  * HTTP request handlers for signup API
  */
 import { Request, Response } from 'express';
-import { validationResult } from 'express-validator';
 
-import rootLog from '../../../models/rootLog';
+// Removed express-validator - using Zod validation in routes
+
+import rootLog from '../../../models/rootLog.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { logger } from '../../../utils/logger.js';
 import { signupService } from './service.js';
@@ -36,40 +37,7 @@ class SignupController {
     console.info('[SignupController] Logger called, checking if logger works');
   }
 
-  /**
-   * Helper: Handle validation errors
-   */
-  private handleValidationErrors(
-    errors: ReturnType<typeof validationResult>,
-    res: Response,
-  ): boolean {
-    if (!errors.isEmpty()) {
-      const validationErrors = errors.array();
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
-          details: validationErrors.map((error: unknown) => {
-            // Cast to expected ValidationError shape from express-validator
-            const err = error as { type?: string; path?: string; msg?: unknown };
-
-            const field = err.type === 'field' && err.path !== undefined ? err.path : 'general';
-            const message =
-              err.msg !== undefined ?
-                typeof err.msg === 'string' ?
-                  err.msg
-                : JSON.stringify(err.msg)
-              : 'Validation error';
-
-            return { field, message };
-          }),
-        },
-      });
-      return true;
-    }
-    return false;
-  }
+  // Validation is now handled by Zod middleware in routes - no helper needed
 
   /**
    * Helper: Create tenant registration log
@@ -181,10 +149,7 @@ class SignupController {
   async signup(req: Request, res: Response): Promise<void> {
     this.logSignupRequest(req);
 
-    const errors = validationResult(req);
-    if (this.handleValidationErrors(errors, res)) {
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       console.info('[SignupController] Entering try block');
@@ -211,31 +176,7 @@ class SignupController {
    * @param res - The response object
    */
   async checkSubdomain(req: Request, res: Response): Promise<void> {
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
-          details: errors.array().map((error: unknown) => {
-            // Cast to expected ValidationError shape from express-validator
-            const err = error as { type?: string; path?: string; msg?: unknown };
-            return {
-              field: err.type === 'field' && err.path !== undefined ? err.path : 'general',
-              message:
-                err.msg !== undefined ?
-                  typeof err.msg === 'string' ?
-                    err.msg
-                  : JSON.stringify(err.msg)
-                : 'Validation error',
-            };
-          }),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const { subdomain } = req.params;

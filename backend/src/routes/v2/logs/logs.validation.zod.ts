@@ -4,8 +4,8 @@
  */
 import { z } from 'zod';
 
-import { validateBody, validateQuery } from '../../../middleware/validation.zod';
-import { DateSchema, IdSchema, PaginationSchema } from '../../../schemas/common.schema';
+import { validateBody, validateQuery } from '../../../middleware/validation.zod.js';
+import { DateSchema, IdSchema, PaginationSchema } from '../../../schemas/common.schema.js';
 
 // ============================================================
 // QUERY SCHEMAS

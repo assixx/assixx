@@ -4,16 +4,16 @@
  */
 
 // Export all loaders
-export { loadAPIRoutes } from './api-routes';
-export { loadErrorHandler } from './error-handler';
-export { loadExpress } from './express';
-export { loadHealthCheck } from './health';
-export { loadLegacyCompat } from './legacy-compat';
-export { loadMiddleware } from './middleware';
-export { loadPageRoutes } from './page-routes';
-export { loadRateLimiting } from './rate-limiting';
-export { loadSecurity } from './security';
-export { loadStaticFiles } from './static-files';
+export { loadAPIRoutes } from './api-routes.js';
+export { loadErrorHandler } from './error-handler.js';
+export { loadExpress } from './express.js';
+export { loadHealthCheck } from './health.js';
+export { loadLegacyCompat } from './legacy-compat.js';
+export { loadMiddleware } from './middleware.js';
+export { loadPageRoutes } from './page-routes.js';
+export { loadRateLimiting } from './rate-limiting.js';
+export { loadSecurity } from './security.js';
+export { loadStaticFiles } from './static-files.js';
 
 /**
  * Recommended loading order:

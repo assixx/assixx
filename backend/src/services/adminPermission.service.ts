@@ -8,7 +8,7 @@ import {
   PermissionCheckResult,
   TotalCountResult,
 } from '../types/query-results.types.js';
-import { PoolConnection, ResultSetHeader, execute, getConnection } from '../utils/db';
+import { PoolConnection, ResultSetHeader, execute, getConnection } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
 interface Permission {

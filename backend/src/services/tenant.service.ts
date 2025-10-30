@@ -5,11 +5,11 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import Tenant from '../models/tenant';
+import Tenant from '../models/tenant.js';
 import type {
   TenantCreateData as ModelTenantCreateData,
   TenantCreateResult,
-} from '../models/tenant';
+} from '../models/tenant.js';
 
 // Interfaces
 interface TenantData {

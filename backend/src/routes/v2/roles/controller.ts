@@ -3,7 +3,8 @@
  * HTTP request handlers for roles API
  */
 import { Response } from 'express';
-import { ValidationError, validationResult } from 'express-validator';
+
+// Removed express-validator - using Zod validation in routes
 
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
@@ -46,22 +47,7 @@ class RolesController {
    * @param res - The response object
    */
   getRoleById(req: AuthenticatedRequest, res: Response): void {
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const roleId = req.params.id as RoleName;
@@ -162,22 +148,7 @@ class RolesController {
       return;
     }
 
-    // Validate request
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Invalid request data',
-          details: errors.array().map((error: ValidationError) => ({
-            field: error.type === 'field' ? error.path : 'general',
-            message: String(error.msg),
-          })),
-        },
-      });
-      return;
-    }
+    // Validation is now handled by Zod middleware in routes
 
     try {
       const request = req.body as RoleCheckRequest;

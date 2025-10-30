@@ -4,8 +4,8 @@
  */
 import { Application, NextFunction, Request, Response } from 'express';
 
-import { validateCSRFToken } from '../middleware/security-enhanced';
-import { checkTenantStatus } from '../middleware/tenantStatus';
+import { validateCSRFToken } from '../middleware/security-enhanced.js';
+import { checkTenantStatus } from '../middleware/tenantStatus.js';
 
 /**
  * Load additional middleware

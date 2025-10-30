@@ -4,10 +4,10 @@
  */
 import { Router } from 'express';
 
-import { authenticateV2 } from '../../../middleware/v2/auth.middleware';
-import { typed } from '../../../utils/routeHandlers';
-import * as documentsController from './documents.controller';
-import { documentsValidationZod } from './documents.validation.zod';
+import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import * as documentsController from './documents.controller.js';
+import { documentsValidationZod } from './documents.validation.zod.js';
 
 const router = Router();
 

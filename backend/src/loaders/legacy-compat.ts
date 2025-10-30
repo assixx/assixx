@@ -4,8 +4,8 @@
  */
 import { Application, NextFunction, Request, Response } from 'express';
 
-import authController from '../controllers/auth.controller';
-import { authLimiter } from '../middleware/security-enhanced';
+import authController from '../controllers/auth.controller.js';
+import { authLimiter } from '../middleware/security-enhanced.js';
 
 /**
  * Load legacy compatibility routes

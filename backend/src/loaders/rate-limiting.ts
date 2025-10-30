@@ -9,7 +9,7 @@ import {
   authLimiter,
   generalLimiter,
   uploadLimiter,
-} from '../middleware/security-enhanced';
+} from '../middleware/security-enhanced.js';
 
 // Constants
 const RATE_LIMIT_PATH = '/rate-limit';

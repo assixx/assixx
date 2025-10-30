@@ -7,9 +7,9 @@ import 'dotenv/config';
 import * as http from 'http';
 import { IncomingMessage, ServerResponse } from 'http';
 
-import pool from '../config/database';
-import { tenantDeletionService } from '../services/tenantDeletion.service';
-import { logger } from '../utils/logger';
+import pool from '../config/database.js';
+import { tenantDeletionService } from '../services/tenantDeletion.service.js';
+import { logger } from '../utils/logger.js';
 
 class DeletionWorker {
   private isRunning = true;

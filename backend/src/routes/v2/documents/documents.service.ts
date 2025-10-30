@@ -4,15 +4,15 @@
  */
 // Model classes are exported as PascalCase objects for backward compatibility
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import Department from '../../../models/department';
+import Department from '../../../models/department.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import Document, { DbDocument, DocumentUpdateData } from '../../../models/document';
+import Document, { DbDocument, DocumentUpdateData } from '../../../models/document.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import Team from '../../../models/team';
+import Team from '../../../models/team.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import User from '../../../models/user';
-import { dbToApi } from '../../../utils/fieldMapping';
-import { logger } from '../../../utils/logger';
+import User from '../../../models/user/index.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
+import { logger } from '../../../utils/logger.js';
 
 // Error constants
 const ERROR_CODES = {

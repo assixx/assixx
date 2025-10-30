@@ -5,8 +5,8 @@
 import { Application, NextFunction, Request, Response } from 'express';
 import path from 'path';
 
-import { protectPage } from '../middleware/pageAuth';
-import htmlRoutes from '../routes/pages/html.routes';
+import { protectPage } from '../middleware/pageAuth.js';
+import htmlRoutes from '../routes/pages/html.routes.js';
 
 /**
  * Load page routes and clean URL configuration

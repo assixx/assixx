@@ -4,6 +4,7 @@
 
 import type { User } from '../../types/api.types';
 import { apiClient, ApiError } from '../../utils/api-client';
+import { tokenManager } from '../../utils/token-manager';
 import { getUserRole, setUserRole, clearUserRole, getActiveRole } from '../../utils/auth-helpers';
 import { parseJwt } from '../../utils/jwt-utils';
 import { SessionManager } from '../utils/session-manager';
@@ -331,11 +332,8 @@ export async function logout(): Promise<void> {
   userProfileCache = { data: null, timestamp: 0 };
   profileLoadingPromise = null;
 
-  // Clear API client tokens
-  apiClient.clearTokens();
-
-  // Redirect to login
-  window.location.href = '/login';
+  // Clear tokens via TokenManager (handles redirect)
+  tokenManager.clearTokens('logout');
 }
 
 // Helper: Login with V2 API
@@ -353,7 +351,9 @@ async function loginV2(email: string, password: string): Promise<{ success: bool
       response.refreshToken !== undefined &&
       response.refreshToken.length > 0
     ) {
-      apiClient.setTokens(response.accessToken, response.refreshToken);
+      // Set tokens via TokenManager (handles timer restart)
+      tokenManager.setTokens(response.accessToken, response.refreshToken);
+      // Also call setAuthToken for backward compatibility (cookie + legacy 'token' localStorage)
       setAuthToken(response.accessToken, response.refreshToken);
 
       if (response.user) {
@@ -413,8 +413,8 @@ function isOnAuthenticatedPage(): boolean {
 
 // Helper: Initialize session manager
 function initializeSessionManager(): void {
-  const sessionManager = SessionManager.getInstance();
-  sessionManager.setRemoveAuthTokenCallback(removeAuthToken);
+  // Initialize SessionManager singleton (starts inactivity timer via side-effects)
+  SessionManager.getInstance();
   console.info('[AUTH] Session manager initialized');
 }
 

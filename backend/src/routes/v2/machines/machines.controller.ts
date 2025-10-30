@@ -3,14 +3,15 @@
  * Handles HTTP requests and delegates business logic to service layer
  */
 import { Response } from 'express';
-import { ValidationError, validationResult } from 'express-validator';
 
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { ServiceError } from '../../../utils/ServiceError';
-import { errorResponse, successResponse } from '../../../utils/apiResponse';
-import { logger } from '../../../utils/logger';
-import { machinesService } from './machines.service';
-import { MachineCreateRequest, MachineUpdateRequest, MaintenanceRecordRequest } from './types';
+// Removed express-validator - using Zod validation in routes
+
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { ServiceError } from '../../../utils/ServiceError.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { logger } from '../../../utils/logger.js';
+import { machinesService } from './machines.service.js';
+import { MachineCreateRequest, MachineUpdateRequest, MaintenanceRecordRequest } from './types.js';
 
 // Error message constants
 const ERROR_MESSAGES = {
@@ -21,16 +22,7 @@ const ERROR_MESSAGES = {
 } as const;
 
 // Helper to map validation errors to our error response format
-/**
- *
- * @param errors - The errors parameter
- */
-function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
-  return errors.map((error: ValidationError) => ({
-    field: error.type === 'field' ? error.path : 'general',
-    message: String(error.msg),
-  }));
-}
+// Validation helper removed - using Zod validation in routes
 
 export const machinesController = {
   /**
@@ -41,19 +33,7 @@ export const machinesController = {
    */
   async listMachines(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              'VALIDATION_ERROR',
-              ERROR_MESSAGES.INVALID_INPUT,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       if (!req.tenantId) {
         res.status(401).json(errorResponse('UNAUTHORIZED', ERROR_MESSAGES.TENANT_ID_MISSING));
@@ -130,19 +110,7 @@ export const machinesController = {
    */
   async createMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              'VALIDATION_ERROR',
-              ERROR_MESSAGES.INVALID_INPUT,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       if (!req.tenantId || !req.userId) {
         res
@@ -186,19 +154,7 @@ export const machinesController = {
    */
   async updateMachine(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              'VALIDATION_ERROR',
-              ERROR_MESSAGES.INVALID_INPUT,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       if (!req.tenantId || !req.userId) {
         res
@@ -400,19 +356,7 @@ export const machinesController = {
    */
   async addMaintenanceRecord(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              'VALIDATION_ERROR',
-              ERROR_MESSAGES.INVALID_INPUT,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       if (!req.tenantId || !req.userId) {
         res

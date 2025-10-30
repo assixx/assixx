@@ -7,15 +7,15 @@ import express, { Application, NextFunction, Request, Response } from 'express';
 import { existsSync } from 'fs';
 import path from 'path';
 
-import { deprecationMiddleware } from '../middleware/deprecation';
-import { contentSecurityPolicy, redirectToDashboard } from '../middleware/pageAuth';
+import { deprecationMiddleware } from '../middleware/deprecation.js';
+import { contentSecurityPolicy, redirectToDashboard } from '../middleware/pageAuth.js';
 import {
   apiSecurityHeaders,
   corsOptions,
   sanitizeInputs,
   securityHeaders,
-} from '../middleware/security-enhanced';
-import { getCurrentDirPath } from '../utils/getCurrentDir';
+} from '../middleware/security-enhanced.js';
+import { getCurrentDirPath } from '../utils/getCurrentDir.js';
 
 // Constants
 const CONTENT_TYPE_HEADER = 'Content-Type';

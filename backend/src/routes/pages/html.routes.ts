@@ -5,8 +5,8 @@
 import express, { Request, Response, Router } from 'express';
 import path from 'path';
 
-import { authenticateToken, authorizeRole } from '../../middleware/auth';
-import { rateLimiter } from '../../middleware/rateLimiter';
+import { authenticateToken, authorizeRole } from '../../middleware/auth.js';
+import { rateLimiter } from '../../middleware/rateLimiter.js';
 
 const router: Router = express.Router();
 

@@ -3,7 +3,7 @@
  */
 import { RedisClientType, createClient } from 'redis';
 
-import { logger } from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 let redisClient: RedisClientType | null = null;
 

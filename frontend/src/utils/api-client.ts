@@ -1,4 +1,5 @@
-/* eslint-disable max-lines */
+import { tokenManager } from './token-manager';
+
 interface ApiConfig {
   version?: 'v1' | 'v2';
   useAuth?: boolean;
@@ -23,48 +24,13 @@ interface ApiResponse<T = unknown> {
   };
 }
 
-/**
- * Helper: Decode JWT token to extract payload
- */
-function decodeJWT(token: string): { exp?: number } | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
-    return JSON.parse(atob(parts[1])) as { exp?: number };
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Helper: Check if token expires within the next X seconds
- * @param token - JWT access token
- * @param thresholdSeconds - Seconds before expiry to consider "soon" (default: 600 = 10 minutes)
- */
-function isTokenExpiringSoon(token: string, thresholdSeconds: number = 600): boolean {
-  const decoded = decodeJWT(token);
-  if (decoded?.exp === undefined) {
-    return false; // Can't determine, assume not expiring
-  }
-
-  const now = Math.floor(Date.now() / 1000);
-  const timeUntilExpiry = decoded.exp - now;
-
-  return timeUntilExpiry < thresholdSeconds && timeUntilExpiry > 0;
-}
-
 export class ApiClient {
   private static instance: ApiClient | undefined;
-  private token: string | null = null;
-  private refreshToken: string | null = null;
   // Feature flags removed - always use v2
   private baseUrl = '';
   private isRedirectingToRateLimit = false; // Prevent multiple redirects
 
   private constructor() {
-    this.loadTokens();
     // Set base URL based on environment
     this.baseUrl = window.location.origin;
   }
@@ -74,16 +40,12 @@ export class ApiClient {
     return ApiClient.instance;
   }
 
-  private loadTokens(): void {
-    this.token = localStorage.getItem('accessToken');
-    this.refreshToken = localStorage.getItem('refreshToken');
-  }
-
+  /**
+   * Set tokens (delegates to TokenManager)
+   * @deprecated Use tokenManager.setTokens() directly instead
+   */
   setTokens(accessToken: string, refreshToken: string): void {
-    this.token = accessToken;
-    this.refreshToken = refreshToken;
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    tokenManager.setTokens(accessToken, refreshToken);
   }
 
   // Removed setVersion - always v2
@@ -114,9 +76,10 @@ export class ApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    // Add auth header for v2
-    if (version === 'v2' && config.useAuth !== false && this.token !== null && this.token !== '') {
-      headers.Authorization = `Bearer ${this.token}`;
+    // Add auth header for v2 (get token from TokenManager)
+    const token = tokenManager.getAccessToken();
+    if (version === 'v2' && config.useAuth !== false && token !== null && token !== '') {
+      headers.Authorization = `Bearer ${token}`;
     }
 
     return headers;
@@ -129,19 +92,21 @@ export class ApiClient {
     version: 'v1' | 'v2',
     config: ApiConfig,
   ): Promise<T | null> {
-    if (version !== 'v2' || config.useAuth === false || this.refreshToken === null || this.refreshToken === '') {
+    const refreshToken = tokenManager.getRefreshToken();
+    if (version !== 'v2' || config.useAuth === false || refreshToken === null || refreshToken === '') {
       return null;
     }
 
     console.info('[API v2] Token expired, attempting refresh...');
-    const refreshed = await this.refreshAccessToken();
+    const refreshed = await tokenManager.refreshIfNeeded();
 
     if (!refreshed) {
       return null;
     }
 
     // Retry request with new token
-    headers.Authorization = `Bearer ${this.token ?? ''}`;
+    const newToken = tokenManager.getAccessToken();
+    headers.Authorization = `Bearer ${newToken ?? ''}`;
     const retryResponse = await fetch(url, {
       ...options,
       headers,
@@ -157,33 +122,41 @@ export class ApiClient {
 
   /**
    * Check if token should be proactively refreshed before making a request
-   * Reduces cognitive complexity by extracting this logic
+   * Delegates to TokenManager which handles the logic
+   *
+   * CRITICAL: Background polling endpoints are excluded to prevent "heartbeat keeps session alive" bug
+   * - Without exclusion: Background API calls (e.g., /chat/unread-count every 10 min) would automatically
+   *   refresh tokens even when user is completely inactive, preventing automatic logout on token expiry
+   * - With exclusion: Only user-initiated API calls refresh tokens, allowing proper token expiry logout
    */
   private async proactivelyRefreshTokenIfNeeded(endpoint: string, headers: Record<string, string>): Promise<void> {
-    // Early return if token is null or endpoint should be skipped
-    if (
-      this.token === null ||
-      endpoint === '/auth/refresh' || // Prevent infinite loop
-      endpoint === '/auth/login' || // Skip for login
-      endpoint === '/auth/logout' // Skip for logout
-    ) {
+    // Skip refresh for auth endpoints (prevent infinite loop) AND background polling endpoints (prevent heartbeat bug)
+    const skipRefreshEndpoints = [
+      '/auth/refresh', // Auth endpoints - prevent infinite loop
+      '/auth/login',
+      '/auth/logout',
+      '/chat/unread-count', // Background polling - should NOT keep session alive
+      '/notifications/stream', // SSE connection - should NOT keep session alive
+    ];
+
+    // Check if endpoint matches any skip pattern
+    if (skipRefreshEndpoints.some((skipEndpoint: string) => endpoint.includes(skipEndpoint))) {
       return;
     }
 
-    // Check if token expires soon
-    if (!isTokenExpiringSoon(this.token, 600)) {
-      return; // Token still fresh, no refresh needed
-    }
+    // TokenManager handles: check if expired (logout) or expiring soon (refresh)
+    const refreshed = await tokenManager.refreshIfNeeded();
 
-    console.info('[API] Token expires soon (<10 min), proactively refreshing...');
-    const refreshed = await this.refreshAccessToken();
     if (refreshed) {
-      console.info('[API] Token proactively refreshed, continuing with request');
-      // Update headers with new token (guaranteed non-null after successful refresh)
-      headers.Authorization = `Bearer ${this.token}`;
-    } else {
-      console.warn('[API] Proactive token refresh failed');
+      // Token is fresh, update header with current token
+      const token = tokenManager.getAccessToken();
+      // False positive: We're only checking token existence (null vs string), not comparing token content
+      // eslint-disable-next-line security/detect-possible-timing-attacks
+      if (token !== null) {
+        headers.Authorization = `Bearer ${token}`;
+      }
     }
+    // If refresh failed, TokenManager already handled logout/redirect
   }
 
   async request<T = unknown>(endpoint: string, options: RequestInit = {}, config: ApiConfig = {}): Promise<T> {
@@ -230,7 +203,7 @@ export class ApiClient {
 
   private handleRateLimit(): void {
     console.error('[API] Rate limit exceeded');
-    this.clearTokens();
+    tokenManager.clearTokens('logout');
 
     if (!this.isRedirectingToRateLimit) {
       this.isRedirectingToRateLimit = true;
@@ -280,8 +253,8 @@ export class ApiClient {
       (details !== '' && details.toLowerCase().includes('expired'))
     ) {
       console.info('[API] Token expired, redirecting to login with session expired message');
-      this.clearTokens();
-      window.location.href = '/login?session=expired';
+      // TokenManager handles logout and redirect
+      tokenManager.clearTokens('token_expired');
       throw new ApiError('Session expired', 'SESSION_EXPIRED', 401);
     }
   }
@@ -367,69 +340,21 @@ export class ApiClient {
     return (version === 'v2' ? this.handleV2Response(response, data) : this.handleV1Response(response, data)) as T;
   }
 
-  private async refreshAccessToken(): Promise<boolean> {
-    try {
-      const response = await fetch(`${this.baseUrl}/api/v2/auth/refresh`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          refreshToken: this.refreshToken,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Token refresh failed');
-      }
-
-      const data = (await response.json()) as {
-        success?: boolean;
-        data?: { accessToken: string; refreshToken: string };
-      };
-
-      if (data.success === true && data.data !== undefined) {
-        this.setTokens(data.data.accessToken, data.data.refreshToken);
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('[API] Token refresh failed:', error);
-      // Refresh failed, clear tokens and redirect to login with session expired message
-      this.clearTokens();
-      window.location.href = '/login?session=expired';
-      return false;
-    }
-  }
-
   /**
    * Check if current token expires soon and proactively refresh it
    * Should be called on page load to ensure fresh token for active users
+   * @deprecated Use tokenManager.refreshIfNeeded() directly instead
    */
   async ensureFreshToken(): Promise<void> {
-    if (this.token === null) {
-      return; // No token, nothing to refresh
-    }
-
-    if (isTokenExpiringSoon(this.token, 600)) {
-      // 600s = 10 minutes
-      console.info('[API] Token expires soon on page load, proactively refreshing...');
-      const refreshed = await this.refreshAccessToken();
-      if (refreshed) {
-        console.info('[API] Token refreshed successfully on page load');
-      } else {
-        console.warn('[API] Token refresh failed on page load');
-      }
-    }
+    await tokenManager.refreshIfNeeded();
   }
 
+  /**
+   * Clear tokens (delegates to TokenManager)
+   * @deprecated Use tokenManager.clearTokens() directly instead
+   */
   clearTokens(): void {
-    this.token = null;
-    this.refreshToken = null;
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('user');
+    tokenManager.clearTokens('logout');
   }
 
   private handleError(error: unknown): Error {
@@ -539,8 +464,7 @@ window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => 
     if (reason.code === 'UNAUTHORIZED' || reason.code === 'SESSION_EXPIRED' || reason.status === 401) {
       // Token might be invalid or expired, redirect to login with session expired message
       event.preventDefault(); // Prevent console error
-      apiClient.clearTokens();
-      window.location.href = '/login?session=expired';
+      tokenManager.clearTokens('token_expired');
     }
   }
 });

@@ -3,18 +3,19 @@
  * Handles HTTP requests and delegates business logic to service layer
  */
 import { Response } from 'express';
-import { ValidationError, validationResult } from 'express-validator';
 
-import rootLog from '../../../models/rootLog';
-import type { AuthenticatedRequest } from '../../../types/request.types';
+// Removed express-validator - using Zod validation in routes
+
+import rootLog from '../../../models/rootLog.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import {
   type PaginationMeta,
   errorResponse,
   paginatedResponse,
   successResponse,
-} from '../../../utils/apiResponse';
-import { uploadMiddleware } from '../../../utils/uploadMiddleware';
-import { ServiceError, usersService } from './users.service';
+} from '../../../utils/apiResponse.js';
+import { uploadMiddleware } from '../../../utils/uploadMiddleware.js';
+import { ServiceError, usersService } from './users.service.js';
 import {
   ChangePasswordBody,
   CreateUserBody,
@@ -22,11 +23,9 @@ import {
   UpdateAvailabilityBody,
   UpdateProfileBody,
   UpdateUserBody,
-} from './users.types';
+} from './users.types.js';
 
 // Constants
-const VALIDATION_ERROR_CODE = 'VALIDATION_ERROR';
-const VALIDATION_ERROR_MESSAGE = 'Invalid input';
 const TENANT_ID_MISSING = 'Tenant ID missing';
 const USER_OR_TENANT_ID_MISSING = 'User ID or Tenant ID missing';
 
@@ -41,35 +40,13 @@ interface User {
   [key: string]: unknown;
 }
 
-// Helper to map validation errors to our error response format
-/**
- *
- * @param errors - The errors parameter
- */
-function mapValidationErrors(errors: ValidationError[]): { field: string; message: string }[] {
-  return errors.map((error: ValidationError) => ({
-    field: error.type === 'field' ? error.path : 'general',
-    message: String(error.msg),
-  }));
-}
+// Validation helper removed - using Zod validation in routes
 
 export const usersController = {
   // List all users with pagination and filters
   listUsers: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
@@ -114,19 +91,7 @@ export const usersController = {
   // Get user by ID
   getUserById: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
@@ -148,19 +113,7 @@ export const usersController = {
   // Create new user
   createUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const body = req.body as CreateUserBody;
       if (req.tenantId === undefined) {
@@ -204,19 +157,7 @@ export const usersController = {
   // Update user
   updateUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const userId = Number.parseInt(req.params.id, 10);
       const body = req.body as UpdateUserBody;
@@ -274,19 +215,7 @@ export const usersController = {
   // Update current user profile
   updateCurrentUserProfile: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const body = req.body as UpdateProfileBody;
       if (req.userId === undefined || req.tenantId === undefined) {
@@ -309,19 +238,7 @@ export const usersController = {
   // Change password
   changePassword: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const { currentPassword, newPassword } = req.body as ChangePasswordBody;
       if (req.userId === undefined || req.tenantId === undefined) {
@@ -344,19 +261,7 @@ export const usersController = {
   // Delete user
   deleteUser: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const userId = Number.parseInt(req.params.id, 10);
       if (req.userId === undefined || req.tenantId === undefined) {
@@ -448,19 +353,7 @@ export const usersController = {
   // Unarchive user
   async unarchiveUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const userId = Number.parseInt(req.params.id, 10);
       if (req.tenantId === undefined) {
@@ -573,19 +466,7 @@ export const usersController = {
   // Update availability
   updateAvailability: async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        res
-          .status(400)
-          .json(
-            errorResponse(
-              VALIDATION_ERROR_CODE,
-              VALIDATION_ERROR_MESSAGE,
-              mapValidationErrors(errors.array()),
-            ),
-          );
-        return;
-      }
+      // Validation is now handled by Zod middleware in routes
 
       const userId = Number.parseInt(req.params.id, 10);
       const body = req.body as UpdateAvailabilityBody;

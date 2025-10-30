@@ -1,5 +1,5 @@
 // Re-import for default export
-import { autoResetExpiredAvailability, updateUserAvailability } from './user.availability';
+import { autoResetExpiredAvailability, updateUserAvailability } from './user.availability.js';
 import {
   archiveUser,
   createUser,
@@ -14,8 +14,8 @@ import {
   searchUsers,
   unarchiveUser,
   updateUser,
-} from './user.crud';
-import { changeUserPassword, updateOwnProfile, updateUserProfilePicture } from './user.profile';
+} from './user.crud.js';
+import { changeUserPassword, updateOwnProfile, updateUserProfilePicture } from './user.profile.js';
 import {
   countActiveUsersByTenant,
   countUsers,
@@ -23,7 +23,7 @@ import {
   getUserDepartmentAndTeam,
   getUserDocumentCount,
   userHasDocuments,
-} from './user.stats';
+} from './user.stats.js';
 
 /**
  * User Module - Barrel Export
@@ -42,7 +42,7 @@ export type {
   AvailabilityData,
   PasswordChangeResult,
   ProfileUpdateResult,
-} from './user.types';
+} from './user.types.js';
 
 // Export CRUD operations
 export {
@@ -59,13 +59,13 @@ export {
   findArchivedUsers,
   findAllUsers,
   findAllUsersByTenant,
-} from './user.crud';
+} from './user.crud.js';
 
 // Export profile operations
-export { updateUserProfilePicture, changeUserPassword, updateOwnProfile } from './user.profile';
+export { updateUserProfilePicture, changeUserPassword, updateOwnProfile } from './user.profile.js';
 
 // Export availability operations
-export { autoResetExpiredAvailability, updateUserAvailability } from './user.availability';
+export { autoResetExpiredAvailability, updateUserAvailability } from './user.availability.js';
 
 // Export statistics operations
 export {
@@ -75,7 +75,7 @@ export {
   userHasDocuments,
   getUserDocumentCount,
   getUserDepartmentAndTeam,
-} from './user.stats';
+} from './user.stats.js';
 
 // Export utility functions (if needed externally)
 export {
@@ -87,7 +87,7 @@ export {
   buildOrderByClause,
   buildPaginationClause,
   buildCountQuery,
-} from './user.utils';
+} from './user.utils.js';
 
 /**
  * Default export for backward compatibility

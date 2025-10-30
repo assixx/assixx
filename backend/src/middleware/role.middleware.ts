@@ -4,7 +4,7 @@
  */
 import { NextFunction, Response } from 'express';
 
-import type { AuthenticatedRequest } from '../types/request.types';
+import type { AuthenticatedRequest } from '../types/request.types.js';
 
 /**
  * Middleware to check if user has one of the required roles

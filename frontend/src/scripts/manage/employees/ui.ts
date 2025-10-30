@@ -14,9 +14,11 @@ export function renderEmptyState(container: HTMLElement): void {
     container,
     `
       <div class="empty-state">
-        <div class="empty-state-icon">👥</div>
-        <div class="empty-state-text">Keine Mitarbeiter gefunden</div>
-        <div class="empty-state-subtext">Fügen Sie Ihren ersten Mitarbeiter hinzu</div>
+        <div class="empty-state__icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <h3 class="empty-state__title">Keine Mitarbeiter gefunden</h3>
+        <p class="empty-state__description">Erstellen Sie Ihren ersten Mitarbeiter</p>
       </div>
     `,
   );

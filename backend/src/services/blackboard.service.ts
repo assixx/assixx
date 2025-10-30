@@ -14,7 +14,7 @@ import {
   getAllEntries,
   getEntryById,
   updateEntry,
-} from '../models/blackboard';
+} from '../models/blackboard.js';
 
 // Service-specific interfaces
 type BlackboardEntry = DbBlackboardEntry;

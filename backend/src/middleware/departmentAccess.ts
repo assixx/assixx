@@ -5,7 +5,7 @@
 import { NextFunction, Response } from 'express';
 
 import adminPermissionService from '../services/adminPermission.service.js';
-import type { AuthenticatedRequest } from '../types/request.types';
+import type { AuthenticatedRequest } from '../types/request.types.js';
 import { logger } from '../utils/logger.js';
 
 interface DepartmentAccessRequest extends AuthenticatedRequest {

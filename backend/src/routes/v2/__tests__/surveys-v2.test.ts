@@ -6,7 +6,7 @@ import type { ResultSetHeader } from 'mysql2';
 import { Pool } from 'mysql2/promise';
 import request from 'supertest';
 
-import app from '../../../app';
+import app from '../../../app.js';
 import {
   cleanupTestData,
   createTestDatabase,
@@ -14,7 +14,7 @@ import {
   createTestTeam,
   createTestTenant,
   createTestUser,
-} from '../../mocks/database';
+} from '../../mocks/database.js';
 
 describe('Surveys API v2', () => {
   let testDb: Pool;

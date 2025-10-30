@@ -1,18 +1,17 @@
 import { Response, Router } from 'express';
 
-import { security } from '../../../middleware/security';
+import { security } from '../../../middleware/security.js';
 import type {
   AuthenticatedRequest,
   BodyRequest,
   ParamsRequest,
   PublicRequest,
-} from '../../../types/request.types';
-import { errorResponse, successResponse } from '../../../utils/apiResponse';
-import { getErrorMessage } from '../../../utils/errorHandler';
-import { typed } from '../../../utils/routeHandlers';
-import { PlansService } from './plans.service';
-import { plansValidation } from './plans.validation';
-import type { UpdateAddonsRequest, UpgradePlanRequest } from './types';
+} from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { getErrorMessage } from '../../../utils/errorHandler.js';
+import { typed } from '../../../utils/routeHandlers.js';
+import { PlansService } from './plans.service.js';
+import type { UpdateAddonsRequest, UpgradePlanRequest } from './types.js';
 
 const router = Router();
 
@@ -256,7 +255,6 @@ router.get(
 router.put(
   '/addons',
   ...security.admin(),
-  plansValidation.updateAddons,
   typed.body<UpdateAddonsRequest>(async (req: BodyRequest<UpdateAddonsRequest>, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;
@@ -376,7 +374,6 @@ router.get(
  */
 router.get(
   '/:id',
-  plansValidation.getPlanById,
   typed.params<{ id: string }>(async (req: ParamsRequest<{ id: string }>, res: Response) => {
     try {
       const planId = Number.parseInt(req.params.id, 10);
@@ -440,7 +437,6 @@ router.get(
  */
 router.get(
   '/:id/features',
-  plansValidation.getPlanById,
   typed.params<{ id: string }>(async (req: ParamsRequest<{ id: string }>, res: Response) => {
     try {
       const planId = Number.parseInt(req.params.id, 10);
@@ -516,7 +512,6 @@ router.get(
 router.put(
   '/:id/upgrade',
   ...security.admin(),
-  plansValidation.upgradePlan,
   typed.body<UpgradePlanRequest>(async (req: BodyRequest<UpgradePlanRequest>, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;

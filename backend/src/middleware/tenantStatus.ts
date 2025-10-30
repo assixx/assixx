@@ -5,9 +5,9 @@
 import { NextFunction, Request, Response } from 'express';
 import { RowDataPacket } from 'mysql2';
 
-import type { AuthUser, AuthenticatedRequest } from '../types/request.types';
-import { query } from '../utils/db';
-import { logger } from '../utils/logger';
+import type { AuthUser, AuthenticatedRequest } from '../types/request.types.js';
+import { query } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
 
 interface TenantStatusRow extends RowDataPacket {
   deletion_status: 'active' | 'marked_for_deletion' | 'suspended' | 'deleting';

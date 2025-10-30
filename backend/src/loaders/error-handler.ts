@@ -5,7 +5,7 @@
  */
 import { Application, NextFunction, Request, Response } from 'express';
 
-import { createErrorResponse } from '../utils/errors';
+import { createErrorResponse } from '../utils/errors.js';
 
 /**
  * Load error handling configuration

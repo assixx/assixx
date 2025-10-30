@@ -16,7 +16,7 @@
  *
  * USAGE EXAMPLE:
  * ```typescript
- * import { UsersRow } from './database-rows.types';
+ * import { UsersRow } from './database-rows.types.js';
  *
  * const [rows] = await connection.execute<UsersRow[]>(
  *   'SELECT * FROM users WHERE id = ?',

@@ -10,7 +10,7 @@ import Department from '../../../models/department.js';
 import Team from '../../../models/team.js';
 import type { DbTeam, TeamCreateData, TeamUpdateData } from '../../../models/team.js';
 // eslint-disable-next-line @typescript-eslint/naming-convention
-import User from '../../../models/user.js';
+import User from '../../../models/user/index.js';
 import { execute } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { logger } from '../../../utils/logger.js';

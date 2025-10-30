@@ -9,16 +9,16 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
 
-import rootLog from '../../../models/rootLog';
-import type { AuthenticatedRequest } from '../../../types/request.types';
-import { errorResponse, successResponse } from '../../../utils/apiResponse';
-import { logger } from '../../../utils/logger';
+import rootLog from '../../../models/rootLog.js';
+import type { AuthenticatedRequest } from '../../../types/request.types.js';
+import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
+import { logger } from '../../../utils/logger.js';
 import {
   DocumentCreateInput,
   DocumentFilters,
   ServiceError,
   documentsService,
-} from './documents.service';
+} from './documents.service.js';
 
 interface Document {
   id: number;

@@ -7,12 +7,12 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { RowDataPacket } from 'mysql2/promise';
 
-import { authenticateUser as authUser, generateToken } from '../auth';
-import UserModel from '../models/user';
-import { AuthResult, TokenValidationResult, UserRegistrationData } from '../types/auth.types';
-import { DatabaseUser } from '../types/models';
-import { ResultSetHeader, execute } from '../utils/db';
-import { logger } from '../utils/logger';
+import { authenticateUser as authUser, generateToken } from '../auth.js';
+import UserModel from '../models/user/index.js';
+import { AuthResult, TokenValidationResult, UserRegistrationData } from '../types/auth.types.js';
+import { DatabaseUser } from '../types/models.js';
+import { ResultSetHeader, execute } from '../utils/db.js';
+import { logger } from '../utils/logger.js';
 
 const INVALID_CREDENTIALS_MSG = 'Ungültige Anmeldedaten';
 

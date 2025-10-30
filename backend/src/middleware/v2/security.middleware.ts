@@ -4,10 +4,10 @@
  */
 import { RequestHandler } from 'express';
 
-import { ValidationMiddleware } from '../../types/middleware.types';
-import { rateLimiter } from '../rateLimiter';
-import { validateTenantIsolation } from '../tenantIsolation';
-import { authenticateV2, requireRoleV2 } from './auth.middleware';
+import { ValidationMiddleware } from '../../types/middleware.types.js';
+import { rateLimiter } from '../rateLimiter.js';
+import { validateTenantIsolation } from '../tenantIsolation.js';
+import { authenticateV2, requireRoleV2 } from './auth.middleware.js';
 
 // Security middleware stacks for v2 endpoints
 export const securityV2 = {
