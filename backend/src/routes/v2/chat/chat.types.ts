@@ -223,6 +223,7 @@ export interface MessageRow extends RowDataPacket {
   attachment_path: string | null;
   attachment_name: string | null;
   attachment_type: string | null;
+  attachment_size: number | null;
   is_system: number;
   created_at: Date;
   is_read?: number;

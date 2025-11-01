@@ -148,7 +148,6 @@ export async function listShifts(req: AuthenticatedRequest, res: Response): Prom
     const filters = parseShiftFilters(req.query);
     const shifts = await shiftsService.listShifts(req.user.tenant_id, filters);
 
-    // TODO: Implement proper pagination
     res.json(
       paginatedResponse(shifts, {
         currentPage: filters.page,

@@ -15,11 +15,12 @@ import {
   getAreasController,
   updateAreaController,
 } from './areas.controller.js';
+import { areasValidationZod } from './areas.validation.zod.js';
 
 const router = Router();
 
 // Get all areas (all authenticated users)
-router.get('/', ...security.user(), typed.auth(getAreasController));
+router.get('/', ...security.user(), areasValidationZod.list, typed.auth(getAreasController));
 
 // Get area hierarchy (all authenticated users)
 router.get('/hierarchy', ...security.user(), typed.auth(getAreaHierarchyController));
@@ -28,15 +29,30 @@ router.get('/hierarchy', ...security.user(), typed.auth(getAreaHierarchyControll
 router.get('/stats', ...security.user(), typed.auth(getAreaStatsController));
 
 // Get area by ID (all authenticated users)
-router.get('/:id', ...security.user(), typed.auth(getAreaByIdController));
+router.get(
+  '/:id',
+  ...security.user(),
+  areasValidationZod.getById,
+  typed.auth(getAreaByIdController),
+);
 
 // Create new area (admin/root only)
-router.post('/', ...security.admin(), typed.auth(createAreaController));
+router.post('/', ...security.admin(), areasValidationZod.create, typed.auth(createAreaController));
 
 // Update area (admin/root only)
-router.put('/:id', ...security.admin(), typed.auth(updateAreaController));
+router.put(
+  '/:id',
+  ...security.admin(),
+  ...areasValidationZod.update,
+  typed.auth(updateAreaController),
+);
 
 // Delete area (admin/root only)
-router.delete('/:id', ...security.admin(), typed.auth(deleteAreaController));
+router.delete(
+  '/:id',
+  ...security.admin(),
+  areasValidationZod.delete,
+  typed.auth(deleteAreaController),
+);
 
 export default router;

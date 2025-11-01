@@ -531,19 +531,6 @@ export function setupDeleteEmployee(): void {
 }
 
 /**
- * Setup View Employee Details Window Handler
- * Currently redirects to edit mode (TODO: implement separate detail view)
- */
-export function setupViewEmployeeDetails(): void {
-  const w = window as WindowWithEmployeeHandlers;
-  w.viewEmployeeDetails = async (id: number) => {
-    // Vorerst zur Bearbeiten-Funktion weiterleiten
-    // TODO: Implementiere separate Detail-Ansicht
-    await w.editEmployee?.(id);
-  };
-}
-
-/**
  * Setup Load Employees Table Window Handler
  * Triggers employee list reload
  */

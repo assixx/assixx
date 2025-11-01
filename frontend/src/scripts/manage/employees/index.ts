@@ -23,7 +23,6 @@ import {
   setupCloseEmployeeModal,
   setupSaveEmployee,
   setupLoadEmployeesTable,
-  setupViewEmployeeDetails,
   setupLoadDropdowns,
 } from './forms';
 
@@ -896,7 +895,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupCloseEmployeeModal();
     setupSaveEmployee();
     setupLoadEmployeesTable();
-    setupViewEmployeeDetails();
     setupLoadDropdowns();
 
     // Setup live email/password validation

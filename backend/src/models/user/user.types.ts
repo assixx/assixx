@@ -80,6 +80,7 @@ export interface UserCreateData {
   is_archived?: boolean;
   is_active?: boolean;
   tenant_id?: number;
+  last_login?: Date; // Track last successful login timestamp
   availability_status?: string;
   availability_start?: string;
   availability_end?: string;

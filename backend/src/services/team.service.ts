@@ -70,10 +70,11 @@ class TeamService {
    * Holt einen Team Eintrag per ID
    * @param _tenantDb - The _tenantDb parameter
    * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
-  async getById(_tenantDb: Pool, id: number): Promise<TeamData | null> {
+  async getById(_tenantDb: Pool, id: number, tenantId: number): Promise<TeamData | null> {
     try {
-      const team = await Team.findById(id);
+      const team = await Team.findById(id, tenantId);
       if (!team) return null;
 
       return {
@@ -100,7 +101,7 @@ class TeamService {
         team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
       };
       const id = await Team.create(modelData);
-      const created = await Team.findById(id);
+      const created = await Team.findById(id, data.tenant_id);
       if (!created) {
         throw new Error('Failed to retrieve created team');
       }
@@ -120,17 +121,23 @@ class TeamService {
    * Aktualisiert einen Team Eintrag
    * @param tenantDb - The tenantDb parameter
    * @param id - The resource ID
+   * @param tenantId - The tenant ID
    * @param data - The data object
    */
-  async update(tenantDb: Pool, id: number, data: TeamUpdateData): Promise<TeamData | null> {
+  async update(
+    tenantDb: Pool,
+    id: number,
+    tenantId: number,
+    data: TeamUpdateData,
+  ): Promise<TeamData | null> {
     try {
       const modelData: ModelTeamUpdateData = {
         ...data,
         team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
       };
-      const success = await Team.update(id, modelData);
+      const success = await Team.update(id, modelData, tenantId);
       if (success) {
-        return await this.getById(tenantDb, id);
+        return await this.getById(tenantDb, id, tenantId);
       }
       return null;
     } catch (error: unknown) {
@@ -143,11 +150,11 @@ class TeamService {
    * Löscht einen Team Eintrag
    * @param _tenantDb - The _tenantDb parameter
    * @param id - The resource ID
+   * @param tenantId - The tenant ID
    */
-  async delete(_tenantDb: Pool, id: number): Promise<boolean> {
+  async delete(_tenantDb: Pool, id: number, tenantId: number): Promise<boolean> {
     try {
-      // TODO: Team.delete expects different parameters
-      return await Team.delete(id);
+      return await Team.delete(id, tenantId);
     } catch (error: unknown) {
       console.error('Error in TeamService.delete:', error);
       throw error;

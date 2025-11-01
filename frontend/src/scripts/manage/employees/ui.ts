@@ -235,6 +235,22 @@ export function getAvailabilityBadge(employee: Employee): string {
 }
 
 /**
+ * Get avatar HTML for employee
+ */
+function getEmployeeAvatar(employee: Employee): string {
+  const firstName = employee.firstName ?? employee.first_name ?? '';
+  const lastName = employee.lastName ?? employee.last_name ?? '';
+  const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const avatarColor = employee.id % 10;
+
+  return `
+    <div class="avatar avatar--sm avatar--color-${avatarColor}">
+      <span>${initials}</span>
+    </div>
+  `;
+}
+
+/**
  * Render a single employee row
  */
 export function renderEmployeeRow(employee: Employee): string {
@@ -244,7 +260,12 @@ export function renderEmployeeRow(employee: Employee): string {
 
   return `
     <tr>
-      <td>${displayName}</td>
+      <td>
+        <div class="flex items-center gap-2">
+          ${getEmployeeAvatar(employee)}
+          <span>${displayName}</span>
+        </div>
+      </td>
       <td>${employee.email}</td>
       <td>${employee.position ?? '-'}</td>
       <td>${employee.employee_number ?? employee.employeeNumber ?? employee.employee_id ?? employee.employeeId ?? '-'}</td>

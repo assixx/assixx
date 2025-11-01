@@ -1,31 +1,22 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 /**
- * Employee Service
- * Handles employee-related business logic
+ * Employee Service - Facade Pattern
+ * Provides semantic "Employee" API over the User model
  *
- * NOTE: This service currently imports '../models/employee' which doesn't exist.
- * It should probably use '../models/user' instead.
- * This needs to be fixed in a separate refactoring step.
+ * ARCHITECTURE:
+ * This service acts as a facade/wrapper around the User model, providing
+ * employee-specific terminology and type aliases while delegating to User model methods.
+ * This is intentional design (Facade Pattern), not a workaround.
+ *
+ * NOTE: This service is currently not imported anywhere in the codebase.
+ * It may be legacy code kept for backward compatibility.
  */
-// TODO: Fix import - employee model doesn't exist, using user model instead
 import { Pool } from 'mysql2/promise';
 
 import User, { DbUser, UserCreateData, UserFilter } from '../models/user/index.js';
 
-/**
- * Employee Service
- * Handles employee-related business logic
- *
- * NOTE: This service currently imports '../models/employee' which doesn't exist.
- * It should probably use '../models/user' instead.
- * This needs to be fixed in a separate refactoring step.
- */
-
-// TODO: Fix import - employee model doesn't exist, using user model instead
-
-// Interfaces
-// Re-export types from User model for consistency
-// Map employee-specific types to User model types
+// Type aliases: Map employee-specific types to User model types
+// This provides semantic clarity (Employee vs User terminology)
 type EmployeeData = DbUser;
 type EmployeeCreateData = UserCreateData;
 type EmployeeUpdateData = Partial<UserCreateData>;

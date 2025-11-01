@@ -91,7 +91,7 @@
 .role-switch-banner {
   position: fixed;
   z-index: 999;
-  top: 60px;
+  top: 80px;
   right: 30%;
   left: 30%;
 
@@ -796,10 +796,21 @@ body:has(.sidebar.collapsed) .header .logo {
   box-shadow: 0 0 1px rgb(100 116 122 / 100%);
 }
 
-/* Role Switch Dropdown - Using styles from dashboard-theme.css */
-/* Only adding the specific margin that's different */
+/* Role Switch Dropdown - Specific styles */
 .role-switch-dropdown {
+  min-width: 200px; /* Give it width so justify-content: space-between works */
   margin-right: 12px;
+  font-size: 14px; /* Explicit font size for dropdown */
+}
+
+/* Explicit margin for icons in dropdown options to prevent disappearing during transitions */
+.role-switch-dropdown .dropdown__option i {
+  margin-right: 8px !important; /* Explicit and important to ensure it persists */
+}
+
+/* Also ensure the trigger icon keeps its margin */
+.role-switch-dropdown .dropdown__trigger span i {
+  margin-right: 8px !important;
 }
 
 .sidebar-menu {

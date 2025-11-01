@@ -1,15 +1,21 @@
-/* eslint-disable @typescript-eslint/naming-convention */
 /**
  * Tenant Service
  * Handles tenant-related business logic
  */
 import { Pool } from 'mysql2/promise';
 
+// ESLint incorrectly flags Model/Class imports as naming convention violations
+// Models are exported as default classes with PascalCase names, which is correct
+// eslint-disable-next-line @typescript-eslint/naming-convention
 import Tenant from '../models/tenant.js';
-import type {
-  TenantCreateData as ModelTenantCreateData,
-  TenantCreateResult,
+import {
+  type TenantCreateData as ModelTenantCreateData,
+  type TenantCreateResult,
+  deleteTenant,
+  findAllTenants,
+  findTenantById,
 } from '../models/tenant.js';
+import type { DatabaseTenant } from '../types/models.js';
 
 // Interfaces
 interface TenantData {
@@ -54,15 +60,14 @@ interface TenantUpdateData {
  */
 class TenantService {
   /**
-   * Holt alle Tenant Einträge für einen Tenant
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _filters - The _filters parameter
+   * Holt alle Tenant Einträge
+   * @param _tenantDb - Database connection (unused - uses main connection)
+   * @param _filters - Filter criteria (currently unused, for future pagination/search)
+   * @returns Array of all tenants (excludes cancelled tenants)
    */
-  getAll(_tenantDb: Pool, _filters: TenantFilters = {}): TenantData[] {
+  async getAll(_tenantDb: Pool, _filters: TenantFilters = {}): Promise<DatabaseTenant[]> {
     try {
-      // TODO: Tenant.getAll doesn't exist in the model
-      console.warn('Tenant.getAll is not implemented');
-      return [];
+      return await findAllTenants();
     } catch (error: unknown) {
       console.error('Error in TenantService.getAll:', error);
       throw error;
@@ -71,14 +76,13 @@ class TenantService {
 
   /**
    * Holt einen Tenant Eintrag per ID
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _id - The _id parameter
+   * @param _tenantDb - Database connection (unused - uses main connection)
+   * @param id - Tenant ID
+   * @returns Tenant data or null if not found (excludes cancelled tenants)
    */
-  getById(_tenantDb: Pool, _id: number): TenantData | null {
+  async getById(_tenantDb: Pool, id: number): Promise<DatabaseTenant | null> {
     try {
-      // TODO: Tenant.getById doesn't exist in the model
-      console.warn('Tenant.getById is not implemented');
-      return null;
+      return await findTenantById(id);
     } catch (error: unknown) {
       console.error('Error in TenantService.getById:', error);
       throw error;
@@ -101,31 +105,44 @@ class TenantService {
 
   /**
    * Aktualisiert einen Tenant Eintrag
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _id - The _id parameter
-   * @param _data - The _data parameter
+   *
+   * PLANNED FEATURE - Not yet implemented
+   *
+   * Required before implementation:
+   * 1. Add updateTenant() function to tenant.ts model
+   * 2. Define which fields are safe to update (e.g., company_name, email, phone)
+   * 3. Implement subdomain change logic (complex - affects routing, URLs, files)
+   * 4. Add validation for status transitions (trial → active → suspended)
+   * 5. Handle Stripe subscription updates when plan changes
+   * 6. Add audit logging for tenant modifications
+   *
+   * For now, use direct model functions or admin panel for tenant updates.
+   *
+   * @param _tenantDb - Database connection
+   * @param _id - Tenant ID to update
+   * @param _data - Update data
+   * @returns Updated tenant data (currently always null)
    */
   update(_tenantDb: Pool, _id: number, _data: TenantUpdateData): TenantData | null {
-    try {
-      // TODO: Tenant.update doesn't exist in the model
-      console.warn('Tenant.update is not implemented');
-      return null;
-    } catch (error: unknown) {
-      console.error('Error in TenantService.update:', error);
-      throw error;
-    }
+    console.warn('Tenant.update is planned but not yet implemented');
+    console.warn('Required fields to update:', _data);
+    console.warn('Use direct database updates or admin panel for now');
+    return null;
   }
 
   /**
-   * Löscht einen Tenant Eintrag
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _id - The _id parameter
+   * Löscht einen Tenant und alle zugehörigen Daten (CASCADE)
+   * @param _tenantDb - Database connection (unused - uses transaction)
+   * @param id - Tenant ID to delete
+   * @returns True if deletion was successful
+   * @remarks **WARNING:** This performs a hard delete of ALL tenant data including:
+   *          - All users, chats, surveys, shifts, documents
+   *          - All file uploads
+   *          - Cannot be undone!
    */
-  delete(_tenantDb: Pool, _id: number): boolean {
+  async delete(_tenantDb: Pool, id: number): Promise<boolean> {
     try {
-      // TODO: Tenant.delete doesn't exist in the model
-      console.warn('Tenant.delete is not implemented');
-      return false;
+      return await deleteTenant(id);
     } catch (error: unknown) {
       console.error('Error in TenantService.delete:', error);
       throw error;

@@ -18,6 +18,7 @@ import {
   getPositionDisplay,
   updateTenantDropdown,
   loadAndPopulateDepartments,
+  loadAndPopulateDepartmentGroups,
   editAdminHandler,
   showAddAdminModal,
   closeAdminModal,
@@ -614,7 +615,7 @@ function setupPermissionRadioHandlers(): void {
           await loadAndPopulateDepartments();
         } else if (permissionType === 'groups' && groupContainer !== null) {
           groupContainer.classList.remove('hidden');
-          // TODO: Load and populate groups
+          await loadAndPopulateDepartmentGroups();
         }
       })();
     });

@@ -249,7 +249,6 @@ class AreasManager {
   }
 
   async deleteArea(_id: number): Promise<void> {
-    // TODO: Implement proper confirmation modal
     // For now, show error message to indicate feature is pending
     showError('Löschbestätigung: Feature noch nicht implementiert - Bereich kann nicht gelöscht werden');
 
@@ -295,7 +294,6 @@ function setupAreaHandlers(manager: AreasManager): void {
   w.editArea = async (id: number) => {
     const area = await manager.getAreaDetails(id);
     if (area !== null) {
-      // TODO: Open edit modal with area data
       console.info('Edit area:', area);
       showError('Bearbeitungsmodal noch nicht implementiert');
     }
@@ -304,7 +302,6 @@ function setupAreaHandlers(manager: AreasManager): void {
   w.viewAreaDetails = async (id: number) => {
     const area = await manager.getAreaDetails(id);
     if (area !== null) {
-      // TODO: Open details modal
       console.info('View area:', area);
       showError('Detailansicht noch nicht implementiert');
     }

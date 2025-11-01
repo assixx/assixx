@@ -22,7 +22,7 @@ export const directAttachHandlers: DirectAttachHandlers = {};
 export let directAttachmentFile: File | null = null;
 
 // Global variables for zoom and fullscreen
-export let currentZoom = 100;
+export let currentZoom = 70; // Default zoom is 70% (matches HTML initial value)
 export let fullscreenAutoRefreshInterval: ReturnType<typeof setInterval> | null = null;
 
 // Initialize API client - used in saveDirectAttachment
@@ -488,6 +488,14 @@ export function setupDirectAttachHandlers(): void {
   if (saveBtn) {
     saveBtn.dataset.action = 'save-direct-attachment';
   }
+
+  // Organization level change handler
+  const orgLevelSelect = $$id('directAttachOrgLevel') as HTMLSelectElement | null;
+  if (orgLevelSelect) {
+    orgLevelSelect.addEventListener('change', function (this: HTMLSelectElement) {
+      void loadDirectAttachOrgIdOptions(this.value);
+    });
+  }
 }
 
 /**
@@ -565,6 +573,83 @@ export function clearDirectAttachment(): void {
   directAttachmentFile = null;
 }
 
+/**
+ * Load and populate organization ID options for Direct Attach
+ * @param orgLevel - The organization level (company/department/team)
+ */
+async function loadDirectAttachOrgIdOptions(orgLevel: string): Promise<void> {
+  const orgIdContainer = $$id('directAttachOrgIdContainer');
+  const orgIdSelect = $$id('directAttachOrgId') as HTMLSelectElement | null;
+
+  if (!orgIdContainer || !orgIdSelect) {
+    console.error('[DirectAttach] orgId elements not found');
+    return;
+  }
+
+  // Hide container for company level
+  if (orgLevel === 'company') {
+    orgIdContainer.classList.add('u-hidden');
+    return;
+  }
+
+  // Show container and update label
+  orgIdContainer.classList.remove('u-hidden');
+  const label = orgIdContainer.querySelector('label');
+  if (label) {
+    label.textContent = orgLevel === 'department' ? 'Welche Abteilung?' : 'Welches Team?';
+  }
+
+  // Clear existing options
+  orgIdSelect.innerHTML = '';
+
+  try {
+    const apiClient = ApiClient.getInstance();
+
+    if (orgLevel === 'department') {
+      // Load departments
+      const departments = await apiClient.get<{ id: number; name: string }[]>('/departments');
+
+      // Get current user to pre-select their department
+      const currentUser = await apiClient.get<{ departmentId?: number }>('/auth/me');
+
+      departments.forEach((dept: { id: number; name: string }) => {
+        const option = document.createElement('option');
+        option.value = dept.id.toString();
+        option.textContent = dept.name;
+
+        // 🔥 SMART DEFAULT: Pre-select user's department
+        if (currentUser.departmentId !== undefined && dept.id === currentUser.departmentId) {
+          option.selected = true;
+        }
+
+        orgIdSelect.appendChild(option);
+      });
+    } else if (orgLevel === 'team') {
+      // Load teams
+      const teams = await apiClient.get<{ id: number; name: string }[]>('/teams');
+
+      // Get current user to pre-select their team
+      const currentUser = await apiClient.get<{ teamId?: number }>('/auth/me');
+
+      teams.forEach((team: { id: number; name: string }) => {
+        const option = document.createElement('option');
+        option.value = team.id.toString();
+        option.textContent = team.name;
+
+        // 🔥 SMART DEFAULT: Pre-select user's team
+        if (currentUser.teamId !== undefined && team.id === currentUser.teamId) {
+          option.selected = true;
+        }
+
+        orgIdSelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error('[DirectAttach] Error loading org options:', error);
+    showError('Fehler beim Laden der Optionen');
+  }
+}
+
 function buildDirectAttachFormData(
   file: File,
   title: string,
@@ -575,8 +660,24 @@ function buildDirectAttachFormData(
   const formData = new FormData();
   formData.append('title', title);
   formData.append('content', `[Attachment:${size}]`); // Special content format
-  formData.append('org_level', orgLevelSelect?.value ?? 'company');
-  formData.append('org_id', '1'); // TODO: Get actual org_id based on level
+
+  const orgLevel = orgLevelSelect?.value ?? 'company';
+  formData.append('org_level', orgLevel);
+
+  // Get org_id from select if not company level
+  if (orgLevel !== 'company') {
+    const orgIdSelect = $$id('directAttachOrgId') as HTMLSelectElement | null;
+    const orgId = orgIdSelect?.value ?? '';
+
+    if (orgId.length > 0) {
+      formData.append('org_id', orgId);
+    } else {
+      // If no orgId selected but level is department/team, this is an error
+      console.warn('[DirectAttach] No org_id selected for level:', orgLevel);
+    }
+  }
+  // For company level, don't send org_id at all (backend expects null)
+
   formData.append('priority_level', prioritySelect?.value ?? 'normal');
   formData.append('color', 'white'); // White background for images
   formData.append('tags', 'attachment,image');
@@ -682,6 +783,10 @@ export function setupZoomControls(): void {
     console.error('[Zoom] Required elements not found');
     return;
   }
+
+  // Apply initial zoom level (70%)
+  blackboardContainer.style.zoom = `${currentZoom}%`;
+  zoomLevelDisplay.textContent = `${currentZoom}%`;
 
   // Zoom in
   zoomInBtn.addEventListener('click', () => {

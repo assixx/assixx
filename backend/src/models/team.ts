@@ -119,26 +119,27 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
   }
 }
 
-export async function findTeamById(id: number): Promise<DbTeam | null> {
-  logger.info(`Fetching team with ID ${String(id)}`);
+export async function findTeamById(id: number, tenantId: number): Promise<DbTeam | null> {
+  logger.info(`Fetching team with ID ${String(id)} for tenant ${String(tenantId)}`);
+  // SECURITY: Always include tenant_id in WHERE clause to prevent cross-tenant data access
   const query = `
       SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id,
              t.tenant_id, t.created_at, t.updated_at, t.is_active,
              d.name AS department_name,
              CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name
       FROM teams t
-      LEFT JOIN departments d ON t.department_id = d.id
-      LEFT JOIN users u ON t.team_lead_id = u.id
-      WHERE t.id = ?
+      LEFT JOIN departments d ON t.department_id = d.id AND d.tenant_id = t.tenant_id
+      LEFT JOIN users u ON t.team_lead_id = u.id AND u.tenant_id = t.tenant_id
+      WHERE t.id = ? AND t.tenant_id = ?
     `;
 
   try {
-    const [rows] = await executeQuery<DbTeam[]>(query, [id]);
+    const [rows] = await executeQuery<DbTeam[]>(query, [id, tenantId]);
     if (rows.length === 0) {
-      logger.warn(`Team with ID ${String(id)} not found`);
+      logger.warn(`Team with ID ${String(id)} not found for tenant ${String(tenantId)}`);
       return null;
     }
-    logger.info(`Team ${String(id)} retrieved successfully`);
+    logger.info(`Team ${String(id)} retrieved successfully for tenant ${String(tenantId)}`);
     return rows[0];
   } catch (error: unknown) {
     logger.error(`Error fetching team ${String(id)}: ${(error as Error).message}`);
@@ -179,8 +180,12 @@ function buildUpdateQuery(teamData: TeamUpdateData): {
   return { updateFields, values };
 }
 
-export async function updateTeam(id: number, teamData: TeamUpdateData): Promise<boolean> {
-  logger.info(`Updating team ${String(id)}`);
+export async function updateTeam(
+  id: number,
+  teamData: TeamUpdateData,
+  tenantId: number,
+): Promise<boolean> {
+  logger.info(`Updating team ${String(id)} for tenant ${String(tenantId)}`);
 
   const { updateFields, values } = buildUpdateQuery(teamData);
 
@@ -189,20 +194,21 @@ export async function updateTeam(id: number, teamData: TeamUpdateData): Promise<
     return true;
   }
 
+  // SECURITY: Always include tenant_id in WHERE clause to prevent cross-tenant updates
   const query = `
       UPDATE teams
       SET ${updateFields.join(', ')}
-      WHERE id = ?
+      WHERE id = ? AND tenant_id = ?
     `;
-  values.push(id);
+  values.push(id, tenantId);
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, values);
     if (result.affectedRows === 0) {
-      logger.warn(`No team found with ID ${String(id)} for update`);
+      logger.warn(`No team found with ID ${String(id)} for tenant ${String(tenantId)} for update`);
       return false;
     }
-    logger.info(`Team ${String(id)} updated successfully`);
+    logger.info(`Team ${String(id)} updated successfully for tenant ${String(tenantId)}`);
     return true;
   } catch (error: unknown) {
     logger.error(`Error updating team ${String(id)}: ${(error as Error).message}`);
@@ -210,17 +216,20 @@ export async function updateTeam(id: number, teamData: TeamUpdateData): Promise<
   }
 }
 
-export async function deleteTeam(id: number): Promise<boolean> {
-  logger.info(`Deleting team ${String(id)}`);
-  const query = 'DELETE FROM teams WHERE id = ?';
+export async function deleteTeam(id: number, tenantId: number): Promise<boolean> {
+  logger.info(`Deleting team ${String(id)} for tenant ${String(tenantId)}`);
+  // SECURITY: Always include tenant_id in WHERE clause to prevent cross-tenant deletions
+  const query = 'DELETE FROM teams WHERE id = ? AND tenant_id = ?';
 
   try {
-    const [result] = await executeQuery<ResultSetHeader>(query, [id]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     if (result.affectedRows === 0) {
-      logger.warn(`No team found with ID ${String(id)} for deletion`);
+      logger.warn(
+        `No team found with ID ${String(id)} for tenant ${String(tenantId)} for deletion`,
+      );
       return false;
     }
-    logger.info(`Team ${String(id)} deleted successfully`);
+    logger.info(`Team ${String(id)} deleted successfully for tenant ${String(tenantId)}`);
     return true;
   } catch (error: unknown) {
     logger.error(`Error deleting team ${String(id)}: ${(error as Error).message}`);

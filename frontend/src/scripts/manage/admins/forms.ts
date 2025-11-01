@@ -8,7 +8,7 @@ import { $, $$, $all, setHTML, setSafeHTML } from '../../../utils/dom-utils';
 import { resetPasswordToggles, resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 // Import from types
-import type { Admin, AdminFormData } from './types';
+import type { Admin, AdminFormData, Department } from './types';
 // Import from data layer
 import {
   admins,
@@ -16,6 +16,7 @@ import {
   currentAdminId,
   setCurrentAdminId,
   loadDepartments,
+  loadDepartmentGroups,
   loadAdminPermissions,
   saveAdmin as saveAdminAPI,
   updateAdminPermissions,
@@ -258,6 +259,36 @@ export async function loadAndPopulateDepartments(): Promise<void> {
       option.value = dept.id.toString();
       option.textContent = dept.name;
       deptSelect.appendChild(option);
+    });
+  }
+}
+
+// Load and populate department groups
+export async function loadAndPopulateDepartmentGroups(): Promise<void> {
+  const groups: { id: number; name: string; departments?: Department[] }[] = await loadDepartmentGroups();
+  const groupContainer = $$('#group-select-container');
+
+  if (groupContainer !== null && groups.length > 0) {
+    // Clear existing content
+    groupContainer.innerHTML = '';
+
+    // Create checkboxes for each group
+    groups.forEach((group: { id: number; name: string; departments?: Department[] }) => {
+      const label = document.createElement('label');
+      label.className = 'checkbox-label';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'groupSelect';
+      checkbox.value = group.id.toString();
+      checkbox.className = 'checkbox-input';
+
+      const span = document.createElement('span');
+      span.textContent = group.name;
+
+      label.appendChild(checkbox);
+      label.appendChild(span);
+      groupContainer.appendChild(label);
     });
   }
 }

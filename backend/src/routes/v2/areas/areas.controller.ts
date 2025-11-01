@@ -18,27 +18,30 @@ import {
   getAreas,
   updateArea,
 } from './areas.service.js';
+import {
+  AreaIdParam,
+  CreateAreaBody,
+  GetAreasQuery,
+  UpdateAreaBody,
+} from './areas.validation.zod.js';
 import { AreaFilters, CreateAreaRequest, UpdateAreaRequest } from './types.js';
 
 /**
  * Get all areas
  * GET /api/v2/areas
- * @param req - The request object
+ * @param req - The request object (with validated query)
  * @param res - The response object
  */
 export async function getAreasController(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
+    // Zod middleware validates and transforms query params at runtime
+    // TypeScript can't track this transformation, so we need explicit assertion
+    const query = req.query as unknown as GetAreasQuery;
     const filters: AreaFilters = {
-      type: req.query.type as string,
-      isActive:
-        req.query.isActive === 'true' ? true
-        : req.query.isActive === 'false' ? false
-        : undefined, // Don't filter by default - return all areas
-      parentId:
-        req.query.parentId !== undefined && req.query.parentId !== '' ?
-          Number.parseInt(req.query.parentId as string)
-        : undefined,
-      search: req.query.search as string,
+      type: query.type,
+      isActive: query.isActive,
+      parentId: query.parentId,
+      search: query.search,
     };
 
     const areas = await getAreas(req.user.tenant_id, filters);
@@ -73,7 +76,7 @@ export async function getAreaHierarchyController(
 /**
  * Get area by ID
  * GET /api/v2/areas/:id
- * @param req - The request object
+ * @param req - The request object (with validated params)
  * @param res - The response object
  */
 export async function getAreaByIdController(
@@ -81,14 +84,10 @@ export async function getAreaByIdController(
   res: Response,
 ): Promise<void> {
   try {
-    const areaId = Number.parseInt(req.params.id);
-
-    if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('BAD_REQUEST', 'Invalid area ID'));
-      return;
-    }
-
-    const area = await getAreaById(areaId, req.user.tenant_id);
+    // Zod middleware validates and transforms params at runtime (string → number)
+    // TypeScript can't track this transformation, so we need explicit assertion
+    const params = req.params as unknown as AreaIdParam;
+    const area = await getAreaById(params.id, req.user.tenant_id);
 
     if (!area) {
       res.status(404).json(errorResponse('NOT_FOUND', 'Area not found'));
@@ -105,7 +104,7 @@ export async function getAreaByIdController(
 /**
  * Create new area
  * POST /api/v2/areas
- * @param req - The request object
+ * @param req - The request object (with validated body)
  * @param res - The response object
  */
 export async function createAreaController(
@@ -119,7 +118,16 @@ export async function createAreaController(
       return;
     }
 
-    const data = req.body as CreateAreaRequest;
+    // Zod middleware validates body and replaces req.body with validated data
+    const body = req.body as CreateAreaBody;
+    const data: CreateAreaRequest = {
+      name: body.name,
+      description: body.description,
+      type: body.type,
+      capacity: body.capacity ?? undefined,
+      parentId: body.parentId ?? undefined,
+      address: body.address,
+    };
     const newArea = await createArea(data, req.user.tenant_id, req.user.id);
 
     // Log area creation
@@ -165,7 +173,7 @@ export async function createAreaController(
 /**
  * Update area
  * PUT /api/v2/areas/:id
- * @param req - The request object
+ * @param req - The request object (with validated params and body)
  * @param res - The response object
  */
 export async function updateAreaController(
@@ -179,17 +187,26 @@ export async function updateAreaController(
       return;
     }
 
-    const areaId = Number.parseInt(req.params.id);
-
-    if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('BAD_REQUEST', 'Invalid area ID'));
-      return;
-    }
+    // Zod middleware validates and transforms params/body at runtime
+    // Params need explicit assertion due to string→number transformation
+    const params = req.params as unknown as AreaIdParam;
+    // Body can use simple assertion (Express body-parser already gives correct types)
+    const body = req.body as UpdateAreaBody;
+    const areaId = params.id;
 
     // Get old area data for logging
     const oldArea = await getAreaById(areaId, req.user.tenant_id);
 
-    const data = req.body as UpdateAreaRequest;
+    // req.body is already validated by Zod middleware
+    const data: UpdateAreaRequest = {
+      name: body.name,
+      description: body.description,
+      type: body.type,
+      capacity: body.capacity ?? undefined,
+      parentId: body.parentId ?? undefined,
+      address: body.address,
+      isActive: body.isActive,
+    };
     const updatedArea = await updateArea(areaId, data, req.user.tenant_id);
 
     // Log area update
@@ -244,7 +261,7 @@ export async function updateAreaController(
 /**
  * Delete area
  * DELETE /api/v2/areas/:id
- * @param req - The request object
+ * @param req - The request object (with validated params)
  * @param res - The response object
  */
 export async function deleteAreaController(
@@ -258,12 +275,10 @@ export async function deleteAreaController(
       return;
     }
 
-    const areaId = Number.parseInt(req.params.id);
-
-    if (Number.isNaN(areaId)) {
-      res.status(400).json(errorResponse('BAD_REQUEST', 'Invalid area ID'));
-      return;
-    }
+    // Zod middleware validates and transforms params at runtime (string → number)
+    // TypeScript can't track this transformation, so we need explicit assertion
+    const params = req.params as unknown as AreaIdParam;
+    const areaId = params.id;
 
     // Get force parameter from query string (e.g., /areas/123?force=true)
     const force = req.query.force === 'true';

@@ -78,7 +78,7 @@ export class ApiClient {
 
     // Add auth header for v2 (get token from TokenManager)
     const token = tokenManager.getAccessToken();
-    if (version === 'v2' && config.useAuth !== false && token !== null && token !== '') {
+    if (version === 'v2' && config.useAuth !== false && token !== null) {
       headers.Authorization = `Bearer ${token}`;
     }
 
@@ -93,7 +93,7 @@ export class ApiClient {
     config: ApiConfig,
   ): Promise<T | null> {
     const refreshToken = tokenManager.getRefreshToken();
-    if (version !== 'v2' || config.useAuth === false || refreshToken === null || refreshToken === '') {
+    if (version !== 'v2' || config.useAuth === false || refreshToken === null) {
       return null;
     }
 

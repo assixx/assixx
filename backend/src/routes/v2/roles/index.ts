@@ -5,9 +5,11 @@
 import { Response, Router } from 'express';
 
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
+import { validateBody, validateParams } from '../../../middleware/validation.zod.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { rolesController } from './controller.js';
+import { CheckUserRoleSchema, RoleIdParamSchema } from './validation.zod.js';
 
 const router = Router();
 
@@ -188,6 +190,7 @@ router.get(
  */
 router.get(
   '/:id',
+  validateParams(RoleIdParamSchema), // Validate role ID parameter
   typed.auth((req: AuthenticatedRequest, res: Response) => {
     rolesController.getRoleById(req, res);
   }),
@@ -259,6 +262,7 @@ router.get(
  */
 router.post(
   '/check',
+  validateBody(CheckUserRoleSchema), // Validate role check request
   typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await rolesController.checkUserRole(req, res);
   }),

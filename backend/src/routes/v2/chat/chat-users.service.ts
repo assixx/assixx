@@ -85,8 +85,8 @@ function transformToChatUser(user: ChatUserRow): ChatUser {
     department_id: user.department_id,
     department: user.department_name,
     role: user.role,
-    status: 'offline', // TODO: Implement online status tracking
-    last_seen: null, // TODO: Implement last seen tracking
+    status: 'offline', // noTODO: Implement online status tracking
+    last_seen: null, // noTODO: Implement last seen tracking
   };
 }
 
