@@ -84,7 +84,6 @@ export interface Team {
 export interface WindowWithEmployeeHandlers extends Window {
   loadEmployeesTable?: () => Promise<void>;
   editEmployee?: (id: number) => Promise<void>;
-  viewEmployeeDetails?: (id: number) => Promise<void>;
   deleteEmployee?: (id: number) => Promise<void>;
   showEmployeeModal?: () => void;
   hideEmployeeModal?: () => void;

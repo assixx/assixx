@@ -278,6 +278,7 @@ export async function updateUser(
       'status',
       'is_archived',
       'is_active',
+      'last_login', // Track last successful login timestamp
       'availability_status',
       'availability_start',
       'availability_end',

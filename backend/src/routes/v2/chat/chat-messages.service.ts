@@ -91,7 +91,7 @@ function transformMessage(msg: MessageRow): Message {
           url: msg.attachment_path,
           filename: msg.attachment_name ?? 'attachment',
           mimeType: msg.attachment_type ?? 'application/octet-stream',
-          size: 0, // TODO: Add file size to DB
+          size: typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,
         }
       : null,
     isRead: !!msg.is_read,
@@ -146,6 +146,7 @@ export async function getMessages(
         m.attachment_path,
         m.attachment_name,
         m.attachment_type,
+        m.attachment_size,
         m.created_at,
         m.deleted_at,
         u.username as sender_username,
@@ -230,8 +231,8 @@ export async function sendMessage(
     // Insert message
     const [messageResult] = await execute<ResultSetHeader>(
       `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
-         attachment_path, attachment_name, attachment_type, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+         attachment_path, attachment_name, attachment_type, attachment_size, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         tenantId,
         conversationId,
@@ -240,6 +241,7 @@ export async function sendMessage(
         data.attachment?.path ?? null,
         data.attachment?.filename ?? null,
         data.attachment?.mimeType ?? null,
+        data.attachment?.size ?? null,
       ],
     );
 

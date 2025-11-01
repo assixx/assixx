@@ -139,7 +139,8 @@ async function login(
       foundUser.email,
     );
 
-    // TODO: Update last login - need to add updateLastLogin method to User model
+    // Update last login timestamp
+    await user.update(foundUser.id, { last_login: new Date() }, foundUser.tenant_id);
 
     // Log successful login for audit trail
     await rootLog.create({

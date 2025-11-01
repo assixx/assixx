@@ -4,7 +4,7 @@
  */
 
 :root {
-  --header-height: 60px;
+  --header-height: 80px;
   --sidebar-width-expanded: 250px;
   --sidebar-width-collapsed: 60px;
   --modal-max-width: 560px;

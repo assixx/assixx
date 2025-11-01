@@ -43,7 +43,6 @@ class DepartmentService {
   ): Promise<DepartmentData[]> {
     try {
       // Note: Department.findAll doesn't support limit/offset yet
-      // TODO: Add pagination support to Department model
       return await department.findAll(tenantId);
     } catch (error: unknown) {
       console.error('Error in DepartmentService.getAll:', error);

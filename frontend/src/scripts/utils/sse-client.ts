@@ -3,8 +3,6 @@
  * Replaces polling with push-based updates
  */
 
-import type unifiedNavigation from '../components/unified-navigation';
-
 // SSE Message types
 interface SSEMessage {
   type: string;
@@ -22,10 +20,9 @@ interface SSEMessage {
 }
 
 // Extend the Window interface with additional properties
-// unifiedNav is already declared in unified-navigation.ts
+// NOTE: unifiedNav is declared in unified-navigation.ts to avoid circular dependency
 declare global {
   interface Window {
-    unifiedNav?: unifiedNavigation;
     showErrorAlert?: (message: string) => void;
     showSuccessAlert?: (message: string) => void;
     showInfoAlert?: (message: string) => void;
@@ -58,7 +55,8 @@ export class SSEClient {
       return;
     }
 
-    const token = localStorage.getItem('token');
+    // BUGFIX: Use 'accessToken' not 'token' (TokenManager uses 'accessToken')
+    const token = localStorage.getItem('accessToken') ?? localStorage.getItem('token');
     if (token === null || token === '' || token === 'test-mode') {
       console.warn('[SSE] No valid token available');
       return;
@@ -253,6 +251,24 @@ export class SSEClient {
       this.isConnecting = false;
       console.info('[SSE] Disconnected');
     }
+  }
+
+  /**
+   * Reconnect with new token (e.g., after token refresh)
+   */
+  reconnectWithNewToken(): void {
+    console.info('[SSE] Reconnecting with new token...');
+    // Reset reconnect attempts since this is a manual reconnect
+    this.reconnectAttempts = 0;
+    this.reconnectDelay = 1000;
+
+    // Disconnect existing connection
+    this.disconnect();
+
+    // Small delay to ensure clean disconnect
+    setTimeout(() => {
+      this.connect();
+    }, 100);
   }
 
   isConnected(): boolean {

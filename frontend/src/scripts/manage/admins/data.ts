@@ -82,6 +82,24 @@ export async function loadDepartments(): Promise<Department[]> {
   }
 }
 
+// Load all department groups
+export async function loadDepartmentGroups(): Promise<{ id: number; name: string; departments?: Department[] }[]> {
+  try {
+    const response = await apiClient.request<{
+      success: boolean;
+      data: { id: number; name: string; departments?: Department[] }[];
+    }>('/department-groups', { method: 'GET' }, { version: 'v2' });
+
+    if ('data' in response && Array.isArray(response.data)) {
+      return response.data;
+    }
+    return [];
+  } catch (error) {
+    console.error('Error loading department groups:', error);
+    return [];
+  }
+}
+
 // Load admins
 export async function loadAdmins(): Promise<void> {
   console.info('loadAdmins called');

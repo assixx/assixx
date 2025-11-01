@@ -55,12 +55,18 @@ export async function getEmployeeMetrics(
     SELECT
       COUNT(*) as total,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
-      COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as new_this_month
+      COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as new_this_month,
+      (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND status = 'active') as department_count,
+      CASE
+        WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND status = 'active') > 0
+        THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND status = 'active')
+        ELSE 0
+      END as avg_per_department
     FROM users
     WHERE tenant_id = ?
       AND role = 'employee'
   `,
-    [tenantId],
+    [tenantId, tenantId, tenantId, tenantId],
   );
 
   const metrics = (resultRows as Record<string, unknown>[])[0] ?? {};
@@ -68,8 +74,8 @@ export async function getEmployeeMetrics(
     total: Number.parseInt(String(metrics.total)) || 0,
     active: Number.parseInt(String(metrics.active)) || 0,
     newThisMonth: Number.parseInt(String(metrics.new_this_month)) || 0,
-    departments: 0, // TODO: Implement department count
-    avgPerDepartment: 0, // TODO: Implement average per department
+    departments: Number.parseInt(String(metrics.department_count)) || 0,
+    avgPerDepartment: Number.parseFloat(String(metrics.avg_per_department)) || 0,
   };
 }
 

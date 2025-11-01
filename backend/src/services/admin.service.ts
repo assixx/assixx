@@ -38,13 +38,6 @@ interface AdminLogCreateData extends Omit<ModelRootLogCreateData, 'tenant_id'> {
   was_role_switched?: boolean;
 }
 
-interface AdminLogUpdateData {
-  action?: string;
-  entity_type?: string | null;
-  entity_id?: number | null;
-  details?: string | null;
-}
-
 /**
  *
  */
@@ -121,29 +114,17 @@ class AdminLogService {
   }
 
   /**
-   * Aktualisiert einen AdminLog Eintrag
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _id - The _id parameter
-   * @param _data - The _data parameter
+   * NOTE: No update() or delete() methods
+   *
+   * Audit logs are immutable by design for security and compliance:
+   * - Security: Prevents attackers from covering their tracks
+   * - Forensics: Maintains tamper-proof audit trail
+   * - Compliance: GDPR Art. 17(3), SOX, ISO 27001 require immutable logs
+   * - Legal: Audit logs are exempt from "right to erasure"
+   *
+   * If you need to "delete" a log entry (e.g., for GDPR), use pseudonymization
+   * or mark as redacted - never actually delete the record.
    */
-  async update(
-    _tenantDb: Pool,
-    _id: number,
-    _data: AdminLogUpdateData,
-  ): Promise<AdminLogData | null> {
-    // TODO: Implement update method in AdminLog model
-    return await Promise.resolve(null);
-  }
-
-  /**
-   * Löscht einen AdminLog Eintrag
-   * @param _tenantDb - The _tenantDb parameter
-   * @param _id - The _id parameter
-   */
-  async delete(_tenantDb: Pool, _id: number): Promise<boolean> {
-    // TODO: Implement delete method in AdminLog model
-    return await Promise.resolve(false);
-  }
 }
 
 // Export singleton instance

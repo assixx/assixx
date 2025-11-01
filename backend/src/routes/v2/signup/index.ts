@@ -5,7 +5,9 @@
 import { Request, Response, Router } from 'express';
 
 import { apiLimiter, authLimiter } from '../../../middleware/security-enhanced.js';
+import { validateBody, validateParams } from '../../../middleware/validation.zod.js';
 import { signupController } from './controller.js';
+import { SignupRequestSchema, SubdomainCheckRequestSchema } from './validation.zod.js';
 
 const router = Router();
 
@@ -126,9 +128,10 @@ const router = Router();
 router.post(
   '/',
   authLimiter, // Rate limiting for registration
+  validateBody(SignupRequestSchema), // CRITICAL: Input validation to prevent SQL injection and XSS
   async (req: Request, res: Response) => {
     console.info('[SIGNUP ROUTE] Request received');
-    console.info('[SIGNUP ROUTE] Body:', req.body);
+    console.info('[SIGNUP ROUTE] Body validated:', req.body);
     console.info('[SIGNUP ROUTE] About to call controller');
     try {
       console.info('[SIGNUP ROUTE] Inside try block');
@@ -201,6 +204,7 @@ router.post(
 router.get(
   '/check-subdomain/:subdomain',
   apiLimiter, // Rate limiting for API calls
+  validateParams(SubdomainCheckRequestSchema), // Validate subdomain parameter
   async (req: Request, res: Response) => {
     await signupController.checkSubdomain(req, res);
   },

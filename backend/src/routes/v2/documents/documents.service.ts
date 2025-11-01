@@ -657,8 +657,8 @@ class DocumentsService {
         400,
       );
     }
-    const team = await Team.findById(teamId);
-    if (team?.tenant_id !== tenantId) {
+    const team = await Team.findById(teamId, tenantId);
+    if (!team) {
       throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid team ID', 400);
     }
   }

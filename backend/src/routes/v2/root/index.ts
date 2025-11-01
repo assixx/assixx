@@ -3,11 +3,23 @@
  * Route definitions for root user operations
  */
 import { Router } from 'express';
+import { z } from 'zod';
 
 import { security } from '../../../middleware/security.js';
-import { validate, validateBody, validateParams, z } from '../../../middleware/validation.zod.js';
+import {
+  validate,
+  validateBody,
+  validateParams,
+  validateQuery,
+} from '../../../middleware/validation.zod.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { rootController } from './root.controller.js';
+import {
+  AdminIdParamSchema,
+  CreateAdminSchema,
+  RootApiFiltersSchema,
+  UpdateAdminSchema,
+} from './validation.zod.js';
 
 const router = Router();
 
@@ -15,30 +27,21 @@ const router = Router();
 router.get(
   '/admins',
   ...security.root(),
+  validateQuery(RootApiFiltersSchema), // Add query validation
   typed.auth(rootController.getAdmins.bind(rootController)),
 );
 
 router.get(
   '/admins/:id',
   ...security.root(),
-  validateParams(z.object({ id: z.coerce.number().int().min(1, 'Invalid admin ID') })),
+  validateParams(AdminIdParamSchema), // Use centralized schema
   typed.params<{ id: string }>(rootController.getAdminById.bind(rootController)),
 );
 
 router.post(
   '/admins',
   ...security.root(),
-  validateBody(
-    z.object({
-      username: z.string().min(1),
-      email: z.email(),
-      password: z.string().min(6),
-      firstName: z.string().optional(),
-      lastName: z.string().optional(),
-      company: z.string().optional(),
-      notes: z.string().optional(),
-    }),
-  ),
+  validateBody(CreateAdminSchema), // Use centralized schema
   typed.body(rootController.createAdmin.bind(rootController)),
 );
 
@@ -46,19 +49,8 @@ router.put(
   '/admins/:id',
   ...security.root(),
   validate({
-    params: z.object({
-      id: z.coerce.number().int().min(1, 'Invalid admin ID'),
-    }),
-    body: z.object({
-      username: z.string().optional(),
-      email: z.email().optional(),
-      password: z.string().min(6).optional(),
-      firstName: z.string().optional(),
-      lastName: z.string().optional(),
-      company: z.string().optional(),
-      notes: z.string().optional(),
-      isActive: z.boolean().optional(),
-    }),
+    params: AdminIdParamSchema,
+    body: UpdateAdminSchema,
   }),
   typed.paramsBody<{ id: string }>(rootController.updateAdmin.bind(rootController)),
 );
@@ -66,14 +58,14 @@ router.put(
 router.delete(
   '/admins/:id',
   ...security.root(),
-  validateParams(z.object({ id: z.coerce.number().int().min(1, 'Invalid admin ID') })),
+  validateParams(AdminIdParamSchema),
   typed.params<{ id: string }>(rootController.deleteAdmin.bind(rootController)),
 );
 
 router.get(
   '/admins/:id/logs',
   ...security.root(),
-  validateParams(z.object({ id: z.coerce.number().int().min(1, 'Invalid admin ID') })),
+  validateParams(AdminIdParamSchema),
   typed.params<{ id: string }>(rootController.getAdminLogs.bind(rootController)),
 );
 

@@ -4429,10 +4429,9 @@ class ShiftPlanningSystem {
       if (!e.is_active) return false;
 
       // Check if employee belongs to selected team
-      if (this.selectedContext.teamId !== null) {
-        // TODO: Add team_id check when employee data includes it
-        // For now, show all active employees from tenant
-        return true;
+      if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
+        // Filter by team_id (employee data includes team_id from API)
+        return e.team_id === this.selectedContext.teamId;
       }
 
       return true;

@@ -102,7 +102,7 @@
                 <button id="zoomInBtn" class="zoom-btn" title="Vergrößern">
                   <i class="fas fa-plus"></i>
                 </button>
-                <span id="zoomLevel" class="zoom-level">100%</span>
+                <span id="zoomLevel" class="zoom-level">70%</span>
                 <button id="zoomOutBtn" class="zoom-btn" title="Verkleinern">
                   <i class="fas fa-minus"></i>
                 </button>
@@ -376,6 +376,14 @@
               </select>
             </div>
 
+            <!-- Organization ID (shown when department/team selected) -->
+            <div class="form-group u-hidden" id="directAttachOrgIdContainer">
+              <label for="directAttachOrgId" class="form-label">Welche Abteilung/Team?</label>
+              <select class="form-control" id="directAttachOrgId">
+                <option value="" disabled selected>-- Bitte erst oben auswählen --</option>
+              </select>
+            </div>
+
             <!-- Priority -->
             <div class="form-group">
               <label for="directAttachPriority" class="form-label">Priorität</label>
@@ -486,7 +494,7 @@
     <!-- Modal Functions gemäß Design Standards -->
     <script>
       // Zoom Functionality
-      let currentZoom = 100; // Start at 100%
+      let currentZoom = 70; // Start at 70% (default)
       const zoomStep = 10; // 10% increments
       const maxZoom = 120;
       const minZoom = 10;
@@ -508,10 +516,13 @@
 
       // Filter Toggle Functionality
       document.addEventListener('DOMContentLoaded', function () {
-        // Initialize zoom from localStorage
+        // Initialize zoom from localStorage or use default
         const savedZoom = localStorage.getItem('blackboard-zoom');
         if (savedZoom) {
           updateZoom(parseInt(savedZoom));
+        } else {
+          // Apply default zoom on first load
+          updateZoom(70);
         }
 
         // Zoom button event listeners
@@ -534,7 +545,7 @@
               updateZoom(currentZoom - zoomStep);
             } else if (e.key === '0') {
               e.preventDefault();
-              updateZoom(100); // Reset to 100%
+              updateZoom(70); // Reset to 70%
             }
           }
         });

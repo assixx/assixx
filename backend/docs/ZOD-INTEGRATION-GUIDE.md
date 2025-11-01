@@ -248,7 +248,7 @@ try {
 - Implement Zod schemas alongside
 - Test both validation methods
 
-### Phase 2: Gradual Migration (✅ COMPLETED - 2025-10-24)
+### Phase 2: Gradual Migration (✅ COMPLETED - 2025-11-01)
 
 **ALL v2 routes have been migrated to Zod!**
 
@@ -269,11 +269,19 @@ try {
 - `/api/v2/notifications` - Notification system
 - `/api/v2/reports` - Reporting endpoints
 - `/api/v2/machines` - Machine/equipment management
+- `/api/v2/signup` - User registration (NEW - 2025-11-01)
+- `/api/v2/role-switch` - Role switching (NEW - 2025-11-01)
+- `/api/v2/roles` - Role management (NEW - 2025-11-01)
+- `/api/v2/root` - Super admin operations (NEW - 2025-11-01)
 
-**Not Migrated (Will be removed):**
+**Remaining Routes (To be migrated):**
 
-- All v1 routes - Being deprecated, no migration needed
-- Secondary v2 routes (chat, calendar, root, etc.) - Being refactored/removed
+- `/api/v2/admin-permissions` - Admin permission management
+- `/api/v2/settings` - Application settings
+- `/api/v2/department-groups` - Department group management
+- `/api/v2/plans` - Subscription plans
+- `/api/v2/calendar` - Calendar functionality
+- `/api/v2/chat` - Chat system
 
 ### Phase 3: Cleanup (IN PROGRESS)
 
@@ -453,6 +461,69 @@ describe('POST /users', () => {
     );
   });
 });
+```
+
+## Recently Implemented Validation Schemas (2025-11-01)
+
+### 1. Signup Validation (`/api/v2/signup/validation.zod.ts`)
+
+**Key Features:**
+
+- Subdomain validation with strict pattern (lowercase, alphanumeric, hyphens)
+- Company name sanitization
+- Email normalization (lowercase, trimmed)
+- Strong password requirements (uppercase, lowercase, number)
+- Phone number format validation
+- Subscription plan enum validation
+
+### 2. Role Switch Validation (`/api/v2/role-switch/validation.zod.ts`)
+
+**Security Focus:**
+
+- Empty body validation with `.strict()` to prevent parameter injection
+- Role information extracted from JWT token only
+- No user-supplied role data accepted
+
+### 3. Roles Management (`/api/v2/roles/validation.zod.ts`)
+
+**Key Schemas:**
+
+- `RoleEnum` - Strict enum for admin/employee/root
+- `CheckUserRoleSchema` - Validates role checking requests
+- `AssignRoleSchema` - Future-ready role assignment validation
+
+### 4. Root Admin Operations (`/api/v2/root/validation.zod.ts`)
+
+**Comprehensive Validation:**
+
+- Admin CRUD operations with detailed field validation
+- Root user management with strict access control
+- Tenant deletion with multi-stage approval process
+- Query filters with automatic type conversion
+- Email, username, and password validation with transforms
+- Tenant status enum validation
+
+**Security Considerations:**
+
+- All IDs converted from string to number with validation
+- Email addresses normalized to lowercase
+- Usernames restricted to safe characters
+- Password complexity requirements enforced
+- Strict enum validation for roles and statuses
+
+## Zod v4 Migration Notes
+
+### Email Validation Deprecation
+
+In Zod v4, string format methods like `.email()` are deprecated when chained after `.string()`. However, for complex validations with transforms, we still need to use the chained approach:
+
+```typescript
+// Deprecated warning (but still functional)
+z.string().email().transform(...)
+
+// Workaround with ESLint disable
+// eslint-disable-next-line @typescript-eslint/no-deprecated
+z.string().email('Invalid email').transform(...)
 ```
 
 ## Resources

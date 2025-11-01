@@ -1394,43 +1394,80 @@ class UnifiedNavigation {
   }
 
   private createRootRoleSwitchDropdown(activeRole: string | null): string {
+    // Icon mapping für roles
+    const roleIcons = {
+      root: 'fa-user-shield',
+      admin: 'fa-user-tie',
+      employee: 'fa-user',
+    };
+
+    const currentRole: 'root' | 'admin' | 'employee' =
+      activeRole === 'root' ? 'root' : activeRole === 'admin' ? 'admin' : 'employee';
     const currentView =
       activeRole === 'root' ? 'Root-Ansicht' : activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht';
+    // eslint-disable-next-line security/detect-object-injection -- currentRole is type-safe literal union
+    const currentIcon = roleIcons[currentRole];
+
     return `
-      <!-- Role Switch Custom Dropdown for Root -->
-      <div class="custom-dropdown role-switch-dropdown">
-        <div class="dropdown-display" id="roleSwitchDisplay">
-          <span>${currentView}</span>
-          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
+      <!-- Role Switch - EXACT Storybook Structure -->
+      <div class="dropdown role-switch-dropdown">
+        <div class="dropdown__trigger" id="roleSwitchDisplay">
+          <span>
+            <i class="fas ${currentIcon}" style="margin-right: 8px;"></i>
+            ${currentView}
+          </span>
+          <i class="fas fa-chevron-down"></i>
         </div>
-        <div class="dropdown-options" id="roleSwitchDropdown">
-          <div class="dropdown-option ${activeRole === 'root' ? 'active' : ''}" data-value="root">Root-Ansicht</div>
-          <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
-          <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
+        <div class="dropdown__menu" id="roleSwitchDropdown">
+          <div class="dropdown__option ${activeRole === 'root' ? 'active' : ''}" data-value="root">
+            <i class="fas fa-user-shield"></i>
+            Root-Ansicht
+          </div>
+          <div class="dropdown__option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">
+            <i class="fas fa-user-tie"></i>
+            Admin-Ansicht
+          </div>
+          <div class="dropdown__option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">
+            <i class="fas fa-user"></i>
+            Mitarbeiter-Ansicht
+          </div>
         </div>
-        <input type="hidden" id="role-switch-value" value="${activeRole ?? 'root'}" />
       </div>
     `;
   }
 
   private createAdminRoleSwitchDropdown(activeRole: string | null): string {
+    // Icon mapping für roles
+    const roleIcons = {
+      admin: 'fa-user-tie',
+      employee: 'fa-user',
+    };
+
+    const currentRole: 'admin' | 'employee' = activeRole === 'admin' ? 'admin' : 'employee';
     const currentView = activeRole === 'admin' ? 'Admin-Ansicht' : 'Mitarbeiter-Ansicht';
+    // eslint-disable-next-line security/detect-object-injection -- currentRole is type-safe literal union
+    const currentIcon = roleIcons[currentRole];
+
     return `
-      <!-- Role Switch Dropdown for Admin -->
-      <div class="custom-dropdown role-switch-dropdown">
-        <div class="dropdown-display" id="roleSwitchDisplay">
-          <span>${currentView}</span>
-          <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-            <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-          </svg>
+      <!-- Role Switch - EXACT Storybook Structure -->
+      <div class="dropdown role-switch-dropdown">
+        <div class="dropdown__trigger" id="roleSwitchDisplay">
+          <span>
+            <i class="fas ${currentIcon}" style="margin-right: 8px;"></i>
+            ${currentView}
+          </span>
+          <i class="fas fa-chevron-down"></i>
         </div>
-        <div class="dropdown-options" id="roleSwitchDropdown">
-          <div class="dropdown-option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">Admin-Ansicht</div>
-          <div class="dropdown-option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">Mitarbeiter-Ansicht</div>
+        <div class="dropdown__menu" id="roleSwitchDropdown">
+          <div class="dropdown__option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">
+            <i class="fas fa-user-tie"></i>
+            Admin-Ansicht
+          </div>
+          <div class="dropdown__option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">
+            <i class="fas fa-user"></i>
+            Mitarbeiter-Ansicht
+          </div>
         </div>
-        <input type="hidden" id="role-switch-value" value="${activeRole ?? 'admin'}" />
       </div>
     `;
   }
@@ -2122,24 +2159,27 @@ class UnifiedNavigation {
   private handleRoleSelection(e: Event, dropdownDisplay: HTMLElement, dropdownOptions: HTMLElement): void {
     e.stopPropagation();
 
-    const selectedRole = (e.target as HTMLElement).dataset.value as 'root' | 'admin' | 'employee';
+    // Get the clicked option (might be the icon or text inside)
+    const target = e.target as HTMLElement;
+    const option = target.closest('.dropdown__option');
+
+    if (!(option instanceof HTMLElement)) {
+      return;
+    }
+
+    const selectedRole = option.dataset.value as 'root' | 'admin' | 'employee';
     console.info('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
 
-    // Update display text
-    const displayText = dropdownDisplay.querySelector('span');
-    if (displayText && e.target instanceof HTMLElement) {
-      displayText.textContent = e.target.textContent;
+    // Update display with icon and text - copy innerHTML from option
+    const displaySpan = dropdownDisplay.querySelector('span');
+    if (displaySpan) {
+      // eslint-disable-next-line no-unsanitized/property -- Safe: copying our own generated HTML
+      displaySpan.innerHTML = option.innerHTML;
     }
 
     // Close dropdown
     dropdownDisplay.classList.remove('active');
     dropdownOptions.classList.remove('active');
-
-    // Update hidden input
-    const hiddenInput = $$('#role-switch-value') as HTMLInputElement | null;
-    if (hiddenInput !== null) {
-      hiddenInput.value = selectedRole;
-    }
 
     // Call the role switch function
     console.info('[UnifiedNav] Calling switchRoleForRoot with role:', selectedRole);
@@ -2147,7 +2187,7 @@ class UnifiedNavigation {
   }
 
   private setupRoleSelectionHandlers(dropdownDisplay: HTMLElement, dropdownOptions: HTMLElement): void {
-    const options = dropdownOptions.querySelectorAll('.dropdown-option');
+    const options = dropdownOptions.querySelectorAll('.dropdown__option');
     options.forEach((option) => {
       option.addEventListener('click', (e) => {
         this.handleRoleSelection(e, dropdownDisplay, dropdownOptions);
@@ -3066,6 +3106,14 @@ class UnifiedNavigation {
     // Connect to SSE endpoint
     this.sseClient = new SSEClient('/api/v2/notifications/stream');
     this.sseClient.connect();
+
+    // Reconnect SSE after token refresh to use new token
+    tokenManager.onTokenRefreshed(() => {
+      console.info('[UnifiedNav] Token refreshed - reconnecting SSE with new token');
+      if (this.sseClient) {
+        this.sseClient.reconnectWithNewToken();
+      }
+    });
 
     // Reconnect on visibility change
     document.addEventListener('visibilitychange', () => {

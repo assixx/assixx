@@ -59,7 +59,6 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
       filters,
     );
 
-    // TODO: Add proper pagination metadata
     res.json(
       paginatedResponse(surveys, {
         currentPage: filters.page,
@@ -384,9 +383,15 @@ export async function getStatistics(req: AuthenticatedRequest, res: Response): P
   }
 }
 
-// Note: Survey responses are handled by a separate API endpoint
-// TODO: Implement these in a separate responses controller
-// - POST /api/v2/surveys/{id}/responses - Submit a response
-// - GET /api/v2/surveys/{id}/responses - Get responses (admin only)
-// - GET /api/v2/surveys/{id}/responses/{responseId} - Get specific response
-// - PUT /api/v2/surveys/{id}/responses/{responseId} - Update response (if allowed)
+/**
+ * Survey Responses API
+ * All response endpoints are fully implemented in responses.controller.ts
+ *
+ * Available endpoints (see index.ts for routes):
+ * - POST   /api/v2/surveys/:id/responses          - Submit a response
+ * - GET    /api/v2/surveys/:id/responses          - Get all responses (admin only)
+ * - GET    /api/v2/surveys/:id/my-response        - Get user's own response
+ * - GET    /api/v2/surveys/:id/export             - Export responses (CSV/Excel)
+ * - GET    /api/v2/surveys/:id/responses/:id      - Get specific response
+ * - PUT    /api/v2/surveys/:id/responses/:id      - Update response (if allowed)
+ */

@@ -196,16 +196,13 @@ class TeamsService {
    */
   async getTeamById(id: number, tenantId: number): Promise<Record<string, unknown>> {
     try {
-      const team = await Team.findById(id);
+      const team = await Team.findById(id, tenantId);
 
       if (!team) {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 
-      // Check tenant isolation
-      if (team.tenant_id !== tenantId) {
-        throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
-      }
+      // Tenant isolation already enforced by Team.findById
 
       // Get team members and machines
       const members = await Team.getTeamMembers(id);
@@ -294,8 +291,8 @@ class TeamsService {
    * @param tenantId - The tenant ID
    */
   private async validateTeamExists(id: number, tenantId: number): Promise<DbTeam> {
-    const existingTeam = await Team.findById(id);
-    if (existingTeam?.tenant_id !== tenantId) {
+    const existingTeam = await Team.findById(id, tenantId);
+    if (!existingTeam) {
       throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
     }
     return existingTeam;
@@ -378,7 +375,7 @@ class TeamsService {
       const updateData = this.buildUpdateData(data);
 
       // Update the team
-      const success = await Team.update(id, updateData);
+      const success = await Team.update(id, updateData, tenantId);
       if (!success) {
         throw new ServiceError('SERVER_ERROR', 'Failed to update team', 500);
       }
@@ -399,8 +396,8 @@ class TeamsService {
    * Validate team ownership
    */
   private async validateTeamOwnership(id: number, tenantId: number): Promise<void> {
-    const team = await Team.findById(id);
-    if (team?.tenant_id !== tenantId) {
+    const team = await Team.findById(id, tenantId);
+    if (!team) {
       throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
     }
   }
@@ -437,7 +434,7 @@ class TeamsService {
       await this.validateTeamOwnership(id, tenantId);
       await this.handleTeamMembersForDeletion(id, force ?? false);
 
-      const success = await Team.delete(id);
+      const success = await Team.delete(id, tenantId);
       if (!success) {
         throw new ServiceError('SERVER_ERROR', 'Failed to delete team', 500);
       }
@@ -460,8 +457,8 @@ class TeamsService {
   async getTeamMembers(teamId: number, tenantId: number): Promise<Record<string, unknown>[]> {
     try {
       // Check if team exists and belongs to tenant
-      const team = await Team.findById(teamId);
-      if (team?.tenant_id !== tenantId) {
+      const team = await Team.findById(teamId, tenantId);
+      if (!team) {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 
@@ -498,8 +495,8 @@ class TeamsService {
   ): Promise<{ message: string }> {
     try {
       // Check if team exists and belongs to tenant
-      const team = await Team.findById(teamId);
-      if (team?.tenant_id !== tenantId) {
+      const team = await Team.findById(teamId, tenantId);
+      if (!team) {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 
@@ -545,8 +542,8 @@ class TeamsService {
   ): Promise<{ message: string }> {
     try {
       // Check if team exists and belongs to tenant
-      const team = await Team.findById(teamId);
-      if (team?.tenant_id !== tenantId) {
+      const team = await Team.findById(teamId, tenantId);
+      if (!team) {
         throw new ServiceError('NOT_FOUND', TEAM_NOT_FOUND_MSG, 404);
       }
 
