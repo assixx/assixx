@@ -62,6 +62,7 @@ export default [
       'backend/coverage/**',
       '**/*.generated.ts',
       '**/*.config.js',
+      '**/vite.config.optimized.js',
       '**/*.min.css',
       'backend/src/routes/mocks/**',
       '**/__tests__/**',

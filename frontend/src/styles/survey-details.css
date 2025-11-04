@@ -180,7 +180,6 @@
 }
 
 .btn-secondary:hover {
-  transform: translateY(-1px);
   border-color: var(--primary-color);
   background: rgb(255 255 255 / 8%);
 }
@@ -192,7 +191,6 @@
 }
 
 .btn-danger:hover {
-  transform: translateY(-1px);
   background: rgb(244 67 54 / 20%);
 }
 

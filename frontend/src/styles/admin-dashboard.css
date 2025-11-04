@@ -276,12 +276,8 @@
 }
 
 .btn-status-active:hover {
-  transform: translateY(-1px);
-
   border-color: #ff5722;
-
   color: #ff5722;
-
   background: rgb(255 107 53 / 10%);
   box-shadow: 0 4px 12px rgb(255 107 53 / 20%);
 }
@@ -299,12 +295,8 @@
 }
 
 .btn-status-inactive:hover {
-  transform: translateY(-1px);
-
   border-color: #218838;
-
   color: #218838;
-
   background: rgb(40 167 69 / 10%);
   box-shadow: 0 4px 12px rgb(40 167 69 / 20%);
 }
@@ -434,7 +426,7 @@
 }
 
 .btn-info:hover {
-  transform: translateY(-1px);
+
   border-color: #17a2b8;
   background: rgb(23 162 184 / 30%);
 } */

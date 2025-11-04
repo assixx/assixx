@@ -27,7 +27,6 @@
 
 /* Hover State - Brighten the gradient */
 .btn-light:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: linear-gradient(145deg, rgb(224 224 224 / 18%), rgb(158 158 158 / 25%)); /* Intensiver */
   box-shadow: var(--shadow-btn-light-hover, 0 2px 6px rgb(0 0 0 / 12%));
 }

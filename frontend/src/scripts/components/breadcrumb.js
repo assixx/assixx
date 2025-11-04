@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Breadcrumb Navigation Component
  * Business logic for breadcrumb generation and initialization
@@ -44,9 +43,9 @@ function getUserRole() {
 // Helper: Get home URL based on role
 function getHomeUrl(userRole) {
   const roleMap = {
-    root: '/pages/root-dashboard.html',
-    admin: '/pages/admin-dashboard.html',
-    employee: '/pages/employee-dashboard.html',
+    root: '/root-dashboard',
+    admin: '/admin-dashboard',
+    employee: '/employee-dashboard',
   };
 
   // Safe lookup to avoid object injection
@@ -125,16 +124,7 @@ function handleAdminPages(items, currentPage) {
 
 // Helper: Handle root pages
 function handleRootPages(items, currentPage) {
-  const rootPages = [
-    '/manage-root-users',
-    '/pages/manage-root-users',
-    '/root-features',
-    '/pages/root-features',
-    '/tenant-deletion-status',
-    '/pages/tenant-deletion-status',
-    '/feature-management',
-    '/pages/feature-management',
-  ];
+  const rootPages = ['/manage-root-users', '/root-features', '/tenant-deletion-status', '/feature-management'];
 
   if (rootPages.includes(currentPage)) {
     items.push({
@@ -244,15 +234,9 @@ function processSpecialHandlers(items, currentPage) {
  * Process special case pages
  */
 function processSpecialCases(items, currentPage) {
-  const isArchivedEmployees = currentPage === '/archived-employees' || currentPage === '/pages/archived-employees';
-  const isDepartmentGroups =
-    currentPage === '/manage-department-groups' || currentPage === '/pages/manage-department-groups';
-  const isAccountRelated = [
-    '/account-settings',
-    '/pages/account-settings',
-    '/storage-upgrade',
-    '/pages/storage-upgrade',
-  ].includes(currentPage);
+  const isArchivedEmployees = currentPage === '/archived-employees';
+  const isDepartmentGroups = currentPage === '/manage-department-groups';
+  const isAccountRelated = ['/account-settings', '/storage-upgrade'].includes(currentPage);
 
   if (isArchivedEmployees) {
     handleArchivedEmployees(items);
@@ -295,7 +279,7 @@ function addSectionBreadcrumb(items, section) {
  * Add current page breadcrumb
  */
 function addCurrentPageBreadcrumb(items, currentPage, mapping, section) {
-  const isAdminDashboard = currentPage === '/admin-dashboard' || currentPage === '/pages/admin-dashboard';
+  const isAdminDashboard = currentPage === '/admin-dashboard';
 
   if (isAdminDashboard && section) {
     addSectionBreadcrumb(items, section);

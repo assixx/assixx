@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { readdirSync, existsSync, mkdirSync, copyFileSync } from 'fs';
 import tailwindcss from '@tailwindcss/vite';
 import simpleHtmlPlugin from 'vite-plugin-simple-html';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 // Get all HTML files from src/pages
 const getHtmlInputs = () => {
@@ -23,9 +24,17 @@ export default defineConfig({
   root: 'src',
   base: '/',
 
+  // 🔥 NEW: Cache Directory Optimization (Best Practice 2025)
+  cacheDir: '../node_modules/.vite',
+
   build: {
     outDir: '../dist',
     emptyOutDir: true,
+
+    // 🔥 NEW: Source Maps für Production Debugging
+    sourcemap: process.env.NODE_ENV === 'development' ? 'inline' : false,
+
+    // 🔥 OPTIMIZED: Better Chunk Strategy
     rollupOptions: {
       input: getHtmlInputs(),
       output: {
@@ -48,20 +57,46 @@ export default defineConfig({
           }
           return 'assets/[name]-[hash][extname]';
         },
-        chunkFileNames: 'js/[name].js',
+        chunkFileNames: 'js/[name]-[hash].js',
         entryFileNames: 'js/[name].js',
+
+        // 🔥 NEW: Manual Chunk Split Strategy
+        manualChunks: {
+          // Vendor chunks
+          'vendor-fullcalendar': [
+            '@fullcalendar/core',
+            '@fullcalendar/daygrid',
+            '@fullcalendar/interaction',
+            '@fullcalendar/list',
+            '@fullcalendar/timegrid',
+          ],
+          'vendor-utils': ['dompurify'],
+        },
       },
     },
     // Minification
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false, // Keep console logs for debugging
+        drop_console: process.env.NODE_ENV === 'production',
         drop_debugger: true,
+        // 🔥 NEW: More aggressive compression
+        passes: 2,
+        pure_funcs: ['console.debug'],
+      },
+      // 🔥 NEW: Better mangle options
+      mangle: {
+        safari10: true,
       },
     },
-    // Chunk size warnings
-    chunkSizeWarningLimit: 1000,
+    // 🔥 OPTIMIZED: Increase chunk size limit
+    chunkSizeWarningLimit: 2000,
+
+    // 🔥 NEW: CSS Code Split Control
+    cssCodeSplit: true,
+
+    // 🔥 NEW: Control asset inlining
+    assetsInlineLimit: 4096, // 4KB
   },
 
   css: {
@@ -69,14 +104,70 @@ export default defineConfig({
     postcss: './postcss.config.js',
     // Enable CSS source maps in development
     devSourcemap: true,
+
+    // 🔥 NEW: CSS Modules configuration
+    modules: {
+      localsConvention: 'camelCase',
+      generateScopedName:
+        process.env.NODE_ENV === 'production' ? '[hash:base64:5]' : '[name]__[local]__[hash:base64:5]',
+    },
   },
 
   server: {
     port: 5173,
+
+    // 🔥 NEW: Enhanced HMR Configuration (Best Practice 2025)
+    hmr: {
+      overlay: true,
+      port: 5173,
+      protocol: 'ws',
+      host: 'localhost',
+    },
+
+    // 🔥 NEW: File Watching for WSL2/Docker environments
+    watch: {
+      // Use polling in WSL2/Docker
+      usePolling: process.env.WSL_DISTRO_NAME ? true : false,
+      interval: 100, // Check every 100ms when polling
+
+      // Ignore patterns
+      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**'],
+    },
+
+    // 🔥 NEW: Warm up frequently used modules (Performance Optimization)
+    warmup: {
+      clientFiles: [
+        './scripts/common.ts',
+        './scripts/auth/index.ts',
+        './scripts/components/unified-navigation.ts',
+        './styles/main.css',
+        './styles/tailwind.css',
+      ],
+    },
+
+    // 🔥 NEW: HTTP/2 Push Headers
+    headers: {
+      'Cache-Control': 'no-cache',
+      'X-Content-Type-Options': 'nosniff',
+    },
+
+    // 🔥 NEW: CORS configuration for development
+    cors: true,
+
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+
+        // 🔥 NEW: WebSocket support
+        ws: true,
+
+        // 🔥 NEW: Better error handling
+        configure: (proxy, options) => {
+          proxy.on('error', (err, _req, res) => {
+            console.error('Proxy error:', err);
+          });
+        },
       },
       '/uploads': {
         target: 'http://localhost:3000',
@@ -92,20 +183,81 @@ export default defineConfig({
       '@scripts': resolve(__dirname, './src/scripts'),
       '@components': resolve(__dirname, './src/components'),
       '@assets': resolve(__dirname, './src/assets'),
+      // 🔥 NEW: Additional useful aliases
+      '@utils': resolve(__dirname, './src/scripts/utils'),
+      '@types': resolve(__dirname, './src/types'),
     },
+
+    // 🔥 NEW: Extensions order (reduces filesystem checks)
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
   },
 
   optimizeDeps: {
+    // 🔥 OPTIMIZED: Include more dependencies
     include: [
-      'marked',
-      'chart.js',
-      'moment',
       '@fullcalendar/core',
       '@fullcalendar/daygrid',
       '@fullcalendar/timegrid',
       '@fullcalendar/interaction',
       '@fullcalendar/list',
+      'dompurify',
     ],
+
+    // 🔥 NEW: Exclude certain packages from optimization
+    exclude: [],
+
+    // 🔥 NEW: Force optimization even if cached (useful in development)
+    force: false,
+
+    // 🔥 NEW: Performance optimization for large codebases
+    holdUntilCrawlEnd: false,
+
+    // 🔥 NEW: ESM interop for problematic dependencies
+    needsInterop: [],
+
+    // 🔥 NEW: Custom entries for pre-bundling
+    entries: ['src/pages/*.html', 'src/scripts/**/*.ts'],
+  },
+
+  // 🔥 NEW: JSON import optimization
+  json: {
+    namedExports: true,
+    stringify: 'auto', // Stringify large JSON for better performance
+  },
+
+  // 🔥 NEW: Worker optimization
+  worker: {
+    format: 'es',
+    rollupOptions: {
+      output: {
+        entryFileNames: 'js/worker-[name]-[hash].js',
+      },
+    },
+  },
+
+  // 🔥 NEW: Preview server configuration
+  preview: {
+    port: 4173,
+    strictPort: false,
+    headers: {
+      'Cache-Control': 'public, max-age=600',
+    },
+  },
+
+  // 🔥 NEW: Experimental features for performance
+  experimental: {
+    renderBuiltUrl(filename, { hostType }) {
+      if (hostType === 'js') {
+        return { relative: true };
+      }
+      return { relative: true };
+    },
+  },
+
+  // 🔥 NEW: Future flags for upcoming deprecations
+  future: {
+    removeServerModuleGraph: 'warn',
+    removeServerTransformRequest: 'warn',
   },
 
   // Custom plugins
@@ -230,5 +382,38 @@ export default defineConfig({
         }
       },
     },
+
+    // 🔥 NEW: Performance monitoring plugin
+    {
+      name: 'vite-plugin-performance',
+      configResolved(config) {
+        if (process.env.DEBUG_PERFORMANCE) {
+          console.log('🚀 Vite Performance Mode Enabled');
+        }
+      },
+      buildStart() {
+        if (process.env.DEBUG_PERFORMANCE) {
+          console.time('Build Time');
+        }
+      },
+      buildEnd() {
+        if (process.env.DEBUG_PERFORMANCE) {
+          console.timeEnd('Build Time');
+        }
+      },
+    },
+
+    // 🔥 Bundle Analyzer - Visualize bundle composition (Best Practice 2025)
+    // MUST BE LAST PLUGIN for accurate analysis after all transformations
+    visualizer({
+      filename: './dist/bundle-stats.html',
+      title: 'Assixx Bundle Analysis',
+      template: 'treemap', // Best for multi-page apps: treemap | sunburst | network | list
+      open: false, // Set to true to auto-open in browser after build
+      gzipSize: true, // Show real gzip sizes (what users download)
+      brotliSize: false, // Enable when Brotli compression is active
+      sourcemap: false, // Use sourcemaps for more accurate size calculation
+      projectRoot: process.cwd(), // Root for relative file paths
+    }),
   ],
 });

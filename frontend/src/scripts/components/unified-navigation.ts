@@ -91,91 +91,48 @@ const DISPLAY_INLINE_BLOCK = 'inline-block';
 const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   // Root-only pages
   [ROOT_DASHBOARD_URL]: ['root'],
-  '/pages/root-dashboard': ['root'],
   '/manage-root-users': ['root'],
-  '/pages/manage-root-users': ['root'],
   '/root-features': ['root'],
-  '/pages/root-features': ['root'],
   '/root-profile': ['root'],
-  '/pages/root-profile': ['root'],
   '/tenant-deletion-status': ['root'],
-  '/pages/tenant-deletion-status': ['root'],
   '/storage-upgrade': ['root'],
-  '/pages/storage-upgrade': ['root'],
   '/logs': ['root'],
-  '/pages/logs': ['root'],
 
-  // Admin and Root pages
   [ADMIN_DASHBOARD_URL]: ['admin', 'root'],
-  '/pages/admin-dashboard': ['admin', 'root'],
   '/manage-admins': ['admin', 'root'],
-  '/pages/manage-admins': ['admin', 'root'],
   '/manage-users': ['admin', 'root'],
-  '/pages/manage-users': ['admin', 'root'],
   '/manage-departments': ['admin', 'root'],
-  '/pages/manage-departments': ['admin', 'root'],
   '/manage-department-groups': ['admin', 'root'],
-  '/pages/manage-department-groups': ['admin', 'root'],
   '/manage-areas': ['admin', 'root'],
-  '/pages/manage-areas': ['admin', 'root'],
   '/manage-teams': ['admin', 'root'],
-  '/pages/manage-teams': ['admin', 'root'],
   '/manage-machines': ['admin', 'root'],
-  '/pages/manage-machines': ['admin', 'root'],
   '/manage-employees': ['admin', 'root'],
-  '/pages/manage-employees': ['admin', 'root'],
   '/blackboard': ['employee', 'admin', 'root'],
-  '/pages/blackboard': ['employee', 'admin', 'root'],
   '/document-upload': ['admin', 'root'],
-  '/pages/document-upload': ['admin', 'root'],
   '/survey-admin': ['admin', 'root'],
-  '/pages/survey-admin': ['admin', 'root'],
   '/survey-create': ['admin', 'root'],
-  '/pages/survey-create': ['admin', 'root'],
   '/survey-details': ['admin', 'root'],
-  '/pages/survey-details': ['admin', 'root'],
   '/survey-results': ['admin', 'root'],
-  '/pages/survey-results': ['admin', 'root'],
   '/archived-employees': ['admin', 'root'],
-  '/pages/archived-employees': ['admin', 'root'],
   '/admin-profile': ['admin', 'root'],
-  '/pages/admin-profile': ['admin', 'root'],
 
-  // Employee pages (accessible by all)
   [EMPLOYEE_DASHBOARD_URL]: ['employee', 'admin', 'root'],
-  '/pages/employee-dashboard': ['employee', 'admin', 'root'],
   '/profile': ['employee', 'admin', 'root'],
-  '/pages/profile': ['employee', 'admin', 'root'],
   '/employee-profile': ['employee', 'admin', 'root'],
-  '/pages/employee-profile': ['employee', 'admin', 'root'],
   '/kvp': ['employee', 'admin', 'root'],
-  '/pages/kvp': ['employee', 'admin', 'root'],
   '/kvp-detail': ['employee', 'admin', 'root'],
-  '/pages/kvp-detail': ['employee', 'admin', 'root'],
   '/calendar': ['employee', 'admin', 'root'],
-  '/pages/calendar': ['employee', 'admin', 'root'],
   '/shifts': ['employee', 'admin', 'root'],
-  '/pages/shifts': ['employee', 'admin', 'root'],
   '/chat': ['employee', 'admin', 'root'],
-  '/pages/chat': ['employee', 'admin', 'root'],
   '/survey-employee': ['employee', 'admin', 'root'],
-  '/pages/survey-employee': ['employee', 'admin', 'root'],
   '/documents': ['employee', 'admin', 'root'],
-  '/pages/documents': ['employee', 'admin', 'root'],
   '/documents-search': ['employee', 'admin', 'root'],
-  '/pages/documents-search': ['employee', 'admin', 'root'],
   '/documents-company': ['employee', 'admin', 'root'],
-  '/pages/documents-company': ['employee', 'admin', 'root'],
   '/documents-department': ['employee', 'admin', 'root'],
-  '/pages/documents-department': ['employee', 'admin', 'root'],
   '/documents-team': ['employee', 'admin', 'root'],
-  '/pages/documents-team': ['employee', 'admin', 'root'],
   '/documents-personal': ['employee', 'admin', 'root'],
-  '/pages/documents-personal': ['employee', 'admin', 'root'],
   '/documents-payroll': ['employee', 'admin', 'root'],
-  '/pages/documents-payroll': ['employee', 'admin', 'root'],
   '/account-settings': ['employee', 'admin', 'root'],
-  '/pages/account-settings': ['employee', 'admin', 'root'],
 };
 
 // Convert to Map for safer access (prevents object injection)
@@ -1557,7 +1514,7 @@ class UnifiedNavigation {
               </p>
             </div>
             <div class="ds-modal__footer ds-modal__footer--spaced">
-              <button class="btn btn-light" id="cancelLogout">
+              <button class="btn btn-dark" id="cancelLogout">
                 <i class="fas fa-times"></i>
                 Abbrechen
               </button>
@@ -2273,7 +2230,7 @@ class UnifiedNavigation {
         });
 
         // Handle option selection
-        const options = dropdownOptions.querySelectorAll('.dropdown-option');
+        const options = dropdownOptions.querySelectorAll('.dropdown__option');
         options.forEach((option) => {
           option.addEventListener('click', (e) => {
             void (async () => {
@@ -2294,6 +2251,9 @@ class UnifiedNavigation {
             })();
           });
         });
+
+        // Setup outside click handler to close dropdown
+        this.setupOutsideClickHandler(dropdownDisplay, dropdownOptions);
       }
     }
   }

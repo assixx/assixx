@@ -438,7 +438,7 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
     entries
       .map(
         (entry) => `
-        <a href="/pages/blackboard.html#entry-${entry.id}" class="list-group-item list-group-item-action">
+        <a href="/blackboard.html#entry-${entry.id}" class="list-group-item list-group-item-action">
           <div class="d-flex w-100 justify-content-between">
             <h6 class="mb-1">${escapeHtml(entry.title)}</h6>
             <small class="text-muted">${formatDate(entry.created_at)}</small>

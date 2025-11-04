@@ -1432,7 +1432,6 @@ select.form-control {
 }
 
 .search-trigger:hover {
-  transform: translateY(-1px);
   background: var(--primary-dark);
 }
 
@@ -1699,7 +1698,6 @@ select.form-control {
 }
 
 .attachment-remove:hover {
-  transform: translateY(-1px);
   background: rgb(231 76 60 / 30%);
 }
 
@@ -1758,8 +1756,6 @@ select.form-control {
 }
 
 .entry-attachment-item:hover {
-  transform: translateY(-1px);
-
   border-color: rgb(255 255 255 / 15%);
 
   color: var(--text-primary);
