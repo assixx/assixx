@@ -27,12 +27,8 @@
 }
 
 .btn-status-active:hover:not(:disabled) {
-  transform: translateY(-1px);
-
   border-color: var(--color-status-active-hover);
-
   color: var(--color-status-active-hover);
-
   background: rgb(198 40 40 / 10%); /* Subtle red tint */
   box-shadow: var(--shadow-btn-status-active-hover);
 }
@@ -59,12 +55,8 @@
 }
 
 .btn-status-inactive:hover:not(:disabled) {
-  transform: translateY(-1px);
-
   border-color: var(--color-status-inactive-hover);
-
   color: var(--color-status-inactive-hover);
-
   background: rgb(40 167 69 / 10%); /* Subtle green tint */
   box-shadow: var(--shadow-btn-status-inactive-hover);
 }

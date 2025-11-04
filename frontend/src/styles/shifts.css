@@ -193,7 +193,6 @@
 }
 
 .week-nav-btn:hover {
-  transform: translateY(-1px);
   background: var(--primary-dark);
   box-shadow: var(--shadow-md);
 }
@@ -313,7 +312,6 @@
 }
 
 .shift-cell:hover {
-  transform: translateY(-1px);
   border-color: var(--primary-color);
   background: rgb(33 150 243 / 10%);
   box-shadow: var(--shadow-sm);
@@ -1504,7 +1502,6 @@
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
   background: #2980b9;
 }
 
@@ -1891,7 +1888,6 @@
 }
 
 .scroll-nav-btn:hover {
-  transform: translateY(-1px);
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 5%);
 }
@@ -2453,7 +2449,6 @@
 }
 
 .favorite-btn:hover {
-  transform: translateY(-1px);
   border-color: rgb(76 175 80 / 60%);
   background: linear-gradient(135deg, rgb(76 175 80 / 30%), rgb(76 175 80 / 20%));
   box-shadow: 0 4px 12px rgb(76 175 80 / 20%);
@@ -2643,7 +2638,6 @@
 }
 
 .admin-btn:hover {
-  transform: translateY(-1px);
   background: #45a049;
   box-shadow: var(--shadow-md);
 }

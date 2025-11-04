@@ -102,6 +102,7 @@
 
   .dropdown__option:hover {
     padding-left: 20px;
+    border-radius: var(--radius-md);
     color: #fff;
     background: rgb(33 150 243 / 20%);
   }

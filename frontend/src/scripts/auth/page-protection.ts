@@ -50,13 +50,13 @@ const pagePermissions: Partial<Record<string, string[]>> = {
 function getDashboardForRole(role: string): string {
   switch (role) {
     case 'employee':
-      return '/pages/employee-dashboard.html';
+      return '/employee-dashboard.html';
     case 'admin':
-      return '/pages/admin-dashboard.html';
+      return '/admin-dashboard.html';
     case 'root':
-      return '/pages/root-dashboard.html';
+      return '/root-dashboard.html';
     default:
-      return '/pages/login.html';
+      return '/login.html';
   }
 }
 

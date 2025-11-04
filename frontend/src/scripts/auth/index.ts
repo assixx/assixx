@@ -117,7 +117,7 @@ function getRoleBasedRedirectUrl(): string {
     case 'root':
       return '/root-dashboard';
     default:
-      return '/pages/login.html';
+      return '/login.html';
   }
 }
 

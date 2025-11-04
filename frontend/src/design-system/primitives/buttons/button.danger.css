@@ -21,8 +21,7 @@
 
 /* Hover state - Brighten the gradient */
 .btn-danger:hover:not(:disabled) {
-  transform: translateY(-1px);
-  background: linear-gradient(145deg, #f4433685, #ff000031);
+  background: linear-gradient(145deg, #ff1100b0, #ff000052);
   box-shadow: var(--shadow-btn-danger-hover);
 }
 

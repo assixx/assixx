@@ -10,16 +10,16 @@
 
 .btn-dark {
   padding: var(--spacing-2) var(--spacing-4);
-  border: 1px solid rgb(17 17 17);
+  border: 1px solid #404040;
   color: var(--color-white);
   background: linear-gradient(145deg, rgb(34 34 34), rgb(0 0 0));
 }
 
 /* Hover State - Brighten the gradient */
 .btn-dark:hover:not(:disabled) {
-  border: 1px solid rgb(17 17 17);
+  border: 1px solid #404040;
   color: var(--color-white);
-  background: linear-gradient(145deg, rgb(34 34 34), rgb(0 0 0));
+  background: linear-gradient(145deg, rgb(53 53 53), rgb(0 0 0));
 }
 
 /* Active/Pressed State */
