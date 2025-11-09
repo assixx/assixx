@@ -1,7 +1,7 @@
-/* Extracted styles from documents-payroll.html */
+/* Extracted styles from documents-company.html */
 /* dashboard-theme.css already loaded via main.css - removed duplicate import */
-@import "./documents.css";
-@import "./user-info-update.css";
+@import './documents.css';
+@import './user-info-update.css';
 
 /* Glassmorphismus Design-Standards */
 

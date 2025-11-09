@@ -1060,13 +1060,163 @@ T=27:00 → User klickt "Aktiv bleiben"
 ---
 
 **Dokumentation erstellt von:** Claude Code
-**Letzte Aktualisierung:** 2025-10-30 (Final)
+**Letzte Aktualisierung:** 2025-11-07 (Phase 7: Timer UX + Session Fix)
 **Review Status:** ✅ User Testing Completed
 **Deployment Status:** ✅ PRODUCTION-READY
+**Security Status:** ✅ CRITICAL BUG FIXED (Role-switch 24h→30m)
+**Timing Accuracy:** ✅ Clock Skew ELIMINATED (30:00 exact)
+**Timer Display:** ✅ Live 1s Updates (smooth countdown)
+**Session Refresh:** ✅ Only via API calls or "Stay Active" button
 
 ---
 
 ## 📝 Final Changelog
+
+### Phase 7 (2025-11-07 - Timer UX + Session Refresh Fix)
+
+**PROBLEM 1: Progressive Timer causes "jumpy" display**
+
+```diff
+🔴 USER ISSUE: Timer updates only every 60 seconds when > 10 min remaining
+🔴 BAD UX: Timer jumps from 24:36 → 23:36 → 22:36 (not live countdown)
+🔴 ROOT CAUSE: Progressive interval system (60s, 10s, 5s, 1s)
+
+📊 OLD BEHAVIOR:
+- Token > 10 min: Update every 60 seconds ❌
+- Token 5-10 min: Update every 10 seconds
+- Token 1-5 min: Update every 5 seconds
+- Token < 1 min: Update every 1 second
+
+✅ SOLUTION: Always 1 second interval
++ Changed getOptimalInterval(): Always returns 1000ms (1s)
++ Removed progressive interval logic (60s, 10s, 5s)
++ Removed interval adjustment code (no longer needed)
++ Updated all comments and debug logs
+
+📊 NEW BEHAVIOR:
+- ALL tokens: Update every 1 second ✅
+- Live countdown: 30:00 → 29:59 → 29:58 → 29:57
+- Smooth UX like a real clock
+
+🔧 FILES MODIFIED:
++ frontend/src/utils/token-manager.ts
+  - getOptimalInterval(): Simplified to always return 1000
+  - getIntervalMode(): Returns "LIVE (1s)" always
+  - Removed interval change detection in tick loop
+  - Removed interval restart on visibility change
+```
+
+**PROBLEM 2: Browser minimize/maximize triggers token refresh**
+
+```diff
+🔴 USER ISSUE: Browser minimize → maximize triggered automatic token refresh
+🔴 BAD BEHAVIOR: Any user interaction (scroll, mousedown, visibilitychange) refreshed token
+🔴 ROOT CAUSE: SessionManager.updateActivity() called tokenManager.refresh()
+
+📊 OLD BEHAVIOR:
+sessionManager.updateActivity()
+  └─> isActiveInteraction && token < 10 min?
+      └─> tokenManager.refresh() ❌ AUTOMATIC REFRESH!
+
+✅ SOLUTION: Remove automatic refresh from updateActivity()
+- Token refresh should ONLY happen via:
+  1. API calls (api-client.ts proactive refresh) ✅
+  2. "Stay Active" button in warning modal (extendSession) ✅
+- User events (mouse, keyboard, visibility) should NOT refresh token!
+
+🔧 FILES MODIFIED:
++ frontend/src/scripts/utils/session-manager.ts
+  - Removed automatic refresh from updateActivity()
+  - Added comment explaining the two refresh paths
+```
+
+**User Testing:** ✅ BOTH ISSUES FIXED
+
+---
+
+### Phase 6 (2025-11-07 - Clock Skew Fix)
+
+**PROBLEM: Timer shows 30:03 instead of 30:00**
+
+```diff
+🔴 USER ISSUE: Timer displayed "30:03" after fresh login (not exactly "30:00")
+🔴 ROOT CAUSE: Server-Client Clock Skew (Docker container runs 3 seconds ahead)
+
+🧪 ANALYSIS:
++ JWT payload: iat=1762554318, exp=1762556118 → exactly 1800 seconds ✅
++ Server time (Docker): 22:25:21
++ Client time (Browser): 22:25:18
++ Old calculation: remaining = exp (server) - now (client) = 1803 seconds = 30:03 ❌
+
+✅ SOLUTION: Client-Time-Only Calculation
++ Added: tokenReceivedAt property (Date.now() when token received)
++ Changed getRemainingTime():
+  - OLD: remaining = exp - now (mixes server + client time) ❌
+  - NEW: elapsed = now - receivedAt (both client time) ✅
+        remaining = 1800 - elapsed
++ Persists tokenReceivedAt to localStorage
++ Migration: Old tokens get tokenReceivedAt = Date.now() on page load
+
+📊 RESULTS:
+✅ New logins: Timer shows EXACTLY 30:00 (not 30:03)
+✅ Clock Skew immune: Uses only client time (Date.now())
+✅ Old tokens: Migrated automatically on page reload
+✅ Fallback: If tokenReceivedAt missing, uses old method (exp - now)
+
+🔧 FILES MODIFIED:
++ frontend/src/utils/token-manager.ts
+  - Added tokenReceivedAt: number | null property
+  - Updated setTokens(): Captures Date.now() when token received
+  - Updated loadTokensFromStorage(): Auto-migration for old tokens
+  - Updated clearTokens(): Removes tokenReceivedAt from localStorage
+  - Rewrote getRemainingTime(): Client-time-only calculation
+  - Fallback to old method if tokenReceivedAt missing
+```
+
+**User Testing:** ✅ PASSED - Timer now shows exactly "30:00" after login
+
+---
+
+### Phase 5 (2025-11-07 - Backend Token Security & Cleanup)
+
+**CRITICAL SECURITY FIX + MASSIVE CODE CLEANUP**
+
+```diff
+🔴 CRITICAL BUG FOUND: Role-Switch tokens lived 24 HOURS instead of 30 minutes!
++ Created central token config: backend/src/config/token.config.ts
++ Exported ACCESS_TOKEN_EXPIRES = '30m' (Single Source of Truth)
++ Exported REFRESH_TOKEN_EXPIRES = '7d'
++ Fixed role-switch.service.ts: { expiresIn: '24h' } → { expiresIn: ACCESS_TOKEN_EXPIRES }
++ Migrated auth.controller.ts (v2) to use central config
++ Migrated auth.ts (v1 legacy) to use central config
+
+🗑️ MASSIVE CLEANUP: Deleted 1544 lines of V1 dead code!
+- Deleted backend/src/auth.ts (570 lines) - v1 token generation
+- Deleted backend/src/services/auth.service.ts (570 lines) - v1 service
+- Deleted backend/src/controllers/auth.controller.ts (400 lines) - v1 controller
+- Deleted backend/src/middleware/auth.ts (4 lines) - forwarding file
+- Cleaned backend/src/loaders/legacy-compat.ts - Removed POST /login endpoint
+
+✅ VERIFICATION:
++ No broken imports found
++ TypeScript type-check: PASSED
++ Frontend uses /api/v2/auth/login (not /login)
++ All tokens now expire after exactly 30 minutes (consistent!)
+
+📊 IMPACT:
++ Security: Fixed 48x token lifetime vulnerability
++ Codebase: Removed 1544 lines of dead code
++ Maintainability: Single auth implementation (v2 only)
++ Clarity: No confusion about which auth to use
+```
+
+**User Observation Explained:**
+- Timer showed "30:02" after login (not exactly 30:00)
+- THIS IS NORMAL: 2 seconds = network + processing latency (0.11% deviation)
+- JWT generates EXACTLY 1800 seconds ✅
+- No clock skew between Docker/Host ✅
+
+---
 
 ### Phase 4 (2025-10-30 - Final Polish)
 ```diff
@@ -1108,27 +1258,48 @@ T=27:00 → User klickt "Aktiv bleiben"
 **Code Quality:**
 - ✅ TypeScript Strict Mode: PASS
 - ✅ ESLint (Security, SonarJS): PASS
-- ✅ Code Duplication: ELIMINATED (500+ lines removed)
+- ✅ Code Duplication: ELIMINATED (2044+ lines removed total!)
+  - Frontend: 500 lines (Phase 1)
+  - Backend: 1544 lines (Phase 5)
 - ✅ Type Safety: 100%
 - ✅ Cognitive Complexity: < 10 (all functions)
+- ✅ Dead Code: ELIMINATED (v1 auth completely removed)
 
 **Performance:**
 - ✅ Check Interval: 10s (optimal balance)
-- ✅ Timer Update: 1s (real-time)
+- ✅ Timer Update: **ALWAYS 1s** (real-time live countdown)
 - ✅ Modal Precision: ±10s
 - ✅ Build Time: ~10s (Vite)
+- ✅ Progressive Intervals: REMOVED (caused jumpy UX)
 
 **Security:**
-- ✅ Token Expiry: Enforced (30 min)
+- ✅ Token Expiry: Enforced (30 min) - CONSISTENT ACROSS ALL ENDPOINTS
 - ✅ Inactivity Timeout: Enforced (30 min)
 - ✅ Background Polling: No session extension
 - ✅ Proper Logout: All scenarios covered
+- ✅ CRITICAL FIX: Role-switch tokens now 30 min (was 24h!)
+- ✅ Central Token Config: Single Source of Truth
+- ✅ Session Refresh: Only via API calls or "Stay Active" button (Phase 7)
 
 **UX:**
 - ✅ Warning Modal: 5 min before timeout
 - ✅ Real-Time Countdown: Accurate & Stable
 - ✅ Design System: Professional appearance
 - ✅ Timing Precision: ±10s (industry-standard)
+- ✅ Token Timer: Shows EXACTLY 30:00 (Clock Skew eliminated!)
+- ✅ Live Timer: Updates every 1 second (smooth countdown) (Phase 7)
+
+**Timing Accuracy (Phase 6):**
+- ✅ Clock Skew: ELIMINATED
+- ✅ Timer Display: Exactly 30:00 (not 30:03)
+- ✅ Calculation: Client-time-only (Date.now())
+- ✅ Migration: Automatic for old tokens
+- ✅ Fallback: Old method if tokenReceivedAt missing
+
+**Timer Display (Phase 7):**
+- ✅ Interval: Always 1 second (was 60s/10s/5s/1s progressive)
+- ✅ Update Frequency: Every second (live countdown)
+- ✅ UX: Smooth like a real clock (not jumpy)
 
 ---
 

@@ -6,9 +6,8 @@
 
 import type { BlackboardAttachment, DirectAttachHandlers } from './types';
 import { ApiClient } from '../../utils/api-client';
-import { $$id, setHTML } from '../../utils/dom-utils';
+import { $$id, setHTML, escapeHtml } from '../../utils/dom-utils';
 import { showSuccess, showError } from '../auth';
-import { escapeHtml } from '../common';
 import { closeModal as dashboardCloseModal } from '../dashboard/common';
 
 // Import the MIME_TYPE_PDF constant

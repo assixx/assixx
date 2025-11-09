@@ -108,7 +108,7 @@ export interface Document {
   target_department_id?: number;
   target_team_id?: number;
   category: string;
-  scope: 'company' | 'department' | 'team' | 'personal';
+  scope?: 'company' | 'department' | 'team' | 'personal'; // Optional: Backend may not always send this
   file_path: string;
   file_name: string;
   file_size: number;

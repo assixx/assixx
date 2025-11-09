@@ -1,0 +1,238 @@
+/**
+ * Documents Explorer - TypeScript Type Definitions
+ *
+ * Central type definitions for the Documents Explorer SPA
+ * Used across all explorer modules for type safety
+ *
+ * @module explorer/types
+ */
+
+/**
+ * Document category types
+ * Maps to backend recipient types
+ */
+export type DocumentCategory = 'all' | 'personal' | 'team' | 'department' | 'company' | 'payroll';
+
+/**
+ * View mode for document display
+ */
+export type ViewMode = 'list' | 'grid';
+
+/**
+ * Sort options for documents
+ */
+export type SortOption = 'newest' | 'oldest' | 'name' | 'size';
+
+/**
+ * User role types (from auth-helpers.ts)
+ */
+export type UserRole = 'employee' | 'admin' | 'root';
+
+/**
+ * Document interface
+ * Matches backend API v2 response structure
+ */
+export interface Document {
+  /** Document ID (numeric, not UUID) */
+  id: number;
+
+  /** Original filename */
+  filename: string;
+
+  /** Stored filename (UUID-based) */
+  storedFilename: string;
+
+  /** Document category/type */
+  category: string;
+
+  /** Year the document belongs to */
+  year: number;
+
+  /** Month the document belongs to (1-12) */
+  month: number | null;
+
+  /** File size in bytes */
+  size: number;
+
+  /** Upload timestamp */
+  uploadedAt: string;
+
+  /** ID of user who uploaded */
+  uploadedBy: number;
+
+  /** Name of user who uploaded */
+  uploaderName: string;
+
+  /** Whether document has been read by current user */
+  isRead: boolean;
+
+  /** Recipient type: 'user' | 'team' | 'department' | 'company' */
+  recipientType: string;
+
+  /** ID of recipient (user/team/department ID, null for company) */
+  recipientId: number | null;
+
+  /** Download URL */
+  downloadUrl: string;
+
+  /** Preview URL (if available) */
+  previewUrl?: string;
+}
+
+/**
+ * Application state interface
+ * Central state managed by StateManager
+ */
+export interface AppState {
+  /** Currently active category */
+  currentCategory: DocumentCategory;
+
+  /** Current view mode */
+  viewMode: ViewMode;
+
+  /** Current sort option */
+  sortOption: SortOption;
+
+  /** Search query */
+  searchQuery: string;
+
+  /** All documents (unfiltered) */
+  documents: Document[];
+
+  /** Filtered and sorted documents */
+  filteredDocuments: Document[];
+
+  /** Loading state */
+  isLoading: boolean;
+
+  /** Error state */
+  error: string | null;
+
+  /** Currently selected document (for preview) */
+  selectedDocument: Document | null;
+
+  /** User role (determines UI permissions) */
+  userRole: UserRole | null;
+
+  /** Statistics */
+  stats: DocumentStats;
+}
+
+/**
+ * Document statistics
+ */
+export interface DocumentStats {
+  /** Total documents in current view */
+  total: number;
+
+  /** Unread documents */
+  unread: number;
+
+  /** Documents uploaded this week */
+  thisWeek: number;
+}
+
+/**
+ * Folder tree item for sidebar
+ */
+export interface FolderItem {
+  /** Category key */
+  category: DocumentCategory;
+
+  /** Display label */
+  label: string;
+
+  /** Icon HTML (SVG) */
+  icon: string;
+
+  /** Document count */
+  count: number;
+
+  /** Whether this folder is active */
+  isActive: boolean;
+}
+
+/**
+ * State observer callback
+ * Called when state changes
+ */
+export type StateObserver = (state: AppState) => void;
+
+/**
+ * Router route definition
+ */
+export interface Route {
+  /** Route path pattern (e.g., "/documents/:category") */
+  path: string;
+
+  /** Handler function */
+  handler: (params: RouteParams) => void;
+}
+
+/**
+ * Route parameters
+ */
+export type RouteParams = Record<string, string>;
+
+/**
+ * API response wrapper
+ */
+export interface ApiResponse<T> {
+  /** Success flag */
+  success: boolean;
+
+  /** Response data */
+  data: T | null;
+
+  /** Error message (if any) */
+  error: string | null;
+}
+
+/**
+ * Upload form data
+ */
+export interface UploadFormData {
+  /** PDF file */
+  file: File;
+
+  /** Recipient type */
+  recipientType: 'user' | 'team' | 'department' | 'company';
+
+  /** Recipient ID (null for company) */
+  recipientId: number | null;
+
+  /** Document category */
+  category: string;
+
+  /** Year */
+  year: number;
+
+  /** Month (1-12, null if not applicable) */
+  month: number | null;
+}
+
+/**
+ * Upload progress callback
+ */
+export type UploadProgressCallback = (progress: number) => void;
+
+/**
+ * Filter options
+ */
+export interface FilterOptions {
+  /** Categories to include */
+  categories?: string[];
+
+  /** Year filter */
+  year?: number;
+
+  /** Month filter */
+  month?: number;
+
+  /** Only unread */
+  onlyUnread?: boolean;
+
+  /** Date range */
+  dateFrom?: string;
+  dateTo?: string;
+}

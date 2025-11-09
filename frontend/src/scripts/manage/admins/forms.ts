@@ -592,16 +592,20 @@ export async function setPermissionType(admin: Admin): Promise<void> {
 }
 
 export function setRadioButton(value: string): void {
-  const radio = document.querySelector(`input[name="permissionType"][value="${value}"]`);
+  const radio = document.querySelector(`input[name="permission-type"][value="${value}"]`);
   if (radio) {
     (radio as HTMLInputElement).checked = true;
     console.info(`✅ Set permission type to: ${value}`);
+  } else {
+    console.error(`❌ Radio button not found for value: ${value}`);
   }
 }
 
 export async function setupDepartmentSelection(admin: Admin, deptContainer: HTMLElement | null): Promise<void> {
   if (!deptContainer) return;
 
+  // Remove hidden class and show container
+  deptContainer.classList.remove('hidden');
   deptContainer.style.display = 'block';
   await loadAndPopulateDepartments();
 
@@ -896,8 +900,12 @@ export async function showPermissionsModal(adminId: number): Promise<void> {
   const permissionsResponse = await loadAdminPermissions(adminId);
   console.info('Current permissions:', permissionsResponse);
 
-  // Note: Permissions table building removed - HTML structure uses radio buttons for permission types
-  // instead of individual department checkboxes. See permission-type radio handlers in index.ts
+  // Update admin object with loaded permissions
+  admin.departments = permissionsResponse.departments;
+  admin.hasAllAccess = permissionsResponse.hasAllAccess;
+
+  // Set permission type and load department list if needed
+  await setPermissionType(admin);
 
   // Show modal
   const modal = $$('#permissions-modal');
@@ -918,6 +926,12 @@ export async function savePermissionsHandler(): Promise<void> {
     await updatePermissions(currentAdminId);
     showSuccessAlert('Berechtigungen aktualisiert');
     closePermissionsModal();
+
+    // Reload admin list to update badge display - window function is set by index.ts
+    const manageWindow = window as unknown as import('./types').ManageAdminsWindow;
+    if (typeof manageWindow.reloadAdminsTable === 'function') {
+      await manageWindow.reloadAdminsTable();
+    }
   } catch (error) {
     console.error('Error saving permissions:', error);
     showErrorAlert('Netzwerkfehler beim Speichern');

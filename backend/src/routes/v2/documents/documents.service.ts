@@ -2,6 +2,9 @@
  * Documents v2 Service Layer
  * Handles all business logic for document management
  */
+import fs from 'fs/promises';
+import path from 'path';
+
 // Model classes are exported as PascalCase objects for backward compatibility
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import Department from '../../../models/department.js';
@@ -82,6 +85,11 @@ export interface DocumentCreateInput {
   tags?: string[];
   isPublic?: boolean;
   expiresAt?: Date;
+  // NEW: UUID-based storage
+  fileUuid?: string;
+  fileChecksum?: string;
+  filePath?: string;
+  storageType?: 'database' | 'filesystem' | 's3';
 }
 
 export interface DocumentUpdateInput {
@@ -160,33 +168,9 @@ class DocumentsService {
         totalCount = result.total;
       }
 
-      // Get read status for each document
+      // Enrich documents with metadata and access status
       const documentsWithStatus = await Promise.all(
-        documents.map(async (doc: DbDocument) => {
-          const isRead = await Document.isReadByUser(doc.id, userId, tenantId);
-          const apiDoc = dbToApi(doc);
-
-          // Map recipient IDs to proper names
-          if (apiDoc.userId === null) apiDoc.userId = undefined;
-          if (apiDoc.teamId === null) apiDoc.teamId = undefined;
-          if (apiDoc.departmentId === null) apiDoc.departmentId = undefined;
-
-          // Parse tags if stored as JSON string
-          if (typeof apiDoc.tags === 'string') {
-            try {
-              apiDoc.tags = JSON.parse(apiDoc.tags);
-            } catch {
-              apiDoc.tags = [];
-            }
-          }
-
-          return {
-            ...apiDoc,
-            isRead,
-            downloadUrl: `/api/v2/documents/${doc.id}/download`,
-            previewUrl: `/api/v2/documents/${doc.id}/preview`,
-          };
-        }),
+        documents.map((doc: DbDocument) => this.enrichDocumentWithMetadata(doc, userId, tenantId)),
       );
 
       return {
@@ -205,6 +189,62 @@ class DocumentsService {
       logger.error(`Error listing documents: ${(error as Error).message}`);
       throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to list documents', 500);
     }
+  }
+
+  /**
+   * Enrich document with metadata, read status, and URLs
+   * Extracted to reduce cognitive complexity
+   */
+  private async enrichDocumentWithMetadata(
+    doc: DbDocument,
+    userId: number,
+    tenantId: number,
+  ): Promise<Record<string, unknown>> {
+    const isRead = await Document.isReadByUser(doc.id, userId, tenantId);
+    const apiDoc = dbToApi(doc);
+
+    // Parse tags if stored as JSON string
+    if (typeof apiDoc.tags === 'string') {
+      try {
+        apiDoc.tags = JSON.parse(apiDoc.tags);
+      } catch {
+        apiDoc.tags = [];
+      }
+    }
+
+    // Map recipient ID based on recipient type
+    const recipientId = this.extractRecipientId(apiDoc);
+
+    // Map fields for frontend compatibility (camelCase)
+    return {
+      ...apiDoc,
+      // Frontend expects: filename = user-facing name, storedFilename = UUID-based
+      filename: apiDoc.originalName ?? doc.original_name ?? apiDoc.filename,
+      storedFilename: apiDoc.filename ?? doc.filename,
+      uploadedBy: apiDoc.createdBy ?? doc.created_by ?? userId,
+      uploaderName: apiDoc.uploadedByName ?? doc.uploaded_by_name ?? 'Unbekannt',
+      recipientId,
+      isRead,
+      downloadUrl: `/api/v2/documents/${doc.id}/download`,
+      previewUrl: `/api/v2/documents/${doc.id}/preview`,
+    };
+  }
+
+  /**
+   * Extract recipient ID based on recipient type
+   * Extracted to reduce cognitive complexity
+   */
+  private extractRecipientId(apiDoc: Record<string, unknown>): number | null {
+    if (apiDoc.recipientType === 'user') {
+      return typeof apiDoc.userId === 'number' ? apiDoc.userId : null;
+    }
+    if (apiDoc.recipientType === 'team') {
+      return typeof apiDoc.teamId === 'number' ? apiDoc.teamId : null;
+    }
+    if (apiDoc.recipientType === 'department') {
+      return typeof apiDoc.departmentId === 'number' ? apiDoc.departmentId : null;
+    }
+    return null;
   }
 
   /**
@@ -243,10 +283,10 @@ class DocumentsService {
     tenantId: number,
   ): Promise<Record<string, unknown>> {
     try {
-      const document = await Document.findById(id);
+      const document = await Document.findById(id, tenantId);
 
-      // Validate document exists and belongs to tenant
-      if (document?.tenant_id !== tenantId) {
+      // Validate document exists (tenant_id already filtered in query)
+      if (document === null) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -317,7 +357,7 @@ class DocumentsService {
         departmentId: data.departmentId,
         recipientType: data.recipientType as 'user' | 'team' | 'department' | 'company',
         category: data.category,
-        fileName: data.filename, // Model expects fileName
+        fileName: data.filename, // Model expects fileName (UUID-based)
         fileContent: data.fileContent,
         description: data.description,
         year: data.year,
@@ -325,7 +365,34 @@ class DocumentsService {
         createdBy: createdBy,
         tags: data.tags,
         mimeType: data.mimeType, // Pass the mime type to store it correctly
+        // NEW: UUID-based storage
+        fileUuid: data.fileUuid,
+        fileChecksum: data.fileChecksum,
+        storageType: data.storageType ?? 'filesystem',
       };
+
+      // Write file to disk if storageType is 'filesystem' and filePath is provided
+      if (data.storageType === 'filesystem' && data.filePath) {
+        try {
+          // Build absolute path from project root
+          // Path is validated via path.join() which prevents path traversal attacks
+          const absolutePath = path.join(process.cwd(), data.filePath);
+          const directory = path.dirname(absolutePath);
+
+          // Create directory structure recursively
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based, safe from traversal
+          await fs.mkdir(directory, { recursive: true });
+
+          // Write file to disk
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based, safe from traversal
+          await fs.writeFile(absolutePath, data.fileContent);
+
+          logger.info(`File written successfully: ${data.filePath}`);
+        } catch (fsError: unknown) {
+          logger.error(`Failed to write file to disk: ${(fsError as Error).message}`);
+          throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to write file to disk', 500);
+        }
+      }
 
       const documentId = await Document.create(documentData);
 
@@ -393,15 +460,15 @@ class DocumentsService {
     tenantId: number,
   ): Promise<void> {
     try {
-      const document = await Document.findById(id);
+      const document = await Document.findById(id, tenantId);
 
-      if (document?.tenant_id !== tenantId) {
+      if (document === null) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
       await this.checkUpdatePermission(document, userId, tenantId);
       const updateData = this.buildUpdateData(data);
-      await Document.update(id, updateData);
+      await Document.update(id, updateData, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -420,9 +487,9 @@ class DocumentsService {
   async deleteDocument(id: number, userId: number, tenantId: number): Promise<void> {
     try {
       // Get document
-      const document = await Document.findById(id);
+      const document = await Document.findById(id, tenantId);
 
-      if (document?.tenant_id !== tenantId) {
+      if (document === null) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -441,7 +508,7 @@ class DocumentsService {
         );
       }
 
-      await Document.delete(id);
+      await Document.delete(id, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -466,9 +533,9 @@ class DocumentsService {
   ): Promise<void> {
     try {
       // Get document
-      const document = await Document.findById(id);
+      const document = await Document.findById(id, tenantId);
 
-      if (document?.tenant_id !== tenantId) {
+      if (document === null) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -491,7 +558,7 @@ class DocumentsService {
         isArchived: archive,
       };
 
-      await Document.update(id, updateData);
+      await Document.update(id, updateData, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -518,9 +585,9 @@ class DocumentsService {
     fileSize: number;
   }> {
     try {
-      const document = await Document.findById(id);
+      const document = await Document.findById(id, tenantId);
 
-      if (document?.tenant_id !== tenantId) {
+      if (document === null) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
       }
 
@@ -536,10 +603,39 @@ class DocumentsService {
       }
 
       // Increment download count
-      await Document.incrementDownloadCount(id);
+      await Document.incrementDownloadCount(id, tenantId);
+
+      // Get file content: try DB first, then filesystem
+      let content: Buffer;
+
+      if (document.file_content != null) {
+        // File stored in database (Buffer exists)
+        content = document.file_content;
+      } else if (document.file_path != null) {
+        // File stored on filesystem
+        const fs = await import('fs/promises');
+        const path = await import('path');
+
+        // Construct absolute path (file_path is relative from project root)
+        // Safe: we already checked file_path != null above
+        const absolutePath = path.join(process.cwd(), String(document.file_path));
+
+        try {
+          content = await fs.readFile(absolutePath);
+        } catch (fsError) {
+          logger.error(`Failed to read file from filesystem: ${absolutePath}`, fsError);
+          throw new ServiceError(
+            ERROR_CODES.NOT_FOUND,
+            'Document file not found on filesystem',
+            404,
+          );
+        }
+      } else {
+        throw new ServiceError(ERROR_CODES.NOT_FOUND, 'Document has no content or file path', 404);
+      }
 
       return {
-        content: document.file_content ?? Buffer.from(''),
+        content,
         originalName: document.original_name ?? document.filename ?? '',
         mimeType: document.mime_type ?? 'application/octet-stream',
         fileSize: document.file_size ?? 0,

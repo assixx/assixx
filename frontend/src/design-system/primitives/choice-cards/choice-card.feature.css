@@ -35,7 +35,7 @@
 
   /* Glassmorphism */
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
   backdrop-filter: blur(10px);
@@ -242,7 +242,7 @@
   transform: translate(-50%, -50%) rotate(-5deg);
 
   padding: 8px 16px;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 
   font-size: 14px;
   font-weight: 600;

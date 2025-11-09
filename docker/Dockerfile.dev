@@ -11,17 +11,15 @@ RUN npm install -g pnpm@latest tsx nodemon
 # Arbeitsverzeichnis
 WORKDIR /app
 
-# Package files kopieren und installieren
+# Package files kopieren - pnpm workspace braucht alle package.json VORHER
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
-# Install with frozen lockfile (onlyBuiltDependencies in package.json handles script blocking)
-RUN pnpm install --frozen-lockfile
-
-# Frontend package files kopieren
-# In einem pnpm workspace gibt es nur einen gemeinsamen Lockfile im Root
 COPY frontend/package.json ./frontend/
-# Der Lockfile ist bereits im Root kopiert, daher nur pnpm install vom Root aus
+COPY backend/package.json ./backend/
+
+# EINMAL installieren - pnpm findet automatisch alle Workspaces (frontend + backend)
+# onlyBuiltDependencies in package.json verhindert build scripts während Docker build
 RUN pnpm install --frozen-lockfile
 
 # Der Rest wird über Volumes gemountet

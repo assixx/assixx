@@ -108,6 +108,23 @@ export const Primary = {
 };
 
 /**
+ * UPLOAD BUTTON
+ * Primary button with upload icon for file uploads
+ * Use for: Document upload, File import, Media upload actions
+ */
+export const Upload = {
+  args: {
+    label: 'Hochladen',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+    icon: 'fa-upload',
+  },
+  render: (args) => createButton({ ...args, variant: 'primary' }),
+};
+
+/**
  * PRIMARY-FIRST BUTTON
  * Transparent hero CTA (no background!)
  * Use for: Landing page CTAs, Login, Register, Sign Up

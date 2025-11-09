@@ -50,7 +50,7 @@
   padding: var(--spacing-3) var(--spacing-4);
   padding-left: calc(var(--spacing-4) * 2 + 16px); /* Space for icon */
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 
   font-family: var(--font-family-sans);
   font-size: 14px;

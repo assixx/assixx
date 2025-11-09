@@ -121,7 +121,7 @@
   padding: var(--spacing-2) var(--spacing-4);
   border: 1px solid transparent;
   border-bottom: none;
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 
   color: var(--color-text-secondary);
 

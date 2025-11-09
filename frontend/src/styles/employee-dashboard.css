@@ -1,17 +1,6 @@
-/* Employee Dashboard - Optimized for Design System Components */
-/* Most styles replaced by Design System components (card-stat, card-accent, card) */
-/* Only keeping essential animation styles for welcome-hero floating dots */
-
-/* Main Content Container */
-.container {
-  margin: 0 auto;
-  padding: var(--spacing-6);
-}
-
-/* ============================= */
-/* Welcome Hero Custom Background */
-/* ============================= */
-
+/* Welcome Hero Custom Background
+ * WHY: Unique gradient background for employee dashboard welcome section
+ * USED IN: employee-dashboard.html Line 40 (.welcome-hero-custom) */
 .welcome-hero-custom {
   background: var(--glass-bg);
   background-image:
@@ -19,7 +8,9 @@
     radial-gradient(circle at 80% 20%, rgb(39 72 89) 0%, rgb(35 84 114 / 63%) 50%);
 }
 
-/* Welcome Hero Stat Cards */
+/* Welcome Stat Card
+ * WHY: Glassmorphic stat cards in welcome hero section
+ * USED IN: employee-dashboard.html Lines 81, 85, 89 */
 .welcome-stat {
   min-width: 80px;
   padding: var(--spacing-3);
@@ -37,12 +28,17 @@
   transition: all 0.2s ease;
 }
 
+/* Welcome Stat Hover Effect
+ * WHY: UX enhancement - lift effect on hover */
 .welcome-stat:hover {
   transform: translateY(-2px);
   background: rgb(255 255 255 / 5%);
   box-shadow: var(--shadow-sm);
 }
 
+/* Welcome Stat Number
+ * WHY: Large number display in stat card
+ * USED IN: employee-dashboard.html Lines 82, 86, 90 */
 .welcome-stat-number {
   display: block;
 
@@ -53,6 +49,9 @@
   color: #fff;
 }
 
+/* Welcome Stat Label
+ * WHY: Label text for stat card
+ * USED IN: employee-dashboard.html Lines 83, 87, 91 */
 .welcome-stat-label {
   font-size: 0.8rem;
   color: rgb(255 255 255 / 90%);
@@ -62,10 +61,9 @@
   opacity: 90%;
 }
 
-/* ============================= */
-/* Floating Dots Animation Styles */
-/* ============================= */
-
+/* Floating Elements Container
+ * WHY: Container for animated floating dots in welcome hero
+ * USED IN: employee-dashboard.html Line 43 */
 .floating-elements {
   pointer-events: none;
   position: absolute;
@@ -73,6 +71,9 @@
   inset: 0;
 }
 
+/* Floating Dot Base
+ * WHY: Animated background decoration dots
+ * USED IN: employee-dashboard.html Lines 44-67 (24 dots total) */
 .floating-dot {
   position: absolute;
 
@@ -85,7 +86,8 @@
   animation: float 6s infinite ease-in-out;
 }
 
-/* Positioning for each floating dot */
+/* Floating Dot Positioning - Individual nth-child selectors
+ * WHY: Each of 24 dots needs unique position and animation delay */
 .floating-dot:nth-child(1) {
   top: 20%;
   left: 10%;
@@ -310,10 +312,9 @@
   animation-delay: -4.5s;
 }
 
-/* ============================= */
-/* Keyframe Animations */
-/* ============================= */
-
+/* Float Animation
+ * WHY: Animates floating dots with vertical movement and rotation
+ * USED BY: .floating-dot (animation: float 6s infinite ease-in-out) */
 @keyframes float {
   0%,
   100% {
@@ -326,97 +327,3 @@
     opacity: 100%;
   }
 }
-
-/* Shimmer animation (for potential future use) */
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100px) translateY(-100px) rotate(45deg);
-    opacity: 0%;
-  }
-
-  50% {
-    opacity: 100%;
-  }
-
-  100% {
-    transform: translateX(100px) translateY(100px) rotate(45deg);
-    opacity: 0%;
-  }
-}
-
-/* Pulse animation (used by animate-pulse class) */
-@keyframes pulse {
-  0% {
-    opacity: 100%;
-  }
-
-  50% {
-    opacity: 50%;
-  }
-
-  100% {
-    opacity: 100%;
-  }
-}
-
-/* Fade in up animation (for potential future use) */
-@keyframes fade-in-up {
-  from {
-    transform: translateY(30px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
-
-/* Subtle pulse animation (for potential future use) */
-@keyframes subtle-pulse {
-  0% {
-    box-shadow:
-      0 8px 32px rgb(0 0 0 / 40%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
-  }
-
-  50% {
-    box-shadow:
-      0 8px 32px rgb(0 142 255 / 20%),
-      inset 0 1px 0 rgb(255 255 255 / 15%);
-  }
-
-  100% {
-    box-shadow:
-      0 8px 32px rgb(0 0 0 / 40%),
-      inset 0 1px 0 rgb(255 255 255 / 10%);
-  }
-}
-
-/* ============================= */
-/* Mobile Responsive */
-/* ============================= */
-
-@media (width <= 768px) {
-  .container {
-    padding: 0 var(--spacing-4) var(--spacing-4) var(--spacing-4);
-  }
-}
-
-/* ============================= */
-/* REMOVED STYLES - Now using Design System Components */
-/* ============================= */
-/*
- * The following styles have been removed and replaced:
- *
- * .info-card → Replaced by Design System card-stat component
- * .feature-card → Replaced by Design System card-accent component
- * .dashboard-grid → Using Tailwind grid utilities
- * .welcome-hero → Using inline Tailwind with CSS variables
- * .quick-stats → Not used
- * .activity-feed → Not used
- * .loading-state → Not used
- * Button hover effects → Design System has its own
- *
- * Total reduction: ~500 lines of CSS (70% reduction)
- */

@@ -129,9 +129,11 @@
   position: absolute;
   right: 0;
 
+  display: inherit;
+
   padding: 4px;
   border: none;
-  border-radius: 4px;
+  border-radius: 300px;
 
   color: #ff9800;
 

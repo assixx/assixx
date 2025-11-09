@@ -31,127 +31,145 @@
       <!-- Main Content -->
       <main class="flex-1 min-h-[calc(100vh-60px)] p-4 bg-[var(--background-primary)]">
         <div id="breadcrumb-container"></div>
+
         <div class="container">
-          <!-- Page Header -->
-          <div class="page-header"></div>
+          <div class="card">
+            <!-- Card Header -->
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-search mr-2"></i>
+                Dokumente suchen
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Durchsuchen Sie alle verfügbaren Dokumente</p>
 
-          <!-- Search Section -->
-          <div class="documents-section" id="search-container">
-            <div class="search-bar-container">
-              <div class="form-field">
-                <div class="form-field__input-wrapper">
-                  <i class="fas fa-search form-field__icon"></i>
-                  <input
-                    type="text"
-                    id="searchInput"
-                    class="form-field__control form-field__control--with-icon"
-                    placeholder="Suchen Sie nach Dokumentname, Beschreibung oder Uploader..."
-                    autocomplete="off"
-                  />
+              <!-- Search & Controls -->
+              <div class="flex gap-4 items-start mt-4">
+                <!-- Search Input (Left) -->
+                <div class="search-input-wrapper flex-1" id="search-wrapper">
+                  <div class="search-input" id="search-container">
+                    <i class="search-input__icon fas fa-search"></i>
+                    <input
+                      type="search"
+                      id="searchInput"
+                      class="search-input__field"
+                      placeholder="Suchen Sie nach Dokumentname, Beschreibung oder Uploader..."
+                      autocomplete="off"
+                    />
+                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="search-clear">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <div class="search-input__spinner"></div>
+                  </div>
+                  <div class="search-input__results" id="search-results"></div>
+                </div>
+
+                <!-- Sort Dropdown (Right) -->
+                <div class="flex-shrink-0">
+                  <input type="hidden" id="sortValue" value="newest" />
+                  <div class="dropdown" id="sort-dropdown">
+                    <div class="dropdown__trigger gap-2" id="sort-trigger">
+                      <span>Neueste zuerst</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="dropdown__menu" id="sort-menu">
+                      <div class="dropdown__option" data-value="newest">Neueste zuerst</div>
+                      <div class="dropdown__option" data-value="oldest">Älteste zuerst</div>
+                      <div class="dropdown__option" data-value="name">Nach Name</div>
+                      <div class="dropdown__option" data-value="size">Nach Größe</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="card__body">
+              <!-- Results Count -->
+              <div class="mb-4">
+                <span class="text-[var(--color-text-secondary)]">Gefundene Dokumente:</span>
+                <span class="font-semibold ml-2" id="totalDocs">0</span>
+              </div>
+
+              <!-- Documents Container -->
+              <div id="documentsContainer">
+                <!-- Empty State (hidden by default) -->
+                <div id="documents-empty" class="empty-state u-hidden">
+                  <div class="empty-state__icon">
+                    <i class="fas fa-inbox"></i>
+                  </div>
+                  <h3 class="empty-state__title">Keine Dokumente verfügbar</h3>
+                  <p class="empty-state__description">
+                    Es wurden noch keine Dokumente hochgeladen oder Sie haben keine Zugriffsrechte auf Dokumente.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
-
-          <!-- Sort Controls -->
-          <div class="documents-controls">
-            <div class="control-left">
-              <div class="stats-container">
-                <div class="stat-item">
-                  <span class="stat-label">Gefundene Dokumente:</span>
-                  <span class="stat-value" id="totalDocs">0</span>
-                </div>
-              </div>
-            </div>
-            <div class="control-right">
-              <div class="form-field form-field--inline">
-                <label class="form-field__label" for="sortSelect">
-                  <i class="fas fa-sort"></i>
-                  Sortieren
-                </label>
-                <select class="form-field__control form-field__control--select" id="sortSelect" name="sort">
-                  <option value="newest">Neueste zuerst</option>
-                  <option value="oldest">Älteste zuerst</option>
-                  <option value="name">Nach Name</option>
-                  <option value="size">Nach Größe</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <!-- Documents Container -->
-          <div id="documentsContainer" class="documents-container">
-            <div class="empty-state">
-              <i class="fas fa-search"></i>
-              <h3>Suche starten</h3>
-              <p>Geben Sie einen Suchbegriff ein, um Dokumente zu finden.</p>
-            </div>
-          </div>
+          <!-- End of card -->
         </div>
+        <!-- End of container -->
       </main>
     </div>
 
     <!-- Document Preview Modal -->
-    <div id="documentPreviewModal" class="modal u-hidden">
-      <div class="modal-content modal-large">
-        <div class="modal-header">
-          <h2>
-            <i class="fas fa-file-alt me-2"></i>
+    <div id="documentPreviewModal" class="modal-overlay">
+      <div class="ds-modal ds-modal--lg">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-file-alt mr-2"></i>
             <span id="modalDocumentTitle">Dokument Vorschau</span>
-          </h2>
-          <button class="close-button" data-action="close-document-modal">
+          </h3>
+          <button type="button" class="ds-modal__close" data-action="close-document-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
-        <div class="modal-body">
-          <div class="document-preview-container">
-            <iframe id="documentPreviewFrame" class="document-preview-frame" title="Dokument Vorschau"></iframe>
-            <div id="previewError" class="preview-error u-hidden">
-              <i class="fas fa-exclamation-circle"></i>
-              <p>Vorschau nicht verfügbar</p>
-              <small>Das Dokument kann nicht in der Vorschau angezeigt werden.</small>
-            </div>
+        <div class="ds-modal__body">
+          <!-- Document Info Notice -->
+          <div class="mb-4 text-center py-10 bg-[var(--background-secondary)] rounded-lg">
+            <i class="fas fa-file-pdf text-6xl text-[var(--color-primary)] mb-4"></i>
+            <p class="text-[var(--color-text-primary)]">Dokument-Details werden unten angezeigt.</p>
+            <p class="text-sm text-[var(--color-text-secondary)] mt-2">Verwenden Sie "Herunterladen", um das Dokument zu öffnen.</p>
           </div>
-          <div class="document-info">
-            <div class="info-grid">
-              <div class="info-item">
-                <i class="fas fa-file"></i>
-                <div>
-                  <label>Dateiname</label>
-                  <span id="modalFileName">-</span>
-                </div>
+
+          <!-- Document Info -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[var(--background-secondary)] rounded-lg">
+            <div class="flex items-start gap-3">
+              <i class="fas fa-file text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+              <div class="min-w-0 flex-1">
+                <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Dateiname</label>
+                <span id="modalFileName" class="text-[var(--color-text-primary)] font-medium block break-words">-</span>
               </div>
-              <div class="info-item">
-                <i class="fas fa-weight"></i>
-                <div>
-                  <label>Größe</label>
-                  <span id="modalFileSize">-</span>
-                </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <i class="fas fa-weight text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+              <div class="min-w-0 flex-1">
+                <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Größe</label>
+                <span id="modalFileSize" class="text-[var(--color-text-primary)] font-medium block">-</span>
               </div>
-              <div class="info-item">
-                <i class="fas fa-user"></i>
-                <div>
-                  <label>Hochgeladen von</label>
-                  <span id="modalUploadedBy">-</span>
-                </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <i class="fas fa-user text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+              <div class="min-w-0 flex-1">
+                <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Hochgeladen von</label>
+                <span id="modalUploadedBy" class="text-[var(--color-text-primary)] font-medium block break-words">-</span>
               </div>
-              <div class="info-item">
-                <i class="fas fa-calendar"></i>
-                <div>
-                  <label>Datum</label>
-                  <span id="modalUploadDate">-</span>
-                </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <i class="fas fa-calendar text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+              <div class="min-w-0 flex-1">
+                <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Datum</label>
+                <span id="modalUploadDate" class="text-[var(--color-text-primary)] font-medium block">-</span>
               </div>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" data-action="close-document-modal">
-            <i class="fas fa-times me-2"></i>
+        <div class="ds-modal__footer">
+          <button type="button" class="btn btn-secondary" data-action="close-document-modal">
+            <i class="fas fa-times mr-2"></i>
             Schließen
           </button>
-          <button class="btn btn-primary" id="downloadButton" data-action="download-document">
-            <i class="fas fa-download me-2"></i>
+          <button type="button" class="btn btn-primary" id="downloadButton" data-action="download-document">
+            <i class="fas fa-download mr-2"></i>
             Herunterladen
           </button>
         </div>
@@ -160,7 +178,7 @@
 
     <!-- Scripts -->
     <script type="module" src="/scripts/auth/index.ts"></script>
-    <script type="module" src="/scripts/documents/search.ts"></script>
+    <script type="module" src="/scripts/documents/search/index.ts"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
 

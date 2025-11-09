@@ -9,7 +9,7 @@ import { loadAPIRoutes } from './loaders/api-routes.js';
 import { loadErrorHandler } from './loaders/error-handler.js';
 import { loadExpress } from './loaders/express.js';
 import { loadHealthCheck } from './loaders/health.js';
-import { loadLegacyCompat } from './loaders/legacy-compat.js';
+import { loadLoginRedirect } from './loaders/login-redirect.js';
 import { loadMiddleware } from './loaders/middleware.js';
 import { loadPageRoutes } from './loaders/page-routes.js';
 import { loadRateLimiting } from './loaders/rate-limiting.js';
@@ -51,8 +51,8 @@ loadAPIRoutes(app);
 // 8. Static file serving (must be after API routes)
 loadStaticFiles(app);
 
-// 9. Legacy compatibility routes
-loadLegacyCompat(app);
+// 9. Login redirect (/login → /pages/login)
+loadLoginRedirect(app);
 
 // 10. Error handling (MUST BE LAST!)
 loadErrorHandler(app);

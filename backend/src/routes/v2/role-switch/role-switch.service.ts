@@ -4,6 +4,7 @@
  */
 import jwt from 'jsonwebtoken';
 
+import { ACCESS_TOKEN_EXPIRES } from '../../../config/token.config.js';
 import rootLog from '../../../models/rootLog.js';
 import userModel, { DbUser } from '../../../models/user/index.js';
 
@@ -65,6 +66,12 @@ async function verifyUserTenant(userId: number, tenantId: number): Promise<DbUse
 /**
  * Generate JWT token with role switch information
  * SECURITY: Always preserves original role, tenant_id, and user_id
+ *
+ * CRITICAL FIX (2025-11-07): Changed from '24h' to ACCESS_TOKEN_EXPIRES ('30m')
+ * - SECURITY BUG: Role-switch tokens lived 48x longer than normal login tokens!
+ * - Users could stay logged in for 24 hours after role switch (vs 30 min for normal login)
+ * - Now consistent: ALL tokens expire after 30 minutes
+ *
  * @param user - The user parameter
  * @param activeRole - The activeRole parameter
  * @param isRoleSwitched - The isRoleSwitched parameter
@@ -88,7 +95,7 @@ function generateToken(user: DbUser, activeRole: string, isRoleSwitched: boolean
       type: 'access' as const,
     },
     JWT_SECRET,
-    { expiresIn: '24h' },
+    { expiresIn: ACCESS_TOKEN_EXPIRES }, // FIXED: Was '24h', now consistent with all tokens ('30m')
   );
 }
 

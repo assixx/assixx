@@ -163,6 +163,7 @@
   --breakpoint-xl: 80rem; /* 1280px - Standard laptops, HD monitors */
   --breakpoint-qhd: 90rem; /* 1440px - QHD monitors (2560×1440) - CRITICAL! */
   --breakpoint-fhd: 100rem; /* 1600px - Large desktop displays */
+  --breakpoint-flhd: 111rem; /* 1776px - Full Large HD displays */
   --breakpoint-2xl: 96rem; /* 1536px - Standard large displays (kept for compatibility) */
   --breakpoint-3xl: 120rem; /* 1920px - Full HD wide displays, 4K scaled */
 

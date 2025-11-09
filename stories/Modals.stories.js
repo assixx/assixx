@@ -685,3 +685,397 @@ export const AllSizes = {
     return wrapper;
   },
 };
+
+/**
+ * Upload Modal
+ *
+ * Modal for uploading documents with drag-and-drop support.
+ * Used in documents-explorer for admins and root users.
+ */
+export const UploadModal = {
+  args: {
+    maxFileSize: '10 MB',
+    acceptedFormats: '.pdf, .doc, .docx, .xls, .xlsx, .jpg, .png',
+    showProgress: false,
+    uploadProgress: 0,
+  },
+  argTypes: {
+    maxFileSize: {
+      control: 'text',
+      description: 'Maximum file size allowed',
+    },
+    acceptedFormats: {
+      control: 'text',
+      description: 'Accepted file formats',
+    },
+    showProgress: {
+      control: 'boolean',
+      description: 'Show upload progress bar',
+    },
+    uploadProgress: {
+      control: { type: 'range', min: 0, max: 100 },
+      description: 'Upload progress percentage',
+    },
+  },
+  render: (args) => {
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+      <div class="modal-overlay modal-overlay--active">
+        <div class="ds-modal ds-modal--lg">
+          <div class="ds-modal__header">
+            <h3 class="ds-modal__title">
+              <i class="fas fa-upload mr-2"></i>
+              Dokument hochladen
+            </h3>
+            <button type="button" class="ds-modal__close" data-action="close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="ds-modal__body">
+            <form style="display: grid; gap: var(--spacing-5);">
+
+              <!-- Upload Area -->
+              <div class="upload-zone" style="
+                border: 2px dashed var(--color-border);
+                border-radius: 12px;
+                padding: 40px;
+                text-align: center;
+                background: rgba(59, 130, 246, 0.05);
+                transition: all 0.3s ease;
+                cursor: pointer;
+              " onmouseover="this.style.borderColor='var(--color-primary)'; this.style.background='rgba(59, 130, 246, 0.1)'"
+                 onmouseout="this.style.borderColor='var(--color-border)'; this.style.background='rgba(59, 130, 246, 0.05)'">
+                <i class="fas fa-cloud-upload-alt" style="font-size: 48px; color: var(--color-primary); margin-bottom: 16px;"></i>
+                <h4 style="color: var(--color-text-primary); margin-bottom: 8px;">
+                  Datei hier ablegen oder klicken zum Auswählen
+                </h4>
+                <p style="color: var(--color-text-secondary); font-size: 14px; margin-bottom: 8px;">
+                  Maximale Dateigröße: ${args.maxFileSize}
+                </p>
+                <p style="color: var(--color-text-tertiary); font-size: 12px;">
+                  Unterstützte Formate: ${args.acceptedFormats}
+                </p>
+                <input type="file" style="display: none;" accept="${args.acceptedFormats}" />
+              </div>
+
+              <!-- Selected File Display (when file is selected) -->
+              <div class="selected-file" style="
+                display: none;
+                padding: 16px;
+                background: var(--background-secondary);
+                border-radius: 8px;
+                border: 1px solid var(--color-border);
+              ">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <i class="fas fa-file-pdf" style="font-size: 32px; color: var(--color-danger);"></i>
+                  <div style="flex: 1;">
+                    <div style="color: var(--color-text-primary); font-weight: 500;">Beispieldokument.pdf</div>
+                    <div style="color: var(--color-text-secondary); font-size: 14px;">2.5 MB</div>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-danger" style="padding: 4px 8px;">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Upload Progress (shown during upload) -->
+              ${args.showProgress ? `
+              <div class="upload-progress" style="
+                padding: 16px;
+                background: var(--background-secondary);
+                border-radius: 8px;
+                border: 1px solid var(--color-border);
+              ">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                  <span style="color: var(--color-text-primary); font-size: 14px;">Hochladen...</span>
+                  <span style="color: var(--color-text-secondary); font-size: 14px;">${args.uploadProgress}%</span>
+                </div>
+                <div class="progress" style="height: 8px;">
+                  <div class="progress__bar" style="width: ${args.uploadProgress}%; background: var(--gradient-primary);"></div>
+                </div>
+              </div>
+              ` : ''}
+
+              <!-- Category Selection - Custom Dropdown -->
+              <div class="form-field">
+                <label class="form-field__label form-field__label--required">
+                  Kategorie
+                </label>
+                <div class="dropdown" style="margin-top: var(--spacing-2);">
+                  <button type="button" class="dropdown__trigger" style="width: 100%;">
+                    <span style="display: flex; align-items: center; gap: 8px;">
+                      <i class="fas fa-folder"></i>
+                      <span>Kategorie wählen</span>
+                    </span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                  <div class="dropdown__menu" style="display: none;">
+                    <div class="dropdown__option" data-value="personal">
+                      <i class="fas fa-user"></i> Persönliche Dokumente
+                    </div>
+                    <div class="dropdown__option" data-value="team">
+                      <i class="fas fa-users"></i> Team Dokumente
+                    </div>
+                    <div class="dropdown__option" data-value="department">
+                      <i class="fas fa-building"></i> Abteilungsdokumente
+                    </div>
+                    <div class="dropdown__option" data-value="company">
+                      <i class="fas fa-briefcase"></i> Firmendokumente
+                    </div>
+                    <div class="dropdown__option" data-value="payroll">
+                      <i class="fas fa-money-bill-wave"></i> Gehaltsabrechnungen
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Document Name -->
+              <div class="form-field">
+                <label class="form-field__label form-field__label--required" for="docName">
+                  Dokumentname
+                </label>
+                <input
+                  type="text"
+                  id="docName"
+                  class="form-field__control"
+                  placeholder="z.B. Arbeitsvertrag 2025"
+                  required
+                >
+                <small class="form-field__message">
+                  Der Name wird in der Dokumentenliste angezeigt
+                </small>
+              </div>
+
+              <!-- Description -->
+              <div class="form-field">
+                <label class="form-field__label" for="docDescription">
+                  Beschreibung
+                </label>
+                <textarea
+                  id="docDescription"
+                  class="form-field__control"
+                  rows="3"
+                  placeholder="Optionale Beschreibung des Dokuments..."
+                ></textarea>
+              </div>
+
+              <!-- Target Selection (for Admin/Root) -->
+              <div class="form-field">
+                <label class="form-field__label">
+                  Sichtbarkeit
+                </label>
+                <div style="display: grid; gap: 12px;">
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="visibility" value="private" checked>
+                    <span style="color: var(--color-text-primary);">
+                      <i class="fas fa-lock mr-2"></i>Privat (nur für mich)
+                    </span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="visibility" value="team">
+                    <span style="color: var(--color-text-primary);">
+                      <i class="fas fa-users mr-2"></i>Team
+                    </span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="visibility" value="department">
+                    <span style="color: var(--color-text-primary);">
+                      <i class="fas fa-building mr-2"></i>Abteilung
+                    </span>
+                  </label>
+                  <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="radio" name="visibility" value="company">
+                    <span style="color: var(--color-text-primary);">
+                      <i class="fas fa-briefcase mr-2"></i>Gesamte Firma
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Tags -->
+              <div class="form-field">
+                <label class="form-field__label" for="docTags">
+                  Tags
+                </label>
+                <input
+                  type="text"
+                  id="docTags"
+                  class="form-field__control"
+                  placeholder="z.B. vertrag, 2025, personal (kommagetrennt)"
+                >
+                <small class="form-field__message">
+                  Tags helfen beim späteren Suchen und Filtern
+                </small>
+              </div>
+
+            </form>
+          </div>
+          <div class="ds-modal__footer">
+            <button type="button" class="btn btn-secondary">
+              Abbrechen
+            </button>
+            <button type="button" class="btn btn-primary">
+              <i class="fas fa-upload mr-2"></i>
+              Hochladen
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    return wrapper;
+  },
+};
+
+/**
+ * Document Preview Modal
+ *
+ * Modal for previewing PDF documents with metadata display.
+ * Used in documents-search and other document pages.
+ */
+export const DocumentPreviewModal = {
+  args: {
+    state: 'loaded',
+    documentName: 'Gehaltsabrechnung_Januar_2025.pdf',
+    fileName: 'Gehaltsabrechnung_Januar_2025.pdf',
+    fileSize: '2.9 MB',
+    uploadedBy: 'Max Mustermann',
+    uploadDate: '06.11.2025',
+  },
+  argTypes: {
+    state: {
+      control: 'select',
+      options: ['loading', 'loaded', 'error'],
+      description: 'Preview state',
+    },
+    documentName: {
+      control: 'text',
+      description: 'Document title (displayed in header)',
+    },
+    fileName: {
+      control: 'text',
+      description: 'File name',
+    },
+    fileSize: {
+      control: 'text',
+      description: 'File size (formatted)',
+    },
+    uploadedBy: {
+      control: 'text',
+      description: 'Uploader name',
+    },
+    uploadDate: {
+      control: 'text',
+      description: 'Upload date (formatted)',
+    },
+  },
+  render: (args) => {
+    const wrapper = document.createElement('div');
+
+    // Determine iframe content based on state
+    let iframeContent = '';
+    let previewErrorVisible = 'u-hidden';
+
+    if (args.state === 'loading') {
+      iframeContent = `
+        <div class="flex justify-center items-center h-full">
+          <div class="spinner"></div>
+          <span class="ml-3 text-[var(--color-text-secondary)]">Lade Vorschau...</span>
+        </div>
+      `;
+      previewErrorVisible = 'u-hidden';
+    } else if (args.state === 'error') {
+      iframeContent = '';
+      previewErrorVisible = '';
+    } else {
+      // Loaded state - show placeholder for PDF
+      iframeContent = `
+        <div class="flex flex-col justify-center items-center h-full bg-[var(--background-tertiary)] text-[var(--color-text-secondary)]">
+          <i class="fas fa-file-pdf text-6xl mb-4" style="color: var(--color-danger);"></i>
+          <p class="font-medium mb-2">PDF Vorschau</p>
+          <small>In production würde hier das PDF im iframe angezeigt</small>
+        </div>
+      `;
+      previewErrorVisible = 'u-hidden';
+    }
+
+    wrapper.innerHTML = `
+      <div class="modal-overlay modal-overlay--active">
+        <div class="ds-modal ds-modal--lg">
+          <div class="ds-modal__header">
+            <h3 class="ds-modal__title">
+              <i class="fas fa-file-alt mr-2"></i>
+              <span id="modalDocumentTitle">${args.documentName}</span>
+            </h3>
+            <button type="button" class="ds-modal__close" data-action="close-document-modal">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="ds-modal__body">
+            <!-- Document Preview iframe -->
+            <div class="mb-4 relative">
+              ${
+                args.state === 'loaded' || args.state === 'loading'
+                  ? `
+              <div class="w-full h-[600px] border border-[var(--color-border)] rounded-lg overflow-hidden">
+                ${iframeContent}
+              </div>
+              `
+                  : ''
+              }
+              <div id="previewError" class="${previewErrorVisible} text-center py-10">
+                <i class="fas fa-exclamation-circle text-4xl text-[var(--color-text-secondary)] mb-4"></i>
+                <p class="text-[var(--color-text-primary)] mb-2">Vorschau nicht verfügbar</p>
+                <small class="text-[var(--color-text-secondary)]">Das Dokument kann nicht in der Vorschau angezeigt werden.</small>
+              </div>
+            </div>
+
+            <!-- Document Info Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[var(--background-secondary)] rounded-lg">
+              <div class="flex items-start gap-3">
+                <i class="fas fa-file text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+                <div class="min-w-0 flex-1">
+                  <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Dateiname</label>
+                  <span id="modalFileName" class="text-[var(--color-text-primary)] font-medium block break-words">${args.fileName}</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <i class="fas fa-weight text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+                <div class="min-w-0 flex-1">
+                  <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Größe</label>
+                  <span id="modalFileSize" class="text-[var(--color-text-primary)] font-medium block">${args.fileSize}</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <i class="fas fa-user text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+                <div class="min-w-0 flex-1">
+                  <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Hochgeladen von</label>
+                  <span id="modalUploadedBy" class="text-[var(--color-text-primary)] font-medium block break-words">${args.uploadedBy}</span>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <i class="fas fa-calendar text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
+                <div class="min-w-0 flex-1">
+                  <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Datum</label>
+                  <span id="modalUploadDate" class="text-[var(--color-text-primary)] font-medium block">${args.uploadDate}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ds-modal__footer">
+            <button type="button" class="btn btn-secondary" data-action="close-document-modal">
+              <i class="fas fa-times mr-2"></i>
+              Schließen
+            </button>
+            <button type="button" class="btn btn-primary" id="downloadButton" data-action="download-document">
+              <i class="fas fa-download mr-2"></i>
+              Herunterladen
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    return wrapper;
+  },
+};

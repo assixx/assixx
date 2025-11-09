@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/naming-convention */
 import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
@@ -17,6 +18,7 @@ interface DbDocument extends RowDataPacket {
   year?: number;
   month?: string;
   upload_date: Date;
+  uploaded_at?: string;
   is_archived: boolean;
   download_count?: number;
   last_downloaded?: Date;
@@ -29,6 +31,9 @@ interface DbDocument extends RowDataPacket {
   first_name?: string;
   last_name?: string;
   employee_name?: string;
+  uploader_first_name?: string;
+  uploader_last_name?: string;
+  uploaded_by_name?: string;
 }
 
 interface DocumentCreateData {
@@ -46,6 +51,12 @@ interface DocumentCreateData {
   createdBy?: number; // The user who uploads the document
   tags?: string[]; // Tags for the document
   mimeType?: string; // MIME type of the document
+  // NEW: UUID-based storage
+  fileUuid?: string; // UUID v4 for unique filename
+  fileChecksum?: string; // SHA-256 hash for integrity
+  storageType?: 'database' | 'filesystem' | 's3'; // Where file is stored
+  version?: number; // Version number
+  parentVersionId?: number; // Previous version ID
 }
 
 interface DocumentUpdateData {
@@ -108,12 +119,17 @@ export async function createDocument({
   createdBy,
   tags,
   mimeType = 'application/octet-stream',
+  fileUuid,
+  fileChecksum,
+  storageType = 'filesystem',
+  version = 1,
+  parentVersionId,
 }: DocumentCreateData): Promise<number> {
   // Log creation based on recipient type
 
   // We need to also set default values for required fields
   const query =
-    'INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by, tags) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    'INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [
       userId ?? null, // user_id can be null for company documents
@@ -122,7 +138,7 @@ export async function createDocument({
       recipientType,
       fileName,
       fileName, // original_name - same as filename for now
-      `/uploads/documents/${fileName}`, // file_path
+      `/uploads/documents/${fileName}`, // file_path - will be updated by controller with UUID path
       fileContent ? fileContent.length : 0, // file_size
       mimeType, // mime_type - use provided or default
       fileContent,
@@ -133,6 +149,11 @@ export async function createDocument({
       tenant_id,
       createdBy ?? userId ?? 1, // created_by - use createdBy if provided, otherwise userId, otherwise 1
       tags ? JSON.stringify(tags) : null, // tags as JSON
+      fileUuid ?? null, // NEW: UUID for unique filename
+      fileChecksum ?? null, // NEW: SHA-256 checksum
+      storageType, // NEW: storage type
+      version, // NEW: version number
+      parentVersionId ?? null, // NEW: parent version for versioning
     ]);
     return result.insertId;
   } catch (error: unknown) {
@@ -141,67 +162,84 @@ export async function createDocument({
   }
 }
 
-export async function findDocumentsByUserId(userId: number): Promise<DbDocument[]> {
+export async function findDocumentsByUserId(
+  userId: number,
+  tenantId: number,
+): Promise<DbDocument[]> {
   const query =
-    'SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? ORDER BY upload_date DESC';
+    'SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? AND tenant_id = ? ORDER BY upload_date DESC';
   try {
-    const [rows] = await executeQuery<DbDocument[]>(query, [userId]);
+    const [rows] = await executeQuery<DbDocument[]>(query, [userId, tenantId]);
     return rows;
   } catch (error: unknown) {
-    logger.error(`Error fetching documents for user ${userId}: ${(error as Error).message}`);
+    logger.error(
+      `Error fetching documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
 
 export async function findDocumentsByUserIdAndCategory(
   userId: number,
+  tenantId: number,
   category: string,
   archived?: boolean,
 ): Promise<DbDocument[]> {
   const resolvedArchived = archived ?? false;
 
-  logger.info(`Fetching ${category} documents for user ${userId} (archived: ${resolvedArchived})`);
+  logger.info(
+    `Fetching ${category} documents for user ${userId} in tenant ${tenantId} (archived: ${resolvedArchived})`,
+  );
   const query =
-    'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
+    'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND tenant_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
   try {
-    const [rows] = await executeQuery<DbDocument[]>(query, [userId, category, resolvedArchived]);
+    const [rows] = await executeQuery<DbDocument[]>(query, [
+      userId,
+      tenantId,
+      category,
+      resolvedArchived,
+    ]);
     return rows;
   } catch (error: unknown) {
     logger.error(
-      `Error fetching ${category} documents for user ${userId}: ${(error as Error).message}`,
+      `Error fetching ${category} documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
     );
     throw error;
   }
 }
 
-export async function findDocumentById(id: number): Promise<DbDocument | null> {
-  const query = 'SELECT * FROM documents WHERE id = ?';
+export async function findDocumentById(id: number, tenantId: number): Promise<DbDocument | null> {
+  const query = 'SELECT * FROM documents WHERE id = ? AND tenant_id = ?';
   try {
-    const [rows] = await executeQuery<DbDocument[]>(query, [id]);
+    const [rows] = await executeQuery<DbDocument[]>(query, [id, tenantId]);
     if (rows.length === 0) {
-      logger.warn(`Document with ID ${id} not found`);
+      logger.warn(`Document with ID ${id} not found in tenant ${tenantId}`);
       return null;
     }
     return rows[0];
   } catch (error: unknown) {
-    logger.error(`Error fetching document ${id}: ${(error as Error).message}`);
+    logger.error(
+      `Error fetching document ${id} for tenant ${tenantId}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
 
-export async function incrementDownloadCount(id: number): Promise<boolean> {
+export async function incrementDownloadCount(id: number, tenantId: number): Promise<boolean> {
   // Note: download_count column doesn't exist in current schema
-  // For now, just verify the document exists
-  const query = 'SELECT id FROM documents WHERE id = ?';
+  // For now, just verify the document exists and belongs to tenant
+  const query = 'SELECT id FROM documents WHERE id = ? AND tenant_id = ?';
   try {
-    const [rows] = await executeQuery<RowDataPacket[]>(query, [id]);
+    const [rows] = await executeQuery<RowDataPacket[]>(query, [id, tenantId]);
     if (rows.length === 0) {
-      logger.warn(`No document found with ID ${id} for download tracking`);
+      logger.warn(`No document found with ID ${id} in tenant ${tenantId} for download tracking`);
       return false;
     }
     return true;
   } catch (error: unknown) {
-    logger.error(`Error tracking download for document ${id}: ${(error as Error).message}`);
+    logger.error(
+      `Error tracking download for document ${id} in tenant ${tenantId}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
@@ -238,7 +276,11 @@ function buildUpdateQuery(data: DocumentUpdateData): { updates: string[]; params
   return { updates, params };
 }
 
-export async function updateDocument(id: number, data: DocumentUpdateData): Promise<boolean> {
+export async function updateDocument(
+  id: number,
+  data: DocumentUpdateData,
+  tenantId: number,
+): Promise<boolean> {
   const { updates, params } = buildUpdateQuery(data);
 
   if (updates.length === 0) {
@@ -246,61 +288,69 @@ export async function updateDocument(id: number, data: DocumentUpdateData): Prom
     return false;
   }
 
-  const query = `UPDATE documents SET ${updates.join(', ')} WHERE id = ?`;
-  params.push(id);
+  const query = `UPDATE documents SET ${updates.join(', ')} WHERE id = ? AND tenant_id = ?`;
+  params.push(id, tenantId);
 
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, params);
     if (result.affectedRows === 0) {
-      logger.warn(`No document found with ID ${id} for update`);
+      logger.warn(`No document found with ID ${id} in tenant ${tenantId} for update`);
       return false;
     }
-    logger.info(`Document ${id} updated successfully`);
+    logger.info(`Document ${id} in tenant ${tenantId} updated successfully`);
     return true;
   } catch (error: unknown) {
-    logger.error(`Error updating document ${id}: ${(error as Error).message}`);
+    logger.error(
+      `Error updating document ${id} in tenant ${tenantId}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
 
-export async function archiveDocument(id: number): Promise<boolean> {
-  return await updateDocument(id, { isArchived: true });
+export async function archiveDocument(id: number, tenantId: number): Promise<boolean> {
+  return await updateDocument(id, { isArchived: true }, tenantId);
 }
 
-export async function unarchiveDocument(id: number): Promise<boolean> {
-  return await updateDocument(id, { isArchived: false });
+export async function unarchiveDocument(id: number, tenantId: number): Promise<boolean> {
+  return await updateDocument(id, { isArchived: false }, tenantId);
 }
 
-export async function deleteDocument(id: number): Promise<boolean> {
-  const query = 'DELETE FROM documents WHERE id = ?';
+export async function deleteDocument(id: number, tenantId: number): Promise<boolean> {
+  const query = 'DELETE FROM documents WHERE id = ? AND tenant_id = ?';
   try {
-    const [result] = await executeQuery<ResultSetHeader>(query, [id]);
+    const [result] = await executeQuery<ResultSetHeader>(query, [id, tenantId]);
     if (result.affectedRows === 0) {
-      logger.warn(`No document found with ID ${id} for deletion`);
+      logger.warn(`No document found with ID ${id} in tenant ${tenantId} for deletion`);
       return false;
     }
-    logger.info(`Document ${id} deleted successfully`);
+    logger.info(`Document ${id} in tenant ${tenantId} deleted successfully`);
     return true;
   } catch (error: unknown) {
-    logger.error(`Error deleting document ${id}: ${(error as Error).message}`);
+    logger.error(
+      `Error deleting document ${id} in tenant ${tenantId}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
 
-export async function findAllDocuments(category: string | null = null): Promise<DbDocument[]> {
+export async function findAllDocuments(
+  tenantId: number,
+  category: string | null = null,
+): Promise<DbDocument[]> {
   logger.info(
-    `Fetching all documents${category != null && category !== '' ? ` of category ${category}` : ''}`,
+    `Fetching all documents for tenant ${tenantId}${category != null && category !== '' ? ` of category ${category}` : ''}`,
   );
   let query = `
       SELECT d.*, u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
-      LEFT JOIN users u ON d.user_id = u.id`;
+      LEFT JOIN users u ON d.user_id = u.id
+      WHERE d.tenant_id = ?`;
 
-  const params: unknown[] = [];
+  const params: unknown[] = [tenantId];
 
   if (category !== null && category !== '') {
-    query += ' WHERE d.category = ?';
+    query += ' AND d.category = ?';
     params.push(category);
   }
 
@@ -309,29 +359,40 @@ export async function findAllDocuments(category: string | null = null): Promise<
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, params);
     logger.info(
-      `Retrieved ${rows.length} documents${category != null && category !== '' ? ` of category ${category}` : ''}`,
+      `Retrieved ${rows.length} documents for tenant ${tenantId}${category != null && category !== '' ? ` of category ${category}` : ''}`,
     );
     return rows;
   } catch (error: unknown) {
-    logger.error(`Error fetching documents: ${(error as Error).message}`);
+    logger.error(`Error fetching documents for tenant ${tenantId}: ${(error as Error).message}`);
     throw error;
   }
 }
 
-export async function searchDocuments(userId: number, searchTerm: string): Promise<DbDocument[]> {
-  logger.info(`Searching documents for user ${userId} with term: ${searchTerm}`);
+export async function searchDocuments(
+  userId: number,
+  tenantId: number,
+  searchTerm: string,
+): Promise<DbDocument[]> {
+  logger.info(
+    `Searching documents for user ${userId} in tenant ${tenantId} with term: ${searchTerm}`,
+  );
   const query =
-    'SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND (file_name LIKE ? OR description LIKE ?)';
+    'SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND tenant_id = ? AND (file_name LIKE ? OR description LIKE ?)';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [
       userId,
+      tenantId,
       `%${searchTerm}%`,
       `%${searchTerm}%`,
     ]);
-    logger.info(`Found ${rows.length} documents matching search for user ${userId}`);
+    logger.info(
+      `Found ${rows.length} documents matching search for user ${userId} in tenant ${tenantId}`,
+    );
     return rows;
   } catch (error: unknown) {
-    logger.error(`Error searching documents for user ${userId}: ${(error as Error).message}`);
+    logger.error(
+      `Error searching documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
+    );
     throw error;
   }
 }
@@ -447,9 +508,9 @@ export async function countDocuments(filters?: DocumentCountFilter): Promise<num
 }
 
 // Legacy compatibility method
-export async function findDocumentsByUser(userId: number): Promise<DbDocument[]> {
+export async function findDocumentsByUser(userId: number, tenantId: number): Promise<DbDocument[]> {
   // Alias for findByUserId for legacy compatibility
-  return await findDocumentsByUserId(userId);
+  return await findDocumentsByUserId(userId, tenantId);
 }
 
 // Helper: Build access condition SQL for documents
@@ -588,6 +649,9 @@ export async function findDocumentsByEmployeeWithAccess(
     SELECT DISTINCT d.*,
       u.first_name, u.last_name,
       CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+      uploader.first_name AS uploader_first_name,
+      uploader.last_name AS uploader_last_name,
+      CONCAT(uploader.first_name, ' ', uploader.last_name) AS uploaded_by_name,
       t.name as team_name,
       dept.name as department_name,
       CASE
@@ -599,6 +663,7 @@ export async function findDocumentsByEmployeeWithAccess(
       END as recipient_display
     FROM documents d
     LEFT JOIN users u ON d.user_id = u.id
+    LEFT JOIN users uploader ON d.created_by = uploader.id
     LEFT JOIN teams t ON d.team_id = t.id
     LEFT JOIN departments dept ON d.department_id = dept.id
     WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
@@ -741,10 +806,15 @@ export async function findDocumentsWithFilters(
   filters: DocumentFilters,
 ): Promise<{ documents: DbDocument[]; total: number }> {
   const baseQuery = `
-      SELECT d.*, u.first_name, u.last_name,
-             CONCAT(u.first_name, ' ', u.last_name) AS employee_name
+      SELECT d.*,
+             u.first_name, u.last_name,
+             CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+             uploader.first_name AS uploader_first_name,
+             uploader.last_name AS uploader_last_name,
+             CONCAT(uploader.first_name, ' ', uploader.last_name) AS uploaded_by_name
       FROM documents d
       LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN users uploader ON d.created_by = uploader.id
       WHERE 1=1`;
 
   const baseCountQuery = `

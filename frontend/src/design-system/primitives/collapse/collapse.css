@@ -99,7 +99,7 @@
 .collapse--card {
   padding: var(--spacing-4);
   border: 1px solid var(--glass-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 5%);
   backdrop-filter: blur(10px);

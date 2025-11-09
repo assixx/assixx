@@ -22,7 +22,7 @@
 
   /* Appearance */
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 
   /* Typography */
   font-size: 14px;

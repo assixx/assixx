@@ -21,6 +21,10 @@
  * That's it! Entire design system is loaded.
  */
 
+/* ========== MATERIAL SYMBOLS ========== */
+/* Font + CSS class are automatically loaded via Google Fonts (vite.config.js)
+ * No additional CSS needed - Google provides the .material-symbols-outlined class */
+
 /* ========== DESIGN TOKENS ========== */
 /* Single source of truth for all design values */
 @import "./tokens/index.css";

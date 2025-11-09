@@ -6,8 +6,8 @@
 import type { User, Document } from '../../types/api.types';
 import { apiClient } from '../../utils/api-client';
 import { getAuthToken, showError, loadUserInfo } from '../auth/index';
-import { formatDate, escapeHtml } from '../common';
-import { $$id, setHTML } from '../../utils/dom-utils';
+import { formatDate } from '../../utils/date-helpers';
+import { $$id, setHTML, escapeHtml } from '../../utils/dom-utils';
 
 interface EmployeeInfo extends User {
   department?: string;

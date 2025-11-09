@@ -164,9 +164,7 @@ export function injectStyles() {
         display: flex;
         align-items: center;
         gap: 8px;
-        /*backdrop-filter: blur(20px) saturate(180%);*/
         border-radius: 12px;
-        /*box-shadow: 0 0px 4px rgba(33,150,243,.3),inset 0 1px 0 hsla(0,0%,100%,.2);*/
         color: #fff;
         font-size: 14px;
         padding: 6px 20px;
