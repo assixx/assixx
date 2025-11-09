@@ -5,29 +5,28 @@
 /* Glassmorphismus Upload Section - nutzt card Klasse aus dashboard-theme.css */
 .upload-section {
   position: relative;
-  overflow: hidden;
 
   /* Glassmorphismus styles werden aus dashboard-theme.css verwendet */
   /* Erweitert die .card Klasse */
   margin-bottom: var(--spacing-6);
+  overflow: hidden;
 
   /* animation: fadeInUp 0.6s ease-out; */
 }
 
 .upload-section::before {
-  content: "";
-
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
 
-  height: 3px;
-
   opacity: 0%;
-  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
 
   transition: opacity 0.3s ease;
+  background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+
+  height: 3px;
+  content: '';
 }
 
 .upload-section:hover::before {
@@ -36,39 +35,39 @@
 
 .upload-section:hover {
   transform: translateY(-5px);
-  background: rgb(255 255 255 / 3%);
   box-shadow:
     0 12px 40px rgb(0 0 0 / 50%),
     inset 0 1px 0 rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 3%);
 }
 
 /* Card Header für Upload Title - wie im Dashboard */
 .card-header {
-  padding: var(--spacing-4) var(--spacing-6);
   border-bottom: 1px solid rgb(255 255 255 / 5%);
   background: rgb(255 255 255 / 1%);
+  padding: var(--spacing-4) var(--spacing-6);
 }
 
 .upload-title {
   display: flex;
-  gap: var(--spacing-2);
   align-items: center;
+  gap: var(--spacing-2);
 
   margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
 
   font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text-primary);
 }
 
 .upload-title::before {
-  content: "";
-
-  width: 4px;
-  height: 20px;
   border-radius: 2px;
 
   background: linear-gradient(180deg, var(--primary-color), var(--primary-light));
+
+  width: 4px;
+  height: 20px;
+  content: '';
 }
 
 .card-body {
@@ -76,8 +75,8 @@
 }
 
 .upload-form {
-  max-width: 800px;
   margin: 0 auto;
+  max-width: 800px;
 }
 
 /* Custom Glassmorphismus Dropdown - Nach Design Standards */
@@ -87,20 +86,19 @@
 }
 
 .dropdown-display {
-  cursor: pointer;
-
   display: flex;
-  align-items: center;
   justify-content: space-between;
-
-  padding: var(--spacing-3);
+  align-items: center;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
 
-  color: #fff;
-
   background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
+
+  padding: var(--spacing-3);
+
+  color: #fff;
 }
 
 .dropdown-display:hover {
@@ -109,8 +107,8 @@
 }
 
 .dropdown-display.active {
-  border-color: rgb(0 142 255 / 50%);
   box-shadow: 0 0 0 3px rgb(0 142 255 / 15%);
+  border-color: rgb(0 142 255 / 50%);
 }
 
 .dropdown-display.active svg {
@@ -118,8 +116,8 @@
 }
 
 .dropdown-display span {
-  overflow: hidden;
   flex: 1;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -130,23 +128,23 @@
 
 .dropdown-options {
   position: absolute;
-  z-index: 1001;
   top: calc(100% + 4px);
   right: 0;
   left: 0;
   transform: translateY(-10px);
 
-  overflow-y: auto;
-
-  max-height: 200px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
   visibility: hidden;
   opacity: 0%;
-  background: rgb(18 18 18 / 100%);
+  z-index: 1001;
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
+  border: 1px solid hsl(0deg 0% 100% / 10%);
+  border-radius: var(--radius-xl);
+  background: rgb(18 18 18 / 100%);
+
+  max-height: 200px;
+
+  overflow-y: auto;
 }
 
 .dropdown-options.active {
@@ -157,8 +155,8 @@
 
 .dropdown-option {
   cursor: pointer;
-  padding: 10px 12px;
   border-bottom: 1px solid rgb(255 255 255 / 5%);
+  padding: 10px 12px;
   color: var(--text-primary);
 }
 
@@ -167,20 +165,20 @@
 }
 
 .dropdown-option.selected {
-  font-weight: 500;
   background: rgb(33 150 243 / 15%);
+  font-weight: 500;
 }
 
 /* Placeholder Styling */
 .dropdown-display.placeholder span {
-  font-style: italic;
   color: rgb(255 255 255 / 50%);
+  font-style: italic;
 }
 
 /* Textarea spezifisch */
 textarea.form-control {
-  resize: vertical;
   min-height: 100px;
+  resize: vertical;
 }
 
 /* Page Header - wie im Dashboard */
@@ -190,10 +188,10 @@ textarea.form-control {
 
 .page-title {
   margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
 
   font-size: 1.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
   text-shadow: 0 0 20px rgb(33 150 243 / 30%);
 }
 
@@ -205,37 +203,37 @@ textarea.form-control {
 
 .form-col {
   flex: 1;
-  min-width: 200px;
   padding: 0 10px;
+  min-width: 200px;
 }
 
 .file-drop-area {
   position: relative;
-
-  margin-bottom: var(--spacing-4);
-  padding: 30px;
-  border: 2px dashed rgb(255 255 255 / 15%);
-  border-radius: var(--radius-xl);
-
-  text-align: center;
-
-  background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
 
   transition: all 0.3s;
+
+  margin-bottom: var(--spacing-4);
+  border: 2px dashed rgb(255 255 255 / 15%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 2%);
+  padding: 30px;
+
+  text-align: center;
 }
 
 .file-drop-area:hover,
 .file-drop-area.drag-over {
+  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
   border-color: rgb(33 150 243 / 50%);
   background: rgb(33 150 243 / 5%);
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
 }
 
 .file-icon {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 
   margin-bottom: var(--spacing-2);
 
@@ -253,67 +251,66 @@ textarea.form-control {
 }
 
 .file-restrictions {
+  backdrop-filter: blur(5px);
   margin-top: var(--spacing-1);
   margin-bottom: var(--spacing-4);
-  padding: var(--spacing-3);
   border: 1px solid rgb(33 150 243 / 10%);
   border-radius: var(--radius-xl);
 
-  font-size: 12px;
+  background: rgb(33 150 243 / 5%);
+  padding: var(--spacing-3);
   color: rgb(255 255 255 / 70%);
 
-  background: rgb(33 150 243 / 5%);
-  backdrop-filter: blur(5px);
+  font-size: 12px;
 }
 
 .file-input {
-  cursor: pointer;
-
   position: absolute;
   top: 0;
   left: 0;
 
+  opacity: 0%;
+  cursor: pointer;
+
   width: 100%;
   height: 100%;
-
-  opacity: 0%;
 }
 
 .file-info {
   display: none;
+  backdrop-filter: blur(10px);
 
   margin-top: var(--spacing-2);
-  padding: 10px 15px;
+  box-shadow: 0 1px 8px rgb(33 150 243 / 15%);
   border: 1px solid rgb(33 150 243 / 20%);
   border-radius: var(--radius-xl);
 
-  color: var(--text-primary);
-
   background: rgb(33 150 243 / 8%);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 1px 8px rgb(33 150 243 / 15%);
+  padding: 10px 15px;
+
+  color: var(--text-primary);
 }
 
 .file-info.active {
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 
   /* animation: fadeInUp 0.3s ease-out; */
 }
 
 .pdf-preview-container {
-  overflow: hidden;
   display: none;
-
-  max-height: 400px;
+  backdrop-filter: blur(20px);
   margin: var(--spacing-4) 0;
+  box-shadow: var(--shadow-sm);
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px);
-  box-shadow: var(--shadow-sm);
+
+  max-height: 400px;
+  overflow: hidden;
 }
 
 .pdf-preview-container.active {
@@ -323,53 +320,51 @@ textarea.form-control {
 }
 
 .pdf-preview {
+  border: none;
   width: 100%;
   height: 400px;
-  border: none;
 }
 
 .preview-controls {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-
-  padding: var(--spacing-3);
+  align-items: center;
+  backdrop-filter: blur(10px);
   border-bottom: 1px solid rgb(255 255 255 / 10%);
 
   background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
+
+  padding: var(--spacing-3);
 }
 
 .preview-title {
-  font-weight: 600;
   color: var(--text-primary);
+  font-weight: 600;
 }
 
 .preview-close {
+  transition: all 0.2s;
   cursor: pointer;
-
-  padding: 5px;
   border: none;
   border-radius: var(--radius-xl);
 
-  font-size: 18px;
-  color: var(--text-secondary);
-
   background: none;
 
-  transition: all 0.2s;
+  padding: 5px;
+  color: var(--text-secondary);
+
+  font-size: 18px;
 }
 
 .preview-close:hover {
   transform: scale(1.1);
-  color: var(--error-color);
   background: rgb(255 255 255 / 5%);
+  color: var(--error-color);
 }
 
 .file-name {
-  overflow: hidden;
-
   max-width: 70%;
+  overflow: hidden;
 
   font-weight: 600;
   text-overflow: ellipsis;
@@ -377,8 +372,8 @@ textarea.form-control {
 }
 
 .file-size {
-  font-size: 14px;
   color: var(--text-secondary);
+  font-size: 14px;
 }
 
 /* Button Styles - Using Design System base */
@@ -386,30 +381,29 @@ textarea.form-control {
 /* Second-Level Button für Upload (mit Gradient) */
 .btn-primary {
   position: relative;
+  box-shadow:
+    0 1px 4px rgb(33 150 243 / 30%),
+    inset 0 1px 0 rgb(255 255 255 / 20%);
+
+  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 
   overflow: hidden;
 
   color: #fff;
-
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-  box-shadow:
-    0 1px 4px rgb(33 150 243 / 30%),
-    inset 0 1px 0 rgb(255 255 255 / 20%);
 }
 
 .btn-primary::before {
-  content: "";
-
   position: absolute;
   top: 0;
   left: -100%;
 
-  width: 100%;
-  height: 100%;
+  transition: left 0.5s ease;
 
   background: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%), transparent);
 
-  transition: left 0.5s ease;
+  width: 100%;
+  height: 100%;
+  content: '';
 }
 
 .btn-primary:hover {
@@ -434,11 +428,11 @@ textarea.form-control {
   display: flex;
   align-items: center;
 
-  margin-bottom: var(--spacing-4);
-  padding: 15px 20px;
-  border-radius: var(--radius-xl);
-
   backdrop-filter: blur(20px) saturate(180%);
+
+  margin-bottom: var(--spacing-4);
+  border-radius: var(--radius-xl);
+  padding: 15px 20px;
 
   /* animation: fadeInUp 0.3s ease-out; */
 }
@@ -449,21 +443,21 @@ textarea.form-control {
 }
 
 .alert-success {
-  border: 1px solid rgb(16 185 129 / 30%);
-  color: #10b981;
-  background: rgb(16 185 129 / 15%);
   box-shadow:
     0 4px 12px rgb(16 185 129 / 20%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid rgb(16 185 129 / 30%);
+  background: rgb(16 185 129 / 15%);
+  color: #10b981;
 }
 
 .alert-danger {
-  border: 1px solid rgb(244 67 54 / 30%);
-  color: #f44336;
-  background: rgb(244 67 54 / 15%);
   box-shadow:
     0 4px 12px rgb(244 67 54 / 20%),
     inset 0 1px 0 rgb(255 255 255 / 10%);
+  border: 1px solid rgb(244 67 54 / 30%);
+  background: rgb(244 67 54 / 15%);
+  color: #f44336;
 }
 
 /* Animationen */
@@ -491,8 +485,8 @@ textarea.form-control {
 
 .loading-spinner {
   display: inline-flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   margin-right: 8px;
 }
 
@@ -506,17 +500,16 @@ textarea.form-control {
 }
 
 .radio-option {
-  cursor: pointer;
-
   display: flex;
   align-items: center;
-
-  padding: 10px 16px;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
   border: 1px solid hsl(0deg 0% 100% / 10%);
   border-radius: var(--radius-xl);
 
   background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(10px);
+
+  padding: 10px 16px;
 }
 
 .radio-option:hover {
@@ -524,24 +517,24 @@ textarea.form-control {
   background: rgb(255 255 255 / 5%);
 }
 
-.radio-option input[type="radio"] {
+.radio-option input[type='radio'] {
   margin-right: 8px;
   accent-color: var(--primary-color);
 }
 
-.radio-option input[type="radio"]:checked + span {
-  font-weight: 500;
+.radio-option input[type='radio']:checked + span {
   color: var(--primary-color);
+  font-weight: 500;
 }
 
-.radio-option input[type="radio"]:checked {
+.radio-option input[type='radio']:checked {
   transform: scale(1.1);
 }
 
-.radio-option:has(input[type="radio"]:checked) {
+.radio-option:has(input[type='radio']:checked) {
+  box-shadow: 0 0 0 2px rgb(33 150 243 / 15%);
   border-color: rgb(33 150 243 / 50%);
   background: rgb(33 150 243 / 10%);
-  box-shadow: 0 0 0 2px rgb(33 150 243 / 15%);
 }
 
 /* Anpassungen für mobile Geräte */
@@ -551,7 +544,7 @@ textarea.form-control {
   }
 
   .form-col {
-    width: 100%;
     margin-bottom: var(--spacing-4);
+    width: 100%;
   }
 }

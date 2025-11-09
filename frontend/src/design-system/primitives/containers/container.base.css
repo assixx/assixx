@@ -57,7 +57,7 @@
 @media (width <= 768px) {
   .page-container {
     padding: var(--spacing-6); /* 24px on mobile */
-    border-radius: var(--radius-lg); /* 8px on mobile */
+    border-radius: var(--radius-xl); /* 8px on mobile */
   }
 }
 

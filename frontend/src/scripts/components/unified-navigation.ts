@@ -108,7 +108,7 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/manage-machines': ['admin', 'root'],
   '/manage-employees': ['admin', 'root'],
   '/blackboard': ['employee', 'admin', 'root'],
-  '/document-upload': ['admin', 'root'],
+  '/document-upload': ['employee', 'admin', 'root'],
   '/survey-admin': ['admin', 'root'],
   '/survey-create': ['admin', 'root'],
   '/survey-details': ['admin', 'root'],
@@ -125,7 +125,6 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/shifts': ['employee', 'admin', 'root'],
   '/chat': ['employee', 'admin', 'root'],
   '/survey-employee': ['employee', 'admin', 'root'],
-  '/documents': ['employee', 'admin', 'root'],
   '/documents-search': ['employee', 'admin', 'root'],
   '/documents-company': ['employee', 'admin', 'root'],
   '/documents-department': ['employee', 'admin', 'root'],
@@ -964,45 +963,16 @@ class UnifiedNavigation {
   private getDocumentSubmenu(): NavItem[] {
     return [
       {
+        id: 'documents-explorer',
+        icon: this.getSVGIcon('folder'),
+        label: 'Datei Explorer',
+        url: '/documents-explorer',
+      },
+      {
         id: 'documents-search',
         icon: this.getSVGIcon('search'),
         label: 'Dokumente suchen',
         url: '/documents-search',
-      },
-      {
-        id: 'documents-company',
-        icon: this.getSVGIcon('building'),
-        label: 'Firmendokumente',
-        url: '/documents-company',
-        badgeId: 'badge-docs-company',
-      },
-      {
-        id: 'documents-department',
-        icon: this.getSVGIcon('sitemap'),
-        label: 'Abteilungsdokumente',
-        url: '/documents-department',
-        badgeId: 'badge-docs-department',
-      },
-      {
-        id: 'documents-team',
-        icon: this.getSVGIcon('team'),
-        label: 'Teamdokumente',
-        url: '/documents-team',
-        badgeId: 'badge-docs-team',
-      },
-      {
-        id: 'documents-personal',
-        icon: this.getSVGIcon('user'),
-        label: 'Persönliche Dokumente',
-        url: '/documents-personal',
-        badgeId: 'badge-docs-personal',
-      },
-      {
-        id: 'documents-payroll',
-        icon: this.getSVGIcon('money'),
-        label: 'Gehaltsabrechnungen',
-        url: '/documents-payroll',
-        badgeId: 'badge-docs-payroll',
       },
     ];
   }
@@ -1070,6 +1040,8 @@ class UnifiedNavigation {
       building:
         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,3L1,9V21H23V9M21,19H3V10.53L12,5.68L21,10.53M8,15H10V19H8M12,15H14V19H12M16,15H18V19H16Z"/></svg>',
       team: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>',
+      folder:
+        '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/></svg>',
       'folder-tree':
         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3,3H9V7H3V3M15,10H21V14H15V10M15,17H21V21H15V17M13,13H11V18H13V20H11V21H9V20H7V18H9V11H7V9H9V3H11V9H13V11H15V13H13Z"/></svg>',
       settings:
@@ -1351,11 +1323,11 @@ class UnifiedNavigation {
   }
 
   private createRootRoleSwitchDropdown(activeRole: string | null): string {
-    // Icon mapping für roles
+    // Icon mapping für roles (Material Symbols)
     const roleIcons = {
-      root: 'fa-user-shield',
-      admin: 'fa-user-tie',
-      employee: 'fa-user',
+      root: 'manage_accounts',
+      admin: 'supervisor_account',
+      employee: 'person_apron',
     };
 
     const currentRole: 'root' | 'admin' | 'employee' =
@@ -1370,22 +1342,22 @@ class UnifiedNavigation {
       <div class="dropdown role-switch-dropdown">
         <div class="dropdown__trigger" id="roleSwitchDisplay">
           <span>
-            <i class="fas ${currentIcon}" style="margin-right: 8px;"></i>
+            <span class="material-symbols-outlined" style="margin-right: 8px;">${currentIcon}</span>
             ${currentView}
           </span>
           <i class="fas fa-chevron-down"></i>
         </div>
         <div class="dropdown__menu" id="roleSwitchDropdown">
           <div class="dropdown__option ${activeRole === 'root' ? 'active' : ''}" data-value="root">
-            <i class="fas fa-user-shield"></i>
+            <span class="material-symbols-outlined">manage_accounts</span>
             Root-Ansicht
           </div>
           <div class="dropdown__option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">
-            <i class="fas fa-user-tie"></i>
+            <span class="material-symbols-outlined">supervisor_account</span>
             Admin-Ansicht
           </div>
           <div class="dropdown__option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">
-            <i class="fas fa-user"></i>
+            <span class="material-symbols-outlined">person_apron</span>
             Mitarbeiter-Ansicht
           </div>
         </div>
@@ -1394,10 +1366,10 @@ class UnifiedNavigation {
   }
 
   private createAdminRoleSwitchDropdown(activeRole: string | null): string {
-    // Icon mapping für roles
+    // Icon mapping für roles (Material Symbols)
     const roleIcons = {
-      admin: 'fa-user-tie',
-      employee: 'fa-user',
+      admin: 'supervisor_account',
+      employee: 'person_apron',
     };
 
     const currentRole: 'admin' | 'employee' = activeRole === 'admin' ? 'admin' : 'employee';
@@ -1410,18 +1382,18 @@ class UnifiedNavigation {
       <div class="dropdown role-switch-dropdown">
         <div class="dropdown__trigger" id="roleSwitchDisplay">
           <span>
-            <i class="fas ${currentIcon}" style="margin-right: 8px;"></i>
+            <span class="material-symbols-outlined" style="margin-right: 8px;">${currentIcon}</span>
             ${currentView}
           </span>
           <i class="fas fa-chevron-down"></i>
         </div>
         <div class="dropdown__menu" id="roleSwitchDropdown">
           <div class="dropdown__option ${activeRole === 'admin' ? 'active' : ''}" data-value="admin">
-            <i class="fas fa-user-tie"></i>
+            <span class="material-symbols-outlined">supervisor_account</span>
             Admin-Ansicht
           </div>
           <div class="dropdown__option ${activeRole === 'employee' ? 'active' : ''}" data-value="employee">
-            <i class="fas fa-user"></i>
+            <span class="material-symbols-outlined">person_apron</span>
             Mitarbeiter-Ansicht
           </div>
         </div>
@@ -2515,9 +2487,13 @@ class UnifiedNavigation {
       return;
     }
 
-    parentLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
-
-    if (childId !== undefined) {
+    // Don't mark parent as active when a child is active
+    // Only mark parent active if no child is specified (top-level item)
+    if (childId === undefined) {
+      parentLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
+    } else {
+      // For submenu items, only mark the child as active
+      // The parent should stay inactive but expanded (handled elsewhere)
       const childLink = document.querySelector(`[data-nav-id="${childId}"]`);
       childLink?.closest('.submenu-item')?.classList.add('active');
     }
@@ -2525,11 +2501,14 @@ class UnifiedNavigation {
 
   private checkSubmenuItems(menuItems: NavItem[], currentPath: string): boolean {
     for (const item of menuItems) {
-      if (item.children === undefined || item.children.length === 0) {
+      // Check both children and submenu properties
+      const nestedItems = item.children ?? item.submenu ?? [];
+
+      if (nestedItems.length === 0) {
         continue;
       }
 
-      for (const child of item.children) {
+      for (const child of nestedItems) {
         if (this.isValidChildUrl(child) && currentPath === child.url) {
           this.markItemAndChildActive(item.id, child.id);
           return true;

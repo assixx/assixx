@@ -71,4 +71,5 @@ export interface ManageAdminsWindow extends Window {
   closeAdminModal: (() => void) | null;
   closePermissionsModal: (() => void) | null;
   savePermissionsHandler: (() => Promise<void>) | null;
+  reloadAdminsTable: (() => Promise<void>) | null;
 }

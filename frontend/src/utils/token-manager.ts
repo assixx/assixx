@@ -28,9 +28,9 @@ export class TokenManager {
   private static instance: TokenManager | undefined;
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private tokenReceivedAt: number | null = null; // Client timestamp when token was received (Clock Skew fix)
   private timerInterval: number | null = null;
   private currentInterval = 60000; // Start with 1 minute interval
-  private lastTickTime = Date.now();
   private debugMode = true; // Enable debug logging for testing
   private isPageVisible = true;
   private callbacks: TokenCallbacks = {
@@ -46,7 +46,7 @@ export class TokenManager {
     this.loadTokensFromStorage();
     this.startTimer();
     this.setupVisibilityListener();
-    this.logDebug('🚀 TokenManager initialized with Progressive Timer + Page Visibility API');
+    this.logDebug('🚀 TokenManager initialized with 1s Timer + Page Visibility API');
   }
 
   static getInstance(): TokenManager {
@@ -60,6 +60,20 @@ export class TokenManager {
   private loadTokensFromStorage(): void {
     this.accessToken = localStorage.getItem('accessToken');
     this.refreshToken = localStorage.getItem('refreshToken');
+
+    const receivedAtStr = localStorage.getItem('tokenReceivedAt');
+
+    if (receivedAtStr !== null) {
+      // Token has tokenReceivedAt (new method)
+      this.tokenReceivedAt = Number.parseInt(receivedAtStr, 10);
+    } else if (this.accessToken !== null) {
+      // MIGRATION: Old token without tokenReceivedAt
+      // Set to NOW (Client time) - not perfect but better than Clock Skew
+      // Token might be X seconds old already, but we can't know exactly when it was received
+      this.tokenReceivedAt = Date.now();
+      localStorage.setItem('tokenReceivedAt', this.tokenReceivedAt.toString());
+      console.log('[TokenManager] Migrated old token: set tokenReceivedAt to now');
+    }
   }
 
   // ========================================
@@ -88,10 +102,12 @@ export class TokenManager {
   public setTokens(access: string, refresh: string): void {
     this.accessToken = access;
     this.refreshToken = refresh;
+    this.tokenReceivedAt = Date.now(); // Capture client timestamp (Clock Skew fix)
 
     // Persist to localStorage
     localStorage.setItem('accessToken', access);
     localStorage.setItem('refreshToken', refresh);
+    localStorage.setItem('tokenReceivedAt', this.tokenReceivedAt.toString());
 
     // Also update cookie for legacy compatibility (some endpoints might still check it)
     // Using 'token' for backward compatibility with backend
@@ -122,10 +138,12 @@ export class TokenManager {
   public clearTokens(reason: LogoutReason = 'logout'): void {
     this.accessToken = null;
     this.refreshToken = null;
+    this.tokenReceivedAt = null;
 
     // Clear localStorage
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('tokenReceivedAt');
     localStorage.removeItem('user');
 
     // Stop timer
@@ -263,20 +281,42 @@ export class TokenManager {
 
   /**
    * Get remaining time until token expires (in seconds)
+   * CLOCK SKEW FIX: Uses only client time (Date.now()) to avoid server-client time mismatch
+   *
+   * NEW TOKENS (with tokenReceivedAt - clock skew immune):
+   *   elapsed = now (client time) - receivedAt (client time)
+   *   remaining = TOKEN_LIFETIME - elapsed
+   *
+   * OLD TOKENS (without tokenReceivedAt - fallback to exp):
+   *   remaining = exp (server time) - now (client time)
+   *
    * @returns Remaining seconds, or 0 if token is expired/invalid
    */
   public getRemainingTime(): number {
+    // No token = no time remaining
     if (this.accessToken === null) {
       return 0;
     }
 
-    const payload = parseJwt(this.accessToken);
-    if (payload?.exp === undefined) {
-      return 0;
+    // FALLBACK: If tokenReceivedAt is missing (old tokens before update), use JWT exp
+    if (this.tokenReceivedAt === null) {
+      const payload = parseJwt(this.accessToken);
+      if (payload?.exp === undefined) {
+        return 0;
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      const remaining = payload.exp - now;
+      return Math.max(0, remaining);
     }
 
-    const now = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
-    const remaining = payload.exp - now;
+    // NEW METHOD: Clock Skew immune calculation using client time only
+    const elapsedMs = Date.now() - this.tokenReceivedAt;
+    const elapsedSeconds = Math.floor(elapsedMs / 1000);
+
+    // Token lifetime is 30 minutes = 1800 seconds (hardcoded to match backend)
+    const TOKEN_LIFETIME_SECONDS = 30 * 60;
+    const remaining = TOKEN_LIFETIME_SECONDS - elapsedSeconds;
 
     return Math.max(0, remaining);
   }
@@ -350,8 +390,8 @@ export class TokenManager {
   // ========================================
 
   /**
-   * Start progressive timer with dynamic intervals based on urgency
-   * BEST PRACTICE 2025: Progressive intervals save 75% CPU/battery
+   * Start timer with 1 second interval for live countdown
+   * UX: Always 1 second for smooth, real-time timer display
    */
   private startTimer(): void {
     // Don't start timer if no token
@@ -362,7 +402,7 @@ export class TokenManager {
     const interval = this.getOptimalInterval();
     this.currentInterval = interval;
 
-    this.logDebug(`⏱️ Starting Progressive Timer with ${interval}ms interval`, {
+    this.logDebug(`⏱️ Starting Timer with ${interval}ms interval`, {
       remaining: this.getRemainingTime(),
       interval,
       mode: this.getIntervalMode(),
@@ -371,18 +411,10 @@ export class TokenManager {
     this.timerInterval = window.setInterval(() => {
       // Skip tick if page is hidden (Page Visibility API)
       if (!this.isPageVisible) {
-        this.logDebug('👁️ Page hidden, skipping tick (battery optimization)');
         return;
       }
 
       this.tick();
-
-      // Check if we need to adjust interval
-      const newInterval = this.getOptimalInterval();
-      if (newInterval !== this.currentInterval) {
-        this.logDebug(`🔄 Interval change needed: ${this.currentInterval}ms → ${newInterval}ms`);
-        this.restartTimer();
-      }
     }, interval);
   }
 
@@ -406,21 +438,13 @@ export class TokenManager {
   }
 
   /**
-   * Timer tick (progressive interval based on urgency)
+   * Timer tick (fires every second for live countdown)
    */
   private tick(): void {
     const remaining = this.getRemainingTime();
-    const now = Date.now();
-    const timeSinceLastTick = now - this.lastTickTime;
-    this.lastTickTime = now;
 
-    this.logDebug(`⏱️ Tick fired`, {
-      remaining,
-      interval: this.currentInterval,
-      timeSinceLastTick,
-      mode: this.getIntervalMode(),
-      subscribers: this.callbacks.onTimerUpdate.length,
-    });
+    // Note: Removed "Tick fired" debug log - it fires every 1 second and pollutes console
+    // If you need to debug timer ticks, use: tokenManager.getTimerStats()
 
     // Emit timer update to all subscribers
     this.callbacks.onTimerUpdate.forEach((callback) => {
@@ -504,56 +528,28 @@ export class TokenManager {
       this.isPageVisible = !document.hidden;
 
       if (!wasVisible && this.isPageVisible) {
-        // Page became visible
-        this.logDebug('👁️ Page became visible - resuming timer');
-
-        // Immediately update on visibility to sync UI
+        // Page became visible - immediately update on visibility to sync UI
         this.tick();
-
-        // Check if interval needs adjustment
-        const newInterval = this.getOptimalInterval();
-        if (newInterval !== this.currentInterval) {
-          this.restartTimer();
-        }
-      } else if (wasVisible && !this.isPageVisible) {
-        // Page became hidden
-        this.logDebug('👁️ Page became hidden - timer continues but skips updates (battery save)');
       }
+      // Note: No action needed when page becomes hidden - timer continues in background
     });
   }
 
   /**
-   * Calculate optimal timer interval based on token remaining time
-   * Progressive intervals: Critical (1s) → Urgent (5s) → Normal (60s)
+   * Get timer interval (always 1 second for live countdown)
+   * UX: User expects to see timer update every second (like a real clock)
    */
   private getOptimalInterval(): number {
-    const remaining = this.getRemainingTime();
-
-    if (remaining <= 60) {
-      // CRITICAL: Last minute - update every second
-      return 1000;
-    } else if (remaining <= 300) {
-      // URGENT: Last 5 minutes - update every 5 seconds
-      return 5000;
-    } else if (remaining <= 600) {
-      // WARNING: Last 10 minutes - update every 10 seconds
-      return 10000;
-    } else {
-      // NORMAL: More than 10 minutes - update every minute
-      return 60000;
-    }
+    // Always 1 second for best UX
+    // Progressive intervals (60s, 10s, 5s) were causing "jumpy" timer
+    return 1000;
   }
 
   /**
    * Get current interval mode for debugging
    */
   private getIntervalMode(): string {
-    const remaining = this.getRemainingTime();
-
-    if (remaining <= 60) return 'CRITICAL (1s)';
-    if (remaining <= 300) return 'URGENT (5s)';
-    if (remaining <= 600) return 'WARNING (10s)';
-    return 'NORMAL (60s)';
+    return 'LIVE (1s)';
   }
 
   /**

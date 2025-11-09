@@ -128,7 +128,7 @@
   --input-padding-y: var(--spacing-2);
   --input-padding-x: var(--spacing-3);
   --card-shadow: var(--shadow-md);
-  --card-border-radius: var(--radius-lg);
+  --card-border-radius: var(--radius-xl);
   --card-padding: var(--spacing-6);
   --button-font-weight: var(--font-weight-medium);
   --button-font-size-lg: var(--font-size-lg);

@@ -36,6 +36,13 @@
     transition: var(--form-field-transition), var(--form-field-transition-shadow);
   }
 
+  /* Inner span in trigger must also be flex for proper icon alignment */
+  .dropdown__trigger > span {
+    display: flex;
+    gap: 0; /* No gap, margin-right on icon handles spacing */
+    align-items: center;
+  }
+
   .dropdown__trigger:hover {
     border: var(--form-field-border-hover);
     background: var(--form-field-bg-hover);
@@ -45,6 +52,11 @@
   .dropdown__trigger i {
     opacity: 60%;
     transition: transform 0.2s ease;
+  }
+
+  /* Material Symbols in trigger: use design system color */
+  .dropdown__trigger .material-symbols-outlined {
+    color: var(--text-secondary);
   }
 
   .dropdown__trigger.active svg,
@@ -119,7 +131,16 @@
     color: rgb(255 255 255 / 60%);
   }
 
+  .dropdown__option .material-symbols-outlined {
+    margin-right: 12px;
+    color: var(--text-secondary);
+  }
+
   .dropdown__option:hover i {
+    color: #fff;
+  }
+
+  .dropdown__option:hover .material-symbols-outlined {
     color: #fff;
   }
 

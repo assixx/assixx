@@ -141,7 +141,7 @@
 /* Bordered variant - with card border */
 .empty-state--bordered {
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(10px);
 }

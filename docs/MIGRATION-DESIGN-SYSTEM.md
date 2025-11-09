@@ -176,17 +176,16 @@ export class SignupFormController {
 - [x] manage-department-groups.html ✅ (2025-01-15) - 100% Design System compliant (ds-modal, form-field, search-input, dropdown, empty-state, btn-float, TypeScript modules split to api/forms/ui/types/index layers, hierarchical group tree, no inline styles/JS, no Bootstrap)
 - [x] manage-teams.html ✅ (2025-01-28) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to data/forms/ui/types/index layers, multi-select dropdowns with checkboxes, no inline styles/JS, no Bootstrap)
 - [x] manage-areas.html ✅ (2025-01-29) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to api/forms/ui/types/index layers, two-stage force-delete with dependency warnings, status filter fix in backend controller, no inline styles/JS, no Bootstrap)
-- [ ] manage-machines.html
+- [x] manage-machines.html ✅ (2025-11-02) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to data/forms/ui/types/index layers, machine type & status dropdowns with badges, department/area assignment, no inline styles/JS, no Bootstrap)
 
 ### Documents
 
-- [ ] documents.html
+- [ ] documents-search.html
 - [ ] documents-company.html
 - [ ] documents-department.html
 - [ ] documents-team.html
 - [ ] documents-personal.html
 - [ ] documents-payroll.html
-- [ ] documents-search.html
 - [ ] document-upload.html
 
 ### Features

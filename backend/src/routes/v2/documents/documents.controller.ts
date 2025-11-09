@@ -6,8 +6,11 @@
  *   name: Documents v2
  *   description: Document management API v2
  */
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import multer from 'multer';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
@@ -49,6 +52,49 @@ const upload = multer({
 });
 
 export const uploadMiddleware = upload.single('document');
+
+/**
+ * Generate UUID and file metadata for upload
+ */
+function generateFileMetadata(file: Express.Multer.File): {
+  uuid: string;
+  checksum: string;
+  extension: string;
+} {
+  const uuid = uuidv4();
+  const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
+  const extension = path.extname(file.originalname).toLowerCase();
+
+  return {
+    uuid,
+    checksum,
+    extension,
+  };
+}
+
+/**
+ * Build hierarchical storage path with UUID
+ */
+function buildStoragePath(
+  tenantId: number,
+  category: string,
+  uuid: string,
+  extension: string,
+): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+
+  return path.join(
+    'uploads',
+    'documents',
+    tenantId.toString(),
+    category,
+    year.toString(),
+    month,
+    `${uuid}${extension}`,
+  );
+}
 
 /**
  * @param req - The request object
@@ -300,10 +346,15 @@ export async function getDocumentById(req: AuthenticatedRequest, res: Response):
 function parseDocumentData(
   file: Express.Multer.File,
   body: Record<string, string>,
+  tenantId: number,
 ): DocumentCreateInput {
+  // Generate UUID and metadata
+  const metadata = generateFileMetadata(file);
+  const storagePath = buildStoragePath(tenantId, body.category, metadata.uuid, metadata.extension);
+
   return {
-    filename: file.filename || file.originalname,
-    originalName: file.originalname,
+    filename: `${metadata.uuid}${metadata.extension}`, // UUID-based filename
+    originalName: file.originalname, // Keep user's original name
     fileSize: file.size,
     fileContent: file.buffer,
     mimeType: file.mimetype,
@@ -318,6 +369,11 @@ function parseDocumentData(
     tags: body.tags ? (JSON.parse(body.tags) as string[]) : undefined,
     isPublic: body.isPublic === 'true',
     expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+    // NEW: UUID-based storage
+    fileUuid: metadata.uuid,
+    fileChecksum: metadata.checksum,
+    filePath: storagePath,
+    storageType: 'filesystem',
   };
 }
 
@@ -355,7 +411,7 @@ export async function createDocument(req: AuthenticatedRequest, res: Response): 
     }
 
     const body = req.body as Record<string, string>;
-    const documentData = parseDocumentData(req.file, body);
+    const documentData = parseDocumentData(req.file, body, req.user.tenant_id);
 
     const document = await documentsService.createDocument(
       documentData,

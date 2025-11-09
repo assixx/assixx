@@ -5,6 +5,7 @@
 /* Chat-spezifische Styles mit Glassmorphismus-Design */
 .chat-container {
   position: relative;
+  top: 20px;
 
   overflow: hidden;
   display: flex;

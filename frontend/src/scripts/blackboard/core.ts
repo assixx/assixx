@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Blackboard Core
  * Main functionality for the blackboard feature
@@ -31,9 +32,8 @@ import {
   formatDate,
 } from './ui-helpers';
 import { ApiClient } from '../../utils/api-client';
-import { $$id, $$, setHTML } from '../../utils/dom-utils';
+import { $$id, $$, setHTML, escapeHtml } from '../../utils/dom-utils';
 import { showSuccess, showError } from '../auth';
-import { escapeHtml } from '../common';
 
 // Import constants
 const PDF_MIME_TYPE = 'application/pdf';
@@ -508,7 +508,6 @@ function setupFileUploadHandlers(): void {
   // Click to upload
   dropZone.addEventListener('click', () => {
     fileInput.click();
-    // eslint-disable-next-line max-lines
   });
 
   // File input change

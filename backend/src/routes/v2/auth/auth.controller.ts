@@ -6,6 +6,7 @@ import bcryptjs from 'bcryptjs';
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
+import { ACCESS_TOKEN_EXPIRES, REFRESH_TOKEN_EXPIRES } from '../../../config/token.config.js';
 import rootLog from '../../../models/rootLog.js';
 import user from '../../../models/user/index.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
@@ -37,9 +38,9 @@ const JWT_SECRET = process.env.JWT_SECRET ?? 'default-jwt-secret';
 const JWT_REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? 'default-jwt-secret';
 
-// Token expiration times
-const ACCESS_TOKEN_EXPIRES = '30m'; // 30 Minuten
-const REFRESH_TOKEN_EXPIRES = '7d';
+// Token expiration times imported from central config (token.config.ts)
+// ACCESS_TOKEN_EXPIRES = '30m' (30 minutes)
+// REFRESH_TOKEN_EXPIRES = '7d' (7 days)
 
 // HTTP Headers
 const USER_AGENT_HEADER = 'user-agent';

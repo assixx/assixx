@@ -146,6 +146,7 @@ function setupGlobalFunctions() {
   (window as unknown as ManageAdminsWindow).closeAdminModal = closeAdminModal;
   (window as unknown as ManageAdminsWindow).closePermissionsModal = closePermissionsModal;
   (window as unknown as ManageAdminsWindow).savePermissionsHandler = savePermissionsHandler;
+  (window as unknown as ManageAdminsWindow).reloadAdminsTable = loadAdminsAndRender;
 }
 
 /**
@@ -606,15 +607,23 @@ function setupPermissionRadioHandlers(): void {
         const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
         const groupContainer = $$('#group-select-container');
 
-        // Hide all containers first
-        deptContainer?.classList.add('hidden');
-        groupContainer?.classList.add('hidden');
+        // Hide all containers first (reset inline styles to let CSS classes work)
+        if (deptContainer !== null) {
+          deptContainer.classList.add('hidden');
+          deptContainer.style.display = ''; // Reset inline style
+        }
+        if (groupContainer !== null) {
+          groupContainer.classList.add('hidden');
+          groupContainer.style.display = ''; // Reset inline style
+        }
 
         if (permissionType === 'specific' && deptContainer !== null) {
           deptContainer.classList.remove('hidden');
+          deptContainer.style.display = 'block'; // Explicitly show element
           await loadAndPopulateDepartments();
         } else if (permissionType === 'groups' && groupContainer !== null) {
           groupContainer.classList.remove('hidden');
+          groupContainer.style.display = 'block'; // Explicitly show element
           await loadAndPopulateDepartmentGroups();
         }
       })();

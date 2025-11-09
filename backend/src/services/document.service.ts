@@ -263,7 +263,7 @@ class DocumentService {
    */
   async getDocumentById(documentId: number, _tenantId: number): Promise<DocumentData | null> {
     try {
-      const doc = await Document.findById(documentId);
+      const doc = await Document.findById(documentId, _tenantId);
       if (!doc) return null;
 
       return {
@@ -341,7 +341,7 @@ class DocumentService {
         description: updateData.description !== null ? updateData.description : undefined,
         category: updateData.category ?? undefined,
       };
-      await Document.update(documentId, modelUpdateData);
+      await Document.update(documentId, modelUpdateData, tenant_id);
       return true;
     } catch (error: unknown) {
       logger.error('Error in document service updateDocument:', error);
@@ -375,7 +375,7 @@ class DocumentService {
       }
 
       // Delete database record
-      await Document.delete(documentId);
+      await Document.delete(documentId, tenant_id);
       return true;
     } catch (error: unknown) {
       logger.error('Error in document service deleteDocument:', error);
@@ -406,7 +406,7 @@ class DocumentService {
    */
   async getDocumentsByUser(userId: number, _tenantId: number): Promise<DocumentData[]> {
     try {
-      const dbDocuments = await Document.findByUserId(userId);
+      const dbDocuments = await Document.findByUserId(userId, _tenantId);
       return dbDocuments.map(
         (doc: DbDocument) =>
           ({

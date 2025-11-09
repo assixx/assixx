@@ -11,16 +11,16 @@ export default {
   title: 'Design System/Choice Cards',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -325,7 +325,7 @@ export const InModalContext = {
             </button>
           </div>
           <div class="ds-modal__body">
-            <div style="padding: var(--spacing-4); background: rgba(33, 150, 243, 0.1); border-radius: var(--radius-lg); margin-bottom: var(--spacing-5); border-left: 4px solid var(--color-primary);">
+            <div style="padding: var(--spacing-4); background: rgba(33, 150, 243, 0.1); border-radius: var(--radius-xl); margin-bottom: var(--spacing-5); border-left: 4px solid var(--color-primary);">
               <p style="color: var(--color-text-secondary); font-size: 0.875rem; margin: 0;">
                 <i class="fas fa-info-circle"></i>
                 Admin: <strong>Max Mustermann</strong>

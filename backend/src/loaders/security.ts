@@ -102,6 +102,24 @@ export function loadSecurity(app: Application): void {
 
   // API security headers and validation
   app.use('/api', apiSecurityHeaders);
+
+  // Override X-Frame-Options for document preview/download endpoints
+  // Allow SAMEORIGIN so PDFs can be displayed in iframe modals
+  app.use(
+    '/api/v2/documents/:id/preview',
+    (_req: Request, res: Response, next: NextFunction): void => {
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      next();
+    },
+  );
+  app.use(
+    '/api/v2/documents/:id/download',
+    (_req: Request, res: Response, next: NextFunction): void => {
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+      next();
+    },
+  );
+
   app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
     // Validate Content-Type for POST/PUT requests
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {

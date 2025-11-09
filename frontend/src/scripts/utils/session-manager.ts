@@ -60,15 +60,9 @@ export class SessionManager {
 
       if (!wasVisible && this.isPageVisible) {
         // Page became visible - resume checking
-        if (this.DEBUG_MODE) {
-          console.log('[SessionManager] 👁️ Page became visible - resuming checks');
-        }
         this.scheduleNextCheck();
       } else if (wasVisible && !this.isPageVisible) {
         // Page became hidden - pause checking
-        if (this.DEBUG_MODE) {
-          console.log('[SessionManager] 👁️ Page became hidden - pausing checks');
-        }
         this.cancelScheduledCheck();
       }
     });
@@ -142,13 +136,11 @@ export class SessionManager {
       this.scheduleNextCheck();
     }
 
-    // Active interactions may refresh token immediately (not in idle callback)
-    if (isActiveInteraction && tokenManager.isExpiringSoon(600)) {
-      if (this.DEBUG_MODE) {
-        console.info('[SessionManager] 🔄 Active interaction detected, token < 10 min → refreshing...');
-      }
-      void tokenManager.refresh();
-    }
+    // REMOVED: Automatic token refresh on user interaction
+    // Token refresh should ONLY happen via:
+    // 1. API calls (api-client.ts does proactive refresh)
+    // 2. Manual "Stay Active" button in warning modal (extendSession)
+    // User events (mouse, keyboard) should NOT trigger token refresh!
   }
 
   /**

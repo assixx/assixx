@@ -282,19 +282,27 @@ export default defineConfig({
       transformIndexHtml: {
         order: 'pre', // Run before other transformations
         handler(html, ctx) {
-          // Skip if already has Google Fonts Outfit
-          if (html.includes('fonts.googleapis.com/css2') && html.includes('Outfit')) {
-            return html;
-          }
+          let modifiedHtml = html;
 
-          // Add preconnect and font link after <title> tag
-          const fontPreloads = `
+          // 1. Inject Outfit font if not present
+          if (!html.includes('fonts.googleapis.com/css2') || !html.includes('Outfit')) {
+            const outfitFont = `
     <!-- Font Preconnect for Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">`;
+            modifiedHtml = modifiedHtml.replace('</title>', `</title>${outfitFont}`);
+          }
 
-          return html.replace('</title>', `</title>${fontPreloads}`);
+          // 2. Inject Material Symbols if not present (Best Practice 2025)
+          if (!html.includes('Material+Symbols+Outlined')) {
+            const materialSymbols = `
+    <!-- Material Symbols - Google Icons (Best Practice 2025) -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">`;
+            modifiedHtml = modifiedHtml.replace('</title>', `</title>${materialSymbols}`);
+          }
+
+          return modifiedHtml;
         },
       },
     },
