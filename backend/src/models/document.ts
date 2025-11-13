@@ -6,17 +6,24 @@ import { logger } from '../utils/logger.js';
 // Database interfaces
 interface DbDocument extends RowDataPacket {
   id: number;
-  user_id: number;
+  // NEW: Clean access control fields (refactored 2025-01-10)
+  access_scope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  owner_user_id?: number | null;
+  target_team_id?: number | null;
+  target_department_id?: number | null;
+  // File fields
   file_name: string;
   filename?: string;
   original_name?: string;
   file_content?: Buffer;
   file_size?: number;
   mime_type?: string;
+  // NEW: Flexible category (VARCHAR instead of ENUM)
   category: string;
   description?: string;
-  year?: number;
-  month?: string;
+  // NEW: Payroll-specific fields
+  salary_year?: number;
+  salary_month?: number;
   upload_date: Date;
   uploaded_at?: string;
   is_archived: boolean;
@@ -24,9 +31,6 @@ interface DbDocument extends RowDataPacket {
   last_downloaded?: Date;
   tenant_id: number;
   created_by?: number;
-  recipient_type?: string;
-  team_id?: number | null;
-  department_id?: number | null;
   // Extended fields from joins
   first_name?: string;
   last_name?: string;
@@ -37,21 +41,25 @@ interface DbDocument extends RowDataPacket {
 }
 
 interface DocumentCreateData {
-  userId?: number | null;
-  teamId?: number | null;
-  departmentId?: number | null;
-  recipientType?: 'user' | 'team' | 'department' | 'company';
-  fileName: string;
+  // NEW: Clean access control (refactored 2025-01-10)
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  ownerUserId?: number | null;
+  targetTeamId?: number | null;
+  targetDepartmentId?: number | null;
+  // File fields
+  fileName: string; // UUID-based filename for storage
+  originalName?: string; // User-visible name from modal input
   fileContent?: Buffer;
   category?: string;
   description?: string;
-  year?: number;
-  month?: string;
+  // NEW: Payroll-specific fields
+  salaryYear?: number;
+  salaryMonth?: number;
   tenant_id: number;
   createdBy?: number; // The user who uploads the document
   tags?: string[]; // Tags for the document
   mimeType?: string; // MIME type of the document
-  // NEW: UUID-based storage
+  // UUID-based storage
   fileUuid?: string; // UUID v4 for unique filename
   fileChecksum?: string; // SHA-256 hash for integrity
   storageType?: 'database' | 'filesystem' | 's3'; // Where file is stored
@@ -76,14 +84,15 @@ interface DocumentFilters {
   userId?: number;
   tenant_id?: number;
   category?: string;
-  year?: number;
-  month?: string;
+  // NEW: Payroll filters (refactored 2025-01-10)
+  salaryYear?: number;
+  salaryMonth?: number;
   isArchived?: boolean;
   searchTerm?: string;
   uploadDateFrom?: Date;
   uploadDateTo?: Date;
-  recipientType?: string;
-  recipientId?: number;
+  // NEW: Access scope filter instead of recipientType
+  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll';
   orderBy?: string;
   orderDirection?: 'ASC' | 'DESC';
   limit?: number;
@@ -105,16 +114,17 @@ interface TotalSizeResult extends RowDataPacket {
 }
 
 export async function createDocument({
-  userId,
-  teamId,
-  departmentId,
-  recipientType = 'user',
+  accessScope,
+  ownerUserId,
+  targetTeamId,
+  targetDepartmentId,
   fileName,
+  originalName, // User-visible name from modal input
   fileContent,
   category = 'other',
   description = '',
-  year,
-  month,
+  salaryYear,
+  salaryMonth,
   tenant_id,
   createdBy,
   tags,
@@ -125,36 +135,37 @@ export async function createDocument({
   version = 1,
   parentVersionId,
 }: DocumentCreateData): Promise<number> {
-  // Log creation based on recipient type
+  logger.info(`Creating document with access_scope=${accessScope} for tenant ${tenant_id}`);
 
-  // We need to also set default values for required fields
+  // NEW: Clean database structure (refactored 2025-01-10)
   const query =
-    'INSERT INTO documents (user_id, team_id, department_id, recipient_type, filename, original_name, file_path, file_size, mime_type, file_content, category, description, year, month, tenant_id, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    'INSERT INTO documents (tenant_id, access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month, filename, original_name, file_path, file_size, mime_type, file_content, category, description, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   try {
     const [result] = await executeQuery<ResultSetHeader>(query, [
-      userId ?? null, // user_id can be null for company documents
-      teamId,
-      departmentId,
-      recipientType,
-      fileName,
-      fileName, // original_name - same as filename for now
+      tenant_id,
+      accessScope,
+      ownerUserId ?? null, // owner_user_id for personal/payroll
+      targetTeamId ?? null, // target_team_id for team scope
+      targetDepartmentId ?? null, // target_department_id for department scope
+      salaryYear ?? null, // salary_year for payroll documents
+      salaryMonth ?? null, // salary_month for payroll documents
+      fileName, // UUID-based filename for storage
+      originalName ?? fileName, // User-visible name (fallback to fileName if not provided)
       `/uploads/documents/${fileName}`, // file_path - will be updated by controller with UUID path
       fileContent ? fileContent.length : 0, // file_size
       mimeType, // mime_type - use provided or default
       fileContent,
       category,
       description,
-      year,
-      month,
-      tenant_id,
-      createdBy ?? userId ?? 1, // created_by - use createdBy if provided, otherwise userId, otherwise 1
+      createdBy ?? ownerUserId ?? 1, // created_by - use createdBy if provided, otherwise ownerUserId, otherwise 1
       tags ? JSON.stringify(tags) : null, // tags as JSON
-      fileUuid ?? null, // NEW: UUID for unique filename
-      fileChecksum ?? null, // NEW: SHA-256 checksum
-      storageType, // NEW: storage type
-      version, // NEW: version number
-      parentVersionId ?? null, // NEW: parent version for versioning
+      fileUuid ?? null, // UUID for unique filename
+      fileChecksum ?? null, // SHA-256 checksum
+      storageType, // storage type
+      version, // version number
+      parentVersionId ?? null, // parent version for versioning
     ]);
+    logger.info(`Document created with ID ${result.insertId}`);
     return result.insertId;
   } catch (error: unknown) {
     logger.error(`Error creating document: ${(error as Error).message}`);
@@ -162,23 +173,28 @@ export async function createDocument({
   }
 }
 
+// DEPRECATED: Use findDocumentsByEmployeeWithAccess for full access control
+// This only returns documents where the user is the owner (personal/payroll)
 export async function findDocumentsByUserId(
   userId: number,
   tenantId: number,
 ): Promise<DbDocument[]> {
+  // NEW: Query by owner_user_id for personal/payroll documents (refactored 2025-01-10)
   const query =
-    'SELECT id, file_name, upload_date, category, description, year, month, is_archived FROM documents WHERE user_id = ? AND tenant_id = ? ORDER BY upload_date DESC';
+    'SELECT id, file_name, upload_date, category, description, salary_year, salary_month, is_archived, access_scope FROM documents WHERE owner_user_id = ? AND tenant_id = ? AND access_scope IN ("personal", "payroll") ORDER BY uploaded_at DESC';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [userId, tenantId]);
     return rows;
   } catch (error: unknown) {
     logger.error(
-      `Error fetching documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
+      `Error fetching owner documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
     );
     throw error;
   }
 }
 
+// DEPRECATED: Use findDocumentsByEmployeeWithAccess with filters for full access control
+// This only returns documents where the user is the owner (personal/payroll)
 export async function findDocumentsByUserIdAndCategory(
   userId: number,
   tenantId: number,
@@ -188,10 +204,11 @@ export async function findDocumentsByUserIdAndCategory(
   const resolvedArchived = archived ?? false;
 
   logger.info(
-    `Fetching ${category} documents for user ${userId} in tenant ${tenantId} (archived: ${resolvedArchived})`,
+    `Fetching ${category} owner documents for user ${userId} in tenant ${tenantId} (archived: ${resolvedArchived})`,
   );
+  // NEW: Query by owner_user_id with salary_month ordering (refactored 2025-01-10)
   const query =
-    'SELECT id, file_name, upload_date, category, description, year, month FROM documents WHERE user_id = ? AND tenant_id = ? AND category = ? AND is_archived = ? ORDER BY year DESC, CASE month WHEN "Januar" THEN 1 WHEN "Februar" THEN 2 WHEN "März" THEN 3 WHEN "April" THEN 4 WHEN "Mai" THEN 5 WHEN "Juni" THEN 6 WHEN "Juli" THEN 7 WHEN "August" THEN 8 WHEN "September" THEN 9 WHEN "Oktober" THEN 10 WHEN "November" THEN 11 WHEN "Dezember" THEN 12 ELSE 13 END DESC';
+    'SELECT id, file_name, upload_date, category, description, salary_year, salary_month, access_scope FROM documents WHERE owner_user_id = ? AND tenant_id = ? AND category = ? AND is_archived = ? AND access_scope IN ("personal", "payroll") ORDER BY salary_year DESC, salary_month DESC';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [
       userId,
@@ -202,7 +219,7 @@ export async function findDocumentsByUserIdAndCategory(
     return rows;
   } catch (error: unknown) {
     logger.error(
-      `Error fetching ${category} documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
+      `Error fetching ${category} owner documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
     );
     throw error;
   }
@@ -340,11 +357,12 @@ export async function findAllDocuments(
   logger.info(
     `Fetching all documents for tenant ${tenantId}${category != null && category !== '' ? ` of category ${category}` : ''}`,
   );
+  // NEW: Join on owner_user_id (refactored 2025-01-10)
   let query = `
       SELECT d.*, u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name
       FROM documents d
-      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN users u ON d.owner_user_id = u.id
       WHERE d.tenant_id = ?`;
 
   const params: unknown[] = [tenantId];
@@ -368,16 +386,19 @@ export async function findAllDocuments(
   }
 }
 
+// DEPRECATED: Use searchDocumentsWithEmployeeAccess for full access control
+// This only searches documents where the user is the owner (personal/payroll)
 export async function searchDocuments(
   userId: number,
   tenantId: number,
   searchTerm: string,
 ): Promise<DbDocument[]> {
   logger.info(
-    `Searching documents for user ${userId} in tenant ${tenantId} with term: ${searchTerm}`,
+    `Searching owner documents for user ${userId} in tenant ${tenantId} with term: ${searchTerm}`,
   );
+  // NEW: Search by owner_user_id (refactored 2025-01-10)
   const query =
-    'SELECT id, file_name, upload_date, category, description FROM documents WHERE user_id = ? AND tenant_id = ? AND (file_name LIKE ? OR description LIKE ?)';
+    'SELECT id, file_name, filename, upload_date, category, description, access_scope FROM documents WHERE owner_user_id = ? AND tenant_id = ? AND access_scope IN ("personal", "payroll") AND (filename LIKE ? OR description LIKE ?)';
   try {
     const [rows] = await executeQuery<DbDocument[]>(query, [
       userId,
@@ -386,18 +407,19 @@ export async function searchDocuments(
       `%${searchTerm}%`,
     ]);
     logger.info(
-      `Found ${rows.length} documents matching search for user ${userId} in tenant ${tenantId}`,
+      `Found ${rows.length} owner documents matching search for user ${userId} in tenant ${tenantId}`,
     );
     return rows;
   } catch (error: unknown) {
     logger.error(
-      `Error searching documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
+      `Error searching owner documents for user ${userId} in tenant ${tenantId}: ${(error as Error).message}`,
     );
     throw error;
   }
 }
 
 // Search documents with employee access (personal, team, department, company)
+// NEW: Updated for clean access_scope structure (refactored 2025-01-10)
 export async function searchDocumentsWithEmployeeAccess(
   userId: number,
   tenant_id: number,
@@ -405,42 +427,27 @@ export async function searchDocumentsWithEmployeeAccess(
 ): Promise<DbDocument[]> {
   logger.info(`Searching accessible documents for employee ${userId} with term: ${searchTerm}`);
 
-  let query = `
+  const query = `
       SELECT DISTINCT d.*,
         u.first_name, u.last_name,
         CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
         t.name as team_name,
         dept.name as department_name,
         CASE
-          WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
-          WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
-          WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
-          WHEN d.recipient_type = 'company' THEN 'Gesamte Firma'
+          WHEN d.access_scope = 'personal' THEN CONCAT(u.first_name, ' ', u.last_name)
+          WHEN d.access_scope = 'team' THEN CONCAT('Team: ', t.name)
+          WHEN d.access_scope = 'department' THEN CONCAT('Abteilung: ', dept.name)
+          WHEN d.access_scope = 'company' THEN 'Gesamte Firma'
+          WHEN d.access_scope = 'payroll' THEN 'Gehalt'
           ELSE 'Unbekannt'
         END as recipient_display
       FROM documents d
-      LEFT JOIN users u ON d.user_id = u.id
-      LEFT JOIN teams t ON d.team_id = t.id
-      LEFT JOIN departments dept ON d.department_id = dept.id
+      LEFT JOIN users u ON d.owner_user_id = u.id
+      LEFT JOIN teams t ON d.target_team_id = t.id
+      LEFT JOIN departments dept ON d.target_department_id = dept.id
       WHERE d.tenant_id = ?
         AND (d.filename LIKE ? OR d.description LIKE ?)
-        AND (
-          -- Personal documents
-          (d.recipient_type = 'user' AND d.user_id = ?)
-          OR
-          -- Team documents (user is member of the team)
-          (d.recipient_type = 'team' AND d.team_id IN (
-            SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
-          ))
-          OR
-          -- Department documents (user is in the department)
-          (d.recipient_type = 'department' AND d.department_id = (
-            SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
-          ))
-          OR
-          -- Company-wide documents
-          d.recipient_type = 'company'
-        )
+        AND ${buildAccessCondition()}
       ORDER BY d.uploaded_at DESC`;
 
   try {
@@ -448,11 +455,12 @@ export async function searchDocumentsWithEmployeeAccess(
       tenant_id,
       `%${searchTerm}%`,
       `%${searchTerm}%`,
-      userId,
-      userId,
-      tenant_id,
-      userId,
-      tenant_id,
+      userId, // personal
+      userId, // payroll
+      userId, // team
+      tenant_id, // team
+      userId, // department
+      tenant_id, // department
     ]);
     logger.info(`Found ${rows.length} accessible documents matching search for employee ${userId}`);
     return rows;
@@ -514,23 +522,27 @@ export async function findDocumentsByUser(userId: number, tenantId: number): Pro
 }
 
 // Helper: Build access condition SQL for documents
+// NEW: Uses clean access_scope structure (refactored 2025-01-10)
 function buildAccessCondition(): string {
   return `(
-    -- Personal documents
-    (d.recipient_type = 'user' AND d.user_id = ?)
+    -- Personal documents (only owner can access)
+    (d.access_scope = 'personal' AND d.owner_user_id = ?)
+    OR
+    -- Payroll documents (only owner can access)
+    (d.access_scope = 'payroll' AND d.owner_user_id = ?)
     OR
     -- Team documents (user is member of the team)
-    (d.recipient_type = 'team' AND d.team_id IN (
+    (d.access_scope = 'team' AND d.target_team_id IN (
       SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?
     ))
     OR
     -- Department documents (user is in the department)
-    (d.recipient_type = 'department' AND d.department_id = (
+    (d.access_scope = 'department' AND d.target_department_id = (
       SELECT department_id FROM users WHERE id = ? AND tenant_id = ?
     ))
     OR
-    -- Company-wide documents
-    d.recipient_type = 'company'
+    -- Company-wide documents (all users in tenant)
+    d.access_scope = 'company'
   )`;
 }
 
@@ -573,9 +585,11 @@ function applyDocumentFilters(
     type: 'string' | 'number';
   }[] = [
     { field: 'category', condition: ' AND d.category = ?', type: 'string' },
-    { field: 'year', condition: ' AND d.year = ?', type: 'number' },
-    { field: 'month', condition: ' AND d.month = ?', type: 'string' },
-    { field: 'recipientType', condition: ' AND d.recipient_type = ?', type: 'string' },
+    // NEW: Payroll filters (refactored 2025-01-10)
+    { field: 'salaryYear', condition: ' AND d.salary_year = ?', type: 'number' },
+    { field: 'salaryMonth', condition: ' AND d.salary_month = ?', type: 'number' },
+    // NEW: Access scope filter instead of recipientType
+    { field: 'accessScope', condition: ' AND d.access_scope = ?', type: 'string' },
   ];
 
   // Apply simple filters
@@ -616,6 +630,7 @@ function addOrdering(query: string, filters?: DocumentFilters): string {
 }
 
 // Helper: Execute count query
+// NEW: Updated for clean access_scope structure (refactored 2025-01-10)
 async function getDocumentCount(
   tenant_id: number,
   userId: number,
@@ -624,12 +639,13 @@ async function getDocumentCount(
   const baseQuery = `
     SELECT COUNT(DISTINCT d.id) as total
     FROM documents d
-    LEFT JOIN users u ON d.user_id = u.id
-    LEFT JOIN teams t ON d.team_id = t.id
-    LEFT JOIN departments dept ON d.department_id = dept.id
+    LEFT JOIN users u ON d.owner_user_id = u.id
+    LEFT JOIN teams t ON d.target_team_id = t.id
+    LEFT JOIN departments dept ON d.target_department_id = dept.id
     WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
 
-  const baseParams: unknown[] = [tenant_id, userId, userId, tenant_id, userId, tenant_id];
+  // NEW: Parameters for buildAccessCondition: userId (personal), userId (payroll), userId (team), tenant_id (team), userId (dept), tenant_id (dept)
+  const baseParams: unknown[] = [tenant_id, userId, userId, userId, tenant_id, userId, tenant_id];
   const { query, params } = applyDocumentFilters(baseQuery, baseParams, filters);
 
   const [countResult] = await executeQuery<CountResult[]>(query, params);
@@ -645,6 +661,7 @@ export async function findDocumentsByEmployeeWithAccess(
 ): Promise<{ documents: DbDocument[]; total: number }> {
   logger.info(`Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`);
 
+  // NEW: Clean structure with access_scope (refactored 2025-01-10)
   const baseQuery = `
     SELECT DISTINCT d.*,
       u.first_name, u.last_name,
@@ -655,20 +672,22 @@ export async function findDocumentsByEmployeeWithAccess(
       t.name as team_name,
       dept.name as department_name,
       CASE
-        WHEN d.recipient_type = 'user' THEN CONCAT(u.first_name, ' ', u.last_name)
-        WHEN d.recipient_type = 'team' THEN CONCAT('Team: ', t.name)
-        WHEN d.recipient_type = 'department' THEN CONCAT('Abteilung: ', dept.name)
-        WHEN d.recipient_type = 'company' THEN 'Gesamte Firma'
+        WHEN d.access_scope = 'personal' THEN CONCAT(u.first_name, ' ', u.last_name)
+        WHEN d.access_scope = 'team' THEN CONCAT('Team: ', t.name)
+        WHEN d.access_scope = 'department' THEN CONCAT('Abteilung: ', dept.name)
+        WHEN d.access_scope = 'company' THEN 'Gesamte Firma'
+        WHEN d.access_scope = 'payroll' THEN 'Gehalt'
         ELSE 'Unbekannt'
       END as recipient_display
     FROM documents d
-    LEFT JOIN users u ON d.user_id = u.id
+    LEFT JOIN users u ON d.owner_user_id = u.id
     LEFT JOIN users uploader ON d.created_by = uploader.id
-    LEFT JOIN teams t ON d.team_id = t.id
-    LEFT JOIN departments dept ON d.department_id = dept.id
+    LEFT JOIN teams t ON d.target_team_id = t.id
+    LEFT JOIN departments dept ON d.target_department_id = dept.id
     WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
 
-  const baseParams: unknown[] = [tenant_id, userId, userId, tenant_id, userId, tenant_id];
+  // NEW: Parameters for buildAccessCondition
+  const baseParams: unknown[] = [tenant_id, userId, userId, userId, tenant_id, userId, tenant_id];
 
   try {
     // Get total count
@@ -743,9 +762,9 @@ function applyAllDocumentFilters(
   let updatedQuery = query;
   const updatedParams = [...params];
 
-  // Add user filter
+  // Add owner user filter (NEW: uses owner_user_id, refactored 2025-01-10)
   if (filters.userId != null && filters.userId !== 0) {
-    updatedQuery += ' AND d.user_id = ?';
+    updatedQuery += ' AND d.owner_user_id = ?';
     updatedParams.push(filters.userId);
   }
 
@@ -805,6 +824,7 @@ export async function findDocumentsWithFilters(
   tenantId: number,
   filters: DocumentFilters,
 ): Promise<{ documents: DbDocument[]; total: number }> {
+  // NEW: Join on owner_user_id (refactored 2025-01-10)
   const baseQuery = `
       SELECT d.*,
              u.first_name, u.last_name,
@@ -813,14 +833,14 @@ export async function findDocumentsWithFilters(
              uploader.last_name AS uploader_last_name,
              CONCAT(uploader.first_name, ' ', uploader.last_name) AS uploaded_by_name
       FROM documents d
-      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN users u ON d.owner_user_id = u.id
       LEFT JOIN users uploader ON d.created_by = uploader.id
       WHERE 1=1`;
 
   const baseCountQuery = `
       SELECT COUNT(DISTINCT d.id) as total
       FROM documents d
-      LEFT JOIN users u ON d.user_id = u.id
+      LEFT JOIN users u ON d.owner_user_id = u.id
       WHERE 1=1`;
 
   try {
@@ -893,6 +913,7 @@ export async function isDocumentReadByUser(
 }
 
 // Get unread documents count for a user
+// NEW: Updated for clean access_scope structure (refactored 2025-01-10)
 export async function getUnreadDocumentCountForUser(
   userId: number,
   tenant_id: number,
@@ -901,31 +922,32 @@ export async function getUnreadDocumentCountForUser(
       SELECT COUNT(DISTINCT d.id) as unread_count
       FROM documents d
       LEFT JOIN document_read_status drs ON d.id = drs.document_id AND drs.user_id = ? AND drs.tenant_id = ?
-      LEFT JOIN user_teams ut ON d.team_id = ut.team_id AND ut.user_id = ? AND ut.tenant_id = ?
+      LEFT JOIN user_teams ut ON d.target_team_id = ut.team_id AND ut.user_id = ? AND ut.tenant_id = ?
       LEFT JOIN users u ON u.id = ? AND u.tenant_id = ?
       WHERE d.tenant_id = ?
         AND drs.id IS NULL
-        AND (
-          (d.recipient_type = 'user' AND d.user_id = ?)
-          OR (d.recipient_type = 'team' AND ut.user_id IS NOT NULL)
-          OR (d.recipient_type = 'department' AND d.department_id = u.department_id)
-          OR d.recipient_type = 'company'
-        )
+        AND ${buildAccessCondition()}
     `;
   const [results] = await executeQuery<RowDataPacket[]>(query, [
-    userId,
-    tenant_id,
-    userId,
-    tenant_id,
-    userId,
-    tenant_id,
-    tenant_id,
-    userId,
+    userId, // document_read_status join
+    tenant_id, // document_read_status join
+    userId, // user_teams join
+    tenant_id, // user_teams join
+    userId, // users join
+    tenant_id, // users join
+    tenant_id, // WHERE tenant filter
+    userId, // buildAccessCondition: personal
+    userId, // buildAccessCondition: payroll
+    userId, // buildAccessCondition: team
+    tenant_id, // buildAccessCondition: team
+    userId, // buildAccessCondition: department
+    tenant_id, // buildAccessCondition: department
   ]);
   return (results[0] as { unread_count?: number }).unread_count ?? 0;
 }
 
 // Get document counts by category for a user
+// NEW: Updated for clean access_scope structure (refactored 2025-01-10)
 export async function getDocumentCountsByCategory(
   tenant_id: number,
   userId: number,
@@ -935,16 +957,11 @@ export async function getDocumentCountsByCategory(
         d.category,
         COUNT(DISTINCT d.id) as count
       FROM documents d
-      LEFT JOIN user_teams ut ON d.team_id = ut.team_id AND ut.user_id = ?
+      LEFT JOIN user_teams ut ON d.target_team_id = ut.team_id AND ut.user_id = ?
       LEFT JOIN users u ON u.id = ?
       WHERE d.tenant_id = ?
         AND d.is_archived = false
-        AND (
-          (d.recipient_type = 'user' AND d.user_id = ?)
-          OR (d.recipient_type = 'team' AND ut.user_id IS NOT NULL)
-          OR (d.recipient_type = 'department' AND d.department_id = u.department_id)
-          OR d.recipient_type = 'company'
-        )
+        AND ${buildAccessCondition()}
       GROUP BY d.category
     `;
 
@@ -953,7 +970,17 @@ export async function getDocumentCountsByCategory(
     count: number;
   }
 
-  const [results] = await executeQuery<CategoryCount[]>(query, [userId, userId, tenant_id, userId]);
+  const [results] = await executeQuery<CategoryCount[]>(query, [
+    userId, // user_teams join
+    userId, // users join
+    tenant_id, // WHERE tenant filter
+    userId, // buildAccessCondition: personal
+    userId, // buildAccessCondition: payroll
+    userId, // buildAccessCondition: team
+    tenant_id, // buildAccessCondition: team
+    userId, // buildAccessCondition: department
+    tenant_id, // buildAccessCondition: department
+  ]);
 
   // Convert to object
   const counts: Record<string, number> = {

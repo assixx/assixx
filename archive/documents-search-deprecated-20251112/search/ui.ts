@@ -135,7 +135,7 @@ export function renderEmptyState(searchTerm: string): void {
  */
 function createDocumentCard(doc: Document): string {
   const icon = getFileIcon(doc.file_name);
-  const scopeLabel = getScopeLabel(doc.scope);
+  const scopeLabel = getScopeLabel(doc.scope ?? 'unknown');
   const isRead = doc.is_read ?? false;
 
   const cardHTML = `

@@ -29,7 +29,7 @@ export type SortOption = 'newest' | 'oldest' | 'name' | 'size';
 export type UserRole = 'employee' | 'admin' | 'root';
 
 /**
- * Document interface
+ * Document interface (NEW: clean structure, refactored 2025-01-10)
  * Matches backend API v2 response structure
  */
 export interface Document {
@@ -45,11 +45,23 @@ export interface Document {
   /** Document category/type */
   category: string;
 
-  /** Year the document belongs to */
-  year: number;
+  /** NEW: Access scope - WHO can see this document */
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
 
-  /** Month the document belongs to (1-12) */
-  month: number | null;
+  /** NEW: Owner user ID (for personal/payroll documents) */
+  ownerUserId?: number | null;
+
+  /** NEW: Target team ID (for team documents) */
+  targetTeamId?: number | null;
+
+  /** NEW: Target department ID (for department documents) */
+  targetDepartmentId?: number | null;
+
+  /** NEW: Salary year (for payroll documents) */
+  salaryYear?: number | null;
+
+  /** NEW: Salary month 1-12 (for payroll documents) */
+  salaryMonth?: number | null;
 
   /** File size in bytes */
   size: number;
@@ -66,11 +78,8 @@ export interface Document {
   /** Whether document has been read by current user */
   isRead: boolean;
 
-  /** Recipient type: 'user' | 'team' | 'department' | 'company' */
-  recipientType: string;
-
-  /** ID of recipient (user/team/department ID, null for company) */
-  recipientId: number | null;
+  /** ID of recipient (computed field for compatibility) */
+  recipientId?: number | null;
 
   /** Download URL */
   downloadUrl: string;
@@ -189,26 +198,38 @@ export interface ApiResponse<T> {
 }
 
 /**
- * Upload form data
+ * Upload form data (NEW: clean structure, refactored 2025-01-10)
  */
 export interface UploadFormData {
   /** PDF file */
   file: File;
 
-  /** Recipient type */
-  recipientType: 'user' | 'team' | 'department' | 'company';
+  /** NEW: Access scope - WHO can see this document */
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
 
-  /** Recipient ID (null for company) */
-  recipientId: number | null;
+  /** NEW: Owner user ID (for personal/payroll documents) */
+  ownerUserId?: number | null;
+
+  /** NEW: Target team ID (for team documents) */
+  targetTeamId?: number | null;
+
+  /** NEW: Target department ID (for department documents) */
+  targetDepartmentId?: number | null;
 
   /** Document category */
   category: string;
 
-  /** Year */
-  year: number;
+  /** Document name (user-visible name, from input field) */
+  documentName?: string | null;
 
-  /** Month (1-12, null if not applicable) */
-  month: number | null;
+  /** Document description (optional) */
+  description?: string | null;
+
+  /** NEW: Salary year (for payroll documents) */
+  salaryYear?: number | null;
+
+  /** NEW: Salary month 1-12 (for payroll documents) */
+  salaryMonth?: number | null;
 }
 
 /**

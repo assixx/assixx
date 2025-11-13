@@ -166,10 +166,11 @@ class SidebarManager {
   }
 
   /**
-   * Calculate document counts per category
+   * Calculate document counts per category (NEW: clean structure, refactored 2025-01-10)
+   * Direct 1:1 mapping with accessScope!
    */
   private calculateCategoryCounts(
-    documents: { recipientType: string; category: string }[],
+    documents: { accessScope: string; category: string }[],
   ): Record<DocumentCategory, number> {
     const counts: Record<DocumentCategory, number> = {
       all: documents.length,
@@ -181,9 +182,9 @@ class SidebarManager {
     };
 
     documents.forEach((doc) => {
-      // Map recipient type to category
-      switch (doc.recipientType) {
-        case 'user':
+      // NEW: Direct mapping with accessScope - perfect 1:1!
+      switch (doc.accessScope) {
+        case 'personal':
           counts.personal++;
           break;
         case 'team':
@@ -195,18 +196,14 @@ class SidebarManager {
         case 'company':
           counts.company++;
           break;
-      }
-
-      // Check if it's a payroll document
-      if (
-        doc.category.toLowerCase().includes('gehalt') ||
-        doc.category.toLowerCase().includes('payroll') ||
-        doc.category.toLowerCase().includes('lohn')
-      ) {
-        counts.payroll++;
+        case 'payroll':
+          counts.payroll++;
+          break;
       }
     });
 
+    // REMOVED: No more broken payroll string matching!
+    // accessScope='payroll' is already counted above
     return counts;
   }
 }

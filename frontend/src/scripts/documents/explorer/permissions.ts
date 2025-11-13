@@ -40,14 +40,17 @@ class PermissionsManager {
     }
 
     // Company-wide documents are visible to all authenticated users
-    if (document.recipientType === 'company') {
+    if (document.accessScope === 'company') {
       return true;
     }
 
-    // For personal/team/department documents, check if user is the recipient
-    // Note: This is a simplified check - backend should provide full recipient validation
-    // including team/department membership
-    if (userId !== undefined && document.recipientType === 'personal' && document.recipientId === userId) {
+    // For personal/payroll documents, check if user is the owner
+    // Note: This is a simplified check - backend should provide full access validation
+    if (
+      userId !== undefined &&
+      (document.accessScope === 'personal' || document.accessScope === 'payroll') &&
+      document.ownerUserId === userId
+    ) {
       return true;
     }
 

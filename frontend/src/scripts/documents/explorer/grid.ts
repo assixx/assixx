@@ -81,7 +81,7 @@ class GridViewManager {
   private createDocumentCard(doc: Document): string {
     const date = this.formatRelativeDate(doc.uploadedAt);
     const size = this.formatFileSize(doc.size);
-    const isNewDoc = this.isDocumentNew(doc.uploadedAt);
+    const isNewDoc = this.isDocumentNew(doc);
     const showActions = isAdmin();
 
     return `
@@ -93,10 +93,7 @@ class GridViewManager {
         <!-- Card Header: Icon & Badge -->
         <div class="flex items-start justify-between mb-3">
           <div class="flex items-center gap-3">
-            <svg class="w-10 h-10 text-error-500 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"></path>
-              <path fill="#fff" d="M14 2v6h6"></path>
-            </svg>
+            <i class="fas fa-file-alt flex-shrink-0" style="font-size: 40px; color: var(--color-icon-primary);"></i>
             <div class="flex flex-col gap-1">
               ${isNewDoc ? '<span class="px-2 py-0.5 bg-success-100 text-success-700 text-xs font-medium rounded">Neu</span>' : ''}
               ${!doc.isRead ? '<span class="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-medium rounded">Ungelesen</span>' : ''}
@@ -121,8 +118,8 @@ class GridViewManager {
 
         <!-- Card Body: Document Info -->
         <div class="mb-3">
-          <h3 class="text-sm font-medium text-content-primary truncate mb-1 ${!doc.isRead ? 'font-semibold' : ''}" title="${this.escapeHtml(doc.filename)}">
-            ${this.truncateFilename(doc.filename, 40)}
+          <h3 class="text-sm font-medium text-content-primary truncate mb-1 ${!doc.isRead ? 'font-semibold' : ''}" title="${this.escapeHtml(this.getDisplayName(doc))}">
+            ${this.truncateFilename(this.getDisplayName(doc), 40)}
           </h3>
           <p class="text-xs text-content-secondary">${this.escapeHtml(doc.category)}</p>
         </div>
@@ -182,7 +179,7 @@ class GridViewManager {
 
     if (doc) {
       stateManager.setSelectedDocument(doc);
-      stateManager.markAsRead(documentId);
+      stateManager.markAsRead(doc.id); // Use doc.id (number) instead of documentId (string)
     }
   }
 
@@ -239,7 +236,7 @@ class GridViewManager {
       if (!option) return;
 
       const action = option.getAttribute('data-action');
-      if (!action || !this.currentDocumentId) return;
+      if (action === null || action === '' || this.currentDocumentId === null || this.currentDocumentId === '') return;
 
       this.handleActionMenuClick(action, this.currentDocumentId);
       this.hideActionMenu();
@@ -259,7 +256,7 @@ class GridViewManager {
 
     // Escape key to close
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.actionMenuEl?.classList.contains('active')) {
+      if (e.key === 'Escape' && this.actionMenuEl?.classList.contains('active') === true) {
         this.hideActionMenu();
       }
     });
@@ -278,13 +275,12 @@ class GridViewManager {
         this.downloadDocument(doc);
         break;
       case 'delete':
-        // TODO: Implement delete functionality
-        console.log('Delete document:', documentId);
+        // DELETE FEATURE: Requires backend DELETE /api/v2/documents/:id endpoint + permission check
+        // Currently shows placeholder alert until backend endpoint is ready
         alert('Löschen-Funktion folgt noch');
         break;
       case 'move':
-        // TODO: Implement move functionality
-        console.log('Move document:', documentId);
+        // MOVE FEATURE: Not planned for current phase - requires folder system architecture
         alert('Verschieben-Funktion folgt noch');
         break;
       default:
@@ -379,14 +375,35 @@ class GridViewManager {
   }
 
   /**
-   * Check if document is new (uploaded in last 7 days)
+   * Check if document should show "Neu" badge
+   * Badge shows when: (uploaded in last 7 days) AND (user has NOT read it yet)
    */
-  private isDocumentNew(uploadedAt: string): boolean {
-    const uploadDate = new Date(uploadedAt);
+  private isDocumentNew(doc: Document): boolean {
+    // Check if uploaded in last 7 days
+    const uploadDate = new Date(doc.uploadedAt);
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const isRecent = uploadDate >= sevenDaysAgo;
 
-    return uploadDate >= sevenDaysAgo;
+    // Show badge only if recent AND not yet read by current user
+    return isRecent && !doc.isRead;
+  }
+
+  /**
+   * Extract file extension from stored filename (UUID-based)
+   */
+  private getFileExtension(storedFilename: string): string {
+    const lastDot = storedFilename.lastIndexOf('.');
+    return lastDot !== -1 ? storedFilename.substring(lastDot) : '';
+  }
+
+  /**
+   * Get display name with extension (original name + extension from stored filename)
+   * Example: "testfile" + ".pdf" = "testfile.pdf"
+   */
+  private getDisplayName(doc: Document): string {
+    const extension = this.getFileExtension(doc.storedFilename);
+    return doc.filename + extension;
   }
 
   /**

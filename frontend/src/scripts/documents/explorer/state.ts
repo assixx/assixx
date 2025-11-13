@@ -17,6 +17,7 @@ import type {
   UserRole,
   ViewMode,
 } from './types';
+import { documentAPI } from './api';
 
 /**
  * State Manager
@@ -177,9 +178,9 @@ class StateManager {
 
   /**
    * Mark document as read
-   * @param documentId - UUID of document
+   * @param documentId - Document ID (numeric)
    */
-  public markAsRead(documentId: string): void {
+  public markAsRead(documentId: number): void {
     const docIndex = this.state.documents.findIndex((d) => d.id === documentId);
     if (docIndex !== -1) {
       // eslint-disable-next-line security/detect-object-injection
@@ -208,57 +209,90 @@ class StateManager {
       filtered = filtered.filter((doc) => this.matchesCategory(doc, this.state.currentCategory));
     }
 
-    // Filter by search query - searchQuery is always string (never null/undefined)
+    // Filter by search query with smart scoring (Windows Explorer style)
     const searchQuery = this.state.searchQuery;
     if (searchQuery !== '') {
-      filtered = filtered.filter((doc) => this.matchesSearch(doc, searchQuery));
-    }
+      // Score each document and filter out non-matches (score = 0)
+      const scoredDocs = filtered
+        .map((doc: Document) => ({
+          doc,
+          score: this.getSearchScore(doc, searchQuery),
+        }))
+        .filter((item: { doc: Document; score: number }) => item.score > 0);
 
-    // Sort
-    filtered.sort((a, b) => this.compareDocuments(a, b, this.state.sortOption));
+      // Sort by score first (highest first), then by user preference
+      scoredDocs.sort((a: { doc: Document; score: number }, b: { doc: Document; score: number }) => {
+        if (a.score !== b.score) {
+          return b.score - a.score; // Higher score first
+        }
+        return this.compareDocuments(a.doc, b.doc, this.state.sortOption);
+      });
+
+      filtered = scoredDocs.map((item: { doc: Document; score: number }) => item.doc);
+    } else {
+      // Normal sort without search
+      filtered.sort((a, b) => this.compareDocuments(a, b, this.state.sortOption));
+    }
 
     this.updateState({ filteredDocuments: filtered });
   }
 
   /**
-   * Check if document matches category
+   * Check if document matches category (NEW: clean structure, refactored 2025-01-10)
+   * Direct 1:1 mapping - no translation layer needed!
    */
   private matchesCategory(doc: Document, category: DocumentCategory): boolean {
-    const categoryMap: Record<string, DocumentCategory> = {
-      user: 'personal',
-      team: 'team',
-      department: 'department',
-      company: 'company',
-    };
-
-    // Special handling for payroll category
-    if (category === 'payroll') {
-      return (
-        doc.category.toLowerCase().includes('gehalt') ||
-        doc.category.toLowerCase().includes('payroll') ||
-        doc.category.toLowerCase().includes('lohn')
-      );
+    if (category === 'all') {
+      return true;
     }
 
-    const mappedCategory = categoryMap[doc.recipientType];
-    return mappedCategory === category;
+    // NEW: Direct comparison with accessScope - perfect 1:1 mapping!
+    // Sidebar category === database access_scope === backend field
+    return doc.accessScope === category;
   }
 
   /**
-   * Check if document matches search query
+   * Get search score for document (Windows Explorer style)
+   * Higher score = better match
+   *
+   * Scoring:
+   * - 100: Filename starts with query (highest priority)
+   * - 50: Filename contains query
+   * - 25: Category/uploader/metadata contains query
+   * - 0: No match
+   *
+   * Best Practice 2025: Prefix matching with priority scoring
    */
-  private matchesSearch(doc: Document, query: string): boolean {
-    const searchableText = [
-      doc.filename,
-      doc.category,
-      doc.uploaderName,
-      `${doc.year}`,
-      doc.month !== null && doc.month !== 0 ? `${doc.month}` : '',
-    ]
-      .join(' ')
-      .toLowerCase();
+  private getSearchScore(doc: Document, query: string): number {
+    const filenameLower = doc.filename.toLowerCase();
+    const categoryLower = doc.category.toLowerCase();
+    const uploaderLower = doc.uploaderName.toLowerCase();
+    const yearStr = doc.salaryYear !== null && doc.salaryYear !== undefined ? `${doc.salaryYear}` : '';
+    const monthStr =
+      doc.salaryMonth !== null && doc.salaryMonth !== undefined && doc.salaryMonth !== 0 ? `${doc.salaryMonth}` : '';
 
-    return searchableText.includes(query);
+    // Highest priority: Filename starts with query
+    if (filenameLower.startsWith(query)) {
+      return 100;
+    }
+
+    // High priority: Filename contains query
+    if (filenameLower.includes(query)) {
+      return 50;
+    }
+
+    // Medium priority: Category, uploader, or metadata contains query
+    if (
+      categoryLower.includes(query) ||
+      uploaderLower.includes(query) ||
+      yearStr.includes(query) ||
+      monthStr.includes(query)
+    ) {
+      return 25;
+    }
+
+    // No match
+    return 0;
   }
 
   /**
@@ -311,16 +345,46 @@ class StateManager {
    * Refresh documents from API
    * Used after upload or when retry button is clicked
    */
-  public refreshDocuments(): void {
+  public async refreshDocuments(): Promise<void> {
     this.setLoading(true);
     this.setError(null);
 
     try {
-      // Will be implemented by API module
-      // For now, just clear loading state
+      console.info('[StateManager] Refreshing documents after upload...');
+
+      // Fetch fresh documents from backend
+      const documents = await documentAPI.fetchDocuments();
+
+      console.info(`[StateManager] Loaded ${documents.length} documents after refresh`);
+
+      // DEBUG: Log first document (newest) with all relevant fields
+      if (documents.length > 0) {
+        const newest = documents[0];
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const uploadDate = new Date(newest.uploadedAt);
+        const isRecent = uploadDate >= sevenDaysAgo;
+
+        console.log('[StateManager DEBUG] Newest document:', {
+          id: newest.id,
+          filename: newest.filename,
+          uploadedAt: newest.uploadedAt,
+          uploadDateParsed: uploadDate.toISOString(),
+          isRead: newest.isRead,
+          uploadedBy: newest.uploadedBy,
+          isRecent,
+          shouldShowNewBadge: isRecent && !newest.isRead,
+          sevenDaysAgo: sevenDaysAgo.toISOString(),
+        });
+      }
+
+      // Update state with fresh data
+      this.setDocuments(documents);
       this.setLoading(false);
     } catch (error) {
+      console.error('[StateManager] Failed to refresh documents:', error);
       this.setError(error instanceof Error ? error.message : 'Fehler beim Laden');
+      this.setLoading(false);
     }
   }
 

@@ -54,20 +54,22 @@ export class ServiceError extends Error {
   }
 }
 
+// NEW: Clean filter structure (refactored 2025-01-10)
 export interface DocumentFilters {
   category?: string;
-  recipientType?: string;
-  userId?: number;
-  teamId?: number;
-  departmentId?: number;
-  year?: number;
-  month?: number;
+  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  ownerUserId?: number;
+  targetTeamId?: number;
+  targetDepartmentId?: number;
+  salaryYear?: number;
+  salaryMonth?: number;
   isArchived?: boolean;
   search?: string;
   page?: number;
   limit?: number;
 }
 
+// NEW: Clean create input structure (refactored 2025-01-10)
 export interface DocumentCreateInput {
   filename: string;
   originalName: string;
@@ -75,17 +77,19 @@ export interface DocumentCreateInput {
   fileContent: Buffer;
   mimeType: string;
   category: string;
-  recipientType: string;
-  userId?: number;
-  teamId?: number;
-  departmentId?: number;
+  // NEW: Clean access control
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  ownerUserId?: number;
+  targetTeamId?: number;
+  targetDepartmentId?: number;
   description?: string;
-  year?: number;
-  month?: number;
+  // NEW: Payroll fields
+  salaryYear?: number;
+  salaryMonth?: number;
   tags?: string[];
   isPublic?: boolean;
   expiresAt?: Date;
-  // NEW: UUID-based storage
+  // UUID-based storage
   fileUuid?: string;
   fileChecksum?: string;
   filePath?: string;
@@ -137,15 +141,13 @@ class DocumentsService {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.USER_NOT_FOUND, 404);
       }
 
-      // Build filter object for model
+      // Build filter object for model (NEW: clean structure, refactored 2025-01-10)
       const modelFilters = {
         category: filters?.category,
-        recipientType: filters?.recipientType,
-        userId: filters?.userId,
-        teamId: filters?.teamId,
-        departmentId: filters?.departmentId,
-        year: filters?.year,
-        month: filters?.month?.toString(),
+        accessScope: filters?.accessScope,
+        userId: filters?.ownerUserId, // Map ownerUserId -> userId for model compatibility
+        salaryYear: filters?.salaryYear,
+        salaryMonth: filters?.salaryMonth,
         isArchived: filters?.isArchived ?? false,
         searchTerm: filters?.search, // Map 'search' to 'searchTerm' for model
         limit,
@@ -231,31 +233,35 @@ class DocumentsService {
   }
 
   /**
-   * Extract recipient ID based on recipient type
-   * Extracted to reduce cognitive complexity
+   * Extract recipient ID based on access scope
+   * NEW: Uses clean access_scope structure (refactored 2025-01-10)
    */
   private extractRecipientId(apiDoc: Record<string, unknown>): number | null {
-    if (apiDoc.recipientType === 'user') {
-      return typeof apiDoc.userId === 'number' ? apiDoc.userId : null;
+    const accessScope = apiDoc.accessScope as string;
+
+    if (accessScope === 'personal' || accessScope === 'payroll') {
+      return typeof apiDoc.ownerUserId === 'number' ? apiDoc.ownerUserId : null;
     }
-    if (apiDoc.recipientType === 'team') {
-      return typeof apiDoc.teamId === 'number' ? apiDoc.teamId : null;
+    if (accessScope === 'team') {
+      return typeof apiDoc.targetTeamId === 'number' ? apiDoc.targetTeamId : null;
     }
-    if (apiDoc.recipientType === 'department') {
-      return typeof apiDoc.departmentId === 'number' ? apiDoc.departmentId : null;
+    if (accessScope === 'department') {
+      return typeof apiDoc.targetDepartmentId === 'number' ? apiDoc.targetDepartmentId : null;
     }
+    // Company-wide documents have no specific recipient
     return null;
   }
 
   /**
    * Map null recipient IDs to undefined
+   * NEW: Uses clean field names (refactored 2025-01-10)
    */
   private mapRecipientIds(apiDoc: Record<string, unknown>): void {
-    if (apiDoc.userId === null) apiDoc.userId = undefined;
+    if (apiDoc.ownerUserId === null) apiDoc.ownerUserId = undefined;
 
-    if (apiDoc.teamId === null) apiDoc.teamId = undefined;
+    if (apiDoc.targetTeamId === null) apiDoc.targetTeamId = undefined;
 
-    if (apiDoc.departmentId === null) apiDoc.departmentId = undefined;
+    if (apiDoc.targetDepartmentId === null) apiDoc.targetDepartmentId = undefined;
   }
 
   /**
@@ -276,11 +282,13 @@ class DocumentsService {
    * @param id - The resource ID
    * @param userId - The user ID
    * @param tenantId - The tenant ID
+   * @param shouldMarkAsRead - Whether to mark document as read (default: true, false for upload response)
    */
   async getDocumentById(
     id: number,
     userId: number,
     tenantId: number,
+    shouldMarkAsRead: boolean = true,
   ): Promise<Record<string, unknown>> {
     try {
       const document = await Document.findById(id, tenantId);
@@ -300,8 +308,10 @@ class DocumentsService {
         );
       }
 
-      // Mark as read and get status
-      await Document.markAsRead(id, userId, tenantId);
+      // Mark as read only if requested (skip for upload to show "Neu" badge)
+      if (shouldMarkAsRead) {
+        await Document.markAsRead(id, userId, tenantId);
+      }
       const isRead = await Document.isReadByUser(id, userId, tenantId);
 
       const apiDoc = dbToApi(document);
@@ -344,28 +354,36 @@ class DocumentsService {
       if (!this.isAllowedFileType(data.mimeType)) {
         throw new ServiceError(
           ERROR_CODES.BAD_REQUEST,
-          'File type not allowed. Only PDF files are accepted',
+          'File type not allowed. Allowed types: PDF, JPG, PNG, DOCX, DOC, XLSX, XLS (max 5MB)',
           400,
         );
       }
 
-      // Create document data (note: model expects camelCase for some fields)
+      // Create document data (NEW: clean structure, refactored 2025-01-10)
       const documentData = {
         tenant_id: tenantId,
-        userId: data.userId ?? createdBy, // Always set userId - use createdBy if not specified
-        teamId: data.teamId,
-        departmentId: data.departmentId,
-        recipientType: data.recipientType as 'user' | 'team' | 'department' | 'company',
+        // NEW: Clean access control
+        accessScope: data.accessScope,
+        ownerUserId:
+          data.ownerUserId ??
+          (data.accessScope === 'personal' || data.accessScope === 'payroll' ?
+            createdBy
+          : undefined),
+        targetTeamId: data.targetTeamId,
+        targetDepartmentId: data.targetDepartmentId,
+        // File fields
         category: data.category,
-        fileName: data.filename, // Model expects fileName (UUID-based)
+        fileName: data.filename, // UUID-based filename for storage
+        originalName: data.originalName, // User-visible name from modal input
         fileContent: data.fileContent,
         description: data.description,
-        year: data.year,
-        month: data.month?.toString(),
+        // NEW: Payroll fields
+        salaryYear: data.salaryYear,
+        salaryMonth: data.salaryMonth,
         createdBy: createdBy,
         tags: data.tags,
         mimeType: data.mimeType, // Pass the mime type to store it correctly
-        // NEW: UUID-based storage
+        // UUID-based storage
         fileUuid: data.fileUuid,
         fileChecksum: data.fileChecksum,
         storageType: data.storageType ?? 'filesystem',
@@ -396,8 +414,8 @@ class DocumentsService {
 
       const documentId = await Document.create(documentData);
 
-      // Return the created document
-      return await this.getDocumentById(documentId, createdBy, tenantId);
+      // Return the created document without marking as read (so uploader sees "Neu" badge)
+      return await this.getDocumentById(documentId, createdBy, tenantId, false);
     } catch (error: unknown) {
       if (error instanceof ServiceError) {
         throw error;
@@ -685,7 +703,26 @@ class DocumentsService {
   }
 
   /**
+   * Mark document as read by user
+   * Updates document_read_status table to track that user has viewed the document
+   * @param documentId - Document ID
+   * @param userId - User ID
+   * @param tenantId - Tenant ID
+   */
+  async markDocumentAsRead(documentId: number, userId: number, tenantId: number): Promise<void> {
+    try {
+      await Document.markAsRead(documentId, userId, tenantId);
+      logger.info(`Document ${documentId} marked as read by user ${userId}`);
+    } catch (error: unknown) {
+      logger.error(`Error marking document ${documentId} as read: ${(error as Error).message}`);
+      // Don't throw - marking as read is non-critical, shouldn't block document viewing
+      // User can still view document even if read tracking fails
+    }
+  }
+
+  /**
    * Check if user has access to a document
+   * NEW: Uses clean access_scope structure (refactored 2025-01-10)
    * @param document - The document parameter
    * @param userId - The user ID
    * @param tenantId - The tenant ID
@@ -703,22 +740,27 @@ class DocumentsService {
       return true;
     }
 
-    // Check based on recipient type
-    switch (document.recipient_type) {
-      case 'user':
-        return document.user_id === userId;
+    // Check based on access_scope (NEW: clean structure)
+    switch (document.access_scope) {
+      case 'personal':
+      case 'payroll':
+        // Only the owner can access personal/payroll documents
+        return document.owner_user_id === userId;
 
       case 'team': {
-        if (!document.team_id) return false;
-        const teamMembers = await Team.getTeamMembers(document.team_id);
+        // Check if user is member of the target team
+        if (!document.target_team_id) return false;
+        const teamMembers = await Team.getTeamMembers(document.target_team_id);
         return teamMembers.some((member: { id: number }) => member.id === userId);
       }
 
       case 'department':
-        return user.department_id === document.department_id;
+        // Check if user is in the target department
+        return user.department_id === document.target_department_id;
 
       case 'company':
-        return true; // All users in tenant can see company documents
+        // All users in tenant can see company documents
+        return true;
 
       default:
         return false;
@@ -726,76 +768,89 @@ class DocumentsService {
   }
 
   /**
-   * Validate user recipient
+   * Validate owner user for personal/payroll documents
+   * NEW: Validates ownerUserId (refactored 2025-01-10)
    */
-  private async validateUserRecipient(userId: number | undefined, tenantId: number): Promise<void> {
+  private async validateOwnerUser(userId: number | undefined, tenantId: number): Promise<void> {
     if (!userId) {
       throw new ServiceError(
         ERROR_CODES.BAD_REQUEST,
-        'User ID is required for user recipient type',
+        'Owner user ID is required for personal/payroll documents',
         400,
       );
     }
     const user = await User.findById(userId, tenantId);
     if (!user) {
-      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid user ID', 400);
+      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid owner user ID', 400);
     }
   }
 
   /**
-   * Validate team recipient
+   * Validate target team for team documents
+   * NEW: Validates targetTeamId (refactored 2025-01-10)
    */
-  private async validateTeamRecipient(teamId: number | undefined, tenantId: number): Promise<void> {
+  private async validateTargetTeam(teamId: number | undefined, tenantId: number): Promise<void> {
     if (!teamId) {
       throw new ServiceError(
         ERROR_CODES.BAD_REQUEST,
-        'Team ID is required for team recipient type',
+        'Target team ID is required for team documents',
         400,
       );
     }
     const team = await Team.findById(teamId, tenantId);
     if (!team) {
-      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid team ID', 400);
+      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid target team ID', 400);
     }
   }
 
   /**
-   * Validate department recipient
+   * Validate target department for department documents
+   * NEW: Validates targetDepartmentId (refactored 2025-01-10)
    */
-  private async validateDepartmentRecipient(
+  private async validateTargetDepartment(
     departmentId: number | undefined,
     tenantId: number,
   ): Promise<void> {
     if (!departmentId) {
       throw new ServiceError(
         ERROR_CODES.BAD_REQUEST,
-        'Department ID is required for department recipient type',
+        'Target department ID is required for department documents',
         400,
       );
     }
     const dept = await Department.findById(departmentId, tenantId);
     if (!dept) {
-      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid department ID', 400);
+      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid target department ID', 400);
     }
   }
 
   /**
-   * Validate recipient based on type
+   * Validate recipient based on access scope
+   * NEW: Uses clean access_scope (refactored 2025-01-10)
    * @param data - The data object
    * @param tenantId - The tenant ID
    */
   private async validateRecipient(data: DocumentCreateInput, tenantId: number): Promise<void> {
-    if (data.recipientType === 'user') {
-      await this.validateUserRecipient(data.userId, tenantId);
-    } else if (data.recipientType === 'team') {
-      await this.validateTeamRecipient(data.teamId, tenantId);
-    } else if (data.recipientType === 'department') {
-      await this.validateDepartmentRecipient(data.departmentId, tenantId);
-    } else if (data.recipientType === 'company') {
-      // No specific recipient needed
-      return;
-    } else {
-      throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid recipient type', 400);
+    switch (data.accessScope) {
+      case 'personal':
+      case 'payroll':
+        await this.validateOwnerUser(data.ownerUserId, tenantId);
+        break;
+
+      case 'team':
+        await this.validateTargetTeam(data.targetTeamId, tenantId);
+        break;
+
+      case 'department':
+        await this.validateTargetDepartment(data.targetDepartmentId, tenantId);
+        break;
+
+      case 'company':
+        // No specific recipient needed for company-wide documents
+        break;
+
+      default:
+        throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid access scope', 400);
     }
   }
 
@@ -804,7 +859,15 @@ class DocumentsService {
    * @param mimeType - The mimeType parameter
    */
   private isAllowedFileType(mimeType: string): boolean {
-    const allowedTypes = ['application/pdf'];
+    const allowedTypes = [
+      'application/pdf', // PDF
+      'image/jpeg', // JPG/JPEG
+      'image/png', // PNG
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+      'application/msword', // DOC
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+      'application/vnd.ms-excel', // XLS
+    ];
     return allowedTypes.includes(mimeType);
   }
 }

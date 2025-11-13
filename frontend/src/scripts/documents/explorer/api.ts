@@ -63,25 +63,68 @@ class DocumentAPI {
   }
 
   /**
-   * Upload a document
+   * Append optional number field to FormData
+   */
+  private appendOptionalNumber(fd: FormData, key: string, value: number | null | undefined): void {
+    if (value !== null && value !== undefined) {
+      fd.append(key, value.toString());
+    }
+  }
+
+  /**
+   * Append optional string field to FormData
+   */
+  private appendOptionalString(fd: FormData, key: string, value: string | null | undefined): void {
+    if (value !== null && value !== undefined && value !== '') {
+      fd.append(key, value);
+    }
+  }
+
+  /**
+   * Build FormData from upload form data
+   * @param formData - Upload form data
+   * @returns FormData - Ready for upload
+   */
+  private buildUploadFormData(formData: UploadFormData): FormData {
+    const fd = new FormData();
+    fd.append('document', formData.file); // Backend expects 'document' field name (upload.single('document'))
+    fd.append('accessScope', formData.accessScope);
+    fd.append('category', formData.category);
+
+    // Optional IDs
+    this.appendOptionalNumber(fd, 'ownerUserId', formData.ownerUserId);
+    this.appendOptionalNumber(fd, 'targetTeamId', formData.targetTeamId);
+    this.appendOptionalNumber(fd, 'targetDepartmentId', formData.targetDepartmentId);
+
+    // Document name and description (optional)
+    this.appendOptionalString(fd, 'documentName', formData.documentName);
+    this.appendOptionalString(fd, 'description', formData.description);
+
+    // Payroll fields
+    this.appendOptionalNumber(fd, 'salaryYear', formData.salaryYear);
+    this.appendOptionalNumber(fd, 'salaryMonth', formData.salaryMonth);
+
+    console.log('[DocumentAPI] FormData being sent:', {
+      accessScope: formData.accessScope,
+      category: formData.category,
+      documentName: formData.documentName ?? '(not set)',
+      description: formData.description ?? '(not set)',
+      fileSize: formData.file.size,
+      fileName: formData.file.name,
+    });
+
+    return fd;
+  }
+
+  /**
+   * Upload a document (NEW: clean structure, refactored 2025-01-10)
    * @param formData - Upload form data
    * @param onProgress - Progress callback (0-100)
    * @returns Promise<Document> - Newly created document
    */
   public async uploadDocument(formData: UploadFormData, onProgress?: UploadProgressCallback): Promise<Document> {
     try {
-      // Create FormData object
-      const fd = new FormData();
-      fd.append('file', formData.file);
-      fd.append('recipientType', formData.recipientType);
-      if (formData.recipientId !== null) {
-        fd.append('recipientId', formData.recipientId.toString());
-      }
-      fd.append('category', formData.category);
-      fd.append('year', formData.year.toString());
-      if (formData.month !== null) {
-        fd.append('month', formData.month.toString());
-      }
+      const fd = this.buildUploadFormData(formData);
 
       // Create XMLHttpRequest for progress tracking
       // eslint-disable-next-line @typescript-eslint/return-await -- XMLHttpRequest doesn't return a Promise directly

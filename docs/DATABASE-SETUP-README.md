@@ -474,9 +474,81 @@ Das Assixx-System verwendet **55+ Haupttabellen** in 10 Kategorien:
 - `teams` - Teams
 - `user_teams` - Benutzer ↔ Team-Zuordnung
 
-#### 3. **Document Management** (1 Tabelle)
+#### 3. **Document Management** (1 Tabelle) - Refactored 2025-01-11
 
-- `documents` - Alle Dokumente mit Kategorisierung
+- `documents` - Alle Dokumente mit Zugriffskontrolle
+
+**Documents Table Schema (NEW - Clean Structure):**
+
+```sql
+CREATE TABLE documents (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  tenant_id INT NOT NULL,
+
+  -- NEW: Clean access control (WHO can see this)
+  access_scope ENUM('personal', 'team', 'department', 'company', 'payroll') NOT NULL,
+  owner_user_id INT DEFAULT NULL,           -- For personal/payroll (WHO owns it)
+  target_team_id INT DEFAULT NULL,          -- For team (WHICH team)
+  target_department_id INT DEFAULT NULL,    -- For department (WHICH department)
+
+  -- NEW: Flexible classification (WHAT it is)
+  category VARCHAR(50) DEFAULT 'general',   -- Flexible, not ENUM
+  tags JSON DEFAULT NULL,                   -- Array of tags
+
+  -- NEW: Payroll-specific fields
+  salary_year INT DEFAULT NULL,             -- e.g., 2025
+  salary_month TINYINT DEFAULT NULL,        -- 1-12
+
+  -- File metadata
+  filename VARCHAR(255) NOT NULL,           -- Original filename
+  stored_filename VARCHAR(255) NOT NULL,    -- UUID-based storage name
+  file_path VARCHAR(500) NOT NULL,
+  file_size BIGINT NOT NULL,
+  mime_type VARCHAR(100) NOT NULL,
+
+  -- Upload metadata
+  uploaded_by INT NOT NULL,                 -- User who uploaded
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  description TEXT DEFAULT NULL,
+
+  -- Versioning (future use)
+  version INT DEFAULT 1,
+  parent_document_id INT DEFAULT NULL,
+
+  -- Timestamps
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  -- Indexes
+  INDEX idx_tenant_access (tenant_id, access_scope),
+  INDEX idx_owner (owner_user_id),
+  INDEX idx_target_team (target_team_id),
+  INDEX idx_target_department (target_department_id),
+  INDEX idx_payroll (salary_year, salary_month),
+  INDEX idx_uploaded_by (uploaded_by),
+
+  -- Foreign Keys
+  FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+  FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE RESTRICT,
+  FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_team_id) REFERENCES teams(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_department_id) REFERENCES departments(id) ON DELETE CASCADE,
+  FOREIGN KEY (parent_document_id) REFERENCES documents(id) ON DELETE SET NULL
+);
+```
+
+**Access Scope Explanation:**
+- `personal` - Only the owner can see it (e.g., personal contracts)
+- `team` - All members of target_team_id can see it
+- `department` - All users in target_department_id can see it
+- `company` - All users in the tenant can see it
+- `payroll` - Like personal, but salary-specific (owner + HR admin)
+
+**Migration Notes (2025-01-11):**
+- Replaced ambiguous `recipient_type`, `user_id`, `team_id`, `department_id`, `year`, `month`
+- New semantic field names clearly indicate purpose
+- Direct 1:1 mapping: Frontend ↔ Backend ↔ Database
+- Zero translation layers = fewer bugs
 
 #### 4. **Feature Management** (5 Tabellen)
 

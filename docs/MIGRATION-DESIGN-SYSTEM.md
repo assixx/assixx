@@ -180,30 +180,25 @@ export class SignupFormController {
 
 ### Documents
 
-- [ ] documents-search.html
-- [ ] documents-company.html
-- [ ] documents-department.html
-- [ ] documents-team.html
-- [ ] documents-personal.html
-- [ ] documents-payroll.html
-- [ ] document-upload.html
+- [x] documents-explorer.html ✅ (2025-11-13) - 100% Design System compliant (NUCLEAR REFACTORING: deleted 1,227 lines legacy CSS, created minimal 195-line CSS, fixed all inline styles, TypeScript modules, NO Bootstrap, NO inline JS)
+
 
 ### Features
 
-- [ ] blackboard.html
-- [ ] calendar.html
-- [ ] chat.html
-- [ ] shifts.html
+- [ ] blackboard.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] calendar.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] chat.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] shifts.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] kvp.html
 - [ ] kvp-detail.html
 - [ ] logs.html
 
 ### Surveys
 
-- [ ] survey-admin.html
-- [ ] survey-employee.html
-- [ ] survey-details.html
-- [ ] survey-results.html
+- [ ] survey-admin.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] survey-employee.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] survey-details.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] survey-results.html --skip wir machen das zum schluss, weil größere refactoring
 
 ### Admin/Root
 
@@ -215,11 +210,11 @@ export class SignupFormController {
 ### Other
 
 - [ ] index.html (landing page)
-- [ ] hilfe.html
-- [ ] storage-upgrade.html
+- [ ] hilfe.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] storage-upgrade.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] tenant-deletion-status.html
 - [ ] rate-limit.html
-- [ ] design-system-demo.html
+- [ ] unified-navigation.ts und css !
 
 ## Migration Strategy
 

@@ -55,7 +55,7 @@ Die API v2 Implementation ist zu **100% abgeschlossen** (27/27 APIs). Dieser Pla
 | `/api/chat/*`              | `/api/v2/chat/*`                                 | ✅ Ready  | WebSocket Upgrade          |
 | `/api/departments/*`       | `/api/v2/departments/*`                          | ✅ Ready  | Hierarchie Support         |
 | `/api/teams/*`             | `/api/v2/teams/*`                                | ✅ Ready  | Erweiterte Stats           |
-| `/api/documents/*`         | `/api/v2/documents/*`                            | ✅ Ready  | Tag System                 |
+| `/api/documents/*`         | `/api/v2/documents/*`                            | ✅ Ready  | Access Control Refactored (2025-01-11)  |
 | `/api/blackboard/*`        | `/api/v2/blackboard/*`                           | ✅ Ready  | Priority Levels            |
 | `/api/role-switch/*`       | `/api/v2/role-switch/*`                          | ✅ Ready  | Audit Logging              |
 | `/api/kvp/*`               | `/api/v2/kvp/*`                                  | ✅ Ready  | ROI Tracking               |
@@ -499,6 +499,73 @@ if (!data.success) {
 }
 ```
 
+### 5. Documents API - Access Control Refactoring (2025-01-11)
+
+**CRITICAL: Complete access control system redesign!**
+
+```javascript
+// v1 (OLD - AMBIGUOUS)
+{
+  "recipientType": "user",      // Unclear: user/team/department/company
+  "userId": 123,                 // Unclear purpose
+  "teamId": 456,                 // Unclear purpose
+  "departmentId": 789,           // Unclear purpose
+  "year": 2025,                  // Only for payroll
+  "month": "1"                   // Only for payroll (string!)
+}
+
+// v2 (NEW - SEMANTIC & CLEAN)
+{
+  "accessScope": "personal",     // WHO can see: personal/team/department/company/payroll
+  "ownerUserId": 123,            // CLEAR: Who owns this (for personal/payroll)
+  "targetTeamId": 456,           // CLEAR: Which team (for team documents)
+  "targetDepartmentId": 789,     // CLEAR: Which department (for department documents)
+  "salaryYear": 2025,            // CLEAR: Salary year (for payroll, integer)
+  "salaryMonth": 1               // CLEAR: Salary month 1-12 (for payroll, integer)
+}
+```
+
+**Upload Request Changes:**
+
+```javascript
+// v1 Upload
+const formData = new FormData();
+formData.append('document', file);
+formData.append('recipientType', 'user');
+formData.append('userId', '123');
+formData.append('category', 'general');
+
+// v2 Upload
+const formData = new FormData();
+formData.append('document', file);
+formData.append('accessScope', 'personal');  // Direct mapping!
+formData.append('ownerUserId', '123');       // Semantic name
+formData.append('category', 'general');
+```
+
+**Frontend Sidebar Filtering:**
+
+```javascript
+// v1 (BROKEN - Required complex mapping)
+const categoryMap = { user: 'personal', team: 'team', ... };
+if (category === 'payroll') {
+  return doc.category.includes('gehalt');  // String matching = fragile!
+}
+return categoryMap[doc.recipientType] === category;
+
+// v2 (PERFECT - Direct 1:1 mapping)
+if (category === 'all') return true;
+return doc.accessScope === category;  // Direct comparison!
+```
+
+**Migration Impact:**
+- ✅ Zero translation layers - Direct 1:1 mapping
+- ✅ Self-documenting field names
+- ✅ Type-safe with TypeScript enums
+- ✅ Payroll is first-class citizen (not string matching hack)
+- ⚠️ **Breaking:** All upload forms must use new field names
+- ⚠️ **Breaking:** Sidebar filtering logic completely changed
+
 ## 🛡️ Risk Management & Rollback Strategy
 
 ### Rollback Triggers
@@ -571,11 +638,19 @@ const EMERGENCY_ROLLBACK = {
 
 ## 🚨 Critical Path Items
 
-1. **JWT Token Migration** - Höchste Priorität
-2. **WebSocket Upgrade** - Chat Functionality
-3. **File Upload Changes** - Documents API
-4. **Multi-Tenant Validation** - Security Critical
-5. **Performance Testing** - Before Go-Live
+1. ✅ **Documents API Refactoring** - COMPLETED 2025-01-11 (Access control system redesigned)
+2. **JWT Token Migration** - Höchste Priorität
+3. **WebSocket Upgrade** - Chat Functionality
+4. **File Upload Changes** - Documents API (⚠️ Updated for new accessScope fields)
+5. **Multi-Tenant Validation** - Security Critical
+6. **Performance Testing** - Before Go-Live
+
+**Documents API Update (2025-01-11):**
+- Database: Old columns removed, new semantic columns added
+- Backend: 4 layers refactored (Model, Service, Controller, Validation)
+- Frontend: 5 modules refactored (Types, Upload, API, State, Sidebar)
+- Build: Zero TypeScript errors
+- Status: Code complete, manual testing in progress
 
 ## 📞 Support & Communication
 
