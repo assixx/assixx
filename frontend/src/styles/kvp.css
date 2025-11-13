@@ -11,31 +11,28 @@
 @import "./user-info-update.css";
 
 /* ========================================
-   KVP-SPECIFIC: Secondary Filters
+   KVP-SPECIFIC: Secondary Filters (Dropdowns Only)
    ======================================== */
 
 .secondary-filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Horizontal, kein wrapping */
   gap: var(--spacing-4);
+  overflow-x: auto; /* Scroll bei zu vielen Dropdowns */
   align-items: center;
-  justify-content: space-between;
 
-  margin-top: var(--spacing-6);
   margin-bottom: var(--spacing-6);
 }
 
 .secondary-filters__left {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* Alle Dropdowns horizontal */
   gap: var(--spacing-4);
   align-items: center;
 }
 
-.secondary-filters__right {
-  flex: 0 0 auto;
-  min-width: 280px;
-  max-width: 400px;
+.secondary-filters__left .dropdown {
+  flex-shrink: 0; /* Verhindert squashing */
 }
 
 /* ========================================
@@ -360,18 +357,16 @@
   }
 
   .secondary-filters {
-    flex-direction: column;
-    align-items: stretch;
+    overflow-x: visible; /* Kein horizontal scroll auf mobile */
   }
 
   .secondary-filters__left {
+    flex-wrap: wrap; /* Auf mobile dürfen Dropdowns wrappen */
     width: 100%;
   }
 
-  .secondary-filters__right {
-    width: 100%;
-    min-width: unset;
-    max-width: unset;
+  .secondary-filters__left .dropdown {
+    flex: 1 1 150px; /* Können wachsen auf mobile */
   }
 }
 
