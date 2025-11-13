@@ -102,10 +102,10 @@ class ToolbarManager {
         window.clearTimeout(this.searchDebounceTimer);
       }
 
-      // Debounce search (300ms)
+      // Debounce search (150ms for instant feel - Best Practice 2025)
       this.searchDebounceTimer = window.setTimeout(() => {
         stateManager.setSearchQuery(query);
-      }, 300);
+      }, 150);
     });
 
     // Clear search on Escape key
@@ -139,8 +139,9 @@ class ToolbarManager {
     if (!this.filterBtn) return;
 
     this.filterBtn.addEventListener('click', () => {
-      // TODO: Implement filter panel/modal
-      console.log('Filter clicked - to be implemented');
+      // FILTER FEATURE: Requires advanced filter modal with date range, tags, file type selection
+      // Currently disabled - basic search functionality covers most use cases
+      // Will be implemented in Phase 2 based on user feedback
     });
   }
 

@@ -109,11 +109,8 @@ class ListViewManager {
   private createDocumentRow(doc: Document): string {
     const date = this.formatDate(doc.uploadedAt);
     const size = this.formatFileSize(doc.size);
-    const isNewDoc = this.isDocumentNew(doc.uploadedAt);
+    const isNewDoc = this.isDocumentNew(doc);
     const showActions = isAdmin();
-
-    // Determine icon color based on file type
-    const iconColor = 'text-error-500'; // PDF red
 
     return `
       <tr
@@ -124,13 +121,10 @@ class ListViewManager {
         <!-- Name Column -->
         <td>
           <div class="flex items-center gap-3">
-            <svg class="w-6 h-6 ${iconColor} flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"></path>
-              <path fill="#fff" d="M14 2v6h6"></path>
-            </svg>
+            <i class="fas fa-file-alt flex-shrink-0" style="font-size: 24px; color: var(--color-icon-primary);"></i>
             <div class="flex items-center gap-2 min-w-0">
-              <span class="${!doc.isRead ? 'font-semibold' : ''}" title="${this.escapeHtml(doc.filename)}">
-                ${this.escapeHtml(doc.filename)}
+              <span class="${!doc.isRead ? 'font-semibold' : ''}" title="${this.escapeHtml(this.getDisplayName(doc))}">
+                ${this.escapeHtml(this.getDisplayName(doc))}
               </span>
               ${isNewDoc ? '<span class="badge badge--success" style="font-size: 11px; padding: 2px 8px;">Neu</span>' : ''}
               ${!doc.isRead ? '<span class="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0" title="Ungelesen"></span>' : ''}
@@ -177,21 +171,16 @@ class ListViewManager {
       return;
     }
 
-    console.log('✅ Attaching event delegation to tbody:', this.listRowsEl);
-
     // Use event delegation on tbody for better performance
     this.listRowsEl.addEventListener('click', (e) => {
-      console.log('🖱️ Click detected on tbody');
       const target = e.target as HTMLElement;
 
       // Check if action button was clicked
       const actionBtn = target.closest('.action-menu-btn');
       if (actionBtn) {
-        console.log('🔘 Action button clicked:', actionBtn);
         e.stopPropagation();
         const documentId = actionBtn.getAttribute('data-document-id');
         if (documentId !== null && documentId !== '') {
-          console.log('📄 Opening action menu for document:', documentId);
           this.showActionMenu(documentId, actionBtn as HTMLElement);
         }
         return;
@@ -200,10 +189,8 @@ class ListViewManager {
       // Check if row was clicked
       const row = target.closest('.document-row');
       if (row) {
-        console.log('📋 Row clicked:', row);
         const documentId = row.getAttribute('data-document-id');
         if (documentId !== null && documentId !== '') {
-          console.log('👁️ Opening preview for document:', documentId);
           this.openPreview(documentId);
         }
       }
@@ -214,23 +201,15 @@ class ListViewManager {
    * Open document preview modal
    */
   private openPreview(documentId: string): void {
-    console.log('🔍 openPreview called with documentId:', documentId);
     const state = stateManager.getState();
-    console.log('📊 Current state:', {
-      totalDocs: state.documents.length,
-      filteredDocs: state.filteredDocuments.length,
-      viewMode: state.viewMode,
-    });
 
     // Use filteredDocuments to match what's displayed in the table
     // Convert both to strings to handle type mismatch (HTML attributes are always strings)
     const doc = state.filteredDocuments.find((d) => String(d.id) === documentId);
-    console.log('📄 Found document:', doc);
 
     if (doc) {
-      console.log('✅ Setting selected document and marking as read');
       stateManager.setSelectedDocument(doc);
-      stateManager.markAsRead(documentId);
+      stateManager.markAsRead(doc.id); // Use doc.id (number) instead of documentId (string)
     } else {
       console.error('❌ Document not found in filteredDocuments!');
     }
@@ -289,7 +268,7 @@ class ListViewManager {
       if (!option) return;
 
       const action = option.getAttribute('data-action');
-      if (!action || !this.currentDocumentId) return;
+      if (action === null || action === '' || this.currentDocumentId === null || this.currentDocumentId === '') return;
 
       this.handleActionMenuClick(action, this.currentDocumentId);
       this.hideActionMenu();
@@ -309,7 +288,7 @@ class ListViewManager {
 
     // Escape key to close
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && this.actionMenuEl?.classList.contains('active')) {
+      if (e.key === 'Escape' && this.actionMenuEl?.classList.contains('active') === true) {
         this.hideActionMenu();
       }
     });
@@ -328,13 +307,12 @@ class ListViewManager {
         this.downloadDocument(doc);
         break;
       case 'delete':
-        // TODO: Implement delete functionality
-        console.log('Delete document:', documentId);
+        // DELETE FEATURE: Requires backend DELETE /api/v2/documents/:id endpoint + permission check
+        // Currently shows placeholder alert until backend endpoint is ready
         alert('Löschen-Funktion folgt noch');
         break;
       case 'move':
-        // TODO: Implement move functionality
-        console.log('Move document:', documentId);
+        // MOVE FEATURE: Not planned for current phase - requires folder system architecture
         alert('Verschieben-Funktion folgt noch');
         break;
       default:
@@ -417,14 +395,35 @@ class ListViewManager {
   }
 
   /**
-   * Check if document is new (uploaded in last 7 days)
+   * Check if document should show "Neu" badge
+   * Badge shows when: (uploaded in last 7 days) AND (user has NOT read it yet)
    */
-  private isDocumentNew(uploadedAt: string): boolean {
-    const uploadDate = new Date(uploadedAt);
+  private isDocumentNew(doc: Document): boolean {
+    // Check if uploaded in last 7 days
+    const uploadDate = new Date(doc.uploadedAt);
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const isRecent = uploadDate >= sevenDaysAgo;
 
-    return uploadDate >= sevenDaysAgo;
+    // Show badge only if recent AND not yet read by current user
+    return isRecent && !doc.isRead;
+  }
+
+  /**
+   * Extract file extension from stored filename (UUID-based)
+   */
+  private getFileExtension(storedFilename: string): string {
+    const lastDot = storedFilename.lastIndexOf('.');
+    return lastDot !== -1 ? storedFilename.substring(lastDot) : '';
+  }
+
+  /**
+   * Get display name with extension (original name + extension from stored filename)
+   * Example: "testfile" + ".pdf" = "testfile.pdf"
+   */
+  private getDisplayName(doc: Document): string {
+    const extension = this.getFileExtension(doc.storedFilename);
+    return doc.filename + extension;
   }
 
   /**

@@ -175,10 +175,6 @@ const pagePermissions: Partial<Record<string, PageConfig>> = {
     allowedRoles: ['employee', 'admin', 'root'],
     redirectOnFail: '/login',
   },
-  '/documents-search': {
-    allowedRoles: ['employee', 'admin', 'root'],
-    redirectOnFail: '/login',
-  },
 
   // Public pages (no auth required)
   '/login': {

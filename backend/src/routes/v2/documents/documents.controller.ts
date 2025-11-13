@@ -23,30 +23,47 @@ import {
   documentsService,
 } from './documents.service.js';
 
+// NEW: Clean document interface (refactored 2025-01-10)
 interface Document {
   id: number;
   filename: string;
   category?: string;
   fileSize?: number;
   mimeType?: string;
-  recipientType?: string;
+  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll';
   [key: string]: unknown;
 }
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
+
+// Allowed file types with their MIME types
+const ALLOWED_MIME_TYPES = [
+  'application/pdf', // PDF
+  'image/jpeg', // JPG/JPEG
+  'image/png', // PNG
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
+  'application/msword', // DOC
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
+  'application/vnd.ms-excel', // XLS
+] as const;
+
 const upload = multer({
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB limit per file
   },
   fileFilter: (_req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-    // Only allow PDF files
-    if (file.mimetype === 'application/pdf') {
+    // Check if file type is allowed
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype as (typeof ALLOWED_MIME_TYPES)[number])) {
       // Multer requires callback-style, cannot use async/await
       cb(null, true);
     } else {
-      cb(new Error('Only PDF files are allowed'));
+      cb(
+        new Error(
+          'File type not allowed. Allowed types: PDF, JPG, PNG, DOCX, DOC, XLSX, XLS (max 5MB)',
+        ),
+      );
     }
   },
 });
@@ -182,15 +199,17 @@ function buildStoragePath(
  *       500:
  *         description: Server error
  */
+// NEW: Parse filters with clean structure (refactored 2025-01-10)
 function parseDocumentFilters(query: AuthenticatedRequest['query']): DocumentFilters {
   return {
     category: query.category as string,
-    recipientType: query.recipientType as string,
-    userId: query.userId ? Number.parseInt(query.userId as string) : undefined,
-    teamId: query.teamId ? Number.parseInt(query.teamId as string) : undefined,
-    departmentId: query.departmentId ? Number.parseInt(query.departmentId as string) : undefined,
-    year: query.year ? Number.parseInt(query.year as string) : undefined,
-    month: query.month ? Number.parseInt(query.month as string) : undefined,
+    accessScope: query.accessScope as 'personal' | 'team' | 'department' | 'company' | 'payroll',
+    ownerUserId: query.ownerUserId ? Number.parseInt(query.ownerUserId as string) : undefined,
+    targetTeamId: query.targetTeamId ? Number.parseInt(query.targetTeamId as string) : undefined,
+    targetDepartmentId:
+      query.targetDepartmentId ? Number.parseInt(query.targetDepartmentId as string) : undefined,
+    salaryYear: query.salaryYear ? Number.parseInt(query.salaryYear as string) : undefined,
+    salaryMonth: query.salaryMonth ? Number.parseInt(query.salaryMonth as string) : undefined,
     isArchived: query.isArchived === 'true',
     search: query.search as string,
     page: query.page ? Number.parseInt(query.page as string) : 1,
@@ -343,6 +362,7 @@ export async function getDocumentById(req: AuthenticatedRequest, res: Response):
  *       500:
  *         description: Server error
  */
+// NEW: Parse document data with clean structure (refactored 2025-01-10)
 function parseDocumentData(
   file: Express.Multer.File,
   body: Record<string, string>,
@@ -352,24 +372,37 @@ function parseDocumentData(
   const metadata = generateFileMetadata(file);
   const storagePath = buildStoragePath(tenantId, body.category, metadata.uuid, metadata.extension);
 
+  // Use documentName from frontend if provided, otherwise fallback to original filename
+  const userProvidedName =
+    body.documentName && body.documentName.trim() !== '' ?
+      body.documentName.trim()
+    : file.originalname;
+
+  logger.info(
+    `Document name mapping: documentName="${body.documentName}" → originalName="${userProvidedName}"`,
+  );
+
   return {
-    filename: `${metadata.uuid}${metadata.extension}`, // UUID-based filename
-    originalName: file.originalname, // Keep user's original name
+    filename: `${metadata.uuid}${metadata.extension}`, // UUID-based filename for storage
+    originalName: userProvidedName, // User-visible name from modal input
     fileSize: file.size,
     fileContent: file.buffer,
     mimeType: file.mimetype,
     category: body.category,
-    recipientType: body.recipientType,
-    userId: body.userId ? Number.parseInt(body.userId) : undefined,
-    teamId: body.teamId ? Number.parseInt(body.teamId) : undefined,
-    departmentId: body.departmentId ? Number.parseInt(body.departmentId) : undefined,
+    // NEW: Clean access control
+    accessScope: body.accessScope as 'personal' | 'team' | 'department' | 'company' | 'payroll',
+    ownerUserId: body.ownerUserId ? Number.parseInt(body.ownerUserId) : undefined,
+    targetTeamId: body.targetTeamId ? Number.parseInt(body.targetTeamId) : undefined,
+    targetDepartmentId:
+      body.targetDepartmentId ? Number.parseInt(body.targetDepartmentId) : undefined,
     description: body.description,
-    year: body.year ? Number.parseInt(body.year) : undefined,
-    month: body.month ? Number.parseInt(body.month) : undefined,
+    // NEW: Payroll fields
+    salaryYear: body.salaryYear ? Number.parseInt(body.salaryYear) : undefined,
+    salaryMonth: body.salaryMonth ? Number.parseInt(body.salaryMonth) : undefined,
     tags: body.tags ? (JSON.parse(body.tags) as string[]) : undefined,
     isPublic: body.isPublic === 'true',
     expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
-    // NEW: UUID-based storage
+    // UUID-based storage
     fileUuid: metadata.uuid,
     fileChecksum: metadata.checksum,
     filePath: storagePath,
@@ -377,6 +410,7 @@ function parseDocumentData(
   };
 }
 
+// NEW: Log document upload with clean structure (refactored 2025-01-10)
 async function logDocumentUpload(
   document: unknown,
   documentData: DocumentCreateInput,
@@ -394,7 +428,13 @@ async function logDocumentUpload(
       category: documentData.category,
       file_size: documentData.fileSize,
       mime_type: documentData.mimeType,
-      recipient_type: documentData.recipientType,
+      // NEW: Clean access control logging
+      access_scope: documentData.accessScope,
+      owner_user_id: documentData.ownerUserId,
+      target_team_id: documentData.targetTeamId,
+      target_department_id: documentData.targetDepartmentId,
+      salary_year: documentData.salaryYear,
+      salary_month: documentData.salaryMonth,
       uploaded_by: req.user.email,
     },
     ip_address: req.ip ?? req.socket.remoteAddress,
@@ -778,9 +818,12 @@ export async function downloadDocument(req: AuthenticatedRequest, res: Response)
     res.setHeader('Content-Type', documentContent.mimeType);
     res.setHeader('Content-Disposition', `attachment; filename="${documentContent.originalName}"`);
     res.setHeader('Content-Length', documentContent.fileSize.toString());
+    res.setHeader('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
 
-    // Send file content
-    res.send(documentContent.content);
+    // Send binary content (use res.end for Buffer to avoid encoding corruption)
+    // res.send() would convert Buffer to UTF-8 string, corrupting binary files
+    // IMPORTANT: Do NOT specify encoding parameter - Buffer must be sent directly
+    res.end(documentContent.content);
   } catch (error: unknown) {
     logger.error(`Download document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {
@@ -835,13 +878,21 @@ export async function previewDocument(req: AuthenticatedRequest, res: Response):
       req.user.tenant_id,
     );
 
+    // Mark document as read (non-blocking - errors are logged but don't fail the request)
+    // This ensures "Neu" badge disappears after first preview
+    void documentsService.markDocumentAsRead(documentId, req.user.id, req.user.tenant_id);
+
     // Set headers for inline viewing
     res.setHeader('Content-Type', documentContent.mimeType);
     res.setHeader('Content-Disposition', `inline; filename="${documentContent.originalName}"`);
     res.setHeader('Content-Length', documentContent.fileSize.toString());
+    res.setHeader('Accept-Ranges', 'bytes'); // Enable partial content support for PDFs
+    res.setHeader('Cache-Control', 'private, max-age=3600'); // Cache for 1 hour
 
-    // Send file content
-    res.send(documentContent.content);
+    // Send binary content (use res.end for Buffer to avoid encoding corruption)
+    // res.send() would convert Buffer to UTF-8 string, corrupting binary PDFs
+    // IMPORTANT: Do NOT specify encoding parameter - Buffer must be sent directly
+    res.end(documentContent.content);
   } catch (error: unknown) {
     logger.error(`Preview document error: ${(error as Error).message}`);
     if (error instanceof ServiceError) {

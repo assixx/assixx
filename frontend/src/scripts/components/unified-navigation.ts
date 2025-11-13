@@ -125,7 +125,6 @@ const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   '/shifts': ['employee', 'admin', 'root'],
   '/chat': ['employee', 'admin', 'root'],
   '/survey-employee': ['employee', 'admin', 'root'],
-  '/documents-search': ['employee', 'admin', 'root'],
   '/documents-company': ['employee', 'admin', 'root'],
   '/documents-department': ['employee', 'admin', 'root'],
   '/documents-team': ['employee', 'admin', 'root'],
@@ -968,12 +967,6 @@ class UnifiedNavigation {
         label: 'Datei Explorer',
         url: '/documents-explorer',
       },
-      {
-        id: 'documents-search',
-        icon: this.getSVGIcon('search'),
-        label: 'Dokumente suchen',
-        url: '/documents-search',
-      },
     ];
   }
 
@@ -1143,6 +1136,10 @@ class UnifiedNavigation {
 
       // Now inject sidebar into layout-container
       this.injectSidebarIntoLayout();
+
+      // CRITICAL: Set active state IMMEDIATELY after HTML injection (before first render)
+      // This prevents visual glitch where wrong item appears active briefly
+      this.updateActiveNavigation();
 
       // Re-attach event listeners after inserting HTML
       setTimeout(() => {
@@ -1830,8 +1827,8 @@ class UnifiedNavigation {
     // Sidebar Toggle
     this.attachSidebarToggle();
 
-    // Update active state on page load
-    this.updateActiveNavigation();
+    // Note: updateActiveNavigation() is now called immediately after HTML injection
+    // No need to call it here again
 
     // Initialize role switch functionality
     this.initializeRoleSwitch();
@@ -2268,53 +2265,8 @@ class UnifiedNavigation {
     this.animateNavigation(link);
   }
 
-  private clearAllActiveStates(): void {
-    document.querySelectorAll(SIDEBAR_ITEM_SELECTOR).forEach((item) => {
-      item.classList.remove('active');
-    });
-  }
-
   private isMainDashboardPage(path: string): boolean {
     return path.includes('admin-dashboard') || path.includes('employee-dashboard') || path.includes('root-dashboard');
-  }
-
-  private setActiveNavItem(selector: string, navId?: string): void {
-    const element =
-      navId !== undefined ? document.querySelector(`[data-nav-id="${navId}"]`) : document.querySelector(selector);
-
-    if (element) {
-      element.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
-    }
-  }
-
-  private handleDashboardNavigation(currentHash: string, activeNav: string | null): void {
-    if (currentHash !== '' && currentHash !== 'dashboard') {
-      // Use hash to determine active section
-      this.setActiveNavItem('', currentHash);
-      return;
-    }
-
-    if (activeNav === null || activeNav === '' || activeNav === 'dashboard') {
-      // Default to overview
-      this.setActiveNavItem('[data-nav-id="dashboard"]');
-      localStorage.removeItem('activeNavigation');
-    }
-  }
-
-  private handleNonDashboardNavigation(currentPath: string, activeNav: string | null): void {
-    const detected = this.autoDetectActivePage(currentPath);
-
-    if (detected) {
-      localStorage.removeItem('activeNavigation');
-      return;
-    }
-
-    // Fallback to localStorage or default
-    if (activeNav !== null && activeNav !== '' && activeNav !== 'dashboard') {
-      this.setActiveNavItem('', activeNav);
-    } else {
-      this.setActiveNavItem('[data-nav-id="dashboard"]');
-    }
   }
 
   private updateActiveNavigation(): void {
@@ -2322,15 +2274,60 @@ class UnifiedNavigation {
     const currentPath = window.location.pathname;
     const currentHash = window.location.hash.substring(1);
 
-    this.clearAllActiveStates();
+    // CRITICAL FIX: Determine target FIRST, then switch atomically
+    // This prevents the visual glitch where dashboard flashes during navigation
+    const targetElement = this.isMainDashboardPage(currentPath)
+      ? this.findTargetForDashboardPage(currentHash, activeNav)
+      : this.findTargetForNonDashboardPage(currentPath, activeNav);
 
-    if (this.isMainDashboardPage(currentPath)) {
-      this.handleDashboardNavigation(currentHash, activeNav);
-    } else {
-      this.handleNonDashboardNavigation(currentPath, activeNav);
+    // ATOMIC SWITCH: Clear and set in one operation
+    if (targetElement !== null) {
+      this.applyActiveState(targetElement, currentPath);
     }
 
     this.updateSubmenuStates();
+  }
+
+  private findTargetForDashboardPage(currentHash: string, activeNav: string | null): Element | null {
+    if (currentHash !== '' && currentHash !== 'dashboard') {
+      return document.querySelector(`[data-nav-id="${currentHash}"]`);
+    }
+
+    if (activeNav === null || activeNav === '' || activeNav === 'dashboard') {
+      return document.querySelector('[data-nav-id="dashboard"]');
+    }
+
+    return null;
+  }
+
+  private findTargetForNonDashboardPage(currentPath: string, activeNav: string | null): Element | null {
+    // Try auto-detect first
+    const detected = this.findActivePageElement(currentPath);
+    if (detected !== null) {
+      return detected;
+    }
+
+    // Fallback to localStorage
+    if (activeNav !== null && activeNav !== '' && activeNav !== 'dashboard') {
+      return document.querySelector(`[data-nav-id="${activeNav}"]`);
+    }
+
+    return null;
+  }
+
+  private applyActiveState(targetElement: Element, currentPath: string): void {
+    // Remove all active states
+    document.querySelectorAll(SIDEBAR_ITEM_SELECTOR).forEach((item) => {
+      item.classList.remove('active');
+    });
+
+    // Immediately set new active state (no gap = no glitch)
+    targetElement.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
+
+    // Clean up localStorage
+    if (!this.isMainDashboardPage(currentPath)) {
+      localStorage.removeItem('activeNavigation');
+    }
   }
 
   private updateSubmenuStates(): void {
@@ -2481,27 +2478,15 @@ class UnifiedNavigation {
     return child.url !== undefined && child.url !== '' && !child.url.startsWith('#') && child.url.startsWith('/');
   }
 
-  private markItemAndChildActive(parentId: string, childId?: string): void {
-    const parentLink = document.querySelector(`[data-nav-id="${parentId}"]`);
-    if (!parentLink) {
-      return;
-    }
+  /**
+   * Find the active page element WITHOUT modifying DOM state
+   * Used for atomic state switching to prevent visual glitches
+   */
+  private findActivePageElement(currentPath: string): Element | null {
+    const menuItems = this.getNavigationForRole(this.currentRole);
 
-    // Don't mark parent as active when a child is active
-    // Only mark parent active if no child is specified (top-level item)
-    if (childId === undefined) {
-      parentLink.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
-    } else {
-      // For submenu items, only mark the child as active
-      // The parent should stay inactive but expanded (handled elsewhere)
-      const childLink = document.querySelector(`[data-nav-id="${childId}"]`);
-      childLink?.closest('.submenu-item')?.classList.add('active');
-    }
-  }
-
-  private checkSubmenuItems(menuItems: NavItem[], currentPath: string): boolean {
+    // First check children/submenu items for exact match
     for (const item of menuItems) {
-      // Check both children and submenu properties
       const nestedItems = item.children ?? item.submenu ?? [];
 
       if (nestedItems.length === 0) {
@@ -2510,16 +2495,13 @@ class UnifiedNavigation {
 
       for (const child of nestedItems) {
         if (this.isValidChildUrl(child) && currentPath === child.url) {
-          this.markItemAndChildActive(item.id, child.id);
-          return true;
+          return document.querySelector(`[data-nav-id="${child.id}"]`);
         }
       }
     }
-    return false;
-  }
 
-  private checkTopLevelItems(menuItems: NavItem[], currentPath: string): boolean {
-    const matchingItem = menuItems.find((item) => {
+    // Then check top-level items
+    const matchingItem = menuItems.find((item: NavItem) => {
       if (item.url === undefined || item.url === '' || item.url.startsWith('#')) {
         return false;
       }
@@ -2533,24 +2515,11 @@ class UnifiedNavigation {
       return currentPath.includes(item.url.replace('/', ''));
     });
 
-    if (matchingItem) {
-      this.markItemAndChildActive(matchingItem.id);
-      return true;
+    if (matchingItem !== undefined) {
+      return document.querySelector(`[data-nav-id="${matchingItem.id}"]`);
     }
 
-    return false;
-  }
-
-  private autoDetectActivePage(currentPath: string): boolean {
-    const menuItems = this.getNavigationForRole(this.currentRole);
-
-    // First check children/submenu items for exact match
-    if (this.checkSubmenuItems(menuItems, currentPath)) {
-      return true;
-    }
-
-    // Then check top-level items
-    return this.checkTopLevelItems(menuItems, currentPath);
+    return null;
   }
 
   private animateNavigation(link: HTMLElement): void {

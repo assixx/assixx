@@ -109,7 +109,7 @@ export const Primary = {
 
 /**
  * UPLOAD BUTTON
- * Primary button with upload icon for file uploads
+ * Dedicated upload button with beautiful blue gradient background
  * Use for: Document upload, File import, Media upload actions
  */
 export const Upload = {
@@ -121,7 +121,7 @@ export const Upload = {
     fullWidth: false,
     icon: 'fa-upload',
   },
-  render: (args) => createButton({ ...args, variant: 'primary' }),
+  render: (args) => createButton({ ...args, variant: 'upload' }),
 };
 
 /**

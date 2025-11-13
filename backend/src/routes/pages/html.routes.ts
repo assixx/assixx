@@ -110,12 +110,10 @@ router.get(
     res.redirect('/documents-explorer/team');
   },
 );
-router.get(
-  '/documents-search',
-  rateLimiter.authenticated,
-  authenticateToken,
-  servePage('documents-search'),
-);
+// Redirect old documents-search to new explorer
+router.get('/documents-search', (_req: Request, res: Response) => {
+  res.redirect('/documents-explorer');
+});
 
 // Documents Explorer - New unified view
 router.get(

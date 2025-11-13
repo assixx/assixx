@@ -20,6 +20,9 @@ class PreviewModalManager {
   private closeBtn: HTMLButtonElement | null = null;
   private cancelBtn: HTMLButtonElement | null = null;
   private iframeEl: HTMLIFrameElement | null = null;
+  private imageContainerEl: HTMLElement | null = null;
+  private imageEl: HTMLImageElement | null = null;
+  private noPreviewEl: HTMLElement | null = null;
   private titleEl: HTMLElement | null = null;
   private sizeEl: HTMLElement | null = null;
   private dateEl: HTMLElement | null = null;
@@ -34,6 +37,9 @@ class PreviewModalManager {
     this.closeBtn = document.getElementById('preview-close') as HTMLButtonElement;
     this.cancelBtn = document.getElementById('preview-cancel') as HTMLButtonElement;
     this.iframeEl = document.getElementById('preview-iframe') as HTMLIFrameElement;
+    this.imageContainerEl = document.getElementById('preview-image-container');
+    this.imageEl = document.getElementById('preview-image') as HTMLImageElement;
+    this.noPreviewEl = document.getElementById('preview-no-preview');
     this.titleEl = document.getElementById('preview-title');
     this.sizeEl = document.getElementById('preview-size');
     this.dateEl = document.getElementById('preview-date');
@@ -104,6 +110,18 @@ class PreviewModalManager {
   }
 
   /**
+   * Get file type category for preview
+   */
+  private getFileType(doc: Document): 'pdf' | 'image' | 'document' {
+    // Check by stored filename extension
+    const extension = doc.storedFilename.toLowerCase().split('.').pop();
+
+    if (extension === 'pdf') return 'pdf';
+    if (extension === 'jpg' || extension === 'jpeg' || extension === 'png') return 'image';
+    return 'document'; // DOCX, XLSX, DOC, XLS - no preview
+  }
+
+  /**
    * Show modal with document
    */
   private show(doc: Document): void {
@@ -112,8 +130,8 @@ class PreviewModalManager {
     // Update modal content
     this.updateModalContent(doc);
 
-    // Load PDF in iframe
-    this.loadPDF(doc);
+    // Load document preview (PDF in iframe, others show download message)
+    this.loadDocument(doc);
 
     // Show modal using Design System pattern
     this.modalEl.classList.add('modal-overlay--active');
@@ -131,9 +149,27 @@ class PreviewModalManager {
     // Hide modal using Design System pattern
     this.modalEl.classList.remove('modal-overlay--active');
 
-    // Clear iframe
+    // Clear all preview elements
     if (this.iframeEl) {
+      // Remove error handler BEFORE clearing src to prevent false positive errors
+      this.iframeEl.onerror = null;
       this.iframeEl.src = '';
+      this.iframeEl.classList.add('hidden');
+    }
+
+    if (this.imageEl) {
+      // Remove error handler BEFORE clearing src to prevent false positive errors
+      // This prevents onerror firing when modal closes during image load
+      this.imageEl.onerror = null;
+      this.imageEl.src = '';
+    }
+
+    if (this.imageContainerEl) {
+      this.imageContainerEl.classList.add('hidden');
+    }
+
+    if (this.noPreviewEl) {
+      this.noPreviewEl.classList.add('hidden');
     }
 
     // Restore body scroll
@@ -182,28 +218,79 @@ class PreviewModalManager {
   }
 
   /**
-   * Load PDF in iframe
+   * Load document preview
+   * PDFs: Show in iframe
+   * Images (JPG/PNG): Show in <img> tag
+   * Documents (DOCX/XLSX): Show "no preview" message
    */
-  private loadPDF(doc: Document): void {
-    if (!this.iframeEl) return;
+  private loadDocument(doc: Document): void {
+    if (!this.iframeEl || !this.imageContainerEl || !this.imageEl || !this.noPreviewEl) {
+      console.error('[Preview Modal] Preview elements not found');
+      return;
+    }
 
-    // Use preview URL if available, otherwise download URL
-    const baseUrl = doc.previewUrl ?? doc.downloadUrl;
+    const fileType = this.getFileType(doc);
 
-    // Append access token as query parameter for iframe auth
-    // (iframes cannot send Authorization headers)
+    // Hide all preview elements first
+    this.iframeEl.classList.add('hidden');
+    this.imageContainerEl.classList.add('hidden');
+    this.noPreviewEl.classList.add('hidden');
+
+    // Append access token as query parameter for auth
     const token = tokenManager.getAccessToken();
-    const pdfUrl = token !== null ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
+    const baseUrl = doc.previewUrl ?? doc.downloadUrl;
+    const urlWithToken = token !== null ? `${baseUrl}?token=${encodeURIComponent(token)}` : baseUrl;
 
-    // Load PDF with viewer
-    // Most browsers will use their built-in PDF viewer
-    this.iframeEl.src = pdfUrl;
+    if (fileType === 'pdf') {
+      // Show iframe for PDF preview
+      this.iframeEl.classList.remove('hidden');
 
-    // Handle load errors
-    this.iframeEl.onerror = () => {
-      console.error('Failed to load PDF preview');
-      // Could show error message in modal
-    };
+      console.log('[Preview Modal] Loading PDF:', {
+        docId: doc.id,
+        filename: doc.filename,
+        url: urlWithToken,
+      });
+
+      // Load PDF with viewer
+      // Most browsers will use their built-in PDF viewer
+      this.iframeEl.src = urlWithToken;
+
+      // Handle load errors
+      this.iframeEl.onerror = () => {
+        console.error('[Preview Modal] Failed to load PDF preview');
+      };
+    } else if (fileType === 'image') {
+      // Show image for JPG/PNG files (base has flex, removing hidden makes it visible)
+      this.imageContainerEl.classList.remove('hidden');
+
+      console.log('[Preview Modal] Loading Image:', {
+        docId: doc.id,
+        filename: doc.filename,
+        storedFilename: doc.storedFilename,
+        url: urlWithToken,
+      });
+
+      // Load image
+      this.imageEl.src = urlWithToken;
+      this.imageEl.alt = doc.filename;
+
+      // Handle load errors
+      this.imageEl.onerror = () => {
+        console.error('[Preview Modal] Failed to load image preview');
+      };
+    } else {
+      // Show "no preview" message for DOCX/XLSX files (base has flex, removing hidden makes it visible)
+      this.noPreviewEl.classList.remove('hidden');
+
+      console.log('[Preview Modal] No preview available for document type:', {
+        docId: doc.id,
+        filename: doc.filename,
+        storedFilename: doc.storedFilename,
+        fileType,
+      });
+
+      // User can still download via download button in modal footer
+    }
   }
 
   /**

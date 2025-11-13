@@ -1,30 +1,80 @@
+/* eslint-disable max-lines */
 /**
- * Documents Explorer - Upload Modal Module
+ * Documents Explorer - Upload Modal Module (Refactored 2025-01-12)
  *
- * Handles document upload modal for admin/root users
- * Integrates with existing File Upload component from Design System
+ * AUTOMATIC VISIBILITY MAPPING:
+ * - User selects category → visibility is automatically determined
+ * - No manual visibility selection needed
+ * - Direct 1:1 mapping: category → access_scope → database
  *
  * @module explorer/upload-modal
- * @requires isAdmin from auth-helpers
  */
 
 import { isAdmin } from '../../../utils/auth-helpers';
 import { stateManager } from './state';
 import { documentAPI } from './api';
 import type { UploadFormData } from './types';
+import { showSuccessAlert, showErrorAlert, showWarningAlert } from '../../utils/alerts';
+
+/**
+ * Category Mapping Configuration
+ * Maps user-facing categories to database access control
+ */
+interface CategoryMapping {
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  requiresField?: 'team_id' | 'department_id';
+  requiresPayrollPeriod?: boolean;
+  categoryValue: string; // DB category field value
+}
+
+const CATEGORY_MAPPINGS: Record<string, CategoryMapping | undefined> = {
+  company: {
+    accessScope: 'company',
+    categoryValue: 'general', // Backend ENUM: 'personal', 'work', 'training', 'general', 'salary'
+  },
+  department: {
+    accessScope: 'department',
+    requiresField: 'department_id',
+    categoryValue: 'work', // Backend ENUM
+  },
+  team: {
+    accessScope: 'team',
+    requiresField: 'team_id',
+    categoryValue: 'work', // Backend ENUM
+  },
+  personal: {
+    accessScope: 'personal',
+    categoryValue: 'personal', // Backend ENUM
+  },
+  payroll: {
+    accessScope: 'payroll',
+    requiresPayrollPeriod: true,
+    categoryValue: 'salary', // Backend ENUM
+  },
+};
+
+/**
+ * User Info Interface
+ */
+interface User {
+  id: number;
+  tenant_id: number;
+  department_id?: number | null;
+  team_id?: number | null;
+  role: string;
+}
 
 /**
  * Upload Modal Manager
- * Manages document upload form and submission
  */
 class UploadModalManager {
   private modalEl: HTMLElement | null = null;
   private formEl: HTMLFormElement | null = null;
   private fileInput: HTMLInputElement | null = null;
-  private recipientTypeInputs: NodeListOf<HTMLInputElement> | null = null;
-  private categorySelect: HTMLInputElement | null = null; // Hidden input controlled by dropdown
+  private categoryInput: HTMLInputElement | null = null;
   private submitBtn: HTMLButtonElement | null = null;
   private closeBtn: HTMLButtonElement | null = null;
+  private currentUser: User | null = null;
 
   /**
    * Initialize upload modal
@@ -40,93 +90,251 @@ class UploadModalManager {
     if (uploadBtn) {
       uploadBtn.classList.remove('hidden');
       uploadBtn.addEventListener('click', () => {
-        this.open();
+        // Use void operator for fire-and-forget async call
+        void this.open();
       });
     }
 
     this.modalEl = document.getElementById('upload-modal');
-
     if (!this.modalEl) {
-      console.error('Upload modal not found');
+      console.error('[Upload Modal] Modal element not found');
       return;
     }
 
-    // IMPORTANT: We use the HTML from documents-explorer.html, not renderModalContent()
-    // Commenting out to preserve our Storybook-based design
-    // this.renderModalContent();
-
-    // Get form elements from existing HTML
+    // Get form elements
     this.formEl = this.modalEl.querySelector('#upload-form');
+    this.fileInput = this.modalEl.querySelector('#file-input');
+    this.categoryInput = this.modalEl.querySelector('#category-input');
+    this.submitBtn = this.modalEl.querySelector('#upload-submit');
+    this.closeBtn = this.modalEl.querySelector('#upload-close');
 
-    // Get elements with updated IDs matching our new HTML
-    const fileInput = this.modalEl.querySelector<HTMLInputElement>('#file-input');
-    if (!fileInput) {
-      console.error('File input not found');
+    if (!this.fileInput || !this.categoryInput) {
+      console.error('[Upload Modal] Required form elements not found');
       return;
     }
-    this.fileInput = fileInput;
-
-    // Update to use 'visibility' instead of 'recipientType' for our new design
-    this.recipientTypeInputs = this.modalEl.querySelectorAll('input[name="visibility"]');
-
-    // We don't have recipient-id-select in new design - commenting out
-    // const recipientIdSelect = this.modalEl.querySelector<HTMLSelectElement>('#recipient-id-select');
-    // if (!recipientIdSelect) {
-    //   console.error('Recipient ID select not found');
-    //   return;
-    // }
-    // this.recipientIdSelect = recipientIdSelect;
-
-    // Category is now a hidden input controlled by dropdown
-    const categorySelect = this.modalEl.querySelector<HTMLInputElement>('#category-input');
-    if (!categorySelect) {
-      console.error('Category input not found');
-      // Don't return - continue initialization
-    }
-    this.categorySelect = categorySelect;
-
-    // Year and Month selects don't exist in new design - commenting out
-    // const yearSelect = this.modalEl.querySelector<HTMLSelectElement>('#year-select');
-    // if (!yearSelect) {
-    //   console.error('Year select not found');
-    //   return;
-    // }
-    // this.yearSelect = yearSelect;
-
-    // const monthSelect = this.modalEl.querySelector<HTMLSelectElement>('#month-select');
-    // if (!monthSelect) {
-    // console.error('Month select not found');
-    // return;
-    // }
-    // this.monthSelect = monthSelect;
-
-    const submitBtn = this.modalEl.querySelector<HTMLButtonElement>('#upload-submit');
-    if (!submitBtn) {
-      console.error('Submit button not found');
-      return;
-    }
-    this.submitBtn = submitBtn;
-
-    const closeBtn = this.modalEl.querySelector<HTMLButtonElement>('#upload-close');
-    if (!closeBtn) {
-      console.error('Close button not found');
-      return;
-    }
-    this.closeBtn = closeBtn;
 
     // Attach event listeners
     this.attachEventListeners();
 
-    // Setup drag and drop for upload zone
+    // Setup drag and drop
     this.setupDragAndDrop();
 
-    // Setup custom dropdown for category selection
+    // Setup custom dropdown
     this.setupCustomDropdown();
   }
 
-  // NOTE: The renderModalContent and related methods have been removed
-  // We now use the HTML directly from documents-explorer.html instead of dynamic rendering
-  // This improves performance and maintainability by keeping HTML in one place
+  /**
+   * Get current user info from API
+   */
+  private async getCurrentUser(): Promise<User | null> {
+    if (this.currentUser) {
+      return this.currentUser;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      if (token === null || token === '') {
+        throw new Error('No auth token found');
+      }
+
+      const response = await fetch('/api/v2/users/me', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get user info: ${response.status}`);
+      }
+
+      const data: unknown = await response.json();
+
+      // Type assertion after fetching - API returns user data in various formats
+      this.currentUser = ((data as Record<string, unknown>).data ??
+        (data as Record<string, unknown>).user ??
+        data) as User;
+      return this.currentUser;
+    } catch (error) {
+      console.error('[Upload Modal] Failed to get user info:', error);
+      showErrorAlert('Fehler beim Laden der Benutzerdaten');
+      return null;
+    }
+  }
+
+  /**
+   * Validate upload based on category and user data
+   */
+  /**
+   * Validate user has required field for upload
+   */
+  private validateUserRequiredField(mapping: CategoryMapping, user: User): boolean {
+    if (mapping.requiresField === undefined) {
+      return true;
+    }
+
+    if (mapping.requiresField === 'team_id' && (user.team_id === null || user.team_id === undefined)) {
+      showWarningAlert('Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!');
+      return false;
+    }
+
+    if (
+      mapping.requiresField === 'department_id' &&
+      (user.department_id === null || user.department_id === undefined)
+    ) {
+      showWarningAlert('Sie müssen einer Abteilung zugeordnet sein, um Abteilungs-Dokumente hochzuladen!');
+      return false;
+    }
+
+    return true;
+  }
+
+  private async validateUpload(category: string, file: File): Promise<boolean> {
+    // Safe: CATEGORY_MAPPINGS is Record<string, CategoryMapping | undefined>
+    // Invalid keys (including __proto__) return undefined, which we check immediately
+    // eslint-disable-next-line security/detect-object-injection
+    const mapping = CATEGORY_MAPPINGS[category];
+    if (mapping === undefined) {
+      showWarningAlert('Bitte wählen Sie eine gültige Kategorie aus!');
+      return false;
+    }
+
+    // Get user info
+    const user = await this.getCurrentUser();
+    if (!user) {
+      return false;
+    }
+
+    // Check if user has required field
+    if (!this.validateUserRequiredField(mapping, user)) {
+      return false;
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showWarningAlert('Datei ist zu groß! Maximale Größe: 5 MB');
+      return false;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'image/jpeg',
+      'image/png',
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      showWarningAlert('Nur PDF, Word, Excel, JPG und PNG Dateien sind erlaubt!');
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Populate upload data IDs based on access scope
+   */
+  private populateUploadDataIds(uploadData: UploadFormData, mapping: CategoryMapping, user: User): void {
+    switch (mapping.accessScope) {
+      case 'personal':
+      case 'payroll':
+        uploadData.ownerUserId = user.id;
+        break;
+
+      case 'team':
+        if (user.team_id !== null && user.team_id !== undefined) {
+          uploadData.targetTeamId = user.team_id;
+        }
+        break;
+
+      case 'department':
+        if (user.department_id !== null && user.department_id !== undefined) {
+          uploadData.targetDepartmentId = user.department_id;
+        }
+        break;
+
+      case 'company':
+        // No specific ID needed - all in tenant
+        break;
+    }
+  }
+
+  /**
+   * Add payroll period fields to upload data
+   * Returns false if validation fails
+   */
+  private addPayrollPeriodFields(uploadData: UploadFormData): boolean {
+    const yearSelect = this.modalEl?.querySelector('#salary-year') as HTMLSelectElement | null;
+    const monthSelect = this.modalEl?.querySelector('#salary-month') as HTMLSelectElement | null;
+
+    if (yearSelect !== null && yearSelect.value !== '' && monthSelect !== null && monthSelect.value !== '') {
+      uploadData.salaryYear = Number.parseInt(yearSelect.value, 10);
+      uploadData.salaryMonth = Number.parseInt(monthSelect.value, 10);
+      return true;
+    }
+
+    showWarningAlert('Bitte wählen Sie Jahr und Monat für die Gehaltsabrechnung!');
+    return false;
+  }
+
+  /**
+   * Build UploadFormData with automatic visibility mapping
+   */
+  private async buildFormData(file: File, category: string): Promise<UploadFormData | null> {
+    // Safe: CATEGORY_MAPPINGS is Record<string, CategoryMapping | undefined>
+    // Invalid keys (including __proto__) return undefined, which we check immediately
+    // eslint-disable-next-line security/detect-object-injection
+    const mapping = CATEGORY_MAPPINGS[category];
+    if (mapping === undefined) {
+      return null;
+    }
+
+    const user = await this.getCurrentUser();
+    if (!user) {
+      return null;
+    }
+
+    // Read document name and description from inputs
+    const docNameInput = this.modalEl?.querySelector('#doc-name') as HTMLInputElement | null;
+    const docDescInput = this.modalEl?.querySelector('#doc-description') as HTMLTextAreaElement | null;
+
+    const documentName = docNameInput !== null && docNameInput.value !== '' ? docNameInput.value.trim() : null;
+    const description = docDescInput !== null && docDescInput.value !== '' ? docDescInput.value.trim() : null;
+
+    console.log('[Upload Modal] Building FormData:', {
+      fileName: file.name,
+      documentName,
+      description,
+      accessScope: mapping.accessScope,
+      category: mapping.categoryValue,
+      userId: user.id,
+    });
+
+    // Build UploadFormData object (api.ts will convert to FormData)
+    const uploadData: UploadFormData = {
+      file,
+      accessScope: mapping.accessScope,
+      category: mapping.categoryValue,
+      documentName,
+      description,
+    };
+
+    // Auto-populate IDs based on access scope
+    this.populateUploadDataIds(uploadData, mapping, user);
+
+    // Payroll extra fields
+    if (mapping.requiresPayrollPeriod === true && !this.addPayrollPeriodFields(uploadData)) {
+      return null;
+    }
+
+    console.log('[Upload Modal] Final UploadData:', uploadData);
+
+    return uploadData;
+  }
 
   /**
    * Attach event listeners
@@ -173,19 +381,10 @@ class UploadModalManager {
     }
 
     // File remove
-    const fileRemoveBtn = this.modalEl.querySelector('#file-remove');
+    const fileRemoveBtn = this.modalEl.querySelector('#remove-file');
     if (fileRemoveBtn) {
       fileRemoveBtn.addEventListener('click', () => {
         this.clearFileSelection();
-      });
-    }
-
-    // Recipient type change
-    if (this.recipientTypeInputs) {
-      this.recipientTypeInputs.forEach((input) => {
-        input.addEventListener('change', () => {
-          this.handleRecipientTypeChange();
-        });
       });
     }
 
@@ -198,7 +397,7 @@ class UploadModalManager {
       });
     }
 
-    // Submit button (alternative to form submit)
+    // Submit button
     if (this.submitBtn) {
       this.submitBtn.addEventListener('click', (e) => {
         e.preventDefault();
@@ -212,40 +411,21 @@ class UploadModalManager {
    * Handle file selected
    */
   private handleFileSelected(file: File): void {
-    // Validate file type - allow multiple formats as per HTML
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'image/jpeg',
-      'image/png',
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      alert('Nur PDF, Word, Excel, JPG und PNG Dateien sind erlaubt!');
-      this.clearFileSelection();
-      return;
-    }
-
-    // Validate file size (5MB max)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      alert('Datei ist zu groß! Maximale Größe: 5 MB');
-      this.clearFileSelection();
-      return;
-    }
-
     // Show file preview
-    const preview = this.modalEl?.querySelector('#file-preview');
+    const selectedFileDiv = this.modalEl?.querySelector('#selected-file');
     const fileName = this.modalEl?.querySelector('#file-name');
     const fileSize = this.modalEl?.querySelector('#file-size');
 
-    if (preview && fileName && fileSize) {
+    if (selectedFileDiv && fileName && fileSize) {
       fileName.textContent = file.name;
       fileSize.textContent = this.formatFileSize(file.size);
-      preview.classList.remove('hidden');
+      selectedFileDiv.classList.remove('hidden');
+    }
+
+    // Auto-fill document name if empty
+    const docNameInput = this.modalEl?.querySelector('#doc-name') as HTMLInputElement | null;
+    if (docNameInput !== null && docNameInput.value === '') {
+      docNameInput.value = file.name.replace(/\.[^/.]+$/, ''); // Remove extension
     }
   }
 
@@ -257,35 +437,9 @@ class UploadModalManager {
       this.fileInput.value = '';
     }
 
-    const preview = this.modalEl?.querySelector('#file-preview');
-    if (preview) {
-      preview.classList.add('hidden');
-    }
-  }
-
-  /**
-   * Handle recipient type change
-   */
-  private handleRecipientTypeChange(): void {
-    const selectedType = Array.from(this.recipientTypeInputs ?? []).find((input) => input.checked)?.value;
-
-    // Update UI based on visibility selection
-    // In current design, we don't have recipient selection dropdown
-    // The backend will handle recipient based on visibility type
-
-    // Optional: Show/hide additional fields based on visibility
-    if (selectedType === 'private') {
-      // Personal document - no additional selection needed
-      console.log('Private document selected');
-    } else if (selectedType === 'team') {
-      // Team document - backend will use user's team
-      console.log('Team document selected');
-    } else if (selectedType === 'department') {
-      // Department document - backend will use user's department
-      console.log('Department document selected');
-    } else if (selectedType === 'company') {
-      // Company-wide document
-      console.log('Company document selected');
+    const selectedFileDiv = this.modalEl?.querySelector('#selected-file');
+    if (selectedFileDiv) {
+      selectedFileDiv.classList.add('hidden');
     }
   }
 
@@ -294,11 +448,26 @@ class UploadModalManager {
    */
   private async handleSubmit(): Promise<void> {
     if (!this.fileInput?.files?.[0]) {
-      alert('Bitte wählen Sie eine Datei aus!');
+      showWarningAlert('Bitte wählen Sie eine Datei aus!');
       return;
     }
 
-    const formData = this.getFormData();
+    const category = this.categoryInput?.value;
+    if (category === undefined || category === '') {
+      showWarningAlert('Bitte wählen Sie eine Kategorie aus!');
+      return;
+    }
+
+    const file = this.fileInput.files[0];
+
+    // Validate
+    const isValid = await this.validateUpload(category, file);
+    if (!isValid) {
+      return;
+    }
+
+    // Build form data
+    const formData = await this.buildFormData(file, category);
     if (!formData) {
       return;
     }
@@ -310,7 +479,7 @@ class UploadModalManager {
         this.submitBtn.textContent = 'Wird hochgeladen...';
       }
 
-      // Use statically imported documentAPI to avoid Vite warning
+      // Upload
       await documentAPI.uploadDocument(formData, (progress) => {
         if (this.submitBtn) {
           this.submitBtn.textContent = `Wird hochgeladen... ${progress}%`;
@@ -318,14 +487,18 @@ class UploadModalManager {
       });
 
       // Success
-      alert('Dokument erfolgreich hochgeladen!');
+      showSuccessAlert('Dokument erfolgreich hochgeladen!');
       this.close();
 
-      // Refresh documents list (not async)
-      stateManager.refreshDocuments();
+      // Refresh documents list in background (fire-and-forget)
+      // User doesn't need to wait - observer pattern updates UI automatically
+      stateManager.refreshDocuments().catch((error: unknown) => {
+        console.error('[Upload Modal] Failed to refresh after upload:', error);
+      });
     } catch (error) {
-      console.error('Upload failed:', error);
-      alert('Fehler beim Hochladen. Bitte versuchen Sie es erneut.');
+      console.error('[Upload Modal] Upload failed:', error);
+      const errorMessage = this.parseUploadError(error);
+      showErrorAlert(errorMessage);
     } finally {
       // Re-enable submit button
       if (this.submitBtn) {
@@ -336,50 +509,43 @@ class UploadModalManager {
   }
 
   /**
-   * Get form data
+   * Parse upload error
    */
-  private getFormData(): UploadFormData | null {
-    if (!this.fileInput?.files?.[0]) {
-      return null;
+  private parseUploadError(error: unknown): string {
+    const defaultMessage = 'Fehler beim Hochladen. Bitte versuchen Sie es erneut.';
+
+    if (!(error instanceof Error)) {
+      return defaultMessage;
     }
 
-    // Get visibility/recipientType from radio buttons
-    const selectedType = Array.from(this.recipientTypeInputs ?? []).find((input) => input.checked)?.value as
-      | 'private'
-      | 'team'
-      | 'department'
-      | 'company';
+    const msg = error.message;
 
-    // Map visibility values to recipientType for API compatibility
-    const recipientType = selectedType === 'private' ? 'user' : selectedType;
+    if (msg.includes('Netzwerkfehler')) {
+      return 'Keine Verbindung zum Server. Bitte prüfen Sie Ihre Internetverbindung.';
+    }
+    if (msg.includes('HTTP 401')) {
+      return 'Sitzung abgelaufen. Bitte melden Sie sich erneut an.';
+    }
+    if (msg.includes('HTTP 403')) {
+      return 'Keine Berechtigung. Nur Admins können Dokumente hochladen.';
+    }
+    if (msg.includes('HTTP 400')) {
+      return 'Ungültige Daten. Bitte prüfen Sie Kategorie und Eingabefelder.';
+    }
+    if (msg.includes('HTTP 500') || msg.includes('HTTP 503')) {
+      return 'Server-Fehler. Bitte versuchen Sie es später erneut.';
+    }
+    if (msg.includes('too large') || msg.includes('zu groß')) {
+      return 'Datei ist zu groß. Maximale Größe: 5 MB.';
+    }
 
-    // Get category from hidden input (controlled by dropdown)
-    const category = this.categorySelect?.value ?? 'general';
-
-    // For now, use current year and month since HTML doesn't have year/month selects
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = category === 'salary' ? now.getMonth() + 1 : null; // Month only for salary docs
-
-    // Simplified: no recipient ID selection in current design
-    // Backend will determine recipient based on current user and visibility
-    const recipientId = null;
-
-    return {
-      file: this.fileInput.files[0],
-      recipientType: recipientType,
-      recipientId,
-      category,
-      year,
-      month,
-    };
+    return msg.length > 0 ? msg : defaultMessage;
   }
 
   /**
    * Open modal
    */
-  public open(): void {
-    // Use nullish coalescing assignment to find element if not cached
+  public async open(): Promise<void> {
     this.modalEl ??= document.getElementById('upload-modal');
 
     if (!this.modalEl) {
@@ -387,11 +553,14 @@ class UploadModalManager {
       return;
     }
 
-    // Use Design System pattern - add active class
+    // Show modal
     this.modalEl.classList.add('modal-overlay--active');
 
     // Prevent body scroll
     document.body.style.overflow = 'hidden';
+
+    // Preload user info
+    await this.getCurrentUser();
   }
 
   /**
@@ -400,7 +569,6 @@ class UploadModalManager {
   private close(): void {
     if (!this.modalEl) return;
 
-    // Use Design System pattern - remove active class
     this.modalEl.classList.remove('modal-overlay--active');
 
     this.clearFileSelection();
@@ -410,12 +578,24 @@ class UploadModalManager {
       this.formEl.reset();
     }
 
+    // Hide payroll fields
+    const payrollFields = this.modalEl.querySelector('#payroll-fields');
+    if (payrollFields) {
+      payrollFields.classList.add('hidden');
+    }
+
+    // Reset category text
+    const categoryText = this.modalEl.querySelector('#category-text');
+    if (categoryText) {
+      categoryText.textContent = 'Kategorie wählen';
+    }
+
     // Restore body scroll
     document.body.style.overflow = '';
   }
 
   /**
-   * Format file size for display
+   * Format file size
    */
   private formatFileSize(bytes: number): string {
     if (bytes === 0) return '0 Bytes';
@@ -424,22 +604,19 @@ class UploadModalManager {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'] as const;
     const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-    // Clamp index to valid array bounds to prevent object injection
-    // While TypeScript knows sizes is an array, ESLint security rule requires explicit bounds checking
     const clampedIndex = Math.max(0, Math.min(i, sizes.length - 1));
-    // eslint-disable-next-line security/detect-object-injection -- clampedIndex is clamped to valid array bounds (0 to sizes.length-1)
+    // eslint-disable-next-line security/detect-object-injection
     const sizeLabel = sizes[clampedIndex];
     return `${Math.round((bytes / Math.pow(k, clampedIndex)) * 100) / 100} ${sizeLabel}`;
   }
 
   /**
-   * Setup drag and drop functionality for upload zone
+   * Setup drag and drop functionality
    */
   private setupDragAndDrop(): void {
     const dropzone = document.getElementById('upload-dropzone');
     if (!dropzone) return;
 
-    // Prevent default drag behaviors - bind the method properly
     const preventDefaults = (e: Event): void => {
       e.preventDefault();
       e.stopPropagation();
@@ -450,12 +627,11 @@ class UploadModalManager {
       document.body.addEventListener(eventName, preventDefaults, false);
     });
 
-    // Highlight drop zone when item is dragged over it
     ['dragenter', 'dragover'].forEach((eventName) => {
       dropzone.addEventListener(
         eventName,
         () => {
-          dropzone.classList.add('drag-over');
+          dropzone.classList.add('file-upload-zone--dragover');
         },
         false,
       );
@@ -465,13 +641,12 @@ class UploadModalManager {
       dropzone.addEventListener(
         eventName,
         () => {
-          dropzone.classList.remove('drag-over');
+          dropzone.classList.remove('file-upload-zone--dragover');
         },
         false,
       );
     });
 
-    // Handle dropped files
     dropzone.addEventListener(
       'drop',
       (e: DragEvent) => {
@@ -479,12 +654,10 @@ class UploadModalManager {
 
         const file = e.dataTransfer.files[0];
         if (this.fileInput) {
-          // Create a new FileList with the dropped file
           const dataTransfer = new DataTransfer();
           dataTransfer.items.add(file);
           this.fileInput.files = dataTransfer.files;
 
-          // Trigger change event to update UI
           const event = new Event('change', { bubbles: true });
           this.fileInput.dispatchEvent(event);
         }
@@ -492,7 +665,6 @@ class UploadModalManager {
       false,
     );
 
-    // Click to upload
     dropzone.addEventListener('click', () => {
       this.fileInput?.click();
     });
@@ -505,14 +677,14 @@ class UploadModalManager {
     const dropdownTrigger = document.getElementById('category-dropdown');
     const dropdownMenu = dropdownTrigger?.nextElementSibling as HTMLElement | null;
     const categoryText = document.getElementById('category-text');
-    const categoryInput = document.getElementById('category-input') as HTMLInputElement | null;
+    const categoryInput = this.categoryInput;
 
     if (!dropdownTrigger || !dropdownMenu || !categoryText || !categoryInput) {
       console.error('[Upload Modal] Category dropdown elements not found');
       return;
     }
 
-    // Toggle dropdown on click - using Design System pattern
+    // Toggle dropdown
     dropdownTrigger.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -524,19 +696,27 @@ class UploadModalManager {
     options.forEach((option) => {
       option.addEventListener('click', () => {
         const value = option.getAttribute('data-value');
-        // textContent is never null for HTML elements selected with querySelectorAll
-        const text = option.textContent.trim();
+
+        // Get text from text nodes only (skip icon element)
+        let displayText = '';
+        option.childNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            displayText += node.textContent?.trim() ?? '';
+          }
+        });
 
         if (value !== null && value !== '') {
-          // Update displayed text (remove icon)
-          const textOnly = text.replace(/^[^\s]+\s/, ''); // Remove first icon and space
-          categoryText.textContent = textOnly;
+          // Update displayed text (without icon)
+          categoryText.textContent = displayText;
 
           // Update hidden input value
           categoryInput.value = value;
 
-          // Close dropdown using Design System pattern
+          // Close dropdown
           dropdownMenu.classList.remove('active');
+
+          // Show/hide payroll fields
+          this.handleCategoryChange(value);
         }
       });
     });
@@ -547,6 +727,20 @@ class UploadModalManager {
         dropdownMenu.classList.remove('active');
       }
     });
+  }
+
+  /**
+   * Handle category change (show/hide payroll fields)
+   */
+  private handleCategoryChange(category: string): void {
+    const payrollFields = this.modalEl?.querySelector('#payroll-fields');
+    if (!payrollFields) return;
+
+    if (category === 'payroll') {
+      payrollFields.classList.remove('hidden');
+    } else {
+      payrollFields.classList.add('hidden');
+    }
   }
 }
 

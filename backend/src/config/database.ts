@@ -278,9 +278,13 @@ if (USE_MOCK_DB) {
     dateStrings: false,
     debug: false,
     typeCast: function (field: TypeCastField, next: TypeCastNext): unknown {
-      if (field.type === 'VAR_STRING' || field.type === 'STRING' || field.type === 'BLOB') {
+      // Only convert text fields to UTF-8 strings
+      // BLOB fields (including MEDIUMBLOB for PDFs) MUST be returned as Buffer
+      if (field.type === 'VAR_STRING' || field.type === 'STRING') {
         return field.string('utf8');
       }
+      // For BLOB, MEDIUMBLOB, LONGBLOB: return as Buffer (default behavior)
+      // This prevents corruption of binary PDF data
       return next();
     },
   };

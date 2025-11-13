@@ -19,10 +19,10 @@ const CategorySchema = z.enum(['personal', 'work', 'training', 'general', 'salar
 });
 
 /**
- * Recipient type enum
+ * Access scope enum (NEW: refactored 2025-01-10)
  */
-const RecipientTypeSchema = z.enum(['user', 'team', 'department', 'company'], {
-  message: 'Invalid recipient type',
+const AccessScopeSchema = z.enum(['personal', 'team', 'department', 'company', 'payroll'], {
+  message: 'Invalid access scope',
 });
 
 /**
@@ -58,22 +58,22 @@ const TagsJsonStringSchema = z
 // ============================================================
 
 /**
- * List documents query parameters
+ * List documents query parameters (NEW: clean structure, refactored 2025-01-10)
  */
 export const ListDocumentsQuerySchema = PaginationSchema.extend({
   category: CategorySchema.optional(),
-  recipientType: RecipientTypeSchema.optional(),
-  userId: IdSchema.optional(),
-  teamId: IdSchema.optional(),
-  departmentId: IdSchema.optional(),
-  year: z.preprocess(
+  accessScope: AccessScopeSchema.optional(),
+  ownerUserId: IdSchema.optional(),
+  targetTeamId: IdSchema.optional(),
+  targetDepartmentId: IdSchema.optional(),
+  salaryYear: z.preprocess(
     (val: unknown) =>
       typeof val === 'string' || typeof val === 'number' ?
         Number.parseInt(val.toString(), 10)
       : val,
     z.number().int().min(2000).max(2100).optional(),
   ),
-  month: z.preprocess(
+  salaryMonth: z.preprocess(
     (val: unknown) =>
       typeof val === 'string' || typeof val === 'number' ?
         Number.parseInt(val.toString(), 10)
@@ -111,18 +111,55 @@ export const DocumentIdParamSchema = z.object({
 // ============================================================
 
 /**
- * Create document request body
+ * Create document request body (NEW: clean structure, refactored 2025-01-10)
  * Note: File is handled by multer middleware
+ * FormData sends all values as strings, so we need preprocessing
  */
 export const CreateDocumentBodySchema = z.object({
   category: CategorySchema,
-  recipientType: RecipientTypeSchema,
-  userId: z.number().int().positive('User ID must be a positive integer').optional(),
-  teamId: z.number().int().positive('Team ID must be a positive integer').optional(),
-  departmentId: z.number().int().positive('Department ID must be a positive integer').optional(),
+  accessScope: AccessScopeSchema,
+  ownerUserId: z.preprocess(
+    (val: unknown) =>
+      typeof val === 'string' || typeof val === 'number' ?
+        Number.parseInt(val.toString(), 10)
+      : val,
+    z.number().int().positive('Owner user ID must be a positive integer').optional(),
+  ),
+  targetTeamId: z.preprocess(
+    (val: unknown) =>
+      typeof val === 'string' || typeof val === 'number' ?
+        Number.parseInt(val.toString(), 10)
+      : val,
+    z.number().int().positive('Target team ID must be a positive integer').optional(),
+  ),
+  targetDepartmentId: z.preprocess(
+    (val: unknown) =>
+      typeof val === 'string' || typeof val === 'number' ?
+        Number.parseInt(val.toString(), 10)
+      : val,
+    z.number().int().positive('Target department ID must be a positive integer').optional(),
+  ),
+  documentName: z
+    .string()
+    .trim()
+    .min(1, 'Document name cannot be empty')
+    .max(255, 'Document name must not exceed 255 characters')
+    .optional(),
   description: z.string().trim().max(500, 'Description cannot exceed 500 characters').optional(),
-  year: z.number().int().min(2000).max(2100).optional(),
-  month: z.number().int().min(1).max(12).optional(),
+  salaryYear: z.preprocess(
+    (val: unknown) =>
+      typeof val === 'string' || typeof val === 'number' ?
+        Number.parseInt(val.toString(), 10)
+      : val,
+    z.number().int().min(2000).max(2100).optional(),
+  ),
+  salaryMonth: z.preprocess(
+    (val: unknown) =>
+      typeof val === 'string' || typeof val === 'number' ?
+        Number.parseInt(val.toString(), 10)
+      : val,
+    z.number().int().min(1).max(12).optional(),
+  ),
   tags: TagsJsonStringSchema,
   isPublic: z.preprocess(
     (val: unknown) =>

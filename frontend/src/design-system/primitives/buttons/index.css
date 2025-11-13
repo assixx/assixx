@@ -33,6 +33,7 @@
 @import "./button.manage.css";
 @import "./button.link.css";
 @import "./button.modal.css";
+@import "./button.upload.css";
 
 /* Modifiers - Sizes and layouts */
 @import "./button.sizes.css";
