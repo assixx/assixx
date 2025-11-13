@@ -87,14 +87,14 @@ export class KvpUIHelpers {
     const action = option.dataset.action ?? '';
 
     // Update trigger text (Design System pattern)
-    const triggerText = dropdown.querySelector('.dropdown__trigger-text');
+    const trigger = dropdown.querySelector('.dropdown__trigger');
+    const triggerText = trigger?.querySelector('span');
     if (triggerText) triggerText.textContent = text;
 
     // Update hidden input based on action type
     this.updateHiddenInput(dropdown, action, value);
 
     // Close dropdown
-    const trigger = dropdown.querySelector('.dropdown__trigger');
     const menu = dropdown.querySelector('.dropdown__menu');
     if (trigger) trigger.classList.remove('active');
     if (menu) menu.classList.remove('active');
@@ -345,7 +345,8 @@ export class KvpUIHelpers {
     const displayId = `${dropdownType}Display`;
     const valueId = `${dropdownType}Value`;
 
-    const triggerText = $$(`#${displayId} .dropdown__trigger-text`);
+    const trigger = $$(`#${displayId}`);
+    const triggerText = trigger?.querySelector('span');
     if (triggerText) triggerText.textContent = text;
 
     const hiddenInput = $$(`#${valueId}`);

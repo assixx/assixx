@@ -92,54 +92,71 @@
               </div>
             </div>
             <div class="card-body">
-              <!-- Filter Toggle Group - Design System -->
-              <div class="toggle-group" id="kvp-filter-toggle">
-                <button class="toggle-group__btn active" data-filter="all" title="Alle Vorschläge">
-                  <i class="fas fa-list"></i>
-                  Alle
-                  <span class="badge" id="badgeAll">0</span>
-                </button>
-                <button class="toggle-group__btn" data-filter="mine" title="Meine Vorschläge">
-                  <i class="fas fa-user"></i>
-                  Meine
-                  <span class="badge" id="badgeMine">0</span>
-                </button>
-                <button class="toggle-group__btn" data-filter="team" title="Team Vorschläge">
-                  <i class="fas fa-users"></i>
-                  Team
-                  <span class="badge" id="badgeTeam">0</span>
-                </button>
-                <button class="toggle-group__btn" data-filter="department" title="Abteilungs-Vorschläge">
-                  <i class="fas fa-building"></i>
-                  Abteilung
-                  <span class="badge" id="badgeDepartment">0</span>
-                </button>
-                <button class="toggle-group__btn" data-filter="company" title="Firmenweite Vorschläge">
-                  <i class="fas fa-globe"></i>
-                  Firmenweit
-                  <span class="badge" id="badgeCompany">0</span>
-                </button>
-                <button class="toggle-group__btn admin-only" data-filter="manage" title="Verwaltung" hidden>
-                  <i class="fas fa-tasks"></i>
-                  Verwalten
-                </button>
-                <button class="toggle-group__btn admin-only" data-filter="archived" title="Archivierte Vorschläge" hidden>
-                  <i class="fas fa-archive"></i>
-                  Archiv
-                  <span class="badge" id="badgeArchived">0</span>
-                </button>
+              <!-- Primary Filter Row: Toggle Group + Search -->
+              <div class="flex flex-wrap gap-4 items-center justify-between mb-6">
+                <!-- Filter Toggle Group - Design System -->
+                <div class="toggle-group" id="kvp-filter-toggle">
+                  <button class="toggle-group__btn active" data-filter="all" title="Alle Vorschläge">
+                    <i class="fas fa-list"></i>
+                    Alle
+                    <span class="badge" id="badgeAll">0</span>
+                  </button>
+                  <button class="toggle-group__btn" data-filter="mine" title="Meine Vorschläge">
+                    <i class="fas fa-user"></i>
+                    Meine
+                    <span class="badge" id="badgeMine">0</span>
+                  </button>
+                  <button class="toggle-group__btn" data-filter="team" title="Team Vorschläge">
+                    <i class="fas fa-users"></i>
+                    Team
+                    <span class="badge" id="badgeTeam">0</span>
+                  </button>
+                  <button class="toggle-group__btn" data-filter="department" title="Abteilungs-Vorschläge">
+                    <i class="fas fa-building"></i>
+                    Abteilung
+                    <span class="badge" id="badgeDepartment">0</span>
+                  </button>
+                  <button class="toggle-group__btn" data-filter="company" title="Firmenweite Vorschläge">
+                    <i class="fas fa-globe"></i>
+                    Firmenweit
+                    <span class="badge" id="badgeCompany">0</span>
+                  </button>
+                  <button class="toggle-group__btn admin-only" data-filter="manage" title="Verwaltung" hidden>
+                    <i class="fas fa-tasks"></i>
+                    Verwalten
+                  </button>
+                  <button class="toggle-group__btn admin-only" data-filter="archived" title="Archivierte Vorschläge" hidden>
+                    <i class="fas fa-archive"></i>
+                    Archiv
+                    <span class="badge" id="badgeArchived">0</span>
+                  </button>
+                </div>
+
+                <!-- Search Input - Design System -->
+                <div class="search-input max-w-80" id="kvp-search-container">
+                  <i class="search-input__icon fas fa-search"></i>
+                  <input
+                    type="search"
+                    id="searchFilter"
+                    class="search-input__field"
+                    placeholder="Vorschläge durchsuchen..."
+                    autocomplete="off"
+                  />
+                  <button class="search-input__clear" type="button" aria-label="Suche löschen" hidden>
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
               </div>
 
-              <!-- Secondary Filters - Design System Dropdowns -->
+              <!-- Secondary Filters - Dropdowns Only -->
               <div class="secondary-filters">
-                <!-- Left: Dropdowns grouped -->
                 <div class="secondary-filters__left">
                   <!-- Status Filter Dropdown - Design System -->
                   <div class="dropdown" data-dropdown="status">
-                    <button type="button" class="dropdown__trigger" id="statusDisplay">
-                      <span class="dropdown__trigger-text">Alle Status</span>
-                      <i class="dropdown__trigger-icon fas fa-chevron-down"></i>
-                    </button>
+                    <div class="dropdown__trigger" id="statusDisplay">
+                      <span>Alle Status</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
                     <div class="dropdown__menu" id="statusDropdown">
                       <div class="dropdown__option" data-action="select-status" data-value="">Alle Status</div>
                       <div class="dropdown__option" data-action="select-status" data-value="new">Neu</div>
@@ -153,10 +170,10 @@
 
                   <!-- Category Filter Dropdown - Design System -->
                   <div class="dropdown" data-dropdown="category">
-                    <button type="button" class="dropdown__trigger" id="categoryDisplay">
-                      <span class="dropdown__trigger-text">Alle Kategorien</span>
-                      <i class="dropdown__trigger-icon fas fa-chevron-down"></i>
-                    </button>
+                    <div class="dropdown__trigger" id="categoryDisplay">
+                      <span>Alle Kategorien</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
                     <div class="dropdown__menu" id="categoryDropdown">
                       <div class="dropdown__option" data-action="select-category" data-value="">Alle Kategorien</div>
                       <!-- Dynamisch geladen -->
@@ -166,32 +183,15 @@
 
                   <!-- Department Filter Dropdown - Design System -->
                   <div class="dropdown admin-only" data-dropdown="department" hidden>
-                    <button type="button" class="dropdown__trigger" id="departmentDisplay">
-                      <span class="dropdown__trigger-text">Alle Abteilungen</span>
-                      <i class="dropdown__trigger-icon fas fa-chevron-down"></i>
-                    </button>
+                    <div class="dropdown__trigger" id="departmentDisplay">
+                      <span>Alle Abteilungen</span>
+                      <i class="fas fa-chevron-down"></i>
+                    </div>
                     <div class="dropdown__menu" id="departmentDropdown">
                       <div class="dropdown__option" data-action="select-department" data-value="">Alle Abteilungen</div>
                       <!-- Dynamisch geladen für Admins -->
                     </div>
                     <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
-                  </div>
-                </div>
-
-                <!-- Right: Search Input - Design System -->
-                <div class="secondary-filters__right">
-                  <div class="search-input" id="kvp-search-container">
-                    <i class="search-input__icon fas fa-search"></i>
-                    <input
-                      type="search"
-                      id="searchFilter"
-                      class="search-input__field"
-                      placeholder="Vorschläge durchsuchen..."
-                      autocomplete="off"
-                    />
-                    <button class="search-input__clear" type="button" aria-label="Suche löschen" hidden>
-                      <i class="fas fa-times"></i>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -293,10 +293,10 @@
                   <span class="form-field__required">*</span>
                 </label>
                 <div class="dropdown" data-dropdown="kvpCategory">
-                  <button type="button" class="dropdown__trigger" id="kvpCategoryDisplay">
-                    <span class="dropdown__trigger-text">Bitte wählen</span>
-                    <i class="dropdown__trigger-icon fas fa-chevron-down"></i>
-                  </button>
+                  <div class="dropdown__trigger" id="kvpCategoryDisplay">
+                    <span>Bitte wählen</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
                   <div class="dropdown__menu" id="kvpCategoryDropdown">
                     <!-- Dynamisch geladen -->
                   </div>
@@ -308,10 +308,10 @@
               <div class="form-field">
                 <label class="form-field__label">Priorität</label>
                 <div class="dropdown" data-dropdown="kvpPriority">
-                  <button type="button" class="dropdown__trigger" id="kvpPriorityDisplay">
-                    <span class="dropdown__trigger-text">Normal</span>
-                    <i class="dropdown__trigger-icon fas fa-chevron-down"></i>
-                  </button>
+                  <div class="dropdown__trigger" id="kvpPriorityDisplay">
+                    <span>Normal</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
                   <div class="dropdown__menu" id="kvpPriorityDropdown">
                     <div class="dropdown__option" data-action="select-priority" data-value="low">Niedrig</div>
                     <div class="dropdown__option" data-action="select-priority" data-value="normal">Normal</div>
