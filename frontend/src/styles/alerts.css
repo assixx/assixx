@@ -28,6 +28,7 @@
   background: rgb(0 0 0 / 70%);
 }
 
+/*
 .confirm-modal {
   max-width: 500px;
   padding: 30px;
@@ -44,7 +45,7 @@
   font-size: 16px;
   line-height: 1.5;
   color: #fff;
-}
+} siehe /home/scs/projects/Assixx/frontend/src/design-system/components/confirm-modal/confirm-modal.css */
 
 .confirm-buttons {
   display: flex;

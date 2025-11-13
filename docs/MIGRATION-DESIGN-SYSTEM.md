@@ -189,7 +189,7 @@ export class SignupFormController {
 - [ ] calendar.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] chat.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] shifts.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] kvp.html
+- [x] kvp.html ✅ (2025-11-13) - 100% Design System compliant (search-input, toggle-group, btn-float, alert, card-stat, modal, form-field, dropdown, empty-state, TypeScript modules split to api/data/forms/ui/types/index layers, custom photo upload kept for domain-specific requirements, kvp.css reduced 487→358 lines -27%, no inline styles/JS, no Bootstrap)
 - [ ] kvp-detail.html
 - [ ] logs.html
 

@@ -62,62 +62,9 @@ const assixxApp: AssixxApp = {
   },
 
   initPageSpecific() {
-    // Get current page
-    const page = window.location.pathname.split('/').pop() ?? '';
-
-    // Load page-specific module
-    switch (page) {
-      case 'dashboard':
-        void import('./pages/dashboard.js')
-
-          .then((module: { initDashboard?: () => void }) => {
-            if (typeof module.initDashboard === 'function') {
-              module.initDashboard();
-            }
-            return null;
-          })
-
-          .catch((error: unknown) => {
-            console.error('Failed to load dashboard module:', error);
-          });
-        break;
-      case 'profile':
-        // void import('./pages/profile.js')
-        //   .then((module) => {
-        //     if (module.init && typeof module.init === 'function') {
-        //       module.init();
-        //     }
-        //   })
-        //   .catch((error) => {
-        //     console.error('Failed to load profile module:', error);
-        //   });
-        break;
-      case 'chat':
-        // void import('./pages/chat.js')
-        //   .then((module) => {
-        //     if (module.init && typeof module.init === 'function') {
-        //       module.init();
-        //     }
-        //   })
-        //   .catch((error) => {
-        //     console.error('Failed to load chat module:', error);
-        //   });
-        break;
-      case 'calendar':
-        // void import('./pages/calendar.js')
-        //   .then((module) => {
-        //     if (module.init && typeof module.init === 'function') {
-        //       module.init();
-        //     }
-        //   })
-        //   .catch((error) => {
-        //     console.error('Failed to load calendar module:', error);
-        //   });
-        break;
-      default:
-        // No page-specific initialization needed
-        break;
-    }
+    // Page-specific initialization is now handled by individual page modules
+    // Each page imports its own TypeScript module directly in the HTML file
+    // Example: <script type="module" src="/scripts/chat/index.ts"></script>
   },
 };
 

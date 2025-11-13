@@ -14,7 +14,7 @@ import type {
   User,
   UserMeResponse,
   TeamResponse,
-} from './kvp-types';
+} from './types';
 
 export class KvpApiService {
   private apiClient: ApiClient;

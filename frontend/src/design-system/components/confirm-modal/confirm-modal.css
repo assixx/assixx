@@ -29,12 +29,12 @@
 
   max-width: 500px;
   padding: 30px;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid rgb(255 255 255 / 5%);
   border-radius: var(--glass-card-radius);
 
-  background: linear-gradient(135deg, rgb(30 30 40 / 95%) 0%, rgb(20 20 30 / 95%) 100%);
+  background: linear-gradient(-106deg, rgb(0 39 53) 0%, rgb(0 0 0 / 60%) 100%);
   backdrop-filter: blur(10px);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
+  box-shadow: 0 20px 60px rgb(0 0 0);
 }
 
 /* ========== ICON ========== */
