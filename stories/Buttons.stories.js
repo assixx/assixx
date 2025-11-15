@@ -10,7 +10,7 @@ export default {
   tags: ['autodocs'],
 
   parameters: {
-    layout: 'centered'
+    layout: 'centered',
   },
 
   argTypes: {
@@ -48,9 +48,9 @@ export default {
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 // Helper function to create button HTML
@@ -141,13 +141,29 @@ export const PrimaryFirst = {
 };
 
 /**
- * SECONDARY BUTTON
+ * CANCEL BUTTON
  * Outline style with glassmorphism
  * Use for: Cancel, Back, Close, Secondary actions
  */
-export const Secondary = {
+export const Cancel = {
   args: {
     label: 'Cancel',
+    size: 'md',
+    disabled: false,
+    loading: false,
+    fullWidth: false,
+  },
+  render: (args) => createButton({ ...args, variant: 'cancel' }),
+};
+
+/**
+ * SECONDARY BUTTON
+ * Solid blue gradient with hover lift effect
+ * Use for: Secondary actions, informational buttons, alternative navigation
+ */
+export const Secondary = {
+  args: {
+    label: 'View Details',
     size: 'md',
     disabled: false,
     loading: false,
@@ -350,7 +366,7 @@ export const Sizes = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -408,7 +424,7 @@ export const WithIcons = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -453,7 +469,7 @@ export const Loading = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -494,7 +510,7 @@ export const Disabled = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['primary', 'secondary', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -559,6 +575,7 @@ export const AllVariants = {
     const variants = [
       { variant: 'primary', label: 'Primary' },
       { variant: 'primary-first', label: 'Primary First' },
+      { variant: 'cancel', label: 'Cancel' },
       { variant: 'secondary', label: 'Secondary' },
       { variant: 'modal', label: 'Modal Submit' },
       { variant: 'danger', label: 'Danger' },
@@ -634,7 +651,7 @@ export const ModalContext = {
             </ul>
           </div>
           <div class="ds-modal__footer">
-            <button class="btn btn-secondary">
+            <button class="btn btn-cancel">
               Cancel
             </button>
             <button class="btn btn-modal">
@@ -963,39 +980,39 @@ export const ActionIcons = {
         class: 'action-icon--edit',
         icon: 'fas fa-edit',
         label: 'Edit (Yellow)',
-        desc: 'Modify/update actions'
+        desc: 'Modify/update actions',
       },
       {
         class: 'action-icon--toggle',
         icon: 'fas fa-times-circle',
         label: 'Toggle (Orange)',
         desc: 'Deactivate/activate',
-        dataStatus: 'active'
+        dataStatus: 'active',
       },
       {
         class: 'action-icon--toggle',
         icon: 'fas fa-check-circle',
         label: 'Toggle (Green)',
         desc: 'Activate (inactive)',
-        dataStatus: 'inactive'
+        dataStatus: 'inactive',
       },
       {
         class: 'action-icon--delete',
         icon: 'fas fa-trash',
         label: 'Delete (Red)',
-        desc: 'Remove/destroy actions'
+        desc: 'Remove/destroy actions',
       },
       {
         class: 'action-icon--view',
         icon: 'fas fa-eye',
         label: 'View (Blue)',
-        desc: 'Preview/inspect actions'
+        desc: 'Preview/inspect actions',
       },
       {
         class: 'action-icon--more',
         icon: 'fas fa-ellipsis-v',
         label: 'More (Neutral)',
-        desc: 'Additional options'
+        desc: 'Additional options',
       },
     ];
 

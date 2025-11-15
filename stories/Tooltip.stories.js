@@ -8,7 +8,6 @@
  * - Keyboard triggers
  * - Dynamic content
  */
-
 import '../frontend/src/design-system/index.css';
 
 export default {
@@ -38,7 +37,6 @@ export const BasicTooltip = () => {
 
   container.appendChild(button);
 
-
   return container;
 };
 
@@ -49,7 +47,8 @@ BasicTooltip.storyName = '1. Basic Tooltip';
  */
 export const AllPositions = () => {
   const container = document.createElement('div');
-  container.style.cssText = 'padding: 100px; display: flex; gap: 40px; justify-content: center; align-items: center;';
+  container.style.cssText =
+    'padding: 100px; display: flex; gap: 40px; justify-content: center; align-items: center;';
 
   const positions = [
     { text: 'Bottom', tooltip: 'Bottom tooltip (default)', position: 'bottom' },
@@ -65,7 +64,6 @@ export const AllPositions = () => {
     container.appendChild(button);
   });
 
-
   return container;
 };
 
@@ -76,15 +74,36 @@ AllPositions.storyName = '2. All Positions';
  */
 export const SemanticVariants = () => {
   const container = document.createElement('div');
-  container.style.cssText = 'padding: 100px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;';
+  container.style.cssText =
+    'padding: 100px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;';
 
   const variants = [
-    { className: 'btn-secondary', text: 'Default', tooltip: 'Default dark tooltip', variant: '' },
+    { className: 'btn-cancel', text: 'Default', tooltip: 'Default dark tooltip', variant: '' },
     { className: 'btn-info', text: 'Info', tooltip: 'Informational tooltip', variant: 'info' },
-    { className: 'btn-warning', text: 'Warning', tooltip: 'Warning tooltip - be careful!', variant: 'warning' },
-    { className: 'btn-danger', text: 'Error', tooltip: 'Error tooltip - something wrong', variant: 'error' },
-    { className: 'btn-success', text: 'Success', tooltip: 'Success tooltip - all good!', variant: 'success' },
-    { className: 'btn-light', text: 'Light', tooltip: 'Light tooltip on dark background', variant: 'light' },
+    {
+      className: 'btn-warning',
+      text: 'Warning',
+      tooltip: 'Warning tooltip - be careful!',
+      variant: 'warning',
+    },
+    {
+      className: 'btn-danger',
+      text: 'Error',
+      tooltip: 'Error tooltip - something wrong',
+      variant: 'error',
+    },
+    {
+      className: 'btn-success',
+      text: 'Success',
+      tooltip: 'Success tooltip - all good!',
+      variant: 'success',
+    },
+    {
+      className: 'btn-light',
+      text: 'Light',
+      tooltip: 'Light tooltip on dark background',
+      variant: 'light',
+    },
   ];
 
   variants.forEach((v) => {
@@ -97,7 +116,6 @@ export const SemanticVariants = () => {
     button.textContent = v.text;
     container.appendChild(button);
   });
-
 
   return container;
 };
@@ -114,7 +132,12 @@ export const SizeVariants = () => {
   const sizes = [
     { text: 'Small', tooltip: 'Small tooltip', size: 'sm' },
     { text: 'Default', tooltip: 'Default size tooltip with some helpful information', size: '' },
-    { text: 'Large', tooltip: 'Large tooltip with more detailed information that spans multiple lines and provides comprehensive guidance', size: 'lg' },
+    {
+      text: 'Large',
+      tooltip:
+        'Large tooltip with more detailed information that spans multiple lines and provides comprehensive guidance',
+      size: 'lg',
+    },
   ];
 
   sizes.forEach((s) => {
@@ -127,7 +150,6 @@ export const SizeVariants = () => {
     button.textContent = s.text;
     container.appendChild(button);
   });
-
 
   return container;
 };
@@ -143,13 +165,34 @@ export const OnIconsAndInputs = () => {
 
   // Icons section
   const iconsDiv = document.createElement('div');
-  iconsDiv.style.cssText = 'display: flex; gap: 20px; justify-content: center; margin-bottom: 40px;';
+  iconsDiv.style.cssText =
+    'display: flex; gap: 20px; justify-content: center; margin-bottom: 40px;';
 
   const icons = [
-    { icon: 'fas fa-info-circle', color: 'var(--color-blue-400)', tooltip: 'More information', variant: 'info' },
-    { icon: 'fas fa-exclamation-triangle', color: 'var(--color-orange-400)', tooltip: 'Warning: Action required', variant: 'warning' },
-    { icon: 'fas fa-check-circle', color: 'var(--color-green-400)', tooltip: 'Completed successfully', variant: 'success' },
-    { icon: 'fas fa-times-circle', color: 'var(--color-red-400)', tooltip: 'Error occurred', variant: 'error' },
+    {
+      icon: 'fas fa-info-circle',
+      color: 'var(--color-blue-400)',
+      tooltip: 'More information',
+      variant: 'info',
+    },
+    {
+      icon: 'fas fa-exclamation-triangle',
+      color: 'var(--color-orange-400)',
+      tooltip: 'Warning: Action required',
+      variant: 'warning',
+    },
+    {
+      icon: 'fas fa-check-circle',
+      color: 'var(--color-green-400)',
+      tooltip: 'Completed successfully',
+      variant: 'success',
+    },
+    {
+      icon: 'fas fa-times-circle',
+      color: 'var(--color-red-400)',
+      tooltip: 'Error occurred',
+      variant: 'error',
+    },
   ];
 
   icons.forEach((iconData) => {
@@ -203,7 +246,10 @@ export const OnIconsAndInputs = () => {
   const passwordIcon = document.createElement('i');
   passwordIcon.className = 'fas fa-question-circle';
   passwordIcon.style.cssText = 'font-size: 14px; color: var(--color-text-muted); cursor: help;';
-  passwordIcon.setAttribute('data-tooltip', 'Must be at least 8 characters with uppercase, lowercase, and numbers');
+  passwordIcon.setAttribute(
+    'data-tooltip',
+    'Must be at least 8 characters with uppercase, lowercase, and numbers',
+  );
   passwordIcon.setAttribute('data-tooltip-position', 'right');
   passwordIcon.setAttribute('data-tooltip-size', 'lg');
   passwordLabel.appendChild(passwordIcon);
@@ -218,7 +264,6 @@ export const OnIconsAndInputs = () => {
   formDiv.appendChild(passwordGroup);
 
   container.appendChild(formDiv);
-
 
   return container;
 };
@@ -292,19 +337,19 @@ export const JavaScriptAPI = () => {
   controls.style.cssText = 'margin-top: 20px; display: flex; gap: 10px; justify-content: center;';
 
   const showBtn = document.createElement('button');
-  showBtn.className = 'btn btn-secondary btn-sm';
+  showBtn.className = 'btn btn-cancel btn-sm';
   showBtn.textContent = 'Show';
 
   const hideBtn = document.createElement('button');
-  hideBtn.className = 'btn btn-secondary btn-sm';
+  hideBtn.className = 'btn btn-cancel btn-sm';
   hideBtn.textContent = 'Hide';
 
   const toggleBtn = document.createElement('button');
-  toggleBtn.className = 'btn btn-secondary btn-sm';
+  toggleBtn.className = 'btn btn-cancel btn-sm';
   toggleBtn.textContent = 'Toggle';
 
   const updateBtn = document.createElement('button');
-  updateBtn.className = 'btn btn-secondary btn-sm';
+  updateBtn.className = 'btn btn-cancel btn-sm';
   updateBtn.textContent = 'Update Text';
 
   controls.appendChild(showBtn);
@@ -332,13 +377,19 @@ export const LongText = () => {
 
   const button1 = document.createElement('button');
   button1.className = 'btn btn-primary';
-  button1.setAttribute('data-tooltip', 'This is a longer tooltip that demonstrates how multiline text is handled. It will automatically wrap and maintain readability even with extensive content.');
+  button1.setAttribute(
+    'data-tooltip',
+    'This is a longer tooltip that demonstrates how multiline text is handled. It will automatically wrap and maintain readability even with extensive content.',
+  );
   button1.setAttribute('data-tooltip-size', 'lg');
   button1.textContent = 'Hover for long text';
 
   const button2 = document.createElement('button');
   button2.className = 'btn btn-info';
-  button2.setAttribute('data-tooltip', 'Pro tip: You can use tooltips to provide helpful hints and guidance without cluttering the UI. Keep them concise but informative!');
+  button2.setAttribute(
+    'data-tooltip',
+    'Pro tip: You can use tooltips to provide helpful hints and guidance without cluttering the UI. Keep them concise but informative!',
+  );
   button2.setAttribute('data-tooltip-position', 'bottom');
   button2.setAttribute('data-tooltip-size', 'lg');
   button2.setAttribute('data-tooltip-variant', 'info');
@@ -347,7 +398,6 @@ export const LongText = () => {
 
   container.appendChild(button1);
   container.appendChild(button2);
-
 
   return container;
 };
@@ -458,7 +508,6 @@ export const FormValidation = () => {
   phoneGroup.appendChild(phoneDiv);
   container.appendChild(phoneGroup);
 
-
   return container;
 };
 
@@ -472,7 +521,8 @@ export const AllVariants = () => {
   container.style.cssText = 'padding: 100px;';
 
   const title = document.createElement('h2');
-  title.style.cssText = 'text-align: center; margin-bottom: 40px; color: var(--color-text-primary);';
+  title.style.cssText =
+    'text-align: center; margin-bottom: 40px; color: var(--color-text-primary);';
   title.textContent = 'Complete Tooltip System';
   container.appendChild(title);
 
@@ -518,7 +568,7 @@ export const AllVariants = () => {
   const variantsContainer = createButtonContainer();
 
   [
-    { className: 'btn-secondary', text: 'Default', tooltip: 'Default tooltip', variant: '' },
+    { className: 'btn-cancel', text: 'Default', tooltip: 'Default tooltip', variant: '' },
     { className: 'btn-info', text: 'Info', tooltip: 'Info tooltip', variant: 'info' },
     { className: 'btn-warning', text: 'Warning', tooltip: 'Warning tooltip', variant: 'warning' },
     { className: 'btn-danger', text: 'Error', tooltip: 'Error tooltip', variant: 'error' },
@@ -566,10 +616,30 @@ export const AllVariants = () => {
   iconsContainer.style.cssText = 'display: flex; gap: 30px; font-size: 24px;';
 
   [
-    { icon: 'fas fa-info-circle', color: 'var(--color-blue-400)', tooltip: 'Information', variant: 'info' },
-    { icon: 'fas fa-exclamation-triangle', color: 'var(--color-orange-400)', tooltip: 'Warning', variant: 'warning' },
-    { icon: 'fas fa-check-circle', color: 'var(--color-green-400)', tooltip: 'Success', variant: 'success' },
-    { icon: 'fas fa-times-circle', color: 'var(--color-red-400)', tooltip: 'Error', variant: 'error' },
+    {
+      icon: 'fas fa-info-circle',
+      color: 'var(--color-blue-400)',
+      tooltip: 'Information',
+      variant: 'info',
+    },
+    {
+      icon: 'fas fa-exclamation-triangle',
+      color: 'var(--color-orange-400)',
+      tooltip: 'Warning',
+      variant: 'warning',
+    },
+    {
+      icon: 'fas fa-check-circle',
+      color: 'var(--color-green-400)',
+      tooltip: 'Success',
+      variant: 'success',
+    },
+    {
+      icon: 'fas fa-times-circle',
+      color: 'var(--color-red-400)',
+      tooltip: 'Error',
+      variant: 'error',
+    },
   ].forEach((iconData) => {
     const icon = document.createElement('i');
     icon.className = iconData.icon;
@@ -581,7 +651,6 @@ export const AllVariants = () => {
 
   iconsSection.appendChild(iconsContainer);
   container.appendChild(iconsSection);
-
 
   return container;
 };

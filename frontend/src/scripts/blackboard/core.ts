@@ -1086,7 +1086,7 @@ function getPriorityIcon(priority: string): string {
   return icons[priority] ?? icons.medium;
 }
 
-function createPaginationButton(text: string, page: number, className: string = 'btn-secondary'): HTMLButtonElement {
+function createPaginationButton(text: string, page: number, className: string = 'btn-cancel'): HTMLButtonElement {
   const btn = document.createElement('button');
   btn.className = `btn btn-sm ${className}`;
 
@@ -1128,7 +1128,7 @@ function appendPaginationElements(container: Element, pagination: PaginationInfo
   // Page numbers
   for (let i = 1; i <= pagination.totalPages; i++) {
     if (shouldShowPageButton(i, currentPage, pagination.totalPages)) {
-      const className = i === currentPage ? 'btn-primary' : 'btn-secondary';
+      const className = i === currentPage ? 'btn-primary' : 'btn-cancel';
       const pageBtn = createPaginationButton(i.toString(), i, className);
       container.append(pageBtn);
     } else if (shouldShowEllipsis(i, currentPage)) {
@@ -1502,7 +1502,7 @@ function showDeleteConfirmation(entryId: number): void {
           <p class="text-muted">Diese Aktion kann nicht rückgängig gemacht werden.</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close-modal" data-modal-id="deleteConfirmModal">Abbrechen</button>
+          <button type="button" class="btn btn-cancel" data-action="close-modal" data-modal-id="deleteConfirmModal">Abbrechen</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
             <i class="fas fa-trash"></i> Löschen
           </button>
@@ -1566,16 +1566,14 @@ function buildEntryDetailHeader(entry: BlackboardEntry, priorityIcon: string): s
 function buildEntryTags(tags: string[] | undefined): string {
   if (tags === undefined || tags.length === 0) return '';
 
-  const tagBadges = tags
-    .map((tag: string) => `<span class="badge badge-secondary">${escapeHtml(tag)}</span>`)
-    .join(' ');
+  const tagBadges = tags.map((tag: string) => `<span class="badge badge-error">${escapeHtml(tag)}</span>`).join(' ');
 
   return `<div class="entry-tags">${tagBadges}</div>`;
 }
 
 // Helper: Build footer buttons HTML
 function buildFooterButtons(entryId: number, canEdit: boolean): string {
-  const closeButton = '<button type="button" class="btn btn-secondary" data-action="close">Schließen</button>';
+  const closeButton = '<button type="button" class="btn btn-cancel" data-action="close">Schließen</button>';
 
   if (!canEdit) return closeButton;
 

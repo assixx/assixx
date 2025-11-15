@@ -79,7 +79,11 @@
                   <i class="fas fa-sort"></i>
                   Sortieren
                 </label>
-                <select class="form-field__control form-field__control--select" id="sortSelect" name="sort">
+                <select
+                  class="form-field__control form-field__control--select"
+                  id="sortSelect"
+                  name="sort"
+                >
                   <option value="newest">Neueste zuerst</option>
                   <option value="oldest">Älteste zuerst</option>
                   <option value="name">Nach Name</option>
@@ -114,7 +118,11 @@
         </div>
         <div class="modal-body">
           <div class="document-preview-container">
-            <iframe id="documentPreviewFrame" class="document-preview-frame" title="Dokument Vorschau"></iframe>
+            <iframe
+              id="documentPreviewFrame"
+              class="document-preview-frame"
+              title="Dokument Vorschau"
+            ></iframe>
             <div id="previewError" class="preview-error u-hidden">
               <i class="fas fa-exclamation-circle"></i>
               <p>Vorschau nicht verfügbar</p>
@@ -155,7 +163,7 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-action="close-document-modal">
+          <button class="btn btn-cancel" data-action="close-document-modal">
             <i class="fas fa-times me-2"></i>
             Schließen
           </button>

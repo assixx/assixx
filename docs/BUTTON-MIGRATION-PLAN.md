@@ -15,7 +15,7 @@
 TOTAL: 253 button instances across 41 HTML files
 ├── btn class: 253 occurrences
 ├── btn-primary: ~80 occurrences (31%)
-├── btn-secondary: ~65 occurrences (26%)
+├── btn-cancel: ~65 occurrences (26%)
 ├── btn-danger: ~30 occurrences (12%)
 ├── btn-success: ~20 occurrences (8%)
 ├── btn-warning: ~15 occurrences (6%)
@@ -67,7 +67,7 @@ TOTAL: 253 button instances across 41 HTML files
 | Bootstrap | Design System | Notes |
 |-----------|--------------|-------|
 | `btn-primary` | `btn-primary` | ✅ Match |
-| `btn-secondary` | `btn-secondary` | ✅ Match |
+| `btn-cancel` | `btn-cancel` | ✅ Match |
 | `btn-success` | `btn-success` | ✅ Match |
 | `btn-danger` | `btn-danger` | ✅ Match |
 | `btn-warning` | ❌ Not exists | Need to create |
@@ -166,7 +166,7 @@ HIGH RISK (Last):
 2. Update classes
    btn → btn (keep same)
    btn-primary → btn btn-primary
-   btn-secondary → btn btn-secondary
+   btn-cancel → btn btn-cancel
 
 3. Test visually
    - Screenshot before/after

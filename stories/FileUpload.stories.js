@@ -15,16 +15,16 @@ export default {
   title: 'Design System/File Upload',
 
   parameters: {
-    layout: 'centered'
+    layout: 'centered',
   },
 
   tags: ['autodocs'],
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -415,7 +415,7 @@ export const DocumentUploadForm = {
 
         </div>
         <div class="card__footer">
-          <button class="btn btn-secondary">Cancel</button>
+          <button class="btn btn-cancel">Cancel</button>
           <button class="btn btn-primary">
             <i class="fas fa-upload"></i>
             Upload Documents

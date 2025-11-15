@@ -137,7 +137,6 @@ export default defineConfig({
     // 🔥 NEW: Warm up frequently used modules (Performance Optimization)
     warmup: {
       clientFiles: [
-        './scripts/common.ts',
         './scripts/auth/index.ts',
         './scripts/components/unified-navigation.ts',
         './styles/main.css',

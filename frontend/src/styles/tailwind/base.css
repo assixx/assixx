@@ -65,6 +65,11 @@
     line-height: inherit;
   }
 
+  /* Hidden attribute support - ensures [hidden] attribute works correctly */
+  [hidden] {
+    display: none !important;
+  }
+
   /* ============================================
      CUSTOM BASE STYLES
      ============================================ */

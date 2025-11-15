@@ -13,16 +13,16 @@ export default {
   title: 'Design System/Feedback',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /* ========== ALERTS ========== */
@@ -209,7 +209,7 @@ export const AlertWithActions = () => {
           <div class="alert__message">You have unsaved changes. Do you want to save before leaving this page?</div>
           <div class="alert__actions">
             <button class="btn btn-primary">Save Changes</button>
-            <button class="btn btn-secondary">Discard</button>
+            <button class="btn btn-cancel">Discard</button>
           </div>
         </div>
         <button class="alert__close">
@@ -501,7 +501,7 @@ export const SpinnerInButton = () => {
           Processing
         </button>
 
-        <button class="btn btn-secondary">
+        <button class="btn btn-cancel">
           <div class="spinner-inline"></div>
           Please wait
         </button>

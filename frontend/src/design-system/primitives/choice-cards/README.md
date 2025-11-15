@@ -268,7 +268,7 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
       </div>
     </div>
     <div class="modal__footer">
-      <button class="btn btn-secondary">Abbrechen</button>
+      <button class="btn btn-cancel">Abbrechen</button>
       <button class="btn btn-primary">Speichern</button>
     </div>
   </div>

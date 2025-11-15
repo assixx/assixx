@@ -96,6 +96,13 @@
   background: rgb(255 152 0 / 20%);
 }
 
+/* Area - Teal */
+.badge--visibility-area {
+  border-color: rgb(0 150 136 / 50%);
+  color: #009688;
+  background: rgb(0 150 136 / 20%);
+}
+
 /* Company - Blue */
 .badge--visibility-company {
   border-color: rgb(33 150 243 / 50%);

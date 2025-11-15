@@ -339,7 +339,7 @@ export async function showDeleteConfirmationModal(admin: Admin): Promise<boolean
           </div>
           <div class="ds-modal__footer">
             <button class="btn btn-danger" id="confirm-delete">Löschen</button>
-            <button class="btn btn-secondary" id="cancel-delete">Abbrechen</button>
+            <button class="btn btn-cancel" id="cancel-delete">Abbrechen</button>
           </div>
         </div>
       `;

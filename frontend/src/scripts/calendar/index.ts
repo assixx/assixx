@@ -306,7 +306,7 @@ function getUnreadEventsModalTemplate(): string {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">
+          <button type="button" class="btn btn-cancel" data-action="close">
             Schließen
           </button>
         </div>
@@ -474,7 +474,7 @@ function renderUnreadEventItem(event: UnreadEvent): HTMLDivElement {
     createEventActionButton(event.id, 'respond-event', 'declined', 'btn-danger', 'fas fa-times', 'Absagen'),
   );
   actionsDiv.append(
-    createEventActionButton(event.id, 'show-event-details', null, 'btn-secondary', 'fas fa-info-circle', 'Details'),
+    createEventActionButton(event.id, 'show-event-details', null, 'btn-cancel', 'fas fa-info-circle', 'Details'),
   );
 
   eventDiv.append(actionsDiv);
@@ -1101,7 +1101,7 @@ function validateAndAddEmail(email: string): boolean {
   if (!emailsList) return false;
 
   const emailDiv = document.createElement('div');
-  emailDiv.className = 'badge badge-secondary mr-2 mb-2';
+  emailDiv.className = 'badge badge-error mr-2 mb-2';
   emailDiv.textContent = email;
   emailsList.append(emailDiv);
   return true;
@@ -1979,7 +1979,7 @@ function buildActionButtons(event: CalendarEvent): string {
         <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
           <i class="fas fa-trash"></i> Löschen
         </button>
-        <button class="btn btn-secondary" data-action="close">
+        <button class="btn btn-cancel" data-action="close">
           <i class="fas fa-times"></i> Schließen
         </button>
       </div>
@@ -1992,7 +1992,7 @@ function buildActionButtons(event: CalendarEvent): string {
         <button class="btn btn-danger" data-action="delete-event" data-event-id="${event.id}">
           <i class="fas fa-trash"></i> Löschen
         </button>
-        <button class="btn btn-secondary" data-action="close">
+        <button class="btn btn-cancel" data-action="close">
           <i class="fas fa-times"></i> Schließen
         </button>
       </div>
@@ -2001,7 +2001,7 @@ function buildActionButtons(event: CalendarEvent): string {
 
   return `
     <div class="modal-actions">
-      <button class="btn btn-secondary" data-action="close">
+      <button class="btn btn-cancel" data-action="close">
         <i class="fas fa-times"></i> Schließen
       </button>
     </div>
@@ -4139,7 +4139,7 @@ function getAttendeesResponseTemplate(): string {
       <div id="attendeesContainer">
         <p class="text-info"><i class="fas fa-info-circle"></i> Alle Mitarbeiter der Firma werden automatisch eingeladen</p>
       </div>
-      <button type="button" class="btn btn-secondary mt-2" id="addAttendeeBtn" style="display: none;">
+      <button type="button" class="btn btn-cancel mt-2" id="addAttendeeBtn" style="display: none;">
         <i class="fas fa-plus"></i> Teilnehmer hinzufügen
       </button>
     </div>
@@ -4253,7 +4253,7 @@ function getReminderTemplate(): string {
 function getModalFooterTemplate(): string {
   return `
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+      <button type="button" class="btn btn-cancel" data-action="close">Abbrechen</button>
       <button type="button" class="btn btn-primary" id="saveEventBtn">
         <i class="fas fa-save"></i> Speichern
       </button>
@@ -4340,7 +4340,7 @@ function getAttendeesModalTemplate(): string {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-cancel" data-action="close">Abbrechen</button>
           <button type="button" class="btn btn-primary" id="addSelectedAttendeesBtn">
             <i class="fas fa-plus"></i> Ausgewählte hinzufügen
           </button>
@@ -4379,7 +4379,7 @@ function getEventResponseModalTemplate(): string {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+          <button type="button" class="btn btn-cancel" data-action="close">Schließen</button>
         </div>
       </div>
     </div>
@@ -4401,7 +4401,7 @@ function getConfirmationModalTemplate(): string {
           <p class="mb-0">Möchten Sie diesen Termin wirklich löschen?</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+          <button type="button" class="btn btn-cancel" data-action="close">Abbrechen</button>
           <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
             <i class="fas fa-trash"></i> Löschen
           </button>

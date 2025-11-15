@@ -19,6 +19,7 @@
     cursor: pointer;
 
     display: flex;
+    gap: var(--spacing-2); /* 8px gap between text and chevron icon */
     align-items: center;
     justify-content: space-between;
 
@@ -41,6 +42,7 @@
     display: flex;
     gap: 0; /* No gap, margin-right on icon handles spacing */
     align-items: center;
+    white-space: nowrap; /* Prevent text wrapping */
   }
 
   .dropdown__trigger:hover {

@@ -52,6 +52,6 @@
  *
  * WHEN NOT TO USE:
  * ❌ Regular actions (use .btn-primary)
- * ❌ Cancel (use .btn-secondary)
+ * ❌ Cancel (use .btn-cancel)
  * ❌ Deactivate toggle (use .btn-status-active)
  */

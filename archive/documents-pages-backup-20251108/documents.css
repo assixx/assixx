@@ -580,13 +580,13 @@
   box-shadow: 0 4px 16px rgb(33 150 243 / 40%);
 }
 
-.btn-secondary {
+.btn-cancel {
   border: 1px solid rgb(255 255 255 / 10%);
   background: rgb(255 255 255 / 5%);
   color: var(--text-primary);
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 8%);
 }
@@ -1058,12 +1058,12 @@
   background: linear-gradient(135deg, var(--primary-dark), var(--primary-color));
 } */
 
-/* .btn-secondary {
+/* .btn-cancel {
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 5%);
 } */
 
-/* .btn-secondary:hover {
+/* .btn-cancel:hover {
   background: rgb(255 255 255 / 8%);
 } */
 

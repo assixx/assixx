@@ -9,16 +9,16 @@ export default {
   title: 'Design System/Modals',
 
   parameters: {
-    layout: 'fullscreen'
+    layout: 'fullscreen',
   },
 
   tags: ['autodocs'],
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -56,11 +56,9 @@ export const BasicModal = {
   render: (args) => {
     const sizeClass = args.size !== 'md' ? `ds-modal--${args.size}` : '';
     const footerClass =
-      args.footerAlign === 'center'
-        ? 'ds-modal__footer--centered'
-        : args.footerAlign === 'spaced'
-          ? 'ds-modal__footer--spaced'
-          : '';
+      args.footerAlign === 'center' ? 'ds-modal__footer--centered'
+      : args.footerAlign === 'spaced' ? 'ds-modal__footer--spaced'
+      : '';
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
@@ -69,13 +67,13 @@ export const BasicModal = {
           <div class="ds-modal__header">
             <h2 class="ds-modal__title">${args.title}</h2>
             ${
-              args.showClose
-                ? `
+              args.showClose ?
+                `
             <button class="ds-modal__close" data-action="close">
               <i class="fas fa-times"></i>
             </button>
             `
-                : ''
+              : ''
             }
           </div>
           <div class="ds-modal__body">
@@ -84,12 +82,16 @@ export const BasicModal = {
             </p>
             <p style="color: var(--color-text-secondary);">
               Size: <strong>${args.size}</strong> (max-width: ${
-                args.size === 'sm' ? '500px' : args.size === 'lg' ? '900px' : args.size === 'xl' ? '1200px' : args.size === 'full' ? '~100vw' : '700px'
+                args.size === 'sm' ? '500px'
+                : args.size === 'lg' ? '900px'
+                : args.size === 'xl' ? '1200px'
+                : args.size === 'full' ? '~100vw'
+                : '700px'
               })
             </p>
           </div>
           <div class="ds-modal__footer ${footerClass}">
-            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-cancel">Cancel</button>
             <button class="btn btn-modal">Confirm</button>
           </div>
         </div>
@@ -126,7 +128,7 @@ export const ConfirmationDialog = {
             </p>
           </div>
           <div class="ds-modal__footer ds-modal__footer--spaced">
-            <button class="btn btn-secondary">Cancel</button>
+            <button class="btn btn-cancel">Cancel</button>
             <button class="btn btn-danger">
               <i class="fas fa-trash"></i>
               Delete
@@ -235,7 +237,7 @@ export const FormModal = {
             </form>
           </div>
           <div class="ds-modal__footer">
-            <button class="btn btn-secondary">
+            <button class="btn btn-cancel">
               Cancel
             </button>
             <button class="btn btn-modal">
@@ -348,7 +350,7 @@ export const FormWithDropdown = {
             </form>
           </div>
           <div class="ds-modal__footer">
-            <button class="btn btn-secondary">
+            <button class="btn btn-cancel">
               Cancel
             </button>
             <button class="btn btn-modal">
@@ -452,17 +454,17 @@ export const ConfirmModal = {
               ${args.message}
             </p>
             ${
-              args.showWarning
-                ? `
+              args.showWarning ?
+                `
             <p style="color: var(--color-${args.confirmVariant === 'danger' ? 'danger' : 'warning'}); font-size: 0.875rem;">
               <i class="fas fa-exclamation-triangle"></i> ${args.warningText}
             </p>
             `
-                : ''
+              : ''
             }
           </div>
           <div class="ds-modal__footer ds-modal__footer--spaced">
-            <button class="btn btn-secondary">${args.cancelText}</button>
+            <button class="btn btn-cancel">${args.cancelText}</button>
             <button class="btn btn-${args.confirmVariant === 'primary' ? 'modal' : args.confirmVariant}">
               ${args.confirmText}
             </button>
@@ -580,7 +582,7 @@ export const ScrollableContent = {
             </p>
           </div>
           <div class="ds-modal__footer">
-            <button class="btn btn-secondary">Decline</button>
+            <button class="btn btn-cancel">Decline</button>
             <button class="btn btn-modal">Accept</button>
           </div>
         </div>
@@ -673,7 +675,7 @@ export const AllSizes = {
               </p>
             </div>
             <div class="ds-modal__footer">
-              <button class="btn btn-secondary">Cancel</button>
+              <button class="btn btn-cancel">Cancel</button>
               <button class="btn btn-modal">Confirm</button>
             </div>
           </div>
@@ -779,7 +781,9 @@ export const UploadModal = {
               </div>
 
               <!-- Upload Progress (shown during upload) -->
-              ${args.showProgress ? `
+              ${
+                args.showProgress ?
+                  `
               <div class="upload-progress" style="
                 padding: 16px;
                 background: var(--background-secondary);
@@ -794,7 +798,9 @@ export const UploadModal = {
                   <div class="progress__bar" style="width: ${args.uploadProgress}%; background: var(--gradient-primary);"></div>
                 </div>
               </div>
-              ` : ''}
+              `
+                : ''
+              }
 
               <!-- Category Selection - Custom Dropdown -->
               <div class="form-field">
@@ -911,7 +917,7 @@ export const UploadModal = {
             </form>
           </div>
           <div class="ds-modal__footer">
-            <button type="button" class="btn btn-secondary">
+            <button type="button" class="btn btn-cancel">
               Abbrechen
             </button>
             <button type="button" class="btn btn-primary">
@@ -1015,13 +1021,13 @@ export const DocumentPreviewModal = {
             <!-- Document Preview iframe -->
             <div class="mb-4 relative">
               ${
-                args.state === 'loaded' || args.state === 'loading'
-                  ? `
+                args.state === 'loaded' || args.state === 'loading' ?
+                  `
               <div class="w-full h-[600px] border border-[var(--color-border)] rounded-lg overflow-hidden">
                 ${iframeContent}
               </div>
               `
-                  : ''
+                : ''
               }
               <div id="previewError" class="${previewErrorVisible} text-center py-10">
                 <i class="fas fa-exclamation-circle text-4xl text-[var(--color-text-secondary)] mb-4"></i>
@@ -1063,7 +1069,7 @@ export const DocumentPreviewModal = {
             </div>
           </div>
           <div class="ds-modal__footer">
-            <button type="button" class="btn btn-secondary" data-action="close-document-modal">
+            <button type="button" class="btn btn-cancel" data-action="close-document-modal">
               <i class="fas fa-times mr-2"></i>
               Schließen
             </button>

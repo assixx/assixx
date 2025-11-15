@@ -369,7 +369,7 @@ export const InModalContext = {
             </div>
           </div>
           <div class="ds-modal__footer">
-            <button class="btn btn-secondary">Abbrechen</button>
+            <button class="btn btn-cancel">Abbrechen</button>
             <button class="btn btn-modal">
               <i class="fas fa-save"></i>
               Speichern
@@ -892,7 +892,7 @@ export const FeatureCardsWithActions = {
           <p class="feature-description">Automatische Planung und Verwaltung</p>
           <div class="feature-plan-badge">Ab Professional</div>
           <div class="feature-actions">
-            <button class="btn btn-secondary">
+            <button class="btn btn-cancel">
               <i class="fas fa-cog"></i>
               Konfigurieren
             </button>
@@ -909,7 +909,7 @@ export const FeatureCardsWithActions = {
           <p class="feature-description">Urlaubsverwaltung mit Genehmigung</p>
           <div class="feature-plan-badge">Ab Professional</div>
           <div class="feature-actions">
-            <button class="btn btn-secondary">
+            <button class="btn btn-cancel">
               <i class="fas fa-cog"></i>
               Konfigurieren
             </button>

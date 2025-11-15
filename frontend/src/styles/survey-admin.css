@@ -517,13 +517,13 @@
   box-shadow: 0 8px 25px rgb(33 150 243 / 30%);
 }
 
-.btn-secondary {
+.btn-cancel {
   border: 1px solid rgb(255 255 255 / 20%);
   color: var(--text-primary);
   background: rgb(255 255 255 / 10%);
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
   background: rgb(255 255 255 / 20%);
 }
 

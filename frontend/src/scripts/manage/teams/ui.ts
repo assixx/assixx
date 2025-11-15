@@ -124,7 +124,7 @@ export function getStatusBadgeClass(status: string): string {
     case 'inactive':
       return 'badge--warning';
     default:
-      return 'badge--secondary';
+      return 'badge--error';
   }
 }
 

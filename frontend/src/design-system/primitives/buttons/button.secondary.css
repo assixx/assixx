@@ -1,13 +1,82 @@
 /**
  * Design System - Secondary Button
  *
+ * Purpose: Alternative/Secondary actions (same visual as upload button)
+ * Usage: Secondary actions, informational buttons, alternative options
+ *
+ * Visual: Blue gradient background - matches btn-upload exactly
+ */
+
+.btn-secondary {
+  /* Padding - Standard size */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* No border - gradient is the visual boundary */
+  border: none;
+
+  color: var(--color-white);
+
+  /* ========== VISUAL - BLUE GRADIENT ========== */
+  /* Beautiful blue gradient - Same as btn-upload */
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-btn-primary);
+}
+
+/* Hover state - Slightly darker gradient */
+.btn-secondary:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--color-primary-hover), var(--color-blue-800));
+}
+
+/* Active/Pressed state */
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-btn-primary);
+}
+
+/* Focus state - Accessibility */
+.btn-secondary:focus-visible {
+  box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);
+}
+
+/* Disabled state */
+.btn-secondary:disabled {
+  cursor: not-allowed;
+  color: var(--color-gray-500);
+  opacity: 60%;
+  background: var(--color-gray-700);
+}
+
+/**
+ * WHY SAME AS BTN-UPLOAD?
+ *
+ * - Visual consistency: Same blue gradient creates unified look
+ * - Blue gradient: Premium, trustworthy look for important actions
+ * - Shadow: Creates depth in dark UI
+ * - White text: Maximum contrast for accessibility
+ * - Hover feedback: Clear interactive indication
+ *
+ * WHEN TO USE:
+ * ✅ Secondary actions (e.g., "View Details", "More Options")
+ * ✅ Informational buttons
+ * ✅ Alternative navigation options
+ * ✅ Supporting actions in button groups
+ *
+ * WHEN NOT TO USE:
+ * ❌ Primary form submit (use .btn-primary)
+ * ❌ Destructive actions (use .btn-danger)
+ * ❌ Cancel/Close actions (use .btn-cancel)
+ */
+
+/**
+ * Design System - Cancel Button
+ *
  * Purpose: Alternative/Cancel actions
  * Usage: Cancel, Back, Close, Secondary actions
  *
  * Visual: Outline style with glassmorphism
  */
 
-.btn-secondary {
+.btn-cancel {
   /* Padding - Standard size */
   padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
   border: 1px solid rgb(255 255 255 / 12%); /* Subtle border */
@@ -29,14 +98,14 @@
 }
 
 /* Hover state - Strengthen glass and border */
-.btn-secondary:hover:not(:disabled) {
+.btn-cancel:hover:not(:disabled) {
   background:
     linear-gradient(rgb(10 10 10 / 88%), rgb(35 35 35 / 93%)) padding-box,
     linear-gradient(135deg, rgb(244 0 0), rgb(243 33 33)) border-box; /* Solid primary border */
 }
 
 /* Focus state */
-.btn-secondary:focus-visible {
+.btn-cancel:focus-visible {
   border-color: var(--color-primary);
   box-shadow: var(--shadow-focus-primary);
 }

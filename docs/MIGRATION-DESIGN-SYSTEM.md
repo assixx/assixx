@@ -190,7 +190,7 @@ export class SignupFormController {
 - [ ] chat.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] shifts.html --skip wir machen das zum schluss, weil größere refactoring
 - [x] kvp.html ✅ (2025-11-13) - 100% Design System compliant (search-input, toggle-group, btn-float, alert, card-stat, modal, form-field, dropdown, empty-state, TypeScript modules split to api/data/forms/ui/types/index layers, custom photo upload kept for domain-specific requirements, kvp.css reduced 487→358 lines -27%, no inline styles/JS, no Bootstrap)
-- [ ] kvp-detail.html
+- [x] kvp-detail.html ✅ (2025-11-15) - 100% Design System compliant (ds-modal, form-field, dropdown, choice-card, data-list, badge, btn-cancel, TypeScript modules split to actions/data-loader/index/permissions/renderer/share-modal/ui layers, lightbox photo gallery, comments section with avatar, kvp-detail.css 399 lines domain-specific only, fixed Bootstrap btn-secondary→btn-cancel and btn-light→btn-cancel, no inline styles/JS, no Bootstrap)
 - [ ] logs.html
 
 ### Surveys
@@ -456,7 +456,7 @@ Note: File count varies per page based on inline JS complexity.
 |----------------|---------------------------|
 | .btn | .btn (Design System) |
 | .btn-primary | .btn-primary (Design System) |
-| .btn-secondary | .btn-secondary (Design System) |
+| .btn-cancel | .btn-cancel (Design System) |
 | .btn-danger | .btn-danger (Design System) |
 | .form-control | .form-field__control |
 | .form-label | .form-field__label |

@@ -57,13 +57,13 @@
     background-color: #0b5ed7;
   }
 
-  .btn-secondary {
+  .btn-cancel {
     border-color: #6c757d;
     color: #fff;
     background-color: #6c757d;
   }
 
-  .btn-secondary:hover {
+  .btn-cancel:hover {
     border-color: #565e64;
     color: #fff;
     background-color: #5c636a;

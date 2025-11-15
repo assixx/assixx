@@ -130,7 +130,7 @@ Auf der calendar.html Seite fehlten der Role Switch Button und die Role Badge ko
     <span id="user-name">Lade...</span>
     <span id="role-indicator" class="role-badge admin">Admin</span>
   </div>
-  <button id="logout-btn" class="btn-logout" class="btn btn-secondary">
+  <button id="logout-btn" class="btn-logout" class="btn btn-cancel">
     <i class="fas fa-sign-out-alt"></i>
     Abmelden
   </button>

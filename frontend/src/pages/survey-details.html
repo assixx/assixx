@@ -186,10 +186,10 @@
                     <button class="btn btn-primary" data-action="edit-survey">
                         <i class="fas fa-edit"></i> Bearbeiten
                     </button>
-                    <button class="btn btn-secondary" data-action="view-results" data-survey-id="${escapeHtml(surveyId)}">
+                    <button class="btn btn-cancel" data-action="view-results" data-survey-id="${escapeHtml(surveyId)}">
                         <i class="fas fa-chart-bar"></i> Ergebnisse anzeigen
                     </button>
-                    <button class="btn btn-secondary" data-action="duplicate-survey">
+                    <button class="btn btn-cancel" data-action="duplicate-survey">
                         <i class="fas fa-copy"></i> Duplizieren
                     </button>
                     <button class="btn btn-danger" data-action="delete-survey">
@@ -276,7 +276,7 @@
                 <div class="empty-state" style="text-align: center; padding: var(--spacing-8); color: var(--text-secondary);">
                     <div style="font-size: 3rem; margin-bottom: var(--spacing-4);">❌</div>
                     <p>${safeMessage}</p>
-                    <button class="btn btn-secondary" data-action="back-to-overview">
+                    <button class="btn btn-cancel" data-action="back-to-overview">
                         Zurück zur Übersicht
                     </button>
                 </div>

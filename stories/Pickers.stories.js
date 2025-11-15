@@ -7,14 +7,14 @@ export default {
   title: 'Design System/Pickers',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   globals: {
     backgrounds: {
-      value: "dark"
-    }
-  }
+      value: 'dark',
+    },
+  },
 };
 
 /**
@@ -366,7 +366,7 @@ export const ShiftCreation = () => {
           </div>
         </div>
         <div class="card__footer" style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button class="btn btn-secondary">Abbrechen</button>
+          <button class="btn btn-cancel">Abbrechen</button>
           <button class="btn btn-primary">Schicht erstellen</button>
         </div>
       </div>
@@ -425,7 +425,7 @@ export const FeatureActivation = () => {
             <i class="fas fa-exclamation-triangle"></i> Kostenpflichtig
           </span>
           <div style="display: flex; gap: 12px;">
-            <button class="btn btn-secondary">Abbrechen</button>
+            <button class="btn btn-cancel">Abbrechen</button>
             <button class="btn btn-primary">Feature aktivieren</button>
           </div>
         </div>
@@ -494,7 +494,7 @@ export const CalendarEvent = () => {
           </div>
         </div>
         <div class="card__footer" style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button class="btn btn-secondary">Abbrechen</button>
+          <button class="btn btn-cancel">Abbrechen</button>
           <button class="btn btn-primary">Event erstellen</button>
         </div>
       </div>

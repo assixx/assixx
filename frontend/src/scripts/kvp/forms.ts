@@ -219,7 +219,6 @@ export class KvpFormsManager {
     const categoryId = formData.get('category_id');
     const priorityValue = formData.get('priority');
     const benefitValue = formData.get('expected_benefit');
-    const costValue = formData.get('estimated_cost');
 
     const { orgLevel, orgId } = this.determineOrgLevel(getEffectiveRole);
 
@@ -228,8 +227,7 @@ export class KvpFormsManager {
       description: validatedData.description.trim(),
       categoryId: categoryId !== null && categoryId !== '' ? Number.parseInt(categoryId as string, 10) : null,
       priority: priorityValue !== null && priorityValue !== '' ? (priorityValue as string) : 'normal',
-      expectedBenefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : null,
-      estimatedCost: costValue !== null && costValue !== '' ? (costValue as string) : null,
+      expectedBenefit: benefitValue !== null && benefitValue !== '' ? (benefitValue as string) : undefined,
       orgLevel: orgLevel,
       orgId: orgId,
       departmentId: this.currentUser?.departmentId ?? null,
@@ -275,6 +273,7 @@ export class KvpFormsManager {
 
   /**
    * Handle photo upload after suggestion created
+   * IMPORTANT: Does NOT throw on failure - suggestion was already created successfully
    */
   private async handlePhotoUpload(suggestionId: number): Promise<void> {
     const selectedPhotos = kvpUIHelpers.getSelectedPhotos();
@@ -284,7 +283,17 @@ export class KvpFormsManager {
 
     if (selectedPhotos.length > 0) {
       console.info('Uploading photos for suggestion:', suggestionId);
-      await this.uploadPhotos(suggestionId, selectedPhotos);
+      try {
+        await this.uploadPhotos(suggestionId, selectedPhotos);
+      } catch (error) {
+        // CRITICAL: Suggestion was already created! Don't fail the whole operation.
+        console.error('Photo upload failed, but suggestion was created:', error);
+        this.showWarning(
+          'Vorschlag wurde erfolgreich erstellt, aber Fotos konnten nicht hochgeladen werden. ' +
+            'Sie können die Fotos später in den Vorschlagsdetails hinzufügen.',
+        );
+        // DO NOT re-throw - partial success is acceptable
+      }
     } else {
       console.info('No photos to upload');
     }
@@ -358,14 +367,7 @@ export class KvpFormsManager {
    * Show success message
    */
   private showSuccess(message: string): void {
-    console.info(message);
-    const notification = document.createElement('div');
-    notification.className = 'notification success';
-    notification.textContent = message;
-    document.body.append(notification);
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
+    notificationService.success('Erfolg', message, 3000);
   }
 
   /**
@@ -373,6 +375,13 @@ export class KvpFormsManager {
    */
   private showError(message: string): void {
     notificationService.error('Fehler', message, 4000);
+  }
+
+  /**
+   * Show warning message
+   */
+  private showWarning(message: string): void {
+    notificationService.warning('Warnung', message, 5000);
   }
 
   /**

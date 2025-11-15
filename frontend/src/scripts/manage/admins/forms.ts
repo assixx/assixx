@@ -194,7 +194,7 @@ export function getPositionDisplay(position: string): string {
 export function getStatusBadge(admin: Admin): string {
   // Check if admin is archived
   if (admin.isArchived === true) {
-    return '<span class="badge badge--secondary">Archiviert</span>';
+    return '<span class="badge badge--error">Archiviert</span>';
   }
 
   // Check if admin is active
@@ -234,7 +234,7 @@ export function getDepartmentsBadge(admin: Admin): string {
   }
 
   if (!admin.departments || admin.departments.length === 0) {
-    return '<span class="badge badge-secondary">Keine Abteilungen</span>';
+    return '<span class="badge badge-error">Keine Abteilungen</span>';
   }
 
   const count = admin.departments.length;
@@ -535,7 +535,7 @@ export function setStatusDropdown(statusValue: string): void {
       } else if (statusValue === 'inactive') {
         setSafeHTML(triggerSpan, '<span class="badge badge--warning">Inaktiv</span>');
       } else if (statusValue === 'archived') {
-        setSafeHTML(triggerSpan, '<span class="badge badge--secondary">Archiviert</span>');
+        setSafeHTML(triggerSpan, '<span class="badge badge--error">Archiviert</span>');
       }
     }
   }

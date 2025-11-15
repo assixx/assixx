@@ -70,13 +70,13 @@ h1 {
   box-shadow: 0 4px 12px rgb(56 189 248 / 30%);
 }
 
-.btn-secondary {
+.btn-cancel {
   border-color: rgb(255 255 255 / 10%);
   color: var(--text-primary);
   background: rgb(255 255 255 / 5%);
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 10%);
 }

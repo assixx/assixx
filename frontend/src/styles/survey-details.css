@@ -172,14 +172,14 @@
   box-shadow: 0 6px 20px rgb(33 150 243 / 40%);
 }
 
-.btn-secondary {
+.btn-cancel {
   border: 1px solid rgb(255 255 255 / 12%);
   color: var(--primary-color);
   background: rgb(255 255 255 / 4%);
   backdrop-filter: blur(5px);
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
   border-color: var(--primary-color);
   background: rgb(255 255 255 / 8%);
 }

@@ -140,7 +140,7 @@
 // scripts/migrate-bootstrap-to-tailwind.js
 const classMap = {
   'btn btn-primary': 'btn-glass bg-primary',
-  'btn btn-secondary': 'btn-glass',
+  'btn btn-cancel': 'btn-glass',
   'form-control': 'input-glass',
   'card': 'glass-card',
   'alert alert-success': 'alert-glass alert-success',

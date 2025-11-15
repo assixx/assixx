@@ -17,6 +17,7 @@
 .badge {
   /* ========== LAYOUT ========== */
   display: inline-flex;
+  gap: var(--spacing-2); /* Space between icon and text */
   align-items: center;
   justify-content: center;
 

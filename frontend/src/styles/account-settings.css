@@ -180,13 +180,13 @@
   box-shadow: 0 4px 20px rgb(244 67 54 / 30%);
 }
 
-.btn-secondary {
+.btn-cancel {
   border: 1px solid rgb(255 255 255 / 10%);
   color: var(--text-primary);
   background: rgb(255 255 255 / 5%);
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
   background: rgb(255 255 255 / 10%);
 }
 

@@ -121,11 +121,11 @@
                     Firmenweit
                     <span class="badge" id="badgeCompany">0</span>
                   </button>
-                  <button class="toggle-group__btn admin-only" data-filter="manage" title="Verwaltung" hidden>
+                  <button class="toggle-group__btn" data-filter="manage" title="Verwaltung">
                     <i class="fas fa-tasks"></i>
                     Verwalten
                   </button>
-                  <button class="toggle-group__btn admin-only" data-filter="archived" title="Archivierte Vorschläge" hidden>
+                  <button class="toggle-group__btn" data-filter="archived" title="Archivierte Vorschläge">
                     <i class="fas fa-archive"></i>
                     Archiv
                     <span class="badge" id="badgeArchived">0</span>
@@ -149,8 +149,8 @@
               </div>
 
               <!-- Secondary Filters - Dropdowns Only -->
-              <div class="secondary-filters">
-                <div class="secondary-filters__left">
+              <div class="flex flex-nowrap gap-4 items-center mb-6">
+                <div class="flex flex-nowrap gap-4 items-center w-full md:w-auto">
                   <!-- Status Filter Dropdown - Design System -->
                   <div class="dropdown" data-dropdown="status">
                     <div class="dropdown__trigger" id="statusDisplay">
@@ -182,14 +182,14 @@
                   </div>
 
                   <!-- Department Filter Dropdown - Design System -->
-                  <div class="dropdown admin-only" data-dropdown="department" hidden>
+                  <div class="dropdown" data-dropdown="department">
                     <div class="dropdown__trigger" id="departmentDisplay">
                       <span>Alle Abteilungen</span>
                       <i class="fas fa-chevron-down"></i>
                     </div>
                     <div class="dropdown__menu" id="departmentDropdown">
                       <div class="dropdown__option" data-action="select-department" data-value="">Alle Abteilungen</div>
-                      <!-- Dynamisch geladen für Admins -->
+                      <!-- Dynamisch geladen -->
                     </div>
                     <input type="hidden" name="departmentFilter" id="departmentFilterValue" />
                   </div>
@@ -197,7 +197,7 @@
               </div>
 
               <!-- Suggestions Container -->
-              <div class="kvp-suggestions-grid" id="suggestionsContainer">
+              <div class="grid grid-cols-1 md:grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6 mt-6" id="suggestionsContainer">
                 <!-- Dynamisch geladen -->
               </div>
 
@@ -222,146 +222,144 @@
 
     <!-- Create KVP Modal - Design System -->
     <div class="modal-overlay" id="createKvpModal" hidden>
-      <div class="modal modal--lg">
-        <div class="modal__header">
-          <h3 class="modal__title">Neuer KVP-Vorschlag</h3>
-          <button class="modal__close" data-action="close-modal" type="button" aria-label="Schließen">
+      <form id="createKvpForm" class="ds-modal ds-modal--lg">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">Neuer KVP-Vorschlag</h3>
+          <button class="ds-modal__close" data-action="close-modal" type="button" aria-label="Schließen">
             <i class="fas fa-times"></i>
           </button>
         </div>
 
-        <form id="createKvpForm">
-          <div class="modal__body">
-            <!-- Warning Alert - Design System -->
-            <div class="alert alert--warning mb-6">
-              <div class="alert__icon">
-                <i class="fas fa-exclamation-triangle"></i>
-              </div>
-              <div class="alert__content">
-                <strong class="alert__title">Wichtiger Hinweis:</strong>
-                <p class="alert__message">
-                  Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. Bitte prüfen Sie alle Angaben
-                  sorgfältig, bevor Sie den Vorschlag absenden.
-                </p>
-              </div>
+        <div class="ds-modal__body">
+          <!-- Warning Alert - Design System -->
+          <div class="alert alert--warning mb-6">
+            <div class="alert__icon">
+              <i class="fas fa-exclamation-triangle"></i>
             </div>
-
-            <!-- Form Fields Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Title Field - Design System -->
-              <div class="form-field">
-                <label class="form-field__label" for="kvpTitle">
-                  Titel
-                  <span class="form-field__required">*</span>
-                  <span class="form-field__hint">(3-255 Zeichen)</span>
-                </label>
-                <input
-                  type="text"
-                  id="kvpTitle"
-                  name="title"
-                  class="form-field__control"
-                  placeholder="Kurze, prägnante Beschreibung"
-                  required
-                  minlength="3"
-                  maxlength="255"
-                />
-              </div>
-
-              <!-- Description Field - Design System (full width) -->
-              <div class="form-field md:col-span-2">
-                <label class="form-field__label" for="kvpDescription">
-                  Beschreibung
-                  <span class="form-field__required">*</span>
-                  <span class="form-field__hint">(10-5000 Zeichen)</span>
-                </label>
-                <textarea
-                  id="kvpDescription"
-                  name="description"
-                  class="form-field__control"
-                  placeholder="Detaillierte Beschreibung des Vorschlags..."
-                  rows="4"
-                  required
-                  minlength="10"
-                  maxlength="5000"
-                ></textarea>
-              </div>
-
-              <!-- Category Dropdown - Design System -->
-              <div class="form-field">
-                <label class="form-field__label">
-                  Kategorie
-                  <span class="form-field__required">*</span>
-                </label>
-                <div class="dropdown" data-dropdown="kvpCategory">
-                  <div class="dropdown__trigger" id="kvpCategoryDisplay">
-                    <span>Bitte wählen</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </div>
-                  <div class="dropdown__menu" id="kvpCategoryDropdown">
-                    <!-- Dynamisch geladen -->
-                  </div>
-                  <input type="hidden" name="category_id" id="kvpCategoryValue" required />
-                </div>
-              </div>
-
-              <!-- Priority Dropdown - Design System -->
-              <div class="form-field">
-                <label class="form-field__label">Priorität</label>
-                <div class="dropdown" data-dropdown="kvpPriority">
-                  <div class="dropdown__trigger" id="kvpPriorityDisplay">
-                    <span>Normal</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </div>
-                  <div class="dropdown__menu" id="kvpPriorityDropdown">
-                    <div class="dropdown__option" data-action="select-priority" data-value="low">Niedrig</div>
-                    <div class="dropdown__option" data-action="select-priority" data-value="normal">Normal</div>
-                    <div class="dropdown__option" data-action="select-priority" data-value="high">Hoch</div>
-                    <div class="dropdown__option" data-action="select-priority" data-value="urgent">Dringend</div>
-                  </div>
-                  <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
-                </div>
-              </div>
-
-              <!-- Expected Benefit - Design System (full width) -->
-              <div class="form-field md:col-span-2">
-                <label class="form-field__label" for="kvpBenefit">Erwarteter Nutzen</label>
-                <textarea
-                  id="kvpBenefit"
-                  name="expected_benefit"
-                  class="form-field__control"
-                  placeholder="Welche Vorteile bringt dieser Vorschlag?"
-                  rows="3"
-                ></textarea>
-              </div>
-
-              <!-- Photo Upload Section (full width) -->
-              <div class="form-field md:col-span-2">
-                <label class="form-field__label">
-                  Fotos hinzufügen (optional)
-                  <span class="form-field__hint">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span>
-                </label>
-                <div class="photo-upload-area">
-                  <input type="file" id="kvpPhotos" name="photos" accept="image/jpeg,image/jpg,image/png" multiple hidden />
-                  <div class="upload-box" data-action="upload-photos">
-                    <i class="fas fa-camera"></i>
-                    <p>Klicken Sie hier, um Fotos auszuwählen</p>
-                    <p class="text-sm text-gray-400 mt-2">oder ziehen Sie Dateien hierher</p>
-                  </div>
-                  <div id="photoPreview" class="photo-preview"></div>
-                </div>
-              </div>
+            <div class="alert__content">
+              <strong class="alert__title">Wichtiger Hinweis:</strong>
+              <p class="alert__message">
+                Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. Bitte prüfen Sie alle Angaben sorgfältig,
+                bevor Sie den Vorschlag absenden.
+              </p>
             </div>
           </div>
 
-          <div class="modal__footer modal__footer--right">
-            <button type="button" class="btn btn-secondary" data-action="close-modal">Abbrechen</button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-save"></i>
-              Vorschlag einreichen
-            </button>
+          <!-- Form Fields Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Title Field - Design System -->
+            <div class="form-field">
+              <label class="form-field__label" for="kvpTitle">
+                Titel
+                <span class="text-red-500">*</span>
+                <span class="form-field__hint">(3-255 Zeichen)</span>
+              </label>
+              <input
+                type="text"
+                id="kvpTitle"
+                name="title"
+                class="form-field__control"
+                placeholder="Kurze, prägnante Beschreibung"
+                required
+                minlength="3"
+                maxlength="255"
+              />
+            </div>
+
+            <!-- Description Field - Design System (full width) -->
+            <div class="form-field md:col-span-2">
+              <label class="form-field__label" for="kvpDescription">
+                Beschreibung
+                <span class="text-red-500">*</span>
+                <span class="form-field__hint">(10-5000 Zeichen)</span>
+              </label>
+              <textarea
+                id="kvpDescription"
+                name="description"
+                class="form-field__control"
+                placeholder="Detaillierte Beschreibung des Vorschlags..."
+                rows="4"
+                required
+                minlength="10"
+                maxlength="5000"
+              ></textarea>
+            </div>
+
+            <!-- Category Dropdown - Design System -->
+            <div class="form-field">
+              <label class="form-field__label">
+                Kategorie
+                <span class="text-red-500">*</span>
+              </label>
+              <div class="dropdown" data-dropdown="kvpCategory">
+                <div class="dropdown__trigger" id="kvpCategoryDisplay">
+                  <span>Bitte wählen</span>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="dropdown__menu" id="kvpCategoryDropdown">
+                  <!-- Dynamisch geladen -->
+                </div>
+                <input type="hidden" name="category_id" id="kvpCategoryValue" required />
+              </div>
+            </div>
+
+            <!-- Priority Dropdown - Design System -->
+            <div class="form-field">
+              <label class="form-field__label">Priorität</label>
+              <div class="dropdown" data-dropdown="kvpPriority">
+                <div class="dropdown__trigger" id="kvpPriorityDisplay">
+                  <span>Normal</span>
+                  <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="dropdown__menu" id="kvpPriorityDropdown">
+                  <div class="dropdown__option" data-action="select-priority" data-value="low">Niedrig</div>
+                  <div class="dropdown__option" data-action="select-priority" data-value="normal">Normal</div>
+                  <div class="dropdown__option" data-action="select-priority" data-value="high">Hoch</div>
+                  <div class="dropdown__option" data-action="select-priority" data-value="urgent">Dringend</div>
+                </div>
+                <input type="hidden" name="priority" id="kvpPriorityValue" value="normal" />
+              </div>
+            </div>
+
+            <!-- Expected Benefit - Design System (full width) -->
+            <div class="form-field md:col-span-2">
+              <label class="form-field__label" for="kvpBenefit">Erwarteter Nutzen</label>
+              <textarea
+                id="kvpBenefit"
+                name="expected_benefit"
+                class="form-field__control"
+                placeholder="Welche Vorteile bringt dieser Vorschlag?"
+                rows="3"
+              ></textarea>
+            </div>
+
+            <!-- Photo Upload Section (full width) -->
+            <div class="form-field md:col-span-2">
+              <label class="form-field__label">
+                Fotos hinzufügen (optional)
+                <span class="form-field__hint">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span>
+              </label>
+              <div class="mt-2">
+                <input type="file" id="kvpPhotos" name="photos" accept="image/jpeg,image/jpg,image/png" multiple hidden />
+                <div class="upload-box" data-action="upload-photos">
+                  <i class="fas fa-camera"></i>
+                  <p>Klicken Sie hier, um Fotos auszuwählen</p>
+                  <p class="text-sm text-gray-400 mt-2">oder ziehen Sie Dateien hierher</p>
+                </div>
+                <div id="photoPreview" class="flex flex-wrap gap-2 mt-4"></div>
+              </div>
+            </div>
           </div>
-        </form>
-      </div>
+        </div>
+
+        <div class="ds-modal__footer ds-modal__footer--right">
+          <button type="button" class="btn btn-cancel" data-action="close-modal">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">
+            <i class="fas fa-save"></i>
+            Vorschlag einreichen
+          </button>
+        </div>
+      </form>
     </div>
 
     <!-- Scripts -->

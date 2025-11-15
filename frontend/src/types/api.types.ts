@@ -101,26 +101,31 @@ export interface TenantFeature {
 // Document Types
 export interface Document {
   id: number;
-  tenant_id: number;
-  uploaded_by: number;
-  uploaded_by_name?: string;
-  target_user_id?: number;
-  target_department_id?: number;
-  target_team_id?: number;
+  tenantId: number;
+  uploadedBy: number;
+  uploadedByName?: string;
+  uploaderName?: string;
+  targetUserId?: number;
+  targetDepartmentId?: number;
+  targetTeamId?: number;
   category: string;
-  scope?: 'company' | 'department' | 'team' | 'personal'; // Optional: Backend may not always send this
-  file_path: string;
-  file_name: string;
-  file_size: number;
-  file_type: string;
-  mime_type?: string;
+  scope?: 'company' | 'department' | 'team' | 'personal';
+  filePath: string;
+  filename: string; // User-visible name (manual override in backend, NOT camelCase)
+  storedFilename?: string; // UUID-based filename on disk
+  fileSize: number;
+  fileType: string;
+  mimeType?: string;
   description?: string;
   tags?: string[];
-  is_read?: boolean;
-  is_archived?: boolean;
-  is_deleted: boolean;
-  created_at: string;
-  updated_at: string;
+  isRead?: boolean;
+  isArchived?: boolean;
+  isDeleted: boolean;
+  recipientId?: number;
+  downloadUrl?: string;
+  previewUrl?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Blackboard Types

@@ -8,7 +8,7 @@ export default {
   title: 'Design System/Cards',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
@@ -44,9 +44,9 @@ export default {
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -73,8 +73,9 @@ export const BaseCard = {
       .filter(Boolean)
       .join(' ');
 
-    const headerHTML = args.hasHeader
-      ? `
+    const headerHTML =
+      args.hasHeader ?
+        `
       <div class="card__header">
         <h2 class="card__title">
           <i class="fas fa-users" style="margin-right: 8px;"></i>
@@ -83,8 +84,9 @@ export const BaseCard = {
       </div>`
       : '';
 
-    const footerHTML = args.hasFooter
-      ? `
+    const footerHTML =
+      args.hasFooter ?
+        `
       <div class="card__footer">
         <p style="color: var(--color-text-secondary); font-size: 0.875rem;">
           Zuletzt aktualisiert: Vor 5 Minuten
@@ -104,7 +106,7 @@ export const BaseCard = {
               <i class="fas fa-plus"></i>
               Hinzufügen
             </button>
-            <button class="btn btn-secondary">
+            <button class="btn btn-cancel">
               <i class="fas fa-cog"></i>
               Einstellungen
             </button>
@@ -157,8 +159,9 @@ export const StatCards = {
       danger: 'fa-times-circle',
     };
 
-    const iconHTML = args.showIcon
-      ? `
+    const iconHTML =
+      args.showIcon ?
+        `
       <div class="card-stat__icon">
         <i class="fas ${icons[args.variant]}"></i>
       </div>`

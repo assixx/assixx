@@ -509,7 +509,7 @@ export function DataList({ items, layout = 'default', borderless }: DataListProp
         <td>IT</td>
         <td><span class="badge badge--success">Aktiv</span></td>
         <td>
-          <button class="btn btn-sm btn-secondary">Bearbeiten</button>
+          <button class="btn btn-sm btn-cancel">Bearbeiten</button>
           <button class="btn btn-sm btn-danger">Löschen</button>
         </td>
       </tr>
@@ -520,7 +520,7 @@ export function DataList({ items, layout = 'default', borderless }: DataListProp
         <td>HR</td>
         <td><span class="badge badge--warning">Urlaub</span></td>
         <td>
-          <button class="btn btn-sm btn-secondary">Bearbeiten</button>
+          <button class="btn btn-sm btn-cancel">Bearbeiten</button>
           <button class="btn btn-sm btn-danger">Löschen</button>
         </td>
       </tr>

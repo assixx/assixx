@@ -4,7 +4,7 @@
   "type": "module",
   "main": "backend/src/server.ts",
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=24.11.1",
     "pnpm": ">=10.0.0",
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
@@ -16,7 +16,8 @@
       "vite@>=7.1.0 <=7.1.4": ">=7.1.5",
       "axios@<1.12.0": ">=1.12.0",
       "vite@>=7.1.0 <=7.1.10": ">=7.1.11",
-      "validator@<13.15.20": ">=13.15.20"
+      "validator@<13.15.20": ">=13.15.20",
+      "js-yaml@<4.1.1": ">=4.1.1"
     }
   },
   "scripts": {

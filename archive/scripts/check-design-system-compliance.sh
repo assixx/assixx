@@ -24,7 +24,7 @@ WARNINGS_FOUND=0
 
 # 1. Bootstrap Classes (CRITICAL)
 echo -e "${RED}❌ Bootstrap Classes (Must be 0):${NC}"
-# NOTE: Excludes Design System buttons (btn-primary, btn-secondary, btn-danger, btn-modal)
+# NOTE: Excludes Design System buttons (btn-primary, btn-cancel, btn-danger, btn-modal)
 # NOTE: Excludes Design System dropdown (uses BEM: dropdown__trigger, dropdown__menu)
 # Only checks for Bootstrap-specific button classes and other Bootstrap components
 BOOTSTRAP_PATTERNS="btn-default|btn-lg|btn-sm|btn-xs|btn-block|btn-outline-|btn-group|btn-toolbar|form-control|form-group|input-group|modal-dialog|modal-content|table-striped|alert-danger|alert-success|alert-info|alert-warning|container-fluid| row | col-md-|col-sm-|col-lg-|col-xs-|pull-right|pull-left|navbar|dropdown-toggle|dropdown-item|dropdown-divider|dropdown-header"

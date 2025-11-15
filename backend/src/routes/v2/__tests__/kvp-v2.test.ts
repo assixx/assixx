@@ -39,7 +39,7 @@ describe('KVP API v2', () => {
 
   afterAll(async () => {
     // Clean up test category
-    await testDb.execute("DELETE FROM kvp_categories WHERE name LIKE '__AUTOTEST__%'");
+    await testDb.execute("DELETE FROM global.kvp_categories WHERE name LIKE '__AUTOTEST__%'");
     await cleanupTestData();
     await testDb.end();
   });
@@ -64,14 +64,14 @@ describe('KVP API v2', () => {
 
     // Check if test category exists, if not create it
     const [existingCategories] = await testDb.execute<any[]>(
-      'SELECT id FROM kvp_categories WHERE name = ?',
+      'SELECT id FROM global.kvp_categories WHERE name = ?',
       ['__AUTOTEST__Productivity'],
     );
 
     if (existingCategories.length === 0) {
       // Create test category (global - no tenant_id)
       const [categoryResult] = await testDb.execute<ResultSetHeader>(
-        'INSERT INTO kvp_categories (name, description, color, icon) VALUES (?, ?, ?, ?)',
+        'INSERT INTO global.kvp_categories (name, description, color, icon) VALUES (?, ?, ?, ?)',
         ['__AUTOTEST__Productivity', 'Test Productivity improvements', '#3498db', '💡'],
       );
       categoryId = categoryResult.insertId;
