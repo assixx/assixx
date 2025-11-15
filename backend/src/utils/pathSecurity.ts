@@ -89,7 +89,7 @@ export function getUploadDirectory(type: string): string {
     profile_pictures: path.join(baseUploadDir, 'profile_pictures'),
     blackboard: path.join(baseUploadDir, 'blackboard'),
     chat: path.join(baseUploadDir, 'chat'),
-    kvp: path.join(baseUploadDir, 'kvp'),
+    kvp: path.join(baseUploadDir, 'kvp-attachments'),
   };
 
   // eslint-disable-next-line security/detect-object-injection -- Safe: type is validated against predefined keys

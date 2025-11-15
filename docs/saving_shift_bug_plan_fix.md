@@ -196,7 +196,7 @@ async createShiftPlan(data: CreateShiftPlanRequest): Promise<CreateShiftPlanResp
 <div class="admin-actions">
   <button id="saveShiftsBtn" class="btn btn-primary"><i class="fas fa-save"></i> Speichern</button>
   <!-- NEU: Bearbeiten Button -->
-  <button id="editShiftsBtn" class="btn btn-secondary" style="display: none;">
+  <button id="editShiftsBtn" class="btn btn-cancel" style="display: none;">
     <i class="fas fa-edit"></i> Bearbeiten
   </button>
 </div>

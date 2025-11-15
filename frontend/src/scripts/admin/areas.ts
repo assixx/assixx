@@ -157,15 +157,15 @@ class AreasManager {
         <td>${area.capacity != null ? `${String(area.capacity)} Plätze` : '-'}</td>
         <td>${this.escapeHtml(area.address)}</td>
         <td>
-          <span class="badge ${area.isActive !== false ? 'badge-success' : 'badge-secondary'}">
+          <span class="badge ${area.isActive !== false ? 'badge-success' : 'badge-error'}">
             ${area.isActive !== false ? 'Aktiv' : 'Inaktiv'}
           </span>
         </td>
         <td>
-          <button class="btn btn-sm btn-secondary" data-action="edit" data-id="${String(area.id)}">
+          <button class="btn btn-sm btn-cancel" data-action="edit" data-id="${String(area.id)}">
             <i class="fas fa-edit"></i>
           </button>
-          <button class="btn btn-sm btn-secondary" data-action="view" data-id="${String(area.id)}">
+          <button class="btn btn-sm btn-cancel" data-action="view" data-id="${String(area.id)}">
             <i class="fas fa-eye"></i>
           </button>
           <button class="btn btn-sm btn-danger" data-action="delete" data-id="${String(area.id)}">

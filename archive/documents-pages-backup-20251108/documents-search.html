@@ -40,7 +40,9 @@
                 <i class="fas fa-search mr-2"></i>
                 Dokumente suchen
               </h2>
-              <p class="text-[var(--color-text-secondary)] mt-2">Durchsuchen Sie alle verfügbaren Dokumente</p>
+              <p class="text-[var(--color-text-secondary)] mt-2">
+                Durchsuchen Sie alle verfügbaren Dokumente
+              </p>
 
               <!-- Search & Controls -->
               <div class="flex gap-4 items-start mt-4">
@@ -55,7 +57,12 @@
                       placeholder="Suchen Sie nach Dokumentname, Beschreibung oder Uploader..."
                       autocomplete="off"
                     />
-                    <button class="search-input__clear" type="button" aria-label="Suche löschen" id="search-clear">
+                    <button
+                      class="search-input__clear"
+                      type="button"
+                      aria-label="Suche löschen"
+                      id="search-clear"
+                    >
                       <i class="fas fa-times"></i>
                     </button>
                     <div class="search-input__spinner"></div>
@@ -99,7 +106,8 @@
                   </div>
                   <h3 class="empty-state__title">Keine Dokumente verfügbar</h3>
                   <p class="empty-state__description">
-                    Es wurden noch keine Dokumente hochgeladen oder Sie haben keine Zugriffsrechte auf Dokumente.
+                    Es wurden noch keine Dokumente hochgeladen oder Sie haben keine Zugriffsrechte
+                    auf Dokumente.
                   </p>
                 </div>
               </div>
@@ -128,47 +136,74 @@
           <div class="mb-4 text-center py-10 bg-[var(--background-secondary)] rounded-lg">
             <i class="fas fa-file-pdf text-6xl text-[var(--color-primary)] mb-4"></i>
             <p class="text-[var(--color-text-primary)]">Dokument-Details werden unten angezeigt.</p>
-            <p class="text-sm text-[var(--color-text-secondary)] mt-2">Verwenden Sie "Herunterladen", um das Dokument zu öffnen.</p>
+            <p class="text-sm text-[var(--color-text-secondary)] mt-2">
+              Verwenden Sie "Herunterladen", um das Dokument zu öffnen.
+            </p>
           </div>
 
           <!-- Document Info -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[var(--background-secondary)] rounded-lg">
+          <div
+            class="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-[var(--background-secondary)] rounded-lg"
+          >
             <div class="flex items-start gap-3">
               <i class="fas fa-file text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
               <div class="min-w-0 flex-1">
-                <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Dateiname</label>
-                <span id="modalFileName" class="text-[var(--color-text-primary)] font-medium block break-words">-</span>
+                <label class="text-sm text-[var(--color-text-secondary)] block mb-1"
+                  >Dateiname</label
+                >
+                <span
+                  id="modalFileName"
+                  class="text-[var(--color-text-primary)] font-medium block break-words"
+                  >-</span
+                >
               </div>
             </div>
             <div class="flex items-start gap-3">
               <i class="fas fa-weight text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
               <div class="min-w-0 flex-1">
                 <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Größe</label>
-                <span id="modalFileSize" class="text-[var(--color-text-primary)] font-medium block">-</span>
+                <span id="modalFileSize" class="text-[var(--color-text-primary)] font-medium block"
+                  >-</span
+                >
               </div>
             </div>
             <div class="flex items-start gap-3">
               <i class="fas fa-user text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
               <div class="min-w-0 flex-1">
-                <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Hochgeladen von</label>
-                <span id="modalUploadedBy" class="text-[var(--color-text-primary)] font-medium block break-words">-</span>
+                <label class="text-sm text-[var(--color-text-secondary)] block mb-1"
+                  >Hochgeladen von</label
+                >
+                <span
+                  id="modalUploadedBy"
+                  class="text-[var(--color-text-primary)] font-medium block break-words"
+                  >-</span
+                >
               </div>
             </div>
             <div class="flex items-start gap-3">
               <i class="fas fa-calendar text-[var(--color-primary)] mt-1 flex-shrink-0"></i>
               <div class="min-w-0 flex-1">
                 <label class="text-sm text-[var(--color-text-secondary)] block mb-1">Datum</label>
-                <span id="modalUploadDate" class="text-[var(--color-text-primary)] font-medium block">-</span>
+                <span
+                  id="modalUploadDate"
+                  class="text-[var(--color-text-primary)] font-medium block"
+                  >-</span
+                >
               </div>
             </div>
           </div>
         </div>
         <div class="ds-modal__footer">
-          <button type="button" class="btn btn-secondary" data-action="close-document-modal">
+          <button type="button" class="btn btn-cancel" data-action="close-document-modal">
             <i class="fas fa-times mr-2"></i>
             Schließen
           </button>
-          <button type="button" class="btn btn-primary" id="downloadButton" data-action="download-document">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="downloadButton"
+            data-action="download-document"
+          >
             <i class="fas fa-download mr-2"></i>
             Herunterladen
           </button>
@@ -185,6 +220,7 @@
     <!-- Breadcrumb Component -->
     <script type="module">
       import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
+
       // Breadcrumb wird automatisch generiert basierend auf der URL
       initBreadcrumb();
     </script>

@@ -17,7 +17,7 @@ Glassmorphism overlay modals for forms, confirmations, and dialogs.
       <!-- Content here -->
     </div>
     <div class="ds-modal__footer [ds-modal__footer--centered|ds-modal__footer--spaced]">
-      <button class="btn btn-secondary">Cancel</button>
+      <button class="btn btn-cancel">Cancel</button>
       <button class="btn btn-primary">Save</button>
     </div>
   </div>
@@ -41,7 +41,7 @@ Glassmorphism overlay modals for forms, confirmations, and dialogs.
       <p>Are you sure you want to delete this item?</p>
     </div>
     <div class="ds-modal__footer ds-modal__footer--centered">
-      <button class="btn btn-secondary" data-action="close">Cancel</button>
+      <button class="btn btn-cancel" data-action="close">Cancel</button>
       <button class="btn btn-danger">Delete</button>
     </div>
   </div>
@@ -74,7 +74,7 @@ Glassmorphism overlay modals for forms, confirmations, and dialogs.
       </form>
     </div>
     <div class="ds-modal__footer">
-      <button class="btn btn-secondary" data-action="close">Cancel</button>
+      <button class="btn btn-cancel" data-action="close">Cancel</button>
       <button class="btn btn-primary">Create</button>
     </div>
   </div>
@@ -237,7 +237,7 @@ closeBtn.addEventListener('click', () => {
       <p style="color: var(--color-danger);">This action cannot be undone.</p>
     </div>
     <div class="ds-modal__footer ds-modal__footer--spaced">
-      <button class="btn btn-secondary">Cancel</button>
+      <button class="btn btn-cancel">Cancel</button>
       <button class="btn btn-danger">Delete</button>
     </div>
   </div>
@@ -278,7 +278,7 @@ closeBtn.addEventListener('click', () => {
       </form>
     </div>
     <div class="ds-modal__footer">
-      <button class="btn btn-secondary">Cancel</button>
+      <button class="btn btn-cancel">Cancel</button>
       <button class="btn btn-primary">Create Event</button>
     </div>
   </div>

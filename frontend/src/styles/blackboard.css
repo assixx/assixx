@@ -707,7 +707,7 @@ select.form-control {
   background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
 }
 
-.btn-secondary,
+.btn-cancel,
 .secondary-button,
 .big-button.secondary-button {
   cursor: pointer;

@@ -1505,13 +1505,13 @@
   background: #2980b9;
 }
 
-.btn-secondary {
+.btn-cancel {
   border: 1px solid rgb(255 255 255 / 20%);
   color: var(--text-light);
   background: rgb(255 255 255 / 10%);
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
   color: #fff;
   background: rgb(255 255 255 / 20%);
 }

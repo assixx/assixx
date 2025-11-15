@@ -29,7 +29,7 @@ Created `/frontend/src/styles/tailwind.css` with three distinct layers:
 Instead of keeping Bootstrap, we added Bootstrap-compatible classes to Tailwind:
 
 #### Components Added (1466 class replacements):
-- ✅ **Buttons:** btn, btn-primary, btn-secondary, btn-danger, etc.
+- ✅ **Buttons:** btn, btn-primary, btn-cancel, btn-danger, etc.
 - ✅ **Forms:** form-group, form-control, form-label (566 uses)
 - ✅ **Cards:** card, card-header, card-body, card-title
 - ✅ **Modals:** modal, modal-dialog, modal-content, modal-header

@@ -684,7 +684,7 @@ export class Permissions {
   </div>
   <div class="ds-modal__body">...</div>
   <div class="ds-modal__footer">
-    <button class="btn btn-secondary">...</button>
+    <button class="btn btn-cancel">...</button>
     <button class="btn btn-primary">...</button>
   </div>
 </div>
@@ -2042,7 +2042,7 @@ cp documents-search.html documents-explorer.html
           <div id="modal-content"></div>
         </div>
         <div class="ds-modal__footer">
-          <button class="btn btn-secondary" id="modal-cancel">
+          <button class="btn btn-cancel" id="modal-cancel">
             <i class="fas fa-times mr-2"></i>
             Schließen
           </button>
@@ -2154,7 +2154,7 @@ cp documents-search.html documents-explorer.html
           </form>
         </div>
         <div class="ds-modal__footer">
-          <button class="btn btn-secondary" id="upload-cancel">
+          <button class="btn btn-cancel" id="upload-cancel">
             Abbrechen
           </button>
           <button class="btn btn-primary" id="upload-submit">

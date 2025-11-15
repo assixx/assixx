@@ -38,7 +38,7 @@ Professional button component library following atomic design principles. Fully 
 **Usage:** Cancel, back, alternative actions
 
 ```html
-<button class="btn btn-secondary">Cancel</button>
+<button class="btn btn-cancel">Cancel</button>
 ```
 
 ### Danger
@@ -363,7 +363,7 @@ interface ButtonProps {
 1. **What's the action?**
    - Main form submit → `.btn-primary`
    - Hero/Landing CTA → `.btn-primary-first`
-   - Cancel/Back → `.btn-secondary`
+   - Cancel/Back → `.btn-cancel`
    - Delete/Remove → `.btn-danger`
    - Approve/Success → `.btn-success`
    - Status toggle → `.btn-status-*`
@@ -371,7 +371,7 @@ interface ButtonProps {
 2. **Where is it?**
    - Hero section → `.btn-primary-first`
    - Form → `.btn-primary`
-   - Modal → `.btn-primary` + `.btn-secondary`
+   - Modal → `.btn-primary` + `.btn-cancel`
    - Table row → `.btn-sm`
 
 3. **How important?**

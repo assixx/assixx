@@ -1,13 +1,24 @@
 /**
- * KVP Detail Page Styles
- * Generated: 2025-09-17
+ * KVP Detail Page Styles - Migrated to Design System
+ * Generated: 2025-11-14
+ *
+ * Contains ONLY domain-specific styles.
+ * All generic components (badges, dropdowns, modals, forms, data-lists) use Design System.
  */
 
 /* ========================================
-   Extracted from kvp-detail.html - First Style Block
+   DESIGN SYSTEM IMPORTS
    ======================================== */
 
-/* Detail Container */
+@import "../design-system/primitives/avatar/avatar.css";
+@import "../design-system/primitives/badges/badge.kvp.css";
+@import "../design-system/primitives/choice-cards/choice-card.base.css";
+
+/* ========================================
+   LAYOUT - Domain-Specific
+   ======================================== */
+
+/* Detail Container - 2-Column Layout */
 .detail-container {
   position: relative;
   z-index: 1;
@@ -17,7 +28,7 @@
   gap: var(--spacing-6);
 }
 
-/* Main Content */
+/* Main Content Card */
 .detail-main {
   position: relative;
   z-index: 1;
@@ -47,8 +58,6 @@
 
   overflow: visible;
 
-  /* Wichtig für Dropdown-Sichtbarkeit */
-
   padding: var(--spacing-6);
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
@@ -56,6 +65,10 @@
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
 }
+
+/* ========================================
+   HEADER - Domain-Specific
+   ======================================== */
 
 /* Header with Status */
 .detail-header {
@@ -79,124 +92,45 @@
   color: rgb(255 255 255 / 60%);
 }
 
+.detail-meta span {
+  display: inline-flex;
+  gap: var(--spacing-2); /* Space between icon and text */
+  align-items: center;
+}
+
 .detail-meta i {
   color: var(--primary-color);
 }
 
-/* Status and Priority */
+/* Category Tag */
+.category-tag {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+
+  padding: 4px 12px;
+  border-radius: 16px;
+
+  font-size: 0.8rem;
+}
+
+/* Status and Priority Container */
 .status-priority {
   display: flex;
   gap: var(--spacing-4);
   align-items: center;
 }
 
-.priority-badge {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
+/* NOTE: Badge variants now provided by Design System badge.kvp.css
+   Removed redundant priority/status/visibility badge styles (2025-01-14)
+   Use: .badge--priority-low/normal/high/urgent
+        .badge--kvp-new/inreview/approved/implemented/rejected/archived
+        .badge--visibility-team/department/company */
 
-.priority-badge.low {
-  border: 1px solid rgb(76 175 80 / 50%);
-  color: #4caf50;
-  background: rgb(76 175 80 / 20%);
-}
+/* ========================================
+   CONTENT SECTIONS
+   ======================================== */
 
-.priority-badge.normal {
-  border: 1px solid rgb(33 150 243 / 50%);
-  color: #2196f3;
-  background: rgb(33 150 243 / 20%);
-}
-
-.priority-badge.high {
-  border: 1px solid rgb(255 152 0 / 50%);
-  color: #ff9800;
-  background: rgb(255 152 0 / 20%);
-}
-
-.priority-badge.urgent {
-  border: 1px solid rgb(244 67 54 / 50%);
-  color: #f44336;
-  background: rgb(244 67 54 / 20%);
-}
-
-/* Status Badge */
-.status-badge {
-  padding: 6px 16px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.status-badge.new {
-  border: 1px solid rgb(100 181 246 / 50%);
-  color: #64b5f6;
-  background: rgb(100 181 246 / 20%);
-}
-
-.status-badge.inreview {
-  border: 1px solid rgb(255 193 7 / 50%);
-  color: #ffc107;
-  background: rgb(255 193 7 / 20%);
-}
-
-.status-badge.approved {
-  border: 1px solid rgb(76 175 80 / 50%);
-  color: #4caf50;
-  background: rgb(76 175 80 / 20%);
-}
-
-.status-badge.implemented {
-  border: 1px solid rgb(46 125 50 / 50%);
-  color: #2e7d32;
-  background: rgb(46 125 50 / 20%);
-}
-
-.status-badge.rejected {
-  border: 1px solid rgb(244 67 54 / 50%);
-  color: #f44336;
-  background: rgb(244 67 54 / 20%);
-}
-
-.status-badge.archived {
-  border: 1px solid rgb(158 158 158 / 50%);
-  color: #9e9e9e;
-  background: rgb(158 158 158 / 20%);
-}
-
-/* Visibility Badge */
-.visibility-badge {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-
-  padding: 6px 16px;
-  border-radius: 20px;
-
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.visibility-badge.team {
-  border: 1px solid rgb(255 159 67 / 50%);
-  color: #ff9f43;
-  background: rgb(255 159 67 / 20%);
-}
-
-.visibility-badge.department {
-  border: 1px solid rgb(78 205 196 / 50%);
-  color: #4ecdc4;
-  background: rgb(78 205 196 / 20%);
-}
-
-.visibility-badge.company {
-  border: 1px solid rgb(102 126 234 / 50%);
-  color: #667eea;
-  background: rgb(102 126 234 / 20%);
-}
-
-/* Content Sections */
 .content-section {
   margin-bottom: var(--spacing-8);
 }
@@ -214,77 +148,28 @@
 }
 
 .section-content {
+  /* Glassmorphism Container für Text */
+  padding: var(--spacing-4);
+  border: var(--glass-card-border);
+  border-radius: var(--glass-card-radius);
+
+  /* Text styling */
   line-height: 1.6;
   color: rgb(255 255 255 / 90%);
+
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-backdrop);
+  box-shadow: var(--glass-card-shadow);
 }
 
-/* Info Grid */
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-4);
-}
+/* ========================================
+   COMMENTS SECTION
+   ======================================== */
 
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.info-label {
-  font-size: 0.85rem;
-  color: rgb(255 255 255 / 50%);
-  text-transform: uppercase;
-}
-
-.info-value {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* Comments Section */
 .comments-section {
   margin-top: var(--spacing-8);
   padding-top: var(--spacing-8);
   border-top: 1px solid rgb(255 255 255 / 10%);
-}
-
-.comment-form {
-  display: flex;
-  gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
-}
-
-.comment-input {
-  resize: vertical;
-
-  flex: 1;
-
-  width: 100%;
-  min-height: 80px;
-  padding: var(--spacing-3);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-
-  transition: border-color 0.3s;
-}
-
-.comment-input:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
-}
-
-.comment-input::placeholder {
-  color: var(--color-text-placeholder);
 }
 
 .comment-list {
@@ -313,24 +198,8 @@
   align-items: center;
 }
 
-/* Use same avatar styling as header/sidebar */
-.comment-author .user-avatar {
-  width: 32px !important;
-  height: 32px !important;
-  border-radius: 50% !important;
-  object-fit: cover !important;
-}
-
-.comment-author .user-avatar.avatar-initials {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-
-  font-size: 0.85rem !important;
-  font-weight: 700 !important;
-  line-height: 1 !important;
-  color: #fff !important;
-}
+/* NOTE: Avatar styling is now provided by Design System avatar.css
+   Removed redundant .user-avatar and .avatar-initials styles (2025-01-14) */
 
 .comment-internal {
   border-color: rgb(255 182 107 / 30%);
@@ -348,7 +217,10 @@
   background: rgb(255 182 107 / 20%);
 }
 
-/* Attachments */
+/* ========================================
+   ATTACHMENTS
+   ======================================== */
+
 .attachment-list {
   display: flex;
   flex-direction: column;
@@ -374,7 +246,10 @@
   background: rgb(255 255 255 / 5%);
 }
 
-/* Photo Gallery */
+/* ========================================
+   PHOTO GALLERY
+   ======================================== */
+
 .photo-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -422,7 +297,10 @@
   background: rgb(0 0 0 / 70%);
 }
 
-/* Lightbox */
+/* ========================================
+   LIGHTBOX
+   ======================================== */
+
 .lightbox {
   cursor: pointer;
 
@@ -466,386 +344,48 @@
   transform: scale(1.2);
 }
 
-/* Custom Dropdown Styles */
-.custom-dropdown {
-  position: relative;
-  z-index: 10;
+/* ========================================
+   SHARE MODAL SPECIFIC STYLES
+   ======================================== */
 
-  /* Höher als sidebar-card */
-  width: 100%;
-  margin-top: 8px;
-}
+/* NOTE: Choice cards now provided by Design System choice-card.base.css
+   Removed redundant .org-level-card styles (2025-01-14)
+   Use: .choice-group > .choice-card with .choice-card__input
+   Kept only domain-specific select styling below
 
-.dropdown-display {
-  cursor: pointer;
+   NOTE: Native .org-select was removed in favor of Design System custom dropdowns (2025-11-15) */
 
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* ========================================
+   ACTION BUTTONS CONTAINER
+   ======================================== */
 
-  padding: 8px 12px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  font-size: 0.9rem;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
-.dropdown-display:hover {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 8%);
-}
-
-.dropdown-display.active svg {
-  transform: rotate(180deg);
-}
-
-.dropdown-options {
-  position: absolute;
-  z-index: 999999;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
-  transform: translateY(-10px);
-
-  overflow-y: auto;
-
-  max-height: 200px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  visibility: hidden;
-  opacity: 0%;
-  background: rgb(18 18 18 / 98%);
-  box-shadow: var(--shadow-sm);
-}
-
-.dropdown-options.active {
-  z-index: 99999 !important;
-
-  /* Sicherstellen, dass es über allem ist */
-  transform: translateY(0);
-  visibility: visible;
-  opacity: 100%;
-}
-
-.dropdown-option {
-  cursor: pointer;
-
-  padding: 10px 12px;
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-
-  font-size: 0.9rem;
-  color: var(--text-primary);
-}
-
-.dropdown-option:last-child {
-  border-bottom: none;
-}
-
-/* Scrollbar Styles */
-.dropdown-options::-webkit-scrollbar {
-  width: 6px;
-}
-
-.dropdown-options::-webkit-scrollbar-track {
-  background: rgb(255 255 255 / 2%);
-}
-
-.dropdown-options::-webkit-scrollbar-thumb {
-  border-radius: 3px;
-  background: rgb(255 255 255 / 20%);
-}
-
-.dropdown-options::-webkit-scrollbar-thumb:hover {
-  background: rgb(255 255 255 / 30%);
-}
-
-/* Action Buttons */
 .action-buttons {
-  display: grid;
+  display: inline-grid;
   gap: var(--spacing-4);
   margin-top: var(--spacing-6);
 }
 
-/* Button base - Using Design System */
+/* ========================================
+   SHARE INFO
+   ======================================== */
 
-.btn:hover {
-  transform: translateY(-2px);
-  background: rgb(255 255 255 / 10%);
+.share-info {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
 }
 
-.btn-primary {
-  border-color: var(--primary-color);
-  color: #fff;
-  background: var(--primary-color);
+.share-info > i {
+  font-size: 0.875rem;
+  color: #666;
 }
 
-.btn-primary:hover {
-  border-color: var(--primary-dark);
-  background: var(--primary-dark);
-}
+/* ========================================
+   RESPONSIVE
+   ======================================== */
 
-/* Responsive */
-@media (width <=768px) {
+@media (width <= 768px) {
   .detail-container {
     grid-template-columns: 1fr;
   }
-}
-
-/* ========================================
-   Second Style Block - Modal & Share Styles
-   ======================================== */
-
-.modal {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  left: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-
-  background-color: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(10px);
-
-  animation: fade-in 0.3s ease-out;
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0%;
-  }
-
-  to {
-    opacity: 100%;
-  }
-}
-
-.modal-content {
-  overflow-y: auto;
-
-  width: 90%;
-  max-width: 500px;
-  max-height: 80vh;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-
-  background: hsl(0deg 0% 8.2% / 84%);
-  backdrop-filter: blur(20px) saturate(500%);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 50%);
-
-  animation: slide-up 0.3s ease-out;
-}
-
-@keyframes slide-up {
-  from {
-    transform: translateY(20px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: 24px;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.modal-header h2 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.close-btn {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: none;
-
-  font-size: 1.5rem;
-  color: rgb(255 255 255 / 60%);
-
-  background: transparent;
-
-  transition: color 0.2s;
-}
-
-.close-btn:hover {
-  color: #fff;
-}
-
-.modal-body {
-  padding: 24px;
-  color: rgb(255 255 255 / 90%);
-}
-
-.modal-body p {
-  margin-bottom: 20px;
-  color: rgb(255 255 255 / 80%);
-}
-
-.modal-footer {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-
-  padding: 20px 24px;
-  border-top: 1px solid rgb(255 255 255 / 10%);
-}
-
-.org-level-selector {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.org-level-option {
-  cursor: pointer;
-  display: block;
-}
-
-.org-level-card {
-  padding: 15px;
-  border: 2px solid rgb(255 255 255 / 10%);
-  border-radius: 8px;
-
-  background: rgb(255 255 255 / 5%);
-
-  transition: all 0.3s;
-}
-
-.org-level-option input[type="radio"] {
-  display: none;
-}
-
-.org-level-option input[type="radio"]:checked + .org-level-card {
-  border-color: #00d4ff;
-  background: rgb(0 212 255 / 10%);
-  box-shadow: 0 0 20px rgb(0 212 255 / 20%);
-}
-
-.org-level-card h3 {
-  margin: 0 0 5px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.org-level-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  color: rgb(255 255 255 / 70%);
-}
-
-.org-select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: var(--radius-xl);
-
-  color: #fff;
-
-  background: rgb(255 255 255 / 10%);
-
-  transition: all 0.2s;
-}
-
-.org-select:focus {
-  border-color: #00d4ff;
-  background: rgb(255 255 255 / 15%);
-  outline: none;
-}
-
-.org-select option {
-  color: #fff;
-  background: #1a1a1a;
-}
-
-/* Button Styles matching Create KVP Modal - Duplicate removed (first defined at line 593) */
-/* .btn {
-  cursor: pointer;
-
-  padding: 10px 24px;
-  border: none;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 600;
-
-  transition: all 0.3s ease;
-} */
-
-/* Button variants - Duplicates removed (first defined at lines 611-627) */
-/* .btn-primary {
-  color: #fff;
-  background: linear-gradient(135deg, #00d4ff 0%, #09c 100%);
-  box-shadow: 0 4px 15px rgb(0 212 255 / 30%);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgb(0 212 255 / 40%);
-}
-
-.btn-secondary {
-  border: 1px solid rgb(255 255 255 / 20%);
-  color: rgb(255 255 255 / 90%);
-  background: rgb(255 255 255 / 10%);
-}
-
-.btn-secondary:hover {
-  border-color: rgb(255 255 255 / 30%);
-  background: rgb(255 255 255 / 15%);
-} */
-
-/* ========================================
-   CSS Classes for Inline Styles
-   ======================================== */
-
-/* Hidden elements */
-.hidden {
-  display: none;
-}
-
-/* Modal styles */
-.modal-content-medium {
-  max-width: 500px;
-}
-
-/* Form and selector margins */
-.mt-3 {
-  margin-top: 20px;
-}
-
-.mt-2 {
-  margin-top: 10px;
-}
-
-/* Initially hidden selectors */
-.org-select-hidden {
-  display: none;
-  margin-top: 10px;
 }

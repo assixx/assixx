@@ -8,37 +8,17 @@
  */
 import { Request, Router } from 'express';
 import multer from 'multer';
-import path from 'path';
 
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
-import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as kvpController from './kvp.controller.js';
 import { kvpValidationZod } from './kvp.validation.zod.js';
 
 const router = Router();
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination(
-    _req: Request,
-    _file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void,
-  ) {
-    const uploadDir = getUploadDirectory('kvp');
-    cb(null, uploadDir);
-  },
-  filename(
-    _req: Request,
-    file: Express.Multer.File,
-    cb: (error: Error | null, filename: string) => void,
-  ) {
-    const sanitized = sanitizeFilename(file.originalname);
-    const ext = path.extname(sanitized);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, uniqueSuffix + ext);
-  },
-});
+// Configure multer for file uploads (using memory storage like document-explorer)
+// Files are stored in memory first, then written to disk with organized directory structure
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -930,20 +910,21 @@ router.post(
 
 /**
 
- * /api/v2/kvp/attachments/\{attachmentId\}/download:
+ * /api/v2/kvp/attachments/\{fileUuid\}/download:
  *   get:
  *     summary: Download KVP attachment
- *     description: Download a specific attachment file
+ *     description: Download a specific attachment file using UUID (secure, non-guessable identifier)
  *     tags: [KVP v2]
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: attachmentId
+ *         name: fileUuid
  *         required: true
  *         schema:
- *           type: integer
- *         description: Attachment ID
+ *           type: string
+ *           format: uuid
+ *         description: File UUID (prevents enumeration attacks)
  *     responses:
  *       200:
  *         description: File download
@@ -958,9 +939,9 @@ router.post(
  *         $ref: '#/components/responses/NotFoundError'
  */
 router.get(
-  '/attachments/:attachmentId/download',
+  '/attachments/:fileUuid/download',
   authenticateV2,
-  kvpValidationZod.attachmentId,
+  kvpValidationZod.fileUuid,
   typed.auth(kvpController.downloadAttachment),
 );
 

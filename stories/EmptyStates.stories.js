@@ -6,42 +6,42 @@
  */
 
 export default {
-  title: "Design System/Empty States",
-  tags: ["autodocs"],
+  title: 'Design System/Empty States',
+  tags: ['autodocs'],
 
   parameters: {
-    layout: "centered"
+    layout: 'centered',
   },
 
   argTypes: {
     icon: {
-      control: "text",
-      description: "FontAwesome icon class",
+      control: 'text',
+      description: 'FontAwesome icon class',
     },
     title: {
-      control: "text",
-      description: "Empty state title",
+      control: 'text',
+      description: 'Empty state title',
     },
     description: {
-      control: "text",
-      description: "Empty state description",
+      control: 'text',
+      description: 'Empty state description',
     },
     buttonText: {
-      control: "text",
-      description: "Action button text",
+      control: 'text',
+      description: 'Action button text',
     },
     size: {
-      control: "select",
-      options: ["sm", "md", "lg"],
-      description: "Empty state size",
+      control: 'select',
+      options: ['sm', 'md', 'lg'],
+      description: 'Empty state size',
     },
   },
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -49,18 +49,18 @@ export default {
  */
 export const BasicEmpty = {
   args: {
-    icon: "fa-inbox",
-    title: "No items found",
-    description: "Get started by creating your first item.",
-    buttonText: "Create Item",
-    size: "md",
+    icon: 'fa-inbox',
+    title: 'No items found',
+    description: 'Get started by creating your first item.',
+    buttonText: 'Create Item',
+    size: 'md',
   },
   render: (args) => {
-    const wrapper = document.createElement("div");
-    wrapper.style.width = "600px";
-    wrapper.style.minHeight = "400px";
+    const wrapper = document.createElement('div');
+    wrapper.style.width = '600px';
+    wrapper.style.minHeight = '400px';
 
-    const sizeClass = args.size !== "md" ? `empty-state--${args.size}` : "";
+    const sizeClass = args.size !== 'md' ? `empty-state--${args.size}` : '';
 
     wrapper.innerHTML = `
       <div class="empty-state ${sizeClass}">
@@ -69,7 +69,7 @@ export const BasicEmpty = {
         </div>
         <h3 class="empty-state__title">${args.title}</h3>
         <p class="empty-state__description">${args.description}</p>
-        ${args.buttonText ? `<button class="btn btn-primary">${args.buttonText}</button>` : ""}
+        ${args.buttonText ? `<button class="btn btn-primary">${args.buttonText}</button>` : ''}
       </div>
     `;
 
@@ -82,7 +82,7 @@ export const BasicEmpty = {
  */
 export const CommonUseCases = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
         <!-- No Users -->
@@ -116,7 +116,7 @@ export const CommonUseCases = {
           </div>
           <h3 class="empty-state__title">No results found</h3>
           <p class="empty-state__description">Try adjusting your search or filter criteria.</p>
-          <button class="btn btn-secondary btn-sm">Clear Filters</button>
+          <button class="btn btn-cancel btn-sm">Clear Filters</button>
         </div>
 
         <!-- No Notifications -->
@@ -133,7 +133,7 @@ export const CommonUseCases = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };
 
@@ -142,7 +142,7 @@ export const CommonUseCases = {
  */
 export const SizeVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 2rem;">
         <div>
@@ -185,7 +185,7 @@ export const SizeVariants = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };
 
@@ -194,7 +194,7 @@ export const SizeVariants = {
  */
 export const SemanticVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem;">
         <!-- Default (Gray) -->
@@ -248,7 +248,7 @@ export const SemanticVariants = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };
 
@@ -257,7 +257,7 @@ export const SemanticVariants = {
  */
 export const StyleVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 2rem;">
         <div>
@@ -298,7 +298,7 @@ export const StyleVariants = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };
 
@@ -307,7 +307,7 @@ export const StyleVariants = {
  */
 export const WithActions = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div class="empty-state empty-state--bordered" style="max-width: 600px;">
         <div class="empty-state__icon">
@@ -320,7 +320,7 @@ export const WithActions = {
           <button class="btn btn-primary">
             <i class="fas fa-plus"></i> New Project
           </button>
-          <button class="btn btn-secondary">
+          <button class="btn btn-cancel">
             <i class="fas fa-upload"></i> Import
           </button>
         </div>
@@ -340,7 +340,7 @@ export const WithActions = {
  */
 export const InTable = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 800px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -376,7 +376,7 @@ export const InTable = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };
 
@@ -385,7 +385,7 @@ export const InTable = {
  */
 export const DocumentManagement = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 900px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
@@ -409,7 +409,7 @@ export const DocumentManagement = {
             <button class="btn btn-primary">
               <i class="fas fa-upload"></i> Upload Document
             </button>
-            <button class="btn btn-secondary">
+            <button class="btn btn-cancel">
               <i class="fas fa-folder"></i> Browse Templates
             </button>
           </div>
@@ -424,7 +424,7 @@ export const DocumentManagement = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };
 
@@ -433,7 +433,7 @@ export const DocumentManagement = {
  */
 export const SearchResults = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="max-width: 700px;">
         <div style="margin-bottom: 1.5rem;">
@@ -454,8 +454,8 @@ export const SearchResults = {
           <p class="empty-state__description">Try different keywords or check your spelling. You can also browse all items below.</p>
 
           <div class="empty-state__actions">
-            <button class="btn btn-secondary btn-sm">Clear Search</button>
-            <button class="btn btn-secondary btn-sm">Browse All</button>
+            <button class="btn btn-cancel btn-sm">Clear Search</button>
+            <button class="btn btn-cancel btn-sm">Browse All</button>
           </div>
         </div>
       </div>
@@ -464,7 +464,7 @@ export const SearchResults = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };
 
@@ -473,7 +473,7 @@ export const SearchResults = {
  */
 export const AllVariants = {
   render: () => {
-    const wrapper = document.createElement("div");
+    const wrapper = document.createElement('div');
     wrapper.innerHTML = `
       <div style="display: flex; flex-direction: column; gap: 3rem;">
         <!-- Sizes -->
@@ -549,6 +549,6 @@ export const AllVariants = {
     return wrapper;
   },
   parameters: {
-    layout: "padded",
+    layout: 'padded',
   },
 };

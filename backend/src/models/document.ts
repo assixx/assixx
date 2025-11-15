@@ -662,8 +662,15 @@ export async function findDocumentsByEmployeeWithAccess(
   logger.info(`Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`);
 
   // NEW: Clean structure with access_scope (refactored 2025-01-10)
+  // IMPORTANT: Exclude file_content from SELECT for performance (only load for downloads)
   const baseQuery = `
-    SELECT DISTINCT d.*,
+    SELECT DISTINCT d.id, d.file_uuid, d.version, d.parent_version_id, d.tenant_id,
+      d.access_scope, d.owner_user_id, d.target_team_id, d.target_department_id,
+      d.salary_year, d.salary_month, d.category,
+      d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
+      d.mime_type, d.description, d.tags, d.is_public, d.expires_at,
+      d.is_archived, d.archived_at, d.storage_type,
+      d.created_by, d.uploaded_at,
       u.first_name, u.last_name,
       CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
       uploader.first_name AS uploader_first_name,
@@ -825,8 +832,15 @@ export async function findDocumentsWithFilters(
   filters: DocumentFilters,
 ): Promise<{ documents: DbDocument[]; total: number }> {
   // NEW: Join on owner_user_id (refactored 2025-01-10)
+  // IMPORTANT: Exclude file_content from SELECT for performance (only load for downloads)
   const baseQuery = `
-      SELECT d.*,
+      SELECT d.id, d.file_uuid, d.version, d.parent_version_id, d.tenant_id,
+             d.access_scope, d.owner_user_id, d.target_team_id, d.target_department_id,
+             d.salary_year, d.salary_month, d.category,
+             d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
+             d.mime_type, d.description, d.tags, d.is_public, d.expires_at,
+             d.is_archived, d.archived_at, d.storage_type,
+             d.created_by, d.uploaded_at,
              u.first_name, u.last_name,
              CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
              uploader.first_name AS uploader_first_name,

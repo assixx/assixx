@@ -315,7 +315,7 @@ async function loadAdmins(): Promise<void> {
                     }
                 </td>
                 <td>
-                    <button class="btn-delete" data-id="${admin.id}">🗑️</button>
+                    <button class="btn-cancel" data-id="${admin.id}">🗑️</button>
                 </td>
             </tr>
         `,
@@ -336,7 +336,7 @@ async function loadAdmins(): Promise<void> {
     });
 
     // Event-Listener für Delete Buttons
-    tbody.querySelectorAll('.btn-delete').forEach((button) => {
+    tbody.querySelectorAll('.btn-cancel').forEach((button) => {
       button.addEventListener('click', () => {
         if (button instanceof HTMLElement) {
           const adminId = Number.parseInt(button.dataset.id ?? '0', 10);
@@ -540,7 +540,7 @@ function getActionBadgeClass(action: string): string {
     ['role_switch_to_employee', 'info'],
     ['role_switch_root_to_admin', 'info'],
   ]);
-  return actionClasses.get(action) ?? 'secondary';
+  return actionClasses.get(action) ?? 'info';
 }
 
 // Helper function to get readable userRole labels

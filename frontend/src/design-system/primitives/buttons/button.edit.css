@@ -15,7 +15,6 @@
 
   /* Colors */
   color: var(--color-white);
-
   background: linear-gradient(
     145deg,
     rgb(251 191 36 / 11%),
@@ -23,14 +22,12 @@
   ); /* Yellow-400 to Yellow-500 - subtle */
 
   /* Shadow */
-  box-shadow: var(--shadow-btn-edit, 0 2px 8px rgb(251 191 36 / 30%));
 }
 
 /* Hover State - Brighten the gradient */
 .btn-edit:hover:not(:disabled) {
   color: var(--color-white);
   background: linear-gradient(145deg, rgb(251 191 36 / 18%), rgb(245 158 11 / 25%)); /* Intensiver */
-  box-shadow: var(--shadow-btn-edit-hover, 0 4px 12px rgb(251 191 36 / 40%));
 }
 
 /* Active/Pressed State */

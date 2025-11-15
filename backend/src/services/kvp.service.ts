@@ -97,7 +97,7 @@ interface Suggestion {
   title: string;
   description: string;
   category_id: number;
-  org_level: 'company' | 'department' | 'team';
+  org_level: 'company' | 'department' | 'area' | 'team';
   org_id: number;
   submitted_by: number;
   priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -205,14 +205,14 @@ class KvpService {
   // These should be added in a refactoring step:
 
   /**
-   * Get all categories for a tenant
-   * @param tenantId - The tenant ID
+   * Get all categories (categories are global, not tenant-specific)
+   * @param tenantId - The tenant ID (used only for backward compatibility in response)
    */
   async getCategories(tenantId: number): Promise<Category[]> {
     try {
-      // Categories are global, no tenant filtering needed
+      // Categories are global (not tenant-specific) - all tenants share the same categories
       const categories = await kvpModel.getCategories();
-      // Add tenant_id to match the Category interface expectation
+      // Add tenant_id to match the Category interface expectation for backward compatibility
       // DbCategory extends RowDataPacket which has index signature, ESLint sees this as unsafe
       // but we know the types are correct from the database schema definition
 
@@ -223,7 +223,7 @@ class KvpService {
           description: cat.description,
           color: cat.color,
           icon: cat.icon,
-          tenant_id: tenantId,
+          tenant_id: tenantId, // Categories are global, but we add tenant_id for API compatibility
         }),
       );
     } catch (error: unknown) {

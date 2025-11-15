@@ -29,7 +29,6 @@
 
 /* Hover state - Slightly darker gradient */
 .btn-upload:hover:not(:disabled) {
-  transform: translateY(-1px);
   background: linear-gradient(135deg, var(--color-primary-hover), var(--color-blue-800));
 }
 
@@ -68,5 +67,5 @@
  * WHEN NOT TO USE:
  * ❌ Non-upload actions (use .btn-primary)
  * ❌ Destructive actions (use .btn-danger)
- * ❌ Cancel/back actions (use .btn-secondary)
+ * ❌ Cancel/back actions (use .btn-cancel)
  */

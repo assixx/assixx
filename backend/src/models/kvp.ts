@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * KVP (Kontinuierlicher Verbesserungsprozess) Model
  * Handles all database operations for the KVP system
@@ -7,6 +8,7 @@ import * as fs from 'fs/promises';
 import * as mysql from 'mysql2/promise';
 import { Connection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import * as path from 'path';
+import { v7 as uuidv7 } from 'uuid';
 
 // Get project root directory
 const projectRoot = process.cwd();
@@ -25,6 +27,7 @@ const dbConfig: mysql.ConnectionOptions = {
 // Database interfaces
 export interface DbCategory extends RowDataPacket {
   id: number;
+  tenant_id: number;
   name: string;
   description?: string;
   color?: string;
@@ -33,11 +36,12 @@ export interface DbCategory extends RowDataPacket {
 
 interface DbSuggestion extends RowDataPacket {
   id: number;
+  uuid: string; // NEW: External UUIDv7 identifier
   tenant_id: number;
   title: string;
   description: string;
   category_id: number;
-  org_level: 'company' | 'department' | 'team';
+  org_level: 'company' | 'department' | 'area' | 'team';
   org_id: number;
   submitted_by: number;
   priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -48,10 +52,13 @@ interface DbSuggestion extends RowDataPacket {
   actual_savings?: number;
   created_at: Date;
   updated_at: Date;
+  uuid_created_at?: Date; // NEW: Track when UUID was generated
   // Extended fields from joins
   category_name?: string;
   category_color?: string;
   category_icon?: string;
+  department_name?: string; // NEW: Department name from JOIN
+  team_name?: string; // NEW: Team name from JOIN
   submitted_by_name?: string;
   submitted_by_lastname?: string;
   submitted_by_email?: string;
@@ -64,6 +71,7 @@ interface DbSuggestion extends RowDataPacket {
 
 interface DbAttachment extends RowDataPacket {
   id: number;
+  file_uuid: string; // NEW: Secure UUID for downloads (prevents enumeration attacks)
   suggestion_id: number;
   file_name: string;
   file_path: string;
@@ -111,6 +119,7 @@ interface DashboardStatsResult extends RowDataPacket {
 interface UserOrgInfoResult extends RowDataPacket {
   team_id: number | null;
   department_id: number | null;
+  area_id: number | null;
 }
 
 interface DbDashboardStats extends RowDataPacket {
@@ -129,7 +138,7 @@ interface SuggestionCreateData {
   description: string;
   category_id: number;
   department_id?: number | null;
-  org_level: 'company' | 'department' | 'team';
+  org_level: 'company' | 'department' | 'area' | 'team';
   org_id: number;
   submitted_by: number;
   team_id?: number | null;
@@ -163,14 +172,18 @@ async function getConnection(): Promise<Connection> {
   }
 }
 
-// Get all categories (global - no tenant filtering)
+// Get all categories (categories are global, not tenant-specific)
 export async function getKvpCategories(): Promise<DbCategory[]> {
   const connection = await getConnection();
   try {
     const [rows] = await connection.execute<DbCategory[]>(
-      'SELECT * FROM kvp_categories ORDER BY name ASC',
+      'SELECT * FROM global.kvp_categories ORDER BY name ASC',
     );
     return rows;
+  } catch (error: unknown) {
+    // Log detailed error internally, but throw generic error to prevent info leakage
+    console.error('[KVP Model] Database error in getKvpCategories:', error);
+    throw new Error('Failed to fetch categories from database');
   } finally {
     await connection.end();
   }
@@ -179,13 +192,17 @@ export async function getKvpCategories(): Promise<DbCategory[]> {
 // Create new suggestion
 export async function createKvpSuggestion(
   data: SuggestionCreateData,
-): Promise<SuggestionCreateData & { id: number }> {
+): Promise<SuggestionCreateData & { id: number; uuid: string }> {
   const connection = await getConnection();
   try {
     console.info('[KVP Model] Received data:', JSON.stringify(data));
     console.info('[KVP Model] department_id value:', data.department_id);
 
+    // Generate UUIDv7 for external identifier (secure, time-sortable)
+    const uuid = uuidv7();
+
     const values = [
+      uuid, // NEW: Add UUID as first value
       data.tenant_id,
       data.title,
       data.description,
@@ -200,32 +217,36 @@ export async function createKvpSuggestion(
       data.estimated_cost ?? null,
     ];
 
-    console.info('[KVP Model] SQL VALUES:', values);
+    console.info('[KVP Model] SQL VALUES (with UUID):', values);
     const [result] = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO kvp_suggestions
-        (tenant_id, title, description, category_id, department_id, org_level, org_id, submitted_by, team_id, priority, expected_benefit, estimated_cost)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (uuid, tenant_id, title, description, category_id, department_id, org_level, org_id, is_shared, submitted_by, team_id, priority, expected_benefit, estimated_cost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, FALSE, ?, ?, ?, ?, ?)
       `,
       values,
     );
 
-    return { id: result.insertId, ...data };
+    return { id: result.insertId, uuid, ...data };
+  } catch (error: unknown) {
+    console.error('[KVP Model] Database error in createKvpSuggestion:', error);
+    throw new Error('Failed to create suggestion in database');
   } finally {
     await connection.end();
   }
 }
 
-// Helper function to get user team and department info
+// Helper function to get user team, department, and area info
 async function getUserOrgInfo(
   connection: Connection,
   userId: number,
   tenantId: number,
-): Promise<{ teamId: number | null; departmentId: number | null }> {
+): Promise<{ teamId: number | null; departmentId: number | null; areaId: number | null }> {
   const [userInfo] = await connection.execute<UserOrgInfoResult[]>(
-    `SELECT ut.team_id, u.department_id
+    `SELECT ut.team_id, u.department_id, d.area_id
      FROM users u
      LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+     LEFT JOIN departments d ON u.department_id = d.id AND d.tenant_id = u.tenant_id
      WHERE u.id = ? AND u.tenant_id = ?`,
     [userId, tenantId],
   );
@@ -234,34 +255,75 @@ async function getUserOrgInfo(
     return {
       teamId: userInfo[0].team_id,
       departmentId: userInfo[0].department_id,
+      areaId: userInfo[0].area_id,
     };
   }
 
-  return { teamId: null, departmentId: null };
+  return { teamId: null, departmentId: null, areaId: null };
 }
 
 // Build visibility conditions for employee role
-function buildEmployeeVisibilityConditions(
+// NEW: Respects is_shared flag - private KVPs only visible to creator + team_leader
+async function buildEmployeeVisibilityConditions(
+  connection: Connection,
   userId: number,
   userTeamId: number | null,
   userDepartmentId: number | null,
-): { conditions: string; params: unknown[] } {
-  let conditions = '(s.submitted_by = ? OR s.status = "implemented"';
-  const params: unknown[] = [userId];
+  userAreaId: number | null,
+  tenantId: number,
+): Promise<{ conditions: string; params: unknown[] }> {
+  const params: unknown[] = [];
+  const conditions: string[] = [];
+
+  // Always can see own suggestions
+  conditions.push('s.submitted_by = ?');
+  params.push(userId);
+
+  // Always can see implemented suggestions
+  conditions.push('s.status = "implemented"');
+
+  // Check if user is a team leader for any teams
+  const [teamLeaderCheck] = await connection.execute<RowDataPacket[]>(
+    'SELECT id FROM teams WHERE team_lead_id = ? AND tenant_id = ?',
+    [userId, tenantId],
+  );
+
+  if (teamLeaderCheck.length > 0) {
+    // User is a team leader - can see private KVPs from their team members
+    const teamIds = teamLeaderCheck.map((row: RowDataPacket) => row.id as number);
+    const placeholders = teamIds.map(() => '?').join(',');
+    conditions.push(`(s.is_shared = FALSE AND s.team_id IN (${placeholders}))`);
+    params.push(...(teamIds as unknown[]));
+  }
+
+  // For shared KVPs, use org_level visibility
+  let sharedConditions = '(s.is_shared = TRUE AND (';
+  const sharedParams: unknown[] = [];
 
   if (userTeamId !== null) {
-    conditions += ' OR (s.org_level = "team" AND s.org_id = ?)';
-    params.push(userTeamId);
+    sharedConditions += 's.org_level = "team" AND s.org_id = ? OR ';
+    sharedParams.push(userTeamId);
   }
 
   if (userDepartmentId !== null) {
-    conditions += ' OR (s.org_level = "department" AND s.org_id = ?)';
-    params.push(userDepartmentId);
+    sharedConditions += 's.org_level = "department" AND s.org_id = ? OR ';
+    sharedParams.push(userDepartmentId);
   }
 
-  conditions += ' OR s.org_level = "company")';
+  if (userAreaId !== null) {
+    sharedConditions += 's.org_level = "area" AND s.org_id = ? OR ';
+    sharedParams.push(userAreaId);
+  }
 
-  return { conditions, params };
+  sharedConditions += 's.org_level = "company"))';
+
+  conditions.push(sharedConditions);
+  params.push(...sharedParams);
+
+  return {
+    conditions: '(' + conditions.join(' OR ') + ')',
+    params,
+  };
 }
 
 // Apply search filters to query
@@ -311,7 +373,7 @@ export async function getKvpSuggestions(
           c.name as category_name,
           c.color as category_color,
           c.icon as category_icon,
-          d.name as department_name,
+          COALESCE(d.name, td.name) as department_name,
           t.name as team_name,
           u.first_name as submitted_by_name,
           u.last_name as submitted_by_lastname,
@@ -321,9 +383,10 @@ export async function getKvpSuggestions(
           (SELECT COUNT(*) FROM kvp_comments WHERE suggestion_id = s.id) as comment_count,
           (SELECT AVG(rating) FROM kvp_ratings WHERE suggestion_id = s.id) as avg_rating
         FROM kvp_suggestions s
-        LEFT JOIN kvp_categories c ON s.category_id = c.id
+        LEFT JOIN global.kvp_categories c ON s.category_id = c.id
         LEFT JOIN departments d ON s.department_id = d.id
         LEFT JOIN teams t ON s.team_id = t.id
+        LEFT JOIN departments td ON t.department_id = td.id
         LEFT JOIN users u ON s.submitted_by = u.id
         LEFT JOIN users admin ON s.assigned_to = admin.id
         WHERE s.tenant_id = ?
@@ -333,8 +396,15 @@ export async function getKvpSuggestions(
 
     // Handle employee visibility restrictions
     if (userRole === 'employee') {
-      const { teamId, departmentId } = await getUserOrgInfo(connection, userId, tenantId);
-      const visibility = buildEmployeeVisibilityConditions(userId, teamId, departmentId);
+      const { teamId, departmentId, areaId } = await getUserOrgInfo(connection, userId, tenantId);
+      const visibility = await buildEmployeeVisibilityConditions(
+        connection,
+        userId,
+        teamId,
+        departmentId,
+        areaId,
+        tenantId,
+      );
       query += ' AND ' + visibility.conditions;
       params = [...params, ...visibility.params];
     }
@@ -345,12 +415,129 @@ export async function getKvpSuggestions(
 
     const [rows] = await connection.execute<DbSuggestion[]>(filtered.query, filtered.params);
     return rows;
+  } catch (error: unknown) {
+    console.error('[KVP Model] Database error in getKvpSuggestions:', error);
+    throw new Error('Failed to fetch suggestions from database');
   } finally {
     await connection.end();
   }
 }
 
-// Get single suggestion by ID
+// Get single suggestion by UUID (NEW - secure external identifier)
+/**
+ * Build the base query for fetching a suggestion with all related data
+ */
+function buildSuggestionQuery(whereClause: string): string {
+  return `
+    SELECT
+      s.*,
+      c.name as category_name,
+      c.color as category_color,
+      c.icon as category_icon,
+      COALESCE(d.name, td.name) as department_name,
+      t.name as team_name,
+      u.first_name as submitted_by_name,
+      u.last_name as submitted_by_lastname,
+      u.email as submitted_by_email,
+      admin.first_name as assigned_to_name,
+      admin.last_name as assigned_to_lastname
+    FROM kvp_suggestions s
+    LEFT JOIN global.kvp_categories c ON s.category_id = c.id
+    LEFT JOIN departments d ON s.department_id = d.id
+    LEFT JOIN teams t ON s.team_id = t.id
+    LEFT JOIN departments td ON t.department_id = td.id
+    LEFT JOIN users u ON s.submitted_by = u.id
+    LEFT JOIN users admin ON s.assigned_to = admin.id
+    WHERE ${whereClause}
+  `;
+}
+
+/**
+ * Build employee visibility query additions
+ */
+async function buildEmployeeVisibility(
+  connection: Connection,
+  userId: number,
+  tenantId: number,
+  userTeamId: number | null,
+  userDepartmentId: number | null,
+): Promise<{ conditions: string; params: unknown[] }> {
+  const conditions: string[] = [];
+  const visParams: unknown[] = [];
+
+  // Always can see own suggestions and implemented ones
+  conditions.push('s.submitted_by = ?');
+  visParams.push(userId);
+  conditions.push('s.status = "implemented"');
+
+  // Check if user is team leader
+  const [teamLeaderCheck] = await connection.execute<RowDataPacket[]>(
+    'SELECT id FROM teams WHERE team_lead_id = ? AND tenant_id = ?',
+    [userId, tenantId],
+  );
+
+  if (teamLeaderCheck.length > 0) {
+    const teamIds = teamLeaderCheck.map((row: RowDataPacket) => row.id as number);
+    const placeholders = teamIds.map(() => '?').join(',');
+    conditions.push(`(s.is_shared = FALSE AND s.team_id IN (${placeholders}))`);
+    visParams.push(...teamIds);
+  }
+
+  // For shared KVPs
+  let sharedConditions = '(s.is_shared = TRUE AND (';
+  if (userTeamId !== null) {
+    sharedConditions += 's.org_level = "team" AND s.org_id = ? OR ';
+    visParams.push(userTeamId);
+  }
+  if (userDepartmentId !== null) {
+    sharedConditions += 's.org_level = "department" AND s.org_id = ? OR ';
+    visParams.push(userDepartmentId);
+  }
+  sharedConditions += 's.org_level = "company"))';
+  conditions.push(sharedConditions);
+
+  return {
+    conditions: '(' + conditions.join(' OR ') + ')',
+    params: visParams,
+  };
+}
+
+export async function getKvpSuggestionByUuid(
+  uuid: string,
+  tenantId: number,
+  userId: number,
+  userRole: string,
+): Promise<DbSuggestion | null> {
+  const connection = await getConnection();
+  try {
+    let query = buildSuggestionQuery('s.uuid = ? AND s.tenant_id = ?');
+    const params: unknown[] = [uuid, tenantId];
+
+    // Handle employee visibility
+    if (userRole === 'employee') {
+      const { teamId, departmentId } = await getUserOrgInfo(connection, userId, tenantId);
+      const visibility = await buildEmployeeVisibility(
+        connection,
+        userId,
+        tenantId,
+        teamId,
+        departmentId,
+      );
+      query += ' AND ' + visibility.conditions;
+      params.push(...visibility.params);
+    }
+
+    const [rows] = await connection.execute<DbSuggestion[]>(query, params);
+    return rows[0] ?? null;
+  } catch (error: unknown) {
+    console.error('[KVP Model] Database error in getKvpSuggestionByUuid:', error);
+    throw new Error('Failed to fetch suggestion from database');
+  } finally {
+    await connection.end();
+  }
+}
+
+// Get single suggestion by ID (LEGACY - for backwards compatibility)
 export async function getKvpSuggestionById(
   id: number,
   tenantId: number,
@@ -359,75 +546,28 @@ export async function getKvpSuggestionById(
 ): Promise<DbSuggestion | null> {
   const connection = await getConnection();
   try {
-    // Get user's team membership first if employee
-    let userTeamId: number | null = null;
-    let userDepartmentId: number | null = null;
-
-    if (userRole === 'employee') {
-      const [userInfo] = await connection.execute<UserOrgInfoResult[]>(
-        `SELECT ut.team_id, u.department_id
-         FROM users u
-         LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
-         WHERE u.id = ? AND u.tenant_id = ?`,
-        [userId, tenantId],
-      );
-
-      if (userInfo.length > 0) {
-        userTeamId = userInfo[0].team_id;
-        userDepartmentId = userInfo[0].department_id;
-      }
-    }
-
-    let query = `
-        SELECT
-          s.*,
-          c.name as category_name,
-          c.color as category_color,
-          c.icon as category_icon,
-          d.name as department_name,
-          t.name as team_name,
-          u.first_name as submitted_by_name,
-          u.last_name as submitted_by_lastname,
-          u.email as submitted_by_email,
-          admin.first_name as assigned_to_name,
-          admin.last_name as assigned_to_lastname
-        FROM kvp_suggestions s
-        LEFT JOIN kvp_categories c ON s.category_id = c.id
-        LEFT JOIN departments d ON s.department_id = d.id
-        LEFT JOIN teams t ON s.team_id = t.id
-        LEFT JOIN users u ON s.submitted_by = u.id
-        LEFT JOIN users admin ON s.assigned_to = admin.id
-        WHERE s.id = ? AND s.tenant_id = ?
-      `;
-
+    let query = buildSuggestionQuery('s.id = ? AND s.tenant_id = ?');
     const params: unknown[] = [id, tenantId];
 
-    // If employee, allow access based on visibility rules
+    // Handle employee visibility
     if (userRole === 'employee') {
-      let visibilityConditions = '(s.submitted_by = ? OR s.status = "implemented"';
-      params.push(userId);
-
-      // Add team visibility
-      if (userTeamId !== null) {
-        visibilityConditions += ' OR (s.org_level = "team" AND s.org_id = ?)';
-        params.push(userTeamId);
-      }
-
-      // Add department visibility
-      if (userDepartmentId !== null) {
-        visibilityConditions += ' OR (s.org_level = "department" AND s.org_id = ?)';
-        params.push(userDepartmentId);
-      }
-
-      // Add company-wide visibility
-      visibilityConditions += ' OR s.org_level = "company"';
-
-      visibilityConditions += ')';
-      query += ' AND ' + visibilityConditions;
+      const { teamId, departmentId } = await getUserOrgInfo(connection, userId, tenantId);
+      const visibility = await buildEmployeeVisibility(
+        connection,
+        userId,
+        tenantId,
+        teamId,
+        departmentId,
+      );
+      query += ' AND ' + visibility.conditions;
+      params.push(...visibility.params);
     }
 
     const [rows] = await connection.execute<DbSuggestion[]>(query, params);
     return rows[0] ?? null;
+  } catch (error: unknown) {
+    console.error('[KVP Model] Database error in getKvpSuggestionById:', error);
+    throw new Error('Failed to fetch suggestion from database');
   } finally {
     await connection.end();
   }
@@ -435,7 +575,7 @@ export async function getKvpSuggestionById(
 
 // Update suggestion status (Admin only)
 export async function updateKvpSuggestionStatus(
-  id: number,
+  id: number | string,
   tenantId: number,
   status: string,
   userId: number,
@@ -445,9 +585,12 @@ export async function updateKvpSuggestionStatus(
   try {
     await connection.beginTransaction();
 
-    // Get current status for history
+    // Dual-ID support: Use uuid column for string IDs, id column for numeric IDs
+    const idColumn = typeof id === 'string' ? 'uuid' : 'id';
+
+    // Get current status and numeric ID for history
     const [currentRows] = await connection.execute<DbSuggestion[]>(
-      'SELECT status FROM kvp_suggestions WHERE id = ? AND tenant_id = ?',
+      `SELECT id, status FROM kvp_suggestions WHERE ${idColumn} = ? AND tenant_id = ?`,
       [id, tenantId],
     );
 
@@ -456,25 +599,26 @@ export async function updateKvpSuggestionStatus(
     }
 
     const oldStatus = currentRows[0].status;
+    const numericId = currentRows[0].id; // For foreign key in status_history table
 
     // Update suggestion
     const [result] = await connection.execute<ResultSetHeader>(
       `
         UPDATE kvp_suggestions
         SET status = ?, assigned_to = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ? AND tenant_id = ?
+        WHERE ${idColumn} = ? AND tenant_id = ?
       `,
       [status, userId, id, tenantId],
     );
 
-    // Add to history
+    // Add to history (uses numeric ID as foreign key)
     await connection.execute(
       `
         INSERT INTO kvp_status_history
         (suggestion_id, old_status, new_status, changed_by, change_reason)
         VALUES (?, ?, ?, ?, ?)
       `,
-      [id, oldStatus, status, userId, changeReason],
+      [numericId, oldStatus, status, userId, changeReason],
     );
 
     await connection.commit();
@@ -487,21 +631,41 @@ export async function updateKvpSuggestionStatus(
   }
 }
 
-// Add attachment to suggestion
+// Add attachment to suggestion with tenant verification
 export async function addKvpAttachment(
-  suggestionId: number,
+  suggestionId: number | string,
+  tenantId: number,
   fileData: FileData,
-): Promise<FileData & { id: number }> {
+  fileUuid: string, // NEW: UUID generated in controller (like document-explorer)
+): Promise<FileData & { id: number; file_uuid: string }> {
   const connection = await getConnection();
   try {
+    // Dual-ID support: Use uuid column for string IDs, id column for numeric IDs
+    const idColumn = typeof suggestionId === 'string' ? 'uuid' : 'id';
+
+    // Verify suggestion belongs to tenant and get numeric ID for foreign key
+    const [suggestionCheck] = await connection.execute<DbSuggestion[]>(
+      `SELECT id FROM kvp_suggestions WHERE ${idColumn} = ? AND tenant_id = ?`,
+      [suggestionId, tenantId],
+    );
+
+    if (suggestionCheck.length === 0) {
+      throw new Error('Suggestion not found or does not belong to tenant');
+    }
+
+    // Get numeric ID for foreign key in kvp_attachments table
+    const numericId = suggestionCheck[0].id;
+
+    // Insert attachment with UUID provided by controller (uses numeric ID for foreign key)
     const [result] = await connection.execute<ResultSetHeader>(
       `
         INSERT INTO kvp_attachments
-        (suggestion_id, file_name, file_path, file_type, file_size, uploaded_by)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (file_uuid, suggestion_id, file_name, file_path, file_type, file_size, uploaded_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       [
-        suggestionId,
+        fileUuid, // Use UUID from controller
+        numericId, // Use numeric ID for foreign key (not UUID parameter)
         fileData.file_name,
         fileData.file_path,
         fileData.file_type,
@@ -510,25 +674,29 @@ export async function addKvpAttachment(
       ],
     );
 
-    return { id: result.insertId, ...fileData };
+    return { id: result.insertId, file_uuid: fileUuid, ...fileData };
   } finally {
     await connection.end();
   }
 }
 
-// Get attachments for suggestion
-export async function getKvpAttachments(suggestionId: number): Promise<DbAttachment[]> {
+// Get attachments for suggestion with tenant verification
+export async function getKvpAttachments(
+  suggestionId: number,
+  tenantId: number,
+): Promise<DbAttachment[]> {
   const connection = await getConnection();
   try {
     const [rows] = await connection.execute<DbAttachment[]>(
       `
         SELECT a.*, u.first_name, u.last_name
         FROM kvp_attachments a
+        JOIN kvp_suggestions s ON a.suggestion_id = s.id
         LEFT JOIN users u ON a.uploaded_by = u.id
-        WHERE a.suggestion_id = ?
+        WHERE a.suggestion_id = ? AND s.tenant_id = ?
         ORDER BY a.uploaded_at DESC
       `,
-      [suggestionId],
+      [suggestionId, tenantId],
     );
 
     return rows;
@@ -563,15 +731,20 @@ export async function addKvpComment(
   }
 }
 
-// Get comments for suggestion
-export async function getKvpComments(suggestionId: number, userRole: string): Promise<DbComment[]> {
+// Get comments for suggestion with tenant verification
+export async function getKvpComments(
+  suggestionId: number,
+  tenantId: number,
+  userRole: string,
+): Promise<DbComment[]> {
   const connection = await getConnection();
   try {
     let query = `
         SELECT c.*, u.first_name, u.last_name, u.role
         FROM kvp_comments c
+        JOIN kvp_suggestions s ON c.suggestion_id = s.id
         LEFT JOIN users u ON c.user_id = u.id
-        WHERE c.suggestion_id = ?
+        WHERE c.suggestion_id = ? AND s.tenant_id = ?
       `;
 
     // Hide internal comments from employees
@@ -581,7 +754,7 @@ export async function getKvpComments(suggestionId: number, userRole: string): Pr
 
     query += ' ORDER BY c.created_at ASC';
 
-    const [rows] = await connection.execute<DbComment[]>(query, [suggestionId]);
+    const [rows] = await connection.execute<DbComment[]>(query, [suggestionId, tenantId]);
     return rows;
   } finally {
     await connection.end();
@@ -682,7 +855,7 @@ export async function getKvpDashboardStats(tenantId: number): Promise<DbDashboar
 
 // Update suggestion fields
 export async function updateKvpSuggestion(
-  id: number,
+  id: number | string,
   tenantId: number,
   updates: Partial<{
     title: string;
@@ -703,10 +876,13 @@ export async function updateKvpSuggestion(
     }
 
     const setClause = fields.map((field: string) => `${field} = ?`).join(', ');
+
+    // Dual-ID support: Use uuid column for string IDs, id column for numeric IDs
+    const idColumn = typeof id === 'string' ? 'uuid' : 'id';
     const values = [...Object.values(updates), id, tenantId];
 
     const [result] = await connection.execute<ResultSetHeader>(
-      `UPDATE kvp_suggestions SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND tenant_id = ?`,
+      `UPDATE kvp_suggestions SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE ${idColumn} = ? AND tenant_id = ?`,
       values,
     );
 
@@ -718,7 +894,7 @@ export async function updateKvpSuggestion(
 
 // Delete suggestion and all related data (only by owner)
 export async function deleteKvpSuggestion(
-  suggestionId: number,
+  suggestionId: number | string,
   tenantId: number,
   userId: number,
 ): Promise<boolean> {
@@ -726,11 +902,14 @@ export async function deleteKvpSuggestion(
   try {
     await connection.beginTransaction();
 
+    // Dual-ID support: Use uuid column for string IDs, id column for numeric IDs
+    const idColumn = typeof suggestionId === 'string' ? 'uuid' : 'id';
+
     // Verify ownership
     const [ownerCheck] = await connection.execute<DbSuggestion[]>(
       `
-        SELECT submitted_by FROM kvp_suggestions
-        WHERE id = ? AND tenant_id = ? AND submitted_by = ?
+        SELECT id, submitted_by FROM kvp_suggestions
+        WHERE ${idColumn} = ? AND tenant_id = ? AND submitted_by = ?
       `,
       [suggestionId, tenantId, userId],
     );
@@ -739,19 +918,22 @@ export async function deleteKvpSuggestion(
       throw new Error('Suggestion not found or not owned by user');
     }
 
+    // Get numeric ID for foreign key queries (attachments table uses numeric suggestion_id)
+    const numericId = ownerCheck[0].id;
+
     // Get all attachment file paths for deletion
     const [attachments] = await connection.execute<DbAttachment[]>(
       `
         SELECT file_path FROM kvp_attachments WHERE suggestion_id = ?
       `,
-      [suggestionId],
+      [numericId],
     );
 
     // Delete database records (cascading will handle related records)
-    await connection.execute('DELETE FROM kvp_suggestions WHERE id = ? AND tenant_id = ?', [
-      suggestionId,
-      tenantId,
-    ]);
+    await connection.execute(
+      `DELETE FROM kvp_suggestions WHERE ${idColumn} = ? AND tenant_id = ?`,
+      [suggestionId, tenantId],
+    );
 
     await connection.commit();
 
@@ -817,24 +999,24 @@ async function canEmployeeAccessAttachment(
   return false;
 }
 
-// Get single attachment with access verification
+// Get single attachment with access verification using UUID (secure downloads)
 export async function getKvpAttachment(
-  attachmentId: number,
+  fileUuid: string,
   tenantId: number,
   userId: number,
   userRole: string,
 ): Promise<DbAttachment | null> {
   const connection = await getConnection();
   try {
-    // Get attachment with full suggestion details
+    // Get attachment with full suggestion details using file_uuid (not ID for security)
     const [attachments] = await connection.execute<DbAttachment[]>(
       `
         SELECT a.*, s.submitted_by, s.tenant_id, s.org_level, s.org_id, s.status
         FROM kvp_attachments a
         JOIN kvp_suggestions s ON a.suggestion_id = s.id
-        WHERE a.id = ? AND s.tenant_id = ?
+        WHERE a.file_uuid = ? AND s.tenant_id = ?
       `,
-      [attachmentId, tenantId],
+      [fileUuid, tenantId],
     );
 
     if (attachments.length === 0) {
@@ -883,24 +1065,61 @@ export async function getKvpAttachment(
  * @param sharedBy - The user ID who is sharing
  */
 export async function updateSuggestionOrgLevel(
-  suggestionId: number,
+  suggestionId: number | string,
   tenantId: number,
-  orgLevel: 'company' | 'department' | 'team',
+  orgLevel: 'company' | 'department' | 'area' | 'team',
   orgId: number,
   sharedBy: number,
 ): Promise<void> {
   const conn = await getConnection();
 
   try {
+    // Dual-ID support: Use uuid column for string IDs, id column for numeric IDs
+    const idColumn = typeof suggestionId === 'string' ? 'uuid' : 'id';
+
     await conn.execute(
       `UPDATE kvp_suggestions
        SET org_level = ?,
            org_id = ?,
+           is_shared = TRUE,
            shared_by = ?,
            shared_at = NOW(),
            updated_at = NOW()
-       WHERE id = ? AND tenant_id = ?`,
+       WHERE ${idColumn} = ? AND tenant_id = ?`,
       [orgLevel, orgId, sharedBy, suggestionId, tenantId],
+    );
+  } finally {
+    await conn.end();
+  }
+}
+
+/**
+ * Unshare a suggestion (reset to private/team level)
+ * @param suggestionId - The suggestion ID
+ * @param tenantId - The tenant ID
+ * @param teamId - The team ID to reset to
+ */
+export async function unshareSuggestion(
+  suggestionId: number | string,
+  tenantId: number,
+  teamId: number,
+): Promise<void> {
+  const conn = await getConnection();
+
+  try {
+    // Dual-ID support: Use uuid column for string IDs, id column for numeric IDs
+    const idColumn = typeof suggestionId === 'string' ? 'uuid' : 'id';
+
+    await conn.execute(
+      `UPDATE kvp_suggestions
+       SET org_level = 'team',
+           org_id = ?,
+           is_shared = FALSE,
+           shared_by = NULL,
+           shared_at = NULL,
+           updated_at = NOW()
+       WHERE ${idColumn} = ? AND tenant_id = ?`,
+      [teamId, suggestionId, tenantId],
     );
   } finally {
     await conn.end();
@@ -914,8 +1133,10 @@ const KVPModel = {
   createSuggestion: createKvpSuggestion,
   getSuggestions: getKvpSuggestions,
   getSuggestionById: getKvpSuggestionById,
+  getSuggestionByUuid: getKvpSuggestionByUuid, // NEW: UUID-based lookup
   updateSuggestionStatus: updateKvpSuggestionStatus,
   updateSuggestionOrgLevel,
+  unshareSuggestion,
   addAttachment: addKvpAttachment,
   getAttachments: getKvpAttachments,
   addComment: addKvpComment,

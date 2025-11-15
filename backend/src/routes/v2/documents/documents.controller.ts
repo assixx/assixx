@@ -362,6 +362,23 @@ export async function getDocumentById(req: AuthenticatedRequest, res: Response):
  *       500:
  *         description: Server error
  */
+/**
+ * Ensure filename has file extension
+ * If user provides "document" but file is "document.pdf", result will be "document.pdf"
+ */
+function ensureFileExtension(userProvidedName: string, originalFilename: string): string {
+  const trimmedName = userProvidedName.trim();
+  const fileExtension = path.extname(originalFilename); // e.g., ".jpg"
+
+  // If user already provided extension, use as-is
+  if (path.extname(trimmedName) !== '') {
+    return trimmedName;
+  }
+
+  // Otherwise, append the original file extension
+  return trimmedName + fileExtension;
+}
+
 // NEW: Parse document data with clean structure (refactored 2025-01-10)
 function parseDocumentData(
   file: Express.Multer.File,
@@ -373,9 +390,10 @@ function parseDocumentData(
   const storagePath = buildStoragePath(tenantId, body.category, metadata.uuid, metadata.extension);
 
   // Use documentName from frontend if provided, otherwise fallback to original filename
+  // IMPORTANT: Always ensure the extension is included (user may type "document" for "document.pdf")
   const userProvidedName =
     body.documentName && body.documentName.trim() !== '' ?
-      body.documentName.trim()
+      ensureFileExtension(body.documentName.trim(), file.originalname)
     : file.originalname;
 
   logger.info(
@@ -384,7 +402,7 @@ function parseDocumentData(
 
   return {
     filename: `${metadata.uuid}${metadata.extension}`, // UUID-based filename for storage
-    originalName: userProvidedName, // User-visible name from modal input
+    originalName: userProvidedName, // User-visible name from modal input (WITH extension)
     fileSize: file.size,
     fileContent: file.buffer,
     mimeType: file.mimetype,

@@ -31,7 +31,7 @@ export const StatusBadges = {
   argTypes: {
     variant: {
       control: 'select',
-      options: ['success', 'warning', 'danger', 'info', 'primary', 'secondary', 'dark'],
+      options: ['success', 'warning', 'danger', 'error', 'info', 'primary', 'dark'],
       description: 'Badge color variant',
     },
     label: {
@@ -81,10 +81,10 @@ export const AllStatusVariants = {
     const variants = [
       { variant: 'success', label: 'Success' },
       { variant: 'warning', label: 'Warning' },
-      { variant: 'danger', label: 'Error' },
+      { variant: 'danger', label: 'Danger' },
+      { variant: 'error', label: 'Error' },
       { variant: 'info', label: 'Info' },
       { variant: 'primary', label: 'Primary' },
-      { variant: 'secondary', label: 'Secondary' },
       { variant: 'dark', label: 'Dark' },
     ];
 

@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile für Assixx Backend
 # Stage 1: Build TypeScript
-FROM node:20-alpine AS builder
+FROM node:24.11.1-alpine AS builder
 
 # pnpm installieren
 RUN npm install -g pnpm@10.13.1
@@ -34,7 +34,7 @@ COPY scripts/fix-esm-imports.js ./scripts/
 RUN cd backend && pnpm run build && cd .. && node scripts/fix-esm-imports.js
 
 # Stage 2: Production Runtime
-FROM node:20-alpine
+FROM node:24.11.1-alpine
 
 # pnpm installieren
 RUN npm install -g pnpm@10.13.1

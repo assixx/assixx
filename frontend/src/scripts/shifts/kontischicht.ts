@@ -309,7 +309,7 @@ class KontischichtManager {
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-action="close">Abbrechen</button>
+        <button type="button" class="btn btn-cancel" data-action="close">Abbrechen</button>
       </div>
     `;
 

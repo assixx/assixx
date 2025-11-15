@@ -11,16 +11,16 @@ export default {
   title: 'Design System/Data Display',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /* ========== TABLES ========== */
@@ -117,7 +117,7 @@ export const StripedTable = () => {
               <td><span class="badge badge--role-admin">Admin</span></td>
               <td>Frontend Team</td>
               <td>
-                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
+                <button class="btn btn-cancel" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
               </td>
             </tr>
             <tr>
@@ -126,7 +126,7 @@ export const StripedTable = () => {
               <td><span class="badge badge--role-employee">Employee</span></td>
               <td>Backend Team</td>
               <td>
-                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
+                <button class="btn btn-cancel" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
               </td>
             </tr>
             <tr>
@@ -135,7 +135,7 @@ export const StripedTable = () => {
               <td><span class="badge badge--role-employee">Employee</span></td>
               <td>Design Team</td>
               <td>
-                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
+                <button class="btn btn-cancel" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
               </td>
             </tr>
             <tr>
@@ -144,7 +144,7 @@ export const StripedTable = () => {
               <td><span class="badge badge--role-admin">Admin</span></td>
               <td>DevOps Team</td>
               <td>
-                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
+                <button class="btn btn-cancel" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
               </td>
             </tr>
             <tr>
@@ -153,7 +153,7 @@ export const StripedTable = () => {
               <td><span class="badge badge--role-root">Root</span></td>
               <td>Management</td>
               <td>
-                <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
+                <button class="btn btn-cancel" style="padding: 4px 12px; font-size: 13px;">Bearbeiten</button>
               </td>
             </tr>
           </tbody>
@@ -695,7 +695,7 @@ export const CompleteExample = () => {
       <div style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 24px; margin-bottom: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
           <h4 style="color: #fff; margin: 0;">Mitarbeiterliste</h4>
-          <button class="btn btn-secondary" style="padding: 8px 16px;">
+          <button class="btn btn-cancel" style="padding: 8px 16px;">
             <i class="fas fa-filter"></i>
             Filter
           </button>
@@ -719,7 +719,7 @@ export const CompleteExample = () => {
                 <td><span class="badge badge--role-admin">Admin</span></td>
                 <td><span class="badge badge--success">Aktiv</span></td>
                 <td>
-                  <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 13px;">Details</button>
+                  <button class="btn btn-cancel" style="padding: 4px 12px; font-size: 13px;">Details</button>
                 </td>
               </tr>
               <tr>
@@ -728,7 +728,7 @@ export const CompleteExample = () => {
                 <td><span class="badge badge--role-employee">Employee</span></td>
                 <td><span class="badge badge--success">Aktiv</span></td>
                 <td>
-                  <button class="btn btn-secondary" style="padding: 4px 12px; font-size: 13px;">Details</button>
+                  <button class="btn btn-cancel" style="padding: 4px 12px; font-size: 13px;">Details</button>
                 </td>
               </tr>
             </tbody>
@@ -789,7 +789,7 @@ export const CompleteExample = () => {
           <div class="empty-state__description">
             Versuchen Sie, Ihre Suchkriterien anzupassen
           </div>
-          <button class="btn btn-secondary empty-state__action">
+          <button class="btn btn-cancel empty-state__action">
             Filter zurücksetzen
           </button>
         </div>

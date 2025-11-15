@@ -271,15 +271,9 @@
 }
 
 /* Status Badges */
-.badge {
-  display: inline-block;
-
-  padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 500;
-}
+/* NOTE: Base .badge styles are defined in design-system/primitives/badges/badge.base.css
+   This old definition was overriding the design system with inline-block, breaking gap spacing.
+   Removed in favor of design system badge component. */
 
 .badge-success {
   color: #fff;

@@ -26,7 +26,7 @@ echo ""
 
 # Zähle Button-Varianten
 echo "Primary:   $(grep -h 'btn-primary' frontend/src/pages/*.html 2>/dev/null | wc -l)"
-echo "Secondary: $(grep -h 'btn-secondary' frontend/src/pages/*.html 2>/dev/null | wc -l)"
+echo "Secondary: $(grep -h 'btn-cancel' frontend/src/pages/*.html 2>/dev/null | wc -l)"
 echo "Success:   $(grep -h 'btn-success' frontend/src/pages/*.html 2>/dev/null | wc -l)"
 echo "Danger:    $(grep -h 'btn-danger' frontend/src/pages/*.html 2>/dev/null | wc -l)"
 echo "Warning:   $(grep -h 'btn-warning' frontend/src/pages/*.html 2>/dev/null | wc -l)"

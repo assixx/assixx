@@ -125,21 +125,13 @@ class KvpPage {
   }
 
   /**
-   * Toggle admin-only elements
+   * Toggle admin-only elements (only info box and stats, not UI filters)
    */
   private toggleAdminElements(show: boolean): void {
-    const adminElements = document.querySelectorAll('.admin-only');
     const adminInfoBox = $$('#adminInfoBox');
     const statsOverview = $$('#statsOverview');
 
-    adminElements.forEach((el) => {
-      if (show) {
-        (el as HTMLElement).removeAttribute('hidden');
-      } else {
-        (el as HTMLElement).setAttribute('hidden', '');
-      }
-    });
-
+    // Admin Info Box - only for admins
     if (adminInfoBox) {
       if (show) {
         adminInfoBox.removeAttribute('hidden');
@@ -148,6 +140,7 @@ class KvpPage {
       }
     }
 
+    // Stats Overview - only for admins
     if (statsOverview) {
       if (show) {
         statsOverview.removeAttribute('hidden');
@@ -218,14 +211,14 @@ class KvpPage {
         const target = e.target as HTMLElement;
         if (!target.closest('.action-btn')) {
           const cardEl = card as HTMLElement;
-          const id = cardEl.dataset.id;
-          if (id !== undefined && id !== '') this.viewSuggestion(Number.parseInt(id, 10));
+          const uuid = cardEl.dataset.uuid; // NEW: Use UUID instead of numeric ID
+          if (uuid !== undefined && uuid !== '') this.viewSuggestion(uuid);
         }
       });
     });
 
     // Action button handlers
-    container.querySelectorAll('.action-buttons').forEach((actionButtons) => {
+    container.querySelectorAll('[data-suggestion-id]').forEach((actionButtons) => {
       this.renderActionButtonsForSuggestion(actionButtons as HTMLElement);
     });
   }
@@ -304,9 +297,10 @@ class KvpPage {
 
   /**
    * View suggestion detail page
+   * NEW: Uses UUID for secure, non-guessable URLs
    */
-  private viewSuggestion(id: number): void {
-    window.location.href = `/kvp-detail?id=${id}`;
+  private viewSuggestion(uuid: string): void {
+    window.location.href = `/kvp-detail?uuid=${uuid}`;
   }
 
   /**

@@ -69,7 +69,7 @@ async function getKvpByCategory(
       COUNT(k.id) as suggestions,
       COUNT(CASE WHEN k.status = 'implemented' THEN 1 END) as implemented,
       AVG(CASE WHEN k.status = 'implemented' THEN k.actual_savings ELSE NULL END) as avg_savings
-    FROM kvp_categories c
+    FROM global.kvp_categories c
     LEFT JOIN kvp_suggestions k ON k.category_id = c.id
       AND k.tenant_id = ?
       AND k.created_at BETWEEN ? AND ?

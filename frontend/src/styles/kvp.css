@@ -11,40 +11,8 @@
 @import "./user-info-update.css";
 
 /* ========================================
-   KVP-SPECIFIC: Secondary Filters (Dropdowns Only)
+   KVP-SPECIFIC: Suggestion Cards
    ======================================== */
-
-.secondary-filters {
-  display: flex;
-  flex-wrap: nowrap; /* Horizontal, kein wrapping */
-  gap: var(--spacing-4);
-  overflow-x: auto; /* Scroll bei zu vielen Dropdowns */
-  align-items: center;
-
-  margin-bottom: var(--spacing-6);
-}
-
-.secondary-filters__left {
-  display: flex;
-  flex-wrap: nowrap; /* Alle Dropdowns horizontal */
-  gap: var(--spacing-4);
-  align-items: center;
-}
-
-.secondary-filters__left .dropdown {
-  flex-shrink: 0; /* Verhindert squashing */
-}
-
-/* ========================================
-   KVP-SPECIFIC: Suggestions Grid & Cards
-   ======================================== */
-
-.kvp-suggestions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: var(--spacing-6);
-  margin-top: var(--spacing-6);
-}
 
 .kvp-card {
   cursor: pointer;
@@ -60,56 +28,18 @@
 }
 
 /* ========================================
-   KVP-SPECIFIC: Status Badges
+   KVP-SPECIFIC: Status Badge Positioning
    ======================================== */
 
+/*
+ * IMPORTANT: Status badge COLORS are defined in Design System (badge.kvp.css)
+ * This class only handles POSITIONING for badges in suggestion cards
+ * Usage: <span class="badge badge--kvp-new status-badge">Neu</span>
+ */
 .status-badge {
   position: absolute;
   top: var(--spacing-4);
   right: var(--spacing-4);
-
-  padding: 4px 12px;
-  border-radius: 20px;
-
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.status-badge.new {
-  border: 1px solid rgb(76 175 80 / 50%);
-  color: #4caf50;
-  background: rgb(76 175 80 / 20%);
-}
-
-.status-badge.in_review {
-  border: 1px solid rgb(255 152 0 / 50%);
-  color: #ff9800;
-  background: rgb(255 152 0 / 20%);
-}
-
-.status-badge.approved {
-  border: 1px solid rgb(33 150 243 / 50%);
-  color: #2196f3;
-  background: rgb(33 150 243 / 20%);
-}
-
-.status-badge.implemented {
-  border: 1px solid rgb(103 58 183 / 50%);
-  color: #673ab7;
-  background: rgb(103 58 183 / 20%);
-}
-
-.status-badge.rejected {
-  border: 1px solid rgb(244 67 54 / 50%);
-  color: #f44336;
-  background: rgb(244 67 54 / 20%);
-}
-
-.status-badge.archived {
-  border: 1px solid rgb(158 158 158 / 50%);
-  color: #9e9e9e;
-  background: rgb(158 158 158 / 20%);
 }
 
 /* ========================================
@@ -152,10 +82,6 @@
    KVP-SPECIFIC: Suggestion Card Content
    ======================================== */
 
-.suggestion-header {
-  margin-bottom: var(--spacing-4);
-}
-
 .suggestion-title {
   margin-bottom: var(--spacing-2);
   font-size: 1.1rem;
@@ -170,6 +96,12 @@
 
   font-size: 0.85rem;
   color: rgb(255 255 255 / 60%);
+}
+
+.suggestion-meta span {
+  display: inline-flex;
+  gap: var(--spacing-2); /* Space between icon and text */
+  align-items: center;
 }
 
 .suggestion-meta i {
@@ -227,11 +159,6 @@
    KVP-SPECIFIC: Action Buttons
    ======================================== */
 
-.action-buttons {
-  display: flex;
-  gap: var(--spacing-2);
-}
-
 .action-btn {
   cursor: pointer;
 
@@ -263,10 +190,6 @@
    KVP-SPECIFIC: Photo Upload
    ======================================== */
 
-.photo-upload-area {
-  margin-top: var(--spacing-2);
-}
-
 .upload-box {
   cursor: pointer;
 
@@ -293,13 +216,6 @@
 .upload-box p {
   margin: 0;
   color: rgb(255 255 255 / 70%);
-}
-
-.photo-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-2);
-  margin-top: var(--spacing-4);
 }
 
 .photo-preview-item {
@@ -351,23 +267,22 @@
    Responsive Adjustments
    ======================================== */
 
-@media (width <= 768px) {
-  .kvp-suggestions-grid {
-    grid-template-columns: 1fr;
-  }
+/* Responsive styles now handled by Tailwind classes in HTML */
 
-  .secondary-filters {
-    overflow-x: visible; /* Kein horizontal scroll auf mobile */
-  }
+/* ========================================
+   Share Info
+   ======================================== */
 
-  .secondary-filters__left {
-    flex-wrap: wrap; /* Auf mobile dürfen Dropdowns wrappen */
-    width: 100%;
-  }
+.share-info {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 10px;
+}
 
-  .secondary-filters__left .dropdown {
-    flex: 1 1 150px; /* Können wachsen auf mobile */
-  }
+.share-info > i {
+  font-size: 0.875rem;
+  color: #666;
 }
 
 /* ========================================

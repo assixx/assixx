@@ -280,7 +280,7 @@ async function buildFormData(
 
   <!-- Footer -->
   <div class="modal-footer">
-    <button class="btn btn-secondary" id="cancel-btn">Abbrechen</button>
+    <button class="btn btn-cancel" id="cancel-btn">Abbrechen</button>
     <button class="btn btn-primary" id="upload-btn">
       <i class="fas fa-upload"></i> Hochladen
     </button>

@@ -70,7 +70,9 @@ export class DashboardUI {
 
     const items = documents.slice(0, 5).map((doc) => {
       const item = createElement('div', { className: CLASS_COMPACT_ITEM });
-      const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, doc.file_name);
+      // Backend returns 'filename' (lowercase) - manual override, not standard camelCase
+      const fileName = doc.filename;
+      const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME, title: fileName }, fileName);
       item.append(nameSpan);
       return item;
     });

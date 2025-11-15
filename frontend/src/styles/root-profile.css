@@ -139,7 +139,7 @@ h1 {
   background: linear-gradient(135deg, rgb(0 142 255 / 20%), rgb(0 142 255 / 10%));
 }
 
-.btn-secondary {
+.btn-cancel {
   border-color: rgb(255 255 255 / 20%);
   color: var(--text-secondary);
   background: linear-gradient(135deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 5%));
@@ -696,15 +696,15 @@ h1 {
   box-shadow: 0 4px 16px rgb(255 193 7 / 30%);
 }
 
-/* .btn-secondary - Duplicate removed (first defined at line 218) */
-/* .btn-secondary {
+/* .btn-cancel - Duplicate removed (first defined at line 218) */
+/* .btn-cancel {
   border: 1px solid rgb(255 255 255 / 20%);
   color: var(--text-primary);
   background: rgb(255 255 255 / 5%);
   transition: all var(--transition-fast);
 }
 
-.btn-secondary:hover {
+.btn-cancel:hover {
   border-color: rgb(255 255 255 / 30%);
   background: rgb(255 255 255 / 10%);
 } */

@@ -1019,7 +1019,7 @@ export const OnboardingFlow = () => {
         </div>
 
         <div style="margin-top: 32px; display: flex; gap: 16px; justify-content: flex-end;">
-          <button class="btn btn-secondary">Back</button>
+          <button class="btn btn-cancel">Back</button>
           <button class="btn btn-primary">Continue</button>
         </div>
       </div>

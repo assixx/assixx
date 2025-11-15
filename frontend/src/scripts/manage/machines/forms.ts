@@ -265,10 +265,10 @@ function setStatusDropdown(machine: Machine): void {
       maintenance: { class: 'badge--warning', text: 'In Wartung' },
       repair: { class: 'badge--danger', text: 'In Reparatur' },
       standby: { class: 'badge--info', text: 'Standby' },
-      decommissioned: { class: 'badge--secondary', text: 'Außer Betrieb' },
+      decommissioned: { class: 'badge--error', text: 'Außer Betrieb' },
     };
 
-    const config = statusConfig[machine.status] ?? { class: 'badge--secondary', text: machine.status };
+    const config = statusConfig[machine.status] ?? { class: 'badge--error', text: machine.status };
     setSafeHTML(statusTriggerSpan, `<span class="badge ${config.class}">${config.text}</span>`);
   }
 }

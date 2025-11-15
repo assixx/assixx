@@ -1357,7 +1357,7 @@ class UnifiedNavigation {
             <p class="logout-message">Möchten Sie sich wirklich abmelden?</p>
           </div>
           <div class="logout-modal-footer">
-            <button class="btn btn-secondary" id="cancelLogout">
+            <button class="btn btn-cancel" id="cancelLogout">
               <i class="fas fa-times"></i>
               Abbrechen
             </button>

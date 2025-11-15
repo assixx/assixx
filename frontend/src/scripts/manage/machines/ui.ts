@@ -18,11 +18,11 @@ export function getStatusBadgeClass(status: string): string {
     case 'repair':
       return 'badge--danger';
     case 'standby':
-      return 'badge--secondary';
+      return 'badge--error';
     case 'decommissioned':
-      return 'badge--secondary';
+      return 'badge--error';
     default:
-      return 'badge--secondary';
+      return 'badge--error';
   }
 }
 

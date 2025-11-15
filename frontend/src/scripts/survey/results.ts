@@ -204,10 +204,10 @@ class SurveyResultsPage {
         <button class="btn btn-primary" id="export-excel">
           <i class="fas fa-file-excel"></i> Excel Export
         </button>
-        <button class="btn btn-secondary" id="export-pdf">
+        <button class="btn btn-cancel" id="export-pdf">
           <i class="fas fa-file-pdf"></i> PDF Export
         </button>
-        <button class="btn btn-secondary" data-action="print">
+        <button class="btn btn-cancel" data-action="print">
           <i class="fas fa-print"></i> Drucken
         </button>
       </div>
@@ -627,7 +627,7 @@ class SurveyResultsPage {
       <div class="empty-state">
         <div class="empty-icon">❌</div>
         <p>${escapeHtml(message)}</p>
-        <button class="btn btn-secondary" data-action="navigate-back">
+        <button class="btn btn-cancel" data-action="navigate-back">
           Zurück zur Übersicht
         </button>
       </div>

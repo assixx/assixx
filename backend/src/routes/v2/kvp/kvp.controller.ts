@@ -2,12 +2,18 @@
  * KVP API v2 Controller
  * HTTP request handlers for Continuous Improvement Process
  */
+import crypto from 'crypto';
 import { Response } from 'express';
+import fs from 'fs/promises';
+import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
+import { logger } from '../../../utils/logger.js';
+import { getUploadDirectory } from '../../../utils/pathSecurity.js';
 import { kvpService } from './kvp.service.js';
 import type {
   CommentData,
@@ -20,13 +26,51 @@ import type {
 // Constants
 const USER_AGENT_HEADER = 'user-agent';
 
+/**
+ * Build hierarchical storage path for KVP attachments
+ * Pattern: `uploads/kvp-attachments/{tenantId}/{suggestionId}/{uuid}.ext`
+ * This prevents filename collisions and organizes files by suggestion
+ */
+function buildKvpStoragePath(
+  tenantId: number,
+  suggestionId: number | string,
+  uuid: string,
+  extension: string,
+): string {
+  return path.join(
+    getUploadDirectory('kvp'), // uploads/kvp-attachments
+    tenantId.toString(),
+    suggestionId.toString(),
+    `${uuid}${extension}`,
+  );
+}
+
+/**
+ * Generate UUID and file metadata for upload
+ */
+function generateFileMetadata(file: Express.Multer.File): {
+  uuid: string;
+  checksum: string;
+  extension: string;
+} {
+  const uuid = uuidv4();
+  const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
+  const extension = path.extname(file.originalname).toLowerCase();
+
+  return {
+    uuid,
+    checksum,
+    extension,
+  };
+}
+
 // Request body interfaces
 interface CreateSuggestionBody {
   title: string;
   description: string;
   categoryId: number;
   departmentId?: number | null;
-  orgLevel: 'company' | 'department' | 'team';
+  orgLevel: 'company' | 'department' | 'area' | 'team';
   orgId: number;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
   expectedBenefit?: string;
@@ -43,6 +87,7 @@ interface UpdateSuggestionBody {
   actualSavings?: number;
   status?: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   assignedTo?: number;
+  rejectionReason?: string;
 }
 
 interface AddCommentBody {
@@ -127,15 +172,16 @@ export async function listSuggestions(req: AuthenticatedRequest, res: Response):
 }
 
 /**
- * Get a specific KVP suggestion by ID
- * @param req - The request object
+ * Get suggestion by ID or UUID (Dual-ID support for transition period)
+ * Accepts both numeric ID and UUIDv7 string in req.params.id
+ * @param req - The request object (expects req.params.id as numeric ID or UUID string)
  * @param res - The response object
  */
 export async function getSuggestionById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Pass id as-is (string or number) - Zod validation already handled UUID vs numeric ID
     const suggestion = await kvpService.getSuggestionById(
-      suggestionId,
+      req.params.id,
       req.user.tenant_id,
       req.user.id,
       req.user.role,
@@ -219,7 +265,9 @@ export async function createSuggestion(req: AuthenticatedRequest, res: Response)
  */
 export async function updateSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Pass id as-is (string or number) - Zod validation already handled UUID vs numeric ID
+    const suggestionId = req.params.id;
+
     const body = req.body as UpdateSuggestionBody;
     const data: KVPUpdateData = {
       title: body.title,
@@ -231,6 +279,7 @@ export async function updateSuggestion(req: AuthenticatedRequest, res: Response)
       actualSavings: body.actualSavings,
       status: body.status,
       assignedTo: body.assignedTo,
+      rejectionReason: body.rejectionReason,
     };
     // Get old suggestion data for logging
     const oldSuggestion = await kvpService.getSuggestionById(
@@ -254,7 +303,7 @@ export async function updateSuggestion(req: AuthenticatedRequest, res: Response)
       user_id: req.user.id,
       action: 'update',
       entity_type: 'kvp_suggestion',
-      entity_id: suggestionId,
+      entity_id: typeof suggestionId === 'number' ? suggestionId : 0, // TODO: Update log model for UUID support
       details: `Aktualisiert: ${data.title ?? 'KVP-Vorschlag'}`,
       old_values: {
         title: (oldSuggestion as KVPSuggestion | null)?.title,
@@ -280,6 +329,9 @@ export async function updateSuggestion(req: AuthenticatedRequest, res: Response)
 
     res.json(successResponse(suggestion));
   } catch (error: unknown) {
+    // Log the actual error for debugging
+    console.error('[updateSuggestion] Error:', error);
+
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
@@ -298,7 +350,8 @@ export async function updateSuggestion(req: AuthenticatedRequest, res: Response)
  */
 export async function deleteSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Pass id as-is (string or number) - Zod validation already handled UUID vs numeric ID
+    const suggestionId = req.params.id;
 
     // Get suggestion data before deletion for logging
     const deletedSuggestion = await kvpService.getSuggestionById(
@@ -316,7 +369,7 @@ export async function deleteSuggestion(req: AuthenticatedRequest, res: Response)
       user_id: req.user.id,
       action: 'delete',
       entity_type: 'kvp_suggestion',
-      entity_id: suggestionId,
+      entity_id: typeof suggestionId === 'number' ? suggestionId : 0, // TODO: Update log model for UUID support
       details: `Gelöscht: ${String((deletedSuggestion as KVPSuggestion | null)?.title)}`,
       old_values: {
         title: (deletedSuggestion as KVPSuggestion | null)?.title,
@@ -350,9 +403,9 @@ export async function deleteSuggestion(req: AuthenticatedRequest, res: Response)
  */
 export async function getComments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Support both UUID and numeric ID (validated by Zod)
     const comments = await kvpService.getComments(
-      suggestionId,
+      req.params.id,
       req.user.tenant_id,
       req.user.id,
       req.user.role,
@@ -378,7 +431,9 @@ export async function getComments(req: AuthenticatedRequest, res: Response): Pro
  */
 export async function addComment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Pass id as-is (string or number) - Zod validation already handled UUID vs numeric ID
+    const suggestionId = req.params.id;
+
     const body = req.body as AddCommentBody;
     const data: CommentData = {
       comment: body.comment,
@@ -392,13 +447,13 @@ export async function addComment(req: AuthenticatedRequest, res: Response): Prom
       req.user.role,
     );
 
-    // Log comment addition
+    // Log comment addition - use resolved numeric ID from service response
     await rootLog.create({
       tenant_id: req.user.tenant_id,
       user_id: req.user.id,
       action: 'add_comment',
       entity_type: 'kvp_suggestion',
-      entity_id: suggestionId,
+      entity_id: comment.suggestionId as number,
       details: `Kommentar hinzugefügt`,
       new_values: {
         comment: data.comment,
@@ -430,9 +485,9 @@ export async function addComment(req: AuthenticatedRequest, res: Response): Prom
  */
 export async function getAttachments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Support both UUID and numeric ID
     const attachments = await kvpService.getAttachments(
-      suggestionId,
+      req.params.id,
       req.user.tenant_id,
       req.user.id,
       req.user.role,
@@ -453,12 +508,16 @@ export async function getAttachments(req: AuthenticatedRequest, res: Response): 
 
 /**
  * Upload attachments to a suggestion
+ * NEW: Uses hierarchical storage like document-explorer
+ * Pattern: `uploads/kvp-attachments/{tenantId}/{suggestionId}/{uuid}.ext`
  * @param req - The request object
  * @param res - The response object
  */
 export async function uploadAttachments(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Pass id as-is (string or number) - Zod validation already handled UUID vs numeric ID
+    const suggestionId = req.params.id;
+
     const files = req.files;
 
     // Type guard: Ensure files is an array with items
@@ -467,23 +526,50 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
       return;
     }
 
+    // Process each file: generate UUID, build path, write to disk
     const attachments = await Promise.all(
-      files.map(
-        async (file: Express.Multer.File) =>
-          await kvpService.addAttachment(
-            suggestionId,
-            {
-              fileName: file.filename,
-              filePath: file.path,
-              fileType: file.mimetype,
-              fileSize: file.size,
-              uploadedBy: req.user.id,
-            },
-            req.user.tenant_id,
-            req.user.id,
-            req.user.role,
-          ),
-      ),
+      files.map(async (file: Express.Multer.File) => {
+        // Generate UUID and metadata
+        const metadata = generateFileMetadata(file);
+
+        // Build hierarchical storage path
+        const storagePath = buildKvpStoragePath(
+          req.user.tenant_id,
+          suggestionId,
+          metadata.uuid,
+          metadata.extension,
+        );
+
+        // Create directory if it doesn't exist
+        const directory = path.dirname(storagePath);
+        // eslint-disable-next-line security/detect-non-literal-fs-filename -- storagePath is generated by buildKvpStoragePath() which uses validated paths from getUploadDirectory()
+        await fs.mkdir(directory, { recursive: true });
+
+        // Write file to disk
+        // eslint-disable-next-line security/detect-non-literal-fs-filename -- storagePath is generated by buildKvpStoragePath() which uses validated paths from getUploadDirectory()
+        await fs.writeFile(storagePath, file.buffer);
+
+        logger.info(
+          `KVP attachment saved: ${storagePath} (UUID: ${metadata.uuid}, Size: ${file.size} bytes)`,
+        );
+
+        // Add to database with UUID and organized path
+        return await kvpService.addAttachment(
+          suggestionId,
+          {
+            fileName: file.originalname, // Keep original name for display
+            filePath: storagePath, // Organized path on disk
+            fileType: file.mimetype,
+            fileSize: file.size,
+            uploadedBy: req.user.id,
+            fileUuid: metadata.uuid, // NEW: UUID for secure downloads
+            fileChecksum: metadata.checksum, // NEW: For integrity verification
+          },
+          req.user.tenant_id,
+          req.user.id,
+          req.user.role,
+        );
+      }),
     );
 
     // Log attachment upload
@@ -492,11 +578,11 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
       user_id: req.user.id,
       action: 'upload_attachment',
       entity_type: 'kvp_suggestion',
-      entity_id: suggestionId,
-      details: `Anhänge hochgeladen: ${files.map((f: Express.Multer.File) => f.filename).join(', ')}`,
+      entity_id: typeof suggestionId === 'number' ? suggestionId : 0, // TODO: Update log model for UUID support
+      details: `Anhänge hochgeladen: ${files.map((f: Express.Multer.File) => f.originalname).join(', ')}`,
       new_values: {
         files_count: files.length,
-        file_names: files.map((f: Express.Multer.File) => f.filename).join(', '),
+        file_names: files.map((f: Express.Multer.File) => f.originalname).join(', '),
         total_size: files.reduce((sum: number, f: Express.Multer.File) => sum + f.size, 0),
         uploaded_by: req.user.email,
       },
@@ -507,6 +593,7 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
 
     res.status(201).json(successResponse(attachments));
   } catch (error: unknown) {
+    logger.error(`Upload attachments error: ${(error as Error).message}`);
     if (error instanceof Error && 'code' in error) {
       const serviceError = error as ServiceError;
       res
@@ -519,15 +606,16 @@ export async function uploadAttachments(req: AuthenticatedRequest, res: Response
 }
 
 /**
- * Download an attachment
+ * Download an attachment using UUID (secure, non-guessable)
  * @param req - The request object
  * @param res - The response object
  */
 export async function downloadAttachment(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const attachmentId = Number.parseInt(req.params.attachmentId, 10);
+    // Use file_uuid instead of sequential ID for security (prevents enumeration attacks)
+    const fileUuid = req.params.fileUuid;
     const attachment = await kvpService.getAttachment(
-      attachmentId,
+      fileUuid,
       req.user.tenant_id,
       req.user.id,
       req.user.role,
@@ -646,7 +734,8 @@ export async function unshareSuggestion(req: AuthenticatedRequest, res: Response
       return;
     }
 
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Pass id as-is (string or number) - Zod validation already handled UUID vs numeric ID
+    const suggestionId = req.params.id;
 
     // Get the suggestion to verify it exists and get its team_id
     const suggestion = await kvpService.getSuggestionById(
@@ -665,8 +754,8 @@ export async function unshareSuggestion(req: AuthenticatedRequest, res: Response
       return;
     }
 
-    // Reset to team level
-    await kvpService.shareSuggestion(suggestionId, req.user.tenant_id, req.user.id, 'team', teamId);
+    // Reset to private (unshare)
+    await kvpService.unshareSuggestion(suggestionId, req.user.tenant_id, teamId);
 
     // Log the unsharing action
     await rootLog.create({
@@ -674,7 +763,7 @@ export async function unshareSuggestion(req: AuthenticatedRequest, res: Response
       user_id: req.user.id,
       action: 'unshare',
       entity_type: 'kvp_suggestion',
-      entity_id: suggestionId,
+      entity_id: typeof suggestionId === 'number' ? suggestionId : 0, // TODO: Update log model for UUID support
       details: 'Teilen rückgängig gemacht - zurück auf Teamebene',
       old_values: {
         orgLevel: suggestion.orgLevel,
@@ -732,6 +821,22 @@ export async function getDashboardStats(req: AuthenticatedRequest, res: Response
  * @param req - The request object
  * @param res - The response object
  */
+/**
+ * Get German label for organization level
+ */
+function getOrgLevelLabel(orgLevel: 'company' | 'department' | 'area' | 'team'): string {
+  switch (orgLevel) {
+    case 'company':
+      return 'Firmenebene';
+    case 'department':
+      return 'Abteilungsebene';
+    case 'area':
+      return 'Bereichsebene';
+    case 'team':
+      return 'Teamebene';
+  }
+}
+
 export async function shareSuggestion(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     // Only admin and root can share suggestions
@@ -742,9 +847,11 @@ export async function shareSuggestion(req: AuthenticatedRequest, res: Response):
       return;
     }
 
-    const suggestionId = Number.parseInt(req.params.id, 10);
+    // NEW: Pass id as-is (string or number) - Zod validation already handled UUID vs numeric ID
+    const suggestionId = req.params.id;
+
     const { orgLevel, orgId } = req.body as {
-      orgLevel: 'company' | 'department' | 'team';
+      orgLevel: 'company' | 'department' | 'area' | 'team';
       orgId: number;
     };
 
@@ -772,7 +879,7 @@ export async function shareSuggestion(req: AuthenticatedRequest, res: Response):
       user_id: req.user.id,
       action: 'share',
       entity_type: 'kvp_suggestion',
-      entity_id: suggestionId,
+      entity_id: typeof suggestionId === 'number' ? suggestionId : 0, // TODO: Update log model for UUID support
       details: `Geteilt auf Ebene: ${orgLevel} (ID: ${orgId})`,
       old_values: {
         orgLevel: suggestion.orgLevel,
@@ -789,11 +896,7 @@ export async function shareSuggestion(req: AuthenticatedRequest, res: Response):
 
     res.json(
       successResponse({
-        message: `Vorschlag wurde auf ${
-          orgLevel === 'company' ? 'Firmenebene'
-          : orgLevel === 'department' ? 'Abteilungsebene'
-          : 'Teamebene'
-        } geteilt`,
+        message: `Vorschlag wurde auf ${getOrgLevelLabel(orgLevel)} geteilt`,
       }),
     );
   } catch (error: unknown) {

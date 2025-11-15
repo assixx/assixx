@@ -5,7 +5,7 @@
 
 import { $$, setHTML } from '../../utils/dom-utils';
 import { KvpApiService } from './api';
-import type { User, KvpSuggestion, KvpCategory, Department, StatsResponse, V1Status, V2Status } from './types';
+import type { User, KvpSuggestion, KvpCategory, Department, StatsResponse } from './types';
 
 export class KvpDataManager {
   private apiService: KvpApiService;
@@ -53,11 +53,9 @@ export class KvpDataManager {
   }
 
   /**
-   * Load departments from API and populate dropdown (admin only)
+   * Load departments from API and populate dropdown
    */
-  async loadDepartments(effectiveRole: string): Promise<void> {
-    if (effectiveRole === 'employee') return;
-
+  async loadDepartments(_effectiveRole: string): Promise<void> {
     try {
       this.departments = await this.apiService.loadDepartments();
 
@@ -104,13 +102,6 @@ export class KvpDataManager {
   }
 
   /**
-   * Get API field name based on v1/v2 version
-   */
-  private getFieldName(v2Name: string, v1Name: string): string {
-    return this.apiService.useV2API ? v2Name : v1Name;
-  }
-
-  /**
    * Build URL search params for API request
    */
   private buildSuggestionParams(
@@ -124,15 +115,15 @@ export class KvpDataManager {
 
     if (filters.status !== '') params.append('status', filters.status);
     if (filters.category !== '') {
-      params.append(this.getFieldName('categoryId', 'category_id'), filters.category);
+      params.append('categoryId', filters.category);
     }
     if (filters.department !== '') {
-      params.append(this.getFieldName('departmentId', 'department_id'), filters.department);
+      params.append('departmentId', filters.department);
     }
     if (filters.search !== '') params.append('search', filters.search);
 
     if (this.currentFilter === 'archived') {
-      params.append(this.getFieldName('includeArchived', 'include_archived'), 'true');
+      params.append('includeArchived', 'true');
     }
 
     return params;
@@ -160,10 +151,41 @@ export class KvpDataManager {
   }
 
   /**
+   * Get Design System badge class for status
+   * Maps status values to badge--kvp-* classes
+   */
+  private getStatusBadgeClass(status: string): string {
+    const statusMap = new Map<string, string>([
+      ['new', 'badge--kvp-new'],
+      ['in_review', 'badge--kvp-in-review'],
+      ['approved', 'badge--kvp-approved'],
+      ['implemented', 'badge--kvp-implemented'],
+      ['rejected', 'badge--kvp-rejected'],
+      ['archived', 'badge--kvp-archived'],
+    ]);
+    // Map.get() is safe - status comes from backend enum
+    return statusMap.get(status) ?? 'badge--kvp-new';
+  }
+
+  /**
+   * Get Design System badge class for visibility
+   */
+  private getVisibilityBadgeClass(orgLevel: string): string {
+    const visibilityMap = new Map<string, string>([
+      ['team', 'badge--visibility-team'],
+      ['department', 'badge--visibility-department'],
+      ['area', 'badge--visibility-area'],
+      ['company', 'badge--visibility-company'],
+    ]);
+    return visibilityMap.get(orgLevel) ?? 'badge--visibility-team';
+  }
+
+  /**
    * Render a single suggestion card
    */
   private renderSuggestionCard(suggestion: KvpSuggestion): string {
-    const statusClass = suggestion.status.replace('_', '');
+    const statusBadgeClass = this.getStatusBadgeClass(suggestion.status);
+    const visibilityBadgeClass = this.getVisibilityBadgeClass(suggestion.orgLevel);
     const { icon: visibilityIcon, text: visibilityText } = this.getVisibilityInfo(suggestion);
     const attachmentSpan =
       suggestion.attachmentCount !== undefined && suggestion.attachmentCount > 0
@@ -171,21 +193,25 @@ export class KvpDataManager {
         : '';
     const sharedSpan =
       suggestion.sharedByName !== undefined && suggestion.sharedByName !== ''
-        ? `<span> - Geteilt von ${suggestion.sharedByName}</span>`
+        ? ` - Geteilt von ${suggestion.sharedByName}`
         : '';
 
     return `
-      <div class="custom-glass-card kvp-card" data-id="${suggestion.id}">
-        <div class="status-badge ${statusClass}">${this.getStatusText(suggestion.status)}</div>
-        <div class="suggestion-header">
+      <div class="custom-glass-card kvp-card" data-id="${suggestion.id}" data-uuid="${suggestion.uuid}">
+        <span class="badge ${statusBadgeClass} status-badge">${this.getStatusText(suggestion.status)}</span>
+        <div class="mb-4">
           <h3 class="suggestion-title">${this.escapeHtml(suggestion.title)}</h3>
           <div class="suggestion-meta">
             <span><i class="fas fa-user"></i> ${suggestion.submittedByName} ${suggestion.submittedByLastname}</span>
             <span><i class="fas fa-calendar"></i> ${new Date(suggestion.createdAt).toLocaleDateString('de-DE')}</span>
             ${attachmentSpan}
           </div>
-          <div class="visibility-badge ${suggestion.orgLevel}">
-            <i class="fas ${visibilityIcon}"></i> ${visibilityText}${sharedSpan}
+          <div class="share-info">
+            <i class="fas fa-share-alt"></i>
+            <span class="badge ${visibilityBadgeClass}">
+              <i class="fas ${visibilityIcon}"></i>
+              <span>${visibilityText}${sharedSpan}</span>
+            </span>
           </div>
         </div>
         <div class="suggestion-description">${this.escapeHtml(suggestion.description)}</div>
@@ -194,7 +220,7 @@ export class KvpDataManager {
             ${suggestion.categoryIcon}
             ${suggestion.categoryName}
           </div>
-          <div class="action-buttons" data-suggestion-id="${suggestion.id}">
+          <div class="flex gap-2" data-suggestion-id="${suggestion.id}" data-suggestion-uuid="${suggestion.uuid}">
             <!-- Action buttons populated dynamically -->
           </div>
         </div>
@@ -204,17 +230,41 @@ export class KvpDataManager {
 
   /**
    * Get visibility info for suggestion
+   * Shows "Privat" for non-shared suggestions, org-level name for shared ones
    */
   private getVisibilityInfo(suggestion: KvpSuggestion): { icon: string; text: string } {
-    const icon = suggestion.orgLevel === 'company' ? 'fa-globe' : 'fa-users';
-    const text =
-      suggestion.orgLevel === 'company'
-        ? 'Firmenweit'
-        : suggestion.orgLevel === 'department' && suggestion.departmentName !== ''
-          ? suggestion.departmentName
-          : suggestion.teamName !== undefined && suggestion.teamName !== ''
-            ? suggestion.teamName
-            : 'Team';
+    // If not shared (private), show lock icon and "Privat"
+    if (suggestion.isShared === 0) {
+      return {
+        icon: 'fa-lock',
+        text: 'Privat',
+      };
+    }
+
+    // If shared, show org level info
+    let icon: string;
+    let text: string;
+
+    switch (suggestion.orgLevel) {
+      case 'company':
+        icon = 'fa-globe';
+        text = 'Firmenweit';
+        break;
+      case 'department':
+        icon = 'fa-building';
+        text = suggestion.departmentName !== '' ? suggestion.departmentName : 'Abteilung';
+        break;
+      case 'area':
+        icon = 'fa-sitemap';
+        text = suggestion.areaName ?? 'Bereich';
+        break;
+      case 'team':
+      default:
+        icon = 'fa-users';
+        text = suggestion.teamName ?? 'Team';
+        break;
+    }
+
     return { icon, text };
   }
 
@@ -302,9 +352,9 @@ export class KvpDataManager {
       totalEl.textContent = data.company.total.toString();
     }
     if (openEl instanceof HTMLElement && data.company) {
-      const byStatus = data.company.byStatus as V1Status & V2Status;
+      const byStatus = data.company.byStatus;
       const newCount = byStatus.new ?? 0;
-      const inReviewCount = byStatus.inReview ?? byStatus.in_review ?? 0;
+      const inReviewCount = byStatus.inReview ?? 0;
       openEl.textContent = (newCount + inReviewCount).toString();
     }
     if (implementedEl instanceof HTMLElement && data.company) {

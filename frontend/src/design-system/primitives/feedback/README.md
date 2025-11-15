@@ -86,7 +86,7 @@ Professional feedback components following atomic design principles. Comprehensi
     <div class="alert__message">You have unsaved changes. Save before leaving?</div>
     <div class="alert__actions">
       <button class="btn btn-primary">Save</button>
-      <button class="btn btn-secondary">Discard</button>
+      <button class="btn btn-cancel">Discard</button>
     </div>
   </div>
 </div>

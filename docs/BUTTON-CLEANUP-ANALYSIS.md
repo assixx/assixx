@@ -108,7 +108,7 @@ In JEDER dieser 23 Dateien wird die komplette `.btn { ... }` Block-Definition ge
 
 ## ⚠️ Was bleibt erhalten?
 
-**Button-Varianten** wie `.btn-primary`, `.btn-secondary`, `.btn-danger` etc. bleiben ALLE erhalten!
+**Button-Varianten** wie `.btn-primary`, `.btn-cancel`, `.btn-danger` etc. bleiben ALLE erhalten!
 
 Nur die **Base-Definition** `.btn { ... }` wird entfernt.
 

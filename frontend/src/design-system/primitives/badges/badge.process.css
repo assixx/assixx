@@ -42,7 +42,7 @@
 }
 
 /* Cancelled - Gray */
-.badge--cancelled {
+.badge--errorled {
   border-color: rgb(158 158 158 / 30%);
   color: #9e9e9e;
   background: rgb(158 158 158 / 20%);

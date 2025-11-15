@@ -94,20 +94,20 @@ describe('Reports API v2', () => {
     await testDb.execute('DELETE FROM shifts WHERE tenant_id = ?', [tenantId]);
     await testDb.execute('DELETE FROM surveys WHERE tenant_id = ?', [tenantId]);
     // Clean up test categories
-    await testDb.execute("DELETE FROM kvp_categories WHERE name LIKE '%AUTOTEST%'");
+    await testDb.execute("DELETE FROM global.kvp_categories WHERE name LIKE '%AUTOTEST%'");
   });
 
   async function createTestData() {
     // First check if KVP category exists
     const [existingCategories] = await testDb.execute<any[]>(
-      "SELECT id FROM kvp_categories WHERE name LIKE '%AUTOTEST%' LIMIT 1",
+      "SELECT id FROM global.kvp_categories WHERE name LIKE '%AUTOTEST%' LIMIT 1",
     );
 
     let categoryId: number;
     if (existingCategories.length === 0) {
       // Create test category (global - no tenant_id)
       const [categoryResult] = await testDb.execute<ResultSetHeader>(
-        'INSERT INTO kvp_categories (name, description, color, icon) VALUES (?, ?, ?, ?)',
+        'INSERT INTO global.kvp_categories (name, description, color, icon) VALUES (?, ?, ?, ?)',
         ['__AUTOTEST__Reports_Category', 'Test category for reports', '#27ae60', '📊'],
       );
       categoryId = categoryResult.insertId;

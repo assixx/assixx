@@ -9,16 +9,16 @@ export default {
   title: 'Design System/Containers',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -67,7 +67,9 @@ export const PageContainer = {
     container.className = `page-container ${modifiers}`;
 
     const widthLabel =
-      args.width === 'narrow' ? '800px' : args.width === 'wide' ? '1600px' : '1200px';
+      args.width === 'narrow' ? '800px'
+      : args.width === 'wide' ? '1600px'
+      : '1200px';
 
     container.innerHTML = `
       <h1 style="color: var(--color-text-primary); margin-bottom: var(--spacing-4);">
@@ -227,7 +229,7 @@ export const SettingsPage = {
           </h2>
         </div>
         <div class="card__body">
-          <button class="btn btn-secondary">
+          <button class="btn btn-cancel">
             <i class="fas fa-key"></i>
             Change Password
           </button>

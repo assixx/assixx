@@ -213,7 +213,7 @@ export function getAvailabilityBadge(employee: Employee): string {
       badgeText = 'Krank';
       break;
     case 'unavailable':
-      badgeClass = 'badge badge--secondary';
+      badgeClass = 'badge badge--error';
       badgeText = 'Nicht verfügbar';
       break;
     case 'training':
@@ -221,7 +221,7 @@ export function getAvailabilityBadge(employee: Employee): string {
       badgeText = 'Schulung';
       break;
     case 'other':
-      badgeClass = 'badge badge--secondary';
+      badgeClass = 'badge badge--error';
       badgeText = 'Sonstiges';
       break;
     case 'available':
@@ -272,7 +272,7 @@ export function renderEmployeeRow(employee: Employee): string {
       <td>${employee.department_name ?? employee.departmentName ?? '-'}</td>
       <td>${employee.team_name ?? employee.teamName ?? '-'}</td>
       <td>
-        <span class="${isActive ? 'badge badge--success' : 'badge badge--secondary'}">
+        <span class="${isActive ? 'badge badge--success' : 'badge badge--error'}">
           ${isActive ? 'Aktiv' : 'Inaktiv'}
         </span>
       </td>

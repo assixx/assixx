@@ -12,14 +12,18 @@ export interface User {
 
 export interface KvpSuggestion {
   id: number;
+  uuid: string; // NEW: External UUIDv7 identifier for secure URLs
   title: string;
   description: string;
   status: 'new' | 'in_review' | 'approved' | 'implemented' | 'rejected' | 'archived';
   priority: 'low' | 'normal' | 'high' | 'urgent';
-  orgLevel: 'company' | 'department' | 'team';
+  orgLevel: 'company' | 'department' | 'area' | 'team';
   orgId: number;
+  isShared: number; // 0 = private (only creator + team leader), 1 = shared
   departmentId: number;
   departmentName: string;
+  areaId?: number;
+  areaName?: string;
   teamId?: number;
   teamName?: string;
   submittedBy: number;
@@ -52,72 +56,6 @@ export interface Department {
   name: string;
 }
 
-export interface KvpWindow extends Window {
-  selectCategory: (id: string, name: string) => void;
-  selectDepartment: (id: string, name: string) => void;
-  selectKvpCategory?: (id: string, name: string) => void;
-  showCreateModal: () => void;
-  hideCreateModal: () => void;
-  selectedPhotos?: File[];
-}
-
-// Type for v1 API response with snake_case fields
-export interface V1Suggestion {
-  id: number;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  org_level?: string;
-  orgLevel?: string;
-  org_id?: number;
-  orgId?: number;
-  department_id?: number;
-  departmentId?: number;
-  department_name?: string;
-  departmentName?: string;
-  submitted_by?: number;
-  submittedBy?: number;
-  submitted_by_name?: string;
-  submittedByName?: string;
-  submitted_by_lastname?: string;
-  submittedByLastname?: string;
-  category_id?: number;
-  categoryId?: number;
-  category_name?: string;
-  categoryName?: string;
-  category_icon?: string;
-  categoryIcon?: string;
-  category_color?: string;
-  categoryColor?: string;
-  shared_by?: number;
-  sharedBy?: number;
-  shared_by_name?: string;
-  sharedByName?: string;
-  shared_at?: string;
-  sharedAt?: string;
-  created_at?: string;
-  createdAt?: string;
-  expected_benefit?: string;
-  expectedBenefit?: string;
-  estimated_cost?: number;
-  estimatedCost?: number;
-  actual_savings?: number;
-  actualSavings?: number;
-  attachment_count?: number;
-  attachmentCount?: number;
-  roi?: number;
-}
-
-export interface V1Status {
-  new?: number;
-  in_review?: number;
-  implemented?: number;
-  approved?: number;
-  rejected?: number;
-  archived?: number;
-}
-
 export interface V2Status {
   new?: number;
   inReview?: number;
@@ -130,7 +68,7 @@ export interface V2Status {
 export interface StatsResponse {
   company?: {
     total: number;
-    byStatus: V1Status | V2Status;
+    byStatus: V2Status;
     totalSavings: number;
   };
   total?: number;

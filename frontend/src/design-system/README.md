@@ -98,7 +98,7 @@ That's it! The entire design system is now available.
 <button class="btn btn-primary">Save Changes</button>
 
 <!-- Secondary Button -->
-<button class="btn btn-secondary">Cancel</button>
+<button class="btn btn-cancel">Cancel</button>
 
 <!-- Danger Button -->
 <button class="btn btn-danger">Delete</button>
@@ -114,7 +114,7 @@ Full button system with 6 variants:
 
 - `btn-primary` - Main actions
 - `btn-primary-first` - Hero CTAs
-- `btn-secondary` - Cancel/Back
+- `btn-cancel` - Cancel/Back
 - `btn-danger` - Destructive
 - `btn-success` - Positive
 - `btn-status-*` - Status toggles

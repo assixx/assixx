@@ -361,7 +361,7 @@ function renderGroupTree(groups, level = 0) {
 
     <div class="modal-actions">
       <button on click="savePermissions()" class="btn-primary">Speichern</button>
-      <button on click="closeModal()" class="btn-secondary">Abbrechen</button>
+      <button on click="closeModal()" class="btn-cancel">Abbrechen</button>
     </div>
   </div>
 </div>
@@ -523,7 +523,7 @@ async function loadDepartmentBadge() {
 
       <div class="modal-actions">
         <button type="submit" class="btn-primary">Erstellen</button>
-        <button type="button" on click="closeModal()" class="btn-secondary">Abbrechen</button>
+        <button type="button" on click="closeModal()" class="btn-cancel">Abbrechen</button>
       </div>
     </form>
   </div>

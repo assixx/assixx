@@ -36,7 +36,7 @@ function getStatusBadge(status: Department['status']): { class: string; text: st
     case 'restructuring':
       return { class: 'badge--info', text: 'Umstrukturierung' };
     default:
-      return { class: 'badge--secondary', text: status };
+      return { class: 'badge--error', text: status };
   }
 }
 

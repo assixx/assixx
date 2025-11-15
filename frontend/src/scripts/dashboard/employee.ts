@@ -183,12 +183,12 @@ function displayDocuments(documents: Document[]): void {
     documentTableBody,
     documents
       .map((doc) => {
-        const uploadDate = formatDate(doc.created_at);
-        const fileSize = formatFileSize(doc.file_size);
+        const uploadDate = formatDate(doc.createdAt);
+        const fileSize = formatFileSize(doc.fileSize);
 
         return `
         <tr>
-          <td>${escapeHtml(doc.file_name)}</td>
+          <td>${escapeHtml(doc.filename)}</td>
           <td>${escapeHtml(doc.category)}</td>
           <td>${uploadDate}</td>
           <td>${fileSize}</td>

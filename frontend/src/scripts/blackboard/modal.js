@@ -321,7 +321,7 @@ function updateModalStructure() {
         button.classList.add('btn', 'btn-primary');
       } else if (button.classList.contains('secondary-button')) {
         button.classList.remove('secondary-button');
-        button.classList.add('btn', 'btn-secondary');
+        button.classList.add('btn', 'btn-cancel');
       }
     });
 

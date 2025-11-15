@@ -11,16 +11,16 @@ export default {
   title: 'Design System/Forms/Multi-Select',
 
   parameters: {
-    layout: 'padded'
+    layout: 'padded',
   },
 
   tags: ['autodocs'],
 
   globals: {
     backgrounds: {
-      value: "assixx-dark"
-    }
-  }
+      value: 'assixx-dark',
+    },
+  },
 };
 
 /**
@@ -315,7 +315,7 @@ export const InModalContext = {
             </div>
           </div>
           <div class="ds-modal__footer">
-            <button class="btn btn-secondary">Abbrechen</button>
+            <button class="btn btn-cancel">Abbrechen</button>
             <button class="btn btn-modal">
               <i class="fas fa-save"></i>
               Speichern

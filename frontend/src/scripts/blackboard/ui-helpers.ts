@@ -136,7 +136,7 @@ function getOrCreatePreviewModal(): HTMLElement {
         <a id="downloadLink" class="btn btn-primary" download>
           <i class="fas fa-download"></i> Herunterladen
         </a>
-        <button type="button" class="btn btn-secondary" data-action="close">Schließen</button>
+        <button type="button" class="btn btn-cancel" data-action="close">Schließen</button>
       </div>
     </div>
   `;

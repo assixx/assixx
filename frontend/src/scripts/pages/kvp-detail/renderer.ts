@@ -3,7 +3,7 @@
  * Handles all DOM rendering operations for KVP detail page
  */
 
-import { $$, setHTML, getData } from '../../utils/dom-utils';
+import { $$, setHTML, getData } from '../../../utils/dom-utils';
 import {
   type KvpSuggestion,
   type Comment,
@@ -16,12 +16,57 @@ import {
   getPriorityText,
   formatCurrency,
   hasImplementationDate,
-} from './kvp-detail-ui';
+} from './ui';
 
 interface User {
   id: number;
   role: 'root' | 'admin' | 'employee';
   tenantId: number;
+}
+
+/**
+ * Get Design System badge class for status
+ * Maps status values to badge--kvp-* classes
+ */
+function getStatusBadgeClass(status: string): string {
+  const statusMap = new Map<string, string>([
+    ['new', 'badge--kvp-new'],
+    ['in_review', 'badge--kvp-in-review'],
+    ['approved', 'badge--kvp-approved'],
+    ['implemented', 'badge--kvp-implemented'],
+    ['rejected', 'badge--kvp-rejected'],
+    ['archived', 'badge--kvp-archived'],
+  ]);
+  // Map.get() is safe - status comes from backend enum
+  return statusMap.get(status) ?? 'badge--kvp-new';
+}
+
+/**
+ * Get Design System badge class for priority
+ * Maps priority values to badge--priority-* classes
+ */
+function getPriorityBadgeClass(priority: string): string {
+  const priorityMap = new Map<string, string>([
+    ['low', 'badge--priority-low'],
+    ['normal', 'badge--priority-normal'],
+    ['high', 'badge--priority-high'],
+    ['urgent', 'badge--priority-urgent'],
+  ]);
+  return priorityMap.get(priority) ?? 'badge--priority-normal';
+}
+
+/**
+ * Get Design System badge class for visibility (org level)
+ * Maps orgLevel values to badge--visibility-* classes
+ */
+function getVisibilityBadgeClass(orgLevel: string): string {
+  const visibilityMap = new Map<string, string>([
+    ['team', 'badge--visibility-team'],
+    ['department', 'badge--visibility-department'],
+    ['area', 'badge--visibility-area'],
+    ['company', 'badge--visibility-company'],
+  ]);
+  return visibilityMap.get(orgLevel) ?? 'badge--visibility-team';
 }
 
 export class KvpDetailRenderer {
@@ -71,7 +116,8 @@ export class KvpDetailRenderer {
     if (!this.suggestion) return;
     const statusBadge = $$('#statusBadge');
     if (statusBadge) {
-      statusBadge.className = `status-badge ${this.suggestion.status.replace('_', '')}`;
+      const badgeClass = getStatusBadgeClass(this.suggestion.status);
+      statusBadge.className = `badge ${badgeClass}`;
       statusBadge.textContent = getStatusText(this.suggestion.status);
     }
   }
@@ -80,7 +126,8 @@ export class KvpDetailRenderer {
     if (!this.suggestion) return;
     const priorityBadge = $$('#priorityBadge');
     if (priorityBadge) {
-      priorityBadge.className = `priority-badge ${this.suggestion.priority}`;
+      const badgeClass = getPriorityBadgeClass(this.suggestion.priority);
+      priorityBadge.className = `badge ${badgeClass}`;
       priorityBadge.textContent = getPriorityText(this.suggestion.priority);
     }
   }
@@ -91,7 +138,8 @@ export class KvpDetailRenderer {
     const visibilityText = $$('#visibilityText');
     if (visibilityBadge && visibilityText) {
       const orgLevel = this.suggestion.orgLevel;
-      visibilityBadge.className = `visibility-badge ${orgLevel}`;
+      const badgeClass = getVisibilityBadgeClass(orgLevel);
+      visibilityBadge.className = `badge ${badgeClass}`;
 
       const icon = visibilityBadge.querySelector('i');
       if (icon) {
@@ -130,7 +178,7 @@ export class KvpDetailRenderer {
     if (this.suggestion.expectedBenefit !== undefined && this.suggestion.expectedBenefit !== '') {
       const benefitSection = document.querySelector('#benefitSection');
       const expectedBenefit = document.querySelector('#expectedBenefit');
-      if (benefitSection instanceof HTMLElement) benefitSection.style.display = '';
+      if (benefitSection instanceof HTMLElement) benefitSection.removeAttribute('hidden');
       if (expectedBenefit) expectedBenefit.textContent = this.suggestion.expectedBenefit;
     }
 
@@ -160,7 +208,7 @@ export class KvpDetailRenderer {
   private showFinancialSection(): void {
     const financialSection = document.querySelector('#financialSection');
     if (financialSection instanceof HTMLElement) {
-      financialSection.style.display = '';
+      financialSection.removeAttribute('hidden');
     }
   }
 
@@ -196,10 +244,10 @@ export class KvpDetailRenderer {
 
     setHTML(
       categoryEl,
-      `<span style="color: ${this.suggestion.categoryColor}">
-        <i class="${this.suggestion.categoryIcon}"></i>
+      `<div class="category-tag" style="background: ${this.suggestion.categoryColor}20; color: ${this.suggestion.categoryColor}; border: 1px solid ${this.suggestion.categoryColor};">
+        ${this.suggestion.categoryIcon}
         ${this.suggestion.categoryName}
-      </span>`,
+      </div>`,
     );
   }
 
@@ -228,8 +276,8 @@ export class KvpDetailRenderer {
   private renderAdminStatus(statusElement: Element, statusDropdownContainer: Element, statusDisplay: Element): void {
     if (!this.suggestion) return;
 
-    if (statusElement instanceof HTMLElement) statusElement.style.display = 'none';
-    if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = '';
+    if (statusElement instanceof HTMLElement) statusElement.setAttribute('hidden', '');
+    if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.removeAttribute('hidden');
 
     const statusSpan = statusDisplay.querySelector('span');
     if (statusSpan) statusSpan.textContent = getStatusText(this.suggestion.status);
@@ -242,7 +290,7 @@ export class KvpDetailRenderer {
     if (!this.suggestion) return;
 
     statusElement.textContent = getStatusText(this.suggestion.status);
-    if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.style.display = 'none';
+    if (statusDropdownContainer instanceof HTMLElement) statusDropdownContainer.setAttribute('hidden', '');
   }
 
   private renderAssignedTo(): void {
@@ -251,7 +299,7 @@ export class KvpDetailRenderer {
 
     const assignedToItem = document.querySelector('#assignedToItem');
     if (assignedToItem instanceof HTMLElement) {
-      assignedToItem.style.display = '';
+      assignedToItem.removeAttribute('hidden');
     }
     // TODO: Load assigned user name
   }
@@ -264,7 +312,7 @@ export class KvpDetailRenderer {
     const implementationDate = document.querySelector('#implementationDate');
 
     if (implementationItem instanceof HTMLElement) {
-      implementationItem.style.display = '';
+      implementationItem.removeAttribute('hidden');
     }
 
     if (
@@ -285,7 +333,7 @@ export class KvpDetailRenderer {
     const rejectionReason = document.querySelector('#rejectionReason');
 
     if (rejectionItem instanceof HTMLElement) {
-      rejectionItem.style.display = '';
+      rejectionItem.removeAttribute('hidden');
     }
 
     if (rejectionReason) {
@@ -308,7 +356,7 @@ export class KvpDetailRenderer {
     }
   }
 
-  renderOtherAttachmentsWrapper(otherFiles: Attachment[], onDownload: (id: number) => void): HTMLElement | null {
+  renderOtherAttachmentsWrapper(otherFiles: Attachment[], onDownload: (fileUuid: string) => void): HTMLElement | null {
     const attachmentsCard = document.querySelector('#attachmentsCard');
     const container = document.querySelector('#attachmentList');
 
@@ -318,9 +366,9 @@ export class KvpDetailRenderer {
       // Add click handlers
       updatedContainer.querySelectorAll('.attachment-item').forEach((item) => {
         item.addEventListener('click', () => {
-          const id = getData(item as HTMLElement, 'id');
-          if (id !== undefined && id !== '') {
-            onDownload(Number.parseInt(id, 10));
+          const uuid = getData(item as HTMLElement, 'uuid');
+          if (uuid !== undefined && uuid !== '') {
+            onDownload(uuid);
           }
         });
       });
@@ -331,7 +379,7 @@ export class KvpDetailRenderer {
     return null;
   }
 
-  renderAttachments(attachments: Attachment[], onDownload: (id: number) => void): void {
+  renderAttachments(attachments: Attachment[], onDownload: (fileUuid: string) => void): void {
     if (attachments.length === 0) return;
 
     // Filter photo attachments
@@ -354,7 +402,9 @@ export class KvpDetailRenderer {
     const statusBadge = document.querySelector('#statusBadge');
     if (!statusBadge) return;
 
-    statusBadge.className = `status-badge ${newStatus.replace('_', '')}`;
+    // Use Design System badge class (not raw status value)
+    const badgeClass = getStatusBadgeClass(newStatus);
+    statusBadge.className = `badge ${badgeClass}`;
     statusBadge.textContent = getStatusText(newStatus);
   }
 
@@ -363,10 +413,10 @@ export class KvpDetailRenderer {
     const rejectionReasonEl = document.querySelector('#rejectionReason');
 
     if (newStatus === 'rejected' && rejectionReason !== undefined && rejectionReason !== '') {
-      if (rejectionItem instanceof HTMLElement) rejectionItem.style.display = '';
+      if (rejectionItem instanceof HTMLElement) rejectionItem.removeAttribute('hidden');
       if (rejectionReasonEl) rejectionReasonEl.textContent = rejectionReason;
     } else if (newStatus !== 'rejected' && rejectionItem instanceof HTMLElement) {
-      rejectionItem.style.display = 'none';
+      rejectionItem.setAttribute('hidden', '');
     }
   }
 

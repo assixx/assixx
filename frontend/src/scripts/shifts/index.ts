@@ -2631,7 +2631,7 @@ class ShiftPlanningSystem {
         text = 'Krank';
         break;
       case 'unavailable':
-        badgeClass = 'badge-secondary';
+        badgeClass = 'badge-error';
         text = 'Nicht verfügbar';
         break;
       case 'training':
@@ -2841,7 +2841,7 @@ class ShiftPlanningSystem {
       case 'sick':
         return '<span class="badge badge-danger">Krank</span>';
       case 'unavailable':
-        return '<span class="badge badge-secondary">Nicht verfügbar</span>';
+        return '<span class="badge badge-error">Nicht verfügbar</span>';
       case 'training':
         return '<span class="badge badge-info">Schulung</span>';
       case 'other':
@@ -6242,7 +6242,7 @@ class ShiftPlanningSystem {
           ${machineRow}
         </div>
         <div class="modal-actions">
-          <button class="btn btn-secondary" data-action="close-modal">Schließen</button>
+          <button class="btn btn-cancel" data-action="close-modal">Schließen</button>
         </div>
       </div>
     `;
