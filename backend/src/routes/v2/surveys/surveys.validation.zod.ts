@@ -31,7 +31,7 @@ const QuestionTypeSchema = z.enum(
 /**
  * Assignment type enum
  */
-const AssignmentTypeSchema = z.enum(['all_users', 'department', 'team', 'user'], {
+const AssignmentTypeSchema = z.enum(['all_users', 'area', 'department', 'team', 'user'], {
   message: 'Invalid assignment type',
 });
 
@@ -66,17 +66,20 @@ const QuestionSchema = z.object({
 const AssignmentSchema = z
   .object({
     type: AssignmentTypeSchema,
+    areaId: IdSchema.optional(),
     departmentId: IdSchema.optional(),
     teamId: IdSchema.optional(),
     userId: IdSchema.optional(),
   })
   .refine(
     (data: {
-      type: 'all_users' | 'department' | 'team' | 'user';
+      type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+      areaId?: number;
       departmentId?: number;
       teamId?: number;
       userId?: number;
     }) => {
+      if (data.type === 'area') return data.areaId !== undefined;
       if (data.type === 'department') return data.departmentId !== undefined;
       if (data.type === 'team') return data.teamId !== undefined;
       if (data.type === 'user') return data.userId !== undefined;

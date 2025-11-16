@@ -4,7 +4,7 @@
  */
 
 import { setHTML, escapeHtml } from '../../../utils/dom-utils';
-import type { Survey, SurveyTemplate, Department, Team, SurveyQuestion, QuestionOption, Buffer } from './types';
+import type { Survey, SurveyTemplate, Department, Team, Area, SurveyQuestion, QuestionOption, Buffer } from './types';
 
 // ============================================
 // Display Functions
@@ -32,11 +32,11 @@ export function displaySurveys(surveys: Survey[]): void {
         activeList as HTMLElement,
         `
         <div class="empty-state">
-          <div class="empty-state-icon">
+          <div class="empty-state__icon">
             <i class="fas fa-clipboard-list"></i>
           </div>
-          <h3 class="empty-state-title">Keine aktiven Umfragen</h3>
-          <p class="empty-state-description">Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue Umfrage oder aktivieren Sie einen Entwurf.</p>
+          <h3 class="empty-state__title">Keine aktiven Umfragen</h3>
+          <p class="empty-state__description">Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue Umfrage oder aktivieren Sie einen Entwurf.</p>
         </div>
       `,
       );
@@ -51,11 +51,11 @@ export function displaySurveys(surveys: Survey[]): void {
         draftList as HTMLElement,
         `
         <div class="empty-state">
-          <div class="empty-state-icon">
+          <div class="empty-state__icon">
             <i class="fas fa-file-alt"></i>
           </div>
-          <h3 class="empty-state-title">Keine Entwürfe</h3>
-          <p class="empty-state-description">Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue Umfrage und speichern Sie sie als Entwurf.</p>
+          <h3 class="empty-state__title">Keine Entwürfe</h3>
+          <p class="empty-state__description">Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue Umfrage und speichern Sie sie als Entwurf.</p>
         </div>
       `,
       );
@@ -63,6 +63,22 @@ export function displaySurveys(surveys: Survey[]): void {
       setHTML(draftList as HTMLElement, draftSurveys.map((s) => createSurveyCard(s)).join(''));
     }
   }
+}
+
+/**
+ * Format date for display in survey card
+ */
+function formatSurveyDate(dateStr: string | Date | undefined): string {
+  if (dateStr === undefined || dateStr === '') return '';
+
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const day = date.getDate();
+  const month = date.getMonth() + 1;
+  const year = date.getFullYear();
+
+  return `${day.toString().padStart(2, '0')}.${month.toString().padStart(2, '0')}.${year}`;
 }
 
 export function createSurveyCard(survey: Survey): string {
@@ -73,14 +89,30 @@ export function createSurveyCard(survey: Survey): string {
   const onClickAction = isDraft ? 'edit-survey' : 'view-results';
   const surveyId = survey.id ?? 0;
   const status = survey.status ?? 'draft';
+  const badgeClass = getStatusBadgeClass(status);
+
+  // Format date range
+  const startDate = formatSurveyDate(survey.startDate);
+  const endDate = formatSurveyDate(survey.endDate);
+  const dateRange = startDate !== '' && endDate !== '' ? `${startDate} - ${endDate}` : '';
 
   return `
-    <div class="survey-card" data-action="${onClickAction}" data-survey-id="${surveyId}">
-      <div class="survey-card-header">
-        <h3 class="survey-card-title">${getTextFromBuffer(survey.title)}</h3>
-        <span class="survey-status ${status}">${getStatusText(status)}</span>
+    <div class="card card--clickable" data-action="${onClickAction}" data-survey-id="${surveyId}">
+      <div class="flex justify-between items-start mb-4">
+        <h3 class="text-xl font-semibold text-primary m-0">${getTextFromBuffer(survey.title)}</h3>
+        <span class="badge ${badgeClass} badge--uppercase">${getStatusText(status)}</span>
       </div>
-      <p class="survey-card-description">${getTextFromBuffer(survey.description) !== '' ? getTextFromBuffer(survey.description) : 'Keine Beschreibung'}</p>
+      <p class="mb-4 text-sm leading-relaxed text-secondary">${getTextFromBuffer(survey.description) !== '' ? getTextFromBuffer(survey.description) : 'Keine Beschreibung'}</p>
+      ${
+        dateRange !== ''
+          ? `
+      <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+        <i class="fas fa-calendar-alt"></i>
+        <span>${dateRange}</span>
+      </div>
+      `
+          : ''
+      }
       <div class="survey-stats">
         <div class="survey-stat">
           <i class="fas fa-users"></i>
@@ -95,7 +127,7 @@ export function createSurveyCard(survey: Survey): string {
         ${
           responseCount === 0
             ? `
-          <button class="survey-action-btn" data-action="edit-survey" data-survey-id="${surveyId}">
+          <button class="btn btn-secondary" data-action="edit-survey" data-survey-id="${surveyId}">
             <i class="fas fa-edit"></i>
             Bearbeiten
           </button>
@@ -105,14 +137,14 @@ export function createSurveyCard(survey: Survey): string {
         ${
           !isDraft
             ? `
-          <button class="survey-action-btn" data-action="view-results" data-survey-id="${surveyId}">
+          <button class="btn btn-secondary" data-action="view-results" data-survey-id="${surveyId}">
             <i class="fas fa-chart-bar"></i>
             Ergebnisse
           </button>
         `
             : ''
         }
-        <button class="survey-action-btn" data-action="delete-survey" data-survey-id="${surveyId}">
+        <button class="btn btn-secondary" data-action="delete-survey" data-survey-id="${surveyId}">
           <i class="fas fa-trash"></i>
           Löschen
         </button>
@@ -130,11 +162,11 @@ export function displayTemplates(templates: SurveyTemplate[]): void {
       container as HTMLElement,
       `
       <div class="empty-state">
-        <div class="empty-state-icon">
+        <div class="empty-state__icon">
           <i class="fas fa-folder-open"></i>
         </div>
-        <h3 class="empty-state-title">Keine Vorlagen verfügbar</h3>
-        <p class="empty-state-description">Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden automatisch erstellt, wenn Sie eine Umfrage als Vorlage speichern.</p>
+        <h3 class="empty-state__title">Keine Vorlagen verfügbar</h3>
+        <p class="empty-state__description">Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden automatisch erstellt, wenn Sie eine Umfrage als Vorlage speichern.</p>
       </div>
     `,
     );
@@ -144,10 +176,9 @@ export function displayTemplates(templates: SurveyTemplate[]): void {
   const html = templates
     .map(
       (template) => `
-    <div class="template-card" data-action="create-from-template" data-survey-id="${template.id}">
-      <h4>${escapeHtml(template.name)}</h4>
-      <p>${escapeHtml(template.description)}</p>
-      <span class="template-category">${escapeHtml(template.category)}</span>
+    <div class="card card--clickable" data-action="create-from-template" data-survey-id="${template.id}">
+      <h4 class="mb-2 font-semibold text-primary">${escapeHtml(template.name)}</h4>
+      <p class="text-sm leading-normal text-secondary">${escapeHtml(template.description)}</p>
     </div>
   `,
     )
@@ -195,40 +226,49 @@ export function displayTeamOptions(teams: Team[]): void {
   setHTML(select, optionsHtml);
 }
 
+export function displayAreaOptions(areas: Area[]): void {
+  const select = document.querySelector<HTMLSelectElement>('#areaSelect');
+  if (select === null) return;
+
+  const optionsHtml = areas
+    .map((area) => {
+      return `<option value="${area.id}">${escapeHtml(area.name)}</option>`;
+    })
+    .join('');
+  setHTML(select, optionsHtml);
+}
+
 // ============================================
 // Question UI Functions
 // ============================================
 
 export function createQuestionTypeDropdown(questionId: string): string {
   return `
-    <div class="custom-dropdown">
-      <div class="dropdown-display" id="${questionId}_typeDisplay"
-           data-action="toggle-dropdown" data-params="${questionId}_type">
+    <div class="dropdown" data-dropdown="${questionId}_type">
+      <div class="dropdown__trigger" id="${questionId}_typeDisplay" data-action="toggle-dropdown" data-params="${questionId}_type">
         <span>Textantwort</span>
-        <svg width="12" height="8" viewBox="0 0 12 8" fill="none">
-          <path d="M1 1L6 6L11 1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <i class="fas fa-chevron-down"></i>
       </div>
-      <div class="dropdown-options" id="${questionId}_typeDropdown">
-        <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|text|Textantwort">
+      <div class="dropdown__menu" id="${questionId}_typeDropdown">
+        <div class="dropdown__option" data-action="select-question-type" data-params="${questionId}|text|Textantwort">
           Textantwort
         </div>
-        <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|single_choice|Einzelauswahl">
+        <div class="dropdown__option" data-action="select-question-type" data-params="${questionId}|single_choice|Einzelauswahl">
           Einzelauswahl
         </div>
-        <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|multiple_choice|Mehrfachauswahl">
+        <div class="dropdown__option" data-action="select-question-type" data-params="${questionId}|multiple_choice|Mehrfachauswahl">
           Mehrfachauswahl
         </div>
-        <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|rating|Bewertung (1-5)">
+        <div class="dropdown__option" data-action="select-question-type" data-params="${questionId}|rating|Bewertung (1-5)">
           Bewertung (1-5)
         </div>
-        <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|yes_no|Ja/Nein">
+        <div class="dropdown__option" data-action="select-question-type" data-params="${questionId}|yes_no|Ja/Nein">
           Ja/Nein
         </div>
-        <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|number|Zahl">
+        <div class="dropdown__option" data-action="select-question-type" data-params="${questionId}|number|Zahl">
           Zahl
         </div>
-        <div class="dropdown-option" data-action="select-question-type" data-params="${questionId}|date|Datum">
+        <div class="dropdown__option" data-action="select-question-type" data-params="${questionId}|date|Datum">
           Datum
         </div>
       </div>
@@ -249,24 +289,23 @@ export function createQuestionHtml(questionId: string, questionNumber: number): 
         </button>
       </div>
 
-      <div class="form-group">
-        <input type="text" class="form-control" id="${questionId}_text"
+      <div class="form-field">
+        <input type="text" class="form-field__control" id="${questionId}_text"
                placeholder="Fragetext eingeben..." required>
       </div>
 
-      <div class="question-controls">
+      <div class="question-controls mb-4">
         ${createQuestionTypeDropdown(questionId)}
 
-        <label class="checkbox-label">
-          <input type="checkbox" id="${questionId}_required" checked>
-          <span class="checkbox-custom"></span>
-          <span class="checkbox-text">Pflichtfrage</span>
-        </label>
+        <div class="flex items-center gap-3 mt-2">
+          <input type="checkbox" id="${questionId}_required" checked class="w-5 h-5 cursor-pointer">
+          <label for="${questionId}_required" class="cursor-pointer">Pflichtfrage</label>
+        </div>
       </div>
 
-      <div id="${questionId}_options" style="display: none;">
+      <div id="${questionId}_options" class="hidden">
         <div class="options-header">
-          <label class="form-label">Antwortoptionen</label>
+          <label class="form-field__label">Antwortoptionen</label>
           <button type="button" class="add-option-btn" data-action="add-option" data-params="${questionId}">
             <i class="fas fa-plus"></i> Option hinzufügen
           </button>
@@ -379,12 +418,33 @@ export function getStatusText(status: string): string {
     paused: 'Pausiert',
     completed: 'Abgeschlossen',
     archived: 'Archiviert',
+    closed: 'Geschlossen',
   };
   // Validate status is one of the known keys to prevent object injection
-  const validStatuses = ['draft', 'active', 'paused', 'completed', 'archived'];
+  const validStatuses = ['draft', 'active', 'paused', 'completed', 'archived', 'closed'];
   // Safe: status is validated to be in validStatuses before accessing statusMap
   // eslint-disable-next-line security/detect-object-injection
   return validStatuses.includes(status) ? statusMap[status] : status;
+}
+
+/**
+ * Maps survey status to Design System badge class
+ * @param status - Survey status (draft, active, closed, archived)
+ * @returns Design System badge variant class
+ */
+export function getStatusBadgeClass(status: string): string {
+  const badgeMap: Record<string, string> = {
+    draft: 'badge--warning', // Orange
+    active: 'badge--success', // Green
+    closed: 'badge--danger', // Red
+    archived: 'badge--secondary', // Gray
+    paused: 'badge--warning', // Orange
+    completed: 'badge--success', // Green
+  };
+  const validStatuses = ['draft', 'active', 'closed', 'archived', 'paused', 'completed'];
+  // Safe: status is validated to be in validStatuses before accessing statusMap
+  // eslint-disable-next-line security/detect-object-injection
+  return validStatuses.includes(status) ? badgeMap[status] : 'badge--secondary';
 }
 
 export function toBool(value: unknown): boolean {
@@ -402,9 +462,10 @@ export function setElementVisibility(element: HTMLElement | null, show: boolean)
   if (element === null) return;
 
   if (show) {
-    element.classList.remove('u-hidden');
+    // Design System: Use Tailwind 'hidden' class instead of custom 'u-hidden'
+    element.classList.remove('hidden');
   } else {
-    element.classList.add('u-hidden');
+    element.classList.add('hidden');
   }
 }
 

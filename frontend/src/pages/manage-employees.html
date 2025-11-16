@@ -245,7 +245,10 @@
 
           <div class="form-field">
             <label class="form-field__label" for="employee-birthday">Geburtsdatum</label>
-            <input type="date" id="employee-birthday" name="birthday" class="form-field__control" />
+            <div class="date-picker">
+              <i class="date-picker__icon fas fa-calendar"></i>
+              <input type="date" id="employee-birthday" name="birthday" class="date-picker__input" />
+            </div>
           </div>
 
           <div class="form-field">
@@ -307,12 +310,18 @@
 
             <div class="form-field">
               <label class="form-field__label" for="availability-start-date">Von Datum</label>
-              <input type="date" name="availabilityStart" id="availability-start-date" class="form-field__control" />
+              <div class="date-picker">
+                <i class="date-picker__icon fas fa-calendar"></i>
+                <input type="date" name="availabilityStart" id="availability-start-date" class="date-picker__input" />
+              </div>
             </div>
 
             <div class="form-field">
               <label class="form-field__label" for="availability-end-date">Bis Datum</label>
-              <input type="date" name="availabilityEnd" id="availability-end-date" class="form-field__control" />
+              <div class="date-picker">
+                <i class="date-picker__icon fas fa-calendar"></i>
+                <input type="date" name="availabilityEnd" id="availability-end-date" class="date-picker__input" />
+              </div>
             </div>
 
             <div class="form-field">

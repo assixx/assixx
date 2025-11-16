@@ -94,16 +94,17 @@
   box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
 }
 
+/*
 .time-picker__input:focus + .time-picker__icon,
 .time-picker:focus-within .time-picker__icon {
   color: var(--color-primary);
-}
+} */
 
-/* Hover state */
+/* Hover state
 .time-picker__input:hover:not(:disabled) {
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 8%);
-}
+} */
 
 /* Disabled state */
 .time-picker__input:disabled,
@@ -251,8 +252,8 @@
   }
 }
 
-/* Focus visible (keyboard navigation) */
+/* Focus visible (keyboard navigation)
 .time-picker__input:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
+} */

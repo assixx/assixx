@@ -11,6 +11,7 @@
     display: flex;
     flex-direction: column;
     gap: var(--form-field-gap);
+    margin-bottom: 10px;
   }
 
   .form-field--inline {
@@ -24,6 +25,8 @@
     display: inline-flex;
     gap: var(--spacing-1);
     align-items: center;
+
+    margin-bottom: var(--spacing-1); /* Small spacing below label */
 
     font-size: var(--form-field-label-size);
     font-weight: var(--form-field-label-weight);

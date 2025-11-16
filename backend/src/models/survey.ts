@@ -2,6 +2,8 @@
  * Survey Model
  * Handles database operations for surveys
  */
+import { v7 as uuidv7 } from 'uuid';
+
 import {
   PoolConnection,
   ResultSetHeader,
@@ -53,7 +55,8 @@ interface DbSurveyQuestionOption extends RowDataPacket {
 interface DbSurveyAssignment extends RowDataPacket {
   id: number;
   survey_id: number;
-  assignment_type: 'all_users' | 'department' | 'team' | 'user';
+  assignment_type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+  area_id?: number | null;
   department_id?: number | null;
   team_id?: number | null;
   user_id?: number | null;
@@ -85,7 +88,8 @@ interface SurveyCreateData {
     options?: string[];
   }[];
   assignments?: {
-    type: 'all_users' | 'department' | 'team' | 'user';
+    type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+    area_id?: number | null;
     department_id?: number | null;
     team_id?: number | null;
     user_id?: number | null;
@@ -108,7 +112,8 @@ interface SurveyUpdateData {
     options?: string[];
   }[];
   assignments?: {
-    type: 'all_users' | 'department' | 'team' | 'user';
+    type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+    area_id?: number | null;
     department_id?: number | null;
     team_id?: number | null;
     user_id?: number | null;
@@ -157,6 +162,7 @@ export interface SurveyStatistics {
 // Query result types for type safety
 interface UserDepartmentResult extends RowDataPacket {
   department_id: number | null;
+  area_id: number | null;
 }
 
 interface UserTeamResult extends RowDataPacket {
@@ -234,13 +240,14 @@ async function insertSurveyAssignments(
     await connection.query(
       `
         INSERT INTO survey_assignments (
-          tenant_id, survey_id, assignment_type, department_id, team_id, user_id
-        ) VALUES (?, ?, ?, ?, ?, ?)
+          tenant_id, survey_id, assignment_type, area_id, department_id, team_id, user_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
       [
         tenantId,
         surveyId,
         assignment.type,
+        assignment.area_id ?? null,
         assignment.department_id ?? null,
         assignment.team_id ?? null,
         assignment.user_id ?? null,
@@ -268,13 +275,16 @@ export async function createSurvey(
   try {
     await connection.beginTransaction();
 
+    // Generate UUID for survey (UUIDv7: time-sortable, like KVP)
+    const surveyUuid = uuidv7();
+
     // Create survey
     const [surveyResult] = await connection.query<ResultSetHeader>(
       `
         INSERT INTO surveys (
           tenant_id, title, description, created_by, status,
-          is_anonymous, is_mandatory, start_date, end_date
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          is_anonymous, is_mandatory, start_date, end_date, uuid
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         tenantId,
@@ -286,6 +296,7 @@ export async function createSurvey(
         surveyData.is_mandatory ?? false,
         surveyData.start_date ?? null,
         surveyData.end_date ?? null,
+        surveyUuid,
       ],
     );
 
@@ -358,9 +369,9 @@ export async function getAllSurveysByTenantForEmployee(
   const { status, page = 1, limit = 20 } = filters;
   const offset = (page - 1) * limit;
 
-  // First get employee's department info
+  // First get employee's department and area info
   const [userInfo] = await typedQuery<UserDepartmentResult[]>(
-    `SELECT department_id FROM users WHERE id = ? AND tenant_id = ?`,
+    `SELECT department_id, area_id FROM users WHERE id = ? AND tenant_id = ?`,
     [employeeUserId, tenantId],
   );
 
@@ -368,7 +379,7 @@ export async function getAllSurveysByTenantForEmployee(
     return [];
   }
 
-  const { department_id: departmentId } = userInfo[0];
+  const { department_id: departmentId, area_id: areaId } = userInfo[0];
 
   // Get employee's team IDs from user_teams table
   const [userTeams] = await typedQuery<UserTeamResult[]>(
@@ -400,6 +411,9 @@ export async function getAllSurveysByTenantForEmployee(
         -- Employee can see surveys assigned to all users
         sa.assignment_type = 'all_users'
         OR
+        -- Employee can see surveys assigned to their area
+        (sa.assignment_type = 'area' AND sa.area_id = ?)
+        OR
         -- Employee can see surveys assigned to their department
         (sa.assignment_type = 'department' AND sa.department_id = ?)
         OR
@@ -411,7 +425,7 @@ export async function getAllSurveysByTenantForEmployee(
       )
     `;
 
-  const params: unknown[] = [tenantId, departmentId, ...teamIds, employeeUserId];
+  const params: unknown[] = [tenantId, areaId, departmentId, ...teamIds, employeeUserId];
 
   if (status) {
     query += ' AND s.status = ?';
@@ -455,6 +469,9 @@ export async function getAllSurveysByTenantForAdmin(
       AND (
         -- Admin can see surveys assigned to all users
         sa.assignment_type = 'all_users'
+        OR
+        -- Admin can see surveys assigned to areas (TODO: add admin_area_permissions check)
+        sa.assignment_type = 'area'
         OR
         -- Admin can see surveys assigned to their departments
         (sa.assignment_type = 'department' AND sa.department_id = adp.department_id AND adp.can_read = 1)
@@ -617,13 +634,14 @@ async function updateSurveyAssignments(
       await connection.query(
         `
           INSERT INTO survey_assignments (
-            tenant_id, survey_id, assignment_type, department_id, team_id, user_id
-          ) VALUES (?, ?, ?, ?, ?, ?)
+            tenant_id, survey_id, assignment_type, area_id, department_id, team_id, user_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
         `,
         [
           tenantId,
           surveyId,
           assignment.type,
+          assignment.area_id ?? null,
           assignment.department_id ?? null,
           assignment.team_id ?? null,
           assignment.user_id ?? null,

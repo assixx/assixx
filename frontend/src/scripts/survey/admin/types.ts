@@ -25,8 +25,9 @@ export interface SurveyAdminInstance {
   createFromTemplate(templateId: number): void;
 }
 
-export interface WindowWithExtensions {
+export interface WindowWithExtensions extends Window {
   surveyAdmin?: SurveyAdminInstance;
+  __surveyAdminManager?: unknown;
 }
 
 // ============================================
@@ -37,11 +38,9 @@ export interface SurveyQuestion {
   id?: number;
   questionText: string;
   questionType: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'yes_no' | 'number' | 'date';
-  isRequired: boolean;
-  orderPosition: number;
+  isRequired: number | boolean;
+  orderIndex?: number;
   options?: string[] | QuestionOption[];
-  // Legacy field names
-  is_required?: boolean;
 }
 
 export interface QuestionOption {
@@ -49,15 +48,12 @@ export interface QuestionOption {
 }
 
 export interface SurveyAssignment {
-  type: 'all_users' | 'department' | 'team' | 'user';
+  type?: 'all_users' | 'area' | 'department' | 'team' | 'user';
+  assignmentType?: 'all_users' | 'area' | 'department' | 'team' | 'user';
+  areaId?: number;
   departmentId?: number;
   teamId?: number;
   userId?: number;
-  // Legacy field names
-  assignmentType?: string;
-  assignment_type?: string;
-  department_id?: number;
-  team_id?: number;
 }
 
 export interface Survey {
@@ -79,9 +75,6 @@ export interface Survey {
   creatorLastName?: string;
   createdAt?: string;
   updatedAt?: string;
-  // Legacy field names from API
-  assignment_type?: string;
-  assignmentType?: string;
 }
 
 export interface Buffer {
@@ -119,6 +112,11 @@ export interface Team {
   memberCount?: number;
 }
 
+export interface Area {
+  id: number;
+  name: string;
+}
+
 // ============================================
 // API Response Types
 // ============================================
@@ -126,6 +124,7 @@ export interface Team {
 export interface ApiResponse<T> {
   success?: boolean;
   data?: T;
+  error?: string | { message?: string };
 }
 
 export interface SurveyApiResponse {
