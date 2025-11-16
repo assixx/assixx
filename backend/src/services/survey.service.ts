@@ -49,7 +49,8 @@ interface SurveyQuestionOption {
 interface SurveyAssignment {
   id: number;
   survey_id: number;
-  assignment_type: 'all_users' | 'department' | 'team' | 'user';
+  assignment_type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+  area_id?: number | null;
   department_id?: number | null;
   team_id?: number | null;
   user_id?: number | null;
@@ -87,7 +88,8 @@ interface SurveyCreateData {
     options?: string[];
   }[];
   assignments?: {
-    type: 'all_users' | 'department' | 'team' | 'user';
+    type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+    area_id?: number | null;
     department_id?: number | null;
     team_id?: number | null;
     user_id?: number | null;

@@ -195,10 +195,10 @@ export class SignupFormController {
 
 ### Surveys
 
-- [ ] survey-admin.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] survey-employee.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] survey-details.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] survey-results.html --skip wir machen das zum schluss, weil größere refactoring
+- [x] survey-admin.html ✅ (2025-11-16) - 100% Design System compliant (ds-modal, form-field, dropdown, btn-float, empty-state, badges, cards, TypeScript modules split to index/ui/types layers, question builder with dynamic form fields, Tailwind grid layouts, survey-admin.css reduced 749→274 lines -63%, eliminated ALL redundant styles: survey cards→.card, status badges→.badge variants, grids→Tailwind utilities, no inline styles/JS, no Bootstrap)
+- [ ] survey-employee.html
+- [ ] survey-details.html
+- [ ] survey-results.html
 
 ### Admin/Root
 

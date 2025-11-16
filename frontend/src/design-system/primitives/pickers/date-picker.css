@@ -98,12 +98,12 @@
   color: var(--color-primary);
 }
 
-/* Hover state */
+/* Hover state 
 .date-picker__input:hover:not(:disabled) {
   border-color: rgb(255 255 255 / 20%);
   background: rgb(255 255 255 / 8%);
 }
-
+*/
 /* Disabled state */
 .date-picker__input:disabled,
 .date-picker--disabled .date-picker__input {
@@ -235,8 +235,8 @@
   }
 }
 
-/* Focus visible (keyboard navigation) */
+/* Focus visible (keyboard navigation)
 .date-picker__input:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
-}
+} */
