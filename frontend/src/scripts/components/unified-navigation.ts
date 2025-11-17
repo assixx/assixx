@@ -1483,7 +1483,7 @@ class UnifiedNavigation {
               </p>
             </div>
             <div class="ds-modal__footer ds-modal__footer--spaced">
-              <button class="btn btn-dark" id="cancelLogout">
+              <button class="btn btn-cancel" id="cancelLogout">
                 <i class="fas fa-times"></i>
                 Abbrechen
               </button>

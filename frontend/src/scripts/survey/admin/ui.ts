@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Survey Administration UI Module
  * Handles all UI rendering, display functions, and DOM manipulation
@@ -5,23 +6,15 @@
 
 import { setHTML, escapeHtml } from '../../../utils/dom-utils';
 import type { Survey, SurveyTemplate, Department, Team, Area, SurveyQuestion, QuestionOption, Buffer } from './types';
+import { departments, teams, areas } from './data';
 
 // ============================================
 // Display Functions
 // ============================================
 
 export function displaySurveys(surveys: Survey[]): void {
-  console.log('[SurveyAdmin] Displaying surveys:', surveys);
-  console.log(
-    '[SurveyAdmin] Survey statuses:',
-    surveys.map((s) => ({ id: s.id, status: s.status })),
-  );
-
   const activeSurveys = surveys.filter((s) => s.status === 'active');
   const draftSurveys = surveys.filter((s) => s.status === 'draft');
-
-  console.log('[SurveyAdmin] Active surveys:', activeSurveys.length);
-  console.log('[SurveyAdmin] Draft surveys:', draftSurveys.length);
 
   const activeList = document.querySelector('#activeSurveys');
   const draftList = document.querySelector('#draftSurveys');
@@ -81,6 +74,154 @@ function formatSurveyDate(dateStr: string | Date | undefined): string {
   return `${day.toString().padStart(2, '0')}.${month.toString().padStart(2, '0')}.${year}`;
 }
 
+/**
+ * Helper: Format team assignment
+ */
+function formatTeamAssignment(teamId: number | null | undefined): string {
+  if (teamId == null) return 'Team';
+  const team = teams.find((t) => t.id === teamId);
+  return team !== undefined ? `Team: ${team.name}` : 'Team';
+}
+
+/**
+ * Helper: Format department assignment
+ */
+function formatDepartmentAssignment(departmentId: number | null | undefined): string {
+  if (departmentId == null) return 'Abteilung';
+  const department = departments.find((d) => d.id === departmentId);
+  return department !== undefined ? `Abteilung: ${department.name}` : 'Abteilung';
+}
+
+/**
+ * Helper: Format area assignment
+ */
+function formatAreaAssignment(areaId: number | null | undefined): string {
+  if (areaId == null) return 'Bereich';
+  const area = areas.find((a) => a.id === areaId);
+  return area !== undefined ? `Bereich: ${area.name}` : 'Bereich';
+}
+
+/**
+ * Get assignment information as readable string
+ */
+function getAssignmentInfo(survey: Survey): string {
+  if (survey.assignments === undefined || survey.assignments.length === 0) {
+    return '';
+  }
+
+  const assignment = survey.assignments[0];
+  const assignmentType = assignment.assignmentType ?? assignment.type;
+
+  switch (assignmentType) {
+    case 'all_users':
+      return 'Alle Mitarbeiter';
+    case 'team':
+      return formatTeamAssignment(assignment.teamId);
+    case 'department':
+      return formatDepartmentAssignment(assignment.departmentId);
+    case 'area':
+      return formatAreaAssignment(assignment.areaId);
+    default:
+      return '';
+  }
+}
+
+/**
+ * Helper: Create date range HTML
+ */
+function createDateRangeHtml(survey: Survey): string {
+  const startDate = formatSurveyDate(survey.startDate);
+  const endDate = formatSurveyDate(survey.endDate);
+  const dateRange = startDate !== '' && endDate !== '' ? `${startDate} - ${endDate}` : '';
+
+  return dateRange !== ''
+    ? `
+      <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+        <i class="fas fa-calendar-alt"></i>
+        <span>${dateRange}</span>
+      </div>
+      `
+    : '';
+}
+
+/**
+ * Helper: Create assignment info HTML
+ */
+function createAssignmentInfoHtml(survey: Survey): string {
+  const assignmentInfo = getAssignmentInfo(survey);
+  return assignmentInfo !== ''
+    ? `
+      <div class="mb-4 text-sm text-secondary flex items-center gap-2">
+        <i class="fas fa-users-cog"></i>
+        <span>${assignmentInfo}</span>
+      </div>
+      `
+    : '';
+}
+
+/**
+ * Helper: Create survey properties badges (anonymous, mandatory)
+ * Always shows both badges with different colors based on state
+ */
+function createSurveyPropertiesBadges(survey: Survey): string {
+  const badges: string[] = [];
+
+  // Anonymous badge - ALWAYS show
+  const isAnon = survey.isAnonymous === true || survey.isAnonymous === 1;
+  badges.push(`
+    <span class="badge badge--sm ${isAnon ? 'badge--info' : 'badge--secondary'}">
+      <i class="fas ${isAnon ? 'fa-user-secret' : 'fa-user'}"></i>
+      ${isAnon ? 'Anonym' : 'Nicht anonym'}
+    </span>
+  `);
+
+  // Mandatory badge - ALWAYS show
+  const isMand = survey.isMandatory === true || survey.isMandatory === 1;
+  badges.push(`
+    <span class="badge badge--sm ${isMand ? 'badge--warning' : 'badge--success'}">
+      <i class="fas ${isMand ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
+      ${isMand ? 'Verpflichtend' : 'Freiwillig'}
+    </span>
+  `);
+
+  return `<div class="mb-4 flex items-center gap-2 flex-wrap">${badges.join('')}</div>`;
+}
+
+/**
+ * Helper: Create survey action buttons HTML
+ */
+function createSurveyActionsHtml(surveyId: number, isDraft: boolean, responseCount: number): string {
+  const editButton =
+    responseCount === 0
+      ? `
+          <button class="btn btn-secondary" data-action="edit-survey" data-survey-id="${surveyId}">
+            <i class="fas fa-edit"></i>
+            Bearbeiten
+          </button>
+        `
+      : '';
+
+  const resultsButton = !isDraft
+    ? `
+          <button class="btn btn-secondary" data-action="view-results" data-survey-id="${surveyId}">
+            <i class="fas fa-chart-bar"></i>
+            Ergebnisse
+          </button>
+        `
+    : '';
+
+  return `
+      <div class="survey-actions">
+        ${editButton}
+        ${resultsButton}
+        <button class="btn btn-secondary" data-action="delete-survey" data-survey-id="${surveyId}">
+          <i class="fas fa-trash"></i>
+          Löschen
+        </button>
+      </div>
+  `;
+}
+
 export function createSurveyCard(survey: Survey): string {
   const responseCount = survey.responseCount ?? 0;
   const completedCount = survey.completedCount ?? 0;
@@ -91,28 +232,16 @@ export function createSurveyCard(survey: Survey): string {
   const status = survey.status ?? 'draft';
   const badgeClass = getStatusBadgeClass(status);
 
-  // Format date range
-  const startDate = formatSurveyDate(survey.startDate);
-  const endDate = formatSurveyDate(survey.endDate);
-  const dateRange = startDate !== '' && endDate !== '' ? `${startDate} - ${endDate}` : '';
-
   return `
     <div class="card card--clickable" data-action="${onClickAction}" data-survey-id="${surveyId}">
       <div class="flex justify-between items-start mb-4">
         <h3 class="text-xl font-semibold text-primary m-0">${getTextFromBuffer(survey.title)}</h3>
         <span class="badge ${badgeClass} badge--uppercase">${getStatusText(status)}</span>
       </div>
+      ${createSurveyPropertiesBadges(survey)}
       <p class="mb-4 text-sm leading-relaxed text-secondary">${getTextFromBuffer(survey.description) !== '' ? getTextFromBuffer(survey.description) : 'Keine Beschreibung'}</p>
-      ${
-        dateRange !== ''
-          ? `
-      <div class="mb-4 text-sm text-secondary flex items-center gap-2">
-        <i class="fas fa-calendar-alt"></i>
-        <span>${dateRange}</span>
-      </div>
-      `
-          : ''
-      }
+      ${createDateRangeHtml(survey)}
+      ${createAssignmentInfoHtml(survey)}
       <div class="survey-stats">
         <div class="survey-stat">
           <i class="fas fa-users"></i>
@@ -123,32 +252,7 @@ export function createSurveyCard(survey: Survey): string {
           <span>${responseRate}% Abgeschlossen</span>
         </div>
       </div>
-      <div class="survey-actions">
-        ${
-          responseCount === 0
-            ? `
-          <button class="btn btn-secondary" data-action="edit-survey" data-survey-id="${surveyId}">
-            <i class="fas fa-edit"></i>
-            Bearbeiten
-          </button>
-        `
-            : ''
-        }
-        ${
-          !isDraft
-            ? `
-          <button class="btn btn-secondary" data-action="view-results" data-survey-id="${surveyId}">
-            <i class="fas fa-chart-bar"></i>
-            Ergebnisse
-          </button>
-        `
-            : ''
-        }
-        <button class="btn btn-secondary" data-action="delete-survey" data-survey-id="${surveyId}">
-          <i class="fas fa-trash"></i>
-          Löschen
-        </button>
-      </div>
+      ${createSurveyActionsHtml(surveyId, isDraft, responseCount)}
     </div>
   `;
 }
@@ -191,21 +295,10 @@ export function displayDepartmentOptions(departments: Department[]): void {
   const select = document.querySelector<HTMLSelectElement>('#departmentSelect');
   if (select === null) return;
 
-  console.log('[SurveyAdmin] displayDepartmentOptions called with:', departments);
-
   const optionsHtml = departments
     .map((dept) => {
-      // Debug: Log each department object
-      console.log('[SurveyAdmin] Department object:', dept);
-      console.log('[SurveyAdmin] employeeCount:', dept.employeeCount);
-      console.log('[SurveyAdmin] employee_count:', dept.employee_count);
-      console.log('[SurveyAdmin] member_count:', dept.member_count);
-      console.log('[SurveyAdmin] memberCount:', dept.memberCount);
-
       // Try different possible field names for member count
       const memberCount = dept.employeeCount ?? dept.employee_count ?? dept.member_count ?? dept.memberCount ?? 0;
-      console.log('[SurveyAdmin] Final memberCount for', dept.name, ':', memberCount);
-
       return `<option value="${dept.id}">${escapeHtml(dept.name)} (${memberCount} Mitglieder)</option>`;
     })
     .join('');
@@ -297,9 +390,9 @@ export function createQuestionHtml(questionId: string, questionNumber: number): 
       <div class="question-controls mb-4">
         ${createQuestionTypeDropdown(questionId)}
 
-        <div class="flex items-center gap-3 mt-2">
-          <input type="checkbox" id="${questionId}_required" checked class="w-5 h-5 cursor-pointer">
-          <label for="${questionId}_required" class="cursor-pointer">Pflichtfrage</label>
+        <div class="optional-question-control flex items-center gap-3 mt-2 hidden">
+          <input type="checkbox" id="${questionId}_required" class="w-5 h-5 cursor-pointer">
+          <label for="${questionId}_required" class="cursor-pointer">Optionale Frage</label>
         </div>
       </div>
 
@@ -362,10 +455,11 @@ export function populateQuestionFields(questionElement: Element, question: Surve
     updateQuestionTypeDisplay(questionElement, qType);
   }
 
-  // Set required checkbox
+  // Set optional checkbox
+  // INVERTED LOGIC: isRequired=0 (optional) → checked=true, isRequired=1 (required) → checked=false
   const requiredCheckbox = questionElement.querySelector<HTMLInputElement>('input[type="checkbox"]');
   if (requiredCheckbox !== null) {
-    requiredCheckbox.checked = toBool(question.isRequired);
+    requiredCheckbox.checked = !toBool(question.isRequired);
   }
 }
 

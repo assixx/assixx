@@ -82,7 +82,7 @@ export class SurveyAdminManager {
       displayTeamOptions(teams);
       displayAreaOptions(areas);
     } catch (error) {
-      console.error('[SurveyAdmin] Initialization error:', error);
+      console.error('Initialization error:', error);
       showErrorAlert('Fehler beim Laden der Daten');
     }
   }
@@ -119,8 +119,6 @@ export class SurveyAdminManager {
   }
 
   private executeAction(action: string, surveyId: string, params: string, target: HTMLElement): void {
-    console.log('[SurveyAdmin] Executing action:', { action, surveyId, params });
-
     switch (action) {
       case 'show-create-modal':
         showCreateModal(null);
@@ -179,7 +177,7 @@ export class SurveyAdminManager {
         break;
 
       default:
-        console.warn('[SurveyAdmin] Unknown action:', action);
+        console.warn('Unknown action:', action);
     }
   }
 
@@ -202,8 +200,6 @@ export class SurveyAdminManager {
   }
 
   private handleViewResults(surveyId: string): void {
-    console.log('[SurveyAdmin] View results for survey:', surveyId);
-    // Navigate to results page
     window.location.href = `/survey-results.html?surveyId=${surveyId}`;
   }
 
@@ -370,6 +366,5 @@ export class SurveyAdminManager {
 // Initialize on module load
 const extWindow = window as unknown as WindowWithExtensions;
 if (extWindow.__surveyAdminManager === undefined) {
-  console.log('[SurveyAdmin] Initializing SurveyAdminManager');
   extWindow.__surveyAdminManager = new SurveyAdminManager();
 }

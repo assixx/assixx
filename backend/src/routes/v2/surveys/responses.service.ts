@@ -14,11 +14,18 @@ import { ServiceError } from '../../../utils/ServiceError.js';
 import { PoolConnection, ResultSetHeader, query, transaction } from '../../../utils/db.js';
 
 export interface SurveyAnswer {
-  question_id: number;
+  // Accept both camelCase (from frontend) and snake_case (database)
+  question_id?: number;
+  questionId?: number;
+  question_text?: string;
   answer_text?: string;
+  answerText?: string;
   answer_number?: number;
+  answerNumber?: number;
   answer_date?: string;
+  answerDate?: string;
   answer_options?: number[];
+  answerOptions?: number[];
 }
 
 export interface SurveyResponse {
@@ -68,6 +75,15 @@ class ResponsesService {
       }
     }
 
+    // Normalize answer field names (convert camelCase to snake_case)
+    const normalizedAnswers = answers.map((answer: SurveyAnswer) => ({
+      question_id: answer.questionId ?? answer.question_id,
+      answer_text: answer.answerText ?? answer.answer_text,
+      answer_number: answer.answerNumber ?? answer.answer_number,
+      answer_date: answer.answerDate ?? answer.answer_date,
+      answer_options: answer.answerOptions ?? answer.answer_options,
+    }));
+
     // Use transaction helper
     return await transaction(async (connection: PoolConnection) => {
       // Create response record
@@ -80,7 +96,7 @@ class ResponsesService {
       const responseId = responseResult.insertId;
 
       // Insert answers
-      for (const answer of answers) {
+      for (const answer of normalizedAnswers) {
         if (answer.answer_text !== undefined && answer.answer_text !== '') {
           await connection.query(
             `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id)
@@ -195,6 +211,7 @@ class ResponsesService {
           answers: answers.map(
             (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
               question_id: a.question_id,
+              question_text: a.question_text,
               answer_text: a.answer_text ?? undefined,
               answer_number: a.answer_number ?? undefined,
               answer_date:
@@ -240,7 +257,7 @@ class ResponsesService {
 
     // Get answers
     const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
-      `SELECT sa.*, sq.question_type
+      `SELECT sa.*, sq.question_type, sq.question_text
        FROM survey_answers sa
        JOIN survey_questions sq ON sa.question_id = sq.id
        WHERE sa.response_id = ? AND sa.tenant_id = ?`,
@@ -264,6 +281,7 @@ class ResponsesService {
       answers: answers.map(
         (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
           question_id: a.question_id,
+          question_text: a.question_text,
           answer_text: a.answer_text ?? undefined,
           answer_number: a.answer_number ?? undefined,
           answer_date:
@@ -309,7 +327,7 @@ class ResponsesService {
 
     // Get answers (similar to getUserResponse)
     const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
-      `SELECT sa.*, sq.question_type
+      `SELECT sa.*, sq.question_type, sq.question_text
        FROM survey_answers sa
        JOIN survey_questions sq ON sa.question_id = sq.id
        WHERE sa.response_id = ? AND sa.tenant_id = ?`,
@@ -333,6 +351,7 @@ class ResponsesService {
       answers: answers.map(
         (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
           question_id: a.question_id,
+          question_text: a.question_text,
           answer_text: a.answer_text ?? undefined,
           answer_number: a.answer_number ?? undefined,
           answer_date:
@@ -374,6 +393,15 @@ class ResponsesService {
       throw new ServiceError('FORBIDDEN', 'Bearbeitung von Antworten nicht erlaubt');
     }
 
+    // Normalize answer field names (convert camelCase to snake_case)
+    const normalizedAnswers = answers.map((answer: SurveyAnswer) => ({
+      question_id: answer.questionId ?? answer.question_id,
+      answer_text: answer.answerText ?? answer.answer_text,
+      answer_number: answer.answerNumber ?? answer.answer_number,
+      answer_date: answer.answerDate ?? answer.answer_date,
+      answer_options: answer.answerOptions ?? answer.answer_options,
+    }));
+
     // Use transaction helper
     await transaction(async (connection: PoolConnection) => {
       // Delete existing answers
@@ -383,7 +411,7 @@ class ResponsesService {
       ]);
 
       // Insert new answers (similar to submitResponse)
-      for (const answer of answers) {
+      for (const answer of normalizedAnswers) {
         if (answer.answer_text !== undefined && answer.answer_text !== '') {
           await connection.query(
             `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id)

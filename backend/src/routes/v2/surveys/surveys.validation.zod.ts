@@ -22,7 +22,7 @@ const SurveyStatusSchema = z.enum(['draft', 'active', 'closed'], {
  * Question type enum
  */
 const QuestionTypeSchema = z.enum(
-  ['text', 'single_choice', 'multiple_choice', 'rating', 'number'],
+  ['text', 'single_choice', 'multiple_choice', 'rating', 'yes_no', 'number', 'date'],
   {
     message: 'Invalid question type',
   },
@@ -51,12 +51,29 @@ const NullableDateSchema = z
   .optional();
 
 /**
+ * Question option schema - accepts both string and object formats
+ */
+const QuestionOptionSchema = z.union([
+  z.string(),
+  z.object({
+    option_text: z.string(),
+  }),
+  z.object({
+    optionText: z.string(),
+  }),
+]);
+
+/**
  * Survey question validation schema
  */
 const QuestionSchema = z.object({
   questionText: z.string().min(1, 'Question text is required'),
   questionType: QuestionTypeSchema,
-  options: z.array(z.string()).min(2, 'Choice questions need at least 2 options').optional(),
+  isRequired: z.union([z.number(), z.boolean()]).optional(),
+  options: z
+    .array(QuestionOptionSchema)
+    .min(2, 'Choice questions need at least 2 options')
+    .optional(),
   orderPosition: z.number().optional(),
 });
 
@@ -194,6 +211,7 @@ export const UpdateSurveyBodySchema = z
     startDate: NullableDateSchema,
     endDate: NullableDateSchema,
     questions: z.array(QuestionSchema).min(1, 'Questions must be a non-empty array').optional(),
+    assignments: z.array(AssignmentSchema).optional(),
   })
   .refine(
     (data: {
@@ -205,6 +223,7 @@ export const UpdateSurveyBodySchema = z
       startDate?: string | null;
       endDate?: string | null;
       questions?: unknown[];
+      assignments?: unknown[];
     }) => {
       if (data.startDate && data.endDate) {
         const start = new Date(data.startDate);

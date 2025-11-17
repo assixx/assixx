@@ -18,15 +18,7 @@ import {
   populateQuestionOptions,
   displaySurveys,
 } from './ui';
-import {
-  currentSurveyId,
-  setCurrentSurveyId,
-  saveSurvey as saveSurveyAPI,
-  updateSurveyAssignments,
-  loadSurveyById,
-  loadTemplateById,
-  loadSurveys,
-} from './data';
+import { setCurrentSurveyId, saveSurvey as saveSurveyAPI, loadSurveyById, loadTemplateById, loadSurveys } from './data';
 
 // ===== CONSTANTS =====
 const MODAL_TEMPLATE_ID = '#surveyModal';
@@ -72,8 +64,6 @@ function incrementQuestionCounter(): number {
  * Show create/edit modal
  */
 export function showCreateModal(surveyId: number | null = null): void {
-  console.log('[SurveyAdmin] showCreateModal called, surveyId:', surveyId);
-
   const modalElement = $(MODAL_TEMPLATE_ID);
 
   // Reset form
@@ -98,6 +88,9 @@ export function showCreateModal(surveyId: number | null = null): void {
   // Setup real-time date/time validation
   setupDateTimeValidation();
 
+  // Setup optional question controls visibility
+  setupOptionalQuestionControls();
+
   // If editing, load survey data
   if (surveyId !== null) {
     void loadAndPopulateSurvey(surveyId);
@@ -107,7 +100,6 @@ export function showCreateModal(surveyId: number | null = null): void {
   }
 
   // Show modal
-  console.log('[SurveyAdmin] Opening modal - adding active class');
   modalElement.classList.add(MODAL_ACTIVE_CLASS);
 }
 
@@ -138,11 +130,50 @@ function setupDateTimeValidation(): void {
 }
 
 /**
+ * Setup optional question controls visibility based on is_mandatory checkbox
+ * Logic: Optional question checkboxes only visible when survey is mandatory
+ */
+function setupOptionalQuestionControls(): void {
+  const isMandatoryCheckbox = $(SELECTORS.IS_MANDATORY) as HTMLInputElement | null;
+
+  if (isMandatoryCheckbox === null) return;
+
+  // Remove old listener first to prevent duplicates
+  isMandatoryCheckbox.removeEventListener('change', toggleOptionalQuestionControls);
+
+  // Add new change listener
+  isMandatoryCheckbox.addEventListener('change', toggleOptionalQuestionControls);
+
+  // Set initial state
+  toggleOptionalQuestionControls();
+}
+
+/**
+ * Toggle visibility of optional question controls
+ */
+function toggleOptionalQuestionControls(): void {
+  const isMandatoryCheckbox = $(SELECTORS.IS_MANDATORY) as HTMLInputElement | null;
+  const optionalControls = document.querySelectorAll('.optional-question-control');
+
+  if (isMandatoryCheckbox === null) return;
+
+  // Show optional question controls ONLY when survey is mandatory
+  if (isMandatoryCheckbox.checked) {
+    optionalControls.forEach((control) => {
+      control.classList.remove('hidden');
+    });
+  } else {
+    optionalControls.forEach((control) => {
+      control.classList.add('hidden');
+    });
+  }
+}
+
+/**
  * Close modal
  */
 export function closeModal(): void {
   const modalElement = $(MODAL_TEMPLATE_ID);
-  console.log('[SurveyAdmin] Closing modal - removing active class');
   modalElement.classList.remove(MODAL_ACTIVE_CLASS);
 
   // Clean up validation listeners
@@ -177,8 +208,6 @@ async function loadAndPopulateSurvey(surveyId: number): Promise<void> {
  * Populate form with survey data
  */
 function populateSurveyForm(survey: Survey): void {
-  console.log('[SurveyAdmin] Populating form with survey:', survey);
-
   // Basic fields
   populateBasicFields(survey);
 
@@ -186,6 +215,9 @@ function populateSurveyForm(survey: Survey): void {
   if (survey.questions !== undefined && survey.questions.length > 0) {
     populateQuestions(survey);
   }
+
+  // Update visibility of optional question controls after loading
+  toggleOptionalQuestionControls();
 }
 
 /**
@@ -237,7 +269,10 @@ function populateDateFields(survey: Survey): void {
   if (startDateInput !== null && startTimeInput !== null && survey.startDate !== undefined) {
     const date = new Date(survey.startDate);
     startDateInput.value = date.toISOString().split('T')[0];
-    startTimeInput.value = date.toTimeString().slice(0, 5);
+    // Use UTC time to avoid timezone conversion
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    startTimeInput.value = `${hours}:${minutes}`;
   }
 
   const endDateInput = $(SELECTORS.END_DATE) as HTMLInputElement | null;
@@ -245,7 +280,10 @@ function populateDateFields(survey: Survey): void {
   if (endDateInput !== null && endTimeInput !== null && survey.endDate !== undefined) {
     const date = new Date(survey.endDate);
     endDateInput.value = date.toISOString().split('T')[0];
-    endTimeInput.value = date.toTimeString().slice(0, 5);
+    // Use UTC time to avoid timezone conversion
+    const hours = String(date.getUTCHours()).padStart(2, '0');
+    const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+    endTimeInput.value = `${hours}:${minutes}`;
   }
 }
 
@@ -259,10 +297,56 @@ function populateAssignmentFields(survey: Survey): void {
 
   const assignment = survey.assignments[0];
 
-  if (assignment.departmentId !== undefined) {
-    populateDepartmentAssignment(survey);
-  } else if (assignment.teamId !== undefined) {
-    populateTeamAssignment(survey);
+  // Use assignmentType to determine which fields to populate
+  switch (assignment.assignmentType ?? assignment.type) {
+    case 'all_users':
+      populateAllUsersAssignment();
+      break;
+    case 'area':
+      populateAreaAssignment(survey);
+      break;
+    case 'department':
+      populateDepartmentAssignment(survey);
+      break;
+    case 'team':
+      populateTeamAssignment(survey);
+      break;
+    default:
+      console.warn('Unknown assignment type:', assignment);
+  }
+}
+
+/**
+ * Populate all users assignment
+ */
+function populateAllUsersAssignment(): void {
+  const assignmentTypeInput = $(SELECTORS.ASSIGNMENT_TYPE) as HTMLInputElement | null;
+  if (assignmentTypeInput !== null) {
+    assignmentTypeInput.value = 'all_users';
+  }
+  updateAssignmentDropdown('all_users', 'Alle Mitarbeiter');
+}
+
+/**
+ * Populate area assignment
+ */
+function populateAreaAssignment(survey: Survey): void {
+  const assignmentTypeInput = $(SELECTORS.ASSIGNMENT_TYPE) as HTMLInputElement | null;
+  if (assignmentTypeInput !== null) {
+    assignmentTypeInput.value = 'area';
+  }
+  updateAssignmentDropdown('area', 'Bereich');
+
+  const areaSelect = $(SELECTORS.AREA_SELECT) as HTMLSelectElement | null;
+  if (areaSelect !== null) {
+    const areaIds =
+      survey.assignments
+        ?.filter((a): a is typeof a & { areaId: number } => a.areaId != null)
+        .map((a) => String(a.areaId)) ?? [];
+
+    Array.from(areaSelect.options).forEach((option) => {
+      option.selected = areaIds.includes(option.value);
+    });
   }
 }
 
@@ -329,7 +413,7 @@ function populateQuestions(survey: Survey): void {
       questionsList.append(questionElement);
       populateQuestionFields(questionElement, question);
 
-      if (question.options !== undefined && question.options.length > 0) {
+      if ((question.options?.length ?? 0) > 0) {
         const optionsContainer = questionElement.querySelector(`#${questionId}_options`);
         if (optionsContainer !== null) {
           optionsContainer.classList.remove('hidden');
@@ -347,9 +431,11 @@ function updateAssignmentDropdown(type: string, text: string): void {
   const dropdownDisplay = $(SELECTORS.ASSIGNMENT_DROPDOWN_DISPLAY);
   dropdownDisplay.textContent = text;
 
+  const areaSelection = $(SELECTORS.AREA_SELECTION);
   const departmentSelection = $(SELECTORS.DEPARTMENT_SELECTION);
   const teamSelection = $(SELECTORS.TEAM_SELECTION);
 
+  setElementVisibility(areaSelection, type === 'area');
   setElementVisibility(departmentSelection, type === 'department');
   setElementVisibility(teamSelection, type === 'team');
 
@@ -364,15 +450,17 @@ function updateAssignmentDropdown(type: string, text: string): void {
  */
 export function addQuestion(): void {
   const questionsList = $(SELECTORS.QUESTIONS_LIST);
-
   const questionId = `question_${incrementQuestionCounter()}`;
   const questionHtml = createQuestionHtml(questionId, questionCounter);
 
   const tempDiv = document.createElement('div');
   setHTML(tempDiv, questionHtml);
   const questionElement = tempDiv.firstElementChild;
+
   if (questionElement !== null) {
     questionsList.append(questionElement);
+    // Update visibility of optional question controls
+    toggleOptionalQuestionControls();
   }
 }
 
@@ -456,7 +544,8 @@ function getQuestionsData(): SurveyQuestion[] {
     const question: SurveyQuestion = {
       questionText: textInput.value,
       questionType,
-      isRequired: requiredCheckbox?.checked === true ? 1 : 0,
+      // INVERTED LOGIC: checked = optional (0), unchecked = required (1)
+      isRequired: requiredCheckbox?.checked === true ? 0 : 1,
       orderIndex: index + 1,
     };
 
@@ -576,7 +665,7 @@ function collectSurveyData(status: 'draft' | 'active', assignments: SurveyAssign
   const endDateInput = $(SELECTORS.END_DATE) as HTMLInputElement | null;
   const endTimeInput = $(SELECTORS.END_TIME) as HTMLInputElement | null;
 
-  // Combine date and time values
+  // Combine date and time values (add Z for UTC to match backend expectations)
   let startDateTime = '';
   if (
     startDateInput?.value !== undefined &&
@@ -584,7 +673,7 @@ function collectSurveyData(status: 'draft' | 'active', assignments: SurveyAssign
     startTimeInput?.value !== undefined &&
     startTimeInput.value !== ''
   ) {
-    startDateTime = `${startDateInput.value}T${startTimeInput.value}:00`;
+    startDateTime = `${startDateInput.value}T${startTimeInput.value}:00Z`;
   }
 
   let endDateTime = '';
@@ -594,7 +683,7 @@ function collectSurveyData(status: 'draft' | 'active', assignments: SurveyAssign
     endTimeInput?.value !== undefined &&
     endTimeInput.value !== ''
   ) {
-    endDateTime = `${endDateInput.value}T${endTimeInput.value}:00`;
+    endDateTime = `${endDateInput.value}T${endTimeInput.value}:00Z`;
   }
 
   const surveyData: Survey = {
@@ -667,7 +756,7 @@ function validateQuestion(question: SurveyQuestion, index: number): boolean {
 
   if (
     (question.questionType === 'single_choice' || question.questionType === 'multiple_choice') &&
-    (question.options === undefined || question.options.length < 2)
+    (question.options?.length ?? 0) < 2
   ) {
     showErrorAlert(`Frage ${index + 1} benötigt mindestens 2 Antwortoptionen`);
     return false;
@@ -724,9 +813,9 @@ function validateDateTimeInputs(): void {
     return; // Not enough data to validate
   }
 
-  // Combine date and time
-  const startDateTime = new Date(`${startDateInput.value}T${startTimeInput.value}:00`);
-  const endDateTime = new Date(`${endDateInput.value}T${endTimeInput.value}:00`);
+  // Combine date and time (add Z for UTC to match how we save)
+  const startDateTime = new Date(`${startDateInput.value}T${startTimeInput.value}:00Z`);
+  const endDateTime = new Date(`${endDateInput.value}T${endTimeInput.value}:00Z`);
   const now = new Date();
 
   // Check if end is before start
@@ -856,8 +945,6 @@ function validateDates(surveyData: Survey): boolean {
  * Save survey (handles both save as draft and activate)
  */
 export async function saveSurvey(status: 'draft' | 'active'): Promise<void> {
-  console.log('[SurveyAdmin] Saving survey with status:', status);
-
   const assignments = collectAssignments();
   if (assignments === null) return;
 
@@ -870,12 +957,12 @@ export async function saveSurvey(status: 'draft' | 'active'): Promise<void> {
     const surveyId = await saveSurveyAPI(surveyData);
 
     if (surveyId !== null) {
-      await handleSurveySaveSuccess(status, assignments);
+      await handleSurveySaveSuccess(status);
     } else {
       showErrorAlert('Umfrage konnte nicht gespeichert werden');
     }
   } catch (error) {
-    console.error('[SurveyAdmin] Error saving survey:', error);
+    console.error('Error saving survey:', error);
     showErrorAlert('Fehler beim Speichern der Umfrage');
   }
 }
@@ -883,11 +970,9 @@ export async function saveSurvey(status: 'draft' | 'active'): Promise<void> {
 /**
  * Handle successful survey save
  */
-async function handleSurveySaveSuccess(status: 'draft' | 'active', assignments: SurveyAssignment[]): Promise<void> {
-  // Update assignments if needed
-  if (currentSurveyId !== null && assignments.length > 0) {
-    await updateSurveyAssignments(currentSurveyId, assignments);
-  }
+async function handleSurveySaveSuccess(status: 'draft' | 'active'): Promise<void> {
+  // Assignments are already saved as part of the survey update/create request
+  // No separate API call needed
 
   const message = getSaveSuccessMessage(status);
   showSuccessAlert(message);
@@ -915,8 +1000,6 @@ async function reloadSurveys(): Promise<void> {
  * Create survey from template
  */
 export async function createFromTemplate(templateId: number): Promise<void> {
-  console.log('[SurveyAdmin] Creating from template:', templateId);
-
   const template = await loadTemplateById(templateId);
   if (template === null) {
     showErrorAlert('Vorlage konnte nicht geladen werden');

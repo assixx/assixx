@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Survey Model
  * Handles database operations for surveys
@@ -83,7 +84,7 @@ interface SurveyCreateData {
   questions?: {
     question_text: string;
     question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
-    is_required?: boolean;
+    is_required?: boolean | number;
     order_position?: number;
     options?: string[];
   }[];
@@ -107,7 +108,7 @@ interface SurveyUpdateData {
   questions?: {
     question_text: string;
     question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
-    is_required?: boolean;
+    is_required?: boolean | number;
     order_position?: number;
     options?: string[];
   }[];
@@ -217,7 +218,7 @@ async function insertSurveyQuestions(
         surveyId,
         question.question_text,
         question.question_type,
-        question.is_required !== false,
+        question.is_required === 0 || question.is_required === false ? 0 : 1,
         question.order_position ?? index + 1,
         question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
       ],
@@ -369,9 +370,12 @@ export async function getAllSurveysByTenantForEmployee(
   const { status, page = 1, limit = 20 } = filters;
   const offset = (page - 1) * limit;
 
-  // First get employee's department and area info
+  // First get employee's department info, then get area from department
   const [userInfo] = await typedQuery<UserDepartmentResult[]>(
-    `SELECT department_id, area_id FROM users WHERE id = ? AND tenant_id = ?`,
+    `SELECT u.department_id, d.area_id
+     FROM users u
+     LEFT JOIN departments d ON u.department_id = d.id
+     WHERE u.id = ? AND u.tenant_id = ?`,
     [employeeUserId, tenantId],
   );
 
@@ -606,7 +610,7 @@ async function updateSurveyQuestions(
         surveyId,
         question.question_text,
         question.question_type,
-        question.is_required !== false,
+        question.is_required === 0 || question.is_required === false ? 0 : 1,
         question.order_position ?? index + 1,
         question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
       ],
@@ -678,6 +682,7 @@ export async function updateSurvey(
           description = ?,
           status = ?,
           is_anonymous = ?,
+          is_mandatory = ?,
           start_date = ?,
           end_date = ?
         WHERE id = ? AND tenant_id = ?
@@ -687,6 +692,7 @@ export async function updateSurvey(
         surveyData.description ?? null,
         surveyData.status ?? 'draft',
         surveyData.is_anonymous ?? false,
+        surveyData.is_mandatory ?? false,
         surveyData.start_date ?? null,
         surveyData.end_date ?? null,
         surveyId,
@@ -955,6 +961,34 @@ export async function getSurveyStatistics(
   }
 }
 
+/**
+ * Get assignments for multiple surveys in a single query
+ * This is used by listSurveys to efficiently load assignments for all surveys
+ */
+export async function getAssignmentsBySurveyIds(
+  surveyIds: number[],
+  tenantId: number,
+): Promise<DbSurveyAssignment[]> {
+  if (surveyIds.length === 0) {
+    return [];
+  }
+
+  // Create placeholders for IN clause (?, ?, ?)
+  const placeholders = surveyIds.map(() => '?').join(',');
+
+  const [assignments] = await typedQuery<DbSurveyAssignment[]>(
+    `
+      SELECT * FROM survey_assignments
+      WHERE survey_id IN (${placeholders})
+        AND tenant_id = ?
+      ORDER BY survey_id, id
+    `,
+    [...surveyIds, tenantId],
+  );
+
+  return assignments;
+}
+
 // Backward compatibility object
 const Survey = {
   create: createSurvey,
@@ -967,6 +1001,7 @@ const Survey = {
   getTemplates: getSurveyTemplates,
   createFromTemplate: createSurveyFromTemplate,
   getStatistics: getSurveyStatistics,
+  getAssignmentsBySurveyIds: getAssignmentsBySurveyIds,
 };
 
 // Default export

@@ -106,6 +106,56 @@ class SurveysService {
    * @param userRole - The userRole parameter
    * @param filters - The filter criteria
    */
+  /**
+   * Group assignments by survey ID
+   */
+  private groupAssignmentsBySurveyId(assignments: { survey_id: number }[]): Map<number, unknown[]> {
+    const assignmentsBySurveyId = new Map<number, unknown[]>();
+    for (const assignment of assignments) {
+      const surveyId = assignment.survey_id;
+      if (!assignmentsBySurveyId.has(surveyId)) {
+        assignmentsBySurveyId.set(surveyId, []);
+      }
+      assignmentsBySurveyId.get(surveyId)?.push(assignment);
+    }
+    return assignmentsBySurveyId;
+  }
+
+  /**
+   * Attach assignments to surveys
+   */
+  private async attachAssignmentsToSurveys(
+    surveys: SurveyQueryResult[],
+    tenantId: number,
+  ): Promise<void> {
+    if (surveys.length === 0) return;
+
+    const surveyIds = surveys.map((s: SurveyQueryResult) => s.id);
+    const assignments = await survey.getAssignmentsBySurveyIds(surveyIds, tenantId);
+    const assignmentsBySurveyId = this.groupAssignmentsBySurveyId(
+      assignments as { survey_id: number }[],
+    );
+
+    for (const surveyItem of surveys) {
+      (surveyItem as { assignments?: unknown[] }).assignments =
+        assignmentsBySurveyId.get(surveyItem.id) ?? [];
+    }
+  }
+
+  /**
+   * Transform survey query result to API format with metadata
+   */
+  private transformSurveyWithMetadata(surveyItem: SurveyQueryResult): unknown {
+    const transformedSurvey = this.transformSurveyToApi(surveyItem) as Record<string, unknown>;
+    return {
+      ...transformedSurvey,
+      responseCount: surveyItem.response_count ?? 0,
+      completedCount: surveyItem.completed_count ?? 0,
+      creatorFirstName: surveyItem.creator_first_name,
+      creatorLastName: surveyItem.creator_last_name,
+    };
+  }
+
   async listSurveys(
     tenantId: number,
     userId: number,
@@ -116,27 +166,18 @@ class SurveysService {
       let surveys: SurveyQueryResult[];
 
       if (userRole === 'root') {
-        // Root can see all surveys
         surveys = await survey.getAllByTenant(tenantId, filters);
       } else if (userRole === 'admin') {
-        // Admin sees surveys based on department permissions
         surveys = await survey.getAllByTenantForAdmin(tenantId, userId, filters);
       } else {
-        // Employee sees assigned surveys
         surveys = await survey.getAllByTenantForEmployee(tenantId, userId, filters);
       }
 
-      // Transform to API format
-      return surveys.map((survey: SurveyQueryResult) => {
-        const apisurvey = dbToApi(survey);
-        return {
-          ...apisurvey,
-          responseCount: survey.response_count ?? 0,
-          completedCount: survey.completed_count ?? 0,
-          creatorFirstName: survey.creator_first_name,
-          creatorLastName: survey.creator_last_name,
-        };
-      });
+      await this.attachAssignmentsToSurveys(surveys, tenantId);
+
+      return surveys.map((surveyItem: SurveyQueryResult) =>
+        this.transformSurveyWithMetadata(surveyItem),
+      );
     } catch (error: unknown) {
       console.error('Error listing surveys:', error);
       throw new ServiceError('SERVER_ERROR', 'Failed to list surveys');
