@@ -4,8 +4,21 @@
  */
 
 import { setHTML } from '../../../utils/dom-utils.js';
-import type { Survey, BufferData, SurveyResponse } from './types';
+import type { Survey, BufferData, SurveyResponse, ResponseAnswer } from './types';
 import { checkUserResponse } from './data';
+
+/**
+ * Format ISO date string to German format (DD.MM.YYYY)
+ * @param isoDate - ISO 8601 date string (e.g., "2025-11-09T00:00:00.000Z")
+ * @returns German formatted date (e.g., "09.11.2025")
+ */
+function formatGermanDate(isoDate: string): string {
+  const date = new Date(isoDate);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
+}
 
 /**
  * Convert Buffer or string to readable text
@@ -266,18 +279,27 @@ export function closeModal(): void {
  * Helper: Format answer value for display
  */
 function formatAnswerValue(answer: {
-  answer_text?: string | null;
-  answer_number?: number | null;
-  answer_options?: string[] | null;
+  questionType?: string | null;
+  answerText?: string | null;
+  answerNumber?: number | null;
+  answerDate?: string | null;
+  answerOptions?: string[] | null;
 }): string {
-  if (answer.answer_text != null) {
-    return `<p>${answer.answer_text}</p>`;
+  if (answer.answerText != null) {
+    return `<p>${answer.answerText}</p>`;
   }
-  if (answer.answer_number != null) {
-    return `<p>Bewertung: ${answer.answer_number}</p>`;
+  if (answer.answerNumber != null) {
+    // Distinguish between rating (1-5 stars) and number (any number)
+    if (answer.questionType === 'rating') {
+      return `<p>Bewertung: ${answer.answerNumber}</p>`;
+    }
+    return `<p>${answer.answerNumber}</p>`;
   }
-  if (answer.answer_options != null) {
-    return answer.answer_options.map((option) => `<p><i class="fas fa-check-square"></i> ${option}</p>`).join('');
+  if (answer.answerDate != null) {
+    return `<p><i class="fas fa-calendar"></i> ${formatGermanDate(answer.answerDate)}</p>`;
+  }
+  if (answer.answerOptions != null) {
+    return answer.answerOptions.map((option) => `<p><i class="fas fa-check-square"></i> ${option}</p>`).join('');
   }
   return '<p><em>Keine Antwort</em></p>';
 }
@@ -288,9 +310,9 @@ function formatAnswerValue(answer: {
 function createAnswersHtml(answers: SurveyResponse['answers']): string {
   return answers
     .map(
-      (answer) => `
+      (answer: ResponseAnswer) => `
     <div class="response-question">
-      <h4>${answer.question_text}</h4>
+      <h4>${answer.questionText}</h4>
       <div class="response-answer">
         ${formatAnswerValue(answer)}
       </div>

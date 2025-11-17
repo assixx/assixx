@@ -392,7 +392,7 @@ export interface SurveyAnswerWithQuestionResult extends RowDataPacket {
   answer_text: string | null;
   answer_number: number | null;
   answer_date: Date | string | null;
-  answer_options: string | null; // JSON string
+  answer_options: number[] | null; // JSON type - parsed by mysql2
   question_type?: string; // Optional - from join
   question_text?: string; // Optional - from join
   tenant_id: number;

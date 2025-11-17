@@ -6,7 +6,7 @@
 
 import { $, setHTML } from '../../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
-import type { Survey, SurveyQuestion, SurveyAssignment, QuestionOption } from './types';
+import type { Survey, SurveyQuestion, SurveyAssignment } from './types';
 import {
   createQuestionHtml,
   createOptionHtml,
@@ -552,13 +552,11 @@ function getQuestionsData(): SurveyQuestion[] {
     // Collect options for choice questions
     if (typeInput.value === 'single_choice' || typeInput.value === 'multiple_choice') {
       const optionInputs = element.querySelectorAll<HTMLInputElement>(`#${questionId}_option_list .option-input`);
-      const options: QuestionOption[] = [];
+      const options: string[] = [];
 
       optionInputs.forEach((input) => {
         if (input.value.trim() !== '') {
-          options.push({
-            option_text: input.value.trim(),
-          });
+          options.push(input.value.trim());
         }
       });
 

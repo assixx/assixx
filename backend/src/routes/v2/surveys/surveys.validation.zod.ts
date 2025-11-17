@@ -52,12 +52,10 @@ const NullableDateSchema = z
 
 /**
  * Question option schema - accepts both string and object formats
+ * Note: For API responses, transformation happens in surveys.service.ts transformSurveyToApi()
  */
 const QuestionOptionSchema = z.union([
   z.string(),
-  z.object({
-    option_text: z.string(),
-  }),
   z.object({
     optionText: z.string(),
   }),

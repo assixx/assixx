@@ -219,10 +219,25 @@ class SurveysService {
 
     if (surveyData.questions) {
       apisurvey.questions = (surveyData.questions as Record<string, unknown>[]).map(
-        (q: Record<string, unknown>) => ({
-          ...dbToApi(q),
-          orderPosition: q.order_position ?? q.order_index,
-        }),
+        (q: Record<string, unknown>) => {
+          const transformedQuestion = dbToApi(q);
+
+          // Transform nested options array (option_text → optionText)
+          if (q.options !== null && q.options !== undefined && Array.isArray(q.options)) {
+            transformedQuestion.options = q.options.map((opt: unknown) => {
+              if (typeof opt === 'string') return opt;
+              if (typeof opt === 'object' && opt !== null) {
+                return dbToApi(opt as Record<string, unknown>);
+              }
+              return opt;
+            });
+          }
+
+          return {
+            ...transformedQuestion,
+            orderPosition: q.order_position ?? q.order_index,
+          };
+        },
       );
     }
 

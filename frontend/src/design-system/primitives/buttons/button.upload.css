@@ -46,7 +46,7 @@
 /* Disabled state */
 .btn-upload:disabled {
   cursor: not-allowed;
-  color: var(--color-gray-500);
+  color: var(--color-gray-200);
   opacity: 60%;
 }
 

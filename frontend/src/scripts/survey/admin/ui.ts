@@ -5,7 +5,16 @@
  */
 
 import { setHTML, escapeHtml } from '../../../utils/dom-utils';
-import type { Survey, SurveyTemplate, Department, Team, Area, SurveyQuestion, QuestionOption, Buffer } from './types';
+import type {
+  Survey,
+  SurveyTemplate,
+  Department,
+  Team,
+  Area,
+  SurveyQuestion,
+  QuestionOptionResponse,
+  Buffer,
+} from './types';
 import { departments, teams, areas } from './data';
 
 // ============================================
@@ -474,8 +483,8 @@ export function populateQuestionOptions(
   if (optionsList === null) return;
 
   optionsList.innerHTML = '';
-  question.options.forEach((option: string | QuestionOption) => {
-    const optionText = typeof option === 'string' ? option : option.option_text;
+  question.options.forEach((option: string | QuestionOptionResponse) => {
+    const optionText = typeof option === 'string' ? option : option.optionText;
     const optionHtml = createOptionHtml(optionText);
     const tempDiv = document.createElement('div');
     setHTML(tempDiv, optionHtml);

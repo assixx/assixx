@@ -196,22 +196,24 @@ interface SurveyStatsResult extends RowDataPacket {
 }
 
 /**
- * Insert survey questions
+ * Insert survey questions (without options - options go in separate table)
  */
 async function insertSurveyQuestions(
   connection: PoolConnection,
   surveyId: number,
   tenantId: number,
   questions: SurveyCreateData['questions'],
-): Promise<void> {
-  if (!questions || questions.length === 0) return;
+): Promise<number[]> {
+  if (!questions || questions.length === 0) return [];
+
+  const questionIds: number[] = [];
 
   for (const [index, question] of questions.entries()) {
-    await connection.query<ResultSetHeader>(
+    const [result] = await connection.query<ResultSetHeader>(
       `
         INSERT INTO survey_questions (
-          tenant_id, survey_id, question_text, question_type, is_required, order_index, options
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          tenant_id, survey_id, question_text, question_type, is_required, order_index
+        ) VALUES (?, ?, ?, ?, ?, ?)
       `,
       [
         tenantId,
@@ -220,8 +222,40 @@ async function insertSurveyQuestions(
         question.question_type,
         question.is_required === 0 || question.is_required === false ? 0 : 1,
         question.order_position ?? index + 1,
-        question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
       ],
+    );
+    questionIds.push(result.insertId);
+
+    // Insert options for choice questions into separate table
+    if (
+      question.options &&
+      question.options.length > 0 &&
+      (question.question_type === 'single_choice' || question.question_type === 'multiple_choice')
+    ) {
+      await insertQuestionOptions(connection, result.insertId, tenantId, question.options);
+    }
+  }
+
+  return questionIds;
+}
+
+/**
+ * Insert question options into survey_question_options table
+ */
+async function insertQuestionOptions(
+  connection: PoolConnection,
+  questionId: number,
+  tenantId: number,
+  options: string[],
+): Promise<void> {
+  for (const [index, optionText] of options.entries()) {
+    await connection.query<ResultSetHeader>(
+      `
+        INSERT INTO survey_question_options (
+          tenant_id, question_id, option_text, order_position
+        ) VALUES (?, ?, ?, ?)
+      `,
+      [tenantId, questionId, optionText, index],
     );
   }
 }
@@ -503,29 +537,47 @@ export async function getAllSurveysByTenantForAdmin(
  * Get survey by ID with questions and options
  */
 /**
- * Process survey questions for options and buffer conversion
+ * Load question options from survey_question_options table
+ */
+async function loadQuestionOptions(
+  questionIds: number[],
+): Promise<Map<number, DbSurveyQuestionOption[]>> {
+  if (questionIds.length === 0) return new Map();
+
+  const placeholders = questionIds.map(() => '?').join(',');
+  const [options] = await typedQuery<DbSurveyQuestionOption[]>(
+    `
+      SELECT id, question_id, option_text, order_position
+      FROM survey_question_options
+      WHERE question_id IN (${placeholders})
+      ORDER BY question_id, order_position
+    `,
+    questionIds,
+  );
+
+  // Group options by question_id
+  const optionsMap = new Map<number, DbSurveyQuestionOption[]>();
+  for (const option of options) {
+    if (!optionsMap.has(option.question_id)) {
+      optionsMap.set(option.question_id, []);
+    }
+    const questionOptions = optionsMap.get(option.question_id);
+    if (questionOptions !== undefined) {
+      questionOptions.push(option);
+    }
+  }
+
+  return optionsMap;
+}
+
+/**
+ * Process survey questions for buffer conversion
  */
 function processSurveyQuestions(questions: DbSurveyQuestion[]): void {
   for (const question of questions) {
     // Convert Buffer to string if needed
     if (question.question_text && Buffer.isBuffer(question.question_text)) {
       question.question_text = question.question_text.toString();
-    }
-
-    const hasOptions = ['multiple_choice', 'single_choice'].includes(question.question_type);
-    if (!hasOptions || !question.options) {
-      continue;
-    }
-
-    // Options are stored as JSON in the database
-    try {
-      question.options =
-        typeof question.options === 'string' ?
-          (JSON.parse(question.options) as DbSurveyQuestionOption[])
-        : question.options;
-    } catch (error: unknown) {
-      console.error('Error parsing options for question:', question.id, error);
-      question.options = [];
     }
   }
 }
@@ -565,8 +617,20 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
     [surveyId],
   );
 
-  // Parse options from JSON and convert Buffer to string for each question
+  // Convert Buffer to string for questions
   processSurveyQuestions(questions);
+
+  // Load options for choice questions from survey_question_options table
+  const questionIds = questions.map((q: DbSurveyQuestion) => q.id);
+  const optionsMap = await loadQuestionOptions(questionIds);
+
+  // Attach options to questions
+  for (const question of questions) {
+    if (['single_choice', 'multiple_choice'].includes(question.question_type)) {
+      question.options = optionsMap.get(question.id) ?? [];
+    }
+  }
+
   survey.questions = questions;
 
   // Get assignments
@@ -585,6 +649,7 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
 
 /**
  * Update survey questions
+ * Note: CASCADE DELETE will automatically remove options from survey_question_options table
  */
 async function updateSurveyQuestions(
   connection: PoolConnection,
@@ -597,13 +662,13 @@ async function updateSurveyQuestions(
   // Delete existing questions (cascade will handle options)
   await connection.query('DELETE FROM survey_questions WHERE survey_id = ?', [surveyId]);
 
-  // Add new questions
+  // Add new questions (reuse insertSurveyQuestions logic)
   for (const [index, question] of questions.entries()) {
-    await connection.query<ResultSetHeader>(
+    const [result] = await connection.query<ResultSetHeader>(
       `
         INSERT INTO survey_questions (
-          tenant_id, survey_id, question_text, question_type, is_required, order_index, options
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+          tenant_id, survey_id, question_text, question_type, is_required, order_index
+        ) VALUES (?, ?, ?, ?, ?, ?)
       `,
       [
         tenantId,
@@ -612,9 +677,17 @@ async function updateSurveyQuestions(
         question.question_type,
         question.is_required === 0 || question.is_required === false ? 0 : 1,
         question.order_position ?? index + 1,
-        question.options && question.options.length > 0 ? JSON.stringify(question.options) : null,
       ],
     );
+
+    // Insert options for choice questions into separate table
+    if (
+      question.options &&
+      question.options.length > 0 &&
+      (question.question_type === 'single_choice' || question.question_type === 'multiple_choice')
+    ) {
+      await insertQuestionOptions(connection, result.insertId, tenantId, question.options);
+    }
   }
 }
 
