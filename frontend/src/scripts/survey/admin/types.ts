@@ -34,17 +34,25 @@ export interface WindowWithExtensions extends Window {
 // Survey Related Types
 // ============================================
 
+/**
+ * Question option from API response (loaded from survey_question_options table)
+ * Contains full database fields transformed to camelCase
+ */
+export interface QuestionOptionResponse {
+  id: number;
+  questionId: number;
+  optionText: string;
+  orderPosition: number;
+  createdAt?: string;
+}
+
 export interface SurveyQuestion {
   id?: number;
   questionText: string;
   questionType: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'yes_no' | 'number' | 'date';
   isRequired: number | boolean;
   orderIndex?: number;
-  options?: string[] | QuestionOption[];
-}
-
-export interface QuestionOption {
-  option_text: string;
+  options?: string[] | QuestionOptionResponse[];
 }
 
 export interface SurveyAssignment {

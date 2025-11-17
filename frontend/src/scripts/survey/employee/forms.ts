@@ -142,6 +142,7 @@ function createTextInput(question: Question): string {
 
 /**
  * Create choice option HTML with Design System choice-card
+ * Uses real database IDs from survey_question_options table
  */
 function createChoiceOption(
   question: Question,
@@ -150,7 +151,8 @@ function createChoiceOption(
   type: 'single' | 'multiple',
 ): string {
   const optionText = typeof option === 'string' ? option : option.optionText;
-  const optionId = typeof option === 'string' ? index : option.id;
+  // Use real database ID from survey_question_options table
+  const optionId = typeof option === 'string' ? index + 1 : option.id;
   const inputType = type === 'single' ? 'radio' : 'checkbox';
   const nameAttr = type === 'single' ? `name="question_${question.id}"` : '';
   const dataAttr = type === 'multiple' ? `data-question-id="${question.id}"` : '';
@@ -198,6 +200,7 @@ function createRatingInput(question: Question): string {
 
 /**
  * Create yes/no input with Design System choice-card
+ * IMPORTANT: Uses 1-based values (1=Ja, 2=Nein) because backend requires positive integers (> 0)
  */
 function createYesNoInput(question: Question): string {
   const isRequired = isQuestionRequired(question.is_required);
@@ -208,10 +211,9 @@ function createYesNoInput(question: Question): string {
                class="choice-card__input"
                id="q${question.id}_yes"
                name="question_${question.id}"
-               value="yes"
+               value="1"
                data-question-id="${question.id}"
                data-type="single"
-               data-text-value="Ja"
                ${isRequired ? 'required' : ''}>
         <span class="choice-card__text">Ja</span>
       </label>
@@ -220,10 +222,9 @@ function createYesNoInput(question: Question): string {
                class="choice-card__input"
                id="q${question.id}_no"
                name="question_${question.id}"
-               value="no"
+               value="2"
                data-question-id="${question.id}"
                data-type="single"
-               data-text-value="Nein"
                ${isRequired ? 'required' : ''}>
         <span class="choice-card__text">Nein</span>
       </label>
@@ -245,6 +246,20 @@ function createSimpleInput(type: string, question: Question): string {
                    placeholder="${placeholder}"
                    ${isRequired ? 'required' : ''}>
           </div>`;
+}
+
+/**
+ * Convert date string from HTML5 input (YYYY-MM-DD) to ISO 8601 format (YYYY-MM-DDTHH:mm:ss)
+ * Backend Zod schema requires full ISO 8601 timestamp
+ */
+function convertDateToISO(dateString: string): string {
+  // If already in ISO format with time, return as-is
+  if (dateString.includes('T')) {
+    return dateString;
+  }
+
+  // HTML5 date input returns YYYY-MM-DD, append time
+  return `${dateString}T00:00:00`;
 }
 
 /**
@@ -273,7 +288,7 @@ export function updateAnswer(questionId: number, value: string | number, type: s
     // eslint-disable-next-line security/detect-object-injection -- questionId comes from survey data
     answers[questionId] = {
       questionId,
-      answerDate: String(value),
+      answerDate: convertDateToISO(String(value)),
     };
   }
 
@@ -396,8 +411,8 @@ export async function handleSubmit(e: Event): Promise<void> {
     } else {
       // Other answer types (text, number, date)
       answersArray.push({
-        questionId: Number(questionId),
         ...answer,
+        questionId: Number(questionId),
       });
     }
   }

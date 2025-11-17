@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Survey Results Page
  * Displays survey statistics and individual responses
@@ -14,6 +15,19 @@ const escapeHtml = (text: string): string => {
     ALLOWED_ATTR: [],
     KEEP_CONTENT: true,
   });
+};
+
+/**
+ * Format ISO date string to German format (DD.MM.YYYY)
+ * @param isoDate - ISO 8601 date string (e.g., "2025-11-09T00:00:00.000Z")
+ * @returns German formatted date (e.g., "09.11.2025")
+ */
+const formatGermanDate = (isoDate: string): string => {
+  const date = new Date(isoDate);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
 };
 
 interface SurveyData {
@@ -82,14 +96,12 @@ interface SurveyResponse {
 }
 
 interface ResponseAnswer {
-  question_id?: number;
-  questionId?: number;
-  answer_text?: string;
+  questionId: number;
+  questionText?: string;
   answerText?: string;
-  answer_number?: number;
-  answerNumber?: string;
-  answer_options?: number[];
-  question_text?: string;
+  answerNumber?: number;
+  answerDate?: string;
+  answerOptions?: number[];
 }
 
 interface ResponsesData {
@@ -464,13 +476,17 @@ class SurveyResultsPage {
 
     let html = '';
     this.surveyData.questions.forEach((question) => {
-      const answer = response.answers?.find(
-        (a: ResponseAnswer) => a.question_id === question.id || a.questionId === question.id,
-      );
+      const answer = response.answers?.find((a: ResponseAnswer) => a.questionId === question.id);
 
       const questionText = question.questionText;
       const answerText = answer
-        ? (answer.answer_text ?? answer.answerText ?? answer.answer_number ?? answer.answerNumber ?? 'Keine Antwort')
+        ? (answer.answerText ??
+          answer.answerNumber ??
+          (answer.answerDate !== undefined ? formatGermanDate(answer.answerDate) : undefined) ??
+          (answer.answerOptions !== undefined && answer.answerOptions.length > 0
+            ? `Option(s): ${answer.answerOptions.join(', ')}`
+            : undefined) ??
+          'Keine Antwort')
         : 'Keine Antwort';
 
       html += `
@@ -482,7 +498,6 @@ class SurveyResultsPage {
     });
 
     return html;
-    // eslint-disable-next-line max-lines
   }
 
   private attachEventHandlers(): void {

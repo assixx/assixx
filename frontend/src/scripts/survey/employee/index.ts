@@ -139,11 +139,12 @@ export class SurveyEmployeeManager {
 
     const qId = Number(questionId);
 
-    if (target instanceof HTMLInputElement && type === 'checkbox') {
-      // Multiple choice
+    // Use target.type (HTML input type) for radio/checkbox instead of data-type attribute
+    if (target instanceof HTMLInputElement && target.type === 'checkbox') {
+      // Multiple choice (data-type="multiple")
       updateMultipleChoice(qId, Number(target.value), target.checked);
-    } else if (target instanceof HTMLInputElement && type === 'radio') {
-      // Single choice
+    } else if (target instanceof HTMLInputElement && target.type === 'radio') {
+      // Single choice or yes/no (data-type="single")
       updateAnswer(qId, target.value, 'single');
     } else if (type === 'text') {
       // Text area or text input

@@ -76,22 +76,32 @@
     <!-- Survey Response Modal - Design System -->
     <div class="modal-overlay" id="surveyModal">
       <form id="surveyForm" class="ds-modal ds-modal--lg">
-        <div class="ds-modal__header">
-          <h3 class="ds-modal__title" id="modalTitle">Umfrage beantworten</h3>
-          <button class="ds-modal__close" data-action="close" type="button" aria-label="Schließen">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+        <div class="ds-modal__header flex-col items-stretch">
+          <!-- Title Row: Title + Close Button -->
+          <div class="flex justify-between items-center w-full">
+            <h3 class="ds-modal__title" id="modalTitle">Umfrage beantworten</h3>
+            <button class="ds-modal__close" data-action="close" type="button" aria-label="Schließen">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
 
-        <div class="ds-modal__body">
-          <!-- Progress Bar - Design System -->
-          <div class="mb-6">
+          <!-- Progress Bar Row (stays visible when body scrolls) -->
+          <div class="mt-4 w-full">
             <div class="progress progress--lg">
-              <div class="progress__bar" id="progressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+              <div
+                class="progress__bar progress__bar--info"
+                id="progressBar"
+                role="progressbar"
+                aria-valuenow="0"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              ></div>
             </div>
             <div class="progress-text mt-2 text-center text-secondary text-sm" id="progressText">0 von 0 Fragen beantwortet</div>
           </div>
+        </div>
 
+        <div class="ds-modal__body">
           <!-- Questions Container -->
           <div id="questionsContainer">
             <!-- Questions will be loaded here -->

@@ -12,6 +12,7 @@ import {
 } from '../../../types/query-results.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { PoolConnection, ResultSetHeader, query, transaction } from '../../../utils/db.js';
+import { dbToApi } from '../../../utils/fieldMapping.js';
 
 export interface SurveyAnswer {
   // Accept both camelCase (from frontend) and snake_case (database)
@@ -208,20 +209,15 @@ class ResponsesService {
             : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
             : dbResponse.completed_at.toISOString(),
           status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
-          answers: answers.map(
-            (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
-              question_id: a.question_id,
-              question_text: a.question_text,
-              answer_text: a.answer_text ?? undefined,
-              answer_number: a.answer_number ?? undefined,
-              answer_date:
-                a.answer_date === null ? undefined
-                : typeof a.answer_date === 'string' ? a.answer_date
-                : a.answer_date.toISOString(),
-              answer_options:
-                a.answer_options ? (JSON.parse(a.answer_options) as number[]) : undefined,
-            }),
-          ),
+          answers: answers.map((a: SurveyAnswerWithQuestionResult) => {
+            // Transform snake_case to camelCase using dbToApi
+            const transformed = dbToApi(a as unknown as Record<string, unknown>) as SurveyAnswer;
+            // Handle Date object conversion to ISO string
+            if (a.answer_date !== null && typeof a.answer_date !== 'string') {
+              transformed.answerDate = a.answer_date.toISOString();
+            }
+            return transformed;
+          }),
         };
       }),
     );
@@ -278,19 +274,15 @@ class ResponsesService {
         : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
         : dbResponse.completed_at.toISOString(),
       status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
-      answers: answers.map(
-        (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
-          question_id: a.question_id,
-          question_text: a.question_text,
-          answer_text: a.answer_text ?? undefined,
-          answer_number: a.answer_number ?? undefined,
-          answer_date:
-            a.answer_date === null ? undefined
-            : typeof a.answer_date === 'string' ? a.answer_date
-            : a.answer_date.toISOString(),
-          answer_options: a.answer_options ? (JSON.parse(a.answer_options) as number[]) : undefined,
-        }),
-      ),
+      answers: answers.map((a: SurveyAnswerWithQuestionResult) => {
+        // Transform snake_case to camelCase using dbToApi
+        const transformed = dbToApi(a as unknown as Record<string, unknown>) as SurveyAnswer;
+        // Handle Date object conversion to ISO string
+        if (a.answer_date !== null && typeof a.answer_date !== 'string') {
+          transformed.answerDate = a.answer_date.toISOString();
+        }
+        return transformed;
+      }),
     };
 
     return response;
@@ -348,19 +340,15 @@ class ResponsesService {
         : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
         : dbResponse.completed_at.toISOString(),
       status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
-      answers: answers.map(
-        (a: SurveyAnswerWithQuestionResult): SurveyAnswer => ({
-          question_id: a.question_id,
-          question_text: a.question_text,
-          answer_text: a.answer_text ?? undefined,
-          answer_number: a.answer_number ?? undefined,
-          answer_date:
-            a.answer_date === null ? undefined
-            : typeof a.answer_date === 'string' ? a.answer_date
-            : a.answer_date.toISOString(),
-          answer_options: a.answer_options ? (JSON.parse(a.answer_options) as number[]) : undefined,
-        }),
-      ),
+      answers: answers.map((a: SurveyAnswerWithQuestionResult) => {
+        // Transform snake_case to camelCase using dbToApi
+        const transformed = dbToApi(a as unknown as Record<string, unknown>) as SurveyAnswer;
+        // Handle Date object conversion to ISO string
+        if (a.answer_date !== null && typeof a.answer_date !== 'string') {
+          transformed.answerDate = a.answer_date.toISOString();
+        }
+        return transformed;
+      }),
     };
 
     return response;

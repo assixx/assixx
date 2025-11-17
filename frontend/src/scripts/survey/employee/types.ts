@@ -26,7 +26,7 @@ export interface Question {
 export type QuestionType = 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'yes_no' | 'number' | 'date';
 
 export interface QuestionOption {
-  id: number;
+  id: number; // Real database ID from survey_question_options table
   optionText: string;
 }
 
@@ -60,11 +60,13 @@ export interface SurveyResponse {
 }
 
 export interface ResponseAnswer {
-  question_id: number;
-  question_text: string;
-  answer_text?: string;
-  answer_number?: number;
-  answer_options?: string[];
+  questionId: number;
+  questionText: string;
+  questionType?: string;
+  answerText?: string;
+  answerNumber?: number;
+  answerDate?: string;
+  answerOptions?: string[];
 }
 
 export interface WindowWithExtensions extends Window {
