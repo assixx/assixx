@@ -36,7 +36,7 @@
 
         <div class="container">
           <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center">
+            <div class="card-header flex justify-between items-center">
               <div>
                 <h2 class="card-title">Mitarbeiterumfragen</h2>
                 <p class="text-secondary">Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen haben.</p>
@@ -73,48 +73,45 @@
       </main>
     </div>
 
-    <!-- Survey Response Modal -->
-    <div id="surveyModal" class="modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 class="modal-title" id="modalTitle">Umfrage beantworten</h2>
-          <button class="close-btn" id="modalCloseBtn">&times;</button>
+    <!-- Survey Response Modal - Design System -->
+    <div class="modal-overlay" id="surveyModal">
+      <form id="surveyForm" class="ds-modal ds-modal--lg">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title" id="modalTitle">Umfrage beantworten</h3>
+          <button class="ds-modal__close" data-action="close" type="button" aria-label="Schließen">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
 
-        <div class="survey-progress">
-          <div class="progress-bar">
-            <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+        <div class="ds-modal__body">
+          <!-- Progress Bar - Design System -->
+          <div class="mb-6">
+            <div class="progress progress--lg">
+              <div class="progress__bar" id="progressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="progress-text mt-2 text-center text-secondary text-sm" id="progressText">0 von 0 Fragen beantwortet</div>
           </div>
-          <div class="progress-text" id="progressText">0 von 0 Fragen beantwortet</div>
-        </div>
 
-        <form id="surveyForm">
+          <!-- Questions Container -->
           <div id="questionsContainer">
             <!-- Questions will be loaded here -->
           </div>
+        </div>
 
-          <div class="form-actions">
-            <button type="button" class="btn btn-cancel" id="modalCancelBtn">Abbrechen</button>
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-paper-plane"></i>
-              Antworten absenden
-            </button>
-          </div>
-        </form>
-      </div>
+        <div class="ds-modal__footer ds-modal__footer--right">
+          <button type="button" class="btn btn-cancel" data-action="close">Abbrechen</button>
+          <button type="submit" class="btn btn-modal">
+            <i class="fas fa-paper-plane"></i>
+            Antworten absenden
+          </button>
+        </div>
+      </form>
     </div>
 
+    <!-- Scripts -->
     <script type="module" src="/scripts/auth/index.js"></script>
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
-    <script type="module">
-      // Initialize survey employee module
-      import * as SurveyEmployee from '/scripts/pages/survey-employee.js';
-
-      // Initialize on DOM ready
-      document.addEventListener('DOMContentLoaded', () => {
-        SurveyEmployee.init();
-      });
-    </script>
+    <script type="module" src="/scripts/survey/employee/index.ts"></script>
   </body>
 </html>

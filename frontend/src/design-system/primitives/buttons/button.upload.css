@@ -48,7 +48,6 @@
   cursor: not-allowed;
   color: var(--color-gray-500);
   opacity: 60%;
-  background: var(--color-gray-700);
 }
 
 /**

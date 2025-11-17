@@ -20,17 +20,48 @@ const ExportFormatSchema = z.enum(['csv', 'excel'], {
 
 /**
  * Answer schema for survey responses
+ * Accepts both camelCase (from frontend) and snake_case (from database)
  */
-const AnswerSchema = z.object({
-  question_id: IdSchema,
-  answer_text: z.string().trim().optional(),
-  answer_number: z.preprocess(
-    (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
-    z.number().optional(),
-  ),
-  answer_date: DateSchema.optional(),
-  answer_options: z.array(IdSchema).optional(),
-});
+const AnswerSchema = z
+  .object({
+    // Accept both camelCase and snake_case for question ID
+    question_id: IdSchema.optional(),
+    questionId: IdSchema.optional(),
+    // Answer fields - camelCase
+    answerText: z.string().trim().optional(),
+    answerNumber: z.preprocess(
+      (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
+      z.number().optional(),
+    ),
+    answerDate: DateSchema.optional(),
+    answerOptions: z.array(IdSchema).optional(),
+    // Answer fields - snake_case (for backwards compatibility)
+    answer_text: z.string().trim().optional(),
+    answer_number: z.preprocess(
+      (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
+      z.number().optional(),
+    ),
+    answer_date: DateSchema.optional(),
+    answer_options: z.array(IdSchema).optional(),
+  })
+  .refine(
+    (data: {
+      question_id?: number;
+      questionId?: number;
+      answerText?: string;
+      answerNumber?: number;
+      answerDate?: string;
+      answerOptions?: number[];
+      answer_text?: string;
+      answer_number?: number;
+      answer_date?: string;
+      answer_options?: number[];
+    }) => data.question_id !== undefined || data.questionId !== undefined,
+    {
+      message: 'Either question_id or questionId is required',
+      path: ['question_id'],
+    },
+  );
 
 // ============================================================
 // QUERY SCHEMAS

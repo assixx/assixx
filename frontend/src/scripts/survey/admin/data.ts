@@ -50,15 +50,11 @@ export const apiClient = ApiClient.getInstance();
  */
 export async function loadSurveys(): Promise<Survey[]> {
   try {
-    console.log('[SurveyAdmin] Loading surveys...');
     const surveysData = await apiClient.request<Survey[]>('/surveys', { method: 'GET' }, { version: 'v2' });
-
-    console.log('[SurveyAdmin] Loaded surveys:', surveysData);
-
     setSurveys(surveysData);
     return surveysData;
   } catch (error) {
-    console.error('[SurveyAdmin] Error loading surveys:', error);
+    console.error('Error loading surveys:', error);
     setSurveys([]);
     return [];
   }
@@ -70,19 +66,15 @@ export async function loadSurveys(): Promise<Survey[]> {
  */
 export async function loadTemplates(): Promise<SurveyTemplate[]> {
   try {
-    console.log('[SurveyAdmin] Loading templates...');
     const templatesData = await apiClient.request<SurveyTemplate[]>(
       '/surveys/templates',
       { method: 'GET' },
       { version: 'v2' },
     );
-
-    console.log('[SurveyAdmin] Loaded templates:', templatesData);
-
     setTemplates(templatesData);
     return templatesData;
   } catch (error) {
-    console.error('[SurveyAdmin] Error loading templates:', error);
+    console.error('Error loading templates:', error);
     setTemplates([]);
     return [];
   }
@@ -94,14 +86,11 @@ export async function loadTemplates(): Promise<SurveyTemplate[]> {
  */
 export async function loadUserDepartments(): Promise<Department[]> {
   try {
-    console.log('[SurveyAdmin] Loading departments...');
     const departmentsData = await apiClient.request<Department[]>('/departments', { method: 'GET' }, { version: 'v2' });
-
-    console.log('[SurveyAdmin] Loaded departments:', departmentsData);
     setDepartments(departmentsData);
     return departmentsData;
   } catch (error) {
-    console.error('[SurveyAdmin] Error loading departments:', error);
+    console.error('Error loading departments:', error);
     setDepartments([]);
     return [];
   }
@@ -113,14 +102,11 @@ export async function loadUserDepartments(): Promise<Department[]> {
  */
 export async function loadUserTeams(): Promise<Team[]> {
   try {
-    console.log('[SurveyAdmin] Loading teams...');
     const teamsData = await apiClient.request<Team[]>('/teams', { method: 'GET' }, { version: 'v2' });
-
-    console.log('[SurveyAdmin] Loaded teams:', teamsData);
     setTeams(teamsData);
     return teamsData;
   } catch (error) {
-    console.error('[SurveyAdmin] Error loading teams:', error);
+    console.error('Error loading teams:', error);
     setTeams([]);
     return [];
   }
@@ -132,14 +118,11 @@ export async function loadUserTeams(): Promise<Team[]> {
  */
 export async function loadUserAreas(): Promise<Area[]> {
   try {
-    console.log('[SurveyAdmin] Loading areas...');
     const areasData = await apiClient.request<Area[]>('/areas', { method: 'GET' }, { version: 'v2' });
-
-    console.log('[SurveyAdmin] Loaded areas:', areasData);
     setAreas(areasData);
     return areasData;
   } catch (error) {
-    console.error('[SurveyAdmin] Error loading areas:', error);
+    console.error('Error loading areas:', error);
     setAreas([]);
     return [];
   }
@@ -152,14 +135,9 @@ export async function loadUserAreas(): Promise<Area[]> {
 export async function saveSurvey(surveyData: Survey): Promise<number | null> {
   try {
     const isUpdate = currentSurveyId !== null && currentSurveyId !== 0;
-
     const endpoint = isUpdate ? `/surveys/${String(currentSurveyId)}` : '/surveys';
-
     const method = isUpdate ? 'PUT' : 'POST';
 
-    console.log(`[SurveyAdmin] ${isUpdate ? 'Updating' : 'Creating'} survey...`, surveyData);
-
-    // apiClient returns data directly (unwrapped from { success, data } response)
     const survey = await apiClient.request<{ surveyId?: number; id?: number }>(
       endpoint,
       {
@@ -169,14 +147,9 @@ export async function saveSurvey(surveyData: Survey): Promise<number | null> {
       { version: 'v2' },
     );
 
-    console.log('[SurveyAdmin] Survey saved successfully:', survey);
-
-    const surveyId = survey.surveyId ?? survey.id ?? currentSurveyId ?? null;
-    console.log('[SurveyAdmin] Survey ID:', surveyId);
-
-    return surveyId;
+    return survey.surveyId ?? survey.id ?? currentSurveyId ?? null;
   } catch (error) {
-    console.error('[SurveyAdmin] Error saving survey:', error);
+    console.error('Error saving survey:', error);
     return null;
   }
 }
@@ -187,14 +160,10 @@ export async function saveSurvey(surveyData: Survey): Promise<number | null> {
  */
 export async function deleteSurvey(surveyId: number): Promise<boolean> {
   try {
-    console.log('[SurveyAdmin] Deleting survey:', surveyId);
-
     await apiClient.request(`/surveys/${String(surveyId)}`, { method: 'DELETE' }, { version: 'v2' });
-
-    console.log('[SurveyAdmin] Survey deleted successfully');
     return true;
   } catch (error) {
-    console.error('[SurveyAdmin] Error deleting survey:', error);
+    console.error('Error deleting survey:', error);
     return false;
   }
 }
@@ -205,18 +174,9 @@ export async function deleteSurvey(surveyId: number): Promise<boolean> {
  */
 export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
   try {
-    console.log('[SurveyAdmin] Loading survey by ID:', surveyId);
-
-    const survey = await apiClient.request<Survey>(
-      `/surveys/${String(surveyId)}`,
-      { method: 'GET' },
-      { version: 'v2' },
-    );
-
-    console.log('[SurveyAdmin] Loaded survey:', survey);
-    return survey;
+    return await apiClient.request<Survey>(`/surveys/${String(surveyId)}`, { method: 'GET' }, { version: 'v2' });
   } catch (error) {
-    console.error('[SurveyAdmin] Error loading survey:', error);
+    console.error('Error loading survey:', error);
     return null;
   }
 }
@@ -227,8 +187,6 @@ export async function loadSurveyById(surveyId: number): Promise<Survey | null> {
  */
 export async function loadTemplateById(templateId: number): Promise<SurveyTemplate | null> {
   try {
-    console.log('[SurveyAdmin] Finding template by ID:', templateId);
-
     // If templates not loaded yet, load them
     if (templates.length === 0) {
       await loadTemplates();
@@ -238,14 +196,13 @@ export async function loadTemplateById(templateId: number): Promise<SurveyTempla
     const template = templates.find((t) => t.id === templateId);
 
     if (template !== undefined) {
-      console.log('[SurveyAdmin] Found template:', template);
       return template;
     }
 
-    console.error('[SurveyAdmin] Template not found with ID:', templateId);
+    console.error('Template not found with ID:', templateId);
     return null;
   } catch (error) {
-    console.error('[SurveyAdmin] Error finding template:', error);
+    console.error('Error finding template:', error);
     return null;
   }
 }
@@ -256,8 +213,6 @@ export async function loadTemplateById(templateId: number): Promise<SurveyTempla
  */
 export async function updateSurveyAssignments(surveyId: number, assignments: SurveyAssignment[]): Promise<boolean> {
   try {
-    console.log('[SurveyAdmin] Updating survey assignments:', { surveyId, assignments });
-
     await apiClient.request(
       `/surveys/${String(surveyId)}/assignments`,
       {
@@ -266,11 +221,9 @@ export async function updateSurveyAssignments(surveyId: number, assignments: Sur
       },
       { version: 'v2' },
     );
-
-    console.log('[SurveyAdmin] Assignments updated successfully');
     return true;
   } catch (error) {
-    console.error('[SurveyAdmin] Error updating assignments:', error);
+    console.error('Error updating assignments:', error);
     return false;
   }
 }
