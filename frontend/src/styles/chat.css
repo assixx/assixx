@@ -97,7 +97,6 @@
 .conversations-list {
   overflow-y: auto;
   flex: 1;
-  margin-top: 3px;
 }
 
 .conversation-item {

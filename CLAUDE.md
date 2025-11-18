@@ -97,6 +97,7 @@ docker exec assixx-backend pnpm run type-check
 **Database Migration:**
 
 ```bash
+docker exec assixx-mysql mysql -h localhost -u assixx_user -p'AssixxP@ss2025!' main -e "SHOW TABLES;"
 bash scripts/quick-backup.sh "before_migration"
 docker cp migration.sql assixx-mysql:/tmp/
 docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/'$(basename $MIGRATION_FILE)

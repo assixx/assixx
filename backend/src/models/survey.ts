@@ -648,6 +648,78 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
 }
 
 /**
+ * Get survey by UUID with questions and options
+ * Similar to getSurveyById but uses UUID instead of numeric ID
+ */
+export async function getSurveyByUUID(
+  surveyUUID: string,
+  tenantId: number,
+): Promise<DbSurvey | null> {
+  const [surveys] = await typedQuery<DbSurvey[]>(
+    `
+      SELECT s.*,
+        u.first_name as creator_first_name,
+        u.last_name as creator_last_name
+      FROM surveys s
+      LEFT JOIN users u ON s.created_by = u.id
+      WHERE s.uuid = ? AND s.tenant_id = ?
+    `,
+    [surveyUUID, tenantId],
+  );
+
+  if (surveys.length === 0) {
+    return null;
+  }
+
+  const survey = surveys[0];
+
+  // Convert Buffer to string if needed
+  const hasDescription = survey.description != null && survey.description !== '';
+  if (hasDescription && Buffer.isBuffer(survey.description)) {
+    survey.description = survey.description.toString();
+  }
+
+  // Get questions
+  const [questions] = await typedQuery<DbSurveyQuestion[]>(
+    `
+      SELECT * FROM survey_questions
+      WHERE survey_id = ?
+      ORDER BY order_index
+    `,
+    [survey.id],
+  );
+
+  // Convert Buffer to string for questions
+  processSurveyQuestions(questions);
+
+  // Load options for choice questions from survey_question_options table
+  const questionIds = questions.map((q: DbSurveyQuestion) => q.id);
+  const optionsMap = await loadQuestionOptions(questionIds);
+
+  // Attach options to questions
+  for (const question of questions) {
+    if (['single_choice', 'multiple_choice'].includes(question.question_type)) {
+      question.options = optionsMap.get(question.id) ?? [];
+    }
+  }
+
+  survey.questions = questions;
+
+  // Get assignments
+  const [assignments] = await typedQuery<DbSurveyAssignment[]>(
+    `
+      SELECT * FROM survey_assignments
+      WHERE survey_id = ?
+    `,
+    [survey.id],
+  );
+
+  survey.assignments = assignments;
+
+  return survey;
+}
+
+/**
  * Update survey questions
  * Note: CASCADE DELETE will automatically remove options from survey_question_options table
  */
@@ -878,13 +950,22 @@ interface QuestionStatistic {
 async function getChoiceQuestionStats(
   question: DbSurveyQuestion,
 ): Promise<QuestionStatistic['options']> {
-  const options =
-    question.options ?
-      typeof question.options === 'string' ?
-        (JSON.parse(question.options) as unknown[])
-      : (question.options as unknown[])
-    : [];
+  // For yes_no questions: use hardcoded options (not stored in survey_question_options table)
+  let options: { id: number; option_text: string }[];
 
+  if ((question.question_type as string) === 'yes_no') {
+    // Hardcoded yes/no options
+    options = [
+      { id: 1, option_text: 'Ja' },
+      { id: 2, option_text: 'Nein' },
+    ];
+  } else {
+    // Get options from survey_question_options table (new structure)
+    // question.options is already loaded by getSurveyById() as an array of DbSurveyQuestionOption objects
+    options = question.options ?? [];
+  }
+
+  // Get all answers for this question
   const [answers] = await typedQuery<AnswerOptionsResult[]>(
     `
       SELECT sa.answer_options
@@ -895,6 +976,7 @@ async function getChoiceQuestionStats(
     [question.id],
   );
 
+  // Count how many times each option ID was selected
   const optionCounts: Record<number, number> = {};
   answers.forEach((answer: AnswerOptionsResult) => {
     const selectedOptions =
@@ -903,18 +985,20 @@ async function getChoiceQuestionStats(
       : answer.answer_options;
 
     if (Array.isArray(selectedOptions)) {
-      selectedOptions.forEach((optionIndex: number) => {
-        // eslint-disable-next-line security/detect-object-injection -- optionIndex kommt aus validierten Survey-Daten (numerischer Index aus DB), kein User-Input, 100% sicher
-        optionCounts[optionIndex] = (optionCounts[optionIndex] ?? 0) + 1;
+      selectedOptions.forEach((optionId: number) => {
+        // optionId is the ID from survey_question_options table, not an index
+        // eslint-disable-next-line security/detect-object-injection -- optionId kommt aus validierten Survey-Daten (ID aus DB), kein User-Input, 100% sicher
+        optionCounts[optionId] = (optionCounts[optionId] ?? 0) + 1;
       });
     }
   });
 
-  return options.map((optionText: unknown, index: number) => ({
-    option_id: index,
-    option_text: String(optionText),
-    // eslint-disable-next-line security/detect-object-injection -- index ist Array-Iterator von map(), immer numerisch und sicher, kein User-Input
-    count: optionCounts[index] ?? 0,
+  // Map options to statistics format, matching by option ID (not index!)
+  return options.map((option: { id: number; option_text: string }) => ({
+    option_id: option.id,
+    option_text: option.option_text,
+
+    count: optionCounts[option.id] ?? 0,
   }));
 }
 
@@ -967,6 +1051,39 @@ async function getRatingQuestionStats(
   };
 }
 
+/**
+ * Get date question statistics
+ * Returns date options with counts, sorted by most selected
+ */
+async function getDateQuestionStats(questionId: number): Promise<QuestionStatistic['options']> {
+  interface DateCountResult extends RowDataPacket {
+    answer_date: Date | string;
+    count: number;
+  }
+
+  const [dateStats] = await typedQuery<DateCountResult[]>(
+    `
+      SELECT
+        sa.answer_date,
+        COUNT(*) as count
+      FROM survey_answers sa
+      WHERE sa.question_id = ? AND sa.answer_date IS NOT NULL
+      GROUP BY sa.answer_date
+      ORDER BY count DESC, sa.answer_date DESC
+    `,
+    [questionId],
+  );
+
+  return dateStats.map((row: DateCountResult, index: number) => ({
+    option_id: index + 1,
+    option_text:
+      row.answer_date instanceof Date ?
+        row.answer_date.toISOString().split('T')[0]
+      : row.answer_date.split('T')[0],
+    count: row.count,
+  }));
+}
+
 export async function getSurveyStatistics(
   surveyId: number,
   tenantId: number,
@@ -1001,14 +1118,19 @@ export async function getSurveyStatistics(
         responses: [],
       };
 
+      const questionType = question.question_type as string;
       const isChoiceQuestion =
-        question.question_type === 'single_choice' || question.question_type === 'multiple_choice';
+        questionType === 'single_choice' ||
+        questionType === 'multiple_choice' ||
+        questionType === 'yes_no';
 
       if (isChoiceQuestion) {
         questionStat.options = await getChoiceQuestionStats(question);
-      } else if (question.question_type === 'text') {
+      } else if (questionType === 'text') {
         questionStat.responses = await getTextQuestionResponses(question.id);
-      } else if (question.question_type === 'rating') {
+      } else if (questionType === 'date') {
+        questionStat.options = await getDateQuestionStats(question.id);
+      } else if (questionType === 'rating' || questionType === 'number') {
         questionStat.statistics = await getRatingQuestionStats(question.id);
       }
 
@@ -1069,6 +1191,7 @@ const Survey = {
   getAllByTenantForEmployee: getAllSurveysByTenantForEmployee,
   getAllByTenantForAdmin: getAllSurveysByTenantForAdmin,
   getById: getSurveyById,
+  getByUUID: getSurveyByUUID,
   update: updateSurvey,
   delete: deleteSurvey,
   getTemplates: getSurveyTemplates,

@@ -196,9 +196,8 @@ export class SignupFormController {
 ### Surveys
 
 - [x] survey-admin.html ✅ (2025-11-16) - 100% Design System compliant (ds-modal, form-field, dropdown, btn-float, empty-state, badges, cards, TypeScript modules split to index/ui/types layers, question builder with dynamic form fields, Tailwind grid layouts, survey-admin.css reduced 749→274 lines -63%, eliminated ALL redundant styles: survey cards→.card, status badges→.badge variants, grids→Tailwind utilities, no inline styles/JS, no Bootstrap)
-- [ ] survey-employee.html
-- [ ] survey-details.html
-- [ ] survey-results.html
+- [x] survey-employee. ✅ (2025-11-16) - 100% Design System compliant
+- [x] survey-results.html ✅ (2025-11-18) - 100% Design System compliant (accordion accordion--compact for individual responses, card, card-stat, progress progress--lg, badge badge--success/warning, empty-state, spinner, TypeScript modules split to data/ui/types/index layers, survey-results.css reduced 488→206 lines -58%, eliminated ALL redundant CSS: custom cards→.card, progress bars→.progress, badges→.badge, eliminated all API v1 fallbacks, fixed camelCase consistency with dbToApi() transformation, null safety for answerOptions, option texts displayed instead of IDs, no inline styles/JS, no Bootstrap)
 
 ### Admin/Root
 

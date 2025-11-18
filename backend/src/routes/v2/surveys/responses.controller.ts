@@ -8,6 +8,7 @@ import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { SurveyAnswer, responsesService } from './responses.service.js';
+import { surveysService } from './surveys.service.js';
 
 interface FrontendAnswer {
   questionId?: number;
@@ -23,11 +24,50 @@ interface FrontendAnswer {
 }
 
 /**
+ * Helper: Check if string is a valid UUID format
+ */
+function isUUID(value: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
+/**
+ * Helper: Convert UUID or numeric ID param to numeric survey ID
+ * @param idParam - Survey ID (UUID or numeric)
+ * @param tenantId - Tenant ID
+ * @param userId - User ID
+ * @param userRole - User role
+ * @returns Numeric survey ID
+ */
+async function resolveSurveyId(
+  idParam: string,
+  tenantId: number,
+  userId: number,
+  userRole: string,
+): Promise<number> {
+  if (isUUID(idParam)) {
+    const survey = await surveysService.getSurveyByUUID(idParam, tenantId, userId, userRole);
+    return (survey as { id: number }).id;
+  }
+
+  const surveyId = Number.parseInt(idParam, 10);
+  if (Number.isNaN(surveyId)) {
+    throw new ServiceError('INVALID_ID', 'Invalid survey ID or UUID');
+  }
+  return surveyId;
+}
+
+/**
  * Submit a response to a survey
  */
 export async function submitResponse(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const surveyId = await resolveSurveyId(
+      req.params.id,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
     const { answers: rawAnswers } = req.body as { answers: FrontendAnswer[] };
 
     // Transform camelCase from frontend to snake_case for service
@@ -67,7 +107,12 @@ export async function submitResponse(req: AuthenticatedRequest, res: Response): 
  */
 export async function getAllResponses(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const surveyId = await resolveSurveyId(
+      req.params.id,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
     const { page = 1, limit = 50 } = req.query;
 
     const responses = await responsesService.getAllResponses(
@@ -97,7 +142,12 @@ export async function getAllResponses(req: AuthenticatedRequest, res: Response):
  */
 export async function getMyResponse(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const surveyId = await resolveSurveyId(
+      req.params.id,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
 
     const response = await responsesService.getUserResponse(
       surveyId,
@@ -135,7 +185,12 @@ export async function getMyResponse(req: AuthenticatedRequest, res: Response): P
  */
 export async function getResponseById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const surveyId = await resolveSurveyId(
+      req.params.id,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
     const responseId = Number.parseInt(req.params.responseId, 10);
 
     const response = await responsesService.getResponseById(
@@ -162,7 +217,12 @@ export async function getResponseById(req: AuthenticatedRequest, res: Response):
  */
 export async function updateResponse(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const surveyId = await resolveSurveyId(
+      req.params.id,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
     const responseId = Number.parseInt(req.params.responseId, 10);
     const { answers } = req.body as { answers: SurveyAnswer[] };
 
@@ -190,7 +250,12 @@ export async function updateResponse(req: AuthenticatedRequest, res: Response): 
  */
 export async function exportResponses(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const surveyId = await resolveSurveyId(
+      req.params.id,
+      req.user.tenant_id,
+      req.user.id,
+      req.user.role,
+    );
     const format = (req.query.format as string) || 'csv';
 
     const exportData = await responsesService.exportResponses(

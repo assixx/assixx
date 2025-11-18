@@ -66,6 +66,7 @@ export interface SurveyAssignment {
 
 export interface Survey {
   id?: number;
+  uuid?: string; // UUIDv7 for external API calls (security)
   title: string | Buffer;
   description: string | Buffer;
   type?: 'feedback' | 'satisfaction' | 'poll' | 'assessment' | 'other';

@@ -85,16 +85,43 @@ export const ExportResponsesQuerySchema = z.object({
 
 /**
  * Survey ID parameter validation
+ * Accepts both numeric IDs and UUIDs
  */
 export const SurveyIdParamSchema = z.object({
-  id: IdSchema,
+  id: z.union([
+    // UUID format (UUIDv7)
+    z
+      .string()
+      .refine(
+        (val: string) =>
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val),
+        {
+          message: 'Invalid UUID format',
+        },
+      ),
+    // Numeric ID (backwards compatibility)
+    IdSchema,
+  ]),
 });
 
 /**
  * Response ID parameter validation
  */
 export const ResponseIdParamSchema = z.object({
-  id: IdSchema,
+  id: z.union([
+    // UUID format (UUIDv7)
+    z
+      .string()
+      .refine(
+        (val: string) =>
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val),
+        {
+          message: 'Invalid UUID format',
+        },
+      ),
+    // Numeric ID (backwards compatibility)
+    IdSchema,
+  ]),
   responseId: IdSchema,
 });
 
