@@ -31,10 +31,13 @@ export interface SurveyAnswer {
 
 export interface SurveyResponse {
   id: number;
-  survey_id: number;
-  user_id: number;
-  started_at: string;
-  completed_at: string | null;
+  surveyId: number;
+  userId: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+  startedAt: string;
+  completedAt: string | null;
   status: 'in_progress' | 'completed' | 'abandoned';
   answers?: SurveyAnswer[];
 }
@@ -196,22 +199,26 @@ class ResponsesService {
           [dbResponse.id, tenantId],
         );
 
+        // Transform response from snake_case to camelCase (API v2 standard)
+        const baseResponse = dbToApi(
+          dbResponse as unknown as Record<string, unknown>,
+        ) as unknown as SurveyResponse;
+
+        // Handle Date objects conversion to ISO strings
+        if (typeof dbResponse.started_at !== 'string') {
+          baseResponse.startedAt = dbResponse.started_at.toISOString();
+        }
+        if (dbResponse.completed_at !== null && typeof dbResponse.completed_at !== 'string') {
+          baseResponse.completedAt = dbResponse.completed_at.toISOString();
+        }
+
         return {
-          id: dbResponse.id,
-          survey_id: dbResponse.survey_id,
-          user_id: dbResponse.user_id,
-          started_at:
-            typeof dbResponse.started_at === 'string' ?
-              dbResponse.started_at
-            : dbResponse.started_at.toISOString(),
-          completed_at:
-            dbResponse.completed_at === null ? null
-            : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
-            : dbResponse.completed_at.toISOString(),
-          status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
+          ...baseResponse,
           answers: answers.map((a: SurveyAnswerWithQuestionResult) => {
             // Transform snake_case to camelCase using dbToApi
-            const transformed = dbToApi(a as unknown as Record<string, unknown>) as SurveyAnswer;
+            const transformed = dbToApi(
+              a as unknown as Record<string, unknown>,
+            ) as unknown as SurveyAnswer;
             // Handle Date object conversion to ISO string
             if (a.answer_date !== null && typeof a.answer_date !== 'string') {
               transformed.answerDate = a.answer_date.toISOString();
@@ -260,20 +267,21 @@ class ResponsesService {
       [dbResponse.id, tenantId] as unknown[],
     );
 
-    // Create properly typed response
-    const response: SurveyResponse = {
-      id: dbResponse.id,
-      survey_id: dbResponse.survey_id,
-      user_id: dbResponse.user_id,
-      started_at:
-        typeof dbResponse.started_at === 'string' ?
-          dbResponse.started_at
-        : dbResponse.started_at.toISOString(),
-      completed_at:
-        dbResponse.completed_at === null ? null
-        : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
-        : dbResponse.completed_at.toISOString(),
-      status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
+    // Transform response from snake_case to camelCase (API v2 standard)
+    const baseResponse = dbToApi(
+      dbResponse as unknown as Record<string, unknown>,
+    ) as unknown as SurveyResponse;
+
+    // Handle Date objects conversion to ISO strings
+    if (typeof dbResponse.started_at !== 'string') {
+      baseResponse.startedAt = dbResponse.started_at.toISOString();
+    }
+    if (dbResponse.completed_at !== null && typeof dbResponse.completed_at !== 'string') {
+      baseResponse.completedAt = dbResponse.completed_at.toISOString();
+    }
+
+    return {
+      ...baseResponse,
       answers: answers.map((a: SurveyAnswerWithQuestionResult) => {
         // Transform snake_case to camelCase using dbToApi
         const transformed = dbToApi(a as unknown as Record<string, unknown>) as SurveyAnswer;
@@ -284,8 +292,6 @@ class ResponsesService {
         return transformed;
       }),
     };
-
-    return response;
   }
 
   /**
@@ -326,20 +332,21 @@ class ResponsesService {
       [responseId, tenantId],
     );
 
-    // Create properly typed response
-    const response: SurveyResponse = {
-      id: dbResponse.id,
-      survey_id: dbResponse.survey_id,
-      user_id: dbResponse.user_id,
-      started_at:
-        typeof dbResponse.started_at === 'string' ?
-          dbResponse.started_at
-        : dbResponse.started_at.toISOString(),
-      completed_at:
-        dbResponse.completed_at === null ? null
-        : typeof dbResponse.completed_at === 'string' ? dbResponse.completed_at
-        : dbResponse.completed_at.toISOString(),
-      status: dbResponse.status as 'in_progress' | 'completed' | 'abandoned',
+    // Transform response from snake_case to camelCase (API v2 standard)
+    const baseResponse = dbToApi(
+      dbResponse as unknown as Record<string, unknown>,
+    ) as unknown as SurveyResponse;
+
+    // Handle Date objects conversion to ISO strings
+    if (typeof dbResponse.started_at !== 'string') {
+      baseResponse.startedAt = dbResponse.started_at.toISOString();
+    }
+    if (dbResponse.completed_at !== null && typeof dbResponse.completed_at !== 'string') {
+      baseResponse.completedAt = dbResponse.completed_at.toISOString();
+    }
+
+    return {
+      ...baseResponse,
       answers: answers.map((a: SurveyAnswerWithQuestionResult) => {
         // Transform snake_case to camelCase using dbToApi
         const transformed = dbToApi(a as unknown as Record<string, unknown>) as SurveyAnswer;
@@ -350,8 +357,6 @@ class ResponsesService {
         return transformed;
       }),
     };
-
-    return response;
   }
 
   /**

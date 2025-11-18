@@ -78,12 +78,20 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
 }
 
 /**
+ * Helper: Check if string is a valid UUID format
+ */
+function isUUID(value: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
+/**
  * @param req - The request object
  * @param res - The response object
 
  * /api/v2/surveys/\{id\}:
  *   get:
- *     summary: Get survey by ID
+ *     summary: Get survey by ID or UUID
  *     tags: [Surveys v2]
  *     security:
  *       - bearerAuth: []
@@ -92,15 +100,35 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
  *         name: id
  *         required: true
  *         schema:
- *           type: integer
- *         description: Survey ID
+ *           oneOf:
+ *             - type: integer
+ *             - type: string
+ *         description: Survey ID (numeric) or UUID (string)
  */
 export async function getSurveyById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params.id;
+    console.log('[DEBUG] getSurveyById called with idParam:', idParam, 'isUUID:', isUUID(idParam));
 
+    // Check if it's a UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    if (isUUID(idParam)) {
+      console.log('[DEBUG] Routing to UUID lookup');
+      // UUID lookup
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      res.json(successResponse(survey));
+      return;
+    }
+    console.log('[DEBUG] Routing to numeric ID lookup');
+
+    // Numeric ID lookup (backwards compatibility)
+    const surveyId = Number.parseInt(idParam, 10);
     if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
+      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
       return;
     }
 
@@ -192,11 +220,25 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function updateSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params.id;
+    let surveyId: number;
 
-    if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
-      return;
+    // Check if it's a UUID - need to get numeric ID first
+    if (isUUID(idParam)) {
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      surveyId = (survey as { id: number }).id;
+    } else {
+      // Numeric ID lookup (backwards compatibility)
+      surveyId = Number.parseInt(idParam, 10);
+      if (Number.isNaN(surveyId)) {
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
+        return;
+      }
     }
 
     const survey = await surveysService.updateSurvey(
@@ -240,11 +282,25 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function deleteSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params.id;
+    let surveyId: number;
 
-    if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
-      return;
+    // Check if it's a UUID - need to get numeric ID first
+    if (isUUID(idParam)) {
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      surveyId = (survey as { id: number }).id;
+    } else {
+      // Numeric ID lookup (backwards compatibility)
+      surveyId = Number.parseInt(idParam, 10);
+      if (Number.isNaN(surveyId)) {
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
+        return;
+      }
     }
 
     const result = await surveysService.deleteSurvey(
@@ -358,11 +414,25 @@ export async function createFromTemplate(req: AuthenticatedRequest, res: Respons
  */
 export async function getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = Number.parseInt(req.params.id, 10);
+    const idParam = req.params.id;
+    let surveyId: number;
 
-    if (Number.isNaN(surveyId)) {
-      res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID'));
-      return;
+    // Check if it's a UUID - need to get numeric ID first
+    if (isUUID(idParam)) {
+      const survey = await surveysService.getSurveyByUUID(
+        idParam,
+        req.user.tenant_id,
+        req.user.id,
+        req.user.role,
+      );
+      surveyId = (survey as { id: number }).id;
+    } else {
+      // Numeric ID lookup (backwards compatibility)
+      surveyId = Number.parseInt(idParam, 10);
+      if (Number.isNaN(surveyId)) {
+        res.status(400).json(errorResponse('INVALID_ID', 'Invalid survey ID or UUID'));
+        return;
+      }
     }
 
     const statistics = await surveysService.getSurveyStatistics(

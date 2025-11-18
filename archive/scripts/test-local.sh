@@ -19,7 +19,7 @@ cd /home/scs/projects/Assixx
 
 # 1. Docker & DB Status prüfen
 echo "1️⃣  Prüfe Docker & Datenbank Status:"
-if docker exec assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main -e "SELECT 1" > /dev/null 2>&1; then
+if docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT 1" > /dev/null 2>&1; then
     echo -e "   ${GREEN}✅ MySQL Datenbank erreichbar${NC}"
 else
     echo -e "   ${RED}❌ MySQL Datenbank nicht erreichbar${NC}"

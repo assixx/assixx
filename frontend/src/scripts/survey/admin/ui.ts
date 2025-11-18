@@ -199,7 +199,7 @@ function createSurveyPropertiesBadges(survey: Survey): string {
 /**
  * Helper: Create survey action buttons HTML
  */
-function createSurveyActionsHtml(surveyId: number, isDraft: boolean, responseCount: number): string {
+function createSurveyActionsHtml(surveyId: string | number, isDraft: boolean, responseCount: number): string {
   const editButton =
     responseCount === 0
       ? `
@@ -237,7 +237,8 @@ export function createSurveyCard(survey: Survey): string {
   const responseRate = responseCount > 0 ? Math.round((completedCount / responseCount) * 100) : 0;
   const isDraft = survey.status === 'draft';
   const onClickAction = isDraft ? 'edit-survey' : 'view-results';
-  const surveyId = survey.id ?? 0;
+  // Use UUID for external links (security), fallback to numeric ID for edit (internal)
+  const surveyId = survey.uuid ?? survey.id?.toString() ?? '';
   const status = survey.status ?? 'draft';
   const badgeClass = getStatusBadgeClass(status);
 

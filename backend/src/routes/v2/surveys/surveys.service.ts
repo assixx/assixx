@@ -281,6 +281,37 @@ class SurveysService {
   }
 
   /**
+   * Get survey by UUID
+   * @param surveyUUID - The survey UUID (UUIDv7)
+   * @param tenantId - The tenant ID
+   * @param userId - The user ID
+   * @param userRole - The userRole parameter
+   */
+  async getSurveyByUUID(
+    surveyUUID: string,
+    tenantId: number,
+    userId: number,
+    userRole: string,
+  ): Promise<unknown> {
+    try {
+      const surveyData = await survey.getByUUID(surveyUUID, tenantId);
+
+      if (!surveyData) {
+        throw new ServiceError('NOT_FOUND', 'survey not found');
+      }
+
+      // Check access using the numeric ID from the survey data
+      await this.checkSurveyAccess(surveyData.id, tenantId, userId, userRole);
+
+      return this.transformSurveyToApi(surveyData);
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) throw error;
+      console.error('Error getting survey by UUID:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to get survey');
+    }
+  }
+
+  /**
    * Create a new survey
    * @param data - The data object
    * @param tenantId - The tenant ID
