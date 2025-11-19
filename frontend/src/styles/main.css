@@ -42,6 +42,8 @@
 
 /* Design System Choice Cards Component */
 @import "../design-system/primitives/choice-cards/choice-card.base.css";
+@import "../design-system/primitives/choice-cards/choice-card.feature.css";
+@import "../design-system/primitives/choice-cards/choice-card.plan.css";
 
 /* FontAwesome is loaded separately in HTML files */
 

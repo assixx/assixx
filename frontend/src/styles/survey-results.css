@@ -94,8 +94,8 @@
 /* Progress bars use Design System: progress, progress__bar */
 /* Fix for 0% progress: ensure text is visible */
 .option-result .progress__bar--empty {
-  min-width: 40px;
   justify-content: flex-start;
+  min-width: 40px;
   padding-left: var(--spacing-2);
 }
 

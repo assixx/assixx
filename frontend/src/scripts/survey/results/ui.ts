@@ -560,7 +560,7 @@ export function showError(contentArea: HTMLElement, message: string): void {
 export function showLoading(contentArea: HTMLElement): void {
   const html = `
     <div class="loading">
-      <div class="spinner"></div>
+      <div class="spinner-ring spinner-ring--md"></div>
       <p>Lade Umfrage-Ergebnisse...</p>
     </div>
   `;

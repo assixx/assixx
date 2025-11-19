@@ -14,14 +14,7 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="/styles/user-info-update.css" />
     <link rel="stylesheet" href="/styles/root-features.css" />
-    <!-- Dom-utils Module für sichere HTML-Sanitization -->
-    <script type="module">
-      import { setHTML } from '/utils/dom-utils.js';
-      // Make setHTML globally available for inline scripts
-      window.setHTML = setHTML;
-    </script>
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -35,12 +28,15 @@
         <div id="breadcrumb-container"></div>
 
         <div class="container">
-          <!-- Current Plan Header -->
-          <div class="plan-header">
-            <div class="current-plan-info">
+          <!-- Page Header Card -->
+          <div class="card mb-6">
+            <div class="card__header flex items-center justify-between">
               <div>
-                <p class="plan-title">Plan & Feature Management</p>
-                <p style="color: var(--text-secondary); margin-top: 8px">
+                <h1 class="card__title text-2xl">
+                  <i class="fas fa-crown mr-2"></i>
+                  Plan & Feature Management
+                </h1>
+                <p class="text-[var(--color-text-secondary)] mt-2">
                   Verwalten Sie Ihren Plan und aktivieren Sie Features für
                   <strong id="tenant-name">Ihre Organisation</strong>
                 </p>
@@ -50,223 +46,146 @@
                 <span>Enterprise Plan</span>
               </div>
             </div>
+          </div>
 
-            <!-- Plan Selection -->
-            <div class="plan-selection">
-              <!-- Basic Plan -->
-              <div class="plan-card" data-plan="basic">
-                <h3 class="plan-name">Basic</h3>
-                <div class="plan-price">
-                  49€
-                  <small>/Monat</small>
+          <!-- Available Plans Section -->
+          <div class="card mb-6">
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-th-large mr-2"></i>
+                Verfügbare Pläne
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Wählen Sie den passenden Plan für Ihr Unternehmen</p>
+            </div>
+            <div class="card__body">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="plans-container">
+                <!-- Plan cards werden hier dynamisch via TypeScript geladen -->
+                <div class="spinner-container">
+                  <div class="spinner-ring spinner-ring--md"></div>
+                  <p class="mt-2 text-[var(--color-text-secondary)]">Pläne werden geladen...</p>
                 </div>
-                <p class="plan-description">Perfekt für kleine Teams und Startups</p>
-
-                <div class="plan-limits">
-                  <div class="limit-item">
-                    <span class="limit-value">10</span>
-                    <span class="limit-label">Mitarbeiter</span>
-                  </div>
-                  <div class="limit-item">
-                    <span class="limit-value">1</span>
-                    <span class="limit-label">Admin</span>
-                  </div>
-                </div>
-
-                <div class="plan-features">
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Mitarbeiterverwaltung</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Dokumentenverwaltung</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>E-Mail Benachrichtigungen</span>
-                  </div>
-                  <div class="plan-feature">
-                    <i class="fas fa-times" style="color: var(--text-secondary); opacity: 0.5"></i>
-                    <span style="opacity: 0.5">Erweiterte Features</span>
-                  </div>
-                </div>
-
-                <button class="plan-action">Zu Basic wechseln</button>
-              </div>
-
-              <!-- Professional Plan -->
-              <div class="plan-card recommended" data-plan="professional">
-                <h3 class="plan-name">Professional</h3>
-                <div class="plan-price">
-                  149€
-                  <small>/Monat</small>
-                </div>
-                <p class="plan-description">Für wachsende Unternehmen</p>
-
-                <div class="plan-limits">
-                  <div class="limit-item">
-                    <span class="limit-value">50</span>
-                    <span class="limit-label">Mitarbeiter</span>
-                  </div>
-                  <div class="limit-item">
-                    <span class="limit-value">3</span>
-                    <span class="limit-label">Admins</span>
-                  </div>
-                </div>
-
-                <div class="plan-features">
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Alle Basic Features</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Schwarzes Brett & Chat</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Kalender & Teams</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Erweiterte Berichte</span>
-                  </div>
-                </div>
-
-                <button class="plan-action">Zu Professional wechseln</button>
-              </div>
-
-              <!-- Enterprise Plan -->
-              <div class="plan-card current" data-plan="enterprise">
-                <h3 class="plan-name">Enterprise</h3>
-                <div class="plan-price">
-                  299€
-                  <small>/Monat</small>
-                </div>
-                <p class="plan-description">Für große Organisationen</p>
-
-                <div class="plan-limits">
-                  <div class="limit-item">
-                    <span class="limit-value">∞</span>
-                    <span class="limit-label">Mitarbeiter</span>
-                  </div>
-                  <div class="limit-item">
-                    <span class="limit-value">∞</span>
-                    <span class="limit-label">Admins</span>
-                  </div>
-                </div>
-
-                <div class="plan-features">
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Alle Professional Features</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Schichtplanung & KVP</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>API Zugang & Automation</span>
-                  </div>
-                  <div class="plan-feature included">
-                    <i class="fas fa-check"></i>
-                    <span>Priority Support</span>
-                  </div>
-                </div>
-
-                <button class="plan-action current">Aktueller Plan</button>
               </div>
             </div>
           </div>
 
           <!-- Features Section -->
-          <div class="features-section">
-            <div class="section-header">
-              <h2 class="section-title">Verfügbare Features</h2>
-              <div class="feature-filters">
-                <button class="filter-btn active" data-filter="all">Alle</button>
-                <button class="filter-btn" data-filter="active">Aktiv</button>
-                <button class="filter-btn" data-filter="included">Im Plan enthalten</button>
-                <button class="filter-btn" data-filter="addons">Zusätzlich buchbar</button>
+          <div class="card mb-6">
+            <div class="card__header flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 class="card__title">
+                  <i class="fas fa-puzzle-piece mr-2"></i>
+                  Verfügbare Features
+                </h2>
+                <p class="text-[var(--color-text-secondary)] mt-2">Aktivieren oder deaktivieren Sie Features</p>
+              </div>
+
+              <!-- Toggle Group Filter (Design System) -->
+              <div class="toggle-group" id="feature-status-toggle">
+                <button class="toggle-group__btn active" data-filter="all" title="Alle Features anzeigen">
+                  <i class="fas fa-th"></i>
+                  Alle
+                </button>
+                <button class="toggle-group__btn" data-filter="active" title="Nur aktive Features">
+                  <i class="fas fa-check-circle"></i>
+                  Aktiv
+                </button>
+                <button class="toggle-group__btn" data-filter="included" title="Im Plan enthaltene Features">
+                  <i class="fas fa-box"></i>
+                  Im Plan enthalten
+                </button>
+                <button class="toggle-group__btn" data-filter="addons" title="Zusätzlich buchbare Features">
+                  <i class="fas fa-plus-circle"></i>
+                  Zusätzlich buchbar
+                </button>
               </div>
             </div>
 
-            <div id="features-container">
-              <!-- Features werden hier dynamisch geladen -->
+            <div class="card__body">
+              <div id="features-container">
+                <!-- Features werden hier dynamisch via TypeScript geladen -->
+                <div class="spinner-container">
+                  <div class="spinner"></div>
+                  <p class="mt-2 text-[var(--color-text-secondary)]">Features werden geladen...</p>
+                </div>
+              </div>
             </div>
           </div>
 
           <!-- Add-ons Section -->
-          <div class="addons-section">
-            <h2 class="section-title">Zusätzliche Ressourcen</h2>
-            <p style="color: var(--text-secondary); margin-bottom: 20px">Erweitern Sie Ihre Kapazitäten nach Bedarf</p>
+          <div class="card mb-24">
+            <div class="card__header">
+              <h2 class="card__title">
+                <i class="fas fa-cubes mr-2"></i>
+                Zusätzliche Ressourcen
+              </h2>
+              <p class="text-[var(--color-text-secondary)] mt-2">Erweitern Sie Ihre Kapazitäten nach Bedarf</p>
+            </div>
+            <div class="card__body">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Zusätzliche Mitarbeiter -->
+                <div class="addon-card">
+                  <div class="addon-icon">👥</div>
+                  <h3 class="addon-name">Zusätzliche Mitarbeiter</h3>
+                  <div class="addon-price">5€</div>
+                  <div class="addon-unit">pro Mitarbeiter/Monat</div>
+                  <div class="addon-current">
+                    Aktuell:
+                    <strong>0</strong>
+                    zusätzlich
+                  </div>
+                  <div class="addon-controls">
+                    <button class="addon-btn" data-action="adjust-addon" data-type="employees" data-amount="-1">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="addon-value" id="addon-employees">0</span>
+                    <button class="addon-btn" data-action="adjust-addon" data-type="employees" data-amount="1">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                </div>
 
-            <div class="addons-grid">
-              <!-- Zusätzliche Mitarbeiter -->
-              <div class="addon-card">
-                <div class="addon-icon">👥</div>
-                <h3 class="addon-name">Zusätzliche Mitarbeiter</h3>
-                <div class="addon-price">5€</div>
-                <div class="addon-unit">pro Mitarbeiter/Monat</div>
-                <div class="addon-current">
-                  Aktuell:
-                  <strong>0</strong>
-                  zusätzlich
+                <!-- Zusätzliche Admins -->
+                <div class="addon-card">
+                  <div class="addon-icon">👔</div>
+                  <h3 class="addon-name">Zusätzliche Admins</h3>
+                  <div class="addon-price">10€</div>
+                  <div class="addon-unit">pro Admin/Monat</div>
+                  <div class="addon-current">
+                    Aktuell:
+                    <strong>0</strong>
+                    zusätzlich
+                  </div>
+                  <div class="addon-controls">
+                    <button class="addon-btn" data-action="adjust-addon" data-type="admins" data-amount="-1">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="addon-value" id="addon-admins">0</span>
+                    <button class="addon-btn" data-action="adjust-addon" data-type="admins" data-amount="1">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
                 </div>
-                <div class="addon-controls">
-                  <button class="addon-btn" data-action="adjust-addon" data-type="employees" data-amount="-1">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                  <span class="addon-value" id="addon-employees">0</span>
-                  <button class="addon-btn" data-action="adjust-addon" data-type="employees" data-amount="1">
-                    <i class="fas fa-plus"></i>
-                  </button>
-                </div>
-              </div>
 
-              <!-- Zusätzliche Admins -->
-              <div class="addon-card">
-                <div class="addon-icon">👔</div>
-                <h3 class="addon-name">Zusätzliche Admins</h3>
-                <div class="addon-price">10€</div>
-                <div class="addon-unit">pro Admin/Monat</div>
-                <div class="addon-current">
-                  Aktuell:
-                  <strong>0</strong>
-                  zusätzlich
-                </div>
-                <div class="addon-controls">
-                  <button class="addon-btn" data-action="adjust-addon" data-type="admins" data-amount="-1">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                  <span class="addon-value" id="addon-admins">0</span>
-                  <button class="addon-btn" data-action="adjust-addon" data-type="admins" data-amount="1">
-                    <i class="fas fa-plus"></i>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Zusätzlicher Speicher -->
-              <div class="addon-card">
-                <div class="addon-icon">💾</div>
-                <h3 class="addon-name">Zusätzlicher Speicher</h3>
-                <div class="addon-price">10€</div>
-                <div class="addon-unit">pro 100GB/Monat</div>
-                <div class="addon-current">
-                  Aktuell:
-                  <strong>100GB</strong>
-                  inklusive
-                </div>
-                <div class="addon-controls">
-                  <button class="addon-btn" data-action="adjust-addon" data-type="storage" data-amount="-100">
-                    <i class="fas fa-minus"></i>
-                  </button>
-                  <span class="addon-value" id="addon-storage">0</span>
-                  <button class="addon-btn" data-action="adjust-addon" data-type="storage" data-amount="100">
-                    <i class="fas fa-plus"></i>
-                  </button>
+                <!-- Zusätzlicher Speicher -->
+                <div class="addon-card">
+                  <div class="addon-icon">💾</div>
+                  <h3 class="addon-name">Zusätzlicher Speicher</h3>
+                  <div class="addon-price">10€</div>
+                  <div class="addon-unit">pro 100GB/Monat</div>
+                  <div class="addon-current">
+                    Aktuell:
+                    <strong>100GB</strong>
+                    inklusive
+                  </div>
+                  <div class="addon-controls">
+                    <button class="addon-btn" data-action="adjust-addon" data-type="storage" data-amount="-100">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <span class="addon-value" id="addon-storage">0GB</span>
+                    <button class="addon-btn" data-action="adjust-addon" data-type="storage" data-amount="100">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -280,20 +199,20 @@
             <div class="summary-items">
               <div class="summary-item">
                 <span class="summary-label">Aktueller Plan</span>
-                <span class="summary-value" id="summary-plan">Enterprise</span>
+                <span class="summary-value" id="summary-plan">-</span>
               </div>
               <div class="summary-item">
                 <span class="summary-label">Aktive Features</span>
-                <span class="summary-value" id="summary-features">9 / 9</span>
+                <span class="summary-value" id="summary-features">0 / 0</span>
               </div>
               <div class="summary-item">
                 <span class="summary-label">Monatliche Kosten</span>
-                <span class="summary-value" id="summary-cost">299,00€</span>
+                <span class="summary-value" id="summary-cost">0,00€</span>
               </div>
             </div>
             <div class="summary-actions">
               <button class="btn-save" data-action="save-changes">
-                <i class="fas fa-save"></i>
+                <i class="fas fa-save mr-2"></i>
                 Änderungen speichern
               </button>
             </div>
@@ -303,762 +222,10 @@
     </div>
     <!-- End main-content -->
 
-    <!-- Font Awesome -->
-    <!-- Font Awesome already loaded in head - removed duplicate -->
-
-    <!-- Scripts -->
+    <!-- TypeScript Modules -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
-    <script type="module">
-      import { ApiClient } from '/utils/api-client.js';
-
-      // Initialize API client
-      const apiClient = ApiClient.getInstance();
-      // Plan data will be loaded from API
-      let plans = {
-        basic: {
-          id: 1,
-          name: 'Basic',
-          price: 49.0,
-          maxEmployees: 10,
-          maxAdmins: 1,
-          features: ['basic_employees', 'document_upload'],
-        },
-        professional: {
-          id: 2,
-          name: 'Professional',
-          price: 149.0,
-          maxEmployees: 50,
-          maxAdmins: 3,
-          features: ['basic_employees', 'document_upload', 'blackboard', 'chat', 'calendar'],
-        },
-        enterprise: {
-          id: 3,
-          name: 'Enterprise',
-          price: 299.0,
-          maxEmployees: Infinity,
-          maxAdmins: Infinity,
-          features: ['all'],
-        },
-      };
-      let allPlans = [];
-
-      const featureCategories = {
-        'Kern-Features': {
-          icon: '⚙️',
-          features: [
-            {
-              code: 'basic_employees',
-              name: 'Mitarbeiterverwaltung',
-              description: 'Verwalten Sie Ihre Mitarbeiter effizient',
-              minPlan: 'basic',
-              active: true,
-            },
-            {
-              code: 'document_upload',
-              name: 'Dokumentenverwaltung',
-              description: 'Zentrale Ablage für alle Dokumente',
-              minPlan: 'basic',
-              active: true,
-            },
-          ],
-        },
-        Kommunikation: {
-          icon: '💬',
-          features: [
-            {
-              code: 'blackboard',
-              name: 'Schwarzes Brett',
-              description: 'Unternehmensweite Ankündigungen',
-              minPlan: 'professional',
-              active: true,
-            },
-            {
-              code: 'chat',
-              name: 'Chat System',
-              description: 'Echtzeit-Kommunikation im Team',
-              minPlan: 'professional',
-              active: true,
-            },
-            {
-              code: 'surveys',
-              name: 'Umfragen',
-              description: 'Mitarbeiterfeedback sammeln',
-              minPlan: 'enterprise',
-              active: true,
-            },
-          ],
-        },
-        Organisation: {
-          icon: '📊',
-          features: [
-            {
-              code: 'calendar',
-              name: 'Firmenkalender',
-              description: 'Termine und Events verwalten',
-              minPlan: 'professional',
-              active: true,
-            },
-            {
-              code: 'shift_planning',
-              name: 'Schichtplanung',
-              description: 'Automatisierte Schichtpläne',
-              minPlan: 'enterprise',
-              active: true,
-            },
-            {
-              code: 'kvp',
-              name: 'KVP System',
-              description: 'Kontinuierliche Verbesserung',
-              minPlan: 'enterprise',
-              active: false,
-            },
-          ],
-        },
-      };
-
-      let currentPlan = null;
-      const currentTenant = null;
-      const activeFeatures = [];
-      let tenantAddons = {};
-      let currentTenantId = null;
-
-      // Decode JWT to get tenant ID
-      function parseJwt(token) {
-        try {
-          return JSON.parse(atob(token.split('.')[1]));
-        } catch (e) {
-          return null;
-        }
-      }
-
-      // Get tenant ID from token
-      const storedToken = localStorage.getItem('token');
-      if (storedToken) {
-        const decoded = parseJwt(storedToken);
-        if (decoded && decoded.tenant_id) {
-          currentTenantId = decoded.tenant_id;
-        }
-      }
-
-      // Initialize
-      document.addEventListener('DOMContentLoaded', async () => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          window.location.href = '/login';
-          return;
-        }
-
-        await loadInitialData();
-
-        // Plan selection
-        document.querySelectorAll('.plan-card').forEach((card) => {
-          card.addEventListener('click', () => selectPlan(card.dataset.plan));
-        });
-
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach((btn) => {
-          btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach((b) => b.classList.remove('active'));
-            btn.classList.add('active');
-            filterFeatures(btn.dataset.filter);
-          });
-        });
-      });
-
-      async function loadPlans() {
-        const plansData = await apiClient.request('/plans', {
-          method: 'GET',
-        });
-        console.info('Loaded plans response:', plansData);
-
-        // Extract the data array from the response
-        allPlans = plansData.data || plansData;
-
-        // Check if response is an array
-        if (!Array.isArray(allPlans)) {
-          console.error('Plans response is not an array:', allPlans);
-          throw new Error('Invalid plans response');
-        }
-
-        // Convert to object format for compatibility
-        const loadedPlans = {};
-        allPlans.forEach((plan) => {
-          loadedPlans[plan.code] = {
-            id: plan.id,
-            name: plan.name,
-            price: plan.basePrice,
-            maxEmployees: plan.maxEmployees || Infinity,
-            maxAdmins: plan.maxAdmins || Infinity,
-            features: plan.features ? plan.features.map((f) => f.featureCode) : [],
-          };
-        });
-
-        // Only replace plans if we got valid data
-        if (Object.keys(loadedPlans).length > 0) {
-          plans = loadedPlans;
-        }
-      }
-
-      async function loadCurrentPlan() {
-        try {
-          const currentPlanData = await apiClient.request('/plans/current', {
-            method: 'GET',
-          });
-          console.info('Current plan data:', currentPlanData);
-
-          // Check if we have data.plan or just plan
-          const planInfo = currentPlanData.data?.plan || currentPlanData.plan;
-          const addonsInfo = currentPlanData.data?.addons || currentPlanData.addons || [];
-
-          if (!planInfo || !planInfo.planCode) {
-            console.warn('No plan data found, using fallback');
-            currentPlan = 'basic';
-            tenantAddons = {};
-            return;
-          }
-
-          currentPlan = planInfo.planCode;
-          // Handle trial status by mapping to actual plan
-          if (currentPlan === 'trial' || planInfo.status === 'trial') {
-            const planMap = {
-              1: 'basic',
-              2: 'professional',
-              3: 'enterprise',
-            };
-            currentPlan = planMap[planInfo.planId] || 'basic';
-          }
-
-          tenantAddons = addonsInfo.reduce((acc, addon) => {
-            acc[addon.addonType || addon.addon_type] = addon.quantity;
-            return acc;
-          }, {});
-        } catch (error) {
-          console.error('Failed to load current plan:', error);
-          // Fallback to basic plan if no plan found
-          currentPlan = 'basic';
-          tenantAddons = {};
-        }
-      }
-
-      // Load all initial data
-      async function loadInitialData() {
-        try {
-          // Load available plans
-          await loadPlans();
-
-          // Load current tenant plan
-          await loadCurrentPlan();
-
-          // Update UI with current plan
-          updatePlanUI();
-
-          // Load tenant features
-          await loadTenantFeatures();
-
-          // Update summary
-          updateSummary();
-
-          // Hide Add-ons filter for Enterprise plan on load
-          if (currentPlan === 'enterprise') {
-            document.querySelector('[data-filter="addons"]').style.display = 'none';
-          }
-        } catch (error) {
-          console.error('Error loading initial data:', error);
-          alert('Fehler beim Laden der Daten');
-        }
-      }
-
-      // Load tenant features
-      async function loadTenantFeatures() {
-        try {
-          const featuresData = await apiClient.request('/features/my-features', {
-            method: 'GET',
-          });
-          console.info('Loaded tenant features response:', featuresData);
-
-          // Extract the data array from the response
-          const features = featuresData.data || featuresData;
-
-          // Update feature states in categories
-          Object.values(featureCategories).forEach((category) => {
-            category.features.forEach((feature) => {
-              const tenantFeature = features.find((f) => f.code === feature.code);
-              if (tenantFeature) {
-                feature.active = tenantFeature.is_available === 1;
-              }
-            });
-          });
-
-          loadFeatures();
-        } catch (error) {
-          console.error('Error loading tenant features:', error);
-        }
-      }
-
-      // Helper function to update plan cards
-      function updatePlanCards() {
-        document.querySelectorAll('.plan-card').forEach((card) => {
-          card.classList.remove('current');
-          const btn = card.querySelector('.plan-action');
-          btn.classList.remove('current');
-          btn.textContent = `Zu ${card.querySelector('.plan-name').textContent} wechseln`;
-        });
-
-        const currentCard = document.querySelector(`[data-plan="${currentPlan}"]`);
-        if (currentCard) {
-          currentCard.classList.add('current');
-          const btn = currentCard.querySelector('.plan-action');
-          btn.classList.add('current');
-          btn.textContent = 'Aktueller Plan';
-        }
-      }
-
-      // Helper function to get plan display name
-      function getPlanDisplayName(planKey) {
-        if (!planKey) return 'Basic';
-
-        // Use explicit property access to avoid object injection
-        let plan = null;
-        if (planKey === 'basic') {
-          plan = plans.basic;
-        } else if (planKey === 'professional') {
-          plan = plans.professional;
-        } else if (planKey === 'enterprise') {
-          plan = plans.enterprise;
-        }
-
-        return plan ? plan.name || planKey : planKey;
-      }
-
-      // Helper function to update addons display
-      function updateAddonsDisplay() {
-        if (tenantAddons.employees) {
-          document.querySelector('#addon-employees').textContent = tenantAddons.employees;
-        }
-        if (tenantAddons.admins) {
-          document.querySelector('#addon-admins').textContent = tenantAddons.admins;
-        }
-        if (tenantAddons.storage_gb) {
-          document.querySelector('#addon-storage').textContent = `${tenantAddons.storage_gb}GB`;
-        }
-      }
-
-      // Update plan UI
-      function updatePlanUI() {
-        // Update plan cards
-        updatePlanCards();
-
-        // Update plan badge
-        const badge = document.querySelector('.plan-badge span');
-        if (badge) {
-          const planName = getPlanDisplayName(currentPlan);
-          badge.textContent = `${planName} Plan`;
-        }
-
-        // Update addons
-        updateAddonsDisplay();
-      }
-
-      // Helper to get feature status text
-      function getFeatureStatusText(isActive, canActivate) {
-        if (isActive) return 'Aktiv';
-        if (!canActivate) return 'Gesperrt';
-        return 'Inaktiv';
-      }
-
-      // Helper to get feature status class
-      function getFeatureStatusClass(isActive, canActivate) {
-        if (isActive) return 'status-active';
-        if (!canActivate) return 'status-locked';
-        return 'status-inactive';
-      }
-
-      // Helper to render feature button
-      function renderFeatureButton(feature, isActive, canActivate) {
-        if (!canActivate) {
-          return `<button class="btn" disabled>Upgrade benötigt</button>`;
-        }
-        if (isActive) {
-          return `<button class="btn btn-deactivate" data-action="toggle-feature" data-feature="${feature.code}" data-state="false">
-            Deaktivieren
-          </button>`;
-        }
-        return `<button class="btn btn-activate" data-action="toggle-feature" data-feature="${feature.code}" data-state="true">
-          Aktivieren
-        </button>`;
-      }
-
-      // Helper to render a feature card
-      function renderFeatureCard(feature) {
-        const isIncludedInPlan = isFeatureIncludedInPlan(feature.code, currentPlan);
-        const canActivate = canActivateFeature(feature.minPlan, currentPlan);
-        const isActive = feature.active;
-
-        const cardClasses = `feature-card ${isActive ? 'active' : ''} ${!canActivate ? 'locked' : ''}`;
-        const statusClass = getFeatureStatusClass(isActive, canActivate);
-        const statusText = getFeatureStatusText(isActive, canActivate);
-        const actionButton = renderFeatureButton(feature, isActive, canActivate);
-
-        return `
-          <div class="${cardClasses}"
-               data-feature="${feature.code}"
-               data-min-plan="${feature.minPlan}">
-            <span class="feature-status ${statusClass}">
-              ${statusText}
-            </span>
-            <h4 class="feature-name">${feature.name}</h4>
-            <p class="feature-description">${feature.description}</p>
-            <div class="feature-plan-badge">
-              ${getPlanBadge(feature.minPlan)}
-            </div>
-            <div class="feature-actions">
-              ${actionButton}
-            </div>
-          </div>
-        `;
-      }
-
-      function loadFeatures() {
-        const container = document.querySelector('#features-container');
-        container.innerHTML = '';
-
-        Object.entries(featureCategories).forEach(([categoryName, categoryData]) => {
-          const categoryDiv = document.createElement('div');
-          categoryDiv.className = 'feature-category';
-
-          // Safe: HTML is generated from server data and sanitized with dom-utils
-          const htmlContent = `
-            <div class="category-header">
-              <div class="category-icon">${categoryData.icon}</div>
-              <h3 class="category-title">${categoryName}</h3>
-            </div>
-            <div class="features-grid">
-              ${categoryData.features.map((feature) => renderFeatureCard(feature)).join('')}
-            </div>
-          `;
-
-          // Use dom-utils setHTML for safe sanitization
-          window.setHTML(categoryDiv, htmlContent);
-          container.append(categoryDiv);
-        });
-      }
-
-      function isFeatureIncludedInPlan(featureCode, plan) {
-        // Validate plan parameter to prevent object injection
-        const validPlans = ['basic', 'professional', 'enterprise'];
-        if (!validPlans.includes(plan)) {
-          console.warn(`Invalid plan: ${plan}`);
-          return false;
-        }
-
-        // Use safe property access
-        let planData = null;
-        if (plan === 'basic') {
-          planData = plans.basic;
-        } else if (plan === 'professional') {
-          planData = plans.professional;
-        } else if (plan === 'enterprise') {
-          planData = plans.enterprise;
-        }
-
-        if (!planData || !planData.features) {
-          console.warn(`Plan data not found for plan: ${plan}`);
-          return false;
-        }
-        return planData.features.includes('all') || planData.features.includes(featureCode);
-      }
-
-      function canActivateFeature(minPlan, currentPlan) {
-        const planOrder = ['basic', 'professional', 'enterprise'];
-        return planOrder.indexOf(currentPlan) >= planOrder.indexOf(minPlan);
-      }
-
-      function getPlanBadge(plan) {
-        // Safe property access without object injection
-        if (plan === 'basic') {
-          return 'Ab Basic';
-        } else if (plan === 'professional') {
-          return 'Ab Professional';
-        } else if (plan === 'enterprise') {
-          return 'Enterprise Only';
-        }
-        return plan;
-      }
-
-      // Helper function to get plan name safely
-      function getSafePlanName(planKey) {
-        if (planKey === 'basic' && plans.basic) {
-          return plans.basic.name || planKey;
-        }
-        if (planKey === 'professional' && plans.professional) {
-          return plans.professional.name || planKey;
-        }
-        if (planKey === 'enterprise' && plans.enterprise) {
-          return plans.enterprise.name || planKey;
-        }
-        return planKey;
-      }
-
-      // Helper function to update addons filter visibility
-      function updateAddonsFilterVisibility(plan) {
-        const addonsFilterBtn = document.querySelector('[data-filter="addons"]');
-        if (!addonsFilterBtn) return;
-
-        if (plan === 'enterprise') {
-          addonsFilterBtn.style.display = 'none';
-          if (addonsFilterBtn.classList.contains('active')) {
-            const allFilterBtn = document.querySelector('[data-filter="all"]');
-            if (allFilterBtn) allFilterBtn.click();
-          }
-        } else {
-          addonsFilterBtn.style.display = 'inline-flex';
-        }
-      }
-
-      // Helper function to handle plan change success
-      async function handlePlanChangeSuccess(plan) {
-        // Update local state
-        currentPlan = plan;
-
-        // Update UI
-        updatePlanUI();
-        updateAddonsFilterVisibility(plan);
-
-        // Reload features
-        await loadTenantFeatures();
-        updateSummary();
-
-        alert('Plan erfolgreich geändert!');
-      }
-
-      async function selectPlan(plan) {
-        // Check if plan is already current
-        if (plan === currentPlan) return;
-
-        // Get plan name and confirm change
-        const planName = getSafePlanName(plan);
-        if (!confirm(`Möchten Sie wirklich zum ${planName} Plan wechseln?`)) {
-          return;
-        }
-
-        try {
-          await apiClient.request('/plans/change', {
-            method: 'POST',
-            body: {
-              tenantId: currentTenantId,
-              newPlanCode: plan,
-            },
-          });
-
-          await handlePlanChangeSuccess(plan);
-        } catch (error) {
-          console.error('Error changing plan:', error);
-          alert('Fehler beim Plan-Wechsel');
-        }
-      }
-
-      async function toggleFeature(featureCode, activate) {
-        const token = localStorage.getItem('token');
-        try {
-          const endpoint = activate ? '/features/activate' : '/features/deactivate';
-          const result = await apiClient.request(endpoint, {
-            method: 'POST',
-            body: {
-              tenantId: currentTenantId,
-              featureCode: featureCode,
-            },
-          });
-
-          // Update local state
-          Object.values(featureCategories).forEach((category) => {
-            const feature = category.features.find((f) => f.code === featureCode);
-            if (feature) {
-              feature.active = activate;
-            }
-          });
-
-          loadFeatures();
-          updateSummary();
-        } catch (error) {
-          console.error('Error toggling feature:', error);
-          alert('Fehler beim Ändern des Features');
-        }
-      }
-
-      function filterFeatures(filter) {
-        const cards = document.querySelectorAll('.feature-card');
-
-        cards.forEach((card) => {
-          let show = true;
-
-          switch (filter) {
-            case 'active':
-              show = card.classList.contains('active');
-              break;
-            case 'included':
-              show = isFeatureIncludedInPlan(card.dataset.feature, currentPlan);
-              break;
-            case 'addons':
-              show = !isFeatureIncludedInPlan(card.dataset.feature, currentPlan) && !card.classList.contains('locked');
-              break;
-          }
-
-          card.style.display = show ? 'block' : 'none';
-        });
-      }
-
-      // Helper to get backend addon type
-      function getBackendAddonType(type) {
-        // Use explicit checks to avoid object injection
-        if (type === 'employees') return 'employees';
-        if (type === 'admins') return 'admins';
-        if (type === 'storage') return 'storage_gb';
-        return null;
-      }
-
-      // Helper to get current addon value
-      function getCurrentAddonValue(backendType) {
-        if (backendType === 'employees') return tenantAddons.employees || 0;
-        if (backendType === 'admins') return tenantAddons.admins || 0;
-        if (backendType === 'storage_gb') return tenantAddons.storage_gb || 0;
-        return 0;
-      }
-
-      // Helper to set addon value
-      function setAddonValue(backendType, value) {
-        if (backendType === 'employees') {
-          tenantAddons.employees = value;
-        } else if (backendType === 'admins') {
-          tenantAddons.admins = value;
-        } else if (backendType === 'storage_gb') {
-          tenantAddons.storage_gb = value;
-        }
-      }
-
-      // Helper to format addon display value
-      function formatAddonDisplay(type, value) {
-        return type === 'storage' ? `${value}GB` : value;
-      }
-
-      function adjustAddon(type, change) {
-        const backendType = getBackendAddonType(type);
-        if (!backendType) {
-          console.warn(`Invalid addon type: ${type}`);
-          return;
-        }
-
-        const currentValue = getCurrentAddonValue(backendType);
-        const newValue = Math.max(0, currentValue + change);
-
-        setAddonValue(backendType, newValue);
-
-        const displayElement = document.querySelector(`#addon-${type}`);
-        if (displayElement) {
-          displayElement.textContent = formatAddonDisplay(type, newValue);
-        }
-
-        updateSummary();
-      }
-
-      function updateSummary() {
-        // Count active features
-        let activeCount = 0;
-        let totalCount = 0;
-
-        Object.values(featureCategories).forEach((category) => {
-          category.features.forEach((feature) => {
-            if (canActivateFeature(feature.minPlan, currentPlan)) {
-              totalCount++;
-              if (feature.active) activeCount++;
-            }
-          });
-        });
-
-        // Get plan data with fallback
-        // Safe access with validation
-        let planData = null;
-        if (currentPlan === 'basic' && plans.basic) {
-          planData = plans.basic;
-        } else if (currentPlan === 'professional' && plans.professional) {
-          planData = plans.professional;
-        } else if (currentPlan === 'enterprise' && plans.enterprise) {
-          planData = plans.enterprise;
-        }
-
-        if (!planData) {
-          planData = { price: 0, name: currentPlan || 'Basic' };
-        }
-
-        // Calculate cost
-        let totalCost = planData.price || 0;
-        totalCost += (tenantAddons.employees || 0) * 5;
-        totalCost += (tenantAddons.admins || 0) * 10;
-        totalCost += ((tenantAddons.storage_gb || 0) / 100) * 10;
-
-        // Update UI
-        document.querySelector('#summary-plan').textContent = planData.name;
-        document.querySelector('#summary-features').textContent = `${activeCount} / ${totalCount}`;
-        document.querySelector('#summary-cost').textContent = `${totalCost.toFixed(2)}€`;
-      }
-
-      async function saveChanges() {
-        try {
-          // Save addons
-          const result = await apiClient.request('/plans/addons', {
-            method: 'POST',
-            body: {
-              tenantId: currentTenantId,
-              addons: tenantAddons,
-            },
-          });
-
-          // Update cost display
-          if (result.costs) {
-            const totalCost = result.costs.totalCost;
-            document.querySelector('#summary-cost').textContent = `${totalCost.toFixed(2)}€`;
-          }
-
-          alert('Änderungen erfolgreich gespeichert!');
-        } catch (error) {
-          console.error('Error saving changes:', error);
-          alert('Fehler beim Speichern der Änderungen');
-        }
-      }
-
-      // Event delegation for all actions
-      document.addEventListener('click', function (e) {
-        const target = e.target.closest('[data-action]');
-        if (target) {
-          const action = target.dataset.action;
-
-          switch (action) {
-            case 'toggle-feature': {
-              const feature = target.dataset.feature;
-              const state = target.dataset.state === 'true';
-              toggleFeature(feature, state);
-              break;
-            }
-            case 'adjust-addon': {
-              const type = target.dataset.type;
-              const amount = parseInt(target.dataset.amount);
-              adjustAddon(type, amount);
-              break;
-            }
-            case 'save-changes': {
-              saveChanges();
-              break;
-            }
-          }
-        }
-      });
-    </script>
-
-    <!-- Breadcrumb Component -->
-    <script type="module">
-      import { initBreadcrumb } from '/scripts/components/breadcrumb.js';
-      // Breadcrumb wird automatisch generiert basierend auf der URL
-      initBreadcrumb();
-    </script>
+    <script type="module" src="/scripts/components/breadcrumb.js"></script>
+    <script type="module" src="/scripts/features/index.ts"></script>
   </body>
 </html>

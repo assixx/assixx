@@ -58,13 +58,17 @@
 
 /* Active state (feature is enabled) */
 .feature-card.active {
-  border-color: var(--color-success);
-  background: rgb(76 175 80 / 10%);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--glass-card-radius);
+
+  background: rgb(255 255 255 / 3%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--card-shadow);
 }
 
 .feature-card.active:hover {
   border-color: var(--color-success);
-  background: rgb(76 175 80 / 15%);
+  background: rgb(255 255 255 / 3%);
 }
 
 /* Inactive/Disabled state */
