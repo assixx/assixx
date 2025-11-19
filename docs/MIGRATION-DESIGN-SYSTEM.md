@@ -201,7 +201,7 @@ export class SignupFormController {
 
 ### Admin/Root
 
-- [ ] root-features.html
+- [x] root-features.html ✅ (2025-11-19) - 100% Design System compliant (feature-card from choice-card.feature.css with .feature-status badges, .features-grid responsive layout, plan-card from choice-card.plan.css with radio selection and ::before "Empfohlen" badge, toggle-group for filters, TypeScript modules split to types/data/ui/index layers, fixed feature codes to match database (employees, documents), fixed tenant_id initialization with dual format support, fixed plan selection radio reset on cancel/error, fixed addon save route POST→PUT with camelCase body format, root-features.css reduced 617→232 lines -62%, eliminated ALL redundant CSS: feature/plan cards→Design System components, buttons→.btn variants, grids→.features-grid/Tailwind, no inline styles/JS, no Bootstrap)
 - [ ] root-profile.html
 - [ ] admin-profile.html
 - [ ] account-settings.html

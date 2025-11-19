@@ -287,6 +287,32 @@
   border-width: 4px;
 }
 
+/* Ring color variants */
+.spinner-ring--primary {
+  border-top-color: var(--color-primary) !important;
+  border-right-color: var(--color-primary) !important;
+}
+
+.spinner-ring--success {
+  border-top-color: var(--color-success) !important;
+  border-right-color: var(--color-success) !important;
+}
+
+.spinner-ring--warning {
+  border-top-color: var(--color-warning) !important;
+  border-right-color: var(--color-warning) !important;
+}
+
+.spinner-ring--danger {
+  border-top-color: var(--color-danger) !important;
+  border-right-color: var(--color-danger) !important;
+}
+
+.spinner-ring--white {
+  border-top-color: #fff !important;
+  border-right-color: #fff !important;
+}
+
 /* ========== OVERLAY SPINNER (FULLSCREEN) ========== */
 
 .spinner-overlay {
