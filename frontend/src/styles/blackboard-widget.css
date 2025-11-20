@@ -102,7 +102,8 @@
   overflow-x: auto;
   display: flex;
   gap: 1rem;
-  align-items: center;
+
+  /* align-items: center; */
   justify-content: center;
 
   min-height: 200px; /* Prevent layout shift */

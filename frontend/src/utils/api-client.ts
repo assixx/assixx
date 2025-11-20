@@ -407,8 +407,15 @@ export class ApiClient {
     );
   }
 
-  async delete<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
-    return await this.request<T>(endpoint, { method: 'DELETE' }, config);
+  async delete<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
+    return await this.request<T>(
+      endpoint,
+      {
+        method: 'DELETE',
+        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
+      },
+      config,
+    );
   }
 
   async upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {

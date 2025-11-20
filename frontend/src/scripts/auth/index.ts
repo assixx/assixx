@@ -149,8 +149,10 @@ async function makeV2ApiRequest(path: string, method: string, body: string | nul
       const putBody = body !== undefined && body !== null ? (JSON.parse(body) as unknown) : undefined;
       return await apiClient.put(path, putBody);
     }
-    case 'DELETE':
-      return await apiClient.delete(path);
+    case 'DELETE': {
+      const deleteBody = body !== undefined && body !== null ? (JSON.parse(body) as unknown) : undefined;
+      return await apiClient.delete(path, deleteBody);
+    }
     default:
       throw new Error(`Unsupported method: ${method}`);
   }
