@@ -7,7 +7,7 @@
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
-    <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <link rel="stylesheet" href="/styles/signup.css" />
     <!-- Feature Flags for API v2 Migration -->
     <!-- Dom-utils Module für sichere HTML-Sanitization -->
@@ -169,15 +169,24 @@
 
           <!-- Dritte Zeile -->
           <div class="form-field">
-            <label class="form-field__label form-field__label--required" for="password">Passwort</label>
+            <label class="form-field__label form-field__label--required" for="password">
+              Passwort
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                </span>
+              </span>
+            </label>
             <input
               type="password"
               id="password"
               name="password"
               class="form-field__control"
               required
-              minlength="8"
-              placeholder="Min. 8 Zeichen"
+              minlength="12"
+              maxlength="72"
+              placeholder="Min. 12 Zeichen"
               autocomplete="new-password"
             />
           </div>

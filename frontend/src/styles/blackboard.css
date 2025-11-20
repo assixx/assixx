@@ -1106,7 +1106,9 @@ select.form-control {
   background-color: var(--secondary-color, #4caf50);
 }
 
-/* Card content styles */
+/* Card content styles - Scoped to blackboard cards only */
+/* NOTE: .blackboard-card .card-title is page-specific override
+   Base styles from design-system/components/card/card.css (2025-11-20) */
 .blackboard-card .card-title {
   margin-bottom: 0.5rem;
   font-weight: 600;

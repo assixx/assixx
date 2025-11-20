@@ -15,8 +15,9 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="/styles/manage-root-users.css" />
+    <link rel="stylesheet" href="/styles/manage-root.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/password-strength.css" />
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -192,6 +193,12 @@
             <label class="form-field__label" for="root-password">
               Passwort
               <span class="text-red-500">*</span>
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                </span>
+              </span>
             </label>
             <div class="form-field__password-wrapper">
               <input type="password" id="root-password" name="password" class="form-field__control" />
@@ -215,6 +222,23 @@
             <span class="form-field__message form-field__message--error u-hidden" id="password-error">
               Passwörter stimmen nicht überein
             </span>
+          </div>
+
+          <!-- Password Strength Indicator -->
+          <div class="password-strength-container u-hidden" id="root-password-strength-container">
+            <div class="password-strength-meter">
+              <div class="password-strength-bar" id="root-password-strength-bar" data-score="-1"></div>
+            </div>
+            <div class="password-strength-info">
+              <span class="password-strength-label" id="root-password-strength-label"></span>
+              <span class="password-strength-time" id="root-password-strength-time"></span>
+            </div>
+          </div>
+
+          <!-- Password Feedback Section -->
+          <div class="password-feedback u-hidden" id="root-password-feedback">
+            <span class="password-feedback-warning" id="root-password-feedback-warning"></span>
+            <ul class="password-feedback-suggestions u-hidden" id="root-password-feedback-suggestions"></ul>
           </div>
 
           <div class="form-field">
@@ -311,6 +335,6 @@
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
-    <script type="module" src="/scripts/manage/root-users/index.ts"></script>
+    <script type="module" src="/scripts/manage/root/index.ts"></script>
   </body>
 </html>

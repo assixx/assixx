@@ -199,8 +199,12 @@
 
 /* Info Tooltip */
 .tooltip__content--info {
-  border-color: rgb(33 150 243 / 30%);
-  background: rgb(33 150 243 / 95%);
+  width: 200px;
+  padding: var(--spacing-3);
+  border-color: #2196f380;
+  border-radius: var(--radius-xl);
+
+  background: var(--color-black);
 }
 
 .tooltip__content--info.tooltip__content--bottom::before {

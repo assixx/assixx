@@ -1,60 +1,101 @@
-/* Blackboard Widget Styles for Dashboard */
-.blackboard-widget {
-  margin-bottom: 2rem;
-  padding: 1.5rem;
+/**
+ * Blackboard Widget Styles for Dashboard
+ *
+ * Extends Design System .card component with blackboard-specific styles.
+ * Base styles (glassmorphism, layout) inherited from design-system/primitives/cards/card-base.css
+ */
 
-  /* Explicit border to override Tailwind reset - prevent FOUC */
-  border: 1px solid rgb(255 255 255 / 10%) !important;
+/* ========================================
+   CARD MODIFIER - Blackboard Widget
+   ======================================== */
+
+/**
+ * Blackboard-specific card variant
+ * Matches .card-stat styles exactly for consistency
+ *
+ * Usage: <div class="card card--blackboard">
+ */
+.card--blackboard {
+  /* Layout */
+  margin-bottom: 2rem; /* Dashboard widget spacing */
+  padding: var(--spacing-6);
+  border: 1px solid rgb(255 255 255 / 10.2%);
   border-radius: var(--radius-xl);
 
-  background: hsl(0deg 0% 100% / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
+  text-align: center;
 
-  /* Prevent animation on initial load */
+  /* Glassmorphism - EXACT match to .card-stat */
+  background: #ffffff05;
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-md);
+
+  /* Transition */
+  transition: all 0.2s;
+}
+
+/* Hover state - EXACT match to .card-stat:hover */
+.card--blackboard:hover {
+  border-color: #2196f380;
 }
 
 /* After content loads */
-.blackboard-widget.loaded {
-  /* Placeholder for loaded state styles */
+.card--blackboard.loaded {
   opacity: 100%;
 }
 
-.blackboard-widget-header {
+/* ========================================
+   CARD HEADER CUSTOMIZATION
+   ======================================== */
+
+/**
+ * Widget header uses card__header base
+ * Custom styling for blackboard-specific link
+ */
+.card--blackboard .card__header {
+  /* Flex layout for title and link */
   display: flex;
   align-items: center;
   justify-content: space-between;
 
-  margin-bottom: 1rem;
+  /* Remove default card header styles */
+  margin-bottom: 1rem; /* Custom spacing for widget */
+  padding-bottom: 0; /* No bottom padding */
+  border: none !important; /* No bottom border */
 
-  /* Prevent Tailwind border flash */
-  border: none !important;
+  /* Reset text-align from parent .card--blackboard */
+  text-align: left;
 }
 
-.blackboard-widget-title {
+/* Widget title styling */
+.card--blackboard .card__title {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 
-  /* Fixed font-size to prevent FOUC - override any inherited styles */
   font-size: 1.2rem !important;
   font-weight: 600;
   line-height: 1.5;
   color: var(--primary-color);
 }
 
-.blackboard-widget-title i {
+.card--blackboard .card__title i {
   font-size: 1rem;
 }
 
-.blackboard-widget-link {
+/* Widget "View All" link */
+.card--blackboard__link {
   font-size: 0.875rem;
   color: var(--text-muted);
   text-decoration: none;
 }
 
-.blackboard-widget-link:hover {
+.card--blackboard__link:hover {
   color: var(--primary-color);
 }
+
+/* ========================================
+   BLACKBOARD-SPECIFIC COMPONENTS
+   ======================================== */
 
 /* Mini Notes Container */
 .mini-notes-container {
@@ -69,7 +110,7 @@
 }
 
 /* Prevent layout shift during load */
-.blackboard-widget-loading {
+.card--blackboard__loading {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -230,22 +271,22 @@
 }
 
 /* Empty State */
-.blackboard-widget-empty {
+.card--blackboard__empty {
   padding: 2rem;
   color: var(--text-muted);
   text-align: center;
 }
 
-.blackboard-widget-empty i {
+.card--blackboard__empty i {
   margin-bottom: 0.5rem;
   font-size: 2rem;
   opacity: 50%;
 }
 
-/* Loading State - Merged with line 64 */
-/* Removed duplicate selector - styles merged above at line 64 */
+/* ========================================
+   RESPONSIVE
+   ======================================== */
 
-/* Responsive */
 @media (width <= 768px) {
   .mini-notes-container {
     gap: 0.75rem;
@@ -257,7 +298,10 @@
   }
 }
 
-/* Attachment Styles - Combined with line 311 */
+/* ========================================
+   ATTACHMENT STYLES
+   ======================================== */
+
 .mini-note-attachment {
   position: relative;
   overflow: hidden;
@@ -297,7 +341,10 @@
   padding-bottom: 2.5rem;
 }
 
-/* Scrollbar Styling */
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+
 .mini-notes-container::-webkit-scrollbar {
   height: 6px;
 }
@@ -316,8 +363,7 @@
   background: rgb(255 255 255 / 30%);
 }
 
-/* Mini note attachment preview - Merged with line 253 */
-
+/* Mini note attachment preview */
 .mini-note-attachment object {
   pointer-events: none !important;
   display: block;
@@ -327,5 +373,3 @@
 .mini-note-attachment object {
   box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
 }
-
-/* Mini note attachments indicator - Removed duplicate (already defined at line 269) */

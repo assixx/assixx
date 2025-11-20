@@ -110,11 +110,28 @@ function validateEmployeePasswordField(data: Record<string, unknown>): { valid: 
 }
 
 /**
+ * Generate a valid username from an email address
+ * - Takes the part before @
+ * - Replaces invalid characters with underscores
+ * - Only allows letters, numbers, underscores, and hyphens
+ * @param email - Email address to convert
+ * @returns Valid username
+ */
+function generateUsernameFromEmail(email: string): string {
+  // Take the part before @ (local part of email)
+  const localPart = email.split('@')[0];
+
+  // Replace any character that's not a letter, number, underscore, or hyphen with underscore
+  // This ensures the username matches the backend regex: /^[\w-]+$/
+  return localPart.replace(/[^\w-]/g, '_');
+}
+
+/**
  * Prepare employee data for save operation
  */
 function prepareEmployeeDataForSave(data: Record<string, unknown>): void {
   data.role = 'employee';
-  data.username = data.email;
+  data.username = typeof data.email === 'string' ? generateUsernameFromEmail(data.email) : data.email;
   if (data.isActive !== undefined) {
     data.isActive = data.isActive === '1' || data.isActive === true;
   }

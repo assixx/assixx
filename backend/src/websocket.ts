@@ -274,7 +274,7 @@ export class ChatWebSocketServer {
     | undefined
   > {
     const senderQuery = `
-      SELECT id, username, first_name, last_name, profile_picture_url
+      SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
       FROM users WHERE id = ?
     `;
     const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [userId]);
@@ -651,7 +651,7 @@ export class ChatWebSocketServer {
 
         // Sender-Informationen abrufen
         const senderQuery = `
-          SELECT first_name, last_name, profile_picture_url
+          SELECT first_name, last_name, profile_picture as profile_picture_url
           FROM users WHERE id = ?
         `;
         const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [message.sender_id]);
@@ -730,7 +730,7 @@ export class ChatWebSocketServer {
         m.created_at,
         u.first_name,
         u.last_name,
-        u.profile_picture_url
+        u.profile_picture as profile_picture_url
       FROM message_delivery_queue mdq
       JOIN messages m ON mdq.message_id = m.id
       JOIN users u ON m.sender_id = u.id

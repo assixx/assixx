@@ -4,8 +4,9 @@
  * UI and form handling for admin management
  */
 
-import { $, $$, $all, setHTML, setSafeHTML } from '../../../utils/dom-utils';
+import { $, $$, $all, setHTML, setSafeHTML, $$id } from '../../../utils/dom-utils';
 import { resetPasswordToggles, resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
+import { setupPasswordStrength, resetPasswordStrengthUI } from '../../../utils/password-strength-integration';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 // Import from types
 import type { Admin, AdminFormData, Department } from './types';
@@ -404,6 +405,23 @@ export function validatePosition(): boolean {
 
 // ===== FORM DATA HANDLING =====
 
+/**
+ * Generate a valid username from an email address
+ * - Takes the part before @
+ * - Replaces invalid characters with underscores
+ * - Only allows letters, numbers, underscores, and hyphens
+ * @param email - Email address to convert
+ * @returns Valid username
+ */
+function generateUsernameFromEmail(email: string): string {
+  // Take the part before @ (local part of email)
+  const localPart = email.split('@')[0];
+
+  // Replace any character that's not a letter, number, underscore, or hyphen with underscore
+  // This ensures the username matches the backend regex: /^[\w-]+$/
+  return localPart.replace(/[^\w-]/g, '_');
+}
+
 export function getFormData(): AdminFormData {
   const firstNameEl = $$('#admin-first-name') as HTMLInputElement | null;
   const lastNameEl = $$('#admin-last-name') as HTMLInputElement | null;
@@ -418,7 +436,7 @@ export function getFormData(): AdminFormData {
     firstName: firstNameEl !== null ? firstNameEl.value : '',
     lastName: lastNameEl !== null ? lastNameEl.value : '',
     email,
-    username: email,
+    username: generateUsernameFromEmail(email),
     password: passwordEl !== null ? passwordEl.value : '',
     position: positionEl !== null ? positionEl.value : '',
     notes: ($('#admin-notes') as HTMLTextAreaElement).value,
@@ -645,10 +663,9 @@ export function setOptionalFields(): void {
       field.value = '';
     }
 
-    // Clear email confirm field (will be re-entered by user)
-    if (type === 'input' && selector === SELECTORS.ADMIN_EMAIL_CONFIRM) {
-      field.value = '';
-    }
+    // Note: Email confirm field is NOT cleared here
+    // - In edit mode: It's pre-populated with the existing email by fillAdminFormFields()
+    // - In add mode: It's already cleared by clearFormFields()
   });
 }
 
@@ -767,6 +784,13 @@ export function resetModalUIElements(): void {
   resetFormVisibility();
   resetErrorMessages();
   resetPermissionSettings();
+
+  // Reset password strength UI to prevent cached validation state
+  resetPasswordStrengthUI({
+    passwordFieldId: 'admin-password',
+    strengthContainerId: 'admin-password-strength-container',
+    feedbackContainerId: 'admin-password-feedback',
+  });
 }
 
 // ===== MODAL HANDLERS =====
@@ -802,6 +826,24 @@ export async function editAdminHandler(adminId: number): Promise<void> {
     ],
     passwordToggleCleanup,
   );
+
+  // Setup password strength validation
+  setupPasswordStrength({
+    passwordFieldId: 'admin-password',
+    strengthContainerId: 'admin-password-strength-container',
+    strengthBarId: 'admin-password-strength-bar',
+    strengthLabelId: 'admin-password-strength-label',
+    strengthTimeId: 'admin-password-strength-time',
+    feedbackContainerId: 'admin-password-feedback',
+    feedbackWarningId: 'admin-password-feedback-warning',
+    feedbackSuggestionsId: 'admin-password-feedback-suggestions',
+    getUserInputs: () => {
+      const firstName = ($$id('admin-first-name') as HTMLInputElement | null)?.value ?? '';
+      const lastName = ($$id('admin-last-name') as HTMLInputElement | null)?.value ?? '';
+      const email = ($$id('admin-email') as HTMLInputElement | null)?.value ?? '';
+      return [firstName, lastName, email].filter((v) => v !== '');
+    },
+  });
 }
 
 export function showAddAdminModal(): void {
@@ -845,6 +887,24 @@ export function showAddAdminModal(): void {
     ],
     passwordToggleCleanup,
   );
+
+  // Setup password strength validation
+  setupPasswordStrength({
+    passwordFieldId: 'admin-password',
+    strengthContainerId: 'admin-password-strength-container',
+    strengthBarId: 'admin-password-strength-bar',
+    strengthLabelId: 'admin-password-strength-label',
+    strengthTimeId: 'admin-password-strength-time',
+    feedbackContainerId: 'admin-password-feedback',
+    feedbackWarningId: 'admin-password-feedback-warning',
+    feedbackSuggestionsId: 'admin-password-feedback-suggestions',
+    getUserInputs: () => {
+      const firstName = ($$id('admin-first-name') as HTMLInputElement | null)?.value ?? '';
+      const lastName = ($$id('admin-last-name') as HTMLInputElement | null)?.value ?? '';
+      const email = ($$id('admin-email') as HTMLInputElement | null)?.value ?? '';
+      return [firstName, lastName, email].filter((v) => v !== '');
+    },
+  });
 }
 
 export function closeAdminModal(): void {

@@ -111,8 +111,8 @@
 /* Default (md) - 40px defined in base */
 
 .avatar--lg {
-  width: 56px;
-  height: 56px;
+  width: 150px;
+  height: 150px;
 }
 
 .avatar--lg .avatar__initials {
@@ -126,6 +126,15 @@
 
 .avatar--xl .avatar__initials {
   font-size: 1.75rem;
+}
+
+.avatar--xxl {
+  width: 150px;
+  height: 150px;
+}
+
+.avatar--xxl .avatar__initials {
+  font-size: 3rem;
 }
 
 /* ========================================
@@ -251,6 +260,12 @@
   width: 20px;
   height: 20px;
   border-width: 3px;
+}
+
+.avatar--xxl .avatar__status {
+  width: 24px;
+  height: 24px;
+  border-width: 4px;
 }
 
 /* ========================================

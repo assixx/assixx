@@ -462,11 +462,7 @@ export class UsersService {
    * @param filePath - The filePath parameter
    * @param tenantId - The tenant ID
    */
-  async updateProfilePicture(
-    userId: number,
-    filePath: string,
-    tenantId: number,
-  ): Promise<{ picturePath: string }> {
+  async updateProfilePicture(userId: number, filePath: string, tenantId: number): Promise<unknown> {
     const relativePath = path.relative(process.cwd(), filePath);
 
     // Update user profile picture
@@ -479,7 +475,8 @@ export class UsersService {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve updated user', 500);
     }
 
-    return { picturePath: relativePath };
+    // Return user in camelCase format (API v2 standard)
+    return dbToApi(sanitizeUser(updatedUser));
   }
 
   /**

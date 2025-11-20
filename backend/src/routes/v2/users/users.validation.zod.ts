@@ -121,6 +121,7 @@ export const UpdateUserBodySchema = z.object({
   email: EmailSchema.optional(),
   firstName: z.string().trim().min(1, 'First name cannot be empty').optional(),
   lastName: z.string().trim().min(1, 'Last name cannot be empty').optional(),
+  password: PasswordSchema.optional(), // Allow password updates
   role: z.enum(['employee', 'admin']).optional(),
   departmentId: z.number().int().positive().nullable().optional(),
   position: z.string().trim().optional(),

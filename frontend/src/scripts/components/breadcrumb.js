@@ -124,7 +124,7 @@ function handleAdminPages(items, currentPage) {
 
 // Helper: Handle root pages
 function handleRootPages(items, currentPage) {
-  const rootPages = ['/manage-root-users', '/root-features', '/tenant-deletion-status', '/feature-management'];
+  const rootPages = ['/manage-root', '/root-features', '/tenant-deletion-status', '/feature-management'];
 
   if (rootPages.includes(currentPage)) {
     items.push({

@@ -28,12 +28,7 @@
   border-radius: 10px;
 }
 
-.card-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
+/* NOTE: .card-title moved to Design System → design-system/components/card/card.css (2025-11-20) */
 
 /* Filters */
 .filters-section {

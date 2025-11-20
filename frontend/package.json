@@ -37,6 +37,9 @@
     "@fullcalendar/interaction": "6.1.19",
     "@fullcalendar/list": "6.1.19",
     "@fullcalendar/timegrid": "6.1.19",
+    "@zxcvbn-ts/core": "3.0.4",
+    "@zxcvbn-ts/language-common": "3.0.4",
+    "@zxcvbn-ts/language-de": "3.0.2",
     "dompurify": "^3.3.0"
   }
 }

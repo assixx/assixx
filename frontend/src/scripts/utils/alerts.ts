@@ -101,6 +101,129 @@ export function showWarningAlert(message: string): void {
 }
 
 /**
+ * Show a danger confirmation dialog for destructive actions
+ * @param message - The message to display
+ * @param title - Optional title (default: "Bestätigung erforderlich")
+ * @returns Promise that resolves to true if user confirmed, false otherwise
+ */
+export async function showConfirmDanger(message: string, title: string = 'Bestätigung erforderlich'): Promise<boolean> {
+  return await new Promise((resolve) => {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'custom-confirm-dialog';
+    setHTML(
+      modalDiv,
+      `
+      <div class="confirm-overlay">
+        <div class="confirm-modal confirm-modal--danger">
+          <div class="confirm-modal__icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3 class="confirm-modal__title">${title}</h3>
+          <p class="confirm-modal__message">${message}</p>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
+            <button class="confirm-modal__btn confirm-modal__btn--danger">Bestätigen</button>
+          </div>
+        </div>
+      </div>
+    `,
+    );
+    document.body.append(modalDiv);
+
+    const dangerBtn = $$('.confirm-modal__btn--danger', modalDiv) as HTMLButtonElement | null;
+    const cancelBtn = $$('.confirm-modal__btn--cancel', modalDiv) as HTMLButtonElement | null;
+
+    const cleanup = (): void => {
+      modalDiv.remove();
+    };
+
+    dangerBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(true);
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(false);
+    });
+  });
+}
+
+/**
+ * Show a prompt dialog with text input
+ * @param message - The message to display
+ * @param title - Optional title (default: "Eingabe erforderlich")
+ * @param placeholder - Optional input placeholder
+ * @returns Promise that resolves to the input value or null if cancelled
+ */
+export async function showPrompt(
+  message: string,
+  title: string = 'Eingabe erforderlich',
+  placeholder: string = '',
+): Promise<string | null> {
+  return await new Promise((resolve) => {
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'custom-confirm-dialog';
+    setHTML(
+      modalDiv,
+      `
+      <div class="confirm-overlay">
+        <div class="confirm-modal confirm-modal--info">
+          <div class="confirm-modal__icon">
+            <i class="fas fa-edit"></i>
+          </div>
+          <h3 class="confirm-modal__title">${title}</h3>
+          <p class="confirm-modal__message">${message}</p>
+          <div class="confirm-modal__input-group">
+            <textarea
+              class="confirm-modal__input"
+              placeholder="${placeholder}"
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="confirm-modal__actions">
+            <button class="confirm-modal__btn confirm-modal__btn--cancel">Abbrechen</button>
+            <button class="confirm-modal__btn confirm-modal__btn--confirm">OK</button>
+          </div>
+        </div>
+      </div>
+    `,
+    );
+    document.body.append(modalDiv);
+
+    const confirmBtn = $$('.confirm-modal__btn--confirm', modalDiv) as HTMLButtonElement | null;
+    const cancelBtn = $$('.confirm-modal__btn--cancel', modalDiv) as HTMLButtonElement | null;
+    const inputField = $$('.confirm-modal__input', modalDiv) as HTMLTextAreaElement | null;
+
+    const cleanup = (): void => {
+      modalDiv.remove();
+    };
+
+    // Focus input field
+    inputField?.focus();
+
+    confirmBtn?.addEventListener('click', () => {
+      const value = inputField?.value.trim() ?? '';
+      cleanup();
+      resolve(value === '' ? null : value);
+    });
+
+    cancelBtn?.addEventListener('click', () => {
+      cleanup();
+      resolve(null);
+    });
+
+    // Submit on Enter (Ctrl+Enter for multiline)
+    inputField?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        e.preventDefault();
+        confirmBtn?.click();
+      }
+    });
+  });
+}
+
+/**
  * Show an informational modal dialog with Design System confirm-modal--info
  * @param message - The message to display
  * @param title - Optional title (default: "Hinweis")

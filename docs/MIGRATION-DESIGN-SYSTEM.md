@@ -183,8 +183,9 @@ export class SignupFormController {
 - [x] documents-explorer.html ✅ (2025-11-13) - 100% Design System compliant (NUCLEAR REFACTORING: deleted 1,227 lines legacy CSS, created minimal 195-line CSS, fixed all inline styles, TypeScript modules, NO Bootstrap, NO inline JS)
 
 
-### Features
+### Features and unified-navigation !!!! CRITICAL and biggest
 
+- [ ] unified-navigation.ts und css !
 - [ ] blackboard.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] calendar.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] chat.html --skip wir machen das zum schluss, weil größere refactoring
@@ -202,8 +203,9 @@ export class SignupFormController {
 ### Admin/Root
 
 - [x] root-features.html ✅ (2025-11-19) - 100% Design System compliant (feature-card from choice-card.feature.css with .feature-status badges, .features-grid responsive layout, plan-card from choice-card.plan.css with radio selection and ::before "Empfohlen" badge, toggle-group for filters, TypeScript modules split to types/data/ui/index layers, fixed feature codes to match database (employees, documents), fixed tenant_id initialization with dual format support, fixed plan selection radio reset on cancel/error, fixed addon save route POST→PUT with camelCase body format, root-features.css reduced 617→232 lines -62%, eliminated ALL redundant CSS: feature/plan cards→Design System components, buttons→.btn variants, grids→.features-grid/Tailwind, no inline styles/JS, no Bootstrap)
-- [ ] root-profile.html
-- [ ] admin-profile.html
+- [x] root-profile.html ✅ (2025-11-20) - 100% Design System compliant (form-field, form-field__label, form-field__control for all forms, profile-card glassmorphism cards, approval-section for deletion approvals with cooling-off warnings, TypeScript modules split to 5-layer architecture: types/data/ui/forms/index, 629 lines inline JavaScript→TypeScript modules (913 lines structured), HTML reduced 783→153 lines -80%, root-profile.css reduced 740→253 lines -66%, eliminated ALL inline scripts: profile/password forms→forms.ts, API calls→data.ts, DOM manipulation→ui.ts, event orchestration→index.ts RootProfileManager class, eliminated ALL redundant CSS: .form-control→.form-field__control, .btn-* overrides→Design System, .alert-*→Design System via notificationService, .modal-*→removed (unused), custom styles→Design System variables (--spacing-*, --color-*, --radius-*), fixed form field names firstName/lastName to match API v2, fixed alert consistency: custom showMessage→showSuccessAlert/showErrorAlert from alerts.ts (notificationService toasts), kept showSuccessOverlay for special animations, removed #message-container (unused with toast notifications), type-safe profile picture upload/removal, deletion approval workflow with data-action attributes, no inline styles/JS, no Bootstrap)
+- [x] admin-profile.html ✅ (2025-11-20) - 100% Design System compliant
+- [x] employee-profile.html ✅ (2025-11-20) - 100% Design System compliant
 - [ ] account-settings.html
 
 ### Other
@@ -213,7 +215,7 @@ export class SignupFormController {
 - [ ] storage-upgrade.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] tenant-deletion-status.html
 - [ ] rate-limit.html
-- [ ] unified-navigation.ts und css !
+
 
 ## Migration Strategy
 

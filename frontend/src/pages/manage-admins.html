@@ -19,6 +19,7 @@
     <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/manage-admins.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
+    <link rel="stylesheet" href="/styles/password-strength.css" />
 
     <!-- Common Scripts with ApiClient -->
   </head>
@@ -171,6 +172,12 @@
             <label class="form-field__label" for="admin-password">
               Passwort
               <span class="text-red-500">*</span>
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                </span>
+              </span>
             </label>
             <div class="form-field__password-wrapper">
               <input type="password" id="admin-password" name="password" class="form-field__control" />
@@ -194,6 +201,23 @@
             <span class="form-field__message form-field__message--error u-hidden" id="password-error">
               Passwörter stimmen nicht überein
             </span>
+          </div>
+
+          <!-- Password Strength Indicator -->
+          <div class="password-strength-container u-hidden" id="admin-password-strength-container">
+            <div class="password-strength-meter">
+              <div class="password-strength-bar" id="admin-password-strength-bar" data-score="-1"></div>
+            </div>
+            <div class="password-strength-info">
+              <span class="password-strength-label" id="admin-password-strength-label"></span>
+              <span class="password-strength-time" id="admin-password-strength-time"></span>
+            </div>
+          </div>
+
+          <!-- Password Feedback Section -->
+          <div class="password-feedback u-hidden" id="admin-password-feedback">
+            <span class="password-feedback-warning" id="admin-password-feedback-warning"></span>
+            <ul class="password-feedback-suggestions u-hidden" id="admin-password-feedback-suggestions"></ul>
           </div>
 
           <div class="form-field">

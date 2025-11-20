@@ -28,14 +28,42 @@ export const EmailSchema = z
   .trim();
 
 /**
- * Password validation with security requirements
+ * Password validation with MODERN security requirements (2024 Standards)
+ * - Minimum: 12 characters (NIST 800-63B recommendation)
+ * - Maximum: 72 characters (BCrypt limitation - truncates at 72 bytes)
+ * - Complexity: At least 3 out of 4 character categories
+ *
+ * NOTE: BCrypt has a 72-byte limit. We use 72 chars to be safe with UTF-8.
+ * For longer passwords, consider migrating to Argon2id.
  */
 export const PasswordSchema = z
   .string()
-  .min(8, 'Password must be at least 8 characters')
-  .regex(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-    'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+  .min(12, 'Password must be at least 12 characters')
+  .max(72, 'Password cannot exceed 72 characters (BCrypt limit)')
+  .refine(
+    (password: string) => {
+      // Count how many character categories are present
+      let categoriesPresent = 0;
+
+      // Category 1: Uppercase letters
+      if (/[A-Z]/.test(password)) categoriesPresent++;
+
+      // Category 2: Lowercase letters
+      if (/[a-z]/.test(password)) categoriesPresent++;
+
+      // Category 3: Numbers
+      if (/\d/.test(password)) categoriesPresent++;
+
+      // Category 4: Special characters (common set)
+      if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) categoriesPresent++;
+
+      // Require at least 3 out of 4 categories
+      return categoriesPresent >= 3;
+    },
+    {
+      message:
+        'Password must contain characters from at least 3 of the following: uppercase, lowercase, numbers, special characters (!@#$%^&*)',
+    },
   );
 
 /**
