@@ -71,19 +71,19 @@ function updateAvatar(user: User): void {
 
 /**
  * Check if user has valid profile picture
+ * API v2 may return profilePicture (camelCase), handle both for transition
  */
 function hasValidProfilePicture(user: User): boolean {
-  return (
-    (user.profile_picture !== undefined && user.profile_picture !== '') ||
-    (user.profile_picture_url !== undefined && user.profile_picture_url !== '')
-  );
+  const pic = (user as { profilePicture?: string }).profilePicture ?? user.profile_picture;
+  return pic !== undefined && pic !== '';
 }
 
 /**
  * Set avatar image source
  */
 function setAvatarImage(avatarElement: HTMLImageElement, user: User): void {
-  const picUrl = user.profile_picture ?? user.profile_picture_url ?? null;
+  // API v2 returns profilePicture (camelCase), fallback to snake_case for transition
+  const picUrl = (user as { profilePicture?: string }).profilePicture ?? user.profile_picture ?? null;
   if (picUrl !== null && picUrl !== '') {
     avatarElement.src = picUrl;
   }

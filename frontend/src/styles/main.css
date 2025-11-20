@@ -37,6 +37,9 @@
 @import "../design-system/primitives/cards/card-stat.css";
 @import "../design-system/primitives/cards/card-accent.css";
 
+/* Design System Glassmorphic Card Component (Profile/Content Pages) */
+@import "../design-system/components/card/card.css";
+
 /* Design System Modal Component */
 @import "../design-system/primitives/modals/modal.base.css";
 

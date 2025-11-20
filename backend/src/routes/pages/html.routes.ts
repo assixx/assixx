@@ -316,11 +316,11 @@ router.get(
   servePage('root-profile'),
 );
 router.get(
-  '/manage-root-users',
+  '/manage-root',
   rateLimiter.admin,
   authenticateToken,
   requireRole('root') as RequestHandler,
-  servePage('manage-root-users'),
+  servePage('manage-root'),
 );
 router.get(
   '/account-settings',

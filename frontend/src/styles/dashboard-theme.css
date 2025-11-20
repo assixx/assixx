@@ -96,12 +96,7 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.card-title {
-  margin: 0;
-  font-size: 1.125rem; /* 18px */
-  font-weight: 600;
-  color: var(--primary-color);
-}
+/* NOTE: .card-title moved to Design System → design-system/components/card/card.css (2025-11-20) */
 
 /* table */
 .table-responsive {

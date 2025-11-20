@@ -6,6 +6,9 @@
     <title>Root Profil - Assixx</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
 
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script src="/scripts/critical/sidebar-init.js"></script>
 
@@ -15,12 +18,7 @@
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/root-profile.css" />
     <link rel="stylesheet" href="/styles/user-info-update.css" />
-    <!-- Dom-utils Module für sichere HTML-Sanitization -->
-    <script type="module">
-      import { setHTML } from '/utils/dom-utils.js';
-      // Make setHTML globally available for inline scripts
-      window.setHTML = setHTML;
-    </script>
+    <link rel="stylesheet" href="/styles/password-strength.css" />
   </head>
   <body>
     <!-- Unified Navigation -->
@@ -35,9 +33,6 @@
 
         <div class="container">
           <div class="profile-container">
-            <!-- Success/Error Messages -->
-            <div id="message-container"></div>
-
             <!-- Pending Approvals Section -->
             <div id="approvalSection" class="approval-section u-hidden">
               <div class="approval-header">
@@ -56,18 +51,17 @@
             <div class="profile-card">
               <h2 class="card-title">Profilbild</h2>
               <div class="profile-picture-section">
-                <div class="profile-picture-container">
-                  <div id="profile-picture-display" class="profile-picture-placeholder avatar-initials">
-                    <!-- Initials will be set by JavaScript -->
-                  </div>
+                <!-- Design System Avatar Component XXL (150px) -->
+                <div id="profile-picture-display" class="avatar avatar--xxl avatar--color-5">
+                  <span class="avatar__initials">...</span>
                 </div>
                 <div class="profile-picture-actions">
                   <input type="file" id="profile-picture-input" accept="image/*" class="u-hidden" />
-                  <button class="btn btn-primary" data-action="trigger-file-input">
+                  <button type="button" class="btn btn-modal" data-action="trigger-file-input">
                     <i class="fas fa-camera"></i>
                     Bild ändern
                   </button>
-                  <button class="btn btn-cancel" id="remove-picture-btn" class="u-hidden">
+                  <button type="button" class="btn btn-cancel u-hidden" id="remove-picture-btn">
                     <i class="fas fa-trash"></i>
                     Bild entfernen
                   </button>
@@ -80,20 +74,20 @@
               <h2 class="card-title">Persönliche Informationen</h2>
               <form id="profile-form">
                 <div class="form-grid">
-                  <div class="form-group">
-                    <label class="form-label">E-Mail</label>
-                    <input type="email" id="email" name="email" class="form-control" required />
+                  <div class="form-field">
+                    <label class="form-field__label" for="email">E-Mail</label>
+                    <input type="email" id="email" name="email" class="form-field__control" required />
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Vorname</label>
-                    <input type="text" id="first_name" name="first_name" class="form-control" />
+                  <div class="form-field">
+                    <label class="form-field__label" for="first_name">Vorname</label>
+                    <input type="text" id="first_name" name="firstName" class="form-field__control" />
                   </div>
-                  <div class="form-group">
-                    <label class="form-label">Nachname</label>
-                    <input type="text" id="last_name" name="last_name" class="form-control" />
+                  <div class="form-field">
+                    <label class="form-field__label" for="last_name">Nachname</label>
+                    <input type="text" id="last_name" name="lastName" class="form-field__control" />
                   </div>
                 </div>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-modal">
                   <i class="fas fa-save"></i>
                   Änderungen speichern
                 </button>
@@ -104,33 +98,90 @@
             <div class="profile-card">
               <h2 class="card-title">Passwort ändern</h2>
               <form id="password-form" autocomplete="off">
-                <div class="form-group">
-                  <label class="form-label">Aktuelles Passwort</label>
-                  <input
-                    type="password"
-                    id="current_password"
-                    name="current_password"
-                    class="form-control"
-                    autocomplete="current-password"
-                    required
-                  />
+                <div class="form-field">
+                  <label class="form-field__label" for="current_password">Aktuelles Passwort</label>
+                  <div class="form-field__password-wrapper">
+                    <input
+                      type="password"
+                      id="current_password"
+                      name="current_password"
+                      class="form-field__control"
+                      autocomplete="current-password"
+                      required
+                    />
+                    <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="current-password-toggle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                  <span class="form-field__message form-field__message--error u-hidden" id="current-password-error">
+                    Aktuelles Passwort ist falsch
+                  </span>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Neues Passwort</label>
-                  <input type="password" id="new_password" name="new_password" class="form-control" autocomplete="new-password" required />
+                <div class="form-field">
+                  <label class="form-field__label" for="new_password">
+                    Neues Passwort
+                    <span class="tooltip ml-1">
+                      <i class="fas fa-info-circle text-blue-400 text-sm cursor-help"></i>
+                      <span class="tooltip__content tooltip__content--info tooltip__content--right" role="tooltip">
+                        Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                      </span>
+                    </span>
+                  </label>
+                  <div class="form-field__password-wrapper">
+                    <input
+                      type="password"
+                      id="new_password"
+                      name="new_password"
+                      class="form-field__control"
+                      autocomplete="new-password"
+                      minlength="12"
+                      maxlength="72"
+                      required
+                    />
+                    <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="new-password-toggle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                  <!-- Password Strength Indicator -->
+                  <div class="password-strength-container u-hidden" id="password-strength-container">
+                    <div class="password-strength-meter">
+                      <div class="password-strength-bar" id="password-strength-bar" data-score="-1"></div>
+                    </div>
+                    <div class="password-strength-info">
+                      <span class="password-strength-label" id="password-strength-label"></span>
+                      <span class="password-strength-time" id="password-strength-time"></span>
+                    </div>
+                  </div>
+                  <span class="form-field__message form-field__message--error u-hidden" id="new-password-error">
+                    Min. 12 Zeichen, 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                  </span>
+                  <div class="password-feedback u-hidden" id="password-feedback">
+                    <span class="password-feedback-warning" id="password-feedback-warning"></span>
+                    <ul class="password-feedback-suggestions u-hidden" id="password-feedback-suggestions"></ul>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label class="form-label">Neues Passwort bestätigen</label>
-                  <input
-                    type="password"
-                    id="confirm_password"
-                    name="confirm_password"
-                    class="form-control"
-                    autocomplete="new-password"
-                    required
-                  />
+                <div class="form-field">
+                  <label class="form-field__label" for="confirm_password">Neues Passwort bestätigen</label>
+                  <div class="form-field__password-wrapper">
+                    <input
+                      type="password"
+                      id="confirm_password"
+                      name="confirm_password"
+                      class="form-field__control"
+                      autocomplete="new-password"
+                      minlength="12"
+                      maxlength="72"
+                      required
+                    />
+                    <button type="button" class="form-field__password-toggle" aria-label="Passwort anzeigen" id="confirm-password-toggle">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                  <span class="form-field__message form-field__message--error u-hidden" id="password-mismatch-error">
+                    Passwörter stimmen nicht überein
+                  </span>
                 </div>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" class="btn btn-modal">
                   <i class="fas fa-key"></i>
                   Passwort ändern
                 </button>
@@ -141,642 +192,36 @@
       </main>
     </div>
 
-    <!-- Font Awesome für Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <!-- OPTIMIZATION: Instant Profile Picture Loading (before JS bundle) -->
+    <script>
+      // CRITICAL: Load cached profile picture IMMEDIATELY (0ms perceived latency)
+      (function () {
+        try {
+          const cachedPicture = localStorage.getItem('profilePictureCache');
+          if (cachedPicture && cachedPicture !== 'null' && cachedPicture !== '') {
+            const container = document.getElementById('profile-picture-display');
+            if (container) {
+              // Inject image INSTANTLY (before JS modules load)
+              container.className = 'avatar avatar--xxl';
+              container.innerHTML = '<img src="' + cachedPicture + '" alt="Profilbild" class="avatar__image">';
 
-    <!-- JavaScript -->
+              // Show remove button
+              const removeBtn = document.getElementById('remove-picture-btn');
+              if (removeBtn) removeBtn.classList.remove('u-hidden');
+            }
+          }
+        } catch (e) {
+          // Silent fail - JS modules will handle fallback
+        }
+      })();
+    </script>
+
+    <!-- Navigation Components -->
     <script type="module" src="/scripts/components/unified-navigation.ts"></script>
     <script type="module" src="/scripts/auth/role-switch.ts"></script>
-    <script>
-      // Authentication Check
-      const token = localStorage.getItem('token');
-      if (!token) {
-        window.location.href = '/login';
-      }
-
-      // Decode JWT to get user info
-      function parseJwt(token) {
-        try {
-          const base64Url = token.split('.')[1];
-          const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-          const jsonPayload = decodeURIComponent(
-            atob(base64)
-              .split('')
-              .map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-              })
-              .join(''),
-          );
-          return JSON.parse(jsonPayload);
-        } catch {
-          // Error handling - return null if parsing fails
-          return null;
-        }
-      }
-
-      const userInfo = parseJwt(token);
-      if (userInfo && userInfo.role !== 'root') {
-        window.location.href = '/login';
-      }
-
-      // User info wird durch header-user-info.ts geladen
-
-      // Extract user data from API response
-      function extractUserData(data) {
-        const user = data.data || data.user || data;
-        return {
-          email: user.email || '',
-          firstName: user.firstName || user.first_name || '',
-          lastName: user.lastName || user.last_name || '',
-          profilePicture: user.profilePictureUrl || user.profile_picture || '',
-        };
-      }
-
-      // Fill form fields with user data
-      function fillFormFields(userData) {
-        document.querySelector('#email').value = userData.email;
-        document.querySelector('#first_name').value = userData.firstName;
-        document.querySelector('#last_name').value = userData.lastName;
-      }
-
-      // Display user initials when no profile picture
-      function displayInitials(firstName, lastName) {
-        const container = document.querySelector('#profile-picture-display');
-        if (!container) return;
-
-        const firstInitial = firstName.charAt(0).toUpperCase() || '';
-        const lastInitial = lastName.charAt(0).toUpperCase() || '';
-        const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
-
-        console.info('[Root Profile] Setting initials:', { firstName, lastName, initials });
-        container.classList.add('avatar-initials');
-        container.textContent = initials;
-      }
-
-      // Handle profile picture display
-      function handleProfilePicture(profilePicture, firstName, lastName) {
-        if (profilePicture) {
-          displayProfilePicture(profilePicture);
-          // Header wird automatisch durch header-user-info.ts aktualisiert
-        } else {
-          displayInitials(firstName, lastName);
-        }
-      }
-
-      // Load current profile data
-      async function loadProfile() {
-        try {
-          // Feature flags removed - always use v2
-          const useV2Users = true;
-          const endpoint = '/api/v2/users/me';
-
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!response.ok) {
-            showMessage('Fehler beim Laden des Profils', 'error');
-            return;
-          }
-
-          const data = await response.json();
-          console.info('[Root Profile] API Response:', data);
-
-          const userData = extractUserData(data);
-          fillFormFields(userData);
-          handleProfilePicture(userData.profilePicture, userData.firstName, userData.lastName);
-        } catch (error) {
-          console.error('Error loading profile:', error);
-          showMessage('Fehler beim Laden des Profils', 'error');
-        }
-      }
-
-      // Initialize all event listeners when DOM is ready
-      function initializeEventListeners() {
-        // Profile form submission
-        const profileForm = document.querySelector('#profile-form');
-        if (profileForm) {
-          profileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
-
-            try {
-              const useV2Users = true;
-              const endpoint = useV2Users ? '/api/v2/users/me/profile' : '/api/user/profile';
-
-              const response = await fetch(endpoint, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(data),
-              });
-
-              if (response.ok) {
-                showMessage('Profil erfolgreich aktualisiert', 'success');
-                // Reload page after 1 second to update navigation
-                setTimeout(() => {
-                  window.location.reload();
-                }, 1000);
-              } else {
-                const error = await response.json();
-                showMessage(error.message || 'Fehler beim Aktualisieren', 'error');
-              }
-            } catch (error) {
-              console.error('Error updating profile:', error);
-              showMessage('Fehler beim Aktualisieren des Profils', 'error');
-            }
-          });
-        }
-
-        // Password form submission
-        const passwordForm = document.querySelector('#password-form');
-        if (passwordForm) {
-          passwordForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const newPassword = document.querySelector('#new_password').value;
-            const confirmPassword = document.querySelector('#confirm_password').value;
-
-            if (newPassword !== confirmPassword) {
-              showMessage('Die Passwörter stimmen nicht überein', 'error');
-              return;
-            }
-
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
-
-            try {
-              const useV2Users = true;
-              const endpoint = useV2Users ? '/api/v2/users/me/password' : '/api/users/profile/password';
-
-              const response = await fetch(endpoint, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  currentPassword: data.current_password,
-                  newPassword: data.new_password,
-                }),
-              });
-
-              if (response.ok) {
-                showMessage('Passwort erfolgreich geändert', 'success');
-                showSuccessOverlay('Passwort erfolgreich geändert!');
-                e.target.reset();
-              } else {
-                const error = await response.json();
-                showMessage(error.message || 'Fehler beim Ändern des Passworts', 'error');
-              }
-            } catch (error) {
-              console.error('Error changing password:', error);
-              showMessage('Fehler beim Ändern des Passworts', 'error');
-            }
-          });
-        }
-
-        // Profile picture upload
-        const pictureInput = document.querySelector('#profile-picture-input');
-        if (pictureInput) {
-          pictureInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const formData = new FormData();
-            formData.append('profilePicture', file);
-
-            try {
-              const useV2Users = true;
-              const endpoint = useV2Users ? '/api/v2/users/me/profile-picture' : '/api/user/profile-picture';
-
-              const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-                body: formData,
-              });
-
-              if (response.ok) {
-                const data = await response.json();
-                displayProfilePicture(data.profilePicture);
-                showMessage('Profilbild erfolgreich aktualisiert', 'success');
-              } else {
-                showMessage('Fehler beim Hochladen des Profilbilds', 'error');
-              }
-            } catch (error) {
-              console.error('Error uploading profile picture:', error);
-              showMessage('Fehler beim Hochladen des Profilbilds', 'error');
-            }
-          });
-        }
-
-        // Remove profile picture
-        const removePictureBtn = document.querySelector('#remove-picture-btn');
-        if (removePictureBtn) {
-          removePictureBtn.addEventListener('click', async () => {
-            if (!confirm('Möchten Sie Ihr Profilbild wirklich entfernen?')) return;
-
-            try {
-              const useV2Users = true;
-              const endpoint = useV2Users ? '/api/v2/users/me/profile-picture' : '/api/user/profile-picture';
-
-              const response = await fetch(endpoint, {
-                method: 'DELETE',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
-
-              if (response.ok) {
-                const container = document.querySelector('#profile-picture-display');
-                if (container) {
-                  // Get current user data to restore initials
-                  const firstName = document.querySelector('#first_name').value || '';
-                  const lastName = document.querySelector('#last_name').value || '';
-                  const firstInitial = firstName.charAt(0).toUpperCase() || '';
-                  const lastInitial = lastName.charAt(0).toUpperCase() || '';
-                  const initials = firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : 'U';
-
-                  container.classList.add('avatar-initials');
-                  container.textContent = initials;
-                }
-                document.querySelector('#remove-picture-btn').style.display = 'none';
-                showMessage('Profilbild erfolgreich entfernt', 'success');
-              } else {
-                showMessage('Fehler beim Entfernen des Profilbilds', 'error');
-              }
-            } catch (error) {
-              console.error('Error removing profile picture:', error);
-              showMessage('Fehler beim Entfernen des Profilbilds', 'error');
-            }
-          });
-        }
-      }
-
-      // Display profile picture
-      function displayProfilePicture(url) {
-        const container = document.querySelector('#profile-picture-display');
-        if (container) {
-          container.classList.remove('avatar-initials');
-          container.innerHTML = ''; // Clear existing content
-
-          // Sicher: DOM-Methoden verwenden
-          const img = document.createElement('img');
-          img.src = url;
-          img.alt = 'Profilbild';
-          img.className = 'profile-picture';
-          container.append(img);
-
-          const removeBtn = document.querySelector('#remove-picture-btn');
-          if (removeBtn) {
-            removeBtn.style.display = 'block';
-          }
-        }
-      }
-
-      // Show success/error messages
-      function showMessage(message, type) {
-        const container = document.querySelector('#message-container');
-        if (container) {
-          // Use dom-utils setHTML for safe sanitization
-          const htmlContent = `
-                <div class="alert alert-${type}">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                    ${message}
-                </div>
-            `;
-          window.setHTML(container, htmlContent);
-
-          setTimeout(() => {
-            container.innerHTML = '';
-          }, 5000);
-        }
-      }
-
-      // Show success overlay animation - nach Design-Standards
-      function showSuccessOverlay(text = 'Erfolgreich!') {
-        const overlay = document.createElement('div');
-        overlay.className = 'success-overlay';
-        // Use dom-utils setHTML for safe sanitization
-        const overlayHtml = `
-          <div class="success-message">
-            <div class="success-icon">
-              <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="success-text">
-              ${text}
-            </div>
-          </div>
-        `;
-        window.setHTML(overlay, overlayHtml);
-        document.body.append(overlay);
-
-        // Remove after animation - immer 2 Sekunden
-        setTimeout(() => {
-          overlay.remove();
-        }, 2000);
-      }
-
-      // Logout
-      // Wait for navigation to load before attaching logout handler
-      setTimeout(() => {
-        const logoutBtn = document.querySelector('#logout-btn');
-        if (logoutBtn) {
-          logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('role');
-            window.location.href = '/login';
-          });
-        }
-      }, 500);
-
-      // Approval Functions
-      async function loadPendingApprovals() {
-        try {
-          const useV2Root = true;
-          const endpoint = useV2Root ? '/api/v2/root/deletion-approvals/pending' : '/api/root/deletion-approvals/pending';
-
-          const response = await fetch(endpoint, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (!response.ok) throw new Error('Failed to load approvals');
-
-          const data = await response.json();
-          console.info('Deletion approvals response:', data);
-
-          let approvals = [];
-          if (data && data.success && Array.isArray(data.data)) {
-            approvals = data.data;
-          } else if (Array.isArray(data)) {
-            approvals = data;
-          }
-
-          console.info('Processed approvals:', approvals);
-
-          const approvalSection = document.querySelector('#approvalSection');
-          const approvalList = document.querySelector('#approvalList');
-
-          if (approvals.length > 0) {
-            approvalSection.style.display = 'block';
-            // Use dom-utils setHTML for safe sanitization
-            const approvalsHtml = approvals.map((approval) => createApprovalItem(approval)).join('');
-            window.setHTML(approvalList, approvalsHtml);
-          } else {
-            approvalSection.style.display = 'none';
-            approvalList.innerHTML = ''; // Clear any existing content
-          }
-        } catch (error) {
-          console.error('Error loading approvals:', error);
-        }
-      }
-
-      function createApprovalItem(approval) {
-        // Validate approval object
-        if (!approval || !approval.queue_id) {
-          console.error('Invalid approval object:', approval);
-          return '';
-        }
-
-        const requestedAt = new Date(approval.requested_at);
-        const hoursSince = (Date.now() - requestedAt.getTime()) / (1000 * 60 * 60);
-        const coolingOffRemaining = Math.max(0, 24 - hoursSince);
-        const canApprove = coolingOffRemaining === 0;
-
-        return `
-          <div class="approval-item">
-            <div class="approval-item-header">
-              <div class="approval-item-info">
-                <h4>${approval.company_name}</h4>
-                <p>Subdomain: ${approval.subdomain}</p>
-                <p>Beantragt von: ${approval.requester_name}</p>
-                <p>Beantragt am: ${requestedAt.toLocaleString('de-DE')}</p>
-                <span class="approval-status pending">Ausstehend</span>
-              </div>
-              <div class="approval-item-actions">
-                ${
-                  canApprove
-                    ? `
-                  <button class="btn btn-success" data-action="approve-deletion" data-queue-id="${approval.queue_id}">
-                    <i class="fas fa-check"></i> Genehmigen
-                  </button>
-                `
-                    : ''
-                }
-                <button class="btn btn-danger" data-action="reject-deletion" data-queue-id="${approval.queue_id}">
-                  <i class="fas fa-times"></i> Ablehnen
-                </button>
-              </div>
-            </div>
-            ${
-              !canApprove
-                ? `
-              <div class="cooling-off-warning">
-                <i class="fas fa-clock"></i>
-                <span>Cooling-off Periode: Noch ${Math.ceil(coolingOffRemaining)} Stunden warten</span>
-              </div>
-            `
-                : ''
-            }
-          </div>
-        `;
-      }
-
-      async function approveDeletion(queueId) {
-        if (
-          !confirm(
-            'Möchten Sie diese Löschung wirklich genehmigen?\n\nDer Tenant wird nach der 30-tägigen Grace Period endgültig gelöscht.',
-          )
-        ) {
-          return;
-        }
-
-        try {
-          const useV2Root = true;
-          const endpoint = useV2Root
-            ? `/api/v2/root/deletion-approvals/${queueId}/approve`
-            : `/api/root/deletion-approvals/${queueId}/approve`;
-
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          if (response.ok) {
-            showSuccessOverlay('Löschung genehmigt!');
-            await loadPendingApprovals();
-          } else {
-            const error = await response.json();
-            showMessage(error.message || 'Fehler bei der Genehmigung', 'error');
-          }
-        } catch (error) {
-          console.error('Error approving deletion:', error);
-          showMessage('Fehler bei der Genehmigung', 'error');
-        }
-      }
-
-      async function rejectDeletion(queueId) {
-        const reason = prompt('Bitte geben Sie einen Grund für die Ablehnung an:');
-        if (!reason) return;
-
-        try {
-          const useV2Root = true;
-          const endpoint = useV2Root
-            ? `/api/v2/root/deletion-approvals/${queueId}/reject`
-            : `/api/root/deletion-approvals/${queueId}/reject`;
-
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ reason }),
-          });
-
-          if (response.ok) {
-            showSuccessOverlay('Löschung abgelehnt!');
-            await loadPendingApprovals();
-          } else {
-            const error = await response.json();
-            showMessage(error.message || 'Fehler bei der Ablehnung', 'error');
-          }
-        } catch (error) {
-          console.error('Error rejecting deletion:', error);
-          showMessage('Fehler bei der Ablehnung', 'error');
-        }
-      }
-
-      function getInitialsFromToken(token) {
-        if (!token) return '...';
-
-        try {
-          const userInfo = parseJwt(token);
-          if (!userInfo) return '...';
-
-          const firstName = userInfo.first_name || userInfo.firstName || '';
-          const lastName = userInfo.last_name || userInfo.lastName || '';
-          const firstInitial = firstName.charAt(0).toUpperCase() || '';
-          const lastInitial = lastName.charAt(0).toUpperCase() || '';
-
-          return firstInitial || lastInitial ? `${firstInitial}${lastInitial}` : '...';
-        } catch {
-          return '...';
-        }
-      }
-
-      // Set initial placeholder while loading
-      function setInitialPlaceholder() {
-        const container = document.querySelector('#profile-picture-display');
-        if (!container || container.innerHTML.trim()) return;
-
-        const token = localStorage.getItem('token');
-        container.textContent = getInitialsFromToken(token);
-      }
-
-      // Modal functions
-      function closeDeleteModal() {
-        const modal = document.querySelector('#deleteModal');
-        if (modal) {
-          modal.style.display = 'none';
-        }
-      }
-
-      // Initialize everything when DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          setInitialPlaceholder();
-          initializeEventListeners();
-          loadProfile();
-          loadPendingApprovals();
-
-          // Enable delete button only when user types "LÖSCHEN"
-          const deleteConfirmInput = document.querySelector('#deleteConfirmation');
-          if (deleteConfirmInput) {
-            deleteConfirmInput.addEventListener('input', (e) => {
-              const confirmBtn = document.querySelector('#confirmDeleteBtn');
-              if (confirmBtn) {
-                confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
-              }
-            });
-          }
-
-          // Close modal on overlay click
-          const deleteModal = document.querySelector('#deleteModal');
-          if (deleteModal) {
-            deleteModal.addEventListener('click', (e) => {
-              if (e.target.id === 'deleteModal') {
-                closeDeleteModal();
-              }
-            });
-          }
-        });
-      } else {
-        // DOM already loaded
-        setInitialPlaceholder();
-        initializeEventListeners();
-        loadProfile();
-        loadPendingApprovals();
-
-        // Enable delete button only when user types "LÖSCHEN"
-        const deleteConfirmInput = document.querySelector('#deleteConfirmation');
-        if (deleteConfirmInput) {
-          deleteConfirmInput.addEventListener('input', (e) => {
-            const confirmBtn = document.querySelector('#confirmDeleteBtn');
-            if (confirmBtn) {
-              confirmBtn.disabled = e.target.value !== 'LÖSCHEN';
-            }
-          });
-        }
-
-        // Close modal on overlay click
-        const deleteModal = document.querySelector('#deleteModal');
-        if (deleteModal) {
-          deleteModal.addEventListener('click', (e) => {
-            if (e.target.id === 'deleteModal') {
-              closeDeleteModal();
-            }
-          });
-        }
-
-        // Event delegation for all actions
-        document.addEventListener('click', function (e) {
-          const target = e.target.closest('[data-action]');
-          if (target) {
-            const action = target.dataset.action;
-
-            switch (action) {
-              case 'trigger-file-input':
-                document.querySelector('#profile-picture-input').click();
-                break;
-              case 'approve-deletion': {
-                const queueId = parseInt(target.dataset.queueId);
-                approveDeletion(queueId);
-                break;
-              }
-              case 'reject-deletion': {
-                const queueId = parseInt(target.dataset.queueId);
-                rejectDeletion(queueId);
-                break;
-              }
-            }
-          }
-        });
-      }
-    </script>
     <script type="module" src="/scripts/components/breadcrumb.js"></script>
+
+    <!-- Page Script - Root Profile Manager -->
+    <script type="module" src="/scripts/root/profile/index.ts"></script>
   </body>
 </html>

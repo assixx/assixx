@@ -19,6 +19,7 @@ import {
   CreateAdminSchema,
   RootApiFiltersSchema,
   UpdateAdminSchema,
+  UpdateRootUserSchema,
 } from './validation.zod.js';
 
 const router = Router();
@@ -117,16 +118,7 @@ router.put(
     params: z.object({
       id: z.coerce.number().int().min(1, 'Invalid user ID'),
     }),
-    body: z.object({
-      firstName: z.string().optional(),
-      lastName: z.string().optional(),
-      email: z.email().optional(),
-      position: z.string().optional(),
-      notes: z.string().optional(),
-      employeeNumber: z.string().optional(),
-      departmentId: z.number().optional(),
-      isActive: z.boolean().optional(),
-    }),
+    body: UpdateRootUserSchema,
   }),
   typed.paramsBody<{ id: string }>(rootController.updateRootUser.bind(rootController)),
 );

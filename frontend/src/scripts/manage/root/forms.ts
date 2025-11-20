@@ -4,9 +4,10 @@
  * Form handling, validation, modal logic
  */
 
-import { $, $$, getData, setData, setHTML } from '../../../utils/dom-utils';
+import { $, $$, getData, setData, setHTML, $$id } from '../../../utils/dom-utils';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import { resetPasswordToggles, resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
+import { setupPasswordStrength, resetPasswordStrengthUI } from '../../../utils/password-strength-integration';
 // Import from types
 import type { RootUser, FormValues } from './types';
 // Import from data layer
@@ -377,6 +378,23 @@ function validateForm(values: FormValues, isEdit: boolean): boolean {
 }
 
 /**
+ * Generate a valid username from an email address
+ * - Takes the part before @
+ * - Replaces invalid characters with underscores
+ * - Only allows letters, numbers, underscores, and hyphens
+ * @param email - Email address to convert
+ * @returns Valid username
+ */
+function generateUsernameFromEmail(email: string): string {
+  // Take the part before @ (local part of email)
+  const localPart = email.split('@')[0];
+
+  // Replace any character that's not a letter, number, underscore, or hyphen with underscore
+  // This ensures the username matches the backend regex: /^[\w-]+$/
+  return localPart.replace(/[^\w-]/g, '_');
+}
+
+/**
  * Build user data for API request
  */
 function buildUserData(values: FormValues, isEdit: boolean): Record<string, unknown> {
@@ -401,7 +419,7 @@ function buildUserData(values: FormValues, isEdit: boolean): Record<string, unkn
   if (!isEdit) {
     // Create mode: password is required
     userData.password = values.password;
-    userData.username = values.email;
+    userData.username = generateUsernameFromEmail(values.email);
   } else {
     // Edit mode: password is optional (only send if provided)
     if (values.password !== '' && values.password.length >= 8) {
@@ -459,6 +477,13 @@ export function closeRootModal(): void {
     { input: SELECTORS.ROOT_PASSWORD_CONFIRM, toggle: SELECTORS.ROOT_PASSWORD_CONFIRM_TOGGLE },
   ]);
 
+  // Reset password strength UI to prevent cached validation state
+  resetPasswordStrengthUI({
+    passwordFieldId: 'root-password',
+    strengthContainerId: 'root-password-strength-container',
+    feedbackContainerId: 'root-password-feedback',
+  });
+
   // Cleanup password toggle event listeners to prevent memory leak
   passwordToggleCleanup?.abort();
   passwordToggleCleanup = null;
@@ -510,6 +535,25 @@ export function showAddRootModal(): void {
     ],
     passwordToggleCleanup,
   );
+
+  // Setup password strength validation
+  setupPasswordStrength({
+    passwordFieldId: 'root-password',
+    strengthContainerId: 'root-password-strength-container',
+    strengthBarId: 'root-password-strength-bar',
+    strengthLabelId: 'root-password-strength-label',
+    strengthTimeId: 'root-password-strength-time',
+    feedbackContainerId: 'root-password-feedback',
+    feedbackWarningId: 'root-password-feedback-warning',
+    feedbackSuggestionsId: 'root-password-feedback-suggestions',
+    getUserInputs: () => {
+      const firstName = ($$id('root-first-name') as HTMLInputElement | null)?.value ?? '';
+      const lastName = ($$id('root-last-name') as HTMLInputElement | null)?.value ?? '';
+      const email = ($$id('root-email') as HTMLInputElement | null)?.value ?? '';
+      const employeeNumber = ($$id('root-employee-number') as HTMLInputElement | null)?.value ?? '';
+      return [firstName, lastName, email, employeeNumber].filter((v) => v !== '');
+    },
+  });
 }
 
 /**
@@ -624,6 +668,25 @@ export function editRootUserHandler(userId: number): void {
     ],
     passwordToggleCleanup,
   );
+
+  // Setup password strength validation
+  setupPasswordStrength({
+    passwordFieldId: 'root-password',
+    strengthContainerId: 'root-password-strength-container',
+    strengthBarId: 'root-password-strength-bar',
+    strengthLabelId: 'root-password-strength-label',
+    strengthTimeId: 'root-password-strength-time',
+    feedbackContainerId: 'root-password-feedback',
+    feedbackWarningId: 'root-password-feedback-warning',
+    feedbackSuggestionsId: 'root-password-feedback-suggestions',
+    getUserInputs: () => {
+      const firstName = ($$id('root-first-name') as HTMLInputElement | null)?.value ?? '';
+      const lastName = ($$id('root-last-name') as HTMLInputElement | null)?.value ?? '';
+      const email = ($$id('root-email') as HTMLInputElement | null)?.value ?? '';
+      const employeeNumber = ($$id('root-employee-number') as HTMLInputElement | null)?.value ?? '';
+      return [firstName, lastName, email, employeeNumber].filter((v) => v !== '');
+    },
+  });
 }
 
 /**

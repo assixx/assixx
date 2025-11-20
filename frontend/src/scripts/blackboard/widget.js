@@ -47,18 +47,18 @@ class BlackboardWidget {
 
   render() {
     this.container.innerHTML = `
-            <div class="blackboard-widget">
-                <div class="blackboard-widget-header">
-                    <h3 class="blackboard-widget-title">
+            <div class="card card--blackboard">
+                <div class="card__header">
+                    <h3 class="card__title">
                         <i class="fas fa-thumbtack"></i>
                         Schwarzes Brett
                     </h3>
-                    <a href="/blackboard" class="blackboard-widget-link">
+                    <a href="/blackboard" class="card--blackboard__link">
                         Alle anzeigen <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
                 <div id="blackboard-widget-content">
-                    <div class="blackboard-widget-loading">
+                    <div class="card--blackboard__loading">
                         <i class="fas fa-spinner fa-spin"></i>
                         <p>Lade Einträge...</p>
                     </div>
@@ -87,7 +87,7 @@ class BlackboardWidget {
     } catch (error) {
       console.error('Error loading blackboard entries:', error);
       contentElement.innerHTML = `
-                <div class="blackboard-widget-empty">
+                <div class="card--blackboard__empty">
                     <i class="fas fa-exclamation-circle"></i>
                     <p>Fehler beim Laden der Einträge</p>
                 </div>
@@ -99,11 +99,11 @@ class BlackboardWidget {
 
   renderEntries() {
     const contentElement = document.querySelector('#blackboard-widget-content');
-    const widgetElement = this.container.querySelector('.blackboard-widget');
+    const widgetElement = this.container.querySelector('.card--blackboard');
 
     if (this.entries.length === 0) {
       contentElement.innerHTML = `
-                <div class="blackboard-widget-empty">
+                <div class="card--blackboard__empty">
                     <i class="fas fa-sticky-note"></i>
                     <p>Keine aktuellen Einträge</p>
                 </div>

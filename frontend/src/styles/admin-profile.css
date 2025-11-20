@@ -1,291 +1,46 @@
-/* Admin Profile Page Styles */
-/* Glassmorphismus Design-Standards */
+/* Admin Profile - Page-Specific Styles */
+/* Design System provides: Cards, Avatar, Forms, Buttons */
+/* This file only contains page-specific layout */
 
-/* Profil Container */
-.profile-container {
-  /* max-width: 800px; */
-  margin: 0 auto;
-}
-
-h1 {
-  margin-bottom: 32px;
-  font-size: 2.5rem;
-  color: var(--primary-color);
-
-  /* animation: fadeInUp 0.6s ease-out; */
-}
-
-/* Glassmorphismus Cards */
+/* ===== CONTAINER WIDTH ===== */
 .profile-card {
-  margin-bottom: var(--spacing-6);
-  padding: var(--spacing-8);
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: var(--shadow-sm);
-
-  /* animation: fadeInUp 0.6s ease-out; */
+  max-width: 800px;
+  margin-right: auto;
+  margin-left: auto;
 }
 
-/* Card Title with accent bar */
-.card-title {
-  display: flex;
-  gap: var(--spacing-2);
-  align-items: center;
-
-  margin: 0 0 var(--spacing-6) 0;
-
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.card-title::before {
-  content: "";
-
-  width: 4px;
-  height: 24px;
-  border-radius: 2px;
-
-  background: var(--primary-color);
-}
-
-.form-control[readonly] {
-  cursor: not-allowed;
-  opacity: 60%;
-}
-
-/* Button Styles - Using Design System base */
-
-.btn-primary {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-  background: rgb(56 189 248 / 20%);
-}
-
-.btn-primary:hover {
-  background: rgb(56 189 248 / 30%);
-  box-shadow: 0 4px 12px rgb(56 189 248 / 30%);
-}
-
-.btn-cancel {
-  border-color: rgb(255 255 255 / 10%);
-  color: var(--text-primary);
-  background: rgb(255 255 255 / 5%);
-}
-
-.btn-cancel:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 10%);
-}
-
-/* Profile Picture Section */
+/* ===== PROFILE PICTURE LAYOUT ===== */
 .profile-picture-section {
   display: flex;
   gap: var(--spacing-8);
   align-items: center;
+  margin-bottom: var(--spacing-8);
 }
 
+/* Blue border ring around avatar (page-specific decoration) */
 .profile-picture-container {
-  position: relative;
-}
-
-.profile-picture-placeholder {
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 120px;
-  height: 120px;
-  border: 2px solid rgb(255 255 255 / 10%);
+  padding: 3px;
+  border: 3px solid rgb(0 142 255 / 30%);
   border-radius: 50%;
-
-  background: rgb(255 255 255 / 5%);
+  background: transparent;
 }
 
-#profile-picture-display.profile-picture-placeholder.avatar-initials {
-  font-size: 2.5rem;
-  font-weight: 600;
-  color: #fff;
-  text-transform: uppercase;
-
-  background: linear-gradient(135deg, #2196f3, #42a5f5);
-}
-
-.profile-picture-placeholder i {
-  font-size: 48px;
-  color: var(--text-secondary);
-}
-
-.profile-picture-placeholder img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-#profile-picture-display img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  object-fit: cover;
-
-  /* padding: 24px; */
-}
-
+/* Button stack (vertical layout) */
 .profile-picture-actions {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
+  gap: var(--spacing-4);
 }
 
-/* Messages */
-.alert {
-  display: flex;
-  gap: var(--spacing-2);
-  align-items: center;
-
+/* ===== FORM LAYOUT ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-6);
   margin-bottom: var(--spacing-6);
-  padding: var(--spacing-3);
-  border-radius: var(--radius-xl);
-
-  /* animation: slideDown 0.3s ease-out; */
 }
 
-.alert-success {
-  border: 1px solid rgb(76 175 80 / 30%);
-  color: #4caf50;
-  background: rgb(76 175 80 / 10%);
-}
-
-.alert-error {
-  border: 1px solid rgb(244 67 54 / 30%);
-  color: #f44336;
-  background: rgb(244 67 54 / 10%);
-}
-
-/* Animations */
-@keyframes fade-in-up {
-  from {
-    transform: translateY(20px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
-
-@keyframes slide-down {
-  from {
-    transform: translateY(-10px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
-
-/* Success Animation */
-.success-overlay {
-  position: fixed;
-  z-index: 2000;
-  top: 0;
-  left: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-
-  background: rgb(0 0 0 / 80%);
-
-  /* animation: fade-in 0.3s ease-out; */
-}
-
-.success-message {
-  padding: var(--spacing-8) calc(var(--spacing-8) * 2);
-  border: 2px solid #4caf50;
-  border-radius: var(--radius-xl);
-
-  text-align: center;
-
-  background: rgb(76 175 80 / 10%);
-  backdrop-filter: blur(20px);
-
-  /* animation: scale-in 0.5s ease-out; */
-}
-
-.success-icon {
-  margin-bottom: var(--spacing-6);
-  font-size: 4rem;
-  color: #4caf50;
-
-  /* animation: checkmark 0.6s ease-out 0.3s both; */
-}
-
-.success-text {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0%;
-  }
-
-  to {
-    opacity: 100%;
-  }
-}
-
-@keyframes scale-in {
-  from {
-    transform: scale(0.8);
-    opacity: 0%;
-  }
-
-  to {
-    transform: scale(1);
-    opacity: 100%;
-  }
-}
-
-@keyframes checkmark {
-  0% {
-    transform: scale(0) rotate(0deg);
-  }
-
-  50% {
-    transform: scale(1.2) rotate(360deg);
-  }
-
-  100% {
-    transform: scale(1) rotate(360deg);
-  }
-}
-
-/* Responsive */
-@media (width <= 768px) {
-  .profile-picture-section {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* Info Box für nicht editierbare Felder */
+/* ===== INFO BOX (Admin-specific: readonly fields info) ===== */
 .info-box {
   margin-bottom: var(--spacing-6);
   padding: var(--spacing-3);
@@ -312,4 +67,16 @@ h1 {
 .non-editable:focus {
   border-color: rgb(255 255 255 / 10%);
   box-shadow: none;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (width <= 768px) {
+  .profile-picture-section {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 }

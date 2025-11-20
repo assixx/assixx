@@ -1,10 +1,12 @@
 /**
  * Shared upload middleware for profile pictures
+ * Uses UUID-based naming like KVP for collision-free filenames
  */
 import { Request } from 'express';
 import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 
 // Ensure upload directory exists
 const uploadDir = 'uploads/profile_pictures/';
@@ -12,7 +14,7 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Configure multer storage
+// Configure multer storage with UUID-based naming
 const storage = multer.diskStorage({
   destination(
     _req: Request,
@@ -26,9 +28,10 @@ const storage = multer.diskStorage({
     file: Express.Multer.File,
     cb: (error: Error | null, filename: string) => void,
   ) {
-    const uniqueSuffix = `${String(Date.now())}-${String(Math.round(Math.random() * 1e9))}`;
-    const extension = path.extname(file.originalname);
-    cb(null, `profile-${uniqueSuffix}${extension}`);
+    // Use UUID v4 for collision-free filenames (same pattern as KVP)
+    const uuid = uuidv4();
+    const extension = path.extname(file.originalname).toLowerCase();
+    cb(null, `${uuid}${extension}`);
   },
 });
 

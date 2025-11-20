@@ -5,6 +5,7 @@
 
 import { $$id, setSafeHTML } from '../../../utils/dom-utils';
 import { resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
+import { setupPasswordStrength, resetPasswordStrengthUI } from '../../../utils/password-strength-integration';
 import { showErrorAlert } from '../../utils/alerts';
 import type { Employee, WindowWithEmployeeHandlers } from './types';
 import { fillBasicFormFields, fillOptionalFormFields, fillAvailabilityFields, setStatusAndClearPasswords } from './ui';
@@ -114,7 +115,7 @@ export function clearFieldValidationStates(): void {
 
 /**
  * Setup live email validation with visual feedback
- * Following manage-root-users pattern
+ * Following manage-root pattern
  */
 function setupEmailValidation(): void {
   const emailField = document.querySelector<HTMLInputElement>(SELECTORS.EMPLOYEE_EMAIL);
@@ -158,7 +159,7 @@ function setupEmailValidation(): void {
 
 /**
  * Setup live password validation with visual feedback
- * Following manage-root-users pattern
+ * Following manage-root pattern
  */
 function setupPasswordValidation(): void {
   const passwordField = document.querySelector<HTMLInputElement>(SELECTORS.EMPLOYEE_PASSWORD);
@@ -289,6 +290,24 @@ export function showAddEmployeeModal(): void {
     passwordToggleCleanup,
   );
 
+  // Setup password strength validation
+  setupPasswordStrength({
+    passwordFieldId: 'employee-password',
+    strengthContainerId: 'employee-password-strength-container',
+    strengthBarId: 'employee-password-strength-bar',
+    strengthLabelId: 'employee-password-strength-label',
+    strengthTimeId: 'employee-password-strength-time',
+    feedbackContainerId: 'employee-password-feedback',
+    feedbackWarningId: 'employee-password-feedback-warning',
+    feedbackSuggestionsId: 'employee-password-feedback-suggestions',
+    getUserInputs: () => {
+      const firstName = ($$id('employee-first-name') as HTMLInputElement | null)?.value ?? '';
+      const lastName = ($$id('employee-last-name') as HTMLInputElement | null)?.value ?? '';
+      const email = ($$id('employee-email') as HTMLInputElement | null)?.value ?? '';
+      return [firstName, lastName, email].filter((v) => v !== '');
+    },
+  });
+
   // Show modal
   if (modal !== null) {
     modal.classList.add(MODAL_ACTIVE_CLASS);
@@ -310,6 +329,7 @@ export function showAddEmployeeModal(): void {
  * Show employee modal for editing existing employee
  * Following manage-admins showEditAdminModal pattern
  */
+// eslint-disable-next-line max-lines-per-function
 export function showEditEmployeeModal(employee: Employee, departmentId?: number, teamId?: number): void {
   console.info('[showEditEmployeeModal] Opening modal for employee:', employee.id);
 
@@ -343,6 +363,24 @@ export function showEditEmployeeModal(employee: Employee, departmentId?: number,
     ],
     passwordToggleCleanup,
   );
+
+  // Setup password strength validation
+  setupPasswordStrength({
+    passwordFieldId: 'employee-password',
+    strengthContainerId: 'employee-password-strength-container',
+    strengthBarId: 'employee-password-strength-bar',
+    strengthLabelId: 'employee-password-strength-label',
+    strengthTimeId: 'employee-password-strength-time',
+    feedbackContainerId: 'employee-password-feedback',
+    feedbackWarningId: 'employee-password-feedback-warning',
+    feedbackSuggestionsId: 'employee-password-feedback-suggestions',
+    getUserInputs: () => {
+      const firstName = ($$id('employee-first-name') as HTMLInputElement | null)?.value ?? '';
+      const lastName = ($$id('employee-last-name') as HTMLInputElement | null)?.value ?? '';
+      const email = ($$id('employee-email') as HTMLInputElement | null)?.value ?? '';
+      return [firstName, lastName, email].filter((v) => v !== '');
+    },
+  });
 
   // Show modal
   if (modal !== null) {
@@ -395,6 +433,13 @@ export function closeEmployeeModal(): void {
 
   // Reset custom dropdowns (form.reset() doesn't reset custom UI)
   resetCustomDropdowns();
+
+  // Reset password strength UI to prevent cached validation state
+  resetPasswordStrengthUI({
+    passwordFieldId: 'employee-password',
+    strengthContainerId: 'employee-password-strength-container',
+    feedbackContainerId: 'employee-password-feedback',
+  });
 
   // Cleanup password toggle event listeners
   passwordToggleCleanup?.abort();

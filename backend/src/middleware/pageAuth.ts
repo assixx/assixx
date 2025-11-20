@@ -105,7 +105,7 @@ const pagePermissions: Partial<Record<string, PageConfig>> = {
     allowedRoles: ['root'],
     redirectOnFail: ADMIN_DASHBOARD_PATH,
   },
-  '/manage-root-users': {
+  '/manage-root': {
     allowedRoles: ['root'],
     redirectOnFail: ROOT_DASHBOARD_PATH,
   },

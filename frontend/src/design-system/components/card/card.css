@@ -1,0 +1,160 @@
+/**
+ * Card Component - Glassmorphic Content Cards
+ *
+ * Unified card styling for all profile and content pages.
+ * Features:
+ * - Glassmorphism effects (backdrop-filter)
+ * - Accent bar on card titles (gradient left border)
+ * - Consistent spacing and colors
+ * - Responsive and accessible
+ *
+ * USAGE:
+ *   <div class="card">
+ *     <h2 class="card__title">Title</h2>
+ *     <div class="card__body">Content</div>
+ *   </div>
+ *
+ *   <!-- Legacy Support (will be migrated) -->
+ *   <div class="profile-card">
+ *     <h2 class="card-title">Title</h2>
+ *   </div>
+ *
+ * MIGRATION NOTE:
+ * This component consolidates duplicate card styles from 8 files:
+ * - root-profile.css, admin-profile.css, account-settings.css
+ * - dashboard-theme.css, blackboard.css, style.css
+ * - tenant-deletion-status.css, logs.css
+ */
+
+/* ========================================
+   BASE CARD
+   ======================================== */
+
+.card,
+.profile-card {
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-8);
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: var(--radius-xl);
+
+  background: rgb(255 255 255 / 2%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: var(--shadow-sm);
+
+  transition: all var(--transition-normal);
+}
+
+.card:hover,
+.profile-card:hover {
+  border-color: #2196f380;
+}
+
+/* ========================================
+   CARD TITLE WITH ACCENT BAR
+   ======================================== */
+
+.card__title,
+.card-title {
+  display: flex;
+  gap: var(--spacing-2);
+  align-items: center;
+
+  margin: 0 0 var(--spacing-6) 0;
+
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+/* Accent bar (left gradient border) */
+.card__title::before,
+.card-title::before {
+  content: "";
+
+  width: 4px;
+  height: 24px;
+  border-radius: 2px;
+
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
+}
+
+/* ========================================
+   CARD BODY
+   ======================================== */
+
+.card__body {
+  color: var(--color-text-primary);
+}
+
+/* ========================================
+   CARD FOOTER
+   ======================================== */
+
+.card__footer {
+  margin-top: var(--spacing-6);
+  padding-top: var(--spacing-6);
+  border-top: 1px solid rgb(255 255 255 / 10%);
+}
+
+/* ========================================
+   SIZE VARIANTS
+   ======================================== */
+
+.card--compact {
+  padding: var(--spacing-6);
+}
+
+.card--compact .card__title {
+  margin-bottom: var(--spacing-4);
+  font-size: 1.125rem;
+}
+
+/* ========================================
+   COLOR VARIANTS
+   ======================================== */
+
+/* Info card (blue accent) */
+.card--info .card__title::before {
+  background: linear-gradient(180deg, #3b82f6, #2563eb);
+}
+
+/* Success card (green accent) */
+.card--success .card__title::before {
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+}
+
+/* Warning card (orange accent) */
+.card--warning .card__title::before {
+  background: linear-gradient(180deg, #fb923c, #f97316);
+}
+
+/* Danger card (red accent) */
+.card--danger .card__title::before {
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+}
+
+/* ========================================
+   ACCESSIBILITY
+   ======================================== */
+
+.card:focus-visible,
+.profile-card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   RESPONSIVE
+   ======================================== */
+
+@media (width <= 768px) {
+  .card,
+  .profile-card {
+    padding: var(--spacing-6);
+  }
+
+  .card__title,
+  .card-title {
+    font-size: 1.125rem;
+  }
+}

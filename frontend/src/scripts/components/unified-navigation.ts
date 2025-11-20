@@ -56,7 +56,6 @@ interface UserProfileResponse extends User {
   employeeId?: string;
   employeeNumber?: string;
   profilePicture?: string;
-  profilePictureUrl?: string;
   tenantId?: number;
   // Additional user properties that may come from API but aren't in base User type
   data?: {
@@ -91,7 +90,7 @@ const DISPLAY_INLINE_BLOCK = 'inline-block';
 const accessControlData: Record<string, ('root' | 'admin' | 'employee')[]> = {
   // Root-only pages
   [ROOT_DASHBOARD_URL]: ['root'],
-  '/manage-root-users': ['root'],
+  '/manage-root': ['root'],
   '/root-features': ['root'],
   '/root-profile': ['root'],
   '/tenant-deletion-status': ['root'],
@@ -551,6 +550,7 @@ class UnifiedNavigation {
       this.updateCompanyInfo(userData);
       this.updateUserInfo(userData);
       this.updateEmployeeNumber(userData);
+      this.updateAdminPosition(userData);
       this.updateHeaderUserName(userData);
       this.updateAvatars(userData);
 
@@ -626,6 +626,34 @@ class UnifiedNavigation {
     }
   }
 
+  /**
+   * Update admin position display in sidebar
+   * Only shows position for admin role
+   */
+  private updateAdminPosition(userData: UserProfileResponse): void {
+    const positionElement = $$('#sidebar-user-position');
+    if (!positionElement) return;
+
+    // Only show for admin role
+    if (this.currentRole !== 'admin') {
+      positionElement.style.display = 'none';
+      return;
+    }
+
+    // Extract position from userData (supports both camelCase and snake_case)
+    const position =
+      (userData as { position?: string }).position ?? (userData.data as { position?: string } | undefined)?.position;
+
+    if (position !== undefined && position !== '') {
+      console.info('[UnifiedNav] Setting admin position to:', position);
+      positionElement.textContent = position;
+      positionElement.style.display = 'block';
+    } else {
+      console.info('[UnifiedNav] No position found for admin');
+      positionElement.style.display = 'none';
+    }
+  }
+
   private updateHeaderUserName(userData: UserProfileResponse): void {
     const headerUserName = $$('#user-name');
     if (!headerUserName) return;
@@ -662,11 +690,12 @@ class UnifiedNavigation {
   }
 
   private extractProfilePicture(userData: UserProfileResponse): string | null {
+    // API v2 returns profilePicture (camelCase via dbToApi), try both for transition
     return (
-      userData.profilePictureUrl ??
-      userData.profilePicture ??
       userData.data?.profilePicture ??
+      userData.profilePicture ??
       userData.data?.profile_picture ??
+      userData.profile_picture ??
       null
     );
   }
@@ -870,7 +899,7 @@ class UnifiedNavigation {
         id: 'profile',
         icon: this.getSVGIcon('user'),
         label: 'Mein Profil',
-        url: '/profile',
+        url: '/employee-profile',
       },
     ];
   }
@@ -891,7 +920,7 @@ class UnifiedNavigation {
         id: 'root-users',
         icon: this.getSVGIcon('user-shield'),
         label: 'Root User',
-        url: '/manage-root-users',
+        url: '/manage-root',
       },
       {
         id: 'admins',
@@ -1253,11 +1282,8 @@ class UnifiedNavigation {
     const lastName = this.userProfileData?.lastName ?? this.userProfileData?.last_name ?? '';
     const displayName = firstName !== '' && lastName !== '' ? `${firstName} ${lastName}` : userName;
 
-    let profilePicture =
-      this.userProfileData?.profilePictureUrl ??
-      this.userProfileData?.profilePicture ??
-      this.userProfileData?.profile_picture ??
-      null;
+    // API v2 returns profilePicture (camelCase via dbToApi), fallback for transition
+    let profilePicture = this.userProfileData?.profilePicture ?? this.userProfileData?.profile_picture ?? null;
 
     if (profilePicture === '') {
       profilePicture = null;
@@ -1566,6 +1592,7 @@ class UnifiedNavigation {
                         </div>
                         <div class="user-name" id="sidebar-user-name">${this.currentUser?.email ?? 'User'}</div>
                         <div class="user-full-name" id="sidebar-user-fullname"></div>
+                        <div class="user-position" id="sidebar-user-position" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); margin-top: 2px; display: none;"></div>
                         <div class="user-employee-number" id="sidebar-employee-number" style="font-size: 13px; color: rgba(255, 255, 255, 0.6); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
                         <span id="role-indicator" class="role-badge ${this.currentRole ?? ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
