@@ -210,11 +210,12 @@ export class SignupFormController {
 
 ### Other
 
-- [ ] index.html (landing page)
-- [ ] hilfe.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] storage-upgrade.html --skip wir machen das zum schluss, weil größere refactoring
+- [x] index.html (landing page) - **COMPLETED 2025-11-21** - Full migration: 712→472 lines (-34%), 5 TypeScript modules, CSS cleanup (-158 lines)
+- [x] storage-upgrade.html - **COMPLETED 2025-11-21** - Full migration: 420→178 lines (-58%), 1 TypeScript module (256 lines inline JS extracted), 4 inline styles → CSS classes, alert() → toasts, btn-cancel → btn-secondary
+- [x] rate-limit.html - **COMPLETED 2025-11-21** - Full migration: 100→38 lines (-62%), 1 TypeScript module (73 lines inline JS → 133 lines structured), Design System `.card` + Tailwind utilities, CSS: 119→48 lines (-60%), only domain-specific animations kept (fade-in-up, pulse), countdown timer with auto-redirect
+
+last one
 - [ ] tenant-deletion-status.html
-- [ ] rate-limit.html
 
 
 ## Migration Strategy

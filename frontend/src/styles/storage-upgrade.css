@@ -5,8 +5,6 @@
      GLASSMORPHISMUS ÜBERSCHREIBUNGEN
      ======================================== */
 
-/* Body Background - Dramatischer Verlauf */
-
 /* Storage Plans Grid */
 .storage-plans-grid {
   display: grid;
@@ -165,18 +163,6 @@
     rgb(255 255 255 / 20%)
   );
   background-size: 20px 20px;
-
-  /* animation: progress-stripes 1s linear infinite; */
-}
-
-@keyframes progress-stripes {
-  0% {
-    background-position: 0 0;
-  }
-
-  100% {
-    background-position: 20px 20px;
-  }
 }
 
 /* FAQ Section */
@@ -206,4 +192,24 @@
 .faq-answer {
   line-height: 1.6;
   color: var(--text-secondary);
+}
+
+/* Storage Percentage Text */
+.storage-percentage-text {
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* Custom Storage Section */
+.custom-storage-section {
+  margin-top: var(--spacing-8);
+}
+
+.custom-storage-content {
+  padding: var(--spacing-8);
+  text-align: center;
+}
+
+.custom-storage-description {
+  margin-bottom: var(--spacing-6);
 }

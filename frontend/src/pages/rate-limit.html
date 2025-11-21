@@ -7,92 +7,36 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/rate-limit.css" />
+    <!-- Google Material Symbols -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=hourglass_check"
+    />
   </head>
-  <body>
-    <div class="rate-limit-card">
-      <div class="icon">⌛</div>
-      <h1>Zu viele Anfragen</h1>
-      <p class="message">
+  <body class="min-h-screen flex items-center justify-center p-5">
+    <div class="card w-full max-w-[450px] text-center animate-fade-in-up">
+      <span class="rate-limit-icon material-symbols-outlined">hourglass_check</span>
+      <h1 class="text-[28px] font-bold text-[var(--color-text-primary)] mb-4">Zu viele Anfragen</h1>
+      <p class="text-base leading-relaxed text-[var(--color-text-secondary)] mb-8">
         Sie haben die maximale Anzahl an Anfragen überschritten. Bitte warten Sie einen Moment, bevor Sie es erneut versuchen.
       </p>
-      <div class="retry-info">
-        <div class="retry-label">Versuchen Sie es wieder in:</div>
-        <div class="retry-time countdown" id="countdown">0:20</div>
+      <div class="bg-[rgb(33_150_243/10%)] border border-[rgb(33_150_243/20%)] rounded-[var(--radius-xl)] p-6 mb-8">
+        <div class="text-sm text-[var(--color-text-secondary)] mb-3">Versuchen Sie es wieder in:</div>
+        <div class="text-[32px] font-bold text-[var(--color-primary)] countdown" id="countdown">0:20</div>
       </div>
     </div>
 
-    <script>
-      // Clear tokens to prevent further requests
-      localStorage.removeItem('token');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userRole');
-      sessionStorage.clear();
+    <!-- Rate Limit Controller -->
+    <script type="module">
+      import { RateLimitController } from '/scripts/rate-limit/rate-limit-controller.js';
 
-      // Constants
-      const RATE_LIMIT_DURATION = 20 * 1000; // 20 seconds in milliseconds
-      const countdownEl = document.querySelector('#countdown');
-
-      // Get or set rate limit timestamp
-      let rateLimitTimestamp = localStorage.getItem('rateLimitTimestamp');
-
-      if (!rateLimitTimestamp) {
-        // First time on rate limit page - set timestamp
-        rateLimitTimestamp = Date.now();
-        localStorage.setItem('rateLimitTimestamp', rateLimitTimestamp);
+      // Initialize controller when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          new RateLimitController().init();
+        });
       } else {
-        rateLimitTimestamp = parseInt(rateLimitTimestamp);
-        // Clean up old timestamp if expired (>20 seconds old)
-        if (Date.now() - rateLimitTimestamp > RATE_LIMIT_DURATION) {
-          localStorage.removeItem('rateLimitTimestamp');
-          rateLimitTimestamp = Date.now();
-          localStorage.setItem('rateLimitTimestamp', rateLimitTimestamp);
-        }
-      }
-
-      // Calculate remaining time
-      function getRemainingTime() {
-        const elapsed = Date.now() - rateLimitTimestamp;
-        const remaining = Math.max(0, RATE_LIMIT_DURATION - elapsed);
-        return Math.floor(remaining / 1000); // Convert to seconds
-      }
-
-      let timeLeft = getRemainingTime();
-      let timer;
-
-      function updateCountdown() {
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        countdownEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-
-        if (timeLeft <= 0) {
-          countdownEl.textContent = 'Weiterleitung...';
-          if (timer) clearInterval(timer);
-
-          // Clear the timestamp
-          localStorage.removeItem('rateLimitTimestamp');
-
-          // Automatically redirect to login after timer expires
-          // Important: Only pass ratelimit parameter, not session=expired
-          setTimeout(() => {
-            window.location.href = '/login?ratelimit=expired';
-          }, 1000);
-        }
-
-        timeLeft--;
-      }
-
-      // Start timer if there's time remaining
-      if (timeLeft > 0) {
-        timer = setInterval(updateCountdown, 1000);
-        updateCountdown(); // Initial call
-      } else {
-        // Time already expired, redirect immediately
-        localStorage.removeItem('rateLimitTimestamp');
-        countdownEl.textContent = 'Weiterleitung...';
-        setTimeout(() => {
-          window.location.href = '/login?ratelimit=expired';
-        }, 500);
+        new RateLimitController().init();
       }
     </script>
   </body>
