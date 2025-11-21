@@ -22,7 +22,7 @@
           <a href="#security">Sicherheit</a>
           <a href="#pricing">Preise</a>
           <a href="/login">Anmelden</a>
-          <a href="/signup" class="btn btn-primary" style="background: none">Registrieren</a>
+          <a href="/signup" class="btn btn-primary btn-primary--transparent">Registrieren</a>
         </div>
       </nav>
     </header>
@@ -32,7 +32,7 @@
       <p>
         Verbinden Sie Ihre Produktionsarbeiter mit der Verwaltung. Dokumentenverwaltung, Kommunikation und mehr - alles in einer Plattform.
       </p>
-      <a href="/signup" class="btn btn-primary" style="background: none">Jetzt registrieren</a>
+      <a href="/signup" class="btn btn-primary btn-primary--transparent">Jetzt registrieren</a>
     </section>
 
     <section class="features" id="features">
@@ -81,45 +81,15 @@
     </section>
 
     <!-- Datensicherheit & Privatsphäre Section -->
-    <section
-      class="security"
-      id="security"
-      style="
-        padding: calc(var(--spacing-8) * 2) 5%;
-        background: rgba(255, 255, 255, 0.01);
-        backdrop-filter: blur(10px);
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      "
-    >
-      <div style="max-width: 1200px; margin: 0 auto">
-        <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: var(--spacing-6); color: var(--primary-color); font-weight: 700">
-          🔒 Ihre Daten sind bei uns sicher
-        </h2>
-        <p
-          style="
-            text-align: center;
-            color: var(--text-secondary);
-            margin-bottom: calc(var(--spacing-8) * 1.5);
-            font-size: 1.1rem;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            line-height: 1.8;
-          "
-        >
+    <section class="security-section" id="security">
+      <div class="security-section__container">
+        <h2 class="security-section__title">🔒 Ihre Daten sind bei uns sicher</h2>
+        <p class="security-section__subtitle">
           Datenschutz und Sicherheit haben bei uns höchste Priorität. Ihre sensiblen Unternehmensdaten sind durch modernste Verschlüsselung
           und strikte Sicherheitsmaßnahmen geschützt.
         </p>
 
-        <div
-          style="
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: var(--spacing-8);
-            margin-bottom: calc(var(--spacing-8) * 2);
-          "
-        >
+        <div class="security-features-grid">
           <!-- Sicherheits-Feature Cards -->
           <div class="feature-card u-text-center">
             <div class="u-fs-3xl u-mb-md">🇩🇪</div>
@@ -159,42 +129,14 @@
         </div>
 
         <!-- Enterprise On-Premise Box -->
-        <div
-          style="
-            background: rgba(33, 150, 243, 0.05);
-            backdrop-filter: blur(20px);
-            border: 2px solid rgba(33, 150, 243, 0.3);
-            border-radius: var(--radius-3xl);
-            padding: calc(var(--spacing-8) * 1.5);
-            text-align: center;
-            box-shadow:
-              0 8px 32px rgba(33, 150, 243, 0.2),
-              inset 0 1px 0 rgba(255, 255, 255, 0.1);
-          "
-        >
-          <h3 style="color: var(--primary-color); font-size: 2rem; margin-bottom: var(--spacing-6)">🏢 Enterprise On-Premise Lösung</h3>
-          <p
-            style="
-              font-size: 1.1rem;
-              margin-bottom: var(--spacing-6);
-              line-height: 1.8;
-              max-width: 800px;
-              margin-left: auto;
-              margin-right: auto;
-            "
-          >
+        <div class="enterprise-box">
+          <h3 class="enterprise-box__title">🏢 Enterprise On-Premise Lösung</h3>
+          <p class="enterprise-box__description">
             Für Unternehmen mit besonderen Sicherheitsanforderungen bieten wir die Möglichkeit, Assixx vollständig auf Ihren eigenen Servern
             zu betreiben.
             <strong>100% Ihrer Daten bleiben in Ihrer eigenen Infrastruktur.</strong>
           </p>
-          <div
-            style="
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-              gap: var(--spacing-6);
-              margin: var(--spacing-8) 0;
-            "
-          >
+          <div class="enterprise-features-grid">
             <div>
               <div class="u-fs-xl u-mb-sm">✅</div>
               <p class="u-fw-600">Eigene Server</p>
@@ -216,38 +158,13 @@
               <p class="u-fs-09rem u-opacity-80">Dediziertes Enterprise-Team</p>
             </div>
           </div>
-          <a
-            href="/signup?plan=enterprise"
-            class="btn btn-primary"
-            style="background: none; font-size: 1.1rem; padding: var(--spacing-4) calc(var(--spacing-8) * 1.5)"
-          >
-            Enterprise-Beratung anfragen
-          </a>
+          <a href="/signup?plan=enterprise" class="btn btn-primary enterprise-box__button">Enterprise-Beratung anfragen</a>
         </div>
 
         <!-- Trust Badges -->
-        <div style="margin-top: calc(var(--spacing-8) * 2); text-align: center">
-          <p
-            style="
-              color: var(--text-secondary);
-              margin-bottom: var(--spacing-6);
-              font-size: 0.9rem;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-            "
-          >
-            Vertraut von führenden Industrieunternehmen
-          </p>
-          <div
-            style="
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              gap: calc(var(--spacing-8) * 1.5);
-              flex-wrap: wrap;
-              opacity: 0.7;
-            "
-          >
+        <div class="trust-badges">
+          <p class="trust-badges__label">Vertraut von führenden Industrieunternehmen</p>
+          <div class="trust-badges__list">
             <div class="u-fs-09rem">🔒 SSL-verschlüsselt</div>
             <div class="u-fs-09rem">✅ DSGVO-konform</div>
             <div class="u-fs-09rem">🇩🇪 Made in Germany</div>
@@ -259,17 +176,7 @@
 
     <section class="pricing" id="pricing">
       <h2>Einfache, transparente Preise</h2>
-      <p
-        style="
-          text-align: center;
-          color: var(--text-secondary);
-          margin-bottom: calc(var(--spacing-8) * 1.5);
-          font-size: 1.1rem;
-          opacity: 0.8;
-        "
-      >
-        Alle Pläne beinhalten 14 Tage kostenlose Testphase
-      </p>
+      <p class="pricing-subtitle">Alle Pläne beinhalten 14 Tage kostenlose Testphase</p>
 
       <div class="pricing-grid">
         <div class="pricing-card">
@@ -285,19 +192,13 @@
             <li>✅ Schwarzes Brett</li>
             <li>✅ Basis-Support</li>
           </ul>
-          <div style="margin-top: auto; padding-top: var(--spacing-6)">
-            <a
-              href="/signup?plan=basic"
-              class="btn btn-cancel"
-              style="width: 100%; padding: var(--spacing-4) var(--spacing-8); font-size: 16px; font-weight: 600"
-            >
-              Jetzt starten
-            </a>
+          <div class="pricing-card__footer">
+            <a href="/signup?plan=basic" class="btn btn-secondary pricing-card__button">Jetzt starten</a>
           </div>
         </div>
 
         <div class="pricing-card featured u-relative">
-          <div class="popular-badge">Beliebt</div>
+          <span class="badge badge--primary badge--lg badge--uppercase pricing-card__badge">Beliebt</span>
           <h3>Professional</h3>
           <div class="price">
             €99
@@ -312,12 +213,8 @@
             <li>✅ Chat-System</li>
             <li>✅ Priority Support</li>
           </ul>
-          <div style="margin-top: auto; padding-top: var(--spacing-6)">
-            <a
-              href="/signup?plan=professional"
-              class="btn btn-primary"
-              style="width: 100%; padding: var(--spacing-4) var(--spacing-8); font-size: 16px; font-weight: 600; background: none"
-            >
+          <div class="pricing-card__footer">
+            <a href="/signup?plan=professional" class="btn btn-primary pricing-card__button pricing-card__button--transparent">
               Kostenlos testen
             </a>
           </div>
@@ -339,21 +236,15 @@
             <li>✅ 24/7 Support</li>
             <li>✅ SLA-Garantie</li>
           </ul>
-          <div style="margin-top: auto; padding-top: var(--spacing-6)">
-            <a
-              href="/signup?plan=enterprise"
-              class="btn btn-cancel"
-              style="width: 100%; padding: var(--spacing-4) var(--spacing-8); font-size: 16px; font-weight: 600"
-            >
-              Kontakt aufnehmen
-            </a>
+          <div class="pricing-card__footer">
+            <a href="/signup?plan=enterprise" class="btn btn-secondary pricing-card__button">Kontakt aufnehmen</a>
           </div>
         </div>
       </div>
 
       <!-- Feature Vergleichstabelle -->
-      <div class="feature-comparison" style="margin-top: 4rem">
-        <h3 style="text-align: center; margin-bottom: 2rem">Detaillierter Feature-Vergleich</h3>
+      <div class="feature-comparison">
+        <h3 class="feature-comparison__title">Detaillierter Feature-Vergleich</h3>
         <div class="comparison-table-wrapper">
           <table class="comparison-table">
             <thead>
@@ -551,7 +442,7 @@
 
           <div class="form-field">
             <label class="form-field__label form-field__label--required">Ihr Name</label>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+            <div class="form-name-grid">
               <input type="text" id="first_name" name="first_name" class="form-field__control" placeholder="Vorname" required />
               <input type="text" id="last_name" name="last_name" class="form-field__control" placeholder="Nachname" required />
             </div>
@@ -571,141 +462,12 @@
           </div>
 
           <button type="submit" class="btn btn-primary u-w-full">Kostenlos registrieren</button>
-          <button type="button" class="btn btn-cancel" style="width: 100%; margin-top: 1rem" data-action="hide-signup">Abbrechen</button>
+          <button type="button" class="btn btn-secondary btn-cancel--full" data-action="hide-signup">Abbrechen</button>
         </form>
       </div>
     </div>
 
-    <script>
-      // Scroll-basierter Parallax-Effekt für Popular Badge
-      const badge = document.querySelector('.popular-badge');
-      const pricingSection = document.querySelector('#pricing');
-
-      function handleBadgeScroll() {
-        if (!badge || !pricingSection) return;
-
-        const scrollY = window.scrollY;
-        const pricingTop = pricingSection.offsetTop;
-        const pricingHeight = pricingSection.offsetHeight;
-        const windowHeight = window.innerHeight;
-
-        // Badge-Position relativ zum Viewport
-        const badgeViewportTop = pricingTop - scrollY;
-        const scrollProgress = Math.max(0, Math.min(1, (windowHeight - badgeViewportTop) / (windowHeight + pricingHeight)));
-
-        // Parallax-Effekt Berechnung
-        const parallaxOffset = scrollProgress * 20 - 10; // -10 bis +10px
-        const blurAmount = Math.abs(scrollProgress - 0.5) * 2; // 0 bis 1
-        const brightness = 1 + scrollProgress * 0.2; // 1 bis 1.2
-
-        // CSS Custom Properties setzen
-        badge.style.setProperty('--scroll-offset', `${parallaxOffset}px`);
-        badge.style.setProperty('--scroll-blur', `${blurAmount}px`);
-        badge.style.setProperty('--scroll-brightness', brightness);
-
-        // Klasse für Scroll-Aktivierung
-        if (scrollProgress > 0.1 && scrollProgress < 0.9) {
-          badge.classList.add('scroll-active');
-        } else {
-          badge.classList.remove('scroll-active');
-        }
-      }
-
-      // Scroll Event Listener mit Throttling
-      let scrollTimer;
-      window.addEventListener('scroll', () => {
-        if (scrollTimer) return;
-
-        scrollTimer = setTimeout(() => {
-          handleBadgeScroll();
-          scrollTimer = null;
-        }, 16); // ~60fps
-      });
-
-      // Initial call
-      handleBadgeScroll();
-
-      // Event delegation for action buttons
-      document.addEventListener('click', (e) => {
-        const target = e.target;
-        const button = target.closest('[data-action]');
-
-        if (!button) return;
-
-        const action = button.dataset.action;
-
-        if (action === 'reload-page') {
-          window.location.reload();
-        } else if (action === 'hide-signup') {
-          hideSignup();
-        }
-      });
-
-      function showSignup(plan = null) {
-        document.querySelector('#signupModal').style.display = 'flex';
-        if (plan) {
-          // Plan vorauswählen wenn von Preistabelle kommend
-          localStorage.setItem('selectedPlan', plan);
-        }
-      }
-
-      function hideSignup() {
-        document.querySelector('#signupModal').style.display = 'none';
-      }
-
-      // Subdomain-Validierung
-      const subdomainInput = document.querySelector('input[name="subdomain"]');
-      subdomainInput.addEventListener('input', (e) => {
-        const value = e.target.value.toLowerCase();
-        e.target.value = value;
-
-        // Nur Kleinbuchstaben, Zahlen und Bindestriche
-        if (!/^[a-z0-9-]*$/.test(value)) {
-          document.querySelector('#subdomainError').textContent = 'Nur Kleinbuchstaben, Zahlen und Bindestriche erlaubt';
-        } else {
-          document.querySelector('#subdomainError').textContent = '';
-        }
-      });
-
-      // Form Submit
-      document.querySelector('#signupForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(e.target);
-        const data = Object.fromEntries(formData.entries());
-
-        try {
-          const response = await fetch('/api/v2/signup', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              companyName: data.company_name,
-              subdomain: data.subdomain,
-              email: data.company_email,
-              phone: data.phone,
-              adminEmail: data.email,
-              adminPassword: data.password,
-              adminFirstName: data.first_name,
-              adminLastName: data.last_name,
-              selectedPlan: localStorage.getItem('selectedPlan') || 'premium',
-            }),
-          });
-
-          const result = await response.json();
-
-          if (result.success) {
-            alert(`Erfolg! Sie können sich jetzt unter ${data.subdomain}.assixx.com anmelden.`);
-            // Später: Direkte Weiterleitung mit Auto-Login
-            window.location.href = `/login`;
-          } else {
-            alert(result.error?.message || 'Fehler bei der Registrierung');
-          }
-        } catch (error) {
-          alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
-        }
-      });
-    </script>
+    <!-- Landing Page TypeScript Module -->
+    <script type="module" src="/scripts/landing/index.js"></script>
   </body>
 </html>

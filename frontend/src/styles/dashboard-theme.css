@@ -36,12 +36,6 @@
   text-decoration: none;
 }
 
-.logo {
-  width: auto;
-  height: 2.5rem; /* 40px */
-  filter: none;
-}
-
 .logo-text {
   font-size: 1.25rem; /* 20px */
   font-weight: 600;

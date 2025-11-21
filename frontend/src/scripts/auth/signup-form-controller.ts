@@ -19,6 +19,8 @@ import {
 } from './signup-validators.js';
 import { DropdownController } from './signup-dropdown.js';
 import { prepareSignupData, submitSignup, getErrorMessage, isSignupSuccessful } from './signup-api.js';
+import { setupPasswordStrength } from '../../utils/password-strength-integration.js';
+import { $$id } from '../../utils/dom-utils.js';
 
 /**
  * Signup Form Controller
@@ -52,6 +54,7 @@ export class SignupFormController {
   public init(): void {
     this.setupEventListeners();
     this.setupRealtimeValidation();
+    this.setupPasswordStrengthValidation();
     this.setupHelp();
   }
 
@@ -167,6 +170,31 @@ export class SignupFormController {
       emailConfirmInput.addEventListener('input', checkEmailMatch);
       emailInput.addEventListener('input', checkEmailMatch);
     }
+  }
+
+  /**
+   * Setup password strength validation
+   * Uses zxcvbn-ts for intelligent password strength analysis
+   */
+  private setupPasswordStrengthValidation(): void {
+    setupPasswordStrength({
+      passwordFieldId: 'password',
+      strengthContainerId: 'password-strength-container',
+      strengthBarId: 'password-strength-bar',
+      strengthLabelId: 'password-strength-label',
+      strengthTimeId: 'password-strength-time',
+      feedbackContainerId: 'password-feedback',
+      feedbackWarningId: 'password-feedback-warning',
+      feedbackSuggestionsId: 'password-feedback-suggestions',
+      errorElementId: 'password-error',
+      getUserInputs: () => {
+        const companyName = ($$id('company_name') as HTMLInputElement | null)?.value ?? '';
+        const firstName = ($$id('first_name') as HTMLInputElement | null)?.value ?? '';
+        const lastName = ($$id('last_name') as HTMLInputElement | null)?.value ?? '';
+        const email = ($$id('email') as HTMLInputElement | null)?.value ?? '';
+        return [companyName, firstName, lastName, email].filter((v) => v !== '');
+      },
+    });
   }
 
   /**

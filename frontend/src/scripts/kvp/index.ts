@@ -236,7 +236,7 @@ class KvpPage {
 
     // View button for all
     buttons.push(`
-      <button class="action-btn" data-action="view" data-id="${suggestion.id}">
+      <button class="action-btn" data-action="view" data-uuid="${suggestion.uuid}">
         <i class="fas fa-eye"></i> Ansehen
       </button>
     `);
@@ -270,9 +270,15 @@ class KvpPage {
         e.stopPropagation();
         const btnEl = btn as HTMLElement;
         const action = btnEl.dataset.action;
-        const id = btnEl.dataset.id;
-        if (action !== undefined && action !== '' && id !== undefined && id !== '') {
-          void this.handleAction(action, Number.parseInt(id, 10));
+        const uuid = btnEl.dataset.uuid; // For view action
+        const id = btnEl.dataset.id; // For share/unshare actions
+
+        if (action !== undefined && action !== '') {
+          if (action === 'view' && uuid !== undefined && uuid !== '') {
+            void this.handleAction(action, uuid);
+          } else if (id !== undefined && id !== '') {
+            void this.handleAction(action, Number.parseInt(id, 10));
+          }
         }
       });
     });
@@ -280,17 +286,19 @@ class KvpPage {
 
   /**
    * Handle action button clicks
+   * @param action - The action to perform (view, share, unshare)
+   * @param idOrUuid - Either numeric ID (for share/unshare) or string UUID (for view)
    */
-  private async handleAction(action: string, id: number): Promise<void> {
+  private async handleAction(action: string, idOrUuid: number | string): Promise<void> {
     switch (action) {
       case 'view':
-        this.viewSuggestion(id);
+        this.viewSuggestion(idOrUuid as string);
         break;
       case 'share':
-        await this.shareSuggestion(id);
+        await this.shareSuggestion(idOrUuid as number);
         break;
       case 'unshare':
-        await this.unshareSuggestion(id);
+        await this.unshareSuggestion(idOrUuid as number);
         break;
     }
   }

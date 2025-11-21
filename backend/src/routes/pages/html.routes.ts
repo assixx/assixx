@@ -54,7 +54,6 @@ router.get(
   servePage('profile-picture'),
 );
 router.get('/settings', rateLimiter.authenticated, authenticateToken, servePage('settings'));
-router.get('/hilfe', rateLimiter.authenticated, authenticateToken, servePage('hilfe'));
 router.get('/chat', rateLimiter.authenticated, authenticateToken, servePage('chat'));
 router.get('/blackboard', rateLimiter.authenticated, authenticateToken, servePage('blackboard'));
 router.get('/calendar', rateLimiter.authenticated, authenticateToken, servePage('calendar'));
