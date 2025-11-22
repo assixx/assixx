@@ -194,7 +194,7 @@ export function getPositionDisplay(position: string): string {
  */
 export function getStatusBadge(admin: Admin): string {
   // Check if admin is archived
-  if (admin.isArchived === true) {
+  if (admin.isArchived) {
     return '<span class="badge badge--error">Archiviert</span>';
   }
 
@@ -213,7 +213,7 @@ export function getStatusBadge(admin: Admin): string {
  * @returns Status value string ('active', 'inactive', or 'archived')
  */
 export function getStatusValue(admin: Admin): string {
-  if (admin.isArchived === true) {
+  if (admin.isArchived) {
     return 'archived';
   }
   if (admin.isActive) {
@@ -505,8 +505,8 @@ export async function updatePermissions(adminId: number): Promise<void> {
 // ===== FORM UI HELPERS =====
 
 export function fillAdminFormFields(admin: Admin): void {
-  ($('#admin-first-name') as HTMLInputElement).value = admin.firstName;
-  ($('#admin-last-name') as HTMLInputElement).value = admin.lastName;
+  ($('#admin-first-name') as HTMLInputElement).value = admin.firstName ?? '';
+  ($('#admin-last-name') as HTMLInputElement).value = admin.lastName ?? '';
   ($(SELECTORS.ADMIN_EMAIL) as HTMLInputElement).value = admin.email;
   ($(SELECTORS.ADMIN_EMAIL_CONFIRM) as HTMLInputElement).value = admin.email;
   ($(SELECTORS.ADMIN_EMPLOYEE_NUMBER) as HTMLInputElement).value = admin.employeeNumber ?? '';
@@ -947,7 +947,7 @@ export async function showPermissionsModal(adminId: number): Promise<void> {
   const adminNameSpan = $$('#perm-admin-name');
   const adminEmailSpan = $$('#perm-admin-email');
   if (adminNameSpan) {
-    adminNameSpan.textContent = `${admin.firstName} ${admin.lastName}`;
+    adminNameSpan.textContent = `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim();
   }
   if (adminEmailSpan) {
     adminEmailSpan.textContent = admin.email;

@@ -60,17 +60,54 @@ export default defineConfig({
         chunkFileNames: 'js/[name]-[hash].js',
         entryFileNames: 'js/[name].js',
 
-        // 🔥 NEW: Manual Chunk Split Strategy
-        manualChunks: {
-          // Vendor chunks
-          'vendor-fullcalendar': [
-            '@fullcalendar/core',
-            '@fullcalendar/daygrid',
-            '@fullcalendar/interaction',
-            '@fullcalendar/list',
-            '@fullcalendar/timegrid',
-          ],
-          'vendor-utils': ['dompurify'],
+        // OPTIMIZED: Manual Chunk Split Strategy with Lazy Loading Support
+        // Split large libraries into separate chunks for on-demand loading
+        manualChunks(id) {
+          // CRITICAL: Password Strength Library - Split into smaller chunks!
+          // Each module loads independently, keeping all chunks under 2MB
+          if (id.includes('@zxcvbn-ts/core')) {
+            return 'zxcvbn-core'; // ~800 KB - Core logic
+          }
+          if (id.includes('@zxcvbn-ts/language-common')) {
+            return 'zxcvbn-common'; // ~1.2 MB - Common dictionaries
+          }
+          if (id.includes('@zxcvbn-ts/language-de')) {
+            return 'zxcvbn-de'; // ~1.2 MB - German dictionaries
+          }
+
+          // FullCalendar: Split each plugin into separate chunks for lazy loading
+          // This allows loading only the plugins needed for the current view
+          if (id.includes('@fullcalendar/core')) {
+            return 'fullcalendar-core'; // ~450 KB - Lazy load on calendar page
+          }
+          if (id.includes('@fullcalendar/daygrid')) {
+            return 'fullcalendar-daygrid'; // ~150 KB - Loaded on demand (month view)
+          }
+          if (id.includes('@fullcalendar/timegrid')) {
+            return 'fullcalendar-timegrid'; // ~200 KB - Loaded on demand (week/day view)
+          }
+          if (id.includes('@fullcalendar/interaction')) {
+            return 'fullcalendar-interaction'; // ~100 KB - Loaded on demand (edit mode)
+          }
+          if (id.includes('@fullcalendar/list')) {
+            return 'fullcalendar-list'; // ~80 KB - Loaded on demand (list view)
+          }
+
+          // Marked.js - Markdown parser (188 KB) - only for blackboard/calendar
+          if (id.includes('marked')) {
+            return 'marked.min'; // Lazy load only on markdown pages
+          }
+
+          // DOMPurify - small utility (~50 KB), can stay in common vendor
+          if (id.includes('dompurify')) {
+            return 'vendor-utils';
+          }
+
+          // Generic vendor chunk (should be minimal now - only shared utilities)
+          // Most large libraries are now separated above
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
       },
     },
@@ -89,8 +126,9 @@ export default defineConfig({
         safari10: true,
       },
     },
-    // 🔥 OPTIMIZED: Increase chunk size limit
-    chunkSizeWarningLimit: 2000,
+    // 🔥 OPTIMIZED: Chunk size warning limit
+    // With granular chunking, all chunks should be under 2MB
+    chunkSizeWarningLimit: 2000, // Standard limit - no large chunks anymore
 
     // 🔥 NEW: CSS Code Split Control
     cssCodeSplit: true,
@@ -203,7 +241,8 @@ export default defineConfig({
     ],
 
     // 🔥 NEW: Exclude certain packages from optimization
-    exclude: [],
+    // CRITICAL: Exclude zxcvbn to ensure dynamic imports work properly!
+    exclude: ['@zxcvbn-ts/core', '@zxcvbn-ts/language-common', '@zxcvbn-ts/language-de'],
 
     // 🔥 NEW: Force optimization even if cached (useful in development)
     force: false,

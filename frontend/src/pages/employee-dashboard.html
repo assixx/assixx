@@ -173,10 +173,18 @@
                     <i class="fas fa-calendar" style="color: var(--color-icon-primary)"></i>
                     Firmenkalender
                   </h3>
+                  <a href="/calendar" class="card-accent__action">
+                    Alle anzeigen
+                    <i class="fas fa-arrow-right"></i>
+                  </a>
                 </div>
                 <div class="card-accent__content">
-                  <button class="btn btn-manage w-4/5 mb-3" data-href="/calendar">Kalender öffnen</button>
-                  <p class="text-sm text-[var(--color-text-secondary)]">Termine und wichtige Firmentermine im Überblick</p>
+                  <div id="calendar-events-list" class="space-y-2">
+                    <div class="p-2 rounded text-xs">
+                      <strong class="block font-semibold">Nächste Termine</strong>
+                      <p class="text-[var(--color-text-secondary)] mt-1">Lade Termine...</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

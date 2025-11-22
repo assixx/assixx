@@ -332,13 +332,13 @@ function filterByStatus(adminsList: Admin[], status: AdminStatusFilter): Admin[]
   switch (status) {
     case 'active':
       // Show only active AND not archived
-      return adminsList.filter((admin) => admin.isActive && admin.isArchived !== true);
+      return adminsList.filter((admin) => admin.isActive && !admin.isArchived);
     case 'inactive':
       // Show only inactive AND not archived (exclude archived!)
-      return adminsList.filter((admin) => !admin.isActive && admin.isArchived !== true);
+      return adminsList.filter((admin) => !admin.isActive && !admin.isArchived);
     case 'archived':
       // Show only archived (regardless of isActive)
-      return adminsList.filter((admin) => admin.isArchived === true);
+      return adminsList.filter((admin) => admin.isArchived);
     case 'all':
       return adminsList;
     default:
@@ -357,7 +357,7 @@ function filterBySearch(adminsList: Admin[], query: string): Admin[] {
   }
 
   return adminsList.filter((admin) => {
-    const fullName = `${admin.firstName} ${admin.lastName}`.toLowerCase();
+    const fullName = `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim().toLowerCase();
     const email = admin.email.toLowerCase();
     const position = (admin.position ?? '').toLowerCase();
     const positionDisplay = getPositionDisplay(admin.position ?? '').toLowerCase();

@@ -15,27 +15,27 @@
  *
  * Usage: <div class="card card--blackboard">
  */
+/*
 .card--blackboard {
-  /* Layout */
-  margin-bottom: 2rem; /* Dashboard widget spacing */
+
   padding: var(--spacing-6);
   border: 1px solid rgb(255 255 255 / 10.2%);
   border-radius: var(--radius-xl);
 
   text-align: center;
 
-  /* Glassmorphism - EXACT match to .card-stat */
   background: #ffffff05;
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-md);
 
-  /* Transition */
+
   transition: all 0.2s;
 }
+*/
 
 /* Hover state - EXACT match to .card-stat:hover */
 .card--blackboard:hover {
-  border-color: #2196f380;
+  border-color: var(--color-icon-primary);
 }
 
 /* After content loads */

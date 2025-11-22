@@ -96,7 +96,7 @@ a.btn {
 /* Icon-only buttons - square aspect */
 .btn-icon {
   aspect-ratio: 1; /* Perfect square */
-  padding: var(--spacing-2); /* Square padding */
+  padding: var(--spacing-3); /* Square padding */
 }
 
 .btn-icon svg {

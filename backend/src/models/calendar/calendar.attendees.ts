@@ -12,7 +12,6 @@ import { DbCalendarEvent, DbEventAttendee } from './calendar.types.js';
 export async function addEventAttendee(
   eventId: number,
   userId: number,
-  responseStatus: 'pending' | 'accepted' | 'declined' | 'tentative' = 'pending',
   tenantIdParam?: number,
 ): Promise<boolean> {
   try {
@@ -23,30 +22,27 @@ export async function addEventAttendee(
     );
 
     if (attendees.length > 0) {
-      // Update existing attendee status
-      await executeQuery(
-        'UPDATE calendar_attendees SET response_status = ?, responded_at = NOW() WHERE event_id = ? AND user_id = ?',
-        [responseStatus, eventId, userId],
-      );
-    } else {
-      // Get tenant_id from event if not provided
-      let finalTenantId = tenantIdParam;
-      if (finalTenantId == null || finalTenantId === 0) {
-        const [event] = await executeQuery<DbCalendarEvent[]>(
-          'SELECT tenant_id FROM calendar_events WHERE id = ?',
-          [eventId],
-        );
-        if (event.length > 0) {
-          finalTenantId = event[0].tenant_id;
-        }
-      }
-
-      // Add new attendee with tenant_id
-      await executeQuery(
-        'INSERT INTO calendar_attendees (event_id, user_id, response_status, responded_at, tenant_id) VALUES (?, ?, ?, NOW(), ?)',
-        [eventId, userId, responseStatus, finalTenantId],
-      );
+      // Already an attendee, nothing to update
+      return true;
     }
+
+    // Get tenant_id from event if not provided
+    let finalTenantId = tenantIdParam;
+    if (finalTenantId == null || finalTenantId === 0) {
+      const [event] = await executeQuery<DbCalendarEvent[]>(
+        'SELECT tenant_id FROM calendar_events WHERE id = ?',
+        [eventId],
+      );
+      if (event.length > 0) {
+        finalTenantId = event[0].tenant_id;
+      }
+    }
+
+    // Add new attendee with tenant_id
+    await executeQuery(
+      'INSERT INTO calendar_attendees (event_id, user_id, tenant_id) VALUES (?, ?, ?)',
+      [eventId, userId, finalTenantId],
+    );
 
     return true;
   } catch (error: unknown) {
@@ -72,33 +68,6 @@ export async function removeEventAttendee(eventId: number, userId: number): Prom
 }
 
 /**
- * User responds to a calendar event
- */
-export async function respondToEvent(
-  eventId: number,
-  userId: number,
-  response: string,
-): Promise<boolean> {
-  try {
-    // Validate response
-    const validResponses = ['accepted', 'declined', 'tentative'];
-    if (!validResponses.includes(response)) {
-      throw new Error('Invalid response status');
-    }
-
-    // Update response
-    return await addEventAttendee(
-      eventId,
-      userId,
-      response as 'accepted' | 'declined' | 'tentative',
-    );
-  } catch (error: unknown) {
-    logger.error('Error in respondToEvent:', error);
-    throw error;
-  }
-}
-
-/**
  * Get attendees for a calendar event
  */
 export async function getEventAttendees(
@@ -107,7 +76,7 @@ export async function getEventAttendees(
 ): Promise<DbEventAttendee[]> {
   try {
     const query = `
-        SELECT a.user_id, a.response_status, a.responded_at,
+        SELECT a.user_id,
                u.username, u.first_name, u.last_name, u.email, u.profile_picture
         FROM calendar_attendees a
         JOIN users u ON a.user_id = u.id

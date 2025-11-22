@@ -55,34 +55,10 @@
   padding: var(--spacing-6);
 }
 
-/* Cards - Merged & Migrated to Semantic Tokens */
-.card {
-  /* Layout Structure (from style.css) */
-  position: relative;
-
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-
-  min-width: 0;
-
-  /* Spacing - Semantic Tokens (Design System Layer 2) */
-  margin-bottom: var(--card-margin-bottom); /* var(--spacing-6) = 24px */
-  padding: var(--card-padding); /* var(--spacing-6) = 24px */
-
-  /* Borders & Glass Effect */
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--glass-card-radius); /* var(--radius-lg) = 0.5rem */
-
-  overflow-wrap: break-word;
-
-  background: hsl(0deg 0% 100% / 2%);
-  background-clip: border-box;
-  backdrop-filter: blur(20px) saturate(180%);
-
-  /* Shadow - Semantic Token (Design System Layer 2) */
-  box-shadow: var(--card-shadow); /* var(--shadow-md) - stronger shadow */
-}
+/* ===== CARDS =====
+   NOTE: .card is now defined in Design System → /design-system/components/card/card.css
+   Migrated: 2025-11-22
+   This file only contains legacy card variants that haven't been migrated yet */
 
 .card-header {
   margin-bottom: var(--spacing-4);

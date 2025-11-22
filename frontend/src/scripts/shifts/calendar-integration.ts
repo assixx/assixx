@@ -66,50 +66,82 @@ export class ShiftCalendarIntegration {
   }
 
   /**
-   * Add the checkbox to the filter bar
+   * Add the checkbox to the filter bar (as toggle button)
    */
   private addCheckbox(): void {
-    // Find the legend container
-    const legendLabel = [...document.querySelectorAll('.form-label')].find((el) => el.textContent.includes('Legende'));
+    // Check if button already exists in HTML
+    let shiftButton = document.querySelector('#showShiftsToggle');
 
-    if (!legendLabel) {
-      console.warn('[SHIFTS-IN-CALENDAR] Legend label not found');
+    if (shiftButton) {
+      // Button already exists in HTML, just add event handler
+      console.log('[SHIFTS-IN-CALENDAR] Using existing shift toggle button from HTML');
+
+      // Update button state based on saved preference
+      if (this.showShifts) {
+        shiftButton.classList.add('active');
+      } else {
+        shiftButton.classList.remove('active');
+      }
+
+      // Add click handler
+      shiftButton.addEventListener('click', () => {
+        const newState = !this.showShifts;
+        void this.onCheckboxChange(newState);
+
+        // Toggle active class
+        if (newState) {
+          shiftButton?.classList.add('active');
+        } else {
+          shiftButton?.classList.remove('active');
+        }
+      });
+
+      return; // Exit early, button already exists
+    }
+
+    // If button doesn't exist, create it (fallback for older pages without the button)
+    console.log('[SHIFTS-IN-CALENDAR] Creating shift toggle button dynamically');
+
+    // Find the level filter toggle group
+    const levelFilter = document.querySelector('#levelFilter');
+
+    if (!levelFilter) {
+      console.warn('[SHIFTS-IN-CALENDAR] Level filter not found');
       return;
     }
 
-    const legendContainer = legendLabel.parentElement;
-    if (!legendContainer) return;
+    // Create toggle button for shift display
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = this.showShifts ? 'toggle-group__btn active' : 'toggle-group__btn';
+    button.id = 'showShiftsToggle';
+    button.title = 'Schichten anzeigen/ausblenden';
+    button.dataset.action = 'toggle-shifts';
 
-    // Create checkbox container
-    const checkboxDiv = document.createElement('div');
-    checkboxDiv.className = 'form-group';
-    checkboxDiv.style.marginRight = '20px';
-    checkboxDiv.style.display = 'flex';
-    checkboxDiv.style.alignItems = 'center';
+    shiftButton = button;
 
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.id = 'showShiftsCheckbox';
-    checkbox.className = 'form-checkbox';
-    checkbox.style.marginRight = '8px';
+    const icon = document.createElement('i');
+    icon.className = 'fas fa-clock';
+    shiftButton.append(icon);
 
-    checkbox.checked = this.showShifts;
-    checkbox.addEventListener('change', () => {
-      void this.onCheckboxChange(checkbox.checked);
+    const text = document.createTextNode(' Schichten');
+    shiftButton.append(text);
+
+    // Add click handler
+    shiftButton.addEventListener('click', () => {
+      const newState = !this.showShifts;
+      void this.onCheckboxChange(newState);
+
+      // Toggle active class
+      if (newState) {
+        shiftButton.classList.add('active');
+      } else {
+        shiftButton.classList.remove('active');
+      }
     });
 
-    const label = document.createElement('label');
-    label.htmlFor = 'showShiftsCheckbox';
-    label.className = 'form-label';
-    label.style.margin = '0';
-    label.style.cursor = 'pointer';
-    label.style.whiteSpace = 'nowrap';
-    label.textContent = 'Schicht anzeigen';
-
-    checkboxDiv.append(checkbox, label);
-
-    // Insert before legend
-    legendContainer.parentElement?.insertBefore(checkboxDiv, legendContainer);
+    // Append to level filter group
+    levelFilter.append(shiftButton);
   }
 
   /**

@@ -201,7 +201,7 @@
 .tooltip__content--info {
   width: 200px;
   padding: var(--spacing-3);
-  border-color: #2196f380;
+  border-color: var(--color-icon-primary);
   border-radius: var(--radius-xl);
 
   background: var(--color-black);

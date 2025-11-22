@@ -5,9 +5,15 @@
 // eslint-disable-next-line max-classes-per-file
 import type { User, Document } from '../../../types/api.types';
 import { ApiClient } from '../../../utils/api-client';
-import { mapUsers, type MappedUser } from '../../../utils/api-mappers';
 import { getAuthToken, showSuccess } from '../../auth';
-import type { DashboardStats, Department, Team, EmployeeFormData, BlackboardEntryExtended } from './types';
+import type {
+  DashboardStats,
+  Department,
+  Team,
+  EmployeeFormData,
+  BlackboardEntryExtended,
+  CalendarEventApi,
+} from './types';
 
 // Constants - No longer needed as we only use v2 APIs via apiClient
 
@@ -98,15 +104,14 @@ export class EmployeeService {
     this.apiClient = ApiClient.getInstance();
   }
 
-  async loadRecentEmployees(limit: number = 5): Promise<MappedUser[]> {
+  async loadRecentEmployees(limit: number = 5): Promise<User[]> {
     try {
       // First ensure we have all employees loaded and cached
       await this.loadAllEmployees();
 
       // Return the most recent employees from cache
       if (apiCache.employees !== undefined && isCacheValid(apiCache.employees.timestamp)) {
-        const recentEmployees = apiCache.employees.data.slice(0, limit);
-        return mapUsers(recentEmployees);
+        return apiCache.employees.data.slice(0, limit);
       }
 
       return [];
@@ -358,5 +363,80 @@ export class BlackboardService {
     if (priority === 'critical') return 'Kritisch';
     if (priority === 'medium') return 'Mittel';
     return 'Normal';
+  }
+}
+
+// CalendarEvent interface imported from calendar/types.ts - no local definition needed
+// API v2 returns camelCase through dbToApiEvent fieldMapping
+
+/**
+ * Service for loading upcoming calendar events
+ */
+export class CalendarService {
+  private apiClient: ApiClient;
+
+  constructor() {
+    this.apiClient = ApiClient.getInstance();
+  }
+
+  /**
+   * Load upcoming events (next 3 events after today)
+   */
+  async loadUpcomingEvents(): Promise<CalendarEventApi[]> {
+    try {
+      // Get today's date at midnight
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get date 3 months in future for range
+      const futureDate = new Date(today);
+      futureDate.setMonth(futureDate.getMonth() + 3);
+
+      const startISO = today.toISOString();
+      const endISO = futureDate.toISOString();
+
+      // Use calendar API v2 (ApiClient already adds /api/v2 prefix and extracts .data)
+      // Note: Backend expects startDate and endDate as query params
+      // Response is already in camelCase through dbToApiEvent fieldMapping
+      const response = await this.apiClient.get<{
+        events: CalendarEventApi[];
+        pagination: unknown;
+      }>(
+        `/calendar/events?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&filter=all&limit=10`,
+      );
+
+      const events = response.events;
+
+      if (events.length === 0) {
+        return [];
+      }
+
+      // Filter events that are in the future, sort by startTime, and take next 3
+      // API v2 returns camelCase: startTime, endTime, allDay, orgLevel
+      const filteredEvents = events
+        .filter((event: CalendarEventApi) => {
+          // Check if startTime exists and is not empty
+          if (event.startTime === '') {
+            return false;
+          }
+
+          try {
+            const eventDate = new Date(event.startTime);
+            const isValid = !Number.isNaN(eventDate.getTime());
+            const isFuture = eventDate >= today;
+            return isValid && isFuture;
+          } catch {
+            return false;
+          }
+        })
+        .sort((a: CalendarEventApi, b: CalendarEventApi) => {
+          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+        });
+
+      return filteredEvents.slice(0, 3);
+    } catch (error) {
+      console.error('Error loading upcoming events:', error);
+      return [];
+    }
   }
 }

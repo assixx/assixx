@@ -25,9 +25,9 @@ export function generateAdminRow(admin: Admin): string {
       <td>
         <div class="flex items-center gap-2">
           <div class="avatar avatar--sm avatar--color-${admin.id % 10}">
-            <span>${admin.firstName.charAt(0)}${admin.lastName.charAt(0)}</span>
+            <span>${(admin.firstName ?? '').charAt(0)}${(admin.lastName ?? '').charAt(0)}</span>
           </div>
-          <span>${admin.firstName} ${admin.lastName}</span>
+          <span>${admin.firstName ?? ''} ${admin.lastName ?? ''}</span>
         </div>
       </td>
       <td>${admin.email}</td>
@@ -246,7 +246,7 @@ export function highlightMatch(text: string, query: string): string {
  * Generate HTML for a single search result item
  */
 export function generateSearchResultItem(admin: Admin, query: string): string {
-  const fullName = `${admin.firstName} ${admin.lastName}`;
+  const fullName = `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim();
   const position = getPositionDisplay(admin.position ?? '');
   const employeeNumber = admin.employeeNumber ?? '';
 

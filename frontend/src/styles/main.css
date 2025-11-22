@@ -32,13 +32,10 @@
    IMPORTANT: Must come AFTER Tailwind to override Tailwind's theme variables */
 @import "./design-system/variables-dark.css";
 
-/* Design System Card Components */
-@import "../design-system/primitives/cards/card-base.css";
-@import "../design-system/primitives/cards/card-stat.css";
-@import "../design-system/primitives/cards/card-accent.css";
-
-/* Design System Glassmorphic Card Component (Profile/Content Pages) */
-@import "../design-system/components/card/card.css";
+/* NOTE: Design System components are loaded via tailwind.css → design-system/index.css
+   Previously imported directly here (card-base, card-stat, card-accent, card.css)
+   but removed to prevent duplicate imports. See tailwind.css:198 for the single import point.
+   Migrated: 2025-11-22 */
 
 /* Design System Modal Component */
 @import "../design-system/primitives/modals/modal.base.css";

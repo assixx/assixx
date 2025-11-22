@@ -126,10 +126,10 @@ function displayBlackboardItems(entries: BlackboardEntry[]): void {
         <a href="/blackboard.html#entry-${entry.id}" class="list-group-item list-group-item-action">
           <div class="d-flex w-100 justify-content-between">
             <h6 class="mb-1">${escapeHtml(entry.title)}</h6>
-            <small class="text-muted">${formatDate(entry.created_at)}</small>
+            <small class="text-muted">${formatDate(entry.createdAt)}</small>
           </div>
           <p class="mb-1 text-truncate">${escapeHtml(entry.content)}</p>
-          <small class="text-muted">von ${entry.created_by_name ?? 'Unbekannt'}</small>
+          <small class="text-muted">von ${entry.createdByName ?? 'Unbekannt'}</small>
         </a>
       `,
       )

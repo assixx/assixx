@@ -4,7 +4,6 @@
  */
 
 import { ApiClient } from '../../../utils/api-client';
-import { mapUsers, type UserAPIResponse } from '../../../utils/api-mappers';
 import type { Admin, Department, Tenant, AdminFormData } from './types';
 
 // ===== GLOBAL STATE =====
@@ -115,15 +114,14 @@ export async function loadAdmins(): Promise<void> {
       { version: 'v2' },
     );
 
-    // Map the API response to ensure consistent field names
-    // API v2 returns { admins: [...] }
+    // API v2 returns { admins: [...] } or array directly - backend uses fieldMapping for camelCase
     const adminData =
       typeof data === 'object' && 'admins' in data
-        ? (data as { admins: UserAPIResponse[] }).admins
+        ? (data as { admins: Admin[] }).admins
         : Array.isArray(data)
           ? data
           : [];
-    const loadedAdmins = mapUsers(adminData as UserAPIResponse[]) as Admin[];
+    const loadedAdmins = adminData;
     console.info('Loaded admins:', loadedAdmins);
 
     // Load permissions for each admin

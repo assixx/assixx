@@ -1,52 +1,65 @@
 /**
- * Card Component - Glassmorphic Content Cards
+ * Profile Card Component - Enhanced Content Cards
  *
- * Unified card styling for all profile and content pages.
- * Features:
- * - Glassmorphism effects (backdrop-filter)
- * - Accent bar on card titles (gradient left border)
- * - Consistent spacing and colors
- * - Responsive and accessible
+ * Enhanced glassmorphic cards specifically for profile and content pages.
+ * Extends the base .card from primitives/cards/card-base.css with:
+ * - Larger padding (32px vs 24px)
+ * - Accent bar on titles (gradient left border)
+ * - Enhanced hover effects
  *
  * USAGE:
- *   <div class="card">
+ *   <div class="profile-card">
  *     <h2 class="card__title">Title</h2>
  *     <div class="card__body">Content</div>
  *   </div>
  *
- *   <!-- Legacy Support (will be migrated) -->
- *   <div class="profile-card">
- *     <h2 class="card-title">Title</h2>
- *   </div>
- *
  * MIGRATION NOTE:
- * This component consolidates duplicate card styles from 8 files:
+ * This component consolidates duplicate card styles from profile pages:
  * - root-profile.css, admin-profile.css, account-settings.css
- * - dashboard-theme.css, blackboard.css, style.css
- * - tenant-deletion-status.css, logs.css
+ * - employee-profile.css
+ *
+ * DESIGN DECISION (2025-11-22):
+ * - primitives/cards/card-base.css → .card (24px padding, for dashboards)
+ * - components/card/card.css → .profile-card (32px padding, for content pages)
+ * This prevents CSS collision and provides clear semantic distinction.
  */
 
 /* ========================================
-   BASE CARD
+   PROFILE CARD - Enhanced Content Card
    ======================================== */
 
-.card,
 .profile-card {
+  /* Layout Structure */
+  position: relative;
+
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  /* Spacing */
   margin-bottom: var(--spacing-6);
   padding: var(--spacing-8);
+
+  /* Borders & Radius */
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: var(--radius-xl);
 
+  /* Text Wrapping */
+  overflow-wrap: break-word;
+
+  /* Glassmorphism */
   background: rgb(255 255 255 / 2%);
   backdrop-filter: blur(20px) saturate(180%);
   box-shadow: var(--shadow-sm);
 
+  /* Transitions */
   transition: all var(--transition-normal);
 }
 
-.card:hover,
 .profile-card:hover {
-  border-color: #2196f380;
+  border-color: var(--color-icon-primary);
 }
 
 /* ========================================
@@ -137,7 +150,6 @@
    ACCESSIBILITY
    ======================================== */
 
-.card:focus-visible,
 .profile-card:focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
@@ -148,7 +160,6 @@
    ======================================== */
 
 @media (width <= 768px) {
-  .card,
   .profile-card {
     padding: var(--spacing-6);
   }

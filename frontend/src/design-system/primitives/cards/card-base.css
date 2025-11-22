@@ -82,3 +82,8 @@
 .card--compact {
   padding: var(--spacing-4); /* 16px */
 }
+
+.card:hover {
+  border-color: var(--color-icon-primary);
+  box-shadow: var(--shadow-lg);
+}

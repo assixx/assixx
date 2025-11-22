@@ -5,44 +5,64 @@
  */
 
 import type { User } from '../../types/api.types';
-import { ApiClient } from '../../utils/api-client';
-import {
-  mapTeams,
-  mapUsers,
-  mapRotationPatterns,
-  type TeamAPIResponse,
-  type UserAPIResponse,
-  type RotationPatternAPIResponse,
-} from '../../utils/api-mappers';
-import { $$, $$id, createElement, hide, show, setData } from '../../utils/dom-utils';
 import { getAuthToken, showInfo } from '../auth/index';
-// escapeHtml removed - using DOM manipulation instead
 import { showSuccessAlert, showErrorAlert, showConfirm } from '../utils/alerts';
-import { openModal } from '../utils/modal-manager';
+import { ApiClient } from '../../utils/api-client';
+import { $$, $$id, createElement, hide, show, setData } from '../../utils/dom-utils';
+
+// Local types for API responses (backend returns camelCase via fieldMapping)
+interface RotationPattern {
+  id: number;
+  tenantId: number;
+  teamId: number | null;
+  name: string;
+  description?: string;
+  patternType: 'alternate_fs' | 'fixed_n' | 'custom';
+  patternConfig: Record<string, unknown>;
+  cycleLengthWeeks: number;
+  startsAt: string;
+  endsAt?: string | null;
+  isActive: boolean;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Team {
+  id: number;
+  name: string;
+  description?: string;
+  leaderId?: number;
+  leaderName?: string;
+  departmentId?: number;
+  departmentName?: string;
+  memberCount?: number;
+  status?: string;
+  createdAt: string;
+  updatedAt: string;
+  members?: TeamMember[];
+  teamLeadId?: number; // Alternative field name for leaderId
+}
 
 interface ShiftDetailData {
-  employee_id: number;
-  first_name: string;
-  last_name: string;
+  employeeId: number;
+  firstName: string;
+  lastName: string;
   username: string;
 }
 
 interface Employee extends User {
-  department_id?: number;
-  team_id?: number;
-  shift_assignments?: ShiftAssignment[];
-  availability_status?: string; // Allow any string for combined statuses like "available vacation"
-  availabilityStatus?: string; // camelCase version from API
-  availability_start?: string;
-  availability_end?: string;
-  availability_reason?: string;
-  available_from?: string;
+  // departmentId, teamId inherited from User
+  shiftAssignments?: ShiftAssignment[];
+  // availabilityStatus, availabilityStart, availabilityEnd, availabilityNotes inherited from User
+  availabilityReason?: string;
+  availableFrom?: string;
 }
 
 interface ShiftAssignment {
   id: number;
 
-  employee_id: number;
+  employeeId: number;
 
   date: string;
   shift_type: 'early' | 'late' | 'night';
@@ -71,25 +91,18 @@ interface Department {
 interface Machine {
   id: number;
   name: string;
-  department_id: number;
+  departmentId: number;
   area_id?: number;
   description?: string;
 }
 
-interface Team {
-  id: number;
-  name: string;
-  department_id: number;
-  team_lead_id?: number;
-  description?: string;
-  members?: TeamMember[];
-}
+// Team interface defined above (lines 29-41) - using that one
 
 interface TeamMember {
   id: number;
   username: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   role: 'member' | 'lead';
 }
 
@@ -616,9 +629,9 @@ class ShiftPlanningSystem {
   }
 
   private setEmployeeDepartment(user: User): void {
-    if (!this.isAdmin && user.department_id !== undefined && user.department_id !== 0) {
-      this.selectedContext.departmentId = user.department_id;
-      console.info('[SHIFTS DEBUG] Employee department auto-selected:', user.department_id);
+    if (!this.isAdmin && user.departmentId !== undefined && user.departmentId !== 0) {
+      this.selectedContext.departmentId = user.departmentId;
+      console.info('[SHIFTS DEBUG] Employee department auto-selected:', user.departmentId);
     }
   }
 
@@ -645,7 +658,7 @@ class ShiftPlanningSystem {
         this.setUserRoleAndPermissions(user, activeRole);
         this.updateUserNameDisplay(user.username);
         this.setEmployeeDepartment(user);
-        this.updateDepartmentDisplay(user.department_id);
+        this.updateDepartmentDisplay(user.departmentId);
         this.updateTeamLeaderDisplay(user);
       }
     } catch (error) {
@@ -722,9 +735,13 @@ class ShiftPlanningSystem {
   private handleCloseModalAction(target: HTMLElement): void {
     if (target.dataset.action !== 'close-modal') return;
 
-    const w = window as unknown as { modalManager?: { closeModal?: () => void } };
-    if (w.modalManager && typeof w.modalManager.closeModal === 'function') {
-      w.modalManager.closeModal();
+    // Close the modal by removing it from DOM
+    const modal = target.closest('.modal-overlay');
+    if (modal) {
+      modal.classList.remove('modal-overlay--active');
+      setTimeout(() => {
+        modal.remove();
+      }, 300);
     }
   }
 
@@ -1207,11 +1224,11 @@ class ShiftPlanningSystem {
       console.error('Error loading machines:', error);
       // Fallback data
       this.machines = [
-        { id: 1, name: 'Anlage 01', department_id: 1 },
-        { id: 2, name: 'Anlage 02', department_id: 1 },
-        { id: 3, name: 'Förderband A', department_id: 2 },
-        { id: 4, name: 'Förderband B', department_id: 2 },
-        { id: 5, name: 'Prüfstand 01', department_id: 3 },
+        { id: 1, name: 'Anlage 01', departmentId: 1 },
+        { id: 2, name: 'Anlage 02', departmentId: 1 },
+        { id: 3, name: 'Förderband A', departmentId: 2 },
+        { id: 4, name: 'Förderband B', departmentId: 2 },
+        { id: 5, name: 'Prüfstand 01', departmentId: 3 },
       ];
     }
     this.populateMachineSelect();
@@ -1248,17 +1265,20 @@ class ShiftPlanningSystem {
   private async loadTeamsV2(): Promise<void> {
     try {
       const url = this.buildTeamsUrl('/teams', true);
-      const response = await this.apiClient.request<TeamAPIResponse[]>(url, {
+      // Backend already returns camelCase via fieldMapping
+      const response = await this.apiClient.request<Team[]>(url, {
         method: 'GET',
       });
 
-      const mappedTeams = mapTeams(response);
-      this.teams = mappedTeams.map((t) => ({
+      // Backend returns camelCase - use directly
+      this.teams = response.map((t) => ({
         id: t.id,
         name: t.name,
-        department_id: t.departmentId ?? 0,
-        team_lead_id: t.leaderId ?? undefined,
+        departmentId: t.departmentId ?? 0,
+        teamLeadId: t.leaderId ?? undefined,
         description: t.description,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt,
       }));
       console.info('Teams loaded (v2):', this.teams);
     } catch (error) {
@@ -1359,7 +1379,7 @@ class ShiftPlanningSystem {
 
     // Filter machines by selected department (we already know departmentId is set)
     const filteredMachines = this.machines.filter(
-      (machine) => machine.department_id === this.selectedContext.departmentId,
+      (machine) => machine.departmentId === this.selectedContext.departmentId,
     );
 
     if (filteredMachines.length === 0) {
@@ -1624,18 +1644,17 @@ class ShiftPlanningSystem {
     } else {
       // Use v2 API with ApiClient
       try {
-        const response = await this.apiClient.request<UserAPIResponse[]>(
-          `/teams/${String(this.selectedContext.teamId)}/members`,
-          { method: 'GET' },
-        );
+        // Backend already returns camelCase via fieldMapping
+        const response = await this.apiClient.request<User[]>(`/teams/${String(this.selectedContext.teamId)}/members`, {
+          method: 'GET',
+        });
 
-        // Map snake_case to camelCase and convert to TeamMember interface
-        const mappedUsers = mapUsers(response);
-        const members: TeamMember[] = mappedUsers.map((user) => ({
+        // Convert to internal TeamMember interface (uses snake_case)
+        const members: TeamMember[] = response.map((user) => ({
           id: user.id,
           username: user.username,
-          first_name: user.firstName,
-          last_name: user.lastName,
+          firstName: user.firstName ?? '',
+          lastName: user.lastName ?? '',
           role: 'member' as const,
         }));
         console.info('Team members loaded (v2):', members);
@@ -1675,7 +1694,7 @@ class ShiftPlanningSystem {
       });
       card.dataset.userId = String(member.id);
 
-      const nameDiv = createElement('div', { className: 'member-name' }, `${member.first_name} ${member.last_name}`);
+      const nameDiv = createElement('div', { className: 'member-name' }, `${member.firstName} ${member.lastName}`);
 
       const roleDiv = createElement(
         'div',
@@ -1748,8 +1767,8 @@ class ShiftPlanningSystem {
   }
 
   private getEmployeeDisplayName(employee: Employee): string {
-    const firstName = employee.first_name ?? '';
-    const lastName = employee.last_name ?? '';
+    const firstName = employee.firstName ?? '';
+    const lastName = employee.lastName ?? '';
     const name = `${firstName} ${lastName}`.trim();
     return name !== '' ? name : employee.username;
   }
@@ -1817,7 +1836,7 @@ class ShiftPlanningSystem {
     if (!machine) {
       return { valid: false, message: 'Ungültige Maschinen-Auswahl' };
     }
-    if (machine.department_id !== this.selectedContext.departmentId) {
+    if (machine.departmentId !== this.selectedContext.departmentId) {
       return { valid: false, message: 'Maschine gehört nicht zur ausgewählten Abteilung' };
     }
     return null;
@@ -1832,7 +1851,7 @@ class ShiftPlanningSystem {
     if (!team) {
       return { valid: false, message: 'Ungültige Team-Auswahl' };
     }
-    if (team.department_id !== this.selectedContext.departmentId) {
+    if (team.departmentId !== this.selectedContext.departmentId) {
       return { valid: false, message: 'Team gehört nicht zur ausgewählten Abteilung' };
     }
     return null;
@@ -1914,8 +1933,8 @@ class ShiftPlanningSystem {
       user_id: userId,
       date,
       type: convertedType,
-      department_id: this.selectedContext.departmentId,
-      team_id: this.selectedContext.teamId,
+      departmentId: this.selectedContext.departmentId,
+      teamId: this.selectedContext.teamId,
       machine_id: this.selectedContext.machineId,
       start_time: startTime,
       end_time: endTime,
@@ -2269,10 +2288,10 @@ class ShiftPlanningSystem {
     }
   }
 
-  private async fetchAndFilterUsers(): Promise<UserAPIResponse[]> {
+  private async fetchAndFilterUsers(): Promise<User[]> {
     const apiClientInstance = ApiClient.getInstance();
     console.info('[SHIFTS DEBUG] Loading all users via v2 API for availability data');
-    const allUsers = await apiClientInstance.get<UserAPIResponse[]>('/users');
+    const allUsers = await apiClientInstance.get<User[]>('/users');
 
     if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
       return await this.filterUsersByTeam(allUsers);
@@ -2281,53 +2300,48 @@ class ShiftPlanningSystem {
     return this.filterUsersByDepartment(allUsers);
   }
 
-  private async filterUsersByTeam(allUsers: UserAPIResponse[]): Promise<UserAPIResponse[]> {
+  private async filterUsersByTeam(allUsers: User[]): Promise<User[]> {
     console.info('[SHIFTS DEBUG] Filtering users by team ID:', this.selectedContext.teamId);
     const apiClientInstance = ApiClient.getInstance();
-    const teamMembers = await apiClientInstance.get<UserAPIResponse[]>(
-      `/teams/${String(this.selectedContext.teamId)}/members`,
-    );
+    const teamMembers = await apiClientInstance.get<User[]>(`/teams/${String(this.selectedContext.teamId)}/members`);
     const teamMemberIds = teamMembers.map((m) => m.id);
     return allUsers.filter((u) => teamMemberIds.includes(u.id));
   }
 
-  private filterUsersByDepartment(users: UserAPIResponse[]): UserAPIResponse[] {
+  private filterUsersByDepartment(users: User[]): User[] {
     if (this.selectedContext.departmentId !== null && this.selectedContext.departmentId !== 0) {
       return users.filter((u) => {
-        const deptId = u.department_id ?? u.departmentId;
+        const deptId = u.departmentId ?? u.departmentId;
         return deptId === this.selectedContext.departmentId;
       });
     }
     return users;
   }
 
-  private mapUsersToEmployees(users: UserAPIResponse[]): Employee[] {
-    const mappedUsers = mapUsers(users);
-    return mappedUsers.map(
+  private mapUsersToEmployees(users: User[]): Employee[] {
+    // Backend already returns camelCase via API v2 fieldMapping
+    return users.map(
       (u) =>
         ({
           id: u.id,
           username: u.username,
           email: u.email,
-          first_name: u.firstName,
-          last_name: u.lastName,
-          firstName: u.firstName,
-          lastName: u.lastName,
+          firstName: u.firstName ?? '',
+          lastName: u.lastName ?? '',
           role: u.role,
-          tenant_id: u.tenantId,
-          department_id: u.departmentId ?? undefined,
-          team_id: u.teamId ?? undefined,
+          tenantId: u.tenantId,
+          departmentId: u.departmentId,
+          teamId: u.teamId,
           position: u.position,
-          employee_number: u.employeeNumber,
-          is_active: u.isActive,
-          is_archived: false,
-          created_at: u.createdAt ?? new Date().toISOString(),
-          updated_at: u.updatedAt ?? new Date().toISOString(),
-          availability_status: u.availabilityStatus ?? undefined,
-          availabilityStatus: u.availabilityStatus ?? undefined,
-          availability_start: u.availabilityStart ?? undefined,
-          availability_end: u.availabilityEnd ?? undefined,
-          availability_notes: u.availabilityNotes ?? undefined,
+          employeeNumber: u.employeeNumber,
+          isActive: u.isActive,
+          isArchived: false,
+          createdAt: u.createdAt,
+          updatedAt: u.updatedAt,
+          availabilityStatus: u.availabilityStatus,
+          availabilityStart: u.availabilityStart,
+          availabilityEnd: u.availabilityEnd,
+          availabilityNotes: u.availabilityNotes,
         }) as Employee,
     );
   }
@@ -2343,7 +2357,6 @@ class ShiftPlanningSystem {
     this.employees.forEach((emp) => {
       console.info('[SHIFTS DEBUG] Employee availability:', {
         email: emp.email,
-        availability_status: emp.availability_status,
         availabilityStatus: emp.availabilityStatus,
       });
     });
@@ -2369,7 +2382,7 @@ class ShiftPlanningSystem {
 
       // Log current availability status from employees
       const availableCount = this.employees.filter((e) => {
-        const status = e.availability_status ?? e.availabilityStatus ?? 'available';
+        const status = e.availabilityStatus ?? e.availabilityStatus ?? 'available';
         // Parse combined statuses like "available vacation"
         const parts = status.trim().split(/\s+/);
         const actualStatus = parts.length > 1 ? parts[1] : parts[0];
@@ -2392,11 +2405,10 @@ class ShiftPlanningSystem {
     // Log ALL availability-related fields
     console.info('[SHIFTS AVAILABILITY DEBUG]', {
       id: employee.id,
-      name: `${employee.first_name ?? ''} ${employee.last_name ?? ''}`,
-      availability_status: employee.availability_status,
+      name: `${employee.firstName ?? ''} ${employee.lastName ?? ''}`,
       availabilityStatus: employee.availabilityStatus,
-      availability_start: employee.availability_start,
-      availability_end: employee.availability_end,
+      availabilityStart: employee.availabilityStart,
+      availabilityEnd: employee.availabilityEnd,
       fullEmployee: employee,
     });
 
@@ -2433,16 +2445,16 @@ class ShiftPlanningSystem {
       'Week-specific status:',
       availabilityStatus,
       'Raw status:',
-      employee.availability_status ?? employee.availabilityStatus,
+      employee.availabilityStatus ?? employee.availabilityStatus,
       'Date range:',
-      employee.availability_start,
+      employee.availabilityStart,
       'to',
-      employee.availability_end,
+      employee.availabilityEnd,
     );
   }
 
   private buildEmployeeInfoDiv(employee: Employee, availabilityStatus?: string): HTMLElement {
-    const name = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+    const name = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     const displayName = name !== '' ? name : employee.username;
 
     // Build DOM structure safely
@@ -2477,11 +2489,11 @@ class ShiftPlanningSystem {
   }
 
   private addAvailabilityReturnDate(infoDiv: HTMLElement, employee: Employee): void {
-    if (employee.availability_end === undefined || employee.availability_end === '') {
+    if (employee.availabilityEnd === undefined || employee.availabilityEnd === '') {
       return;
     }
 
-    const endDate = new Date(employee.availability_end);
+    const endDate = new Date(employee.availabilityEnd);
     endDate.setDate(endDate.getDate() + 1); // Add one day (this is when employee returns)
 
     // Get current week boundaries
@@ -2580,8 +2592,8 @@ class ShiftPlanningSystem {
 
   // Create date range element for availability period
   createAvailabilityDateRange(employee: Employee): HTMLElement | null {
-    const startDate = employee.availability_start;
-    const endDate = employee.availability_end;
+    const startDate = employee.availabilityStart;
+    const endDate = employee.availabilityEnd;
 
     // Only show if we have at least one date
     if (startDate === undefined && endDate === undefined) {
@@ -2673,8 +2685,8 @@ class ShiftPlanningSystem {
   }
 
   private getEmployeeName(employee: Employee): string {
-    const firstName = employee.first_name ?? 'Unknown';
-    const lastName = employee.last_name ?? 'Unknown';
+    const firstName = employee.firstName ?? 'Unknown';
+    const lastName = employee.lastName ?? 'Unknown';
     return `${firstName} ${lastName}`;
   }
 
@@ -2682,8 +2694,8 @@ class ShiftPlanningSystem {
     console.info(`[SHIFTS DEBUG] Checking week availability for ${this.getEmployeeName(employee)}:`, {
       actualStatus,
       weekRange: `${this.formatDate(weekStart)} to ${this.formatDate(weekEnd)}`,
-      availStart: employee.availability_start,
-      availEnd: employee.availability_end,
+      availStart: employee.availabilityStart,
+      availEnd: employee.availabilityEnd,
     });
   }
 
@@ -2694,12 +2706,12 @@ class ShiftPlanningSystem {
     this.logAvailabilityCheck(employee, actualStatus, weekStart, weekEnd);
 
     // If no date ranges, status always applies
-    if (employee.availability_start === undefined && employee.availability_end === undefined) {
+    if (employee.availabilityStart === undefined && employee.availabilityEnd === undefined) {
       return true;
     }
 
-    const availStart = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
-    const availEnd = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
+    const availStart = employee.availabilityStart !== undefined ? new Date(employee.availabilityStart) : null;
+    const availEnd = employee.availabilityEnd !== undefined ? new Date(employee.availabilityEnd) : null;
 
     const overlaps = this.checkDateRangeOverlap(availStart, availEnd, weekStart, weekEnd);
 
@@ -2718,7 +2730,7 @@ class ShiftPlanningSystem {
   }
 
   getWeekAvailabilityStatus(employee: Employee): string {
-    const baseStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+    const baseStatus = employee.availabilityStatus ?? employee.availabilityStatus ?? 'available';
     const actualStatus = this.parseAvailabilityStatus(baseStatus);
 
     // If status is already "available", no need to check dates
@@ -2771,8 +2783,8 @@ class ShiftPlanningSystem {
     endDate: Date | null;
   } {
     const checkDate = new Date(dateString);
-    const startDate = employee.availability_start !== undefined ? new Date(employee.availability_start) : null;
-    const endDate = employee.availability_end !== undefined ? new Date(employee.availability_end) : null;
+    const startDate = employee.availabilityStart !== undefined ? new Date(employee.availabilityStart) : null;
+    const endDate = employee.availabilityEnd !== undefined ? new Date(employee.availabilityEnd) : null;
 
     // Normalize dates to avoid timezone issues
     this.normalizeDateForAvailability(checkDate, 'check');
@@ -2787,7 +2799,7 @@ class ShiftPlanningSystem {
   }
 
   isEmployeeAvailableOnDate(employee: Employee, dateString: string): boolean {
-    const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+    const rawStatus = employee.availabilityStatus ?? employee.availabilityStatus ?? 'available';
     const status = this.parseAvailabilityStatus(rawStatus);
 
     // If status is available, no need to check dates
@@ -3006,7 +3018,7 @@ class ShiftPlanningSystem {
   }
 
   private buildUnavailabilityMessage(employee: Employee, date: string): string {
-    const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+    const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     const employeeName = fullName !== '' ? fullName : employee.username;
 
     const dateObj = new Date(date);
@@ -3015,13 +3027,13 @@ class ShiftPlanningSystem {
     const year = dateObj.getFullYear();
     const formattedDate = `${day}.${month}.${year}`;
 
-    const rawStatus = employee.availability_status ?? employee.availabilityStatus ?? 'available';
+    const rawStatus = employee.availabilityStatus ?? employee.availabilityStatus ?? 'available';
     const status = this.parseAvailabilityStatus(rawStatus);
     const statusText = this.getStatusText(status);
 
     let errorMsg = `${employeeName} ist am ${formattedDate} ${statusText}`;
 
-    const reason = employee.availability_reason;
+    const reason = employee.availabilityReason;
     if (reason !== undefined && reason !== '') {
       errorMsg += `: ${reason}`;
     }
@@ -3055,7 +3067,7 @@ class ShiftPlanningSystem {
 
       const employees = this.getShiftEmployees(date, shiftType);
       if (employees.includes(employee.id)) {
-        const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+        const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
         const employeeName = fullName !== '' ? fullName : employee.username;
         const shiftName = this.getShiftName(shiftType);
 
@@ -3206,9 +3218,9 @@ class ShiftPlanningSystem {
   ): {
     date: string;
     shift_type: string;
-    employee_id: number;
-    first_name: string;
-    last_name: string;
+    employeeId: number;
+    firstName: string;
+    lastName: string;
     username: string;
   }[] {
     return history.map((h) => {
@@ -3218,9 +3230,9 @@ class ShiftPlanningSystem {
       return {
         date: h.shiftDate,
         shift_type: shiftType,
-        employee_id: h.userId,
-        first_name: employee?.first_name ?? '',
-        last_name: employee?.last_name ?? '',
+        employeeId: h.userId,
+        firstName: employee?.firstName ?? '',
+        lastName: employee?.lastName ?? '',
         username: employee?.username ?? '',
       };
     });
@@ -3299,9 +3311,9 @@ class ShiftPlanningSystem {
       shifts?: {
         date: string;
         shift_type: string;
-        employee_id: number;
-        first_name: string;
-        last_name: string;
+        employeeId: number;
+        firstName: string;
+        lastName: string;
         username: string;
       }[];
     };
@@ -3442,9 +3454,9 @@ class ShiftPlanningSystem {
   ): {
     date: string;
     shift_type: string;
-    employee_id: number;
-    first_name: string;
-    last_name: string;
+    employeeId: number;
+    firstName: string;
+    lastName: string;
     username: string;
   }[] {
     return shifts.map((shift) => {
@@ -3453,9 +3465,9 @@ class ShiftPlanningSystem {
       return {
         date: shift.date,
         shift_type: shift.type,
-        employee_id: shift.userId,
-        first_name: employee?.first_name ?? shift.user?.firstName ?? 'Unknown',
-        last_name: employee?.last_name ?? shift.user?.lastName ?? 'User',
+        employeeId: shift.userId,
+        firstName: employee?.firstName ?? shift.user?.firstName ?? 'Unknown',
+        lastName: employee?.lastName ?? shift.user?.lastName ?? 'User',
         username: employee?.email ?? shift.user?.username ?? `user_${String(shift.userId)}`,
       };
     });
@@ -3530,9 +3542,9 @@ class ShiftPlanningSystem {
     shifts: {
       date: string;
       shift_type: string;
-      employee_id: number;
-      first_name: string;
-      last_name: string;
+      employeeId: number;
+      firstName: string;
+      lastName: string;
       username: string;
     }[],
   ): void {
@@ -3551,9 +3563,9 @@ class ShiftPlanningSystem {
   private processSingleShift(shift: {
     date: string;
     shift_type: string;
-    employee_id: number;
-    first_name: string;
-    last_name: string;
+    employeeId: number;
+    firstName: string;
+    lastName: string;
     username: string;
   }): void {
     const date = shift.date.split('T')[0];
@@ -3570,14 +3582,14 @@ class ShiftPlanningSystem {
       originalDate: shift.date,
       extractedDate: date,
       shiftType,
-      employee_id: shift.employee_id,
+      employeeId: shift.employeeId,
       employee_name: displayName,
-      raw_first_name: shift.first_name,
-      raw_last_name: shift.last_name,
+      raw_firstName: shift.firstName,
+      raw_lastName: shift.lastName,
       raw_username: shift.username,
     });
 
-    this.addEmployeeToShift(date, shiftType, shift.employee_id);
+    this.addEmployeeToShift(date, shiftType, shift.employeeId);
     this.storeShiftDetails(date, shiftType, shift);
   }
 
@@ -3595,15 +3607,15 @@ class ShiftPlanningSystem {
   }
 
   private getShiftEmployeeDisplayName(shift: {
-    employee_id: number;
-    first_name: string;
-    last_name: string;
+    employeeId: number;
+    firstName: string;
+    lastName: string;
     username: string;
   }): string {
-    const employee = this.employees.find((emp) => emp.id === shift.employee_id);
+    const employee = this.employees.find((emp) => emp.id === shift.employeeId);
 
-    const firstName = this.getValidName(employee?.first_name, shift.first_name);
-    const lastName = this.getValidName(employee?.last_name, shift.last_name);
+    const firstName = this.getValidName(employee?.firstName, shift.firstName);
+    const lastName = this.getValidName(employee?.lastName, shift.lastName);
     const fullName = `${firstName} ${lastName}`.trim();
 
     if (fullName !== '') {
@@ -3618,7 +3630,7 @@ class ShiftPlanningSystem {
       return shift.username;
     }
 
-    return `Employee #${shift.employee_id}`;
+    return `Employee #${shift.employeeId}`;
   }
 
   private getValidName(employeeName: string | undefined, shiftName: string): string {
@@ -3637,18 +3649,18 @@ class ShiftPlanningSystem {
     date: string,
     shiftType: string,
     shift: {
-      employee_id: number;
-      first_name: string;
-      last_name: string;
+      employeeId: number;
+      firstName: string;
+      lastName: string;
       username: string;
     },
   ): void {
-    const shiftKey = `${date}_${shiftType}_${String(shift.employee_id)}`;
+    const shiftKey = `${date}_${shiftType}_${String(shift.employeeId)}`;
     if (!this.shiftDetails.has(shiftKey)) {
       this.shiftDetails.set(shiftKey, {
-        employee_id: shift.employee_id,
-        first_name: shift.first_name,
-        last_name: shift.last_name,
+        employeeId: shift.employeeId,
+        firstName: shift.firstName,
+        lastName: shift.lastName,
         username: shift.username,
       });
     }
@@ -3971,7 +3983,7 @@ class ShiftPlanningSystem {
           setting_value: typeof value === 'object' ? JSON.stringify(value) : String(value),
           value_type: typeof value === 'boolean' ? 'boolean' : typeof value === 'object' ? 'json' : 'string',
           category: 'shifts',
-          team_id: teamId, // Include team_id for team-specific settings
+          teamId: teamId, // Include team_id for team-specific settings
         }),
       });
 
@@ -4003,11 +4015,9 @@ class ShiftPlanningSystem {
 
       if (!response.ok) return false;
 
-      const result = (await response.json()) as { data: { patterns: RotationPatternAPIResponse[] } };
-      const rawPatterns = result.data.patterns;
-
-      // Map the patterns to ensure consistent camelCase
-      const patterns = mapRotationPatterns(rawPatterns);
+      // Backend already returns camelCase via fieldMapping
+      const result = (await response.json()) as { data: { patterns: RotationPattern[] } };
+      const patterns = result.data.patterns;
 
       console.info('[SHIFTS DEBUG] Checking patterns for teamId:', teamId);
       console.info('[SHIFTS DEBUG] Found patterns:', patterns);
@@ -4277,7 +4287,7 @@ class ShiftPlanningSystem {
     }
 
     const teamId = this.selectedContext.teamId;
-    console.info('[SHIFTS DEBUG] Loading preferences for team_id:', teamId);
+    console.info('[SHIFTS DEBUG] Loading preferences for teamId:', teamId);
 
     const queryParams = new URLSearchParams({ category: 'shifts' });
     if (teamId !== null) {
@@ -4398,14 +4408,14 @@ class ShiftPlanningSystem {
 
   // Helper function to create employee element
   private createEmployeeElement(
-    employee: { id: number; first_name?: string; last_name?: string; is_active?: boolean },
+    employee: { id: number; firstName?: string; lastName?: string; isActive?: boolean },
     draggable: boolean = true,
   ): HTMLDivElement {
     const employeeDiv = document.createElement('div');
     employeeDiv.className = 'employee-item';
     employeeDiv.draggable = draggable;
     employeeDiv.dataset.employeeId = String(employee.id);
-    const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+    const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     employeeDiv.dataset.employeeName = fullName;
     employeeDiv.textContent = fullName;
 
@@ -4426,12 +4436,12 @@ class ShiftPlanningSystem {
     // Filter employees by selected team (Multi-tenant isolation)
     const teamEmployees = this.employees.filter((e) => {
       // Only show active employees from the selected team
-      if (!e.is_active) return false;
+      if (!e.isActive) return false;
 
       // Check if employee belongs to selected team
       if (this.selectedContext.teamId !== null && this.selectedContext.teamId !== 0) {
-        // Filter by team_id (employee data includes team_id from API)
-        return e.team_id === this.selectedContext.teamId;
+        // Filter by teamId (employee data includes teamId from API v2)
+        return e.teamId === this.selectedContext.teamId;
       }
 
       return true;
@@ -4975,7 +4985,7 @@ class ShiftPlanningSystem {
     const requestPayload = {
       name: `${pattern} Rotation`,
       description: `Automatische ${pattern} Rotation`,
-      team_id: teamId ?? null,
+      teamId: teamId ?? null,
       pattern_type: 'custom',
       pattern_config: {
         skipWeekends,
@@ -4986,7 +4996,7 @@ class ShiftPlanningSystem {
       cycle_length_weeks: cycleWeeks,
       starts_at: startDate,
       ends_at: endDate,
-      is_active: true,
+      isActive: true,
     };
 
     const response = await fetch('/api/v2/shifts/rotation/patterns', {
@@ -5026,7 +5036,7 @@ class ShiftPlanningSystem {
       body: JSON.stringify({
         pattern_id: patternId,
         user_ids: employees,
-        team_id: this.selectedContext.teamId ?? null,
+        teamId: this.selectedContext.teamId ?? null,
         shift_groups: shiftGroups,
         starts_at: startDate,
         ends_at: endDate,
@@ -5217,7 +5227,7 @@ class ShiftPlanningSystem {
     return {
       name: `Team-Rotation ${String(this.selectedContext.teamId ?? 'Unknown')}`,
       description: 'Automatisch generierte Schichtrotation',
-      team_id: this.selectedContext.teamId ?? null,
+      teamId: this.selectedContext.teamId ?? null,
       pattern_type: patternTypeMap[formValues.pattern ?? ''] ?? 'alternate_fs',
       pattern_config: {
         skipWeekends: formValues.skipWeekends,
@@ -5225,7 +5235,7 @@ class ShiftPlanningSystem {
       },
       starts_at: formValues.startDate,
       ends_at: formValues.endDateValue ?? formValues.startDate,
-      is_active: true,
+      isActive: true,
     };
   }
 
@@ -5355,23 +5365,23 @@ class ShiftPlanningSystem {
   }
 
   private createTempEmployeeFromShiftDetail(shiftDetail: ShiftDetailData): Employee {
-    const firstName = shiftDetail.first_name !== '' ? shiftDetail.first_name : undefined;
-    const lastName = shiftDetail.last_name !== '' ? shiftDetail.last_name : undefined;
-    const username = shiftDetail.username !== '' ? shiftDetail.username : `Employee #${shiftDetail.employee_id}`;
+    const firstName = shiftDetail.firstName !== '' ? shiftDetail.firstName : undefined;
+    const lastName = shiftDetail.lastName !== '' ? shiftDetail.lastName : undefined;
+    const username = shiftDetail.username !== '' ? shiftDetail.username : `Employee #${shiftDetail.employeeId}`;
 
     return {
-      id: shiftDetail.employee_id,
-      first_name: firstName,
-      last_name: lastName,
+      id: shiftDetail.employeeId,
+      firstName: firstName,
+      lastName: lastName,
       username: username,
       position: 'Mitarbeiter',
       email: '',
       role: 'employee' as const,
-      tenant_id: 0,
-      created_at: '',
-      updated_at: '',
-      is_active: true,
-      is_archived: false,
+      tenantId: 0,
+      createdAt: '',
+      updatedAt: '',
+      isActive: true,
+      isArchived: false,
     };
   }
 
@@ -5390,7 +5400,7 @@ class ShiftPlanningSystem {
     card.className = 'employee-card';
     card.dataset.employeeId = employee.id.toString();
 
-    const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+    const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     const name = fullName !== '' ? fullName : employee.username;
 
     // Build card content with DOM methods
@@ -5447,37 +5457,37 @@ class ShiftPlanningSystem {
     weekStart: string,
     weekEnd: string,
   ): {
-    employee_id: number;
-    shift_date: string;
-    shift_type: string;
-    week_start: string;
-    week_end: string;
-    department_id?: number;
-    machine_id?: number;
-    team_leader_id?: number;
+    employeeId: number;
+    shiftDate: string;
+    shiftType: string;
+    weekStart: string;
+    weekEnd: string;
+    departmentId?: number;
+    machineId?: number;
+    teamLeaderId?: number;
   }[] {
     const assignments: {
-      employee_id: number;
-      shift_date: string;
-      shift_type: string;
-      week_start: string;
-      week_end: string;
-      department_id?: number;
-      machine_id?: number;
-      team_leader_id?: number;
+      employeeId: number;
+      shiftDate: string;
+      shiftType: string;
+      weekStart: string;
+      weekEnd: string;
+      departmentId?: number;
+      machineId?: number;
+      teamLeaderId?: number;
     }[] = [];
 
     this.weeklyShifts.forEach((shifts, date) => {
       shifts.forEach((employeeIds, shiftType) => {
         employeeIds.forEach((employeeId) => {
           assignments.push({
-            employee_id: employeeId,
-            shift_date: date,
-            shift_type: shiftType,
-            week_start: weekStart,
-            week_end: weekEnd,
-            department_id: this.selectedContext.departmentId ?? undefined,
-            machine_id: this.selectedContext.machineId ?? undefined,
+            employeeId: employeeId,
+            shiftDate: date,
+            shiftType: shiftType,
+            weekStart: weekStart,
+            weekEnd: weekEnd,
+            departmentId: this.selectedContext.departmentId ?? undefined,
+            machineId: this.selectedContext.machineId ?? undefined,
           });
         });
       });
@@ -5781,8 +5791,8 @@ class ShiftPlanningSystem {
       body: JSON.stringify({
         week_start: weekStart,
         week_end: weekEnd,
-        department_id: this.selectedContext.departmentId,
-        team_id: this.selectedContext.teamId,
+        departmentId: this.selectedContext.departmentId,
+        teamId: this.selectedContext.teamId,
         machine_id: this.selectedContext.machineId,
       }),
     });
@@ -6196,9 +6206,33 @@ class ShiftPlanningSystem {
     const assignedEmployees = this.getAssignedEmployeeNames(date, shift);
     const modalContent = this.buildShiftModalContent(shift, dayName, dateStr, assignedEmployees);
 
-    openModal(modalContent, {
-      title: 'Schichtdetails',
-      size: 'md',
+    // Create and show modal (replaces deprecated openModal)
+    const modalHtml = `
+      <div class="modal-overlay" id="shiftDetailsModal">
+        <div class="ds-modal ds-modal--md">
+          <div class="ds-modal__header">
+            <h3 class="ds-modal__title">Schichtdetails</h3>
+            <button type="button" class="ds-modal__close" data-action="close-modal">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="ds-modal__body">
+            ${modalContent}
+          </div>
+        </div>
+      </div>
+    `;
+
+    const div = document.createElement('div');
+    // eslint-disable-next-line no-unsanitized/property -- Modal content is built from safe data
+    div.innerHTML = modalHtml;
+    const modal = div.firstElementChild as HTMLElement;
+    document.body.append(modal);
+
+    // Show modal with Design System BEM modifier
+    void modal.offsetHeight;
+    window.requestAnimationFrame(() => {
+      modal.classList.add('modal-overlay--active');
     });
   }
 
@@ -6208,7 +6242,7 @@ class ShiftPlanningSystem {
       .map((id) => {
         const employee = this.employees.find((e) => e.id === id);
         if (employee) {
-          const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+          const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
           const name = fullName !== '' ? fullName : employee.username;
           return this.escapeHtml(name);
         }

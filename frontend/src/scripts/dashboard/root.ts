@@ -53,8 +53,8 @@ interface DashboardData {
 
 interface CreateAdminFormElements extends HTMLFormControlsCollection {
   userName: HTMLInputElement;
-  first_name: HTMLInputElement;
-  last_name: HTMLInputElement;
+  firstName: HTMLInputElement;
+  lastName: HTMLInputElement;
   email: HTMLInputElement;
   email_confirm: HTMLInputElement;
   password: HTMLInputElement;
@@ -136,7 +136,7 @@ async function checkEmployeeNumber(): Promise<void> {
     const user = await apiClient.request<UserWithEmployeeNumber>(API_ENDPOINTS.USERS_ME);
 
     // Check if user has temporary employee number
-    const employeeNumber = user.employeeNumber ?? user.employee_number ?? '';
+    const employeeNumber = user.employeeNumber ?? user.employeeNumber ?? '';
     if (employeeNumber.startsWith('TEMP-') || employeeNumber.startsWith('TEMP_') || employeeNumber === '') {
       // User has temporary employee number, show modal
       const modal = document.querySelector<HTMLElement>('#employeeNumberModal');
@@ -222,8 +222,8 @@ async function createAdmin(e: Event): Promise<void> {
 
   const adminData = {
     userName: elements.userName.value,
-    first_name: elements.first_name.value,
-    last_name: elements.last_name.value,
+    firstName: elements.firstName.value,
+    lastName: elements.lastName.value,
     email: elements.email.value,
     password: elements.password.value,
     userRole: 'admin',
@@ -304,7 +304,7 @@ async function loadAdmins(): Promise<void> {
             <tr>
                 <td>${admin.id}</td>
                 <td>${admin.userName ?? admin.username}</td>
-                <td>${admin.first_name ?? ''} ${admin.last_name ?? ''}</td>
+                <td>${admin.firstName ?? ''} ${admin.lastName ?? ''}</td>
                 <td>${admin.email}</td>
                 <td>${admin.userRole ?? admin.role}</td>
                 <td>

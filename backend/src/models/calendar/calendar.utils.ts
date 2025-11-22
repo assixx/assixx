@@ -48,7 +48,7 @@ export function applyOrgLevelFilter(
   params: unknown[],
   filter: string,
   userDepartmentId?: number | null,
-  userTeamId?: number | null,
+  _userTeamId?: number | null, // Deprecated: Users can be in multiple teams via user_teams (N:M)
   userId?: number,
 ): { query: string; params: unknown[] } {
   let updatedQuery = query;
@@ -63,8 +63,16 @@ export function applyOrgLevelFilter(
       updatedParams.push(userDepartmentId);
       break;
     case 'team':
-      updatedQuery += " AND e.org_level = 'team' AND e.team_id = ?";
-      updatedParams.push(userTeamId);
+      // User can be in multiple teams via user_teams (N:M relation)
+      updatedQuery +=
+        " AND e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)";
+      updatedParams.push(userId);
+      break;
+    case 'area':
+      // User is assigned to area indirectly via department.area_id
+      updatedQuery +=
+        " AND e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = ?)";
+      updatedParams.push(userDepartmentId);
       break;
     case 'personal':
       updatedQuery +=
@@ -148,13 +156,15 @@ export function applyEventFilters(
     updatedQuery += ` AND (
           e.org_level = 'company' OR
           (e.org_level = 'department' AND e.department_id = ?) OR
-          (e.org_level = 'team' AND e.team_id = ?) OR
+          (e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)) OR
+          (e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = ?)) OR
           e.user_id = ? OR
           EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
         )`;
     updatedParams.push(
       options.userDepartmentId,
-      options.userTeamId,
+      options.userId, // for team check via user_teams
+      options.userDepartmentId, // for area check via department.area_id
       options.userId,
       options.userId,
     );
@@ -215,6 +225,49 @@ export async function getEventCount(
 }
 
 /**
+ * Check if user is team member
+ */
+async function hasTeamAccess(userId: number, teamId: number): Promise<boolean> {
+  const [teamRows] = await executeQuery<RowDataPacket[]>(
+    'SELECT 1 FROM user_teams WHERE user_id = ? AND team_id = ?',
+    [userId, teamId],
+  );
+  return teamRows.length > 0;
+}
+
+/**
+ * Check if user has area access via department
+ */
+async function hasAreaAccess(userDepartmentId: number | null, areaId: number): Promise<boolean> {
+  if (userDepartmentId === null) return false;
+
+  const [areaRows] = await executeQuery<RowDataPacket[]>(
+    'SELECT 1 FROM departments WHERE id = ? AND area_id = ?',
+    [userDepartmentId, areaId],
+  );
+  return areaRows.length > 0;
+}
+
+/**
+ * Check if user is event attendee
+ */
+async function isEventAttendee(eventId: number, userId: number): Promise<boolean> {
+  const [attendeeRows] = await executeQuery<RowDataPacket[]>(
+    'SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
+    [eventId, userId],
+  );
+  return attendeeRows.length > 0;
+}
+
+/**
+ * Check if event is public type
+ */
+function isPublicEventType(eventType: string | undefined): boolean {
+  if (eventType === undefined) return false;
+  return eventType === 'meeting' || eventType === 'training';
+}
+
+/**
  * Check if user has access to a specific event
  * @internal Used internally by CRUD operations
  */
@@ -224,14 +277,10 @@ export async function checkEventAccess(
   role: string | null,
 ): Promise<boolean> {
   // Admins have access to all events
-  if (role === 'admin' || role === 'root') {
-    return true;
-  }
+  if (role === 'admin' || role === 'root') return true;
 
   // Company events are visible to all employees
-  if (event.org_level === 'company') {
-    return true;
-  }
+  if (event.org_level === 'company') return true;
 
   // Get user info for department and team checks
   const userInfo = await user.getUserDepartmentAndTeam(userId);
@@ -246,27 +295,31 @@ export async function checkEventAccess(
   }
 
   // Team events are visible to team members
-  if (event.org_level === 'team' && event.team_id != null && userInfo.teamId === event.team_id) {
+  if (
+    event.org_level === 'team' &&
+    event.team_id != null &&
+    (await hasTeamAccess(userId, event.team_id))
+  ) {
     return true;
   }
 
-  // Check if user is creator or attendee for personal events
-  if (event.user_id === userId) {
+  // Area events are visible to users in departments assigned to that area
+  if (
+    event.org_level === 'area' &&
+    event.area_id != null &&
+    (await hasAreaAccess(userInfo.departmentId, event.area_id))
+  ) {
     return true;
   }
 
-  // Check if event is public type
-  if (event.type === 'meeting' || event.type === 'training') {
-    return true;
-  }
+  // Creator has access
+  if (event.user_id === userId) return true;
 
-  // Check if user is an attendee
-  const [attendeeRows] = await executeQuery<RowDataPacket[]>(
-    'SELECT 1 FROM calendar_attendees WHERE event_id = ? AND user_id = ?',
-    [event.id, userId],
-  );
+  // Public event types are visible to all
+  if (isPublicEventType(event.type)) return true;
 
-  return attendeeRows.length > 0;
+  // Check if user is attendee
+  return await isEventAttendee(event.id, userId);
 }
 
 /**
@@ -298,9 +351,10 @@ function createEventFieldMappings(eventData: {
   start_time?: string | Date;
   end_time?: string | Date;
   all_day?: boolean;
-  org_level?: 'company' | 'department' | 'team' | 'personal';
+  org_level?: 'company' | 'department' | 'team' | 'area' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
+  area_id?: number | null;
   status?: 'active' | 'cancelled';
   reminder_time?: number | string | null;
   color?: string;
@@ -340,6 +394,7 @@ function createEventFieldMappings(eventData: {
       value: eventData.department_id,
     },
     { condition: eventData.team_id !== undefined, field: 'team_id', value: eventData.team_id },
+    { condition: eventData.area_id !== undefined, field: 'area_id', value: eventData.area_id },
     { condition: eventData.status !== undefined, field: 'status', value: eventData.status },
     {
       condition: eventData.reminder_time !== undefined,
@@ -361,9 +416,10 @@ export function buildEventUpdateQuery(
     start_time?: string | Date;
     end_time?: string | Date;
     all_day?: boolean;
-    org_level?: 'company' | 'department' | 'team' | 'personal';
+    org_level?: 'company' | 'department' | 'team' | 'area' | 'personal';
     department_id?: number | null;
     team_id?: number | null;
+    area_id?: number | null;
     status?: 'active' | 'cancelled';
     reminder_time?: number | string | null;
     color?: string;

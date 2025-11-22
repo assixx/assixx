@@ -542,6 +542,17 @@ body:has(.sidebar.collapsed) .header .logo {
   height: 1.063rem !important;
 }
 
+/* Active item when sidebar is collapsed - keep black color with higher specificity */
+.sidebar.collapsed .sidebar-item.active .sidebar-link {
+  color: var(--color-black) !important;
+  transition: color 0.2s ease;
+}
+
+/* Icon color for active item when sidebar is collapsed */
+.sidebar.collapsed .sidebar-item.active .sidebar-link .icon {
+  color: var(--color-black);
+}
+
 .sidebar.collapsed .sidebar-item.active .sidebar-link .icon::before {
   content: "";
 
@@ -553,7 +564,9 @@ body:has(.sidebar.collapsed) .header .logo {
 
   border-radius: var(--glass-card-radius);
 
-  background: rgb(139 139 139 / 41%);
+  /* NOTE: 'color' doesn't work on ::before with empty content - use .icon instead (see above) */
+
+  background: var(--color-icon-primary);
 }
 
 /* Hover nur bei NICHT active */
@@ -566,13 +579,10 @@ body:has(.sidebar.collapsed) .header .logo {
 
   border-radius: var(--glass-card-radius);
 
-  background: rgb(33 150 243 / 10%);
+  background: #a9d9ff47;
 }
 
-/* Active + Hover = stärkerer active effect */
-.sidebar.collapsed .sidebar-item.active .sidebar-link:hover .icon::before {
-  background: linear-gradient(135deg, rgb(33 150 243 / 25%), rgb(33 150 243 / 15%));
-}
+/* Active items should NOT have hover effect - removed the rule */
 
 /* Moved to after base styles - see lines 954+ and 1029+ */
 
@@ -934,13 +944,15 @@ body:has(.sidebar.collapsed) .header .logo {
   position: relative;
 }
 
-/* Hover/Active nur wenn NICHT collapsed - moved here to fix specificity order */
-.sidebar:not(.collapsed) .sidebar-link:hover {
-  background: rgb(33 150 243 / 10%);
+/* Hover nur wenn NICHT collapsed UND NICHT active - moved here to fix specificity order */
+.sidebar:not(.collapsed) .sidebar-item:not(.active) .sidebar-link:hover {
+  background: #a9d9ff47;
 }
 
 .sidebar:not(.collapsed) .sidebar-item.active .sidebar-link {
-  background: rgb(139 139 139 / 41%);
+  border-color: var(--color-icon-primary);
+  color: var(--color-black);
+  background: var(--color-icon-primary);
 }
 
 .submenu-arrow {

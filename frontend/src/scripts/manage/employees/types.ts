@@ -27,37 +27,19 @@ export interface IEmployeesManager {
 
 export interface Employee extends User {
   employeeId?: string;
-  employee_id?: string; // Database field name
-  employeeNumber?: string; // Employee Number field
-  employee_number?: string; // snake_case version
-  departmentId?: number;
+  // employeeNumber inherited from User
+  // departmentId inherited from User
   departmentName?: string;
-  department_name?: string; // snake_case version
-  teamId?: number;
+  // teamId inherited from User
   teamName?: string;
-  team_name?: string; // snake_case version
-  position?: string;
+  // position inherited from User
   hireDate?: string;
   birthday?: string; // Birthday field for form
   status: 'active' | 'inactive' | 'vacation' | 'sick' | 'terminated';
-  // Availability fields - both snake_case and camelCase
-  availabilityStatus?: string;
-  availability_status?: string;
+  // Availability fields (availabilityStatus, availabilityStart, availabilityEnd, availabilityNotes inherited from User)
   availabilityReason?: string;
   availableFrom?: string;
-  availabilityStart?: string;
-  availability_start?: string;
-  availabilityEnd?: string;
-  availability_end?: string;
-  availabilityNotes?: string;
-  availability_notes?: string;
-  // Add both snake_case and camelCase for compatibility
-  first_name?: string;
-  last_name?: string;
-  firstName?: string;
-  lastName?: string;
-  isActive?: boolean | number; // API v2 camelCase (can be boolean or 0/1)
-  phone?: string;
+  // firstName, lastName, isActive, phone inherited from User
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;

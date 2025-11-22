@@ -32,9 +32,10 @@ export interface DbCalendarEvent extends RowDataPacket {
   // Aliases for API compatibility
   start_time?: Date;
   end_time?: Date;
-  org_level?: 'company' | 'department' | 'team' | 'personal';
+  org_level?: 'company' | 'department' | 'team' | 'area' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
+  area_id?: number | null;
   created_by?: number;
   created_by_role?: 'admin' | 'lead' | 'user';
   allow_attendees?: boolean | number;
@@ -46,8 +47,6 @@ export interface DbCalendarEvent extends RowDataPacket {
  */
 export interface DbEventAttendee extends RowDataPacket {
   user_id: number;
-  response_status: 'pending' | 'accepted' | 'declined' | 'tentative';
-  responded_at?: Date;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -60,7 +59,7 @@ export interface DbEventAttendee extends RowDataPacket {
  */
 export interface EventQueryOptions {
   status?: 'active' | 'cancelled';
-  filter?: 'all' | 'company' | 'department' | 'team' | 'personal';
+  filter?: 'all' | 'company' | 'department' | 'team' | 'area' | 'personal';
   search?: string;
   start_date?: string;
   end_date?: string;
@@ -83,9 +82,10 @@ export interface EventCreateData {
   start_time: string | Date;
   end_time: string | Date;
   all_day?: boolean;
-  org_level: 'company' | 'department' | 'team' | 'personal';
+  org_level: 'company' | 'department' | 'team' | 'area' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
+  area_id?: number | null;
   created_by: number;
   created_by_role?: string;
   allow_attendees?: boolean;
@@ -93,7 +93,6 @@ export interface EventCreateData {
   color?: string;
   recurrence_rule?: string | null;
   parent_event_id?: number | null;
-  requires_response?: boolean;
 }
 
 /**
@@ -106,9 +105,10 @@ export interface EventUpdateData {
   start_time?: string | Date;
   end_time?: string | Date;
   all_day?: boolean;
-  org_level?: 'company' | 'department' | 'team' | 'personal';
+  org_level?: 'company' | 'department' | 'team' | 'area' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
+  area_id?: number | null;
   status?: 'active' | 'cancelled';
   reminder_time?: number | string | null;
   color?: string;

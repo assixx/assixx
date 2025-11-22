@@ -2,6 +2,8 @@
  * Calendar CRUD Operations
  * Main business logic for calendar event management
  */
+import { v7 as uuidv7 } from 'uuid';
+
 import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../utils/db.js';
 import { logger } from '../../utils/logger.js';
 import user from '../user/index.js';
@@ -58,14 +60,12 @@ export async function getAllEvents(
     // Build base query
     const baseQuery = `
         SELECT e.*,
-               u.username as creator_name,
-               CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
+               u.username as creator_name
         FROM calendar_events e
         LEFT JOIN users u ON e.user_id = u.id
-        LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
         WHERE e.tenant_id = ? AND e.status = ?
       `;
-    const baseParams: unknown[] = [userId, tenantId, dbStatus];
+    const baseParams: unknown[] = [tenantId, dbStatus];
 
     // Apply filters
     const { query: filteredQuery, params: queryParams } = applyEventFilters(baseQuery, baseParams, {
@@ -144,18 +144,16 @@ export async function getEventById(
     // Determine user's role for access control
     const { role } = await user.getUserDepartmentAndTeam(userId);
 
-    // Query the event with user response status
+    // Query the event
     const query = `
         SELECT e.*,
-               u.username as creator_name,
-               CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
+               u.username as creator_name
         FROM calendar_events e
         LEFT JOIN users u ON e.user_id = u.id
-        LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
         WHERE e.id = ? AND e.tenant_id = ?
       `;
 
-    const [events] = await executeQuery<DbCalendarEvent[]>(query, [userId, id, tenantId]);
+    const [events] = await executeQuery<DbCalendarEvent[]>(query, [id, tenantId]);
 
     if (events.length === 0) {
       return null;
@@ -211,16 +209,20 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
       throw new Error('Start time must be before end time');
     }
 
+    // Generate UUIDv7 for external identifier (time-sortable, like KVP and Survey)
+    const eventUuid = uuidv7();
+
     // Insert new event
     const query = `
         INSERT INTO calendar_events
-        (tenant_id, user_id, title, description, location, start_date, end_date, all_day,
-         org_level, department_id, team_id, created_by_role, allow_attendees, requires_response,
+        (uuid, tenant_id, user_id, title, description, location, start_date, end_date, all_day,
+         org_level, department_id, team_id, created_by_role, allow_attendees,
          type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
+      eventUuid,
       tenantId,
       createdBy, // user_id
       title,
@@ -234,7 +236,6 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
       teamId ?? null,
       createdByRole ?? 'user',
       allowAttendees === true ? 1 : 0,
-      eventData.requires_response === true ? 1 : 0, // requires_response
       'other', // type
       'confirmed', // status
       0, // is_private
@@ -247,9 +248,9 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
     // Get the created event
     const createdEvent = await getEventById(result.insertId, tenantId, createdBy);
 
-    // Add the creator as an attendee with 'accepted' status
+    // Add the creator as an attendee
     if (createdEvent) {
-      await addEventAttendee(createdEvent.id, createdBy, 'accepted');
+      await addEventAttendee(createdEvent.id, createdBy);
 
       // If this is a recurring event, generate future occurrences
       // Use Dependency Injection to pass createEvent function
@@ -345,16 +346,14 @@ export async function getDashboardEvents(
     // Build query for dashboard events
     let query = `
         SELECT e.*,
-               u.username as creator_name,
-               CASE WHEN a.id IS NOT NULL THEN a.response_status ELSE NULL END as user_response
+               u.username as creator_name
         FROM calendar_events e
         LEFT JOIN users u ON e.user_id = u.id
-        LEFT JOIN calendar_attendees a ON e.id = a.event_id AND a.user_id = ?
         WHERE e.tenant_id = ? AND e.status = 'confirmed'
         AND e.start_date >= ? AND e.start_date <= ?
       `;
 
-    const queryParams: unknown[] = [userId, tenantId, todayStr, endDateStr];
+    const queryParams: unknown[] = [tenantId, todayStr, endDateStr];
 
     // Apply access control for non-admin users (dashboard shows all accessible events)
     if (role !== 'admin' && role !== 'root') {

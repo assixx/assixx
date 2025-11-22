@@ -23,9 +23,7 @@
 }
 
 .card-stat:hover {
-  position: relative;
-  z-index: 1;
-  border-color: rgb(33 150 243 / 50%);
+  border-color: var(--color-icon-primary);
 }
 
 /* Stat Value (Big Number) */

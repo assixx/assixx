@@ -7,7 +7,6 @@ import express, { Application, NextFunction, Request, Response } from 'express';
 import { existsSync } from 'fs';
 import path from 'path';
 
-import { deprecationMiddleware } from '../middleware/deprecation.js';
 import { contentSecurityPolicy, redirectToDashboard } from '../middleware/pageAuth.js';
 import {
   apiSecurityHeaders,
@@ -35,9 +34,6 @@ export function loadSecurity(app: Application): void {
 
   // Apply CORS with environment-specific configuration
   app.use(cors(corsOptions));
-
-  // Deprecation warnings for old API endpoints (V1 sunset date)
-  app.use(deprecationMiddleware('v1', '2025-12-31'));
 
   // Sanitize all inputs to prevent XSS
   app.use(sanitizeInputs);

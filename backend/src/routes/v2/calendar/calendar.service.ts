@@ -10,22 +10,12 @@ import type {
   EventCreateData,
   EventUpdateData,
 } from '../../../models/calendar.js';
-import { RowDataPacket } from '../../../utils/db.js';
 import { dbToApiEvent } from '../../../utils/fieldMapping.js';
 import { ServiceError } from '../users/users.service.js';
 
-// Query result interfaces
-interface UnreadEventResult extends RowDataPacket {
-  id: number;
-  title: string;
-  startTime: Date;
-  requires_response: number | boolean;
-  response_status: string;
-}
-
 export interface CalendarFilters {
   status?: 'active' | 'cancelled';
-  filter?: 'all' | 'company' | 'department' | 'team' | 'personal';
+  filter?: 'all' | 'company' | 'department' | 'team' | 'area' | 'personal';
   search?: string;
   startDate?: string;
   endDate?: string;
@@ -42,9 +32,10 @@ export interface CalendarEventData {
   startTime: string;
   endTime: string;
   allDay?: boolean;
-  orgLevel: 'company' | 'department' | 'team' | 'personal';
+  orgLevel: 'company' | 'department' | 'team' | 'area' | 'personal';
   departmentId?: number; // Explizit für department/team Events
   teamId?: number; // Explizit für team Events
+  areaId?: number; // Explizit für area Events
   reminderMinutes?: number;
   color?: string;
   recurrenceRule?: string;
@@ -59,9 +50,10 @@ export interface CalendarEventUpdateData {
   startTime?: string;
   endTime?: string;
   allDay?: boolean;
-  orgLevel?: 'company' | 'department' | 'team' | 'personal';
+  orgLevel?: 'company' | 'department' | 'team' | 'area' | 'personal';
   departmentId?: number;
   teamId?: number;
+  areaId?: number;
   reminderMinutes?: number | null;
   color?: string;
   recurrenceRule?: string | null;
@@ -183,8 +175,6 @@ class CalendarService {
         ...apiEvent,
         attendees: attendees.map((attendee: EventAttendee) => ({
           userId: attendee.user_id,
-          responseStatus: attendee.response_status,
-          respondedAt: attendee.responded_at,
           username: attendee.username,
           firstName: attendee.first_name,
           lastName: attendee.last_name,
@@ -229,6 +219,9 @@ class CalendarService {
         break;
       case 'team':
         this.validateTeamEvent(eventData, userRole, userTeamId);
+        break;
+      case 'area':
+        this.validateAreaEvent(eventData, userRole);
         break;
       case 'personal':
         // Everyone can create personal events
@@ -294,6 +287,21 @@ class CalendarService {
   }
 
   /**
+   * Validate area event creation
+   */
+  private validateAreaEvent(eventData: CalendarEventData, userRole: string): void {
+    if (!eventData.areaId) {
+      throw new ServiceError('BAD_REQUEST', 'areaId is required for area events', 400, [
+        { field: 'areaId', message: 'Required for area events' },
+      ]);
+    }
+
+    if (userRole !== 'admin' && userRole !== 'lead') {
+      throw new ServiceError('FORBIDDEN', 'Only admins and leads can create area events', 403);
+    }
+  }
+
+  /**
    * Build event create data from input
    */
   private buildEventCreateData(
@@ -313,13 +321,13 @@ class CalendarService {
       org_level: eventData.orgLevel,
       department_id: eventData.departmentId ?? null,
       team_id: eventData.teamId ?? null,
+      area_id: eventData.areaId ?? null,
       created_by: userId,
       created_by_role: userRole,
       allow_attendees: Boolean(eventData.attendeeIds && eventData.attendeeIds.length > 0),
       reminder_time: eventData.reminderMinutes,
       color: eventData.color,
       recurrence_rule: eventData.recurrenceRule,
-      requires_response: eventData.requiresResponse ?? false,
     };
   }
 
@@ -336,7 +344,7 @@ class CalendarService {
     }
 
     for (const attendeeId of attendeeIds) {
-      await calendarModel.addEventAttendee(eventId, attendeeId, 'pending', tenantId);
+      await calendarModel.addEventAttendee(eventId, attendeeId, tenantId);
     }
   }
 
@@ -455,6 +463,7 @@ class CalendarService {
       org_level: updateData.orgLevel,
       department_id: updateData.departmentId,
       team_id: updateData.teamId,
+      area_id: updateData.areaId,
       reminder_time: updateData.reminderMinutes,
       color: updateData.color,
       recurrence_rule: updateData.recurrenceRule,
@@ -517,40 +526,6 @@ class CalendarService {
         throw error;
       }
       throw new ServiceError('SERVER_ERROR', 'Failed to delete event', 500);
-    }
-  }
-
-  /**
-   * Update attendee response
-   * @param eventId - The eventId parameter
-   * @param userId - The user ID
-   * @param response - The response parameter
-   * @param tenantId - The tenant ID
-   */
-  async updateAttendeeResponse(
-    eventId: number,
-    userId: number,
-    response: 'accepted' | 'declined' | 'tentative',
-    tenantId: number,
-  ): Promise<{ success: boolean }> {
-    try {
-      // Check if event exists
-      const event = await calendarModel.getEventById(eventId, tenantId, userId);
-      if (!event) {
-        throw new ServiceError('NOT_FOUND', 'Event not found', 404);
-      }
-
-      const success = await calendarModel.respondToEvent(eventId, userId, response);
-      if (!success) {
-        throw new ServiceError('BAD_REQUEST', 'Failed to update response', 400);
-      }
-
-      return { success: true };
-    } catch (error: unknown) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
-      throw new ServiceError('SERVER_ERROR', 'Failed to update attendee response', 500);
     }
   }
 
@@ -670,67 +645,15 @@ class CalendarService {
   }
 
   /**
-   * Get unread events (events requiring response)
-   * @param tenantId - The tenant ID
-   * @param userId - The user ID
+   * Get unread events (DEPRECATED - feature removed)
+   * @returns Empty results for backward compatibility
    */
-  async getUnreadEvents(
-    tenantId: number,
-    userId: number,
-  ): Promise<{
-    totalUnread: number;
-    eventsRequiringResponse: {
-      id: number;
-      title: string;
-      startTime: string;
-      requiresResponse: boolean;
-    }[];
-  }> {
-    try {
-      // Get all events where user is an attendee with pending response
-      const query = `
-        SELECT
-          e.id,
-          e.title,
-          e.start_date as startTime,
-          e.requires_response,
-          a.response_status
-        FROM calendar_events e
-        JOIN calendar_attendees a ON e.id = a.event_id
-        WHERE
-          e.tenant_id = ?
-          AND a.user_id = ?
-          AND a.response_status = 'pending'
-          AND e.requires_response = 1
-          AND e.status = 'confirmed'
-          AND e.start_date >= NOW()
-        ORDER BY e.start_date ASC
-        LIMIT 50
-      `;
-
-      // Import the query function
-      const { query: executeQuery } = await import('../../../utils/db.js');
-      const [events] = await executeQuery<UnreadEventResult[]>(query, [tenantId, userId]);
-
-      // Count total unread events
-      const totalUnread = events.length;
-
-      return {
-        totalUnread,
-        eventsRequiringResponse: events.map((event: UnreadEventResult) => ({
-          id: event.id,
-          title: event.title,
-          startTime: event.startTime.toISOString(),
-          requiresResponse: true,
-        })),
-      };
-    } catch (error: unknown) {
-      console.error('Error getting unread events:', error);
-      return {
-        totalUnread: 0,
-        eventsRequiringResponse: [],
-      };
-    }
+  getUnreadEvents(): { totalUnread: number; eventsRequiringResponse: unknown[] } {
+    // NOTE: This feature has been removed as requires_response functionality was deprecated
+    return {
+      totalUnread: 0,
+      eventsRequiringResponse: [],
+    };
   }
 
   /**
