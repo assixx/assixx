@@ -1,10 +1,5 @@
 // Import for default export
-import {
-  addEventAttendee,
-  getEventAttendees,
-  removeEventAttendee,
-  respondToEvent,
-} from './calendar.attendees.js';
+import { addEventAttendee, getEventAttendees, removeEventAttendee } from './calendar.attendees.js';
 import {
   canManageEvent,
   checkEventExists,
@@ -50,12 +45,7 @@ export {
 } from './calendar.crud.js';
 
 // Export attendee operations
-export {
-  addEventAttendee,
-  removeEventAttendee,
-  respondToEvent,
-  getEventAttendees,
-} from './calendar.attendees.js';
+export { addEventAttendee, removeEventAttendee, getEventAttendees } from './calendar.attendees.js';
 
 // Export recurring event operations
 export { generateRecurringEvents } from './calendar.recurring.js';
@@ -83,7 +73,6 @@ const Calendar = {
   deleteEvent,
   addEventAttendee,
   removeEventAttendee,
-  respondToEvent,
   getEventAttendees,
   getDashboardEvents,
   canManageEvent,

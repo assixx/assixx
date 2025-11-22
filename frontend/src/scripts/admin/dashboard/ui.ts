@@ -2,12 +2,11 @@
  * UI classes for Admin Dashboard
  */
 
-import type { Document } from '../../../types/api.types';
-import type { MappedUser } from '../../../utils/api-mappers';
+import type { User, Document } from '../../../types/api.types';
 import { $$, $$id, createElement, setHTML, setText, show, hide } from '../../../utils/dom-utils';
 import { showError } from '../../auth';
 import { DepartmentService } from './services';
-import type { DashboardStats, Department, Team } from './types';
+import type { DashboardStats, Department, Team, CalendarEventApi } from './types';
 
 // UI Class Constants
 const CLASS_COMPACT_ITEM = 'compact-item';
@@ -37,7 +36,7 @@ export class DashboardUI {
     }
   }
 
-  updateRecentEmployees(employees: MappedUser[]): void {
+  updateRecentEmployees(employees: User[]): void {
     const container = $$id('recent-employees');
     if (container === null) return;
 
@@ -48,7 +47,8 @@ export class DashboardUI {
 
     const items = employees.slice(0, 3).map((emp) => {
       const item = createElement('div', { className: CLASS_COMPACT_ITEM });
-      const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, emp.fullName);
+      const fullName = `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim();
+      const nameSpan = createElement('span', { className: CLASS_COMPACT_ITEM_NAME }, fullName);
       item.append(nameSpan);
       return item;
     });
@@ -125,6 +125,112 @@ export class DashboardUI {
     items.forEach((item) => {
       container.append(item);
     });
+  }
+
+  /**
+   * Update upcoming calendar events (next 3 events after today)
+   */
+  updateUpcomingEvents(events: CalendarEventApi[]): void {
+    const container = $$id('calendar-events-list');
+    if (container === null) return;
+
+    if (events.length === 0) {
+      setHTML(
+        container,
+        `<div class="p-2 rounded text-xs">
+          <strong class="block font-semibold">Nächste Termine</strong>
+          <p class="text-[var(--color-text-secondary)] mt-1">Keine anstehenden Termine</p>
+        </div>`,
+      );
+      return;
+    }
+
+    // Only show next 3 events
+    const upcomingEvents = events.slice(0, 3);
+
+    container.innerHTML = '';
+
+    upcomingEvents.forEach((event) => {
+      const eventItem = this.createEventItem(event);
+      container.append(eventItem);
+    });
+  }
+
+  /**
+   * Create event item HTML element
+   */
+  private createEventItem(event: CalendarEventApi): HTMLElement {
+    // API v2 returns camelCase fields through dbToApiEvent
+    const startDate = new Date(event.startTime);
+    const day = startDate.getDate().toString();
+    const month = startDate.toLocaleDateString('de-DE', { month: 'short' });
+
+    // API returns allDay as boolean or number (1/0)
+    const isAllDay = event.allDay === true || event.allDay === 1;
+    const time = isAllDay ? 'Ganztägig' : startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+    // Get org level class and text - API returns orgLevel
+    const orgLevel = event.orgLevel ?? 'personal';
+    const levelClass = `event-level-${orgLevel}`;
+    const levelText = this.getOrgLevelText(orgLevel);
+
+    const eventItem = createElement('div', { className: 'event-item' });
+    eventItem.dataset.id = event.id.toString();
+
+    // Event date section
+    const eventDate = createElement('div', { className: 'event-date' });
+    eventDate.append(
+      createElement('span', { className: 'event-day' }, day),
+      createElement('span', { className: 'event-month' }, month),
+      createElement('span', { className: 'event-time' }, time),
+    );
+
+    // Event details section
+    const eventDetails = createElement('div', { className: 'event-details' });
+    const title = createElement(
+      'div',
+      { className: 'event-title' },
+      event.title !== '' ? event.title : 'Unbenannter Termin',
+    );
+    eventDetails.append(title);
+
+    // Location (optional)
+    if (event.location !== undefined && event.location !== '') {
+      const locationDiv = createElement('div', { className: 'event-location' });
+      locationDiv.append(createElement('i', { className: 'fas fa-map-marker-alt' }), ` ${event.location}`);
+      eventDetails.append(locationDiv);
+    }
+
+    // Org level badge
+    const levelBadge = createElement('span', { className: `event-level ${levelClass}` }, levelText);
+    eventDetails.append(levelBadge);
+
+    eventItem.append(eventDate, eventDetails);
+
+    // Click handler to open calendar
+    eventItem.addEventListener('click', () => {
+      window.location.href = '/calendar';
+    });
+
+    return eventItem;
+  }
+
+  /**
+   * Get German text for org level
+   */
+  private getOrgLevelText(orgLevel: string): string {
+    switch (orgLevel) {
+      case 'company':
+        return 'Firma';
+      case 'department':
+        return 'Abteilung';
+      case 'team':
+        return 'Team';
+      case 'area':
+        return 'Bereich';
+      default:
+        return 'Persönlich';
+    }
   }
 }
 

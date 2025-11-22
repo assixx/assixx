@@ -5,7 +5,7 @@
  */
 
 import { ApiClient } from '../../../utils/api-client';
-import { mapUsers, type UserAPIResponse } from '../../../utils/api-mappers';
+import type { User } from '../../../types/api.types';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import { $$id, setSafeHTML } from '../../../utils/dom-utils';
 import type { Employee, Department, Team, WindowWithEmployeeHandlers } from './types';
@@ -353,9 +353,9 @@ class EmployeesManager {
 
   private filterByStatus(employees: Employee[]): Employee[] {
     if (this.currentFilter === 'active') {
-      return employees.filter((emp) => emp.is_active);
+      return employees.filter((emp) => emp.isActive);
     } else if (this.currentFilter === 'inactive') {
-      return employees.filter((emp) => !emp.is_active);
+      return employees.filter((emp) => !emp.isActive);
     }
     return employees;
   }
@@ -366,8 +366,8 @@ class EmployeesManager {
     const search = this.searchTerm.toLowerCase();
     return employees.filter(
       (emp) =>
-        (emp.first_name?.toLowerCase().includes(search) ?? false) ||
-        (emp.last_name?.toLowerCase().includes(search) ?? false) ||
+        (emp.firstName?.toLowerCase().includes(search) ?? false) ||
+        (emp.lastName?.toLowerCase().includes(search) ?? false) ||
         emp.email.toLowerCase().includes(search) ||
         (emp.position?.toLowerCase().includes(search) ?? false) ||
         (emp.employeeId?.toLowerCase().includes(search) ?? false),
@@ -387,7 +387,8 @@ class EmployeesManager {
       }
 
       // ApiClient adds /api/v2 or /api prefix automatically based on feature flag
-      const response = await this.apiClient.request<UserAPIResponse[]>('/users', {
+      // Backend already returns camelCase via fieldMapping
+      const response = await this.apiClient.request<User[]>('/users', {
         method: 'GET',
       });
 
@@ -398,11 +399,8 @@ class EmployeesManager {
         return;
       }
 
-      // Map response through api-mappers for consistent field names
-      const mappedUsers = mapUsers(response);
-
       // Map users to employees and apply security filter
-      this.employees = this.mapUsersToEmployees(mappedUsers);
+      this.employees = this.mapUsersToEmployees(response);
 
       // Apply filters
       this.employees = this.filterByStatus(this.employees);
@@ -447,51 +445,40 @@ class EmployeesManager {
     return 'active';
   }
 
-  private mapUsersToEmployees(mappedUsers: ReturnType<typeof mapUsers>): Employee[] {
+  private mapUsersToEmployees(users: User[]): Employee[] {
     // CRITICAL SECURITY: Only show users with role='employee'
     // NEVER show admins or roots in the employees table
     // Admins cannot manage other admins or see root users
-    return mappedUsers
+    return users
       .filter((user) => user.role === 'employee')
       .map(
         (user): Employee => ({
-          // Map basic User fields (snake_case for compatibility with Employee which extends User)
+          // Map basic User fields (camelCase only - API v2)
           id: user.id,
           username: user.username,
           email: user.email,
-          first_name: user.firstName,
-          last_name: user.lastName,
-          role: user.role,
-          tenant_id: user.tenantId,
-          is_active: user.isActive,
-          is_archived: false, // Default to false as MappedUser doesn't have this field
-          created_at: user.createdAt ?? '',
-          updated_at: user.updatedAt ?? '',
-
-          // Map Employee-specific fields
           firstName: user.firstName,
           lastName: user.lastName,
+          role: user.role,
+          tenantId: user.tenantId,
+          isActive: user.isActive,
+          isArchived: false, // Default to false
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+
+          // Map Employee-specific fields
           departmentId: user.departmentId ?? undefined,
           departmentName: user.departmentName,
-          department_id: user.departmentId ?? undefined,
-          department_name: user.departmentName,
           teamId: user.teamId ?? undefined,
           teamName: user.teamName,
-          team_id: user.teamId ?? undefined,
-          team_name: user.teamName,
           position: user.position,
           employeeNumber: user.employeeNumber,
-          employee_number: user.employeeNumber,
 
           // Map availability fields
           availabilityStatus: user.availabilityStatus,
-          availability_status: user.availabilityStatus,
           availabilityStart: user.availabilityStart,
-          availability_start: user.availabilityStart,
           availabilityEnd: user.availabilityEnd,
-          availability_end: user.availabilityEnd,
           availabilityNotes: user.availabilityNotes,
-          availability_notes: user.availabilityNotes,
 
           // Derive status from availability
           status: this.deriveStatusFromAvailability(user.availabilityStatus),
@@ -529,7 +516,7 @@ class EmployeesManager {
     delete cleanedData.availabilityEnd;
     delete cleanedData.availabilityNotes;
 
-    const response = await this.apiClient.request<UserAPIResponse>('/users', {
+    const response = await this.apiClient.request<User>('/users', {
       method: 'POST',
       body: JSON.stringify(cleanedData),
     });
@@ -559,9 +546,8 @@ class EmployeesManager {
     await this.loadEmployees();
     console.info('[createEmployee] Employees list reloaded successfully');
 
-    // Map single user response
-    const mappedUsers = mapUsers([response]);
-    return mappedUsers[0] as unknown as Employee;
+    // Backend already returns camelCase via fieldMapping
+    return response as unknown as Employee;
   }
 
   private async handleTeamAssignmentChange(
@@ -632,7 +618,7 @@ class EmployeesManager {
     delete data.teamId; // Remove from user update data
 
     try {
-      const response = await this.apiClient.request<UserAPIResponse>(`/users/${id}`, {
+      const response = await this.apiClient.request<User>(`/users/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
@@ -643,9 +629,8 @@ class EmployeesManager {
       showSuccessAlert('Mitarbeiter erfolgreich aktualisiert');
       await this.loadEmployees();
 
-      // Map single user response
-      const mappedUsers = mapUsers([response]);
-      return mappedUsers[0] as unknown as Employee;
+      // Backend already returns camelCase via fieldMapping
+      return response as unknown as Employee;
     } catch (error) {
       console.error('Error updating employee:', error);
       showErrorAlert('Fehler beim Aktualisieren des Mitarbeiters');
@@ -684,13 +669,12 @@ class EmployeesManager {
 
   async getEmployeeDetails(id: number): Promise<Employee | null> {
     try {
-      const response = await this.apiClient.request<UserAPIResponse>(`/users/${id}`, {
+      const response = await this.apiClient.request<User>(`/users/${id}`, {
         method: 'GET',
       });
 
-      // Map single user response
-      const mappedUsers = mapUsers([response]);
-      return mappedUsers[0] as unknown as Employee;
+      // Backend already returns camelCase via fieldMapping
+      return response as unknown as Employee;
     } catch (error) {
       console.error('Error getting employee details:', error);
       showErrorAlert('Fehler beim Laden der Mitarbeiterdetails');
@@ -789,7 +773,7 @@ function highlightMatch(text: string, query: string): string {
 function generateSearchResultItem(employee: Employee, query: string): string {
   const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
   const position = employee.position ?? 'Keine Position';
-  const employeeNumber = employee.employeeNumber ?? employee.employee_number ?? '';
+  const employeeNumber = employee.employeeNumber ?? employee.employeeNumber ?? '';
 
   return `
     <div class="search-input__result-item" data-employee-id="${String(employee.id)}" data-action="edit-from-search">

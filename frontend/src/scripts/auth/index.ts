@@ -223,8 +223,8 @@ function updateUserDisplay(user: User): void {
       lastName?: string;
     }
     const userWithBoth = user as UserWithBothFormats;
-    const firstName = userWithBoth.firstName ?? userWithBoth.first_name ?? userWithBoth.username;
-    const lastName = userWithBoth.lastName ?? userWithBoth.last_name ?? '';
+    const firstName = userWithBoth.firstName ?? userWithBoth.firstName ?? userWithBoth.username;
+    const lastName = userWithBoth.lastName ?? userWithBoth.lastName ?? '';
     const displayName = `${firstName} ${lastName}`.trim();
     if (userName.textContent !== displayName) {
       userName.textContent = displayName;
@@ -249,13 +249,13 @@ function getFallbackUser(): User {
     id: 0,
     username: 'Benutzer',
     email: '',
-    first_name: 'Benutzer',
+    firstName: 'Benutzer',
     role: (localStorage.getItem('role') ?? 'admin') as User['role'],
-    tenant_id: 0,
-    is_active: true,
-    is_archived: false,
-    created_at: '',
-    updated_at: '',
+    tenantId: 0,
+    isActive: true,
+    isArchived: false,
+    createdAt: '',
+    updatedAt: '',
   } as User;
 }
 

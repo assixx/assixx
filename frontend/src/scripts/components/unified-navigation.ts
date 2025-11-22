@@ -50,25 +50,15 @@ interface UserProfileResponse extends User {
   // Company/Tenant related properties
   companyName?: string;
   subdomain?: string;
-  // API v2 returns camelCase fields
-  firstName?: string;
-  lastName?: string;
-  employeeId?: string;
-  employeeNumber?: string;
-  profilePicture?: string;
-  tenantId?: number;
-  // Additional user properties that may come from API but aren't in base User type
+  // firstName, lastName, employeeId, employeeNumber, profilePicture, tenantId inherited from User
+  // Additional user properties that may come from API
   data?: {
-    first_name?: string;
-    last_name?: string;
-    profile_picture?: string;
-    employee_number?: string;
-    birthdate?: string;
     firstName?: string;
     lastName?: string;
-    employeeId?: string;
-    employeeNumber?: string;
     profilePicture?: string;
+    employeeNumber?: string;
+    birthdate?: string;
+    employeeId?: string;
   };
   // Tenant information
   tenant?: Tenant;
@@ -562,7 +552,7 @@ class UnifiedNavigation {
 
   private updateCompanyInfo(userData: UserProfileResponse): void {
     const companyElement = $$('#sidebar-company-name');
-    const companyName = userData.tenant?.company_name ?? userData.companyName;
+    const companyName = userData.tenant?.companyName ?? userData.companyName;
     if (companyElement && companyName !== undefined) {
       console.info('[UnifiedNav] Setting company name to:', companyName);
       companyElement.textContent = companyName;
@@ -606,9 +596,9 @@ class UnifiedNavigation {
     const userDataTyped = userData as UserDataWithEmployeeNumber;
     const employeeNumber =
       userData.employeeNumber ??
-      userDataTyped.employee_number ??
+      userDataTyped.employeeNumber ??
       userData.data?.employeeNumber ??
-      userDataTyped.data?.employee_number;
+      userDataTyped.data?.employeeNumber;
 
     if (employeeNumber !== undefined) {
       console.info('[UnifiedNav] Setting employee number to:', employeeNumber);
@@ -694,8 +684,8 @@ class UnifiedNavigation {
     return (
       userData.data?.profilePicture ??
       userData.profilePicture ??
-      userData.data?.profile_picture ??
-      userData.profile_picture ??
+      userData.data?.profilePicture ??
+      userData.profilePicture ??
       null
     );
   }
@@ -1278,12 +1268,12 @@ class UnifiedNavigation {
     profilePicture: string | null;
   } {
     const userName = this.userProfileData?.username ?? this.currentUser?.username ?? 'User';
-    const firstName = this.userProfileData?.firstName ?? this.userProfileData?.first_name ?? '';
-    const lastName = this.userProfileData?.lastName ?? this.userProfileData?.last_name ?? '';
+    const firstName = this.userProfileData?.firstName ?? this.userProfileData?.firstName ?? '';
+    const lastName = this.userProfileData?.lastName ?? this.userProfileData?.lastName ?? '';
     const displayName = firstName !== '' && lastName !== '' ? `${firstName} ${lastName}` : userName;
 
     // API v2 returns profilePicture (camelCase via dbToApi), fallback for transition
-    let profilePicture = this.userProfileData?.profilePicture ?? this.userProfileData?.profile_picture ?? null;
+    let profilePicture = this.userProfileData?.profilePicture ?? this.userProfileData?.profilePicture ?? null;
 
     if (profilePicture === '') {
       profilePicture = null;

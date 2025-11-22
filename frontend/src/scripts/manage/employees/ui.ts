@@ -28,8 +28,8 @@ export function renderEmptyState(container: HTMLElement): void {
  * Get display name for an employee
  */
 export function getEmployeeDisplayName(employee: Employee): string {
-  const firstName = employee.first_name ?? employee.firstName ?? '';
-  const lastName = employee.last_name ?? employee.lastName ?? '';
+  const firstName = employee.firstName ?? employee.firstName ?? '';
+  const lastName = employee.lastName ?? employee.lastName ?? '';
   const fullName = `${firstName} ${lastName}`.trim();
   return fullName !== '' ? fullName : employee.username;
 }
@@ -38,16 +38,8 @@ export function getEmployeeDisplayName(employee: Employee): string {
  * Get active status for an employee
  */
 export function getEmployeeActiveStatus(employee: Employee): boolean {
-  // Check both snake_case and camelCase fields (API v1 vs v2)
-  // Priority: Check isActive first (API v2), then is_active (API v1/DB)
-  if ('isActive' in employee && employee.isActive !== undefined) {
-    // isActive can be boolean or number (0/1)
-    return employee.isActive === true || employee.isActive === 1;
-  } else if ('is_active' in employee) {
-    // is_active is always boolean
-    return employee.is_active;
-  }
-  return true; // Default to active
+  // API v2: isActive is always boolean
+  return employee.isActive;
 }
 
 /**
@@ -84,7 +76,7 @@ export function checkAvailabilityAppliesToday(startDate?: string, endDate?: stri
  */
 export function getCurrentAvailabilityStatus(employee: Employee): string {
   // Handle both snake_case and camelCase from API
-  const rawStatus = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+  const rawStatus = employee.availabilityStatus ?? employee.availabilityStatus ?? 'available';
 
   // Parse the status (handle both single and combined format for compatibility)
   let status = 'available';
@@ -105,8 +97,8 @@ export function getCurrentAvailabilityStatus(employee: Employee): string {
   }
 
   // Check if the special status applies to today
-  const startDate = employee.availability_start ?? employee.availabilityStart;
-  const endDate = employee.availability_end ?? employee.availabilityEnd;
+  const startDate = employee.availabilityStart ?? employee.availabilityStart;
+  const endDate = employee.availabilityEnd ?? employee.availabilityEnd;
 
   if (checkAvailabilityAppliesToday(startDate, endDate)) {
     return status;
@@ -120,7 +112,7 @@ export function getCurrentAvailabilityStatus(employee: Employee): string {
  * Format the planned availability period
  */
 export function getPlannedAvailability(employee: Employee): string {
-  const rawStatus = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+  const rawStatus = employee.availabilityStatus ?? employee.availabilityStatus ?? 'available';
 
   // Parse the status (handle both single and combined format for compatibility)
   let status = 'available';
@@ -141,8 +133,8 @@ export function getPlannedAvailability(employee: Employee): string {
   }
 
   // Get dates
-  const startDate = employee.availability_start ?? employee.availabilityStart;
-  const endDate = employee.availability_end ?? employee.availabilityEnd;
+  const startDate = employee.availabilityStart ?? employee.availabilityStart;
+  const endDate = employee.availabilityEnd ?? employee.availabilityEnd;
 
   // Format the status text
   let statusText = '';
@@ -192,10 +184,9 @@ export function getAvailabilityBadge(employee: Employee): string {
 
   console.info('[EmployeesManager] Availability status for', employee.email, ':', {
     availabilityStatus: employee.availabilityStatus,
-    availability_status: employee.availability_status,
     currentStatus: status,
-    start: employee.availability_start ?? employee.availabilityStart,
-    end: employee.availability_end ?? employee.availabilityEnd,
+    start: employee.availabilityStart,
+    end: employee.availabilityEnd,
   });
 
   // Farben basierend auf design-standards (BEM notation)
@@ -238,8 +229,8 @@ export function getAvailabilityBadge(employee: Employee): string {
  * Get avatar HTML for employee
  */
 function getEmployeeAvatar(employee: Employee): string {
-  const firstName = employee.firstName ?? employee.first_name ?? '';
-  const lastName = employee.lastName ?? employee.last_name ?? '';
+  const firstName = employee.firstName ?? employee.firstName ?? '';
+  const lastName = employee.lastName ?? employee.lastName ?? '';
   const initials = `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   const avatarColor = employee.id % 10;
 
@@ -256,7 +247,7 @@ function getEmployeeAvatar(employee: Employee): string {
 export function renderEmployeeRow(employee: Employee): string {
   const displayName = getEmployeeDisplayName(employee);
   const isActive = getEmployeeActiveStatus(employee);
-  const notes = employee.availability_notes ?? employee.availabilityNotes ?? '-';
+  const notes = employee.availabilityNotes ?? employee.availabilityNotes ?? '-';
 
   return `
     <tr>
@@ -268,9 +259,9 @@ export function renderEmployeeRow(employee: Employee): string {
       </td>
       <td>${employee.email}</td>
       <td>${employee.position ?? '-'}</td>
-      <td>${employee.employee_number ?? employee.employeeNumber ?? employee.employee_id ?? employee.employeeId ?? '-'}</td>
-      <td>${employee.department_name ?? employee.departmentName ?? '-'}</td>
-      <td>${employee.team_name ?? employee.teamName ?? '-'}</td>
+      <td>${employee.employeeNumber ?? employee.employeeNumber ?? employee.employeeId ?? employee.employeeId ?? '-'}</td>
+      <td>${employee.departmentName ?? employee.departmentName ?? '-'}</td>
+      <td>${employee.teamName ?? employee.teamName ?? '-'}</td>
       <td>
         <span class="${isActive ? 'badge badge--success' : 'badge badge--error'}">
           ${isActive ? 'Aktiv' : 'Inaktiv'}
@@ -399,7 +390,7 @@ export function fillAvailabilityFields(employee: Employee): void {
   const availabilityStatusTrigger = $$('#availability-status-trigger');
 
   if (availabilityStatusInput !== null && availabilityStatusTrigger !== null) {
-    const status = employee.availabilityStatus ?? employee.availability_status ?? 'available';
+    const status = employee.availabilityStatus ?? employee.availabilityStatus ?? 'available';
     availabilityStatusInput.value = status;
 
     // Update trigger text based on status
@@ -420,19 +411,19 @@ export function fillAvailabilityFields(employee: Employee): void {
 
   const availabilityStart = $$('input[name="availabilityStart"]') as HTMLInputElement | null;
   if (availabilityStart) {
-    const startDate = employee.availabilityStart ?? employee.availability_start ?? '';
+    const startDate = employee.availabilityStart ?? employee.availabilityStart ?? '';
     availabilityStart.value = startDate;
   }
 
   const availabilityEnd = $$('input[name="availabilityEnd"]') as HTMLInputElement | null;
   if (availabilityEnd) {
-    const endDate = employee.availabilityEnd ?? employee.availability_end ?? '';
+    const endDate = employee.availabilityEnd ?? employee.availabilityEnd ?? '';
     availabilityEnd.value = endDate;
   }
 
   const availabilityNotes = $$('textarea[name="availabilityNotes"]') as HTMLTextAreaElement | null;
   if (availabilityNotes) {
-    const notes = employee.availabilityNotes ?? employee.availability_notes ?? '';
+    const notes = employee.availabilityNotes ?? employee.availabilityNotes ?? '';
     availabilityNotes.value = notes;
   }
 }
@@ -443,8 +434,8 @@ export function fillAvailabilityFields(employee: Employee): void {
 export function setStatusAndClearPasswords(employee: Employee): void {
   const isActiveSelect = $$('select[name="isActive"]') as HTMLSelectElement | null;
   if (isActiveSelect) {
-    console.info('Setting isActive to:', employee.isActive, '-> select value:', employee.isActive === true ? '1' : '0');
-    isActiveSelect.value = employee.isActive === true ? '1' : '0';
+    console.info('Setting isActive to:', employee.isActive, '-> select value:', employee.isActive ? '1' : '0');
+    isActiveSelect.value = employee.isActive ? '1' : '0';
   }
 
   const passwordField = $$('input[name="password"]') as HTMLInputElement | null;

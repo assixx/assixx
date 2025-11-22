@@ -20,58 +20,53 @@ declare global {
 
 interface ChatUser extends User {
   status?: 'online' | 'offline' | 'away';
-  last_seen?: string;
-  department_id?: number;
+  lastSeen?: string;
+  // departmentId inherited from User
 
-  department?: string;
-  position?: string;
-  profile_picture_url?: string;
-  profile_image_url?: string;
+  // department and position inherited from User
+  // profilePicture inherited from User
+  profileImageUrl?: string;
 }
 
 interface Message {
   id: number;
-  conversation_id: number;
-  conversationId?: number; // API v2 compatibility
-  sender_id: number;
-  senderId?: number; // API v2 compatibility
-  senderName?: string; // API v2 compatibility
-  senderUsername?: string; // API v2 compatibility
-  senderProfilePicture?: string; // API v2 compatibility
+  conversationId: number;
+  senderId: number;
+  senderName?: string;
+  senderUsername?: string;
+  senderProfilePicture?: string;
   content: string;
-  created_at: string;
-  createdAt?: string; // API v2 compatibility
-  is_read: boolean;
-  isRead?: boolean; // API v2 compatibility
-  readAt?: string; // API v2 compatibility
-  updatedAt?: string; // API v2 compatibility
+  createdAt: string;
+  isRead: boolean;
+  readAt?: string;
+  updatedAt?: string;
   sender?: ChatUser;
   attachments?: Attachment[];
-  attachment?: string | null; // API v2 compatibility
+  attachment?: string | null;
   type?: 'text' | 'file' | 'system';
 }
 
 interface Attachment {
   id: number;
-  message_id: number;
-  file_name: string;
-  file_path: string;
-  file_size: number;
-  mime_type: string;
-  created_at: string;
+  messageId: number;
+  fileName: string;
+  filePath: string;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
 }
 
 interface Conversation {
   id: number;
   name?: string;
-  is_group: boolean;
-  created_at: string;
-  updated_at: string;
-  last_message?: Message;
+  isGroup: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastMessage?: Message;
   participants: ChatUser[];
-  unread_count?: number;
-  typing_users?: number[];
-  display_name?: string;
+  unreadCount?: number;
+  typingUsers?: number[];
+  displayName?: string;
 }
 
 interface WebSocketMessage {
@@ -1148,7 +1143,7 @@ class ChatClient {
         const messageData = message.data as Message & { conversation_id: number };
         this.handleNewMessage({
           message: messageData,
-          conversationId: messageData.conversation_id,
+          conversationId: messageData.conversationId,
         });
         break;
       }
@@ -1196,28 +1191,26 @@ class ChatClient {
 
   private ensureMessageHasSender(message: Message): void {
     interface MessageWithExtra extends Message {
-      sender_name?: string;
       username?: string;
-      first_name?: string;
-      last_name?: string;
-      profile_image_url?: string;
-      profile_picture_url?: string;
+      firstName?: string;
+      lastName?: string;
+      profileImageUrl?: string;
     }
     const msgWithExtra = message as MessageWithExtra;
-    if (!message.sender && msgWithExtra.sender_id !== 0) {
+    if (!message.sender && msgWithExtra.senderId !== 0) {
       message.sender = {
-        id: msgWithExtra.sender_id,
-        username: msgWithExtra.username ?? msgWithExtra.sender_name ?? 'Unknown',
-        first_name: msgWithExtra.first_name,
-        last_name: msgWithExtra.last_name,
-        profile_picture_url: msgWithExtra.profile_image_url ?? msgWithExtra.profile_picture_url,
+        id: msgWithExtra.senderId,
+        username: msgWithExtra.username ?? msgWithExtra.senderName ?? 'Unknown',
+        firstName: msgWithExtra.firstName,
+        lastName: msgWithExtra.lastName,
+        profilePicture: msgWithExtra.profileImageUrl ?? msgWithExtra.senderProfilePicture,
         role: 'employee',
-        tenant_id: 0,
+        tenantId: 0,
         email: '',
-        created_at: '',
-        updated_at: '',
-        is_active: true,
-        is_archived: false,
+        createdAt: '',
+        updatedAt: '',
+        isActive: true,
+        isArchived: false,
       };
     }
   }
@@ -1228,14 +1221,14 @@ class ChatClient {
       return;
     }
 
-    conversation.last_message = message;
-    conversation.updated_at = message.created_at;
+    conversation.lastMessage = message;
+    conversation.updatedAt = message.createdAt;
 
     if (conversationId !== this.currentConversationId) {
-      conversation.unread_count = (conversation.unread_count ?? 0) + 1;
+      conversation.unreadCount = (conversation.unreadCount ?? 0) + 1;
     }
 
-    this.conversations.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    this.conversations.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     this.renderConversationList();
   }
 
@@ -1244,7 +1237,7 @@ class ChatClient {
       return;
     }
 
-    if (message.sender_id === this.currentUserId) {
+    if (message.senderId === this.currentUserId) {
       this.replaceTemporaryMessage(message);
     } else {
       this.displayMessage(message);
@@ -1274,7 +1267,7 @@ class ChatClient {
   }
 
   private handleNewMessageNotifications(message: Message): void {
-    if (message.sender_id === this.currentUserId) {
+    if (message.senderId === this.currentUserId) {
       return;
     }
 
@@ -1291,10 +1284,10 @@ class ChatClient {
     const conversation = this.conversations.find((c) => c.id === data.conversationId);
 
     if (conversation) {
-      conversation.typing_users ??= [];
+      conversation.typingUsers ??= [];
 
-      if (!conversation.typing_users.includes(data.userId)) {
-        conversation.typing_users.push(data.userId);
+      if (!conversation.typingUsers.includes(data.userId)) {
+        conversation.typingUsers.push(data.userId);
         this.updateTypingIndicator();
       }
     }
@@ -1305,8 +1298,8 @@ class ChatClient {
 
     const conversation = this.conversations.find((c) => c.id === data.conversationId);
 
-    if (conversation?.typing_users) {
-      conversation.typing_users = conversation.typing_users.filter((id) => id !== data.userId);
+    if (conversation?.typingUsers) {
+      conversation.typingUsers = conversation.typingUsers.filter((id) => id !== data.userId);
       this.updateTypingIndicator();
     }
   }
@@ -1384,7 +1377,7 @@ class ChatClient {
     // Clear unread count and mark messages as read
     const conversation = this.conversations.find((c) => c.id === conversationId);
     if (conversation) {
-      conversation.unread_count = 0;
+      conversation.unreadCount = 0;
       this.renderConversationList();
 
       // Mark all messages in this conversation as read
@@ -1492,8 +1485,7 @@ class ChatClient {
     let lastMessageDate: string | null = null;
 
     messages.forEach((message) => {
-      // Handle both camelCase and snake_case for created_at/createdAt
-      const createdAt = message.createdAt ?? message.created_at;
+      const createdAt = message.createdAt;
 
       // Check if we need to add a date separator
       if (createdAt === '') {
@@ -1544,7 +1536,7 @@ class ChatClient {
   }
 
   private getValidMessageDate(message: Message): string | null {
-    const createdAt = message.createdAt ?? message.created_at;
+    const createdAt = message.createdAt;
     if (createdAt === '') {
       console.warn('Message without created date:', message);
       return null;
@@ -1593,16 +1585,14 @@ class ChatClient {
     const messagesContainer = $$('#messagesContainer');
     if (!messagesContainer) return;
 
-    // Handle both snake_case and camelCase for sender_id/senderId
-    const senderId = message.senderId ?? message.sender_id;
+    const senderId = message.senderId;
     const isOwnMessage = senderId === this.currentUserId;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwnMessage ? 'own' : ''}`;
     messageDiv.dataset.messageId = message.id.toString();
     messageDiv.dataset.date = messageDate;
 
-    // Use same createdAt variable that handles both formats
-    const createdAt = message.createdAt ?? message.created_at;
+    const createdAt = message.createdAt;
     const time = new Date(createdAt).toLocaleTimeString('de-DE', {
       hour: '2-digit',
       minute: '2-digit',
@@ -1637,7 +1627,7 @@ class ChatClient {
 
     if (isOwnMessage) {
       const readIndicator = document.createElement('span');
-      readIndicator.className = `read-indicator ${message.is_read ? 'read' : ''}`;
+      readIndicator.className = `read-indicator ${message.isRead ? 'read' : ''}`;
       readIndicator.textContent = '✓✓';
       messageTimeDiv.append(readIndicator);
     }
@@ -1729,8 +1719,8 @@ class ChatClient {
     const fragment = document.createDocumentFragment();
 
     attachments.forEach((attachment) => {
-      const isImage = attachment.mime_type.startsWith('image/');
-      const fileSize = this.formatFileSize(attachment.file_size);
+      const isImage = attachment.mimeType.startsWith('image/');
+      const fileSize = this.formatFileSize(attachment.fileSize);
 
       const attachmentDiv = document.createElement('div');
 
@@ -1739,7 +1729,7 @@ class ChatClient {
 
         const img = document.createElement('img');
         img.src = `/api/chat/attachments/${attachment.id}`;
-        img.alt = attachment.file_name;
+        img.alt = attachment.fileName;
         attachmentDiv.append(img);
       } else {
         attachmentDiv.className = 'attachment file-attachment';
@@ -1753,7 +1743,7 @@ class ChatClient {
 
         const fileName = document.createElement('div');
         fileName.className = 'file-name';
-        fileName.textContent = attachment.file_name;
+        fileName.textContent = attachment.fileName;
         fileInfo.append(fileName);
 
         const fileSizeDiv = document.createElement('div');
@@ -1811,11 +1801,11 @@ class ChatClient {
 
     const tempMessage: Message = {
       id: Date.now(),
-      conversation_id: this.currentConversationId,
-      sender_id: this.currentUserId ?? 0,
+      conversationId: this.currentConversationId,
+      senderId: this.currentUserId ?? 0,
       content: messageContent,
-      created_at: new Date().toISOString(),
-      is_read: false,
+      createdAt: new Date().toISOString(),
+      isRead: false,
       type: 'text',
       sender: this.currentUser,
     };
@@ -2101,29 +2091,29 @@ class ChatClient {
       item.classList.add('active');
     }
 
-    if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
+    if (conversation.unreadCount !== undefined && conversation.unreadCount > 0) {
       item.classList.add('unread');
     }
   }
 
   private getConversationName(conversation: Conversation): string {
-    return conversation.is_group ? (conversation.name ?? 'Gruppenchat') : this.getConversationDisplayName(conversation);
+    return conversation.isGroup ? (conversation.name ?? 'Gruppenchat') : this.getConversationDisplayName(conversation);
   }
 
   private getLastMessageText(conversation: Conversation): string {
-    if (conversation.last_message?.content !== undefined && conversation.last_message.content !== '') {
-      const content = conversation.last_message.content;
+    if (conversation.lastMessage?.content !== undefined && conversation.lastMessage.content !== '') {
+      const content = conversation.lastMessage.content;
       return content.length > 40 ? `${content.substring(0, 37)}...` : content;
     }
     return 'Keine Nachrichten';
   }
 
   private getLastMessageTime(conversation: Conversation): string {
-    return conversation.last_message ? this.formatTime(conversation.last_message.created_at) : '';
+    return conversation.lastMessage ? this.formatTime(conversation.lastMessage.createdAt) : '';
   }
 
   private getAvatarHtml(conversation: Conversation, displayName: string): string {
-    if (conversation.is_group) {
+    if (conversation.isGroup) {
       return '<i class="fas fa-users"></i>';
     }
 
@@ -2143,26 +2133,26 @@ class ChatClient {
     }
 
     if (this.hasName(participant)) {
-      return this.getInitials(participant.first_name, participant.last_name);
+      return this.getInitials(participant.firstName, participant.lastName);
     }
 
     return '<i class="fas fa-user"></i>';
   }
 
   private getProfileImageUrl(participant: ChatUser): string | null {
-    if (participant.profile_picture_url !== undefined && participant.profile_picture_url !== '') {
-      return participant.profile_picture_url;
+    if (participant.profilePicture !== undefined && participant.profilePicture !== '') {
+      return participant.profilePicture;
     }
-    if (participant.profile_image_url !== undefined && participant.profile_image_url !== '') {
-      return participant.profile_image_url;
+    if (participant.profileImageUrl !== undefined && participant.profileImageUrl !== '') {
+      return participant.profileImageUrl;
     }
     return null;
   }
 
   private hasName(participant: ChatUser): boolean {
     return (
-      (participant.first_name !== undefined && participant.first_name !== '') ||
-      (participant.last_name !== undefined && participant.last_name !== '')
+      (participant.firstName !== undefined && participant.firstName !== '') ||
+      (participant.lastName !== undefined && participant.lastName !== '')
     );
   }
 
@@ -2226,10 +2216,10 @@ class ChatClient {
 
     metaDiv.append(timeDiv);
 
-    if (conversation.unread_count !== undefined && conversation.unread_count > 0) {
+    if (conversation.unreadCount !== undefined && conversation.unreadCount > 0) {
       const badgeSpan = document.createElement('span');
       badgeSpan.className = 'unread-count';
-      badgeSpan.textContent = conversation.unread_count.toString();
+      badgeSpan.textContent = conversation.unreadCount.toString();
       metaDiv.append(badgeSpan);
     }
 
@@ -2252,7 +2242,7 @@ class ChatClient {
   }
 
   private getChatDisplayName(conversation: Conversation): string {
-    return conversation.is_group ? (conversation.name ?? 'Gruppenchat') : this.getConversationDisplayName(conversation);
+    return conversation.isGroup ? (conversation.name ?? 'Gruppenchat') : this.getConversationDisplayName(conversation);
   }
 
   private updateChatName(chatPartnerName: HTMLElement | null, displayName: string): void {
@@ -2269,7 +2259,7 @@ class ChatClient {
   ): void {
     if (!chatAvatar) return;
 
-    if (conversation.is_group) {
+    if (conversation.isGroup) {
       this.setGroupChatAvatar(chatAvatar, chatPartnerStatus);
     } else {
       this.setIndividualChatAvatar(chatAvatar, chatPartnerStatus, conversation, displayName);
@@ -2323,7 +2313,7 @@ class ChatClient {
   }
 
   private displayAvatarInitials(chatAvatar: HTMLElement, participant: ChatUser): void {
-    const initials = this.getInitials(participant.first_name, participant.last_name);
+    const initials = this.getInitials(participant.firstName, participant.lastName);
     chatAvatar.textContent = initials;
     chatAvatar.style.display = 'flex';
   }
@@ -2366,20 +2356,20 @@ class ChatClient {
 
   getConversationDisplayName(conversation: Conversation): string {
     // Für Gruppenchats
-    if (conversation.is_group) {
+    if (conversation.isGroup) {
       return conversation.name ?? 'Gruppenchat';
     }
 
     // Für 1:1 Chats - nutze display_name wenn verfügbar
-    if (conversation.display_name !== undefined && conversation.display_name !== '') {
-      return conversation.display_name;
+    if (conversation.displayName !== undefined && conversation.displayName !== '') {
+      return conversation.displayName;
     }
 
     // Fallback auf participants array
     if (conversation.participants.length > 0) {
       const otherParticipant = conversation.participants.find((p) => p.id !== this.currentUserId);
       if (otherParticipant) {
-        const fullName = `${otherParticipant.first_name ?? ''} ${otherParticipant.last_name ?? ''}`.trim();
+        const fullName = `${otherParticipant.firstName ?? ''} ${otherParticipant.lastName ?? ''}`.trim();
         return fullName !== '' ? fullName : otherParticipant.username;
       }
     }
@@ -2574,7 +2564,7 @@ class ChatClient {
     try {
       // Filter employees by department
       const employees = this.availableUsers.filter(
-        (user) => user.role === 'employee' && user.department_id?.toString() === departmentId,
+        (user) => user.role === 'employee' && user.departmentId?.toString() === departmentId,
       );
 
       const dropdown = $$('#employeeDropdown') as HTMLSelectElement | null;
@@ -2591,7 +2581,7 @@ class ChatClient {
           const option = document.createElement('div');
           option.className = 'dropdown-option';
           option.onclick = () => {
-            const fullName = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+            const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
             const name = fullName !== '' ? fullName : employee.username;
             if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
               window.selectChatDropdownOption('employee', employee.id, name, employee.department ?? '');
@@ -2603,7 +2593,7 @@ class ChatClient {
 
           const optionName = document.createElement('div');
           optionName.className = 'option-name';
-          const n = `${employee.first_name ?? ''} ${employee.last_name ?? ''}`.trim();
+          const n = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
           optionName.textContent = n !== '' ? n : employee.username;
 
           const optionMeta = document.createElement('div');
@@ -2632,7 +2622,7 @@ class ChatClient {
         const option = document.createElement('div');
         option.className = 'dropdown-option';
         option.onclick = () => {
-          const fullName = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim();
+          const fullName = `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim();
           const name = fullName !== '' ? fullName : admin.username;
           if ('selectChatDropdownOption' in window && typeof window.selectChatDropdownOption === 'function') {
             window.selectChatDropdownOption('admin', admin.id, name, admin.role);
@@ -2644,7 +2634,7 @@ class ChatClient {
 
         const optionName = document.createElement('div');
         optionName.className = 'option-name';
-        const n = `${admin.first_name ?? ''} ${admin.last_name ?? ''}`.trim();
+        const n = `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim();
         optionName.textContent = n !== '' ? n : admin.username;
 
         const optionMeta = document.createElement('div');
@@ -3068,12 +3058,12 @@ class ChatClient {
 
     const conversation = this.conversations.find((c) => c.id === this.currentConversationId);
 
-    if (!conversation?.typing_users || conversation.typing_users.length === 0) {
+    if (!conversation?.typingUsers || conversation.typingUsers.length === 0) {
       typingIndicator.style.display = 'none';
       return;
     }
 
-    const typingUsers = conversation.typing_users
+    const typingUsers = conversation.typingUsers
       .map((userId) => {
         if (Array.isArray(conversation.participants)) {
           const participant = conversation.participants.find((p) => p.id === userId);
@@ -3210,41 +3200,41 @@ class ChatClient {
   // Transform WebSocket message to ensure proper structure
   transformWebSocketMessage(data: {
     id: number;
-    conversation_id: number;
-    sender_id: number;
+    conversationId: number;
+    senderId: number;
     content: string;
-    created_at: string;
-    is_read?: boolean;
+    createdAt: string;
+    isRead?: boolean;
     type?: string;
     attachments?: Attachment[];
     sender?: ChatUser;
     username?: string;
-    sender_name?: string;
-    first_name?: string;
-    last_name?: string;
+    senderName?: string;
+    firstName?: string;
+    lastName?: string;
   }): Message {
     return {
       id: data.id,
-      conversation_id: data.conversation_id,
-      sender_id: data.sender_id,
+      conversationId: data.conversationId,
+      senderId: data.senderId,
       content: data.content,
-      created_at: data.created_at,
-      is_read: data.is_read ?? false,
+      createdAt: data.createdAt,
+      isRead: data.isRead ?? false,
       type: (data.type ?? 'text') as 'text' | 'file' | 'system',
       attachments: data.attachments ?? [],
       sender:
         data.sender ??
         ({
-          id: data.sender_id,
-          username: data.username ?? data.sender_name ?? 'Unknown',
-          first_name: data.first_name,
-          last_name: data.last_name,
+          id: data.senderId,
+          username: data.username ?? data.senderName ?? 'Unknown',
+          firstName: data.firstName,
+          lastName: data.lastName,
           email: '',
           role: 'employee' as const,
-          tenant_id: 0,
-          created_at: '',
-          updated_at: '',
-          is_active: true,
+          tenantId: 0,
+          createdAt: '',
+          updatedAt: '',
+          isActive: true,
         } as ChatUser),
     };
   }

@@ -43,7 +43,7 @@ const USER_AGENT_HEADER = 'user-agent';
  *         name: filter
  *         schema:
  *           type: string
- *           enum: [all, company, department, team, personal]
+ *           enum: [all, company, department, team, area, personal]
  *         description: Filter by visibility scope
  *       - in: query
  *         name: search
@@ -218,7 +218,7 @@ export async function getEvent(
  *                 type: boolean
  *               orgLevel:
  *                 type: string
- *                 enum: [company, department, team, personal]
+ *                 enum: [company, department, team, area, personal]
  *               orgId:
  *                 type: integer
  *               reminderMinutes:
@@ -276,6 +276,7 @@ export async function createEvent(
         org_level: eventData.orgLevel,
         department_id: eventData.departmentId,
         team_id: eventData.teamId,
+        area_id: eventData.areaId,
         all_day: eventData.allDay,
         created_by: user.email,
       },
@@ -336,7 +337,7 @@ export async function createEvent(
  *                 type: boolean
  *               orgLevel:
  *                 type: string
- *                 enum: [company, department, team, personal]
+ *                 enum: [company, department, team, area, personal]
  *               orgId:
  *                 type: integer
  *               reminderMinutes:
@@ -552,90 +553,11 @@ export async function deleteEvent(
 }
 
 /**
+ * Export calendar events
  * @param req - The request object
  * @param res - The response object
  * @param _next - The _next parameter
-
- * /api/v2/calendar/events/\{id\}/attendees/response:
- *   put:
- *     summary: Update attendee response
- *     tags: [Calendar v2]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: Event ID
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - response
- *             properties:
- *               response:
- *                 type: string
- *                 enum: [accepted, declined, tentative]
- *     responses:
- *       200:
- *         description: Response updated successfully
- *       404:
- *         description: Event not found
- */
-export async function updateAttendeeResponse(
-  req: AuthenticatedRequest,
-  res: Response,
-  _next: NextFunction,
-): Promise<void> {
-  try {
-    const eventId = Number.parseInt(req.params.id, 10);
-    const { user } = req;
-    const tenantId = user.tenant_id;
-    const userId = user.id;
-    const { response } = req.body as {
-      response: 'accepted' | 'declined' | 'tentative';
-    };
-
-    await calendarService.updateAttendeeResponse(eventId, userId, response, tenantId);
-
-    // Log attendee response update
-    await rootLog.create({
-      tenant_id: tenantId,
-      user_id: userId,
-      action: 'update_attendee_response',
-      entity_type: 'calendar_event',
-      entity_id: eventId,
-      details: `Teilnehmer Antwort: ${response}`,
-      new_values: {
-        attendee_response: response,
-        responded_by: user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get(USER_AGENT_HEADER),
-      was_role_switched: false,
-    });
-
-    res.json(successResponse({ message: 'Response updated successfully' }));
-  } catch (error: unknown) {
-    if (error instanceof ServiceError) {
-      const errorCode = error.code === 'BAD_REQUEST' ? 'VALIDATION_ERROR' : error.code;
-      res.status(error.statusCode).json(errorResponse(errorCode, error.message, error.details));
-    } else {
-      res.status(500).json(errorResponse('SERVER_ERROR', INTERNAL_SERVER_ERROR));
-    }
-  }
-}
-
-/**
- * @param req - The request object
- * @param res - The response object
- * @param _next - The _next parameter
-
+ *
  * /api/v2/calendar/export:
  *   get:
  *     summary: Export calendar events
@@ -791,18 +713,14 @@ export async function getDashboardEvents(
  *                       requiresResponse:
  *                         type: boolean
  */
-export async function getUnreadEvents(
-  req: AuthenticatedRequest,
+export function getUnreadEvents(
+  _req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
-): Promise<void> {
+): void {
   try {
-    const { user } = req;
-    const tenantId = user.tenant_id;
-    const userId = user.id;
-
-    // Get events where user is invited and hasn't responded yet
-    const result = await calendarService.getUnreadEvents(tenantId, userId);
+    // Get unread events (feature deprecated - returns empty results)
+    const result = calendarService.getUnreadEvents();
 
     res.json(successResponse(result));
   } catch (error: unknown) {

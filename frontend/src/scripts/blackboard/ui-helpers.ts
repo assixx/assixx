@@ -40,15 +40,9 @@ export function openModal(modalId: string): void {
   }
 
   console.log('[Blackboard] Modal classList:', modal.classList.toString());
-  console.log('[Blackboard] window.showModal exists:', typeof window.showModal);
 
-  // Check if it's the new modal style (class="modal")
-  if (modal.classList.contains('modal') && typeof window.showModal === 'function') {
-    console.log('[Blackboard] Using window.showModal');
-    window.showModal(modalId);
-  }
-  // Check if it's the old modal style (class="modal-overlay")
-  else if (modal.classList.contains('modal-overlay')) {
+  // Check if it's a modal-overlay (Design System style)
+  if (modal.classList.contains('modal-overlay')) {
     // Use the original dashboard modal behavior
     modal.classList.remove('u-hidden'); // Remove u-hidden class first
     modal.style.display = 'flex'; // Add display flex for modal-overlay
@@ -75,12 +69,8 @@ export function closeModal(modalId: string): void {
   const modal = $$id(modalId);
   if (!modal) return;
 
-  // Check if it's the new modal style (class="modal")
-  if (modal.classList.contains('modal') && typeof window.hideModal === 'function') {
-    window.hideModal(modalId);
-  }
-  // Check if it's the old modal style (class="modal-overlay")
-  else if (modal.classList.contains('modal-overlay')) {
+  // Check if it's a modal-overlay (Design System style)
+  if (modal.classList.contains('modal-overlay')) {
     // Use the original dashboard modal behavior
     modal.style.opacity = '0';
     modal.style.visibility = 'hidden';

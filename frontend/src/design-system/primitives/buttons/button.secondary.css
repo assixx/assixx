@@ -16,8 +16,9 @@
 
 /* Hover state - Slightly darker gradient */
 .btn-secondary:hover:not(:disabled) {
-  border-color: var(--primary-color);
-  background: #2196f333;
+  border-color: var(--color-icon-primary);
+  color: var(--color-black);
+  background: var(--color-icon-primary);
 }
 
 /* Active/Pressed state */

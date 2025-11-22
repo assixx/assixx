@@ -11,7 +11,6 @@
  */
 
 import { ApiClient } from '../../../utils/api-client';
-import { mapTeams, type TeamAPIResponse, type MappedTeam } from '../../../utils/api-mappers';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import type { Team, WindowWithTeamHandlers } from './types';
 import { toggleTableVisibility, createTeamRow } from './ui';
@@ -28,12 +27,10 @@ class TeamsManager {
   private filteredTeams: Team[] = [];
   private currentFilter: 'all' | 'active' | 'inactive' = 'active'; // Default to active
   private searchTerm = '';
-  private useV2API = true; // Default to v2 API
 
   constructor() {
     this.apiClient = ApiClient.getInstance();
-    // Feature flags removed - always use v2
-    this.useV2API = true;
+    // Always use API v2 (v1 removed)
     this.initializeEventListeners();
     // Load teams initially
     void this.loadTeams();
@@ -356,22 +353,16 @@ class TeamsManager {
       const loadingEl = document.querySelector('#teams-loading');
       loadingEl?.classList.remove('u-hidden');
 
-      // ApiClient adds /api/v2 or /api prefix automatically based on feature flag
-      const response = await this.apiClient.request<TeamAPIResponse[]>('/teams', {
+      // ApiClient adds /api/v2 prefix automatically
+      // Backend already returns camelCase via fieldMapping
+      const response = await this.apiClient.request<Team[]>('/teams', {
         method: 'GET',
       });
 
       // Hide loading
       loadingEl?.classList.add('u-hidden');
 
-      // Map response through api-mappers for consistent field names (only for v2)
-      if (this.useV2API) {
-        const mapFunction = mapTeams as (teams: TeamAPIResponse[]) => MappedTeam[];
-        const mappedData = mapFunction(response);
-        this.teams = mappedData as Team[];
-      } else {
-        this.teams = response as Team[];
-      }
+      this.teams = response;
 
       this.filterAndRenderTeams();
     } catch (error) {

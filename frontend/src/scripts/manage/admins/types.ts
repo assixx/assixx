@@ -3,12 +3,12 @@
  * All interfaces and types for admin management module
  */
 
-import type { MappedUser } from '../../../utils/api-mappers';
+import type { User } from '../../../types/api.types';
 
 /**
  * Admin user with permissions and departments
  */
-export interface Admin extends MappedUser {
+export interface Admin extends User {
   tenantName?: string;
   notes?: string;
   lastLogin?: string;

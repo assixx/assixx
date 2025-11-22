@@ -47,9 +47,9 @@ function getRoleDisplayText(role: string): string {
 function updateUsernameWithFullName(user: User): void {
   const userNameElement = document.querySelector('#user-name');
   if (!userNameElement) return;
-  if (user.first_name === undefined && user.last_name === undefined) return;
+  if (user.firstName === undefined && user.lastName === undefined) return;
 
-  const fullName = `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim();
+  const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
   userNameElement.textContent = fullName !== '' ? fullName : user.username;
 }
 
@@ -74,7 +74,7 @@ function updateAvatar(user: User): void {
  * API v2 may return profilePicture (camelCase), handle both for transition
  */
 function hasValidProfilePicture(user: User): boolean {
-  const pic = (user as { profilePicture?: string }).profilePicture ?? user.profile_picture;
+  const pic = (user as { profilePicture?: string }).profilePicture ?? user.profilePicture;
   return pic !== undefined && pic !== '';
 }
 
@@ -83,7 +83,7 @@ function hasValidProfilePicture(user: User): boolean {
  */
 function setAvatarImage(avatarElement: HTMLImageElement, user: User): void {
   // API v2 returns profilePicture (camelCase), fallback to snake_case for transition
-  const picUrl = (user as { profilePicture?: string }).profilePicture ?? user.profile_picture ?? null;
+  const picUrl = (user as { profilePicture?: string }).profilePicture ?? user.profilePicture ?? null;
   if (picUrl !== null && picUrl !== '') {
     avatarElement.src = picUrl;
   }
@@ -109,9 +109,8 @@ function replaceWithInitialsAvatar(avatarElement: HTMLImageElement, user: User):
  */
 function getUserInitials(user: User): string {
   const firstInitial =
-    user.first_name !== undefined && user.first_name !== '' ? user.first_name.charAt(0).toUpperCase() : '';
-  const lastInitial =
-    user.last_name !== undefined && user.last_name !== '' ? user.last_name.charAt(0).toUpperCase() : '';
+    user.firstName !== undefined && user.firstName !== '' ? user.firstName.charAt(0).toUpperCase() : '';
+  const lastInitial = user.lastName !== undefined && user.lastName !== '' ? user.lastName.charAt(0).toUpperCase() : '';
 
   const initials = `${firstInitial}${lastInitial}`;
   return initials !== '' ? initials : 'U';

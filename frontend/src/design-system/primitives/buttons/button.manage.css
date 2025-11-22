@@ -11,7 +11,7 @@
 .btn-manage {
   padding: var(--spacing-2) var(--spacing-4);
   color: var(--color-white);
-  background: #2196f31a; /* Blue with 10% opacity */
+  background: #a9d9ff2b; /* Blue with 10% opacity */
 }
 
 /* Hover State - Increase blue opacity */

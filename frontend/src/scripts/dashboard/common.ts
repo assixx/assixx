@@ -122,8 +122,8 @@ async function fetchUserData(_token: string): Promise<User> {
  * Get display name from user data
  */
 function getDisplayName(userData: User): string {
-  if (userData.first_name !== undefined && userData.first_name !== '') {
-    return `${userData.first_name} ${userData.last_name ?? ''}`;
+  if (userData.firstName !== undefined && userData.firstName !== '') {
+    return `${userData.firstName} ${userData.lastName ?? ''}`;
   }
   return userData.username;
 }

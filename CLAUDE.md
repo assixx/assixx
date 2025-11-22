@@ -126,8 +126,9 @@ docker-compose restart backend
 9. Read(~/projects/Assixx/frontend/src/styles/tailwind.css) for UI context (read whole File)
 10. Read(~/projects/Assixx/frontend/src/design-system/README.md) for UI context (read whole File)
 11. Read(~/projects/Assixx/backend/docs/ZOD-INTEGRATION-GUIDE.md) for UI context (read whole File)
-12. Dont do more than this and than recap fast and than ask user that youre ready.
-13. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
+12. Read(~/projects/Assixx/backend/docs/context.md) for context (read whole File)
+13. Dont do more than this and than recap fast and than ask user that youre ready.
+14. DO NOT run type-check or lint automatically - only if user asks! Just finish the mandatory list (API V1 is fully removed, we use API V2 without Fallback, just so you know for context)
 
 ## 📊 PROGRESS DOCUMENTATION
 

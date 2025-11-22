@@ -175,7 +175,7 @@ export class SignupFormController {
 - [x] manage-departments.html ✅ (2025-01-23) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, badge with tooltip, striped tables, btn-float, TypeScript modules split to api/forms/ui/types layers, global modal scroll-reset component, no inline styles/JS, no Bootstrap)
 - [x] manage-department-groups.html ✅ (2025-01-15) - 100% Design System compliant (ds-modal, form-field, search-input, dropdown, empty-state, btn-float, TypeScript modules split to api/forms/ui/types/index layers, hierarchical group tree, no inline styles/JS, no Bootstrap)
 - [x] manage-teams.html ✅ (2025-01-28) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to data/forms/ui/types/index layers, multi-select dropdowns with checkboxes, no inline styles/JS, no Bootstrap)
-- [x] manage-areas.html ✅ (2025-01-29) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to api/forms/ui/types/index layers, two-stage force-delete with dependency warnings, status filter fix in backend controller, no inline styles/JS, no Bootstrap)
+- [x] manage-areas.html ✅ (2025-01-29) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to api/forms/ui/types/index layers, two-stage force-delete with dependency warnings, status filter fix in backend controller, no inline pstyles/JS, no Bootstrap)
 - [x] manage-machines.html ✅ (2025-11-02) - 100% Design System compliant (ds-modal, form-field, toggle-group, search-input, dropdown, confirm-modal, empty-state, badge, btn-float, TypeScript modules split to data/forms/ui/types/index layers, machine type & status dropdowns with badges, department/area assignment, no inline styles/JS, no Bootstrap)
 
 ### Documents
@@ -185,14 +185,15 @@ export class SignupFormController {
 
 ### Features and unified-navigation !!!! CRITICAL and biggest
 
-- [ ] unified-navigation.ts und css !
+- [x] calendar.html ✅ (2025-11-23) - 100% Design System compliant (toggle-group for filters, ds-modal, form-field, dropdown, confirm-modal for delete events, TypeScript modules split to api/filters/modals/state/types/ui/index layers, FullCalendar integration with Design System theming, Schichten toggle button independent from organization filters, fixed field mapping startTime/endTime from API v2, no inline styles/JS, no Bootstrap)
 - [ ] blackboard.html --skip wir machen das zum schluss, weil größere refactoring
-- [ ] calendar.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] chat.html --skip wir machen das zum schluss, weil größere refactoring
 - [ ] shifts.html --skip wir machen das zum schluss, weil größere refactoring
+- [ ] logs.html
+- [ ] unified-navigation.ts und css !
 - [x] kvp.html ✅ (2025-11-13) - 100% Design System compliant (search-input, toggle-group, btn-float, alert, card-stat, modal, form-field, dropdown, empty-state, TypeScript modules split to api/data/forms/ui/types/index layers, custom photo upload kept for domain-specific requirements, kvp.css reduced 487→358 lines -27%, no inline styles/JS, no Bootstrap)
 - [x] kvp-detail.html ✅ (2025-11-15) - 100% Design System compliant (ds-modal, form-field, dropdown, choice-card, data-list, badge, btn-cancel, TypeScript modules split to actions/data-loader/index/permissions/renderer/share-modal/ui layers, lightbox photo gallery, comments section with avatar, kvp-detail.css 399 lines domain-specific only, fixed Bootstrap btn-secondary→btn-cancel and btn-light→btn-cancel, no inline styles/JS, no Bootstrap)
-- [ ] logs.html
+
 
 ### Surveys
 

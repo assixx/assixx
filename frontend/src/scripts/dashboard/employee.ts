@@ -7,7 +7,7 @@ import type { User, Document } from '../../types/api.types';
 import { apiClient } from '../../utils/api-client';
 import { getAuthToken, showError, loadUserInfo } from '../auth/index';
 import { formatDate } from '../../utils/date-helpers';
-import { $$id, setHTML, escapeHtml } from '../../utils/dom-utils';
+import { $$id, setHTML, escapeHtml, createElement } from '../../utils/dom-utils';
 
 interface EmployeeInfo extends User {
   department?: string;
@@ -15,6 +15,26 @@ interface EmployeeInfo extends User {
   supervisor?: string;
   documents_count?: number;
   recent_documents?: Document[];
+}
+
+// Calendar Event type matching actual API v2 response (uses startTime/endTime)
+interface CalendarEventApi {
+  id: number;
+  tenantId: number;
+  createdBy: number;
+  title: string;
+  description?: string;
+  startTime: string; // API returns startTime, not startDate
+  endTime: string; // API returns endTime, not endDate
+  allDay: boolean | number; // Can be boolean or 0/1
+  location?: string;
+  category: string;
+  color?: string;
+  orgLevel?: string; // API returns orgLevel for visibility
+  recurring?: boolean;
+  recurrencePattern?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
@@ -76,7 +96,7 @@ async function loadEmployeeInfo(): Promise<void> {
  * Get full name for display
  */
 function getDisplayName(info: EmployeeInfo): string {
-  const fullName = `${info.first_name ?? ''} ${info.last_name ?? ''}`.trim();
+  const fullName = `${info.firstName ?? ''} ${info.lastName ?? ''}`.trim();
   return fullName !== '' ? fullName : info.username;
 }
 
@@ -97,7 +117,7 @@ function updateNameElements(info: EmployeeInfo): void {
  */
 function generateEmployeeDetailsHTML(info: EmployeeInfo): string {
   const parts = [
-    `<p><strong>Name:</strong> ${escapeHtml(info.first_name ?? '')} ${escapeHtml(info.last_name ?? '')}</p>`,
+    `<p><strong>Name:</strong> ${escapeHtml(info.firstName ?? '')} ${escapeHtml(info.lastName ?? '')}</p>`,
     `<p><strong>E-Mail:</strong> ${escapeHtml(info.email)}</p>`,
   ];
 
@@ -219,6 +239,170 @@ function formatFileSize(bytes: number): string {
   return `${Number.parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2))} ${sizes[sizeIndex]}`;
 }
 
+/**
+ * Load upcoming calendar events
+ */
+async function loadUpcomingEvents(): Promise<void> {
+  try {
+    // Get today's date at midnight
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Get date 3 months in future for range
+    const futureDate = new Date(today);
+    futureDate.setMonth(futureDate.getMonth() + 3);
+
+    const startISO = today.toISOString();
+    const endISO = futureDate.toISOString();
+
+    // Use calendar API v2
+    const response = await apiClient.get<{
+      events: CalendarEventApi[];
+      pagination: unknown;
+    }>(
+      `/calendar/events?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&filter=all&limit=10`,
+    );
+
+    const events = response.events;
+
+    if (events.length === 0) {
+      updateUpcomingEvents([]);
+      return;
+    }
+
+    // Filter events that are in the future, sort by startTime, and take next 3
+    const filteredEvents = events
+      .filter((event: CalendarEventApi) => {
+        // Check if startTime exists and is not empty
+        if (event.startTime === '') {
+          return false;
+        }
+
+        try {
+          const eventDate = new Date(event.startTime);
+          const isValid = !Number.isNaN(eventDate.getTime());
+          const isFuture = eventDate >= today;
+          return isValid && isFuture;
+        } catch {
+          return false;
+        }
+      })
+      .sort((a: CalendarEventApi, b: CalendarEventApi) => {
+        return new Date(a.startTime).getTime() - new Date(b.startTime).getTime();
+      })
+      .slice(0, 3);
+
+    updateUpcomingEvents(filteredEvents);
+  } catch (error) {
+    console.error('Error loading upcoming events:', error);
+    updateUpcomingEvents([]);
+  }
+}
+
+/**
+ * Update upcoming calendar events
+ */
+function updateUpcomingEvents(events: CalendarEventApi[]): void {
+  const container = $$id('calendar-events-list');
+  if (container === null) return;
+
+  if (events.length === 0) {
+    setHTML(
+      container,
+      `<div class="p-2 rounded text-xs">
+        <strong class="block font-semibold">Nächste Termine</strong>
+        <p class="text-[var(--color-text-secondary)] mt-1">Keine anstehenden Termine</p>
+      </div>`,
+    );
+    return;
+  }
+
+  // Clear container and add events
+  container.innerHTML = '';
+
+  events.forEach((event) => {
+    const eventItem = createEventItem(event);
+    container.append(eventItem);
+  });
+}
+
+/**
+ * Create event item HTML element
+ */
+function createEventItem(event: CalendarEventApi): HTMLElement {
+  // API v2 returns camelCase fields through dbToApiEvent
+  const startDate = new Date(event.startTime);
+  const day = startDate.getDate().toString();
+  const month = startDate.toLocaleDateString('de-DE', { month: 'short' });
+
+  // API returns allDay as boolean or number (1/0)
+  const isAllDay = event.allDay === true || event.allDay === 1;
+  const time = isAllDay ? 'Ganztägig' : startDate.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+
+  // Get org level class and text - API returns orgLevel
+  const orgLevel = event.orgLevel ?? 'personal';
+  const levelClass = `event-level-${orgLevel}`;
+  const levelText = getOrgLevelText(orgLevel);
+
+  const eventItem = createElement('div', { className: 'event-item' });
+  eventItem.dataset.id = event.id.toString();
+
+  // Event date section
+  const eventDate = createElement('div', { className: 'event-date' });
+  eventDate.append(
+    createElement('span', { className: 'event-day' }, day),
+    createElement('span', { className: 'event-month' }, month),
+    createElement('span', { className: 'event-time' }, time),
+  );
+
+  // Event details section
+  const eventDetails = createElement('div', { className: 'event-details' });
+  const title = createElement(
+    'div',
+    { className: 'event-title' },
+    event.title !== '' ? event.title : 'Unbenannter Termin',
+  );
+  eventDetails.append(title);
+
+  // Location (optional)
+  if (event.location !== undefined && event.location !== '') {
+    const locationDiv = createElement('div', { className: 'event-location' });
+    locationDiv.append(createElement('i', { className: 'fas fa-map-marker-alt' }), ` ${event.location}`);
+    eventDetails.append(locationDiv);
+  }
+
+  // Org level badge
+  const levelBadge = createElement('span', { className: `event-level ${levelClass}` }, levelText);
+  eventDetails.append(levelBadge);
+
+  eventItem.append(eventDate, eventDetails);
+
+  // Click handler to open calendar
+  eventItem.addEventListener('click', () => {
+    window.location.href = '/calendar';
+  });
+
+  return eventItem;
+}
+
+/**
+ * Get German text for org level
+ */
+function getOrgLevelText(orgLevel: string): string {
+  switch (orgLevel) {
+    case 'company':
+      return 'Firma';
+    case 'department':
+      return 'Abteilung';
+    case 'team':
+      return 'Team';
+    case 'area':
+      return 'Bereich';
+    default:
+      return 'Persönlich';
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Debug logging
   console.info('[Employee Dashboard] Starting initialization...');
@@ -273,6 +457,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load initial data
   void loadEmployeeInfo();
   void loadDocuments();
+  void loadUpcomingEvents();
 
   // Event delegation for document download buttons
   document.addEventListener('click', (e) => {

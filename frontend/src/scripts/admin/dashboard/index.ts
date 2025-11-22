@@ -19,7 +19,14 @@ interface BlackboardWidgetInstance {
   render: () => void;
   loadEntries: () => Promise<void>;
 }
-import { DashboardService, EmployeeService, DepartmentService, TeamService, DocumentService } from './services';
+import {
+  DashboardService,
+  EmployeeService,
+  DepartmentService,
+  TeamService,
+  DocumentService,
+  CalendarService,
+} from './services';
 import { DashboardUI, EmployeeModalUI } from './ui';
 
 /**
@@ -31,6 +38,7 @@ class AdminDashboard {
   private departmentService: DepartmentService;
   private teamService: TeamService;
   private documentService: DocumentService;
+  private calendarService: CalendarService;
 
   private dashboardUI: DashboardUI;
   private employeeModalUI: EmployeeModalUI;
@@ -53,6 +61,7 @@ class AdminDashboard {
     this.departmentService = new DepartmentService();
     this.teamService = new TeamService();
     this.documentService = new DocumentService();
+    this.calendarService = new CalendarService();
 
     // Initialize UI managers
     this.dashboardUI = new DashboardUI();
@@ -166,6 +175,7 @@ class AdminDashboard {
         this.loadRecentDocuments(), // Will load ALL documents and cache them
         this.loadDepartments(), // Will load and cache departments
         this.loadTeams(), // Will load and cache teams
+        this.loadUpcomingEvents(), // Load next 3 calendar events
       ]);
 
       // NOW load stats - this will use the cached data from above
@@ -173,6 +183,15 @@ class AdminDashboard {
       this.loadDashboardStats();
     } catch (error) {
       console.error('[Admin Dashboard] Error loading initial data:', error);
+    }
+  }
+
+  private async loadUpcomingEvents(): Promise<void> {
+    try {
+      const events = await this.calendarService.loadUpcomingEvents();
+      this.dashboardUI.updateUpcomingEvents(events);
+    } catch (error) {
+      console.error('Error loading upcoming events:', error);
     }
   }
 

@@ -13,8 +13,7 @@
  */
 
 import type { Team, Department, Machine, ProcessedFormData } from './types';
-import type { UserAPIResponse, MappedUser } from '../../../utils/api-mappers';
-import { mapUsers } from '../../../utils/api-mappers';
+import type { User } from '../../../types/api.types';
 import { ApiClient } from '../../../utils/api-client';
 import { setSafeHTML } from '../../../utils/dom-utils';
 
@@ -409,13 +408,14 @@ export async function loadDepartmentsForDropdown(apiClient: ApiClient, selectedI
  * Get admin display name
  */
 function getAdminDisplayName(admin: {
-  firstName: string;
-  lastName: string;
+  firstName?: string;
+  lastName?: string;
   username: string;
   employeeNumber?: string;
 }): string {
-  const displayName =
-    admin.firstName !== '' && admin.lastName !== '' ? `${admin.firstName} ${admin.lastName}` : admin.username;
+  const firstName = admin.firstName ?? '';
+  const lastName = admin.lastName ?? '';
+  const displayName = firstName !== '' && lastName !== '' ? `${firstName} ${lastName}` : admin.username;
   const employeeInfo =
     admin.employeeNumber !== undefined && admin.employeeNumber !== '' ? ` (${admin.employeeNumber})` : '';
   return `${displayName}${employeeInfo}`;
@@ -424,7 +424,7 @@ function getAdminDisplayName(admin: {
 /**
  * Select admin in dropdown trigger
  */
-function selectAdminInDropdown(admins: MappedUser[], selectedId: number): void {
+function selectAdminInDropdown(admins: User[], selectedId: number): void {
   const trigger = document.querySelector('#team-lead-trigger span');
   const selected = admins.find((a) => a.id === selectedId);
 
@@ -441,10 +441,10 @@ export async function loadAdminsForDropdown(apiClient: ApiClient, selectedId?: n
   if (!menu) return;
 
   try {
-    const usersResponse = await apiClient.request<UserAPIResponse[]>('/users?role=admin', {
+    // Backend already returns camelCase via fieldMapping
+    const admins = await apiClient.request<User[]>('/users?role=admin', {
       method: 'GET',
     });
-    const admins = mapUsers(usersResponse);
 
     // Clear existing options except the first one (None)
     setSafeHTML(
@@ -523,10 +523,10 @@ export async function loadUsersForDropdown(apiClient: ApiClient, team?: Team): P
   if (!menu) return;
 
   try {
-    const userResponse = await apiClient.request<UserAPIResponse[]>('/users', {
+    // Backend already returns camelCase via fieldMapping
+    const users = await apiClient.request<User[]>('/users', {
       method: 'GET',
     });
-    const users = mapUsers(userResponse);
 
     setSafeHTML(menu, '');
     if (users.length === 0) {
@@ -534,7 +534,9 @@ export async function loadUsersForDropdown(apiClient: ApiClient, team?: Team): P
     } else {
       users.forEach((user) => {
         const displayName =
-          user.firstName !== '' && user.lastName !== '' ? `${user.firstName} ${user.lastName}` : user.username;
+          user.firstName !== undefined && user.firstName !== '' && user.lastName !== undefined && user.lastName !== ''
+            ? `${user.firstName} ${user.lastName}`
+            : user.username;
         const isChecked = team?.members?.some((u) => u.id === user.id) === true;
 
         const option = document.createElement('label');

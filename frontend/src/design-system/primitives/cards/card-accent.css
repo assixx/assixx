@@ -76,6 +76,5 @@
 }
 
 .card-accent--static:hover {
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(255 255 255 / 3%);
+  border-color: var(--color-icon-primary);
 }

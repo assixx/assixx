@@ -69,15 +69,11 @@ export interface BlackboardEntryExtended extends BlackboardEntry {
   orgId?: number;
   departmentId?: number;
   teamId?: number;
-  color?: string;
-  createdBy: number;
-  createdByName?: string;
+  // color, createdBy, createdByName, createdAt, updatedAt inherited from BlackboardEntry
   authorName?: string;
   authorFirstName?: string;
   authorLastName?: string;
   authorFullName?: string;
-  createdAt?: string;
-  updatedAt?: string;
   attachmentCount?: number;
   attachments?: BlackboardAttachment[];
 }
@@ -86,6 +82,26 @@ export interface BlackboardEntryExtended extends BlackboardEntry {
 export const API_V2_DEPARTMENTS = '/api/v2/departments';
 export const API_V1_DEPARTMENTS = '/api/departments';
 export const API_V1_TEAMS = '/api/teams';
+
+// Calendar Event type matching actual API v2 response (uses startTime/endTime)
+export interface CalendarEventApi {
+  id: number;
+  tenantId: number;
+  createdBy: number;
+  title: string;
+  description?: string;
+  startTime: string; // API returns startTime, not startDate
+  endTime: string; // API returns endTime, not endDate
+  allDay: boolean | number; // Can be boolean or 0/1
+  location?: string;
+  category: string;
+  color?: string;
+  orgLevel?: string; // API returns orgLevel for visibility
+  recurring?: boolean;
+  recurrencePattern?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 // UI Class Constants
 export const CLASS_COMPACT_ITEM = 'compact-item';

@@ -4,7 +4,6 @@
  */
 
 import { ApiClient } from '../../../utils/api-client';
-import { mapMachines, type MachineAPIResponse } from '../../../utils/api-mappers';
 import type { Machine, Department, Area, MachineFormData } from './types';
 
 // ===== GLOBAL STATE =====
@@ -59,13 +58,11 @@ export async function loadMachines(statusFilter?: string, searchTerm?: string): 
 
     console.info('[MachinesData] API endpoint:', endpoint);
 
-    // Using v2 API
-    const response = await apiClient.request<MachineAPIResponse[]>(endpoint, {
+    // Using v2 API - backend already returns camelCase via fieldMapping
+    const loadedMachines = await apiClient.request<Machine[]>(endpoint, {
       method: 'GET',
     });
 
-    // Map API response to frontend format
-    const loadedMachines = mapMachines(response);
     console.info('[MachinesData] Loaded machines:', loadedMachines.length);
     setMachines(loadedMachines);
   } catch (error) {

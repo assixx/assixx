@@ -92,6 +92,9 @@
 /* ========== COMPOSED COMPONENTS ========== */
 /* Higher-level components composed from primitives */
 
+/* Content Card - Enhanced glassmorphic cards for profile/content pages */
+@import "./components/card/card.css";
+
 /* Confirm Modal - Confirmation dialogs for critical actions */
 @import "./components/confirm-modal/confirm-modal.css";
 

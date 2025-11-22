@@ -42,7 +42,7 @@
 .btn-icon,
 .btn.btn-icon {
   aspect-ratio: 1; /* Perfect square */
-  padding: var(--spacing-2); /* 8px all sides */
+  padding: var(--spacing-3); /* 8px all sides */
 }
 
 .btn-icon.btn-sm {
