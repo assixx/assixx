@@ -25,7 +25,10 @@ function getTenantFromHost(hostname: string): string | null {
 
   // Produktion: firma.assixx.de -> firma
   if (parts.length >= 3) {
-    return parts[0].toLowerCase();
+    const subdomain = parts[0];
+    if (subdomain !== undefined) {
+      return subdomain.toLowerCase();
+    }
   }
 
   return null;
@@ -60,7 +63,6 @@ function getSubdomainFromBody(req: Request): string | null {
 async function getSubdomainFromUser(req: Request): Promise<string | null> {
   if (
     !('user' in req) ||
-    !req.user ||
     typeof req.user !== 'object' ||
     !('tenant_id' in req.user) ||
     typeof req.user.tenant_id !== 'number'
@@ -78,22 +80,22 @@ async function getSubdomainFromUser(req: Request): Promise<string | null> {
 async function extractTenantSubdomain(req: Request): Promise<string | null> {
   // 1. Try hostname first
   const hostTenant = getTenantFromHost(req.hostname);
-  if (hostTenant) return hostTenant;
+  if (hostTenant !== null) return hostTenant;
 
   // 2. Try header or query (development fallback)
   const headerTenant = req.headers['x-tenant-id'];
   if (typeof headerTenant === 'string' && headerTenant !== '') return headerTenant;
 
-  const queryTenant = req.query.tenant;
+  const queryTenant = req.query['tenant'];
   if (typeof queryTenant === 'string' && queryTenant !== '') return queryTenant;
 
   // 3. Try body subdomain (for login/signup)
   const bodySubdomain = getSubdomainFromBody(req);
-  if (bodySubdomain) return bodySubdomain;
+  if (bodySubdomain !== null) return bodySubdomain;
 
   // 4. Try user's tenant_id from JWT
   const userSubdomain = await getSubdomainFromUser(req);
-  if (userSubdomain) return userSubdomain;
+  if (userSubdomain !== null) return userSubdomain;
 
   return null;
 }
@@ -115,7 +117,7 @@ function validateTenantStatus(
   }
 
   // Check trial expiration
-  if (trialStatus?.isExpired && tenant.status === 'trial') {
+  if (trialStatus?.isExpired === true && tenant.status === 'trial') {
     res.status(402).json({
       error: 'Ihre Testphase ist abgelaufen. Bitte wählen Sie einen Plan.',
       trialEndsAt: trialStatus.trialEndsAt,
@@ -131,7 +133,7 @@ function validateTenantStatus(
  */
 function validateUserTenant(req: Request, tenantId: number): boolean {
   // If no user in request, allow (will be handled by auth middleware)
-  if (!('user' in req) || !req.user || typeof req.user !== 'object') return true;
+  if (!('user' in req) || typeof req.user !== 'object') return true;
 
   // Check if user has tenant_id property
   if (!('tenant_id' in req.user) || typeof req.user.tenant_id !== 'number') return true;
@@ -154,7 +156,7 @@ export async function tenantMiddleware(
     // 1. Identify tenant
     const tenantSubdomain = await extractTenantSubdomain(req);
 
-    if (!tenantSubdomain) {
+    if (tenantSubdomain === null) {
       res.status(400).json({
         error: 'Keine Tenant-Identifikation möglich. Bitte Subdomain verwenden.',
       });
@@ -186,15 +188,19 @@ export async function tenantMiddleware(
       return;
     }
 
-    // 5. Attach tenant info to request
+    // 5. Attach tenant info to request (exactOptionalPropertyTypes compliant)
     const tenantInfo: TenantInfo = {
       id: tenant.id,
       subdomain: tenant.subdomain,
       name: tenant.company_name,
       status: tenant.status,
       plan: tenant.current_plan,
-      trialStatus: trialStatus ?? undefined,
     };
+
+    // Only add trialStatus if defined
+    if (trialStatus !== null) {
+      tenantInfo.trialStatus = trialStatus;
+    }
 
     req.tenant = tenantInfo;
     req.tenantId = tenant.id;

@@ -146,8 +146,8 @@ class RootProfileManager {
         return;
       }
 
-      const action = btn.dataset.action;
-      const queueIdStr = btn.dataset.queueId;
+      const action = btn.dataset['action'];
+      const queueIdStr = btn.dataset['queueId'];
 
       if (queueIdStr === undefined) {
         return;

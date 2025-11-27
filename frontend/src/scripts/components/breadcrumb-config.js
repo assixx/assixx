@@ -85,6 +85,7 @@ export const urlMappings = {
   '/survey-results': { label: UMFRAGE_ERGEBNISSE_LABEL, icon: ICON_CHART_BAR },
   '/documents': { label: DOKUMENTE_LABEL, icon: ICON_FILE_ALT },
   '/blackboard': { label: SCHWARZES_BRETT_LABEL, icon: ICON_CLIPBOARD },
+  '/blackboard-detail': { label: 'Schwarzes Brett Details', icon: ICON_INFO_CIRCLE },
   '/chat': { label: 'Chat', icon: ICON_COMMENTS },
   '/calendar': { label: 'Kalender', icon: ICON_CALENDAR_ALT },
   '/shifts': { label: 'Schichtplan', icon: ICON_CLOCK },

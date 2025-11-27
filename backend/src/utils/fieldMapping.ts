@@ -33,29 +33,29 @@ export function dbToApiEvent(dbEvent: Record<string, unknown>): Record<string, u
   const apiEvent = dbToApi(dbEvent);
 
   // Map specific calendar fields
-  if (dbEvent.start_date != null) {
-    apiEvent.startTime = dbEvent.start_date;
+  if (dbEvent['start_date'] != null) {
+    apiEvent['startTime'] = dbEvent['start_date'];
   }
-  if (dbEvent.end_date != null) {
-    apiEvent.endTime = dbEvent.end_date;
+  if (dbEvent['end_date'] != null) {
+    apiEvent['endTime'] = dbEvent['end_date'];
   }
-  if (dbEvent.reminder_minutes !== undefined) {
-    apiEvent.reminderMinutes = dbEvent.reminder_minutes;
+  if (dbEvent['reminder_minutes'] !== undefined) {
+    apiEvent['reminderMinutes'] = dbEvent['reminder_minutes'];
   }
-  if (dbEvent.created_by !== undefined) {
-    apiEvent.createdBy = dbEvent.created_by;
+  if (dbEvent['created_by'] !== undefined) {
+    apiEvent['createdBy'] = dbEvent['created_by'];
   }
-  if (dbEvent.org_level !== undefined) {
-    apiEvent.orgLevel = dbEvent.org_level;
+  if (dbEvent['org_level'] !== undefined) {
+    apiEvent['orgLevel'] = dbEvent['org_level'];
   }
-  if (dbEvent.org_id !== undefined) {
-    apiEvent.orgId = dbEvent.org_id;
+  if (dbEvent['org_id'] !== undefined) {
+    apiEvent['orgId'] = dbEvent['org_id'];
   }
 
   // Remove redundant fields
-  delete apiEvent.startDate;
-  delete apiEvent.endDate;
-  delete apiEvent.reminderTime;
+  delete apiEvent['startDate'];
+  delete apiEvent['endDate'];
+  delete apiEvent['reminderTime'];
 
   return apiEvent;
 }

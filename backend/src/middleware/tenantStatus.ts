@@ -123,7 +123,8 @@ export async function checkTenantStatus(
       [tenantId],
     );
 
-    if (tenantRows.length === 0) {
+    const tenant = tenantRows[0];
+    if (tenant === undefined) {
       logger.error(`Tenant ${tenantId} not found in status check`);
       res.status(404).json({
         error: 'Tenant not found',
@@ -132,7 +133,7 @@ export async function checkTenantStatus(
       return;
     }
 
-    handleTenantStatus(tenantRows[0], tenantId, authReq.user.username, res, next);
+    handleTenantStatus(tenant, tenantId, authReq.user.username, res, next);
   } catch (error: unknown) {
     logger.error('Error in tenant status middleware:', error);
     // Don't block access on middleware errors
@@ -165,7 +166,7 @@ export async function requireActiveTenant(
     });
 
     const authReq = req as AuthenticatedRequest;
-    if (!authReq.user.tenant_id) {
+    if (typeof authReq.user.tenant_id !== 'number' || authReq.user.tenant_id === 0) {
       next();
       return;
     }
@@ -176,11 +177,12 @@ export async function requireActiveTenant(
       [authReq.user.tenant_id],
     );
 
-    if (rows.length > 0 && rows[0].deletion_status !== 'active') {
+    const row = rows[0];
+    if (row !== undefined && row.deletion_status !== 'active') {
       res.status(403).json({
         error: 'This action requires an active tenant',
         code: 'TENANT_NOT_ACTIVE',
-        status: rows[0].deletion_status,
+        status: row.deletion_status,
       });
       return;
     }
@@ -206,19 +208,23 @@ export async function getTenantDeletionInfo(tenantId: number): Promise<{
       [tenantId],
     );
 
-    if (tenantRows.length === 0) {
+    const tenant = tenantRows[0];
+    if (tenant === undefined) {
       return null;
     }
 
-    const tenant = tenantRows[0];
-
-    const result = {
+    // Build base result (exactOptionalPropertyTypes compliant)
+    const result: {
+      isScheduledForDeletion: boolean;
+      deletionDate?: Date;
+      status: string;
+      daysRemaining?: number;
+    } = {
       isScheduledForDeletion: tenant.deletion_status !== 'active',
       status: tenant.deletion_status,
-      deletionDate: undefined as Date | undefined,
-      daysRemaining: undefined as number | undefined,
     };
 
+    // Add optional properties only when defined
     if (tenant.deletion_status === 'marked_for_deletion' && tenant.deletion_requested_at) {
       const scheduledDate = new Date(tenant.deletion_requested_at);
       scheduledDate.setDate(scheduledDate.getDate() + 30); // 30 day grace period

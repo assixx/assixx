@@ -13,8 +13,7 @@ export interface DepartmentV2 {
   description?: string;
   managerId?: number;
   areaId?: number; // Add areaId field (camelCase)
-  status?: string;
-  visibility?: string;
+  isActive: boolean;
   tenantId: number;
   createdAt?: string;
   updatedAt?: string;
@@ -29,20 +28,18 @@ export interface DepartmentV2 {
 
 export interface CreateDepartmentData {
   name: string;
-  description?: string;
-  managerId?: number;
-  areaId?: number; // camelCase for v2 API
-  status?: string;
-  visibility?: string;
+  description?: string | undefined;
+  managerId?: number | undefined;
+  areaId?: number | undefined;
+  isActive?: boolean | undefined;
 }
 
 export interface UpdateDepartmentData {
-  name?: string;
-  description?: string;
-  managerId?: number;
-  areaId?: number; // camelCase for v2 API
-  status?: string;
-  visibility?: string;
+  name?: string | undefined;
+  description?: string | undefined;
+  managerId?: number | undefined;
+  areaId?: number | undefined;
+  isActive?: boolean | undefined;
 }
 
 export interface DepartmentMember {
@@ -55,6 +52,24 @@ export interface DepartmentMember {
   employeeId?: string;
   role: string;
   isActive: boolean;
+}
+
+/** Department foreign key dependency counts */
+interface DepartmentDependencies {
+  users: number;
+  teams: number;
+  machines: number;
+  shifts: number;
+  shiftPlans: number;
+  shiftFavorites: number;
+  kvpSuggestions: number;
+  documents: number;
+  calendarEvents: number;
+  surveyAssignments: number;
+  adminPermissions: number;
+  departmentGroupMembers: number;
+  documentPermissions: number;
+  total: number;
 }
 
 // Service Error Class
@@ -83,6 +98,41 @@ class ServiceError extends Error {
  */
 class DepartmentService {
   /**
+   * Map DbDepartment to base DepartmentV2 structure
+   * @param dept - Database department record
+   */
+  private mapDbDepartmentToBase(dept: DbDepartment): DepartmentV2 {
+    const result: DepartmentV2 = {
+      id: dept.id,
+      name: dept.name,
+      isActive: Boolean(dept.is_active ?? 1),
+      tenantId: dept.tenant_id,
+    };
+
+    if (dept.description !== undefined) result.description = dept.description;
+    if (dept.manager_id !== undefined) result.managerId = dept.manager_id;
+    if (dept.area_id !== undefined) result.areaId = dept.area_id;
+    if (dept.created_at !== undefined) result.createdAt = dept.created_at.toISOString();
+    if (dept.updated_at !== undefined) result.updatedAt = dept.updated_at.toISOString();
+
+    return result;
+  }
+
+  /**
+   * Add extended fields to DepartmentV2 object
+   * @param result - Target DepartmentV2 object
+   * @param dept - Source database department record
+   */
+  private addExtendedFields(result: DepartmentV2, dept: DbDepartment): void {
+    if (dept.manager_name !== undefined) result.managerName = dept.manager_name;
+    if (dept.areaName !== undefined) result.areaName = dept.areaName;
+    if (dept.employee_count !== undefined) result.employeeCount = dept.employee_count;
+    if (dept.employee_names !== undefined) result.employeeNames = dept.employee_names;
+    if (dept.team_count !== undefined) result.teamCount = dept.team_count;
+    if (dept.team_names !== undefined) result.teamNames = dept.team_names;
+  }
+
+  /**
    * Get all departments for a tenant
    * @param tenantId - The tenant ID
    * @param includeExtended - The includeExtended parameter
@@ -91,27 +141,11 @@ class DepartmentService {
     try {
       const departments = await Department.findAll(tenantId);
 
-      return departments.map((dept: DbDepartment) => ({
-        id: dept.id,
-        name: dept.name,
-        description: dept.description,
-        managerId: dept.manager_id,
-        areaId: dept.area_id, // Add areaId to response
-        status: dept.status,
-        visibility: dept.visibility,
-        tenantId: dept.tenant_id,
-        createdAt: dept.created_at?.toISOString(),
-        updatedAt: dept.updated_at?.toISOString(),
-        // Extended fields if available
-        ...(includeExtended && {
-          managerName: dept.manager_name,
-          areaName: dept.areaName,
-          employeeCount: dept.employee_count ?? 0,
-          employeeNames: dept.employee_names ?? '',
-          teamCount: dept.team_count ?? 0,
-          teamNames: dept.team_names ?? '',
-        }),
-      }));
+      return departments.map((dept: DbDepartment): DepartmentV2 => {
+        const baseDept = this.mapDbDepartmentToBase(dept);
+        if (includeExtended) this.addExtendedFields(baseDept, dept);
+        return baseDept;
+      });
     } catch (error: unknown) {
       logger.error('Error getting departments:', error);
       throw new ServiceError(500, 'Failed to retrieve departments', error);
@@ -133,30 +167,55 @@ class DepartmentService {
         throw new ServiceError(404, 'Department not found');
       }
 
-      return {
-        id: department.id,
-        name: department.name,
-        description: department.description,
-        managerId: department.manager_id,
-        areaId: department.area_id, // Add areaId to response
-        status: department.status,
-        visibility: department.visibility,
-        tenantId: department.tenant_id,
-        createdAt: department.created_at?.toISOString(),
-        updatedAt: department.updated_at?.toISOString(),
-        // Include extended fields
-        managerName: department.manager_name,
-        areaName: department.areaName,
-        employeeCount: department.employee_count ?? 0,
-        employeeNames: department.employee_names ?? '',
-        teamCount: department.team_count ?? 0,
-        teamNames: department.team_names ?? '',
-      };
+      const result = this.mapDbDepartmentToBase(department);
+      this.addExtendedFields(result, department);
+
+      return result;
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error('Error getting department:', error);
       throw new ServiceError(500, 'Failed to retrieve department', error);
     }
+  }
+
+  /**
+   * Build create data for new department
+   * @param data - Input data from API
+   * @param tenantId - Tenant ID
+   */
+  private buildCreateDataForDepartment(
+    data: CreateDepartmentData,
+    tenantId: number,
+  ): {
+    name: string;
+    description?: string;
+    manager_id?: number;
+    area_id?: number;
+    is_active: number;
+    tenant_id: number;
+  } {
+    const createData: ReturnType<typeof this.buildCreateDataForDepartment> = {
+      name: data.name,
+      tenant_id: tenantId,
+      is_active: data.isActive === false ? 0 : 1, // Default active
+    };
+
+    if (data.description !== undefined) createData.description = data.description;
+    if (data.managerId !== undefined) createData.manager_id = data.managerId;
+    if (data.areaId !== undefined) createData.area_id = data.areaId;
+
+    return createData;
+  }
+
+  /**
+   * Check if error is a duplicate entry error
+   * @param error - Error to check
+   */
+  private isDuplicateEntryError(error: unknown): boolean {
+    if (!(error instanceof Error)) return false;
+    return (
+      error.message.includes('Duplicate entry') || error.message.includes('unique_name_tenant')
+    );
   }
 
   /**
@@ -166,31 +225,19 @@ class DepartmentService {
    */
   async createDepartment(data: CreateDepartmentData, tenantId: number): Promise<DepartmentV2> {
     try {
-      // Validate required fields
-      if (!data.name || data.name.trim() === '') {
+      if (data.name.trim() === '') {
         throw new ServiceError(400, 'Department name is required');
       }
 
-      const departmentId = await Department.create({
-        name: data.name,
-        description: data.description,
-        manager_id: data.managerId,
-        area_id: data.areaId, // Add area_id field (snake_case for DB) - undefined is OK
-        status: data.status ?? 'active',
-        visibility: data.visibility ?? 'public',
-        tenant_id: tenantId,
-      });
+      const createData = this.buildCreateDataForDepartment(data, tenantId);
+      const departmentId = await Department.create(createData);
 
       return await this.getDepartmentById(departmentId, tenantId);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
-
-      // Check for duplicate key error
-      const errorMessage = (error as Error).message || '';
-      if (errorMessage.includes('Duplicate entry') || errorMessage.includes('unique_name_tenant')) {
+      if (this.isDuplicateEntryError(error)) {
         throw new ServiceError(400, 'Department name already exists');
       }
-
       logger.error('Error creating department:', error);
       throw new ServiceError(500, 'Failed to create department', error);
     }
@@ -221,8 +268,7 @@ class DepartmentService {
     description: string;
     manager_id: number;
     area_id: number;
-    status: string;
-    visibility: string;
+    is_active: number;
   }> {
     const updateData: ReturnType<typeof this.buildUpdateData> = {};
 
@@ -238,11 +284,8 @@ class DepartmentService {
     if (data.areaId !== undefined) {
       updateData.area_id = data.areaId;
     }
-    if (data.status !== undefined) {
-      updateData.status = data.status;
-    }
-    if (data.visibility !== undefined) {
-      updateData.visibility = data.visibility;
+    if (data.isActive !== undefined) {
+      updateData.is_active = data.isActive ? 1 : 0; // Convert boolean to TINYINT
     }
 
     return updateData;
@@ -303,92 +346,54 @@ class DepartmentService {
     return rows.length;
   }
 
+  /** Tables to check for department dependencies */
+  private getDependencyTables(): string[] {
+    return [
+      'users',
+      'teams',
+      'machines',
+      'shifts',
+      'shift_plans',
+      'shift_favorites',
+      'kvp_suggestions',
+      'documents',
+      'calendar_events',
+      'survey_assignments',
+      'admin_department_permissions',
+      'department_group_members',
+      'document_permissions',
+    ];
+  }
+
   /**
    * Check all foreign key dependencies for a department
    * @param id - Department ID
    * @param tenantId - Tenant ID
-   * @returns Object with dependency counts
    */
   private async checkDepartmentDependencies(
     id: number,
     tenantId: number,
-  ): Promise<{
-    users: number;
-    teams: number;
-    machines: number;
-    shifts: number;
-    shiftPlans: number;
-    shiftFavorites: number;
-    kvpSuggestions: number;
-    documents: number;
-    calendarEvents: number;
-    surveyAssignments: number;
-    adminPermissions: number;
-    departmentGroupMembers: number;
-    documentPermissions: number;
-    total: number;
-  }> {
-    // Check all dependencies in parallel for better performance
-    const [
-      users,
-      teams,
-      machines,
-      shifts,
-      shiftPlans,
-      shiftFavorites,
-      kvpSuggestions,
-      documents,
-      calendarEvents,
-      surveyAssignments,
-      adminPermissions,
-      departmentGroupMembers,
-      documentPermissions,
-    ] = await Promise.all([
-      this.countDependencies('users', id, tenantId),
-      this.countDependencies('teams', id, tenantId),
-      this.countDependencies('machines', id, tenantId),
-      this.countDependencies('shifts', id, tenantId),
-      this.countDependencies('shift_plans', id, tenantId),
-      this.countDependencies('shift_favorites', id, tenantId),
-      this.countDependencies('kvp_suggestions', id, tenantId),
-      this.countDependencies('documents', id, tenantId),
-      this.countDependencies('calendar_events', id, tenantId),
-      this.countDependencies('survey_assignments', id, tenantId),
-      this.countDependencies('admin_department_permissions', id, tenantId),
-      this.countDependencies('department_group_members', id, tenantId),
-      this.countDependencies('document_permissions', id, tenantId),
-    ]);
-
-    const total =
-      users +
-      teams +
-      machines +
-      shifts +
-      shiftPlans +
-      shiftFavorites +
-      kvpSuggestions +
-      documents +
-      calendarEvents +
-      surveyAssignments +
-      adminPermissions +
-      departmentGroupMembers +
-      documentPermissions;
+  ): Promise<DepartmentDependencies> {
+    const tables = this.getDependencyTables();
+    const counts = await Promise.all(
+      tables.map((table: string): Promise<number> => this.countDependencies(table, id, tenantId)),
+    );
 
     return {
-      users,
-      teams,
-      machines,
-      shifts,
-      shiftPlans,
-      shiftFavorites,
-      kvpSuggestions,
-      documents,
-      calendarEvents,
-      surveyAssignments,
-      adminPermissions,
-      departmentGroupMembers,
-      documentPermissions,
-      total,
+      users: counts[0] ?? 0,
+      teams: counts[1] ?? 0,
+      machines: counts[2] ?? 0,
+      shifts: counts[3] ?? 0,
+      shiftPlans: counts[4] ?? 0,
+      shiftFavorites: counts[5] ?? 0,
+      kvpSuggestions: counts[6] ?? 0,
+      documents: counts[7] ?? 0,
+      calendarEvents: counts[8] ?? 0,
+      surveyAssignments: counts[9] ?? 0,
+      adminPermissions: counts[10] ?? 0,
+      departmentGroupMembers: counts[11] ?? 0,
+      documentPermissions: counts[12] ?? 0,
+      total: counts.reduce((sum: number, c: number): number => sum + c, 0),
     };
   }
 
@@ -572,17 +577,27 @@ class DepartmentService {
           employee_id?: string;
           role?: string;
           status?: string;
-        }) => ({
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          firstName: user.first_name ?? '',
-          lastName: user.last_name ?? '',
-          position: user.position,
-          employeeId: user.employee_id,
-          role: user.role ?? 'employee',
-          isActive: user.status === 'active',
-        }),
+        }): DepartmentMember => {
+          const member: DepartmentMember = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            firstName: user.first_name ?? '',
+            lastName: user.last_name ?? '',
+            role: user.role ?? 'employee',
+            isActive: user.status === 'active',
+          };
+
+          // Add optional fields only if defined
+          if (user.position !== undefined) {
+            member.position = user.position;
+          }
+          if (user.employee_id !== undefined) {
+            member.employeeId = user.employee_id;
+          }
+
+          return member;
+        },
       );
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;

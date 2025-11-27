@@ -13,7 +13,7 @@ import { DatabasePool, MockDatabase } from '../types/database.types.js';
 dotenv.config();
 
 // Prüfe, ob wir den Mock-Modus verwenden sollen
-const USE_MOCK_DB = process.env.USE_MOCK_DB === 'true';
+const USE_MOCK_DB = process.env['USE_MOCK_DB'] === 'true';
 
 let pool: DatabasePool;
 
@@ -244,34 +244,34 @@ if (USE_MOCK_DB) {
 } else {
   // Echte Datenbankverbindung
   console.info('[DEBUG] Database config:', {
-    host: process.env.DB_HOST ?? 'localhost',
-    user: process.env.DB_USER ?? 'assixx_user',
-    database: process.env.DB_NAME ?? 'main',
-    port: process.env.DB_PORT ?? (process.env.CI !== undefined ? '3306' : '3307'),
-    NODE_ENV: process.env.NODE_ENV,
-    CI: process.env.CI,
+    host: process.env['DB_HOST'] ?? 'localhost',
+    user: process.env['DB_USER'] ?? 'assixx_user',
+    database: process.env['DB_NAME'] ?? 'main',
+    port: process.env['DB_PORT'] ?? (process.env['CI'] !== undefined ? '3306' : '3307'),
+    NODE_ENV: process.env['NODE_ENV'],
+    CI: process.env['CI'],
   });
 
   // Initialize pool immediately with config
   // Use port 3306 for CI, 3307 for local development
-  const defaultPort = process.env.CI !== undefined && process.env.CI !== '' ? '3306' : '3307';
+  const defaultPort = process.env['CI'] !== undefined && process.env['CI'] !== '' ? '3306' : '3307';
   const defaultDatabase = 'main';
   const config: PoolOptions = {
-    host: process.env.DB_HOST ?? 'localhost',
+    host: process.env['DB_HOST'] ?? 'localhost',
     port: Number.parseInt(
-      process.env.DB_PORT !== undefined && process.env.DB_PORT !== '' ?
-        process.env.DB_PORT
+      process.env['DB_PORT'] !== undefined && process.env['DB_PORT'] !== '' ?
+        process.env['DB_PORT']
       : defaultPort,
     ),
-    user: process.env.DB_USER ?? 'assixx_user',
-    password: process.env.DB_PASSWORD ?? 'AssixxP@ss2025!',
-    database: process.env.DB_NAME ?? defaultDatabase,
+    user: process.env['DB_USER'] ?? 'assixx_user',
+    password: process.env['DB_PASSWORD'] ?? 'AssixxP@ss2025!',
+    database: process.env['DB_NAME'] ?? defaultDatabase,
     waitForConnections: true,
-    connectionLimit: process.env.NODE_ENV === 'test' ? 1 : 10,
+    connectionLimit: process.env['NODE_ENV'] === 'test' ? 1 : 10,
     queueLimit: 0,
     multipleStatements: false, // Sicherheitsverbesserung
     charset: 'utf8mb4',
-    connectTimeout: process.env.NODE_ENV === 'test' ? 5000 : 60000, // 5s for tests
+    connectTimeout: process.env['NODE_ENV'] === 'test' ? 5000 : 60000, // 5s for tests
     stringifyObjects: false,
     supportBigNumbers: true,
     bigNumberStrings: false,
@@ -294,7 +294,7 @@ if (USE_MOCK_DB) {
     console.info('[DEBUG] Database pool created successfully');
 
     // Skip connection test in test environment
-    if (process.env.NODE_ENV !== 'test') {
+    if (process.env['NODE_ENV'] !== 'test') {
       // Test the connection immediately
       void (async () => {
         try {

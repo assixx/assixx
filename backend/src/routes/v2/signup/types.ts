@@ -7,7 +7,7 @@ export interface SignupRequest {
   companyName: string;
   subdomain: string;
   email: string;
-  phone: string;
+  phone?: string;
   address?: string;
   adminEmail: string;
   adminPassword: string;

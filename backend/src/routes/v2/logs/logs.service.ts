@@ -202,64 +202,67 @@ class LogsService {
   }
 
   /**
+   * Get basic stats query result
+   */
+  private async getBasicStats(tenantId: number): Promise<StatsRow[]> {
+    const [rows] = await executeQuery<StatsRow[]>(
+      `SELECT COUNT(*) as total_logs, COUNT(DISTINCT user_id) as unique_users,
+       COUNT(DISTINCT tenant_id) as unique_tenants,
+       SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) as today_logs
+       FROM root_logs WHERE tenant_id = ?`,
+      [tenantId],
+    );
+    return rows;
+  }
+
+  /**
+   * Get top actions query result
+   */
+  private async getTopActions(tenantId: number): Promise<TopActionResult[]> {
+    const [rows] = await executeQuery<TopActionResult[]>(
+      `SELECT action, COUNT(*) as count FROM root_logs WHERE tenant_id = ?
+       GROUP BY action ORDER BY count DESC LIMIT 10`,
+      [tenantId],
+    );
+    return rows;
+  }
+
+  /**
+   * Get top users query result
+   */
+  private async getTopUsers(tenantId: number): Promise<TopUserResult[]> {
+    const [rows] = await executeQuery<TopUserResult[]>(
+      `SELECT rl.user_id, u.username as user_name, COUNT(*) as count
+       FROM root_logs rl LEFT JOIN users u ON rl.user_id = u.id
+       WHERE rl.tenant_id = ? GROUP BY rl.user_id, u.username ORDER BY count DESC LIMIT 10`,
+      [tenantId],
+    );
+    return rows;
+  }
+
+  /**
    * Get log statistics (Root only) - filtered by tenant
-   * @param tenantId - The tenant ID to filter by
    */
   async getStats(tenantId: number): Promise<LogsStatsResponse> {
     try {
-      // Basic stats - FILTERED BY TENANT
-      const [basicStats] = await executeQuery<StatsRow[]>(
-        `SELECT 
-          COUNT(*) as total_logs,
-          COUNT(DISTINCT user_id) as unique_users,
-          COUNT(DISTINCT tenant_id) as unique_tenants,
-          SUM(CASE WHEN DATE(created_at) = CURDATE() THEN 1 ELSE 0 END) as today_logs
-         FROM root_logs
-         WHERE tenant_id = ?`,
-        [tenantId],
-      );
-
-      // Top actions - FILTERED BY TENANT
-      const [topActions] = await executeQuery<TopActionResult[]>(
-        `SELECT action, COUNT(*) as count
-         FROM root_logs
-         WHERE tenant_id = ?
-         GROUP BY action
-         ORDER BY count DESC
-         LIMIT 10`,
-        [tenantId],
-      );
-
-      // Top users - FILTERED BY TENANT
-      const [topUsers] = await executeQuery<TopUserResult[]>(
-        `SELECT
-          rl.user_id,
-          u.username as user_name,
-          COUNT(*) as count
-         FROM root_logs rl
-         LEFT JOIN users u ON rl.user_id = u.id
-         WHERE rl.tenant_id = ?
-         GROUP BY rl.user_id, u.username
-         ORDER BY count DESC
-         LIMIT 10`,
-        [tenantId],
-      );
+      const [basicStats, topActions, topUsers] = await Promise.all([
+        this.getBasicStats(tenantId),
+        this.getTopActions(tenantId),
+        this.getTopUsers(tenantId),
+      ]);
 
       const stats = basicStats[0];
+      if (stats === undefined) {
+        return { totalLogs: 0, todayLogs: 0, uniqueUsers: 0, uniqueTenants: 0, topActions: [], topUsers: [] };
+      }
+
       return {
         totalLogs: stats.total_logs ?? 0,
         todayLogs: stats.today_logs ?? 0,
         uniqueUsers: stats.unique_users ?? 0,
         uniqueTenants: stats.unique_tenants ?? 0,
-        topActions: topActions.map((row: TopActionResult) => ({
-          action: row.action ?? 'unknown',
-          count: row.count ?? 0,
-        })),
-        topUsers: topUsers.map((row: TopUserResult) => ({
-          userId: row.user_id ?? 0,
-          userName: row.user_name ?? 'Unknown',
-          count: row.count ?? 0,
-        })),
+        topActions: topActions.map((r: TopActionResult) => ({ action: r.action ?? 'unknown', count: r.count ?? 0 })),
+        topUsers: topUsers.map((r: TopUserResult) => ({ userId: r.user_id ?? 0, userName: r.user_name ?? 'Unknown', count: r.count ?? 0 })),
       };
     } catch (error: unknown) {
       logger.error('[Logs v2] Error fetching stats:', error);
@@ -268,8 +271,40 @@ class LogsService {
   }
 
   /**
+   * Build delete filter conditions
+   */
+  private buildDeleteConditions(filters: {
+    userId?: number;
+    tenantId?: number;
+    olderThanDays?: number;
+    action?: string;
+    entityType?: string;
+  }): { conditions: string[]; params: unknown[] } {
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (filters.userId !== undefined) {
+      conditions.push('user_id = ?');
+      params.push(filters.userId);
+    }
+    if (filters.tenantId !== undefined) {
+      conditions.push('tenant_id = ?');
+      params.push(filters.tenantId);
+    }
+    if (filters.action !== undefined && filters.action !== '') {
+      conditions.push('action = ?');
+      params.push(filters.action);
+    }
+    if (filters.entityType !== undefined && filters.entityType !== '') {
+      conditions.push('entity_type = ?');
+      params.push(filters.entityType);
+    }
+
+    return { conditions, params };
+  }
+
+  /**
    * Delete logs with filters (Root only)
-   * @param filters - The filter criteria
    */
   async deleteLogs(filters: {
     userId?: number;
@@ -279,33 +314,11 @@ class LogsService {
     entityType?: string;
   }): Promise<number> {
     logger.info('[Logs v2 Service] deleteLogs called with filters:', filters);
-    const conditions: string[] = [];
-    const params: unknown[] = [];
+    const { conditions, params } = this.buildDeleteConditions(filters);
 
-    if (filters.userId) {
-      conditions.push('user_id = ?');
-      params.push(filters.userId);
-    }
-
-    if (filters.tenantId) {
-      conditions.push('tenant_id = ?');
-      params.push(filters.tenantId);
-    }
-
-    if (filters.action) {
-      conditions.push('action = ?');
-      params.push(filters.action);
-    }
-
-    if (filters.entityType) {
-      conditions.push('entity_type = ?');
-      params.push(filters.entityType);
-    }
-
+    // Handle olderThanDays: 0 means delete ALL, >0 means older than N days
     if (filters.olderThanDays !== undefined) {
       if (filters.olderThanDays === 0) {
-        // olderThanDays: 0 means delete ALL logs (no age restriction)
-        // Add a condition that's always true to indicate we have a valid filter
         conditions.push('1=1');
       } else {
         conditions.push('created_at < DATE_SUB(NOW(), INTERVAL ? DAY)');
@@ -317,11 +330,9 @@ class LogsService {
       throw new Error('At least one filter must be provided for deletion');
     }
 
-    const whereClause = conditions.join(' AND ');
-
     try {
       const [result] = await executeQuery<ResultSetHeader>(
-        `DELETE FROM root_logs WHERE ${whereClause}`,
+        `DELETE FROM root_logs WHERE ${conditions.join(' AND ')}`,
         params,
       );
       return result.affectedRows;
@@ -332,38 +343,45 @@ class LogsService {
   }
 
   /**
+   * Apply optional string fields from DB row to response
+   */
+  private applyOptionalLogFields(response: LogsResponse, log: DbLogRow): void {
+    if (log.tenant_name !== undefined) response.tenantName = log.tenant_name;
+    if (log.user_name !== undefined) response.userName = log.user_name;
+    if (log.user_email !== undefined) response.userEmail = log.user_email;
+    if (log.user_role !== undefined) response.userRole = log.user_role;
+    if (log.entity_type !== undefined) response.entityType = log.entity_type;
+    if (log.entity_id !== undefined) response.entityId = log.entity_id;
+    if (log.ip_address !== undefined) response.ipAddress = log.ip_address;
+    if (log.user_agent !== undefined) response.userAgent = log.user_agent;
+  }
+
+  /**
+   * Parse JSON values if needed
+   */
+  private parseJsonValue(value: string | Record<string, unknown>): Record<string, unknown> {
+    return typeof value === 'string' ? (JSON.parse(value) as Record<string, unknown>) : value;
+  }
+
+  /**
    * Format database log to API response
-   * @param log - The log parameter
    */
   private formatLogResponse(log: DbLogRow): LogsResponse {
-    return {
+    const response: LogsResponse = {
       id: log.id,
       tenantId: log.tenant_id,
-      tenantName: log.tenant_name,
       userId: log.user_id,
-      userName: log.user_name,
-      userEmail: log.user_email,
-      userRole: log.user_role,
       action: log.action,
-      entityType: log.entity_type,
-      entityId: log.entity_id,
-      oldValues:
-        log.old_values ?
-          typeof log.old_values === 'string' ?
-            (JSON.parse(log.old_values) as Record<string, unknown>)
-          : log.old_values
-        : undefined,
-      newValues:
-        log.new_values ?
-          typeof log.new_values === 'string' ?
-            (JSON.parse(log.new_values) as Record<string, unknown>)
-          : log.new_values
-        : undefined,
-      ipAddress: log.ip_address,
-      userAgent: log.user_agent,
       wasRoleSwitched: Boolean(log.was_role_switched),
       createdAt: log.created_at.toISOString(),
     };
+
+    this.applyOptionalLogFields(response, log);
+
+    if (log.old_values !== undefined) response.oldValues = this.parseJsonValue(log.old_values);
+    if (log.new_values !== undefined) response.newValues = this.parseJsonValue(log.new_values);
+
+    return response;
   }
 }
 

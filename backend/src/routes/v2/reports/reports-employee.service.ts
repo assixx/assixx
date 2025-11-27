@@ -15,6 +15,14 @@ import {
 import type { DepartmentPerformanceData, ReportFilters } from './reports.types.js';
 
 /**
+ * Safely convert unknown value to number, defaulting to 0 for NaN
+ */
+function toSafeNumber(value: unknown): number {
+  const num = Number(value);
+  return Number.isNaN(num) ? 0 : num;
+}
+
+/**
  * Get detailed employee report with headcount, attendance, and performance
  * @param filters - Filter criteria (tenantId, date range, department, team)
  * @returns Comprehensive employee analytics report
@@ -132,14 +140,14 @@ export async function getDepartmentReport(filters: {
 
   const result: DepartmentPerformanceData[] = (rows as Record<string, unknown>[]).map(
     (dept: Record<string, unknown>) => ({
-      departmentId: Number(dept.department_id),
-      departmentName: String(dept.department_name),
+      departmentId: Number(dept['department_id']),
+      departmentName: String(dept['department_name']),
       metrics: {
-        employees: Number(dept.employees) || 0,
-        teams: Number(dept.teams) || 0,
-        kvpSuggestions: Number(dept.kvp_suggestions) || 0,
-        shiftCoverage: Number(dept.shift_coverage) || 0,
-        avgOvertime: Number(dept.avg_overtime) || 0,
+        employees: toSafeNumber(dept['employees']),
+        teams: toSafeNumber(dept['teams']),
+        kvpSuggestions: toSafeNumber(dept['kvp_suggestions']),
+        shiftCoverage: toSafeNumber(dept['shift_coverage']),
+        avgOvertime: toSafeNumber(dept['avg_overtime']),
       },
     }),
   );

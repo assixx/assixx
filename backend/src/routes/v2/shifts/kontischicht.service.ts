@@ -35,8 +35,10 @@ class KontischichtService {
   calculateEndOfFirstWeekNextYear(fromDate: Date): Date {
     const nextYear = fromDate.getFullYear() + 1;
     const jan1 = new Date(nextYear, 0, 1);
-    const dayOfWeek = jan1.getDay() || 7;
-    const daysToThursday = (4 - dayOfWeek + 7) % 7 || 7;
+    // getDay() returns 0 for Sunday, we want 7 for ISO week calculation
+    const dayOfWeek = jan1.getDay() === 0 ? 7 : jan1.getDay();
+    const daysToThursdayRaw = (4 - dayOfWeek + 7) % 7;
+    const daysToThursday = daysToThursdayRaw === 0 ? 7 : daysToThursdayRaw;
     const firstThursday = new Date(nextYear, 0, 1 + daysToThursday);
 
     const sundayKW1 = new Date(firstThursday);
@@ -56,12 +58,18 @@ class KontischichtService {
     endDate?: string,
   ): { planStartDate: string; planEndDate: string } {
     const planStartDate = startDate;
-    let planEndDate = endDate ?? '';
+    let planEndDate: string;
 
-    if (!endDate) {
+    if (endDate === undefined) {
       const startDateObj = new Date(startDate);
       const endOfKW1 = this.calculateEndOfFirstWeekNextYear(startDateObj);
-      planEndDate = endOfKW1.toISOString().split('T')[0];
+      const endDateStr = endOfKW1.toISOString().split('T')[0];
+      if (endDateStr === undefined) {
+        throw new Error('Failed to calculate end date');
+      }
+      planEndDate = endDateStr;
+    } else {
+      planEndDate = endDate;
     }
 
     console.info('[KONTISCHICHT] Using dates for shift_plan:', {
@@ -124,7 +132,7 @@ class KontischichtService {
    * @returns Effective end date string
    */
   private calculateEffectiveEndDate(data: { startDate: string; endDate?: string }): string {
-    if (data.endDate) {
+    if (data.endDate !== undefined) {
       console.info(`[KONTISCHICHT] Using provided end date from modal: ${data.endDate}`);
       return data.endDate;
     }
@@ -138,6 +146,9 @@ class KontischichtService {
     const effectiveEndDate =
       seventeenWeeksLater > endOfKW1NextYear ? seventeenWeeksLater : endOfKW1NextYear;
     const effectiveEndDateStr = effectiveEndDate.toISOString().split('T')[0];
+    if (effectiveEndDateStr === undefined) {
+      throw new Error('Failed to calculate effective end date');
+    }
 
     console.info(`[KONTISCHICHT] Calculated default end date: ${effectiveEndDateStr}`);
     return effectiveEndDateStr;
@@ -157,6 +168,27 @@ class KontischichtService {
   }
 
   /**
+   * Detect pattern from name string
+   */
+  private detectPatternFromName(name: string): '3er' | '4er-standard' | null {
+    const nameLower = name.toLowerCase();
+    if (nameLower.includes('3er')) return '3er';
+    if (nameLower.includes('4er')) return '4er-standard';
+    return null;
+  }
+
+  /**
+   * Detect pattern from employee count
+   */
+  private detectPatternFromEmployeeCount(shifts: unknown[]): '3er' | '4er-standard' | 'auto' {
+    const uniqueEmployees = new Set(shifts.map((s: unknown) => (s as { userId?: number }).userId))
+      .size;
+    if (uniqueEmployees === 3) return '3er';
+    if (uniqueEmployees === 4) return '4er-standard';
+    return 'auto';
+  }
+
+  /**
    * Detect the pattern type from shift data
    */
   detectPatternType(data: {
@@ -165,35 +197,23 @@ class KontischichtService {
     kontischichtPattern?: string;
     shifts: unknown[];
   }): 'auto' | '3er' | '4er-standard' | '4er-lang' | 'custom' {
-    // Check if pattern type is explicitly provided
-    if (data.kontischichtPattern) {
+    type PatternType = 'auto' | '3er' | '4er-standard' | '4er-lang' | 'custom';
+
+    if (data.kontischichtPattern !== undefined && data.kontischichtPattern !== '') {
       console.info(`[KONTISCHICHT] Pattern provided from frontend: ${data.kontischichtPattern}`);
-      return data.kontischichtPattern as 'auto' | '3er' | '4er-standard' | '4er-lang' | 'custom';
+      return data.kontischichtPattern as PatternType;
     }
 
-    if (data.patternType) {
-      return data.patternType as 'auto' | '3er' | '4er-standard' | '4er-lang' | 'custom';
+    if (data.patternType !== undefined && data.patternType !== '') {
+      return data.patternType as PatternType;
     }
 
-    // Check name for pattern hints
-    if (data.name) {
-      const nameLower = data.name.toLowerCase();
-      if (nameLower.includes('3er')) return '3er';
-      if (nameLower.includes('4er')) return '4er-standard';
+    if (data.name !== undefined && data.name !== '') {
+      const fromName = this.detectPatternFromName(data.name);
+      if (fromName !== null) return fromName;
     }
 
-    // Auto-detect from employee count
-    const uniqueEmployees = new Set(
-      data.shifts.map((s: unknown) => {
-        const shift = s as { userId?: number };
-        return shift.userId;
-      }),
-    ).size;
-
-    if (uniqueEmployees === 3) return '3er';
-    if (uniqueEmployees === 4) return '4er-standard';
-
-    return 'auto';
+    return this.detectPatternFromEmployeeCount(data.shifts);
   }
 
   /**
@@ -231,72 +251,54 @@ class KontischichtService {
     startDateStr: string,
     endDateStr: string,
   ): ShiftEntry[] {
-    const yearShifts: ShiftEntry[] = [];
     const employees = [...new Set(templateShifts.map((s: ShiftEntry) => s.userId))].slice(0, 4);
-
     if (employees.length !== 4) {
       console.warn('[4ER STANDARD PERIOD] Need exactly 4 employees, falling back');
       return templateShifts;
     }
 
-    // 4er Standard Kontischicht: 2-2-2 Rotation
-    const cyclePattern = [
-      // Day 0-1: A=Früh, B=Spät, C=Nacht, D=Frei
-      { shifts: { F: [0], S: [1], N: [2] } },
-      { shifts: { F: [0], S: [1], N: [2] } },
-      // Day 2-3: A=Spät, B=Nacht, C=Frei, D=Früh
-      { shifts: { F: [3], S: [0], N: [1] } },
-      { shifts: { F: [3], S: [0], N: [1] } },
-      // Day 4-5: A=Nacht, B=Frei, C=Früh, D=Spät
-      { shifts: { F: [2], S: [3], N: [0] } },
-      { shifts: { F: [2], S: [3], N: [0] } },
-      // Day 6-7: A=Frei, B=Früh, C=Spät, D=Nacht
-      { shifts: { F: [1], S: [2], N: [3] } },
-      { shifts: { F: [1], S: [2], N: [3] } },
-    ];
+    // 4er Standard Kontischicht: 2-2-2 Rotation (8-day cycle)
+    const cyclePattern = this.get4erStandardCyclePattern();
+    const patternMap = new Map(cyclePattern.entries());
 
+    const yearShifts: ShiftEntry[] = [];
     const startDate = new Date(startDateStr);
     const endDate = new Date(endDateStr);
-    const patternStart = new Date(2025, 0, 1); // Pattern reference start
+    const patternStart = new Date(2025, 0, 1);
 
-    // Process each day in the period
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-      // Calculate which day in the 8-day cycle we're on
       const daysSincePatternStart = Math.floor(
         (date.getTime() - patternStart.getTime()) / (1000 * 60 * 60 * 24),
       );
-      const cycleDay = daysSincePatternStart % 8; // 8-day cycle
+      const pattern = patternMap.get(daysSincePatternStart % 8);
+      if (pattern === undefined) continue;
 
-      // Use Map instead of direct array access to avoid injection warning
-      const patternMap = new Map(cyclePattern.entries());
-      const pattern = patternMap.get(cycleDay);
-      if (!pattern) continue;
-
-      // Generate shifts for this day
-      Object.entries(pattern.shifts).forEach(([shiftType, employeeIndices]: [string, number[]]) => {
-        employeeIndices.forEach((empIdx: number) => {
-          yearShifts.push({
-            // eslint-disable-next-line security/detect-object-injection -- empIdx is from controlled array
-            userId: employees[empIdx],
-            date: date.toISOString().split('T')[0],
-            startTime:
-              shiftType === 'F' ? '06:00'
-              : shiftType === 'S' ? '14:00'
-              : '22:00',
-            endTime:
-              shiftType === 'F' ? '14:00'
-              : shiftType === 'S' ? '22:00'
-              : '06:00',
-            type:
-              shiftType === 'F' ? 'early'
-              : shiftType === 'S' ? 'late'
-              : 'night',
-          });
-        });
-      });
+      const dayShifts = this.processPatternForDate(
+        employees,
+        date,
+        pattern.shifts,
+        '4ER STANDARD PERIOD',
+      );
+      yearShifts.push(...dayShifts);
     }
 
     return yearShifts;
+  }
+
+  /**
+   * Get the 8-day cycle pattern for 4er Standard rotation
+   */
+  private get4erStandardCyclePattern(): { shifts: Record<string, number[]> }[] {
+    return [
+      { shifts: { F: [0], S: [1], N: [2] } }, // Day 0: A=Früh, B=Spät, C=Nacht
+      { shifts: { F: [0], S: [1], N: [2] } }, // Day 1
+      { shifts: { F: [3], S: [0], N: [1] } }, // Day 2: A=Spät, B=Nacht, D=Früh
+      { shifts: { F: [3], S: [0], N: [1] } }, // Day 3
+      { shifts: { F: [2], S: [3], N: [0] } }, // Day 4: A=Nacht, C=Früh, D=Spät
+      { shifts: { F: [2], S: [3], N: [0] } }, // Day 5
+      { shifts: { F: [1], S: [2], N: [3] } }, // Day 6: B=Früh, C=Spät, D=Nacht
+      { shifts: { F: [1], S: [2], N: [3] } }, // Day 7
+    ];
   }
 
   /**
@@ -344,6 +346,49 @@ class KontischichtService {
   }
 
   /**
+   * Convert shift type code to display name
+   */
+  private getShiftTypeName(shiftType: string): string {
+    const typeMap: Record<string, string> = { F: 'early', S: 'late', N: 'night' };
+    // eslint-disable-next-line security/detect-object-injection -- shiftType is from controlled pattern
+    return typeMap[shiftType] ?? shiftType;
+  }
+
+  /**
+   * Process a shift pattern for a single date and return shift entries
+   */
+  private processPatternForDate(
+    employees: number[],
+    dateObj: Date,
+    patternShifts: Record<string, number[]>,
+    logPrefix: string,
+  ): ShiftEntry[] {
+    const shifts: ShiftEntry[] = [];
+    const dateStr = dateObj.toISOString().split('T')[0];
+    if (dateStr === undefined) {
+      console.warn(`[${logPrefix}] Failed to format date`);
+      return shifts;
+    }
+
+    for (const [shiftType, employeeIndices] of Object.entries(patternShifts)) {
+      for (const empIdx of employeeIndices) {
+        // eslint-disable-next-line security/detect-object-injection -- empIdx is from controlled array
+        const userId = employees[empIdx];
+        if (userId === undefined) continue;
+        const { startTime, endTime } = this.getShiftTimes(shiftType);
+        shifts.push({
+          userId,
+          date: dateStr,
+          startTime,
+          endTime,
+          type: this.getShiftTypeName(shiftType),
+        });
+      }
+    }
+    return shifts;
+  }
+
+  /**
    * Process daily shifts for 3er rotation
    */
   private processDailyShifts(
@@ -361,16 +406,30 @@ class KontischichtService {
 
     const shifts: ShiftEntry[] = [];
     const dateString = currentDate.toISOString().split('T')[0];
+    if (dateString === undefined) {
+      console.warn('[3ER ROTATION] Failed to format date');
+      return shifts;
+    }
 
     for (let i = 0; i < 3; i++) {
       const employeeIndex = (i + employeeOffset) % 3;
       const patternPhase = (patternIndex + i) % 4;
       // eslint-disable-next-line security/detect-object-injection -- bounded by modulo
-      const shiftType = rotationPattern[patternPhase].shift;
+      const patternEntry = rotationPattern[patternPhase];
+      if (patternEntry === undefined) {
+        console.warn(`[3ER ROTATION] Pattern phase ${patternPhase} not found`);
+        continue;
+      }
+      const shiftType = patternEntry.shift;
 
-      if (shiftType) {
+      if (shiftType !== null && shiftType !== '') {
         // eslint-disable-next-line security/detect-object-injection -- bounded by modulo
-        shifts.push(this.createShiftEntry(employees[employeeIndex], dateString, shiftType));
+        const userId = employees[employeeIndex];
+        if (userId === undefined) {
+          console.warn(`[3ER ROTATION] Employee index ${employeeIndex} out of bounds`);
+          continue;
+        }
+        shifts.push(this.createShiftEntry(userId, dateString, shiftType));
       }
     }
 
@@ -427,74 +486,29 @@ class KontischichtService {
    * Generate 4er standard rotation (4 employees, 2-2-2 pattern)
    */
   private generate4erStandardRotation(templateShifts: ShiftEntry[], year: number): ShiftEntry[] {
-    const yearShifts: ShiftEntry[] = [];
-
-    // Analyze the template to understand the pattern
     const employees = [...new Set(templateShifts.map((s: ShiftEntry) => s.userId))].slice(0, 4);
     if (employees.length !== 4) {
       console.warn('[4ER STANDARD] Need exactly 4 employees, falling back');
       return this.generateYearPatternFromTwoWeeks(templateShifts, year);
     }
 
-    // 4er Standard Kontischicht: 2-2-2 Rotation
-    // Each employee works 2 days per shift type, then 2 days free
-    // Complete cycle: 8 days (2F-2S-2N-2Free)
-    // A: FF SS NN -- | B: SS NN -- FF | C: NN -- FF SS | D: -- FF SS NN
-    const cyclePattern = new Map<
-      number,
-      { day: number; shifts: { F: number[]; S: number[]; N: number[] } }
-    >([
-      // Day 0-1: A=Früh, B=Spät, C=Nacht, D=Frei
-      [0, { day: 0, shifts: { F: [0], S: [1], N: [2] } }], // Day 1
-      [1, { day: 1, shifts: { F: [0], S: [1], N: [2] } }], // Day 2
-      // Day 2-3: A=Spät, B=Nacht, C=Frei, D=Früh
-      [2, { day: 2, shifts: { F: [3], S: [0], N: [1] } }], // Day 3
-      [3, { day: 3, shifts: { F: [3], S: [0], N: [1] } }], // Day 4
-      // Day 4-5: A=Nacht, B=Frei, C=Früh, D=Spät
-      [4, { day: 4, shifts: { F: [2], S: [3], N: [0] } }], // Day 5
-      [5, { day: 5, shifts: { F: [2], S: [3], N: [0] } }], // Day 6
-      // Day 6-7: A=Frei, B=Früh, C=Spät, D=Nacht
-      [6, { day: 6, shifts: { F: [1], S: [2], N: [3] } }], // Day 7
-      [7, { day: 7, shifts: { F: [1], S: [2], N: [3] } }], // Day 8 (wraps to day 0)
-    ]);
+    // Reuse the same 8-day cycle pattern
+    const cyclePattern = this.get4erStandardCyclePattern();
+    const patternMap = new Map(cyclePattern.entries());
 
+    const yearShifts: ShiftEntry[] = [];
     const startDate = new Date(year, 0, 1);
     const endDate = new Date(year, 11, 31);
 
-    // Process each day of the year
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
-      // Calculate which day in the 8-day cycle we're on
       const daysSinceStart = Math.floor(
         (date.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
       );
-      const cycleDay = daysSinceStart % 8; // 8-day cycle
+      const pattern = patternMap.get(daysSinceStart % 8);
+      if (pattern === undefined) continue;
 
-      // Get pattern for this cycle day from Map
-      const pattern = cyclePattern.get(cycleDay);
-      if (!pattern) continue; // Skip if no pattern defined
-
-      // Generate shifts for this day
-      Object.entries(pattern.shifts).forEach(([shiftType, employeeIndices]: [string, number[]]) => {
-        employeeIndices.forEach((empIdx: number) => {
-          yearShifts.push({
-            // eslint-disable-next-line security/detect-object-injection -- empIdx is from controlled array
-            userId: employees[empIdx],
-            date: date.toISOString().split('T')[0],
-            startTime:
-              shiftType === 'F' ? '06:00'
-              : shiftType === 'S' ? '14:00'
-              : '22:00',
-            endTime:
-              shiftType === 'F' ? '14:00'
-              : shiftType === 'S' ? '22:00'
-              : '06:00',
-            type:
-              shiftType === 'F' ? 'early'
-              : shiftType === 'S' ? 'late'
-              : 'night',
-          });
-        });
-      });
+      const dayShifts = this.processPatternForDate(employees, date, pattern.shifts, '4ER STANDARD');
+      yearShifts.push(...dayShifts);
     }
 
     return yearShifts;
@@ -518,15 +532,29 @@ class KontischichtService {
     const shifts: ShiftEntry[] = [];
 
     const dateString = currentDate.toISOString().split('T')[0];
+    if (dateString === undefined) {
+      console.warn('[4ER ROTATION] Failed to format date');
+      return shifts;
+    }
 
     for (let i = 0; i < 4; i++) {
       const employeePhase = (phaseIndex + i) % 4;
       // eslint-disable-next-line security/detect-object-injection -- bounded by modulo
-      const shiftType = rotationPattern[employeePhase].shift;
+      const patternEntry = rotationPattern[employeePhase];
+      if (patternEntry === undefined) {
+        console.warn(`[4ER ROTATION] Pattern phase ${employeePhase} not found`);
+        continue;
+      }
+      const shiftType = patternEntry.shift;
 
-      if (shiftType) {
+      if (shiftType !== null && shiftType !== '') {
         // eslint-disable-next-line security/detect-object-injection -- bounded by for loop
-        shifts.push(this.createShiftEntry(employees[i], dateString, shiftType));
+        const userId = employees[i];
+        if (userId === undefined) {
+          console.warn(`[4ER ROTATION] Employee index ${i} out of bounds`);
+          continue;
+        }
+        shifts.push(this.createShiftEntry(userId, dateString, shiftType));
       }
     }
 
@@ -604,15 +632,21 @@ class KontischichtService {
 
     for (const templateShift of templateWeek) {
       const templateDate = new Date(templateShift.date);
-      const templateWeekday = templateDate.getDay() || 7;
+      // getDay() returns 0 for Sunday, we want 7 for ISO week calculation
+      const templateWeekday = templateDate.getDay() === 0 ? 7 : templateDate.getDay();
 
       const shiftDate = new Date(currentWeekMonday);
       shiftDate.setDate(currentWeekMonday.getDate() + (templateWeekday - 1));
 
       if (shiftDate.getFullYear() === year) {
+        const dateStr = shiftDate.toISOString().split('T')[0];
+        if (dateStr === undefined) {
+          console.warn('[WEEK SHIFTS] Failed to format date');
+          continue;
+        }
         weekShifts.push({
           userId: templateShift.userId,
-          date: shiftDate.toISOString().split('T')[0],
+          date: dateStr,
           startTime: templateShift.startTime,
           endTime: templateShift.endTime,
           type: templateShift.type,
@@ -638,7 +672,12 @@ class KontischichtService {
       return [];
     }
 
-    const firstTemplateDate = new Date(sortedTemplate[0].date);
+    const firstTemplateShift = sortedTemplate[0];
+    if (firstTemplateShift === undefined) {
+      console.warn('[KONTISCHICHT] First template shift is undefined');
+      return [];
+    }
+    const firstTemplateDate = new Date(firstTemplateShift.date);
     const { weekA, weekB } = this.groupShiftsByWeek(sortedTemplate, firstTemplateDate);
 
     console.info('[KONTISCHICHT] Pattern analysis:', {
@@ -650,7 +689,8 @@ class KontischichtService {
     const yearShifts: ShiftEntry[] = [];
     const yearStart = new Date(year, 0, 1);
     const firstMonday = new Date(yearStart);
-    const yearStartWeekday = yearStart.getDay() || 7;
+    // getDay() returns 0 for Sunday, we want 7 for ISO week calculation
+    const yearStartWeekday = yearStart.getDay() === 0 ? 7 : yearStart.getDay();
 
     if (yearStartWeekday !== 1) {
       firstMonday.setDate(yearStart.getDate() + (8 - yearStartWeekday));

@@ -77,7 +77,6 @@
 
   width: 48px;
   height: 28px;
-  border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 14px; /* Half of height for perfect circle */
 
   /* Glass Track - OFF State */

@@ -143,22 +143,24 @@ export function renderAreasTable(areas: Area[]): void {
   }
 
   const tableHTML = `
-    <table class="data-table data-table--striped">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Beschreibung</th>
-          <th>Typ</th>
-          <th class="text-center">Kapazität</th>
-          <th>Adresse</th>
-          <th>Status</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${areas.map((area) => createAreaRow(area)).join('')}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="data-table data-table--striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Beschreibung</th>
+            <th>Typ</th>
+            <th class="text-center">Kapazität</th>
+            <th>Adresse</th>
+            <th>Status</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${areas.map((area) => createAreaRow(area)).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   setSafeHTML(tableContent, tableHTML);

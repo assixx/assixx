@@ -1,49 +1,7 @@
-/**
- * Blackboard System Styles - Pinnwand Design
- */
+/* Import unified sticky-note component */
+@import "../design-system/primitives/sticky-note/sticky-note.css";
 
-/* Ensure all elements in blackboard use Outfit font */
-.blackboard-page {
-  font-family:
-    Outfit,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif !important;
-}
-
-.blackboard-page .btn,
-.blackboard-page .form-control,
-.blackboard-page input,
-.blackboard-page textarea,
-.blackboard-page select {
-  font-family:
-    Outfit,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    sans-serif !important;
-}
-
-/* Main content padding - REMOVED: Migrated to Tailwind utilities in blackboard.html */
-
-/* Override container max-width when sidebar is collapsed */
-.sidebar-collapsed .container {
-  max-width: none !important;
-}
-
-/* Specific override for blackboard page */
-main.container.sidebar-collapsed {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-/* Also ensure any container inside main uses full width when sidebar collapsed */
-.sidebar-collapsed .blackboard-container {
-  max-width: 99% !important;
-}
-
-/* Pinnwand Container */
+/* Pinnwand Container - Glassmorphismus wie .card */
 .blackboard-container {
   position: relative;
 
@@ -52,6 +10,20 @@ main.container.sidebar-collapsed {
   width: 100%;
   min-height: calc(100vh - 120px);
   padding: 40px;
+  border-radius: 12px;
+
+  /* Transparent wie .card - lässt body::after durchscheinen */
+}
+
+/* Korken-Muster als separater Layer ÜBER dem transparenten Background */
+.blackboard-container::after {
+  pointer-events: none;
+  content: "";
+
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+
   border-radius: 12px;
 
   background:
@@ -63,9 +35,6 @@ main.container.sidebar-collapsed {
     0 0,
     -17px -12px;
   background-size: 30px 30px;
-  box-shadow:
-    inset 0 1px 8px rgb(0 0 0 / 30%),
-    0 4px 16px rgb(0 0 0 / 40%);
 }
 
 /* Cork texture overlay for more realism */
@@ -73,6 +42,8 @@ main.container.sidebar-collapsed {
   pointer-events: none;
   content: "";
 
+  position: absolute;
+  z-index: 1;
   inset: 0;
 
   border-radius: 12px;
@@ -85,809 +56,194 @@ main.container.sidebar-collapsed {
 /* Pinboard Items Grid */
 .pinboard-grid {
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 30px;
+  z-index: 2;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem; /* Same as mini-notes-container */
+  justify-content: center; /* Same as mini-notes-container */
 }
 
-/* Base Pinboard Item */
+/* Base Pinboard Item (wrapper for sticky-note) */
 .pinboard-item {
   position: relative;
   z-index: 1;
-
-  /* padding: 0 100px 100px; */
 }
 
 .pinboard-item:hover {
   z-index: 10;
-  transform: translateY(-5px) scale(1.01);
 }
 
-/* Sticky Note Style */
-.pinboard-sticky {
-  position: relative;
-
-  min-height: 200px;
-  padding: 24px;
-
-  font-family:
-    Outfit,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    Roboto,
-    Arial,
-    sans-serif;
-
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  box-shadow:
-    0 4px 10px rgb(0 0 0 / 20%),
-    inset 0 -2px 5px rgb(0 0 0 / 10%);
-}
-
-/* Different sticky note colors */
-.pinboard-sticky.color-yellow {
-  border-radius: 5px;
-  background: linear-gradient(135deg, #ffd041, #ffd21d);
-}
-
-.pinboard-sticky.color-pink {
-  border-radius: 5px;
-  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
-}
-
-.pinboard-sticky.color-blue {
-  border-radius: 5px;
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-}
-
-.pinboard-sticky.color-green {
-  border-radius: 5px;
-  background: linear-gradient(135deg, #d9f99d 0%, #bef264 100%);
-}
-
-.pinboard-sticky.color-orange {
-  border-radius: 5px;
-  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%);
-}
+/* NOTE: Sticky note styles are now in design-system/primitives/sticky-note/sticky-note.css
+   Classes: .sticky-note, .sticky-note--yellow, .sticky-note__title, etc.
+   Old classes (.pinboard-sticky, .sticky-title, etc.) are deprecated */
 
 /* Larger Note Style (A5/A4) */
-.pinboard-note {
-  position: relative;
-  transform: rotate(var(--rotation, 1deg));
-
-  min-height: 300px;
-  padding: 30px;
-  border: 1px solid #e5e7eb;
-
-  background: linear-gradient(to bottom, #fff 0%, #f9fafb 100%);
-  box-shadow:
-    0 6px 16px rgb(0 0 0 / 15%),
-    inset 0 1px 0 rgb(255 255 255 / 90%);
-}
 
 /* Paper lines for notes */
-.pinboard-note::after {
-  pointer-events: none;
-  content: "";
-
-  position: absolute;
-  inset: 60px 0 0;
-
-  background-image: repeating-linear-gradient(transparent, transparent 27px, #e5e7eb 27px, #e5e7eb 28px);
-}
 
 /* Info Box Style */
-.pinboard-info {
-  position: relative;
-  transform: rotate(var(--rotation, -1deg));
-
-  min-height: 150px;
-  padding: 24px;
-  border: 2px solid #0284c7;
-
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-  box-shadow:
-    0 4px 12px rgb(0 0 0 / 15%),
-    inset 0 1px 0 rgb(255 255 255 / 50%);
-}
 
 /* Document/PDF Preview */
-.pinboard-document {
-  position: relative;
-  transform: rotate(var(--rotation, 2deg));
-
-  overflow: hidden;
-
-  padding: 0;
-  border: 1px solid #d1d5db;
-
-  background: #fff;
-  box-shadow:
-    0 4px 12px rgb(0 0 0 / 10%),
-    0 1px 3px rgb(0 0 0 / 8%);
-}
-
-.pinboard-document .document-header {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-
-  padding: 10px 20px;
-  border-bottom: 1px solid #e5e7eb;
-
-  background: #f3f4f6;
-}
-
-.pinboard-document .document-preview {
-  min-height: 200px;
-  padding: 24px;
-  background: repeating-linear-gradient(transparent, transparent 20px, #f9fafb 20px, #f9fafb 21px);
-}
 
 /* Image Style */
-.pinboard-image {
-  position: relative;
 
-  /* box-shadow:
-    0 6px 20px rgba(0, 0, 0, 0.2),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5); */
-  transform: rotate(var(--rotation, -3deg));
-
-  padding: 10px;
-  border-radius: var(--radius-xl);
-
-  background: #17171700;
-}
-
-.pinboard-image img {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: #000000e5;
-}
-
-/* Pushpin Styles */
+/* Pushpin Styles - Mini-Note Pattern (right-aligned) */
 .pushpin {
   position: absolute;
   z-index: 5;
-  top: -15px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: -5px;
+  right: 15px;
+  transform: rotate(-45deg);
 
-  filter: drop-shadow(0 2px 4px rgb(0 0 0 / 30%));
-}
-
-.pinboard-item:hover .pushpin {
-  transform: translateX(-50%) translateY(-3px);
-}
-
-/* Pinboard Attachment Style */
-.pinboard-attachment {
-  position: relative;
-  transform: rotate(var(--rotation, -2deg));
-
-  padding: 15px;
-  border-radius: var(--radius-xl);
-
-  background: #85a1e4;
-  box-shadow:
-    0 1px 8px rgb(0 0 0 / 15%),
-    0 6px 20px rgb(0 0 0 / 10%);
-
-  /* overflow: hidden; */
-}
-
-.pinboard-attachment:hover {
-  transform: rotate(0deg) scale(1.02);
-  box-shadow:
-    0 4px 12px rgb(0 0 0 / 20%),
-    0 8px 24px rgb(0 0 0 / 15%);
-}
-
-.pinboard-attachment .pinboard-image {
-  cursor: pointer;
-  margin: 10px 0;
-}
-
-.pinboard-attachment .pinboard-image:hover {
-  transform: scale(1.05);
-}
-
-/* stylelint-disable-next-line block-no-empty -- Placeholder for future styling */
-.pinboard-attachment .pinboard-image img {
-}
-
-.pinboard-attachment .pinboard-image:hover img {
-  box-shadow: 0 4px 12px rgb(0 0 0 / 20%) !important;
-}
-
-.pinboard-attachment .pinboard-pdf {
-  cursor: pointer;
-  position: relative;
-  border-radius: 8px;
-  background: rgb(0 0 0 / 2%);
-}
-
-.pinboard-attachment .pinboard-pdf:hover {
-  transform: scale(1.05);
-  background: rgb(0 0 0 / 5%);
-}
-
-.pinboard-attachment .pinboard-pdf:hover i {
-  transform: translateY(-2px);
-  color: #b91c1c !important;
-}
-
-/* PDF Preview Styles */
-.pinboard-pdf-preview {
-  position: relative;
-
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* Height wird über inline-style gesetzt */
-  min-height: 200px;
-  border-radius: 8px;
-
-  /* Merged: was #525659, then #fff - keeping later value */
-  background: #fff;
-  box-shadow: 0 1px 8px rgb(0 0 0 / 10%);
-}
-
-/* PDF-spezifische Attachment Styles - KEIN margin-right */
-.pinboard-attachment:has(.pinboard-pdf-preview) {
-  /* Normale Abstände wie andere Karten */
-}
-
-.pinboard-pdf-preview .pdf-overlay {
-  background: rgb(0 0 0 / 2%);
-  transition: background-color 0.2s;
-}
-
-.pinboard-pdf-preview .pdf-overlay:hover {
-  background: rgb(0 0 0 / 8%);
-}
-
-/* PDF Inner Wrapper */
-.pdf-inner-wrapper {
-  position: relative;
-  transform-origin: top center;
-  transform: scale(1.2);
-
-  width: 100%;
-  height: 100%;
-  margin-top: -15%;
-}
-
-/* PDF Overlay for click */
-.pdf-overlay {
-  cursor: pointer;
-
-  position: absolute;
-  inset: 0;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: rgb(0 0 0 / 0%);
-}
-
-.pdf-overlay i {
-  font-size: 48px;
-  color: #fff;
-  text-shadow: 0 1px 8px rgb(0 0 0 / 50%);
-  opacity: 0%;
-}
-
-.pdf-overlay:hover {
-  background: rgb(0 0 0 / 30%);
-}
-
-.pdf-overlay:hover i {
-  opacity: 100%;
-}
-
-/* Red Pushpin */
-.pushpin-red {
-  width: 30px;
-  height: 30px;
-}
-
-.pushpin-red::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  left: 5px;
-  transform: rotate(45deg);
-
-  width: 20px;
-  height: 20px;
+  width: 15px;
+  height: 15px;
   border-radius: 50% 50% 50% 0;
 
-  background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
-  box-shadow:
-    inset -2px -2px 4px rgb(0 0 0 / 30%),
-    inset 2px 2px 4px rgb(255 255 255 / 30%);
+  background: radial-gradient(circle at 30% 30%, #f44, #c00);
+  box-shadow: 2px 2px 4px rgb(0 0 0 / 30%);
 }
 
-.pushpin-red::after {
-  content: "";
-
-  position: absolute;
-  top: 15px;
-  left: 14px;
-
-  width: 2px;
-  height: 20px;
-
-  background: linear-gradient(to bottom, #868e96 0%, #495057 100%);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 40%);
-}
-
-/* Blue Pushpin */
-.pushpin-blue {
-  width: 30px;
-  height: 30px;
-}
-
-.pushpin-blue::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  left: 5px;
-
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-
-  background: radial-gradient(circle at 30% 30%, #74c0fc, #1c7ed6);
-  box-shadow:
-    inset -2px -2px 4px rgb(0 0 0 / 30%),
-    inset 2px 2px 4px rgb(255 255 255 / 40%);
-}
-
-/* Yellow Pushpin */
-.pushpin-yellow {
-  width: 25px;
-  height: 25px;
-}
-
-.pushpin-yellow::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  left: 4px;
-
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-
-  background: radial-gradient(circle at 30% 30%, #ffd43b, #fab005);
-  box-shadow:
-    inset -1px -1px 3px rgb(0 0 0 / 30%),
-    inset 1px 1px 3px rgb(255 255 255 / 50%);
-}
-
-/* Metal Thumbtack */
-.pushpin-metal {
-  width: 30px;
-  height: 30px;
-}
-
-.pushpin-metal::before {
-  content: "";
-
-  position: absolute;
-  top: 0;
-  left: 6px;
-
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-
-  background: radial-gradient(circle at 30% 30%, #e9ecef, #868e96);
-  box-shadow:
-    inset -2px -2px 3px rgb(0 0 0 / 40%),
-    inset 2px 2px 3px rgb(255 255 255 / 60%),
-    0 1px 3px rgb(0 0 0 / 30%);
-}
-
-.pushpin-metal::after {
+.pushpin::after {
   content: "";
 
   position: absolute;
   top: 5px;
-  left: 11px;
+  left: 5px;
 
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-
-  background: #343a40;
 }
+
+/* Pinboard Attachment Style */
+
+/* PDF Preview Styles */
+
+/* PDF-spezifische Attachment Styles - KEIN margin-right */
+
+/* PDF Inner Wrapper */
+
+/* PDF Overlay for click */
+
+/* Red Pushpin - simplified (uses base .pushpin styling) */
+.pushpin-red {
+  /* All styling inherited from .pushpin */
+}
+
+/* Blue Pushpin */
+
+/* Yellow Pushpin */
+
+/* Metal Thumbtack */
 
 /* Random rotation classes */
-.rotate-1 {
-  --rotation: 1deg;
-}
-
-.rotate-2 {
-  --rotation: 2deg;
-}
-
-.rotate-3 {
-  --rotation: 3deg;
-}
-
-.rotate-n1 {
-  --rotation: -1deg;
-}
-
-.rotate-n2 {
-  --rotation: -2deg;
-}
-
-.rotate-n3 {
-  --rotation: -3deg;
-}
-
-/* ===============================================
- * Modal Styles - Updated Design Standards
- * Merged from blackboard-update.css
- * =============================================== */
-
-/* Override alte Modal Styles nur für Entry Form Modal */
-.entry-form-modal.modal-overlay {
-  display: none !important;
-}
-
-/* Neue Modal Implementation gemäß Design Standards */
-.modal {
-  position: fixed;
-  z-index: 1000;
-  top: 0;
-  left: 0;
-
-  overflow-y: auto;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-
-  width: 100%;
-  height: 100%;
-  padding: 40px 20px;
-
-  visibility: hidden;
-  opacity: 0%;
-  background-color: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(10px);
-}
-
-.modal.active {
-  visibility: visible;
-  opacity: 100%;
-}
-
-/* Form Controls gemäß Design Standards */
-.form-control,
-.form-input,
-.big-input {
-  width: 100%;
-  padding: var(--spacing-3);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  font-family: inherit;
-  font-size: 14px;
-  color: #fff;
-
-  background: rgb(255 255 255 / 3%);
-}
-
-/* Native Select verstecken */
-select.big-input,
-select.form-control {
-  display: none;
-}
-
-/* Custom Dropdown Styles */
-.custom-dropdown {
-  position: relative;
-  width: 100%;
-}
-
-.dropdown-display {
-  cursor: pointer;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  /* height: 42px; */
-  padding: var(--spacing-3);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  color: #fff;
-
-  background: rgb(255 255 255 / 3%);
-  backdrop-filter: blur(10px);
-}
-
-.dropdown-display:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 5%);
-}
-
-.dropdown-display.active svg {
-  transform: rotate(180deg);
-}
-
-.dropdown-options {
-  position: absolute;
-  z-index: 1001;
-  top: calc(100% + 4px);
-  right: 0;
-  left: 0;
-  transform: translateY(-10px);
-
-  overflow-y: auto;
-
-  max-height: 200px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  visibility: hidden;
-  opacity: 0%;
-  background: rgb(18 18 18 / 95%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    0 8px 32px rgb(0 0 0 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 10%);
-}
-
-.dropdown-options.active {
-  transform: translateY(0);
-  visibility: visible;
-  opacity: 100%;
-}
-
-.dropdown-option {
-  cursor: pointer;
-
-  padding: 10px 12px;
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-
-  font-size: 14px;
-  color: var(--text-primary);
-}
-
-.dropdown-option:last-child {
-  border-bottom: none;
-}
-
-/* Form Labels */
-.form-label,
-.big-label {
-  display: block;
-
-  margin-bottom: var(--spacing-1);
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-/* Buttons gemäß Design Standards */
-.btn-primary,
-.primary-button,
-.big-button.primary-button {
-  cursor: pointer;
-
-  position: relative;
-
-  overflow: hidden;
-
-  padding: 10px 24px;
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 500;
-  color: #fff;
-
-  background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
-}
-
-.btn-cancel,
-.secondary-button,
-.big-button.secondary-button {
-  cursor: pointer;
-
-  padding: 10px 24px;
-  border: 1px solid rgb(255 255 255 / 12%);
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--primary-color);
-
-  background: rgb(255 255 255 / 4%);
-  backdrop-filter: blur(5px);
-}
 
 /* Color Picker Update */
+/* ========================================
+   Color Picker Component
+   ======================================== */
+
 .color-picker {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: var(--spacing-2);
+  gap: var(--spacing-3);
 }
 
 .color-option {
   cursor: pointer;
+  user-select: none;
+
+  position: relative;
 
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-2);
   align-items: center;
+  justify-content: center;
 
-  min-height: 60px;
+  min-height: 80px;
   padding: var(--spacing-3);
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
 
-  font-size: 12px;
-  color: #000;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
 
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(10px);
+  background: var(--color-surface-primary);
+
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .color-option:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+  transform: translateY(-2px);
+  border-color: var(--color-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.color-option:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .color-option.active {
-  background: rgb(33 150 243 / 10%);
-  box-shadow: 0 0 0 5px rgb(255 255 255);
+  border-color: var(--color-primary);
+  box-shadow:
+    var(--shadow-md),
+    0 0 0 4px rgb(var(--color-primary-rgb) / 10%);
 }
 
-.color-option span {
-  font-size: 20px;
-}
+.color-option.active::after {
+  content: "";
 
-/* Checkbox Update */
-.simple-checkbox {
-  display: flex;
-  gap: var(--spacing-2);
-  align-items: flex-start;
-}
-
-.simple-checkbox input[type="checkbox"] {
-  cursor: pointer;
+  position: absolute;
+  top: 6px;
+  right: 6px;
 
   width: 18px;
   height: 18px;
-  margin-top: 2px;
+  border-radius: 50%;
 
-  accent-color: var(--primary-color);
+  background: var(--color-primary);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 20%);
 }
 
-.simple-checkbox label {
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-primary);
-}
+.color-option.active::before {
+  content: "\2713";
 
-/* Attachment Upload Zone Update */
-.attachment-upload-zone {
-  cursor: pointer;
+  position: absolute;
+  z-index: 1;
+  top: 7px;
+  right: 10px;
 
-  padding: var(--spacing-8);
-  border: 2px dashed rgb(255 255 255 / 20%);
-  border-radius: var(--radius-xl);
-
-  text-align: center;
-
-  background: rgb(255 255 255 / 1%);
-  backdrop-filter: blur(5px);
-}
-
-.attachment-upload-zone:hover {
-  border-color: rgb(33 150 243 / 50%);
-  background: rgb(33 150 243 / 5%);
-}
-
-.attachment-upload-zone.drag-active {
-  transform: scale(1.02);
-  border-color: var(--primary-color);
-  background: rgb(33 150 243 / 10%);
-  box-shadow: 0 4px 20px rgb(33 150 243 / 20%);
-}
-
-.upload-icon {
-  margin-bottom: var(--spacing-4);
-  font-size: 48px;
-  color: rgb(255 255 255 / 40%);
-}
-
-.upload-text {
-  margin-bottom: var(--spacing-1);
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.upload-hint {
   font-size: 12px;
-  color: rgb(255 255 255 / 60%);
+  font-weight: 700;
+  color: #fff;
 }
 
-/* Modal Content - Breiter und mit Scroll */
-.modal-content,
-.entry-form-modal .modal-content {
-  transform: translateY(0);
+/* Color Swatch - Large colored circle */
+.color-option__swatch {
+  display: block;
 
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgb(255 255 255 / 30%);
+  border-radius: 50%;
 
-  width: 90%;
-  max-width: 900px;
-  max-height: 85vh !important;
-  padding: var(--spacing-6);
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  background: #121212;
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    0 8px 32px #0006,
-    inset 0 1px #ffffff1a;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
 }
 
-/* Modal Header - Fixed */
-.modal-header {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-6);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
+/* Color Label */
+.color-option__label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary);
 }
 
-/* Modal Body/Form - Scrollable */
-.entry-form-modal form {
-  overflow-y: auto;
-  flex: 1;
-  max-height: calc(100vh - 250px);
-  padding: var(--spacing-6);
-}
+/* Checkbox Update */
 
 /* Button Group - Fixed at bottom */
-.button-group {
-  display: flex;
-  flex-shrink: 0;
-  gap: var(--spacing-4);
-  justify-content: flex-end;
-
-  padding: var(--spacing-6);
-  border-top: 1px solid rgb(255 255 255 / 10%);
-
-  background: rgb(0 0 0 / 20%);
-  backdrop-filter: blur(10px);
-}
 
 /* Custom Scrollbar */
 .entry-form-modal form::-webkit-scrollbar {
@@ -914,7 +270,7 @@ select.form-control {
 /* Removed duplicate block: Duplicate of line 909 */
 
 /* Form Hints */
-.simple-hint,
+
 .form-hint {
   display: block;
 
@@ -926,61 +282,22 @@ select.form-control {
 }
 
 /* 2-Spalten Layout für breites Modal */
-@media (width >= 1024px) {
-  .entry-form-modal form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--spacing-8);
-    align-content: start;
-  }
 
-  /* Volle Breite für bestimmte Elemente */
-  .entry-form-modal form > .form-group:nth-child(1), /* Hidden input */
+/* Volle Breite für bestimmte Elemente */
+.entry-form-modal form > .form-group:nth-child(1), /* Hidden input */
   .entry-form-modal form > .form-group:nth-child(2), /* Titel */
   .entry-form-modal form > .form-group:nth-child(3), /* Inhalt */
   .entry-form-modal form > .button-group {
-    grid-column: 1 / -1;
-  }
-
-  /* Attachment Zone auch volle Breite */
-  .entry-form-modal form > .form-group:has(.attachment-upload-zone) {
-    grid-column: 1 / -1;
-  }
+  grid-column: 1 / -1;
 }
 
-/* Responsive */
-@media (width <= 1023px) {
-  .modal-content,
-  .entry-form-modal .modal-content {
-    width: 95%;
-    max-width: 700px;
-  }
+/* Attachment Zone auch volle Breite */
+.entry-form-modal form > .form-group:has(.attachment-upload-zone) {
+  grid-column: 1 / -1;
 }
 
-@media (width <= 768px) {
-  .modal-content,
-  .entry-form-modal .modal-content {
-    width: 95%;
-    max-height: 95vh;
-    margin: 20px auto;
-  }
-
-  .color-picker {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .button-group {
-    flex-direction: column-reverse;
-    gap: var(--spacing-2);
-  }
-
-  .button-group .btn {
-    width: 100%;
-  }
-
-  .entry-form-modal form {
-    padding: var(--spacing-3);
-  }
+.entry-form-modal form {
+  padding: var(--spacing-3);
 }
 
 /* ===============================================
@@ -1010,20 +327,6 @@ select.form-control {
   color: #fff;
 
   background-color: var(--primary-color);
-}
-
-/* Loading Spinner */
-.loading-spinner {
-  display: inline-block;
-
-  width: 40px;
-  height: 40px;
-  margin: var(--spacing-4) auto;
-  border: 3px solid var(--primary-color);
-  border-top-color: transparent;
-  border-radius: 50%;
-
-  /* animation: spin 1s linear infinite; */
 }
 
 /* @keyframes spin {
@@ -1072,16 +375,6 @@ select.form-control {
 /* Unread indicator */
 .blackboard-card.unread {
   background-color: rgb(33 150 243 / 5%);
-}
-
-.unread-badge {
-  padding: 0.2rem 0.5rem;
-  border-radius: var(--radius-sm, 4px);
-
-  font-size: 0.7rem;
-  color: #fff;
-
-  background-color: var(--error-color, #f44336);
 }
 
 /* Organization level badges - mit Assixx Farbschema */
@@ -1134,24 +427,6 @@ select.form-control {
   color: #6c757d;
 
   background-color: transparent;
-}
-
-/* Author avatar - angepasst an Assixx Design */
-.avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  width: 32px;
-  height: 32px;
-  margin-right: 8px;
-  border-radius: 50%;
-
-  font-weight: 600;
-  color: #fff;
-
-  background-color: var(--primary-color, #2196f3);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgb(0 0 0 / 12%));
 }
 
 /* Detail modal - Compact Design Standards */
@@ -1263,95 +538,13 @@ select.form-control {
 }
 
 /* Confirmation status styles - Compact Design */
-.confirmation-status-pending {
-  color: rgb(255 255 255 / 50%);
-}
-
-.confirmation-status-confirmed {
-  color: var(--success-color, #4caf50);
-}
 
 /* Einfaches, übersichtliches Formular-Styling */
-.simple-form {
-  padding: 10px;
-}
-
-.large-form-group {
-  margin-bottom: 25px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.big-label {
-  display: block;
-
-  margin-bottom: 12px;
-
-  font-size: 18px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.big-input {
-  display: block;
-
-  width: 100%;
-  padding: 10px 15px;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-xl);
-
-  font-size: 16px;
-  color: var(--text-primary);
-
-  background-color: var(--background-dark);
-}
-
-.big-input:focus {
-  border-color: var(--primary-color);
-  outline: none;
-}
-
-.simple-hint {
-  margin-top: 8px;
-  font-size: 14px;
-  color: var(--text-secondary);
-}
 
 /* Einfache Checkbox */
 /* Removed duplicate block: Duplicate of line 807 */
 /* Removed duplicate block: Duplicate of line 813 */
 /* Removed duplicate block: Duplicate of line 823 */
-
-.primary-button {
-  color: #fff;
-  background-color: var(--primary-color);
-}
-
-.primary-button:hover {
-  background-color: var(--primary-dark);
-}
-
-.secondary-button {
-  color: var(--text-primary);
-  background-color: rgb(255 255 255 / 10%);
-}
-
-.secondary-button:hover {
-  background-color: rgb(255 255 255 / 15%);
-}
-
-/* Detail view metadata - angepasst an Assixx Design */
-.entry-metadata {
-  display: flex;
-  flex-wrap: wrap;
-
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  border-radius: var(--radius-xl, 8px);
-
-  background-color: var(--background-light, #f5f5f5);
-  box-shadow: var(--shadow-sm, 0 1px 3px rgb(0 0 0 / 12%));
-}
 
 .entry-metadata-item {
   display: flex;
@@ -1365,54 +558,8 @@ select.form-control {
   color: var(--primary-color, #2196f3);
 }
 
-/* Moderne Filter-Kontrollen */
-.modern-filters {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
-}
+/* Moderne Filter-Kontrollen *
 
-/* Floating Search Bar */
-.floating-search {
-  position: relative;
-
-  display: flex;
-  align-items: center;
-
-  max-width: 500px;
-  padding: 8px 16px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 50px;
-
-  background: linear-gradient(135deg, rgb(255 255 255 / 10%), rgb(255 255 255 / 5%));
-  backdrop-filter: blur(10px);
-  box-shadow: var(--shadow-sm);
-}
-
-.floating-search:hover {
-  border-color: var(--primary-color);
-  box-shadow: 0 12px 40px rgb(0 0 0 / 15%);
-}
-
-.search-icon {
-  margin-right: 12px;
-  color: var(--primary-color);
-  opacity: 70%;
-}
-
-.search-field {
-  flex: 1;
-
-  padding: 8px 0;
-  border: none;
-
-  font-size: 16px;
-  color: var(--text-primary);
-
-  background: transparent;
-  outline: none;
-}
 
 .search-field::placeholder {
   color: var(--color-text-placeholder);
@@ -1438,85 +585,6 @@ select.form-control {
 }
 
 /* Filter Pills */
-.filter-pills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 2rem;
-  align-items: center;
-}
-
-.pill-group {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-}
-
-.pill-label {
-  margin-right: 0.5rem;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.filter-pill {
-  cursor: pointer;
-
-  display: flex;
-  gap: 6px;
-  align-items: center;
-
-  padding: 8px 16px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 25px;
-
-  font-size: 14px;
-  color: #fff;
-
-  background: rgb(255 255 255 / 10%);
-}
-
-.filter-pill:hover {
-  transform: translateY(-2px);
-  background: rgb(255 255 255 / 20%);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
-}
-
-.filter-pill.active {
-  border-color: var(--primary-color);
-  color: #fff;
-  background: var(--primary-color);
-  box-shadow: 0 4px 16px rgb(33 150 243 / 30%);
-}
-
-.filter-pill span {
-  font-size: 16px;
-}
-
-/* Modern Select */
-.modern-select {
-  cursor: pointer;
-
-  min-width: 140px;
-  padding: 8px 16px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 25px;
-
-  font-size: 14px;
-  color: var(--text-primary);
-
-  background: rgb(255 255 255 / 10%);
-}
-
-.modern-select:hover {
-  border-color: var(--primary-color);
-  background: rgb(255 255 255 / 15%);
-}
-
-.modern-select:focus {
-  border-color: var(--primary-color);
-  outline: none;
-  box-shadow: 0 0 0 3px rgb(33 150 243 / 10%);
-}
 
 /* Color Picker */
 /* Removed duplicate block: Duplicate of line 765 */
@@ -1524,85 +592,6 @@ select.form-control {
 /* Removed duplicate block: Duplicate of line 791 */
 /* Removed duplicate block: Duplicate of line 796 */
 /* Removed duplicate block: Duplicate of line 802 */
-
-.col-12 {
-  flex: 0 0 100%;
-  margin-bottom: 1rem;
-  padding: 0 8px;
-}
-
-.col-md-6 {
-  flex: 0 0 100%;
-  margin-bottom: 1rem;
-  padding: 0 8px;
-}
-
-.col-md-8 {
-  flex: 0 0 100%;
-  margin-bottom: 1rem;
-  padding: 0 8px;
-}
-
-.col-md-4 {
-  flex: 0 0 100%;
-  margin-bottom: 1rem;
-  padding: 0 8px;
-}
-
-.g-3 {
-  gap: 0.75rem;
-}
-
-/* Tab Navigation Spacing */
-.tab-navigation {
-  margin-top: 0.5rem;
-}
-
-/* Responsive adjustments */
-@media (width >= 768px) {
-  .col-md-6 {
-    flex: 0 0 50%;
-  }
-
-  .col-md-8 {
-    flex: 0 0 66.667%;
-  }
-
-  .col-md-4 {
-    flex: 0 0 33.333%;
-  }
-}
-
-@media (width <= 767.98px) {
-  .blackboard-card {
-    margin-bottom: 1rem;
-  }
-
-  .filter-controls {
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .filter-item {
-    max-width: 100%;
-  }
-
-  .compact-select {
-    max-width: 100%;
-  }
-
-  .search-group {
-    max-width: 100%;
-  }
-
-  .search-input {
-    min-width: 120px;
-  }
-
-  .search-btn {
-    min-width: 44px;
-  }
-}
 
 /* ========================================
    ATTACHMENT UPLOAD ZONE
@@ -1613,14 +602,6 @@ select.form-control {
 /* Removed duplicate block: Duplicate of line 856 */
 /* Removed duplicate block: Duplicate of line 862 */
 /* Removed duplicate block: Duplicate of line 869 */
-.attachment-preview {
-  margin-top: 20px;
-  padding: 24px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 8px;
-
-  background: rgb(255 255 255 / 3%);
-}
 
 .preview-title {
   margin-bottom: 12px;
@@ -1657,23 +638,6 @@ select.form-control {
   align-items: center;
 }
 
-.attachment-icon {
-  font-size: 24px;
-  color: rgb(255 255 255 / 60%);
-}
-
-.attachment-icon.pdf {
-  color: #e74c3c;
-}
-
-.attachment-icon.image {
-  color: #2ecc71;
-}
-
-.attachment-details {
-  flex: 1;
-}
-
 .attachment-name {
   margin-bottom: 2px;
   font-size: 14px;
@@ -1684,23 +648,6 @@ select.form-control {
 .attachment-size {
   font-size: 12px;
   color: rgb(255 255 255 / 50%);
-}
-
-.attachment-remove {
-  cursor: pointer;
-
-  padding: 8px 12px;
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  color: #e74c3c;
-
-  background: rgb(231 76 60 / 20%);
-}
-
-.attachment-remove:hover {
-  background: rgb(231 76 60 / 30%);
 }
 
 /* Attachment Display in Entry - Compact Design */
@@ -1786,9 +733,6 @@ select.form-control {
 
 /* Removed duplicate block: Duplicate of line 1824 */
 /* Highlight Effect for linked entries */
-.highlight-entry {
-  /* animation: highlightPulse 3s ease-in-out; */
-}
 
 /* @keyframes highlightPulse {
   0%,
@@ -1811,78 +755,6 @@ select.form-control {
 } */
 
 /* Attachment Preview Modal - Updated Glassmorphismus Design */
-#attachmentPreviewModal {
-  z-index: 10000;
-}
-
-#attachmentPreviewModal .modal-container {
-  width: auto;
-  max-width: 30%;
-  height: auto;
-  max-height: 90vh;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: var(--radius-xl);
-
-  background: rgb(255 255 255 / 2%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow:
-    0 8px 32px rgb(0 0 0 / 40%),
-    inset 0 1px 0 rgb(255 255 255 / 10%);
-
-  /* animation: fade-in-up 0.3s ease-out; */
-}
-
-#attachmentPreviewModal .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-6);
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-#attachmentPreviewModal .modal-header h2 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-#attachmentPreviewModal .modal-body {
-  overflow: auto;
-  max-height: calc(90vh - 200px);
-  padding: var(--spacing-6);
-  background: transparent;
-}
-
-#attachmentPreviewModal img {
-  display: block;
-
-  max-width: 100%;
-  height: auto;
-  margin: 0 auto;
-  border-radius: var(--radius-xl);
-
-  box-shadow: 0 8px 24px rgb(0 0 0 / 40%);
-}
-
-#attachmentPreviewModal object {
-  width: 100%;
-  min-height: 500px;
-  border-radius: var(--radius-xl);
-  background: rgb(255 255 255 / 95%);
-}
-
-#attachmentPreviewModal .modal-footer {
-  display: flex;
-  gap: var(--spacing-4);
-  justify-content: flex-end;
-
-  padding: var(--spacing-6);
-  border-top: 1px solid rgb(255 255 255 / 10%);
-
-  background: transparent;
-}
 
 /* Entry Form Modal - Glassmorphismus Design Standards */
 
@@ -1902,20 +774,6 @@ select.form-control {
 } */
 
 /* Size option buttons for direct attachment */
-.size-option {
-  cursor: pointer;
-}
-
-.size-option:hover {
-  transform: translateY(-2px);
-  background: rgb(255 255 255 / 10%) !important;
-}
-
-.size-option.active {
-  border-color: var(--primary-color) !important;
-  color: #fff !important;
-  background: var(--primary-color) !important;
-}
 
 /* Hide d-none elements */
 .d-none {
@@ -1931,92 +789,16 @@ select.form-control {
 /* Note: Basic modal styles already exist above, these are additional enhancements */
 
 /* PDF.js spezifische Fixes */
-.attachment-preview-modal object[type="application/pdf"] {
-  overflow: hidden !important;
-}
 
 /* PDF.js Styling - Moderne Alternativen */
 /* Note: Shadow DOM v0 (/deep/ und ::shadow) sind seit 2014 deprecated */
 /* Direkte Manipulation von PDF.js internen Elementen ist nicht mehr möglich */
-.attachment-preview-modal .pdf-container {
-  margin: 0 !important;
-  padding: 0 !important;
-}
 
 /* Falls PDF.js in einem iframe läuft */
-.attachment-preview-modal iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* Modal Overlays - Glassmorphismus */
-.modal-overlay {
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-
-  display: none; /* Standard: versteckt */
-  align-items: center;
-  justify-content: center;
-
-  background: rgb(0 0 0 / 70%);
-  backdrop-filter: blur(10px);
-
-  transition:
-    opacity 0.1s ease,
-    visibility 0.1s ease;
-}
-
-.modal-overlay.active {
-  display: flex; /* Sichtbar wenn active Klasse gesetzt */
-}
-
-.modal-container {
-  border: var(--glass-border);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--shadow-sm);
-
-  /* animation: fade-in-up 0.3s ease-out; */
-}
-
-/* Form Controls mit Glassmorphismus */
-.form-control,
-.big-input,
-.search-field,
-.modern-select {
-  color: #fff;
-}
-
-.form-control:focus,
-.big-input:focus,
-.search-field:focus,
-.modern-select:focus {
-  border-color: rgb(0 142 255 / 50%);
-  background: rgb(255 255 255 / 5%);
-  outline: none;
-  box-shadow:
-    0 0 0 3px rgb(0 142 255 / 15%),
-    inset 0 1px 2px rgb(0 0 0 / 20%);
-}
 
 /* Buttons mit Glassmorphismus und Shine-Effekt - Using Design System base */
 
 /* Filter Pills - Glassmorphismus - bereits bei Zeile 1514 definiert */
-
-/* Animationen */
-@keyframes fade-in-up {
-  from {
-    transform: translateY(30px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
 
 /* Color Options - Glassmorphismus - bereits bei Zeile 783 definiert */
 
@@ -2080,150 +862,12 @@ select.form-control {
   opacity: 80%;
 }
 
-/* Remove transform transition since we're using CSS zoom - bereits definiert bei Zeile 60 */
-/* .color-option.active - bereits definiert bei Zeile 808 */
-
-/* Fullscreen Mode Styles */
-/* .fullscreen-mode {
-  padding: 20px;
-  background: #000;
-} */
-
-body.fullscreen-mode .blackboard-container {
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: auto;
-  gap: 30px;
-  align-content: start;
-
-  max-width: 100%;
-  height: 100vh;
-  min-height: 5000px;
-  margin: 0 auto;
-  padding: 40px;
-}
-
-/* Hide elements only in actual fullscreen mode */
-/* Use body.fullscreen-mode to ensure it's the fullscreen state, not sidebar collapse */
-body.fullscreen-mode .filters-container,
-body.fullscreen-mode .sidebar,
-body.fullscreen-mode .header,
-body.fullscreen-mode .navigation,
-body.fullscreen-mode #navigation-container,
-body.fullscreen-mode #breadcrumb-container,
-body.fullscreen-mode .controls-row,
-body.fullscreen-mode .flex.flex-between.mb-6,
-body.fullscreen-mode .card.mb-6 {
-  display: none !important;
-}
-
-body.fullscreen-mode .layout-container {
-  padding: 0;
-}
-
-body.fullscreen-mode main {
-  max-width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-body.fullscreen-mode .content-card {
-  padding: 0 !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Exit fullscreen button */
-.fullscreen-exit-btn {
-  cursor: pointer;
-
-  position: fixed;
-  z-index: 9999;
-  top: 20px;
-  right: 20px;
-
-  display: none;
-
-  padding: 10px 20px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 8px;
-
-  font-size: 14px;
-  color: #fff;
-
-  background: rgb(255 255 255 / 10%);
-  backdrop-filter: blur(10px);
-}
-
-.fullscreen-exit-btn:hover {
-  transform: scale(1.05);
-  background: rgb(255 255 255 / 20%);
-}
-
-body.fullscreen-mode .fullscreen-exit-btn {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-/* Auto-refresh indicator */
-.auto-refresh-indicator {
-  position: fixed;
-  z-index: 9998;
-  right: 20px;
-  bottom: 20px;
-
-  display: none;
-
-  padding: 8px 16px;
-  border: 1px solid rgb(0 255 0 / 30%);
-  border-radius: 20px;
-
-  font-size: 12px;
-  color: #0f0;
-
-  background: rgb(0 255 0 / 10%);
-  backdrop-filter: blur(10px);
-}
-
-body.fullscreen-mode .auto-refresh-indicator {
-  display: block;
-}
-
-/* Optimize notes for fullscreen */
-body.fullscreen-mode .note {
-  transform: scale(1);
-  height: 100%;
-  min-height: 300px;
-  margin: 0;
-}
-
-/* Filter Toggle Styles */
-.filter-toggle {
-  transition: background 0.3s ease;
-}
-
-.filter-toggle:hover {
-  background: rgb(255 255 255 / 5%);
-}
-
 /* ========================================
    CSS Classes for Inline Styles Replacement
    Generated: 2025-09-17
    ======================================== */
 
 /* Filter Controls */
-.filter-header-flex {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.chevron-icon {
-  transform: rotate(0deg);
-  transition: transform 0.3s ease;
-}
 
 .chevron-icon[data-expanded="true"] {
   transform: rotate(180deg);
@@ -2258,42 +902,55 @@ body.fullscreen-mode .note {
   color: #000;
 }
 
-/* Color Options - Use data attributes */
-.color-option[data-color="yellow"] {
-  background: #fde68a;
+/* ========================================
+   Color Swatch Variants
+   ======================================== */
+
+.color-option[data-color="yellow"] .color-option__swatch {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
 }
 
-.color-option[data-color="blue"] {
-  background: #bfdbfe;
+.color-option[data-color="pink"] .color-option__swatch {
+  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
 }
 
-.color-option[data-color="red"] {
-  background: #fecaca;
+.color-option[data-color="blue"] .color-option__swatch {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 }
 
-.color-option[data-color="indigo"] {
-  background: #c7d2fe;
+.color-option[data-color="green"] .color-option__swatch {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
-.color-option[data-color="green"] {
-  background: #d9f99d;
-}
-
-.color-option[data-color="pink"] {
-  background: #fbcfe8;
-}
-
-.color-option[data-color="orange"] {
-  background: #fed7aa;
-}
-
-.color-option[data-color="emerald"] {
-  background: #a7f3d0;
+.color-option[data-color="orange"] .color-option__swatch {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
 }
 
 /* Utility Classes */
 .ml-2 {
   margin-left: 10px;
+}
+
+/* ========================================
+   FIX: Sort Dropdown Z-Index Bug
+   ULTRA-SPECIFIC - Only the filter card containing the dropdown
+   Modern CSS :has() selector - targets parent card
+   ======================================== */
+
+/* Allow dropdown to overflow the filter card bounds */
+.card:has(#sort-dropdown) {
+  position: relative; /* Create stacking context */
+  z-index: 100; /* Above sibling elements (controls/buttons) */
+  overflow: visible !important;
+}
+
+.card:has(#sort-dropdown) .card__body {
+  overflow: visible !important;
+}
+
+/* Ensure dropdown is above other elements within the card */
+#sort-dropdown .dropdown__menu {
+  z-index: 9999 !important;
 }
 
 /* Only hide filter content when collapsed, not the sidebar! */
@@ -2302,35 +959,61 @@ body.fullscreen-mode .note {
   display: none;
 }
 
+/* ============================================================================
+   FULLSCREEN MODE - Calendar Pattern
+   Only #blackboardContainer goes fullscreen, nothing else!
+   ============================================================================ */
+
+/* Main container: Fullscreen ohne Background/Height Beschränkung */
+body.fullscreen-mode #blackboardContainer {
+  position: fixed !important;
+  z-index: 9999 !important;
+  inset: 0 !important;
+
+  overflow-y: auto;
+
+  width: 100% !important;
+  min-height: 100vh !important; /* Override base min-height */
+  margin: 0 !important;
+  padding: 20px !important; /* Space für Pinboard Items */
+  border: 0 !important; /* No border */
+  border-radius: 0 !important; /* No rounded corners */
+
+  background: #00000063;
+  box-shadow: none !important;
+}
+
+/* Kork-Texture (::after) im Fullscreen beibehalten */
+
+/* Pinboard Grid im Fullscreen: same flex layout */
+body.fullscreen-mode .pinboard-grid {
+  gap: 1rem;
+  justify-content: center;
+}
+
+/* Hide everything else in fullscreen mode */
+body.fullscreen-mode .sidebar,
+body.fullscreen-mode .header,
+body.fullscreen-mode #navigation-container,
+body.fullscreen-mode #breadcrumb-container,
+body.fullscreen-mode .card.mb-6,
+body.fullscreen-mode .flex.flex-between.mb-6 {
+  display: none !important;
+}
+
+/* Hide zoom controls and action buttons in fullscreen mode */
+body.fullscreen-mode .zoom-controls,
+body.fullscreen-mode #newEntryBtn {
+  display: none !important;
+}
+
 /* Modal Specific Styles */
 .modal-content-medium {
   max-width: 600px;
 }
 
 /* Dropzone Styles */
-.attachment-dropzone {
-  cursor: pointer;
-  border: 2px dashed rgb(255 255 255 / 30%);
-  border-radius: var(--radius-xl);
-}
-
-.dropzone-icon {
-  margin-bottom: 16px;
-  font-size: 48px;
-  opacity: 50%;
-}
 
 .file-size-hint {
   font-size: 0.85rem;
-}
-
-/* Preview Styles */
-.attachment-preview-box {
-  border-radius: var(--radius-xl);
-  background: rgb(255 255 255 / 5%);
-}
-
-.preview-image-container {
-  max-width: 150px;
-  max-height: 150px;
 }

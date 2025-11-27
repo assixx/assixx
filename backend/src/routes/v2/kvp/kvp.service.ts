@@ -195,11 +195,39 @@ class KVPService {
   }
 
   /**
+   * Apply search and type filters to suggestions
+   */
+  private applyFilters(
+    suggestions: Record<string, unknown>[],
+    filters: KVPFilters,
+    userId: number,
+  ): Record<string, unknown>[] {
+    let result = suggestions;
+
+    // Apply search filter
+    if (filters.search !== undefined && filters.search !== '') {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(
+        (s: Record<string, unknown>) =>
+          String(s['title']).toLowerCase().includes(searchLower) ||
+          String(s['description']).toLowerCase().includes(searchLower),
+      );
+    }
+
+    // Apply type filter
+    if (filters.filter === 'mine') {
+      result = result.filter((s: Record<string, unknown>) => s['submitted_by'] === userId);
+    } else if (filters.filter === 'team') {
+      result = result.filter((s: Record<string, unknown>) => s['org_level'] === 'team');
+    } else if (filters.filter === 'department') {
+      result = result.filter((s: Record<string, unknown>) => s['org_level'] === 'department');
+    }
+
+    return result;
+  }
+
+  /**
    * List KVP suggestions with filters
-   * @param tenantId - The tenant ID
-   * @param userId - The user ID
-   * @param userRole - The userRole parameter
-   * @param filters - The filter criteria
    */
   async listSuggestions(
     tenantId: number,
@@ -208,68 +236,38 @@ class KVPService {
     filters: KVPFilters = {},
   ): Promise<{
     suggestions: KVPSuggestion[];
-    pagination: {
-      currentPage: number;
-      totalPages: number;
-      pageSize: number;
-      totalItems: number;
-    };
+    pagination: { currentPage: number; totalPages: number; pageSize: number; totalItems: number };
   }> {
     try {
-      const offset = ((filters.page ?? 1) - 1) * (filters.limit ?? 20);
+      const page = filters.page ?? 1;
+      const limit = filters.limit ?? 20;
+      const offset = (page - 1) * limit;
 
-      const suggestions = await kvpModel.getSuggestions(tenantId, userId, userRole, {
-        status: filters.status,
-        category_id: filters.categoryId,
-        priority: filters.priority,
-        org_level: filters.orgLevel,
-      });
+      // Build filter object without undefined values
+      const suggestionFilters: Record<string, unknown> = {};
+      if (filters.status !== undefined) suggestionFilters['status'] = filters.status;
+      if (filters.categoryId !== undefined) suggestionFilters['category_id'] = filters.categoryId;
+      if (filters.priority !== undefined) suggestionFilters['priority'] = filters.priority;
+      if (filters.orgLevel !== undefined) suggestionFilters['org_level'] = filters.orgLevel;
 
-      // Apply search filter if provided
-      let filteredSuggestions = suggestions;
-      if (filters.search !== undefined && filters.search !== '') {
-        const searchLower = filters.search.toLowerCase();
-        filteredSuggestions = suggestions.filter(
-          (s: Record<string, unknown>) =>
-            String(s.title).toLowerCase().includes(searchLower) ||
-            String(s.description).toLowerCase().includes(searchLower),
-        );
-      }
-
-      // Apply specific filters based on 'filter' parameter
-      if (filters.filter === 'mine') {
-        // Only show user's own suggestions
-        filteredSuggestions = filteredSuggestions.filter(
-          (s: Record<string, unknown>) => s.submitted_by === userId,
-        );
-      } else if (filters.filter === 'team') {
-        // Only show team suggestions
-        filteredSuggestions = filteredSuggestions.filter(
-          (s: Record<string, unknown>) => s.org_level === 'team',
-        );
-      } else if (filters.filter === 'department') {
-        // Only show department suggestions
-        filteredSuggestions = filteredSuggestions.filter(
-          (s: Record<string, unknown>) => s.org_level === 'department',
-        );
-      }
-      // Note: 'all' shows everything the user has access to (default behavior)
-
-      // Apply pagination
-      const paginatedSuggestions = filteredSuggestions.slice(
-        offset,
-        offset + (filters.limit ?? 20),
+      const suggestions = await kvpModel.getSuggestions(
+        tenantId,
+        userId,
+        userRole,
+        suggestionFilters,
       );
+      const filtered = this.applyFilters(suggestions, filters, userId);
+      const paginated = filtered.slice(offset, offset + limit);
 
       return {
-        suggestions: paginatedSuggestions.map((suggestion: Record<string, unknown>) =>
-          dbToApi(suggestion),
+        suggestions: paginated.map((s: Record<string, unknown>) =>
+          dbToApi(s),
         ) as unknown as KVPSuggestion[],
         pagination: {
-          currentPage: filters.page ?? 1,
-          totalPages: Math.ceil(filteredSuggestions.length / (filters.limit ?? 20)),
-          pageSize: filters.limit ?? 20,
-          totalItems: filteredSuggestions.length,
+          currentPage: page,
+          totalPages: Math.ceil(filtered.length / limit),
+          pageSize: limit,
+          totalItems: filtered.length,
         },
       };
     } catch (error: unknown) {
@@ -343,20 +341,37 @@ class KVPService {
       // When orgLevel is 'team', orgId is the team_id
       const teamId = data.orgLevel === 'team' ? data.orgId : null;
 
-      const suggestionData = {
+      // Build suggestion data object without undefined values (exactOptionalPropertyTypes requirement)
+      const suggestionData: {
+        tenant_id: number;
+        title: string;
+        description: string;
+        category_id: number;
+        department_id?: number | null;
+        org_level: 'company' | 'department' | 'area' | 'team';
+        org_id: number;
+        submitted_by: number;
+        team_id?: number | null;
+        priority?: 'low' | 'normal' | 'high' | 'urgent';
+        expected_benefit?: string;
+        estimated_cost?: string;
+      } = {
         tenant_id: tenantId,
         title: data.title,
         description: data.description,
         category_id: data.categoryId,
-        department_id: data.departmentId, // Add department_id from request
         org_level: data.orgLevel,
         org_id: data.orgId,
         submitted_by: userId,
-        team_id: teamId, // Store team_id explicitly
-        priority: data.priority,
-        expected_benefit: data.expectedBenefit,
-        estimated_cost: data.estimatedCost,
       };
+
+      // Add optional fields only if they are defined
+      if (data.departmentId !== undefined) suggestionData.department_id = data.departmentId;
+      if (teamId !== null) suggestionData.team_id = teamId;
+      if (data.priority !== undefined) suggestionData.priority = data.priority;
+      if (data.expectedBenefit !== undefined)
+        suggestionData.expected_benefit = data.expectedBenefit;
+      if (data.estimatedCost !== undefined) suggestionData.estimated_cost = data.estimatedCost;
 
       console.info(
         '[KVP Service] suggestionData being sent to model:',
@@ -395,21 +410,21 @@ class KVPService {
     }
 
     // Update status is admin-only operation
-    if (data.status && userRole !== 'admin' && userRole !== 'root') {
+    if (data.status !== undefined && userRole !== 'admin' && userRole !== 'root') {
       throw new ServiceError('FORBIDDEN', 'Only admins can update status');
     }
   }
 
   private buildUpdateFields(data: KVPUpdateData): Record<string, unknown> {
     const updateFields: Record<string, unknown> = {};
-    if (data.title !== undefined) updateFields.title = data.title;
-    if (data.description !== undefined) updateFields.description = data.description;
-    if (data.categoryId !== undefined) updateFields.category_id = data.categoryId;
-    if (data.priority !== undefined) updateFields.priority = data.priority;
-    if (data.expectedBenefit !== undefined) updateFields.expected_benefit = data.expectedBenefit;
-    if (data.estimatedCost !== undefined) updateFields.estimated_cost = data.estimatedCost;
-    if (data.actualSavings !== undefined) updateFields.actual_savings = data.actualSavings;
-    if (data.rejectionReason !== undefined) updateFields.rejection_reason = data.rejectionReason;
+    if (data.title !== undefined) updateFields['title'] = data.title;
+    if (data.description !== undefined) updateFields['description'] = data.description;
+    if (data.categoryId !== undefined) updateFields['category_id'] = data.categoryId;
+    if (data.priority !== undefined) updateFields['priority'] = data.priority;
+    if (data.expectedBenefit !== undefined) updateFields['expected_benefit'] = data.expectedBenefit;
+    if (data.estimatedCost !== undefined) updateFields['estimated_cost'] = data.estimatedCost;
+    if (data.actualSavings !== undefined) updateFields['actual_savings'] = data.actualSavings;
+    if (data.rejectionReason !== undefined) updateFields['rejection_reason'] = data.rejectionReason;
     return updateFields;
   }
 
@@ -436,7 +451,7 @@ class KVPService {
 
     try {
       // If status is being updated, use the special method
-      if (data.status) {
+      if (data.status !== undefined) {
         await kvpModel.updateSuggestionStatus(
           id,
           tenantId,
@@ -607,7 +622,7 @@ class KVPService {
 
     try {
       // Validate that fileUuid is provided (required for secure downloads)
-      if (!attachmentData.fileUuid) {
+      if (attachmentData.fileUuid === undefined || attachmentData.fileUuid === '') {
         throw new ServiceError('VALIDATION_ERROR', 'File UUID is required');
       }
 

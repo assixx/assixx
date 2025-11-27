@@ -208,7 +208,7 @@ export function setupSaveTeam(): void {
 
     try {
       const savedTeam = await ('id' in teamData
-        ? manager.updateTeam(Number(teamData.id), teamData)
+        ? manager.updateTeam(Number(teamData['id']), teamData)
         : manager.createTeam(teamData));
 
       // savedTeam is guaranteed to be Team here (throws on error, never returns null)

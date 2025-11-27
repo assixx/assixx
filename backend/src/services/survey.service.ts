@@ -4,7 +4,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import survey from '../models/survey.js';
+import survey, { type SurveyStatistics } from '../models/survey.js';
 
 // Interfaces
 interface SurveyData {
@@ -113,35 +113,7 @@ interface SurveyUpdateData {
   }[];
 }
 
-interface SurveyStatistics {
-  survey_id: number;
-  total_responses: number;
-  completed_responses: number;
-  completion_rate: number;
-  first_response?: Date | null;
-  last_response?: Date | null;
-  questions: {
-    id: number;
-    question_text: string;
-    question_type: string;
-    responses?: {
-      answer_text?: string;
-      selected_option_id?: number;
-      rating?: number;
-    }[];
-    options?: {
-      option_id: number;
-      option_text: string;
-      count: number;
-    }[];
-    statistics?: {
-      average: number | null;
-      min: number | null;
-      max: number | null;
-      total_responses: number;
-    };
-  }[];
-}
+// SurveyStatistics imported from ../models/survey.js
 
 /**
  *

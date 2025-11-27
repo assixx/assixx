@@ -8,78 +8,16 @@ import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
 import { shiftsService } from './shifts.service.js';
+import type {
+  ShiftCreateData,
+  ShiftUpdateData,
+  SwapRequestCreateData,
+  TemplateCreateData,
+  TemplateUpdateData,
+} from './shifts.types.js';
 
-// Constants
-const ERROR_CODES = {
-  SERVER_ERROR: 'SERVER_ERROR',
-} as const;
-
-const HEADERS = {
-  USER_AGENT: 'user-agent',
-} as const;
-
-// Import types from service for type safety
-interface ShiftCreateData {
-  planId?: number;
-  userId: number;
-  templateId?: number;
-  date: string;
-  startTime: string;
-  endTime: string;
-  title?: string;
-  requiredEmployees?: number;
-  breakMinutes?: number;
-  status?: string;
-  type?: string;
-  notes?: string;
-  departmentId: number;
-  teamId?: number;
-}
-
-interface ShiftUpdateData {
-  planId?: number;
-  userId?: number;
-  templateId?: number;
-  date?: string;
-  startTime?: string;
-  endTime?: string;
-  title?: string;
-  requiredEmployees?: number;
-  actualStart?: string;
-  actualEnd?: string;
-  breakMinutes?: number;
-  status?: string;
-  type?: string;
-  notes?: string;
-  departmentId?: number;
-  teamId?: number;
-}
-
-interface TemplateCreateData {
-  name: string;
-  startTime: string;
-  endTime: string;
-  breakMinutes?: number;
-  color?: string;
-  isNightShift?: boolean;
-  isActive?: boolean;
-}
-
-interface TemplateUpdateData {
-  name?: string;
-  startTime?: string;
-  endTime?: string;
-  breakMinutes?: number;
-  color?: string;
-  isNightShift?: boolean;
-  isActive?: boolean;
-}
-
-interface SwapRequestCreateData {
-  shiftId: number;
-  requestedWithUserId?: number;
-  reason?: string;
-}
+const ERROR_CODES = { SERVER_ERROR: 'SERVER_ERROR' } as const;
+const HEADERS = { USER_AGENT: 'user-agent' } as const;
 
 // ============= SHIFTS CRUD =============
 
@@ -104,36 +42,42 @@ function parseParamWithDefault<T>(value: unknown, defaultValue: T): T {
  * Extract and parse filter parameters from request query
  */
 function parseShiftFilters(query: AuthenticatedRequest['query']): {
-  date: string;
-  startDate: string;
-  endDate: string;
-  userId: number | undefined;
-  departmentId: number | undefined;
-  teamId: number | undefined;
-  status: string;
-  type: string;
-  templateId: number | undefined;
-  planId: number | undefined;
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  userId?: number;
+  departmentId?: number;
+  teamId?: number;
+  status?: string;
+  type?: string;
+  templateId?: number;
+  planId?: number;
   page: number;
   limit: number;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 } {
+  const userId = parseIntParam(query['userId']);
+  const departmentId = parseIntParam(query['departmentId']);
+  const teamId = parseIntParam(query['teamId']);
+  const templateId = parseIntParam(query['templateId']);
+  const planId = parseIntParam(query['planId']);
+
   return {
-    date: query.date as string,
-    startDate: query.startDate as string,
-    endDate: query.endDate as string,
-    userId: parseIntParam(query.userId),
-    departmentId: parseIntParam(query.departmentId),
-    teamId: parseIntParam(query.teamId),
-    status: query.status as string,
-    type: query.type as string,
-    templateId: parseIntParam(query.templateId),
-    planId: parseIntParam(query.planId),
-    page: parseParamWithDefault(parseIntParam(query.page), 1),
-    limit: parseParamWithDefault(parseIntParam(query.limit), 20),
-    sortBy: parseParamWithDefault(query.sortBy, 'date') as string,
-    sortOrder: parseParamWithDefault(query.sortOrder, 'desc') as 'asc' | 'desc',
+    ...(query['date'] !== undefined && { date: query['date'] as string }),
+    ...(query['startDate'] !== undefined && { startDate: query['startDate'] as string }),
+    ...(query['endDate'] !== undefined && { endDate: query['endDate'] as string }),
+    ...(userId !== undefined && { userId }),
+    ...(departmentId !== undefined && { departmentId }),
+    ...(teamId !== undefined && { teamId }),
+    ...(query['status'] !== undefined && { status: query['status'] as string }),
+    ...(query['type'] !== undefined && { type: query['type'] as string }),
+    ...(templateId !== undefined && { templateId }),
+    ...(planId !== undefined && { planId }),
+    page: parseParamWithDefault(parseIntParam(query['page']), 1),
+    limit: parseParamWithDefault(parseIntParam(query['limit']), 20),
+    sortBy: parseParamWithDefault(query['sortBy'], 'date') as string,
+    sortOrder: parseParamWithDefault(query['sortOrder'], 'desc') as 'asc' | 'desc',
   };
 }
 
@@ -176,7 +120,12 @@ export async function listShifts(req: AuthenticatedRequest, res: Response): Prom
  */
 export async function getShiftById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Shift ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const shift = await shiftsService.getShiftById(id, req.user.tenant_id);
     res.json(successResponse(shift));
   } catch (error: unknown) {
@@ -231,7 +180,12 @@ export async function createShift(req: AuthenticatedRequest, res: Response): Pro
  */
 export async function updateShift(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Shift ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const shift = await shiftsService.updateShift(
       id,
       req.body as ShiftUpdateData, // Validated by middleware
@@ -265,7 +219,12 @@ export async function updateShift(req: AuthenticatedRequest, res: Response): Pro
  */
 export async function deleteShift(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Shift ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const result = await shiftsService.deleteShift(
       id,
       req.user.tenant_id,
@@ -322,7 +281,12 @@ export async function listTemplates(req: AuthenticatedRequest, res: Response): P
  */
 export async function getTemplateById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Template ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const template = await shiftsService.getTemplateById(id, req.user.tenant_id);
     res.json(successResponse(template));
   } catch (error: unknown) {
@@ -377,7 +341,12 @@ export async function createTemplate(req: AuthenticatedRequest, res: Response): 
  */
 export async function updateTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Template ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const template = await shiftsService.updateTemplate(
       id,
       req.body as TemplateUpdateData, // Validated by middleware
@@ -411,7 +380,12 @@ export async function updateTemplate(req: AuthenticatedRequest, res: Response): 
  */
 export async function deleteTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Template ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const result = await shiftsService.deleteTemplate(
       id,
       req.user.tenant_id,
@@ -446,11 +420,18 @@ export async function deleteTemplate(req: AuthenticatedRequest, res: Response): 
  */
 export async function listSwapRequests(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const filters = {
-      userId:
-        req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : undefined,
-      status: req.query.status as string,
-    };
+    const userId =
+      req.query['userId'] !== undefined ?
+        Number.parseInt(req.query['userId'] as string)
+      : undefined;
+
+    const filters: { userId?: number; status?: string } = {};
+    if (userId !== undefined) {
+      filters.userId = userId;
+    }
+    if (req.query['status'] !== undefined) {
+      filters.status = req.query['status'] as string;
+    }
 
     const requests = await shiftsService.listSwapRequests(req.user.tenant_id, filters);
     res.json(successResponse(requests));
@@ -511,7 +492,12 @@ export async function updateSwapRequestStatus(
   res: Response,
 ): Promise<void> {
   try {
-    const id = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('VALIDATION_ERROR', 'Swap request ID is required'));
+      return;
+    }
+    const id = Number.parseInt(idParam);
     const { status } = req.body as { status: string };
 
     const result = await shiftsService.updateSwapRequestStatus(
@@ -550,11 +536,13 @@ export async function updateSwapRequestStatus(
 export async function getOvertimeReport(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
     const userId =
-      req.query.userId !== undefined ? Number.parseInt(req.query.userId as string) : req.user.id;
-    const startDate = req.query.startDate as string;
-    const endDate = req.query.endDate as string;
+      req.query['userId'] !== undefined ?
+        Number.parseInt(req.query['userId'] as string)
+      : req.user.id;
+    const startDate = req.query['startDate'] as string | undefined;
+    const endDate = req.query['endDate'] as string | undefined;
 
-    if (!startDate || !endDate) {
+    if (startDate === undefined || startDate === '' || endDate === undefined || endDate === '') {
       res
         .status(400)
         .json(errorResponse('VALIDATION_ERROR', 'Start date and end date are required'));
@@ -586,16 +574,20 @@ export async function getOvertimeReport(req: AuthenticatedRequest, res: Response
 function parseExportFilters(query: AuthenticatedRequest['query']): {
   startDate: string;
   endDate: string;
-  departmentId: number | undefined;
-  teamId: number | undefined;
-  userId: number | undefined;
+  departmentId?: number;
+  teamId?: number;
+  userId?: number;
 } {
+  const departmentId = parseIntParam(query['departmentId']);
+  const teamId = parseIntParam(query['teamId']);
+  const userId = parseIntParam(query['userId']);
+
   return {
-    startDate: query.startDate as string,
-    endDate: query.endDate as string,
-    departmentId: parseIntParam(query.departmentId),
-    teamId: parseIntParam(query.teamId),
-    userId: parseIntParam(query.userId),
+    startDate: query['startDate'] as string,
+    endDate: query['endDate'] as string,
+    ...(departmentId !== undefined && { departmentId }),
+    ...(teamId !== undefined && { teamId }),
+    ...(userId !== undefined && { userId }),
   };
 }
 
@@ -603,7 +595,7 @@ function parseExportFilters(query: AuthenticatedRequest['query']): {
  * Get export format from query or return default
  */
 function getExportFormat(query: AuthenticatedRequest['query']): 'csv' | 'excel' {
-  return parseParamWithDefault(query.format, 'csv') as 'csv' | 'excel';
+  return parseParamWithDefault(query['format'], 'csv') as 'csv' | 'excel';
 }
 
 /**
@@ -699,20 +691,25 @@ export async function createShiftPlan(req: AuthenticatedRequest, res: Response):
  * Extract and parse shift plan filter parameters from request query
  */
 function parseShiftPlanFilters(query: AuthenticatedRequest['query']): {
-  areaId: number | undefined;
-  departmentId: number | undefined;
-  teamId: number | undefined;
-  machineId: number | undefined;
-  startDate: string;
-  endDate: string;
+  areaId?: number;
+  departmentId?: number;
+  teamId?: number;
+  machineId?: number;
+  startDate?: string;
+  endDate?: string;
 } {
+  const areaId = parseIntParam(query['areaId']);
+  const departmentId = parseIntParam(query['departmentId']);
+  const teamId = parseIntParam(query['teamId']);
+  const machineId = parseIntParam(query['machineId']);
+
   return {
-    areaId: parseIntParam(query.areaId),
-    departmentId: parseIntParam(query.departmentId),
-    teamId: parseIntParam(query.teamId),
-    machineId: parseIntParam(query.machineId),
-    startDate: query.startDate as string,
-    endDate: query.endDate as string,
+    ...(areaId !== undefined && { areaId }),
+    ...(departmentId !== undefined && { departmentId }),
+    ...(teamId !== undefined && { teamId }),
+    ...(machineId !== undefined && { machineId }),
+    ...(query['startDate'] !== undefined && { startDate: query['startDate'] as string }),
+    ...(query['endDate'] !== undefined && { endDate: query['endDate'] as string }),
   };
 }
 
@@ -754,7 +751,13 @@ export async function getShiftPlan(req: AuthenticatedRequest, res: Response): Pr
  * Validate and parse plan ID from request params
  */
 function validatePlanId(params: AuthenticatedRequest['params'], res: Response): number | null {
-  const planId = Number.parseInt(params.id);
+  const idParam = params['id'];
+  if (idParam === undefined) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Plan ID is required'));
+    return null;
+  }
+
+  const planId = Number.parseInt(idParam);
 
   if (Number.isNaN(planId)) {
     res.status(400).json(errorResponse('INVALID_ID', 'Invalid plan ID'));
@@ -891,7 +894,13 @@ export async function createFavorite(req: AuthenticatedRequest, res: Response): 
  * Validate and parse favorite ID from request params
  */
 function validateFavoriteId(params: AuthenticatedRequest['params'], res: Response): number | null {
-  const favoriteId = Number.parseInt(params.id, 10);
+  const idParam = params['id'];
+  if (idParam === undefined) {
+    res.status(400).json(errorResponse('INVALID_ID', 'Favorite ID is required'));
+    return null;
+  }
+
+  const favoriteId = Number.parseInt(idParam, 10);
 
   if (Number.isNaN(favoriteId)) {
     res.status(400).json(errorResponse('INVALID_ID', 'Invalid favorite ID'));
@@ -981,10 +990,10 @@ export async function deleteShiftPlan(req: AuthenticatedRequest, res: Response):
  */
 export async function getMyCalendarShifts(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const startDate = req.query.startDate as string;
-    const endDate = req.query.endDate as string;
+    const startDate = req.query['startDate'] as string | undefined;
+    const endDate = req.query['endDate'] as string | undefined;
 
-    if (!startDate || !endDate) {
+    if (startDate === undefined || startDate === '' || endDate === undefined || endDate === '') {
       res
         .status(400)
         .json(errorResponse('VALIDATION_ERROR', 'Start date and end date are required'));

@@ -180,6 +180,19 @@ class SignupController {
 
     try {
       const { subdomain } = req.params;
+
+      // Explicit undefined check required by TypeScript strict mode
+      if (subdomain === undefined) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_SUBDOMAIN',
+            message: 'Subdomain parameter is required',
+          },
+        });
+        return;
+      }
+
       const result = await signupService.checkSubdomainAvailability(subdomain);
 
       res.json({

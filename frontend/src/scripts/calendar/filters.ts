@@ -52,12 +52,12 @@ export function setupLevelFilterButtons(calendar: Calendar): void {
 
   levelFilterButtons.forEach((button) => {
     // Set initial active state based on saved filter
-    button.classList.toggle('active', button.dataset.value === state.currentFilter);
+    button.classList.toggle('active', button.dataset['value'] === state.currentFilter);
 
     button.addEventListener('click', function (this: HTMLButtonElement) {
       // Only update state for organization filter buttons, not the shifts toggle
       updateFilterButtonState(levelFilterButtons, this);
-      handleFilterChange(this.dataset.value ?? 'all', calendar);
+      handleFilterChange(this.dataset['value'] ?? 'all', calendar);
     });
   });
 
@@ -79,7 +79,7 @@ export function setupLegacyFilterPills(calendar: Calendar): void {
   filterPills.forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
       updateFilterButtonState(filterPills, this);
-      handleFilterChange(this.dataset.value ?? 'all', calendar);
+      handleFilterChange(this.dataset['value'] ?? 'all', calendar);
     });
   });
 
@@ -162,7 +162,7 @@ export function setupLegacyViewButtons(calendar: Calendar): void {
 
   viewButtons.forEach((button) => {
     button.addEventListener('click', function (this: HTMLElement) {
-      const view = this.dataset.view;
+      const view = this.dataset['view'];
       if (view === undefined || view === '') return;
 
       state.calendarView = view as ViewMode;

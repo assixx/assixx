@@ -12,18 +12,28 @@ import { IdSchema } from '../../../schemas/common.schema.js';
 // ============================================================
 
 /**
- * Department visibility enum
+ * Coerce various input types to boolean
+ * Accepts: 'true', 'false', '1', '0', 1, 0, true, false
+ * @param val - Unknown input value
+ * @returns Boolean or original value if not coercible
  */
-const VisibilitySchema = z.enum(['public', 'private'], {
-  message: "Visibility must be either 'public' or 'private'",
-});
+function coerceToBooleanOrPassthrough(val: unknown): unknown {
+  // String values
+  if (val === 'true' || val === '1') return true;
+  if (val === 'false' || val === '0') return false;
+
+  // Number values
+  if (val === 1) return true;
+  if (val === 0) return false;
+
+  // Already boolean or other type - pass through
+  return val;
+}
 
 /**
- * Department status enum
+ * Boolean coercion for isActive (accepts 1/0 strings from forms)
  */
-const StatusSchema = z.enum(['active', 'inactive'], {
-  message: "Status must be either 'active' or 'inactive'",
-});
+const BooleanCoercion = z.preprocess(coerceToBooleanOrPassthrough, z.boolean());
 
 // ============================================================
 // QUERY SCHEMAS
@@ -33,13 +43,7 @@ const StatusSchema = z.enum(['active', 'inactive'], {
  * Get departments query parameters
  */
 export const GetDepartmentsQuerySchema = z.object({
-  includeExtended: z.preprocess(
-    (val: unknown) =>
-      val === 'true' ? true
-      : val === 'false' ? false
-      : val,
-    z.boolean().optional(),
-  ),
+  includeExtended: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
 });
 
 // ============================================================
@@ -74,8 +78,7 @@ export const CreateDepartmentBodySchema = z.object({
     .nullable()
     .optional(),
   areaId: z.number().int().positive('Area ID must be a positive integer').nullable().optional(),
-  status: StatusSchema.optional(),
-  visibility: VisibilitySchema.optional(),
+  isActive: BooleanCoercion.optional(),
 });
 
 /**
@@ -96,8 +99,7 @@ export const UpdateDepartmentBodySchema = z.object({
     .nullable()
     .optional(),
   areaId: z.number().int().positive('Area ID must be a positive integer').nullable().optional(),
-  status: StatusSchema.optional(),
-  visibility: VisibilitySchema.optional(),
+  isActive: BooleanCoercion.optional(),
 });
 
 // ============================================================

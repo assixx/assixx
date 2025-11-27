@@ -22,7 +22,7 @@ describe('Authentication API v2 Endpoints', () => {
   let tenantId: number;
   let testUser: any;
 
-  const JWT_SECRET = process.env.JWT_SECRET ?? 'test-jwt-secret';
+  const JWT_SECRET = process.env['JWT_SECRET'] ?? 'test-jwt-secret';
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
@@ -76,7 +76,7 @@ describe('Authentication API v2 Endpoints', () => {
       });
 
       // Verify JWT structure
-      const decoded = jwt.verify(response.body.data.accessToken, JWT_SECRET) as any;
+      const decoded = jwt.verify(response.body.data['accessToken'], JWT_SECRET) as any;
       expect(decoded).toMatchObject({
         id: testUser.id,
         email: testUser.email,
@@ -215,7 +215,7 @@ describe('Authentication API v2 Endpoints', () => {
       });
 
       // Verify new access token
-      const decoded = jwt.verify(response.body.data.accessToken, JWT_SECRET) as any;
+      const decoded = jwt.verify(response.body.data['accessToken'], JWT_SECRET) as any;
       expect(decoded.type).toBe('access');
     });
 
@@ -275,9 +275,9 @@ describe('Authentication API v2 Endpoints', () => {
       });
 
       // Should NOT have snake_case fields
-      expect(response.body.data.first_name).toBeUndefined();
-      expect(response.body.data.last_name).toBeUndefined();
-      expect(response.body.data.tenant_id).toBeUndefined();
+      expect(response.body.data['first_name']).toBeUndefined();
+      expect(response.body.data['last_name']).toBeUndefined();
+      expect(response.body.data['tenant_id']).toBeUndefined();
     });
   });
 

@@ -17,10 +17,10 @@ dotenv.config({ path: path.join(projectRoot, 'backend', '.env') });
 
 // Database configuration
 const dbConfig: mysql.ConnectionOptions = {
-  host: process.env.DB_HOST ?? 'localhost',
-  user: process.env.DB_USER ?? 'root',
-  password: process.env.DB_PASSWORD ?? '',
-  database: process.env.DB_NAME ?? 'lohnabrechnung',
+  host: process.env['DB_HOST'] ?? 'localhost',
+  user: process.env['DB_USER'] ?? 'root',
+  password: process.env['DB_PASSWORD'] ?? '',
+  database: process.env['DB_NAME'] ?? 'lohnabrechnung',
   charset: 'utf8mb4',
 };
 
@@ -251,15 +251,16 @@ async function getUserOrgInfo(
     [userId, tenantId],
   );
 
-  if (userInfo.length > 0) {
-    return {
-      teamId: userInfo[0].team_id,
-      departmentId: userInfo[0].department_id,
-      areaId: userInfo[0].area_id,
-    };
+  const row = userInfo[0];
+  if (row === undefined) {
+    return { teamId: null, departmentId: null, areaId: null };
   }
 
-  return { teamId: null, departmentId: null, areaId: null };
+  return {
+    teamId: row.team_id,
+    departmentId: row.department_id,
+    areaId: row.area_id,
+  };
 }
 
 // Build visibility conditions for employee role
@@ -290,7 +291,7 @@ async function buildEmployeeVisibilityConditions(
 
   if (teamLeaderCheck.length > 0) {
     // User is a team leader - can see private KVPs from their team members
-    const teamIds = teamLeaderCheck.map((row: RowDataPacket) => row.id as number);
+    const teamIds = teamLeaderCheck.map((row: RowDataPacket) => row['id'] as number);
     const placeholders = teamIds.map(() => '?').join(',');
     conditions.push(`(s.is_shared = FALSE AND s.team_id IN (${placeholders}))`);
     params.push(...(teamIds as unknown[]));
@@ -335,22 +336,22 @@ function applyFiltersToQuery(
   let filteredQuery = query;
   const filteredParams = [...params];
 
-  if (filters.status && filters.status !== '') {
+  if (filters.status !== undefined && filters.status !== '') {
     filteredQuery += ' AND s.status = ?';
     filteredParams.push(filters.status);
   }
 
-  if (filters.category_id && filters.category_id !== 0) {
+  if (filters.category_id !== undefined && filters.category_id !== 0) {
     filteredQuery += ' AND s.category_id = ?';
     filteredParams.push(filters.category_id);
   }
 
-  if (filters.priority && filters.priority !== '') {
+  if (filters.priority !== undefined && filters.priority !== '') {
     filteredQuery += ' AND s.priority = ?';
     filteredParams.push(filters.priority);
   }
 
-  if (filters.org_level && filters.org_level !== '') {
+  if (filters.org_level !== undefined && filters.org_level !== '') {
     filteredQuery += ' AND s.org_level = ?';
     filteredParams.push(filters.org_level);
   }
@@ -477,7 +478,7 @@ async function buildEmployeeVisibility(
   );
 
   if (teamLeaderCheck.length > 0) {
-    const teamIds = teamLeaderCheck.map((row: RowDataPacket) => row.id as number);
+    const teamIds = teamLeaderCheck.map((row: RowDataPacket) => row['id'] as number);
     const placeholders = teamIds.map(() => '?').join(',');
     conditions.push(`(s.is_shared = FALSE AND s.team_id IN (${placeholders}))`);
     visParams.push(...teamIds);
@@ -594,12 +595,13 @@ export async function updateKvpSuggestionStatus(
       [id, tenantId],
     );
 
-    if (currentRows.length === 0) {
+    const currentRow = currentRows[0];
+    if (currentRow === undefined) {
       throw new Error('Suggestion not found');
     }
 
-    const oldStatus = currentRows[0].status;
-    const numericId = currentRows[0].id; // For foreign key in status_history table
+    const oldStatus = currentRow.status;
+    const numericId = currentRow.id; // For foreign key in status_history table
 
     // Update suggestion
     const [result] = await connection.execute<ResultSetHeader>(
@@ -649,12 +651,13 @@ export async function addKvpAttachment(
       [suggestionId, tenantId],
     );
 
-    if (suggestionCheck.length === 0) {
+    const suggestionRow = suggestionCheck[0];
+    if (suggestionRow === undefined) {
       throw new Error('Suggestion not found or does not belong to tenant');
     }
 
     // Get numeric ID for foreign key in kvp_attachments table
-    const numericId = suggestionCheck[0].id;
+    const numericId = suggestionRow.id;
 
     // Insert attachment with UUID provided by controller (uses numeric ID for foreign key)
     const [result] = await connection.execute<ResultSetHeader>(
@@ -777,7 +780,8 @@ export async function getKvpUserPoints(tenantId: number, userId: number): Promis
       [tenantId, userId],
     );
 
-    if (rows.length === 0) {
+    const row = rows[0];
+    if (row === undefined) {
       return {
         total_points: 0,
         total_awards: 0,
@@ -785,7 +789,7 @@ export async function getKvpUserPoints(tenantId: number, userId: number): Promis
       } as DbPointsSummary;
     }
 
-    return rows[0];
+    return row;
   } finally {
     await connection.end();
   }
@@ -838,6 +842,18 @@ export async function getKvpDashboardStats(tenantId: number): Promise<DbDashboar
 
     // Convert numeric strings to numbers
     const result = stats[0];
+    if (result === undefined) {
+      return {
+        total_suggestions: 0,
+        new_suggestions: 0,
+        in_progress: 0,
+        in_progress_count: 0,
+        implemented: 0,
+        rejected: 0,
+        avg_savings: null,
+      } as DbDashboardStats;
+    }
+
     return {
       total_suggestions: result.total_suggestions,
       new_suggestions: result.new_suggestions,
@@ -914,12 +930,13 @@ export async function deleteKvpSuggestion(
       [suggestionId, tenantId, userId],
     );
 
-    if (ownerCheck.length === 0) {
+    const ownerRow = ownerCheck[0];
+    if (ownerRow === undefined) {
       throw new Error('Suggestion not found or not owned by user');
     }
 
     // Get numeric ID for foreign key queries (attachments table uses numeric suggestion_id)
-    const numericId = ownerCheck[0].id;
+    const numericId = ownerRow.id;
 
     // Get all attachment file paths for deletion
     const [attachments] = await connection.execute<DbAttachment[]>(
@@ -1019,11 +1036,10 @@ export async function getKvpAttachment(
       [fileUuid, tenantId],
     );
 
-    if (attachments.length === 0) {
+    const attachment = attachments[0];
+    if (attachment === undefined) {
       return null;
     }
-
-    const attachment = attachments[0];
 
     // Admins and root users can access all attachments
     if (userRole === 'admin' || userRole === 'root') {

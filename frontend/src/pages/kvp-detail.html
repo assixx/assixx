@@ -173,6 +173,7 @@
                 <h3 class="section-title">
                   <i class="fas fa-comments"></i>
                   Kommentare
+                  <span class="badge badge--count ml-2" id="commentCount">0</span>
                 </h3>
 
                 <!-- Comment Form (only visible for admin/root users) - Design System -->
@@ -246,10 +247,61 @@
       </main>
     </div>
 
-    <!-- Lightbox -->
-    <div class="lightbox" id="photoLightbox">
-      <span class="lightbox-close" data-action="close-lightbox">&times;</span>
-      <img id="lightboxImage" src="" alt="Vollbild" />
+    <!-- Attachment Preview Modal (Design System - like documents-explorer) -->
+    <div id="preview-modal" class="modal-overlay">
+      <div class="ds-modal ds-modal--xl">
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-file mr-2" id="preview-icon"></i>
+            <span id="preview-title">Datei Vorschau</span>
+          </h3>
+          <button class="ds-modal__close" id="preview-close" data-action="close-preview-modal" aria-label="Modal schließen">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body p-0">
+          <!-- PDF Viewer iframe -->
+          <iframe id="preview-iframe" class="block w-full h-[70vh] min-h-[600px] border-none hidden" title="Dokumentenvorschau"></iframe>
+
+          <!-- Image Viewer - For JPG/PNG files -->
+          <div id="preview-image-container" class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1 hidden">
+            <img id="preview-image" class="max-w-full max-h-full object-contain block" alt="Bildvorschau" />
+          </div>
+
+          <!-- No Preview Message - For DOCX/XLSX and other files -->
+          <div id="preview-no-preview" class="h-[70vh] min-h-[600px] w-full flex items-center justify-center bg-surface-1 hidden">
+            <div class="text-center text-content-secondary">
+              <i class="fas fa-file-alt text-6xl mb-4"></i>
+              <p class="text-lg">Vorschau nicht verfügbar</p>
+              <p class="text-sm mt-2">Bitte laden Sie die Datei herunter, um sie anzuzeigen.</p>
+            </div>
+          </div>
+
+          <!-- File Metadata Footer -->
+          <div class="p-4 bg-surface-2 border-t border-border-subtle">
+            <div class="flex items-center gap-6 text-sm text-content-secondary">
+              <span id="preview-size" class="flex items-center gap-2">
+                <i class="fas fa-file-archive"></i>
+                <span>--</span>
+              </span>
+              <span id="preview-uploader" class="flex items-center gap-2">
+                <i class="fas fa-user"></i>
+                <span>--</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="ds-modal__footer">
+          <button class="btn btn-cancel" id="preview-cancel" data-action="close-preview-modal">
+            <i class="fas fa-times mr-2"></i>
+            Schließen
+          </button>
+          <button class="btn btn-modal" id="preview-download" data-action="download-preview">
+            <i class="fas fa-download mr-2"></i>
+            Herunterladen
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Scripts -->

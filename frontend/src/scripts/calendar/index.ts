@@ -135,7 +135,7 @@ function initDropdown(
     const option = target.closest('.dropdown__option');
     if (option === null || !(option instanceof HTMLElement)) return;
 
-    const value = option.dataset.value ?? '';
+    const value = option.dataset['value'] ?? '';
     const text = option.textContent;
 
     // Update hidden input
@@ -522,8 +522,8 @@ function deleteEvent(eventId: number): void {
       // Add click handler to the delete button when modal opens
       const confirmBtn = $$('#confirmDeleteBtn');
       if (confirmBtn) {
-        confirmBtn.dataset.action = 'confirm-delete-event';
-        confirmBtn.dataset.eventId = state.eventToDelete?.toString() ?? '';
+        confirmBtn.dataset['action'] = 'confirm-delete-event';
+        confirmBtn.dataset['eventId'] = state.eventToDelete?.toString() ?? '';
       }
     },
   });
@@ -629,8 +629,11 @@ async function initializeEventForm(
   // Set form mode
   setFormTitle(eventId);
 
-  // Load departments and teams first
+  // Load departments, teams, and areas first
   await api.loadDepartmentsAndTeams();
+
+  // Populate organization dropdowns with loaded data
+  populateOrgDropdowns();
 
   // Initialize dropdown event handlers
   initCalendarDropdowns();
@@ -647,6 +650,67 @@ async function initializeEventForm(
 
   // Setup attendee search
   setupAttendeeSearch();
+
+  // Setup company-wide toggle
+  setupCompanyWideToggle();
+}
+
+/**
+ * Clear and disable organization selects
+ */
+function disableOrgSelects(
+  areaSelect: HTMLSelectElement | null,
+  deptSelect: HTMLSelectElement | null,
+  teamSelect: HTMLSelectElement | null,
+): void {
+  if (areaSelect) {
+    areaSelect.disabled = true;
+    Array.from(areaSelect.options).forEach((opt) => (opt.selected = false));
+  }
+  if (deptSelect) {
+    deptSelect.disabled = true;
+    Array.from(deptSelect.options).forEach((opt) => (opt.selected = false));
+  }
+  if (teamSelect) {
+    teamSelect.disabled = true;
+    Array.from(teamSelect.options).forEach((opt) => (opt.selected = false));
+  }
+}
+
+/**
+ * Enable organization selects
+ */
+function enableOrgSelects(
+  areaSelect: HTMLSelectElement | null,
+  deptSelect: HTMLSelectElement | null,
+  teamSelect: HTMLSelectElement | null,
+): void {
+  if (areaSelect) areaSelect.disabled = false;
+  if (deptSelect) deptSelect.disabled = false;
+  if (teamSelect) teamSelect.disabled = false;
+}
+
+/**
+ * Setup company-wide toggle event listener
+ * Disables/enables organization selects based on toggle state
+ */
+function setupCompanyWideToggle(): void {
+  const companyToggle = $$('#event-company-wide') as HTMLInputElement | null;
+  if (!companyToggle) return;
+
+  companyToggle.addEventListener('change', () => {
+    const areaSelect = $$('#event-area-select') as HTMLSelectElement | null;
+    const deptSelect = $$('#event-department-select') as HTMLSelectElement | null;
+    const teamSelect = $$('#event-team-select') as HTMLSelectElement | null;
+
+    if (companyToggle.checked) {
+      disableOrgSelects(areaSelect, deptSelect, teamSelect);
+      console.info('[CALENDAR] Company-wide mode enabled - organization selects disabled');
+    } else {
+      enableOrgSelects(areaSelect, deptSelect, teamSelect);
+      console.info('[CALENDAR] Company-wide mode disabled - organization selects enabled');
+    }
+  });
 }
 
 /**
@@ -656,6 +720,51 @@ function setFormTitle(eventId: number | null): void {
   const titleElement = $$('#eventFormModalLabel');
   if (titleElement !== null) {
     titleElement.textContent = eventId !== null ? 'Termin bearbeiten' : 'Neuer Termin';
+  }
+}
+
+/**
+ * Populate organization dropdowns (areas, departments, teams)
+ * Called after loadDepartmentsAndTeams() completes
+ */
+function populateOrgDropdowns(): void {
+  // Populate Areas
+  const areaSelect = $$('#event-area-select') as HTMLSelectElement | null;
+  if (areaSelect !== null) {
+    areaSelect.innerHTML = ''; // Clear existing options
+    state.areas.forEach((area) => {
+      const option = document.createElement('option');
+      option.value = area.id.toString();
+      option.textContent = area.name;
+      areaSelect.appendChild(option);
+    });
+    console.info('[CALENDAR] Populated areas dropdown:', state.areas.length);
+  }
+
+  // Populate Departments
+  const departmentSelect = $$('#event-department-select') as HTMLSelectElement | null;
+  if (departmentSelect !== null) {
+    departmentSelect.innerHTML = ''; // Clear existing options
+    state.departments.forEach((dept) => {
+      const option = document.createElement('option');
+      option.value = dept.id.toString();
+      option.textContent = dept.name;
+      departmentSelect.appendChild(option);
+    });
+    console.info('[CALENDAR] Populated departments dropdown:', state.departments.length);
+  }
+
+  // Populate Teams
+  const teamSelect = $$('#event-team-select') as HTMLSelectElement | null;
+  if (teamSelect !== null) {
+    teamSelect.innerHTML = ''; // Clear existing options
+    state.teams.forEach((team) => {
+      const option = document.createElement('option');
+      option.value = team.id.toString();
+      option.textContent = team.name;
+      teamSelect.appendChild(option);
+    });
+    console.info('[CALENDAR] Populated teams dropdown:', state.teams.length);
   }
 }
 
@@ -1023,7 +1132,7 @@ function getDropdownElements(option: HTMLElement): DropdownElements | null {
   if (display === null) return null;
 
   return {
-    value: option.dataset.value,
+    value: option.dataset['value'],
     label: option.textContent.trim(),
     dropdownOptions,
     customDropdown,
@@ -1094,7 +1203,7 @@ function handleDropdownOption(e: Event, option: HTMLElement): void {
 function handleSelectDepartment(e: Event, option: HTMLElement): void {
   e.stopPropagation();
 
-  const departmentId = option.dataset.departmentId;
+  const departmentId = option.dataset['departmentId'];
   const departmentName = option.textContent.trim();
 
   if (departmentId !== undefined) {
@@ -1114,7 +1223,7 @@ function handleSelectDepartment(e: Event, option: HTMLElement): void {
 function handleSelectDepartmentWithTeams(e: Event, option: HTMLElement): void {
   e.stopPropagation();
 
-  const departmentId = option.dataset.departmentId;
+  const departmentId = option.dataset['departmentId'];
   if (departmentId === undefined) return;
 
   const deptId = Number.parseInt(departmentId, 10);
@@ -1132,8 +1241,8 @@ function handleSelectDepartmentWithTeams(e: Event, option: HTMLElement): void {
   teams.forEach((team) => {
     const teamOption = document.createElement('div');
     teamOption.className = 'dropdown-option';
-    teamOption.dataset.action = 'select-team';
-    teamOption.dataset.teamId = team.id.toString();
+    teamOption.dataset['action'] = 'select-team';
+    teamOption.dataset['teamId'] = team.id.toString();
     teamOption.textContent = team.name;
     teamsSubmenu.append(teamOption);
   });
@@ -1155,7 +1264,7 @@ function handleSelectDepartmentWithTeams(e: Event, option: HTMLElement): void {
 function handleSelectTeam(e: Event, option: HTMLElement): void {
   e.stopPropagation();
 
-  const teamId = option.dataset.teamId;
+  const teamId = option.dataset['teamId'];
   const teamName = option.textContent.trim();
 
   if (teamId !== undefined) {
@@ -1209,8 +1318,8 @@ function setupAttendeeSearch(): void {
     matches.slice(0, 10).forEach((emp) => {
       const resultItem = document.createElement('div');
       resultItem.className = 'attendee-search-result';
-      resultItem.dataset.action = 'add-attendee';
-      resultItem.dataset.userId = emp.id.toString();
+      resultItem.dataset['action'] = 'add-attendee';
+      resultItem.dataset['userId'] = emp.id.toString();
 
       const displayName = ui.getUserDisplayName(emp);
       resultItem.textContent = displayName;
@@ -1228,7 +1337,7 @@ function setupAttendeeSearch(): void {
  * Handle data-action click events
  */
 function handleActionClick(e: MouseEvent, actionElement: HTMLElement): void {
-  const action = actionElement.dataset.action;
+  const action = actionElement.dataset['action'];
   if (action === undefined || action === '') return;
 
   // Handle modal close action
@@ -1269,7 +1378,7 @@ function handleCrudEventActions(action: string, element: HTMLElement): boolean {
       return true;
 
     case 'edit-event': {
-      const eventId = element.dataset.eventId;
+      const eventId = element.dataset['eventId'];
       if (eventId !== undefined && eventId !== '') {
         hideModal('eventDetailModal');
         openEventForm(Number.parseInt(eventId, 10), null, null, false);
@@ -1278,7 +1387,7 @@ function handleCrudEventActions(action: string, element: HTMLElement): boolean {
     }
 
     case 'delete-event': {
-      const eventId = element.dataset.eventId;
+      const eventId = element.dataset['eventId'];
       if (eventId !== undefined && eventId !== '') {
         deleteEvent(Number.parseInt(eventId, 10));
       }
@@ -1295,7 +1404,7 @@ function handleViewEventActions(action: string, element: HTMLElement): boolean {
   switch (action) {
     case 'view-event':
     case 'show-event-details': {
-      const eventId = element.dataset.eventId;
+      const eventId = element.dataset['eventId'];
       if (eventId !== undefined && eventId !== '') {
         void viewEvent(Number.parseInt(eventId, 10));
       }
@@ -1315,8 +1424,8 @@ function handleResponseEventActions(action: string, element: HTMLElement): boole
       return true;
 
     case 'respond-event': {
-      const eventId = element.dataset.eventId;
-      const response = element.dataset.response;
+      const eventId = element.dataset['eventId'];
+      const response = element.dataset['response'];
       if (eventId !== undefined && eventId !== '' && response !== undefined) {
         void respondToEvent(Number.parseInt(eventId, 10), response);
       }
@@ -1348,7 +1457,7 @@ function handleEventActions(action: string, element: HTMLElement): boolean {
 function handleAttendeeActions(action: string, element: HTMLElement): boolean {
   switch (action) {
     case 'add-attendee': {
-      const userId = element.dataset.userId;
+      const userId = element.dataset['userId'];
       const userName = element.textContent.trim();
       if (userId !== undefined && userId !== '') {
         addAttendee(Number.parseInt(userId, 10), userName);
@@ -1357,7 +1466,7 @@ function handleAttendeeActions(action: string, element: HTMLElement): boolean {
     }
 
     case 'remove-attendee': {
-      const userId = element.dataset.userId;
+      const userId = element.dataset['userId'];
       if (userId !== undefined && userId !== '') {
         removeAttendee(Number.parseInt(userId, 10));
       }

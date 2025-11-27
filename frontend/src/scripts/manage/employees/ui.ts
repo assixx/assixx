@@ -84,10 +84,10 @@ export function getCurrentAvailabilityStatus(employee: Employee): string {
     const parts = rawStatus.trim().split(/\s+/);
     if (parts.length > 1) {
       // Combined format like "available vacation" from v2 API
-      status = parts[1];
+      status = parts[1] ?? 'available';
     } else {
       // Single status from DB
-      status = parts[0] !== '' ? parts[0] : 'available';
+      status = (parts[0] ?? '') !== '' ? (parts[0] ?? 'available') : 'available';
     }
   }
 
@@ -120,10 +120,10 @@ export function getPlannedAvailability(employee: Employee): string {
     const parts = rawStatus.trim().split(/\s+/);
     if (parts.length > 1) {
       // Combined format like "available vacation" from v2 API
-      status = parts[1];
+      status = parts[1] ?? 'available';
     } else {
       // Single status from DB
-      status = parts[0] !== '' ? parts[0] : 'available';
+      status = (parts[0] ?? '') !== '' ? (parts[0] ?? 'available') : 'available';
     }
   }
 
@@ -319,7 +319,7 @@ export function renderEmployeesTable(employees: Employee[]): void {
   }
 
   const tableHTML = `
-    <div class="overflow-x-auto">
+    <div class="table-responsive">
       <table class="data-table data-table--hover data-table--striped">
         <thead>
           <tr>
@@ -377,7 +377,7 @@ export function fillOptionalFormFields(employee: Employee): void {
   const birthday = $$('input[name="birthday"]') as HTMLInputElement | null;
   if (birthday && employee.birthdate !== undefined && employee.birthdate !== '') {
     const date = new Date(employee.birthdate);
-    birthday.value = date.toISOString().split('T')[0];
+    birthday.value = date.toISOString().split('T')[0] ?? '';
   }
 }
 

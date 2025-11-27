@@ -1,9 +1,9 @@
 # Token & Session Management - Complete Refactoring Documentation
 
-**Datum:** 2025-10-30
+**Datum:** 2025-11-26
 **Branch:** `lint/refactoring`
-**Status:** ✅ COMPLETED & PRODUCTION-READY
-**Typ:** Refactoring + Bugfix + Feature Enhancement + UX Polish
+**Status:** ✅ COMPLETED & PRODUCTION-READY (Phase 8)
+**Typ:** Refactoring + Bugfix + Security Enhancement + UX Polish
 
 ---
 
@@ -14,28 +14,34 @@
 3. [Phase 2: Heartbeat Bugfix](#phase-2-heartbeat-bugfix)
 4. [Phase 3: Dynamic Session Modal](#phase-3-dynamic-session-modal)
 5. [Phase 4: Timing & UX Polish](#phase-4-timing--ux-polish)
-6. [Complete Architecture](#complete-architecture)
-7. [Testing Guide](#testing-guide)
-8. [Changelog](#changelog)
+6. [Phase 8: Refresh Token Rotation](#phase-8-refresh-token-rotation) ⭐ NEW
+7. [Complete Architecture](#complete-architecture)
+8. [Testing Guide](#testing-guide)
+9. [Changelog](#changelog) _(includes Phase 5, 6, 7 details)_
 
 ---
 
 ## Executive Summary
 
 ### **The Journey:**
-Dieses Dokument beschreibt die **komplette Evolution** des Token & Session Management Systems in Assixx - von chaotischer Code-Duplizierung über kritische Security-Bugfixes bis hin zu professionellen UX-Enhancements.
+Dieses Dokument beschreibt die **komplette Evolution** des Token & Session Management Systems in Assixx - von chaotischer Code-Duplizierung über kritische Security-Bugfixes bis hin zu professionellen UX-Enhancements und industrie-standard Token-Rotation.
 
-### **Four Phases:**
+### **Eight Phases:**
 1. **TokenManager Refactoring** - Zentralisierung & Observer Pattern
 2. **Heartbeat Bugfix** - Critical Security Fix (Background-Polling)
 3. **Dynamic Session Modal** - UX Enhancement mit Real-Time Countdown
 4. **Timing & UX Polish** - Precision Improvements & Visual Stability
+5. **Backend Token Security** - Central Config + 1544 Lines Dead Code Removed
+6. **Clock Skew Fix** - Client-Time-Only Calculation (30:00 exact)
+7. **Timer UX Fix** - Live 1-Second Updates (smooth countdown)
+8. **Refresh Token Rotation** - OWASP Best Practice Security (Reuse Detection)
 
 ### **Impact:**
-- ✅ **500+ Zeilen Code** eliminiert (DRY-Prinzip)
-- ✅ **Critical Security Bug** gefixt (User wurden nie ausgeloggt)
+- ✅ **2044+ Zeilen Code** eliminiert (DRY-Prinzip)
+- ✅ **Critical Security Bugs** gefixt (Heartbeat, Role-Switch 24h→30m)
 - ✅ **Professional UX** mit Design System Integration
 - ✅ **Type-Safe** & **Maintainable** Architecture
+- ✅ **OWASP-Compliant** Refresh Token Rotation mit Reuse Detection
 
 ---
 
@@ -761,6 +767,123 @@ T=01:02 → Timer zeigt: 28:50 (stabil, kein Springen!)
 
 ---
 
+# Phase 8: Refresh Token Rotation
+
+**Datum:** 2025-11-26
+**Status:** ✅ COMPLETED & TESTED
+**Type:** Security Enhancement (OWASP Best Practice)
+
+## 🎯 Problem
+
+Refresh tokens were stored only in localStorage with no server-side tracking:
+- No way to revoke stolen tokens
+- No detection of token theft/replay attacks
+- Single token lifetime = full exposure window
+
+## ✅ Solution: Token Rotation with Reuse Detection
+
+Implemented industry-standard refresh token rotation per RFC 6749/OWASP guidelines.
+
+## 🔧 Implementation
+
+### **1. Database Schema**
+**File:** `database/migrations/20251126_add_refresh_tokens_table.sql`
+
+```sql
+CREATE TABLE refresh_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    tenant_id INT NOT NULL,
+    token_hash VARCHAR(64) NOT NULL,      -- SHA-256 (never store raw!)
+    token_family VARCHAR(36) NOT NULL,    -- UUID for chain tracking
+    expires_at DATETIME NOT NULL,
+    is_revoked TINYINT(1) DEFAULT 0,
+    used_at DATETIME DEFAULT NULL,        -- For reuse detection
+    replaced_by_hash VARCHAR(64),         -- Links to new token
+    ip_address VARCHAR(45),
+    user_agent VARCHAR(512),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    -- Indexes for fast lookup
+    INDEX idx_token_hash (token_hash),
+    INDEX idx_user_tenant (user_id, tenant_id),
+    INDEX idx_family (token_family),
+    INDEX idx_expires (expires_at)
+);
+```
+
+### **2. Service Layer**
+**File:** `backend/src/services/refreshToken.service.ts` (317 lines)
+
+| Function | Purpose |
+|----------|---------|
+| `hashToken(token)` | SHA-256 hashing (NEVER store raw tokens!) |
+| `generateTokenFamily()` | UUID for token chains |
+| `storeRefreshToken(...)` | Store in DB on login/refresh |
+| `findValidRefreshToken(hash)` | Validate token exists & not revoked |
+| `isTokenAlreadyUsed(hash)` | **CRITICAL:** Detect reuse attacks |
+| `markTokenAsUsed(hash, newHash)` | After successful rotation |
+| `revokeTokenFamily(family)` | **SECURITY:** Revoke ALL tokens in chain |
+| `revokeAllUserTokens(userId, tenantId)` | Logout/password change |
+
+### **3. Controller Changes**
+**File:** `backend/src/routes/v2/auth/auth.controller.ts`
+
+| Endpoint | Changes |
+|----------|---------|
+| `POST /login` | Generates token with `family` claim, stores hash in DB |
+| `POST /refresh` | Validates → Checks reuse → Rotates → Stores new token |
+| `POST /logout` | Revokes ALL user tokens |
+
+## 🔐 Security Features
+
+### **Token Family Tracking**
+```
+Login #1 → Family: abc-123
+  └─> Token A (abc-123)
+  └─> Refresh → Token B (abc-123)
+  └─> Refresh → Token C (abc-123)
+
+Login #2 → Family: xyz-789 (NEW family!)
+  └─> Token D (xyz-789)
+```
+
+### **Reuse Detection Flow**
+```
+1. User logs in         → Token A created (family: xyz)
+2. User refreshes       → Token A marked used, Token B issued
+3. Attacker steals A    → Tries to use old Token A
+4. System detects       → TOKEN_REUSE! A was already used!
+5. Security response    → ALL tokens in family xyz → REVOKED
+6. Result               → Both user AND attacker forced to re-login
+```
+
+## 🧪 Test Results (Verified 2025-11-26)
+
+| Test | Result |
+|------|--------|
+| Login stores token in DB | ✅ `token_hash`, `token_family` created |
+| Refresh rotates tokens | ✅ Old token: `used_at` set, New token created |
+| Same family preserved | ✅ Both tokens share `token_family` UUID |
+| Reuse Detection | ✅ Old token rejected with `TOKEN_REUSE` error |
+| Family Revocation | ✅ ALL tokens: `is_revoked = 1` |
+| Other families unaffected | ✅ Only target family revoked |
+
+## 🔄 Backwards Compatibility
+
+- **Pre-rotation tokens** (no `family` claim): Get new family on refresh
+- **Frontend unchanged**: `TokenManager.setTokens()` already handles new refreshToken
+
+## 📁 Files Changed
+
+```diff
++ database/migrations/20251126_add_refresh_tokens_table.sql (NEW)
++ backend/src/services/refreshToken.service.ts (NEW - 317 lines)
+~ backend/src/routes/v2/auth/auth.controller.ts (login, refresh, logout modified)
++ docs/AUTH-TOKEN-REFACTOR-PLAN.md (Planning document)
+```
+
+---
+
 # Complete Architecture
 
 ## 📊 System Overview
@@ -911,6 +1034,32 @@ T=27:00 → User klickt "Aktiv bleiben"
    - Session bleibt aktiv ✅
 ```
 
+### **Test 6: Token Rotation (Phase 8)**
+```
+1. Login als Admin
+2. Check DB: SELECT * FROM refresh_tokens WHERE user_id = X;
+3. Erwartung:
+   - Neuer Eintrag mit token_hash, token_family
+   - is_revoked = 0, used_at = NULL ✅
+4. Warte bis Token refreshed wird (< 10 min + API call)
+5. Check DB erneut
+6. Erwartung:
+   - Alter Token: used_at != NULL, replaced_by_hash gesetzt
+   - Neuer Token: is_revoked = 0, used_at = NULL ✅
+```
+
+### **Test 7: Reuse Detection (Phase 8) - SECURITY**
+```
+1. Login, kopiere refreshToken aus localStorage
+2. Warte auf automatischen Refresh (oder trigger manuell)
+3. Versuche alten refreshToken nochmal zu verwenden:
+   curl -X POST /api/v2/auth/refresh -d '{"refreshToken":"OLD_TOKEN"}'
+4. Erwartung:
+   - Response: { "error": { "code": "TOKEN_REUSE" } } ✅
+   - DB: ALLE Tokens in der Family → is_revoked = 1 ✅
+   - User muss sich neu einloggen ✅
+```
+
 ---
 
 # Changelog
@@ -988,7 +1137,14 @@ T=27:00 → User klickt "Aktiv bleiben"
 | Phase 1 | 4 | +360 | -140 | +220 |
 | Phase 2 | 2 | +40 | -20 | +20 |
 | Phase 3 | 1 | +80 | -60 | +20 |
-| **TOTAL** | **5** | **+480** | **-220** | **+260** |
+| Phase 4 | 1 | +30 | -10 | +20 |
+| Phase 5 | 5 | +50 | -1544 | -1494 |
+| Phase 6 | 1 | +60 | -20 | +40 |
+| Phase 7 | 2 | +20 | -40 | -20 |
+| Phase 8 | 3 | +400 | -50 | +350 |
+| **TOTAL** | **14** | **+1040** | **-1884** | **-844** |
+
+**Net Result:** Removed 844 lines while adding OWASP-compliant security!
 
 ### **Build Status:**
 ```bash
@@ -999,11 +1155,28 @@ T=27:00 → User klickt "Aktiv bleiben"
 ```
 
 ### **Files Modified (Complete List):**
+
+**Frontend (Phase 1-4, 6-7):**
 1. ✅ **NEW:** `frontend/src/utils/token-manager.ts`
 2. ✅ `frontend/src/utils/api-client.ts`
 3. ✅ `frontend/src/scripts/components/unified-navigation.ts`
 4. ✅ `frontend/src/scripts/utils/session-manager.ts`
-5. ✅ `docs/TOKEN-MANAGER-REFACTORING.md` (this file)
+
+**Backend (Phase 5, 8):**
+5. ✅ **NEW:** `backend/src/config/token.config.ts` (Phase 5)
+6. ✅ **NEW:** `backend/src/services/refreshToken.service.ts` (Phase 8)
+7. ✅ `backend/src/routes/v2/auth/auth.controller.ts` (Phase 5, 8)
+8. ✅ `backend/src/routes/v2/role-switch/role-switch.service.ts` (Phase 5)
+9. ❌ **DELETED:** `backend/src/auth.ts` (Phase 5 - V1 cleanup)
+10. ❌ **DELETED:** `backend/src/services/auth.service.ts` (Phase 5 - V1 cleanup)
+11. ❌ **DELETED:** `backend/src/controllers/auth.controller.ts` (Phase 5 - V1 cleanup)
+
+**Database (Phase 8):**
+12. ✅ **NEW:** `database/migrations/20251126_add_refresh_tokens_table.sql`
+
+**Documentation:**
+13. ✅ `docs/TOKEN-MANAGER-REFACTORING.md` (this file)
+14. ✅ `docs/AUTH-TOKEN-REFACTOR-PLAN.md` (Phase 8 planning)
 
 ---
 
@@ -1029,19 +1202,47 @@ T=27:00 → User klickt "Aktiv bleiben"
 - ✅ Accurate time display (not hardcoded)
 - ✅ Synchronized timers across application
 
+**Phase 4: Timing**
+- ✅ CHECK_INTERVAL: 60s → 10s (6x präziser)
+- ✅ Tabular numerals für stabilen Timer
+- ✅ Comprehensive Debug-Logs
+
+**Phase 5: Backend Security**
+- ✅ Central token config (Single Source of Truth)
+- ✅ CRITICAL FIX: Role-switch 24h → 30m
+- ✅ 1544 lines V1 dead code removed
+
+**Phase 6: Clock Skew**
+- ✅ Client-time-only calculation
+- ✅ Timer shows EXACTLY 30:00 (not 30:03)
+- ✅ `tokenReceivedAt` property added
+
+**Phase 7: Timer UX**
+- ✅ Always 1-second interval (smooth countdown)
+- ✅ Removed browser minimize/maximize refresh bug
+- ✅ Refresh only via API calls or "Stay Active"
+
+**Phase 8: Token Rotation (OWASP Best Practice)**
+- ✅ Refresh token rotation on every refresh
+- ✅ Token family tracking (UUID chains)
+- ✅ Reuse detection → entire family revoked
+- ✅ SHA-256 hashing (never store raw tokens)
+- ✅ Database-backed revocation
+
 ### **Design Principles Applied:**
 - ✅ **DRY** - Don't Repeat Yourself
 - ✅ **SoC** - Separation of Concerns
 - ✅ **KISS** - Keep It Simple, Stupid
 - ✅ **Observer Pattern** - Loose Coupling
 - ✅ **Single Responsibility** - Each module has one job
+- ✅ **Defense in Depth** - Multiple security layers
 
 ### **Quality Metrics:**
 - ✅ **Type-Safe:** Full TypeScript with strict mode
 - ✅ **Testable:** Clear separation, mockable dependencies
 - ✅ **Maintainable:** Single source of truth
 - ✅ **Documented:** Comprehensive inline comments
-- ✅ **Secure:** Proper token expiry handling
+- ✅ **Secure:** OWASP-compliant token handling
 
 ---
 
@@ -1056,21 +1257,41 @@ T=27:00 → User klickt "Aktiv bleiben"
 6. **UX:** Progress bar im Warning Modal
 7. **Accessibility:** Keyboard shortcuts (ESC, Enter)
 8. **Performance:** Debounce für Activity-Tracking
+9. ~~**Security:** Refresh Token Rotation~~ → ✅ IMPLEMENTED (Phase 8)
+10. **Security:** HttpOnly Cookies statt localStorage (Phase 9 - geplant)
+11. **Security:** Token Blacklist für sofortige Revocation (Phase 10 - geplant)
 
 ---
 
 **Dokumentation erstellt von:** Claude Code
-**Letzte Aktualisierung:** 2025-11-07 (Phase 7: Timer UX + Session Fix)
+**Letzte Aktualisierung:** 2025-11-26 (Phase 8: Refresh Token Rotation)
 **Review Status:** ✅ User Testing Completed
 **Deployment Status:** ✅ PRODUCTION-READY
-**Security Status:** ✅ CRITICAL BUG FIXED (Role-switch 24h→30m)
+**Security Status:** ✅ OWASP-COMPLIANT (Token Rotation + Reuse Detection)
 **Timing Accuracy:** ✅ Clock Skew ELIMINATED (30:00 exact)
 **Timer Display:** ✅ Live 1s Updates (smooth countdown)
 **Session Refresh:** ✅ Only via API calls or "Stay Active" button
+**Token Storage:** ✅ Database-backed with SHA-256 hashing
+**Theft Detection:** ✅ Family-based revocation on reuse
 
 ---
 
 ## 📝 Final Changelog
+
+### Phase 8 (2025-11-26 - Refresh Token Rotation)
+
+**OWASP-COMPLIANT TOKEN ROTATION WITH REUSE DETECTION**
+
+→ See detailed documentation in [Phase 8 Section](#phase-8-refresh-token-rotation-2025-11-26) above.
+
+**Summary:**
+- ✅ Database-backed token rotation per RFC 6749/OWASP
+- ✅ Token family tracking with UUID chains
+- ✅ Reuse detection triggers family-wide revocation
+- ✅ SHA-256 hashing (never store raw tokens!)
+- ✅ Tested: Login → Refresh → Reuse Detection → All passing
+
+---
 
 ### Phase 7 (2025-11-07 - Timer UX + Session Refresh Fix)
 
@@ -1250,56 +1471,6 @@ sessionManager.updateActivity()
 + Observer Pattern Implementation
 + Zentralisierte Token-Refresh-Logik
 ```
-
----
-
-## 🎉 Final Metrics
-
-**Code Quality:**
-- ✅ TypeScript Strict Mode: PASS
-- ✅ ESLint (Security, SonarJS): PASS
-- ✅ Code Duplication: ELIMINATED (2044+ lines removed total!)
-  - Frontend: 500 lines (Phase 1)
-  - Backend: 1544 lines (Phase 5)
-- ✅ Type Safety: 100%
-- ✅ Cognitive Complexity: < 10 (all functions)
-- ✅ Dead Code: ELIMINATED (v1 auth completely removed)
-
-**Performance:**
-- ✅ Check Interval: 10s (optimal balance)
-- ✅ Timer Update: **ALWAYS 1s** (real-time live countdown)
-- ✅ Modal Precision: ±10s
-- ✅ Build Time: ~10s (Vite)
-- ✅ Progressive Intervals: REMOVED (caused jumpy UX)
-
-**Security:**
-- ✅ Token Expiry: Enforced (30 min) - CONSISTENT ACROSS ALL ENDPOINTS
-- ✅ Inactivity Timeout: Enforced (30 min)
-- ✅ Background Polling: No session extension
-- ✅ Proper Logout: All scenarios covered
-- ✅ CRITICAL FIX: Role-switch tokens now 30 min (was 24h!)
-- ✅ Central Token Config: Single Source of Truth
-- ✅ Session Refresh: Only via API calls or "Stay Active" button (Phase 7)
-
-**UX:**
-- ✅ Warning Modal: 5 min before timeout
-- ✅ Real-Time Countdown: Accurate & Stable
-- ✅ Design System: Professional appearance
-- ✅ Timing Precision: ±10s (industry-standard)
-- ✅ Token Timer: Shows EXACTLY 30:00 (Clock Skew eliminated!)
-- ✅ Live Timer: Updates every 1 second (smooth countdown) (Phase 7)
-
-**Timing Accuracy (Phase 6):**
-- ✅ Clock Skew: ELIMINATED
-- ✅ Timer Display: Exactly 30:00 (not 30:03)
-- ✅ Calculation: Client-time-only (Date.now())
-- ✅ Migration: Automatic for old tokens
-- ✅ Fallback: Old method if tokenReceivedAt missing
-
-**Timer Display (Phase 7):**
-- ✅ Interval: Always 1 second (was 60s/10s/5s/1s progressive)
-- ✅ Update Frequency: Every second (live countdown)
-- ✅ UX: Smooth like a real clock (not jumpy)
 
 ---
 

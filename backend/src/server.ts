@@ -29,7 +29,7 @@ const server: Server = http.createServer(app);
 new ChatWebSocketServer(server);
 
 // Get port from environment
-const PORT: number = Number.parseInt(process.env.PORT ?? '3000', 10);
+const PORT: number = Number.parseInt(process.env['PORT'] ?? '3000', 10);
 
 // Start server
 server.listen(PORT, (): void => {
@@ -37,7 +37,7 @@ server.listen(PORT, (): void => {
   logger.info(`WebSocket server running on ws://localhost:${PORT}`);
 
   // Log environment
-  logger.info(`Environment: ${process.env.NODE_ENV ?? 'development'}`);
+  logger.info(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
   logger.info('🚀 Live-Reload is working! Changed at: ' + new Date().toISOString());
 
   // Create required directories

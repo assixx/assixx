@@ -558,7 +558,7 @@ export class TokenManager {
   private logDebug(message: string, data?: Record<string, unknown>): void {
     if (!this.debugMode) return;
 
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
+    const timestamp = new Date().toISOString().split('T')[1]?.slice(0, 8) ?? '';
     const remaining = this.getRemainingTime();
     const minutes = Math.floor(remaining / 60);
     const seconds = remaining % 60;

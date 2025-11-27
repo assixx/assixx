@@ -13,7 +13,7 @@ import { checkTenantStatus } from '../middleware/tenantStatus.js';
  */
 export function loadMiddleware(app: Application): void {
   // Tenant Status Middleware - check tenant deletion status
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env['NODE_ENV'] !== 'production') {
     console.info('[DEBUG] Applying tenant status middleware');
   }
   app.use('/api', checkTenantStatus);

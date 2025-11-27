@@ -86,9 +86,9 @@ interface Category {
   id: number;
   tenant_id: number;
   name: string;
-  description?: string;
-  color?: string;
-  icon?: string;
+  description?: string | undefined;
+  color?: string | undefined;
+  icon?: string | undefined;
 }
 
 interface Suggestion {
@@ -220,9 +220,9 @@ class KvpService {
         (cat: DbCategory): Category => ({
           id: cat.id,
           name: cat.name,
-          description: cat.description,
-          color: cat.color,
-          icon: cat.icon,
+          description: cat.description ?? undefined,
+          color: cat.color ?? undefined,
+          icon: cat.icon ?? undefined,
           tenant_id: tenantId, // Categories are global, but we add tenant_id for API compatibility
         }),
       );

@@ -336,12 +336,12 @@ class MachineModel {
     const [result] = await executeQuery<ResultSetHeader>(query, params);
 
     // Update machine's last_maintenance and next_maintenance dates
-    if (result.insertId) {
+    if (typeof result.insertId === 'number' && result.insertId > 0) {
       // Update machine's last_maintenance and next_maintenance dates
       interface MachineUpdateData {
-        last_maintenance?: Date;
-        next_maintenance?: Date;
-        status?: Machine['status'];
+        last_maintenance?: Date | undefined;
+        next_maintenance?: Date | undefined;
+        status?: Machine['status'] | undefined;
       }
       const updateData: MachineUpdateData = {
         last_maintenance: data.performed_date,
@@ -383,7 +383,7 @@ class MachineModel {
   // Get statistics
   async getStatistics(tenantId: number): Promise<MachineStatistics> {
     const query = `
-      SELECT 
+      SELECT
         COUNT(*) as total_machines,
         SUM(CASE WHEN status = 'operational' THEN 1 ELSE 0 END) as operational,
         SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as in_maintenance,
@@ -395,7 +395,13 @@ class MachineModel {
       WHERE tenant_id = ? AND is_active = TRUE
     `;
     const [rows] = await executeQuery<MachineStatistics[]>(query, [tenantId]);
-    return rows[0];
+    const stats = rows[0];
+
+    if (stats === undefined) {
+      throw new Error(`Failed to retrieve machine statistics for tenant ${tenantId}`);
+    }
+
+    return stats;
   }
 
   // Get machine categories

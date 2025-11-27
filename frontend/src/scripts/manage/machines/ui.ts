@@ -258,23 +258,25 @@ export function renderMachinesTable(
 
   // Generate complete table HTML
   const tableHTML = `
-    <table class="data-table data-table--striped">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Modell</th>
-          <th>Hersteller</th>
-          <th>Abteilung</th>
-          <th>Status</th>
-          <th>Betriebsstunden</th>
-          <th>Nächste Wartung</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${machines.map((machine) => generateMachineRow(machine)).join('')}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="data-table data-table--striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Modell</th>
+            <th>Hersteller</th>
+            <th>Abteilung</th>
+            <th>Status</th>
+            <th>Betriebsstunden</th>
+            <th>Nächste Wartung</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${machines.map((machine) => generateMachineRow(machine)).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   setSafeHTML(tableContent, tableHTML);

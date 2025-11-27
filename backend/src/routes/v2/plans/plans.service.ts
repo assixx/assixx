@@ -34,20 +34,30 @@ export class PlansService {
    * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiPlan(dbPlan: DbPlan): Plan {
-    return {
+    const plan: Plan = {
       id: dbPlan.id,
       code: dbPlan.code,
       name: dbPlan.name,
-      description: dbPlan.description,
       basePrice: Number.parseFloat(String(dbPlan.base_price)),
-      maxEmployees: dbPlan.max_employees ?? 0,
-      maxAdmins: dbPlan.max_admins ?? 0,
       maxStorageGb: dbPlan.max_storage_gb,
       isActive: dbPlan.is_active,
       sortOrder: dbPlan.sort_order,
       createdAt: dbPlan.created_at.toISOString(),
       updatedAt: dbPlan.updated_at.toISOString(),
     };
+
+    // Conditionally add optional properties to avoid exactOptionalPropertyTypes issues
+    if (dbPlan.description !== undefined) {
+      (plan as unknown as Record<string, unknown>)['description'] = dbPlan.description;
+    }
+    if (dbPlan.max_employees !== undefined) {
+      (plan as unknown as Record<string, unknown>)['maxEmployees'] = dbPlan.max_employees;
+    }
+    if (dbPlan.max_admins !== undefined) {
+      (plan as unknown as Record<string, unknown>)['maxAdmins'] = dbPlan.max_admins;
+    }
+
+    return plan;
   }
 
   /**
@@ -69,7 +79,7 @@ export class PlansService {
    * @param dbPlan - The dbPlan parameter
    */
   private static dbToApiTenantPlan(dbPlan: DbTenantPlan): TenantPlan {
-    return {
+    const tenantPlan: TenantPlan = {
       id: dbPlan.id,
       tenantId: dbPlan.tenant_id,
       planId: dbPlan.plan_id,
@@ -77,10 +87,19 @@ export class PlansService {
       planName: dbPlan.plan_name,
       status: dbPlan.status as 'active' | 'cancelled' | 'trial' | 'expired',
       startedAt: dbPlan.started_at.toISOString(),
-      expiresAt: dbPlan.expires_at?.toISOString(),
-      customPrice: dbPlan.custom_price ?? undefined,
       billingCycle: dbPlan.billing_cycle as 'monthly' | 'yearly',
     };
+
+    // Conditionally add optional properties to avoid exactOptionalPropertyTypes issues
+    if (dbPlan.expires_at !== undefined && dbPlan.expires_at !== null) {
+      (tenantPlan as unknown as Record<string, unknown>)['expiresAt'] =
+        dbPlan.expires_at.toISOString();
+    }
+    if (dbPlan.custom_price !== undefined && dbPlan.custom_price !== null) {
+      (tenantPlan as unknown as Record<string, unknown>)['customPrice'] = dbPlan.custom_price;
+    }
+
+    return tenantPlan;
   }
 
   /**
@@ -114,7 +133,7 @@ export class PlansService {
         const dbFeatures = await PlanModel.getPlanFeatures(dbPlan.id);
         const plan = this.dbToApiPlan(dbPlan as ModelDbPlan);
         const features = dbFeatures
-          .filter((f: DbPlanFeature) => f.is_included)
+          .filter((f: DbPlanFeature) => f.is_included === true || f.is_included === 1)
           .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
         return {
@@ -137,11 +156,15 @@ export class PlansService {
     }
 
     const dbPlan = dbPlans[0];
+    if (dbPlan === undefined) {
+      return null;
+    }
+
     const dbFeatures = await PlanModel.getPlanFeatures(planId);
 
     const plan = this.dbToApiPlan(dbPlan);
     const features = dbFeatures
-      .filter((f: DbPlanFeature) => f.is_included)
+      .filter((f: DbPlanFeature) => f.is_included === true || f.is_included === 1)
       .map((f: DbPlanFeature) => this.dbToApiFeature(f));
 
     return {
@@ -173,7 +196,7 @@ export class PlansService {
     const tenantPlan = this.dbToApiTenantPlan(dbTenantPlan);
     const planDetails = this.dbToApiPlan(dbPlan);
     const features = dbFeatures
-      .filter((f: DbPlanFeature) => f.is_included)
+      .filter((f: DbPlanFeature) => f.is_included === true || f.is_included === 1)
       .map((f: DbPlanFeature) => this.dbToApiFeature(f));
     const addons = dbAddons.map((a: DbTenantAddon) => this.dbToApiAddon(a));
 
@@ -222,14 +245,20 @@ export class PlansService {
     }
 
     // Change the plan
-    await PlanModel.changeTenantPlan({
+    const planChangeRequest: { tenantId: number; newPlanCode: string; effectiveDate?: Date } = {
       tenantId,
       newPlanCode,
-      effectiveDate,
-    });
+    };
+
+    // Conditionally add effectiveDate to avoid exactOptionalPropertyTypes issues
+    if (effectiveDate !== undefined) {
+      (planChangeRequest as unknown as Record<string, unknown>)['effectiveDate'] = effectiveDate;
+    }
+
+    await PlanModel.changeTenantPlan(planChangeRequest);
 
     // Log the change
-    if (userId) {
+    if (userId !== undefined) {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,
@@ -285,10 +314,19 @@ export class PlansService {
       };
     }
 
+    const firstAddon = dbAddons[0];
+    if (firstAddon === undefined) {
+      return {
+        employees: 0,
+        admins: 0,
+        storageGb: 0,
+      };
+    }
+
     return {
-      employees: dbAddons[0].extra_employees,
-      admins: dbAddons[0].extra_admins,
-      storageGb: dbAddons[0].extra_storage_gb,
+      employees: firstAddon.extra_employees,
+      admins: firstAddon.extra_admins,
+      storageGb: firstAddon.extra_storage_gb,
     };
   }
 
@@ -314,9 +352,9 @@ export class PlansService {
   ): Promise<TenantAddons> {
     // Map camelCase to snake_case for model
     const addonUpdate: Record<string, number> = {};
-    if (addons.employees !== undefined) addonUpdate.employees = addons.employees;
-    if (addons.admins !== undefined) addonUpdate.admins = addons.admins;
-    if (addons.storageGb !== undefined) addonUpdate.storage_gb = addons.storageGb;
+    if (addons.employees !== undefined) addonUpdate['employees'] = addons.employees;
+    if (addons.admins !== undefined) addonUpdate['admins'] = addons.admins;
+    if (addons.storageGb !== undefined) addonUpdate['storage_gb'] = addons.storageGb;
 
     await PlanModel.updateTenantAddons({
       tenantId,
@@ -324,7 +362,7 @@ export class PlansService {
     });
 
     // Log the change
-    if (userId) {
+    if (userId !== undefined) {
       await RootLog.create({
         user_id: userId,
         tenant_id: tenantId,

@@ -50,7 +50,9 @@ class KvpPermissionService {
        WHERE id = ?`,
       [suggestionId],
     );
-    return suggestions.length > 0 ? suggestions[0] : null;
+    const suggestion = suggestions[0];
+    if (suggestion === undefined) return null;
+    return suggestion;
   }
 
   private async canEmployeeViewSuggestion(
@@ -69,8 +71,9 @@ class KvpPermissionService {
       [userId],
     );
 
-    if (userInfo.length > 0 && suggestion.org_level === 'department') {
-      return userInfo[0].department_id === suggestion.department_id;
+    const userRow = userInfo[0];
+    if (userRow !== undefined && suggestion.org_level === 'department') {
+      return userRow.department_id === suggestion.department_id;
     }
 
     return false;
@@ -148,8 +151,8 @@ class KvpPermissionService {
         [suggestionId],
       );
 
-      if (suggestions.length === 0) return false;
       const suggestion = suggestions[0];
+      if (suggestion === undefined) return false;
 
       // Check tenant match
       if (suggestion.tenant_id !== tenantId) return false;
@@ -305,8 +308,8 @@ class KvpPermissionService {
         [suggestionId],
       );
 
-      if (suggestions.length === 0) return false;
       const suggestion = suggestions[0];
+      if (suggestion === undefined) return false;
 
       // Check tenant match
       if (suggestion.tenant_id !== tenantId) return false;
@@ -364,11 +367,33 @@ class KvpPermissionService {
     }
   }
 
+  /** Build WHERE clause for stats queries */
+  private buildStatsWhereClause(
+    scope: 'company' | 'department',
+    scopeId: number,
+    tenantId: number,
+  ): { where: string; params: (string | number)[] } {
+    const params: (string | number)[] = [tenantId];
+    let where = 's.tenant_id = ?';
+    if (scope === 'department') {
+      where += ' AND s.department_id = ?';
+      params.push(scopeId);
+    }
+    return { where, params };
+  }
+
+  /** Parse savings value safely */
+  private parseSavings(savingsRow: TotalSavingsResult | undefined): number {
+    if (savingsRow === undefined) return 0;
+    if (typeof savingsRow.total_savings === 'string') {
+      const parsed = Number.parseFloat(savingsRow.total_savings);
+      return Number.isNaN(parsed) ? 0 : parsed;
+    }
+    return savingsRow.total_savings;
+  }
+
   /**
    * Get suggestion statistics for a department or company
-   * @param scope - The scope parameter
-   * @param scopeId - The scopeId parameter
-   * @param tenantId - The tenant ID
    */
   async getSuggestionStats(
     scope: 'company' | 'department',
@@ -381,41 +406,21 @@ class KvpPermissionService {
     totalSavings: number;
   }> {
     try {
-      let whereClause = 's.tenant_id = ?';
-      const params: (string | number)[] = [tenantId];
+      const { where, params } = this.buildStatsWhereClause(scope, scopeId, tenantId);
 
-      if (scope === 'department') {
-        whereClause += ' AND s.department_id = ?';
-        params.push(scopeId);
-      }
-
-      // Get counts by status
       const [statusCounts] = await executeQuery<StatusCountResult[]>(
-        `SELECT status, COUNT(*) as count
-         FROM kvp_suggestions s
-         WHERE ${whereClause}
-         GROUP BY status`,
+        `SELECT status, COUNT(*) as count FROM kvp_suggestions s WHERE ${where} GROUP BY status`,
         params,
       );
-
-      // Get counts by priority
       const [priorityCounts] = await executeQuery<PriorityCountResult[]>(
-        `SELECT priority, COUNT(*) as count
-         FROM kvp_suggestions s
-         WHERE ${whereClause}
-         GROUP BY priority`,
+        `SELECT priority, COUNT(*) as count FROM kvp_suggestions s WHERE ${where} GROUP BY priority`,
         params,
       );
-
-      // Get total savings
       const [savings] = await executeQuery<TotalSavingsResult[]>(
-        `SELECT COALESCE(SUM(actual_savings), 0) as total_savings
-         FROM kvp_suggestions s
-         WHERE ${whereClause} AND status = 'implemented'`,
+        `SELECT COALESCE(SUM(actual_savings), 0) as total_savings FROM kvp_suggestions s WHERE ${where} AND status = 'implemented'`,
         params,
       );
 
-      // Build result
       const byStatus: Record<string, number> = {};
       statusCounts.forEach((row: StatusCountResult) => {
         byStatus[row.status] = row.count;
@@ -427,24 +432,10 @@ class KvpPermissionService {
       });
 
       const total = Object.values(byStatus).reduce((sum: number, count: number) => sum + count, 0);
-
-      return {
-        total,
-        byStatus,
-        byPriority,
-        totalSavings:
-          typeof savings[0].total_savings === 'string' ?
-            Number.parseFloat(savings[0].total_savings) || 0
-          : savings[0].total_savings,
-      };
+      return { total, byStatus, byPriority, totalSavings: this.parseSavings(savings[0]) };
     } catch (error: unknown) {
       logger.error('Error getting suggestion stats:', error);
-      return {
-        total: 0,
-        byStatus: {},
-        byPriority: {},
-        totalSavings: 0,
-      };
+      return { total: 0, byStatus: {}, byPriority: {}, totalSavings: 0 };
     }
   }
 }

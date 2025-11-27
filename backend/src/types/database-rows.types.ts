@@ -23,7 +23,7 @@
  *   [userId]
  * );
  * const user = rows[0]; //  Fully typed!
- * console.log(user.username); //  TypeScript knows this is string
+ * console.log(user['username']); //  TypeScript knows this is string
  * ```
  *
  * Best Practice 2025: Always specify Row type instead of RowDataPacket
@@ -614,7 +614,6 @@ export interface BlackboardEntriesRow extends RowDataPacket {
   views: number;
   is_active: number; // tinyint(1)
   status: 'active' | 'archived';
-  requires_confirmation: number; // tinyint(1)
   attachment_count: number;
   attachment_path: string | null;
   created_at: Date | string;

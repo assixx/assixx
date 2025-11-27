@@ -79,7 +79,7 @@ export function initPositionDropdown(): void {
     option.addEventListener('click', () => {
       // Cast to HTMLElement for dataset access
       const htmlOption = option as HTMLElement;
-      const value = htmlOption.dataset.value ?? '';
+      const value = htmlOption.dataset['value'] ?? '';
       const text = htmlOption.textContent;
 
       // Update hidden input
@@ -140,7 +140,7 @@ export function initStatusDropdown(): void {
       return;
     }
 
-    const value = option.dataset.value ?? '';
+    const value = option.dataset['value'] ?? '';
     // Get badge element from option
     const badge = option.querySelector('.badge');
 
@@ -231,11 +231,11 @@ export function getDepartmentsBadge(admin: Admin): string {
   });
 
   if (admin.hasAllAccess === true) {
-    return '<span class="badge badge-success">Alle Abteilungen</span>';
+    return '<span class="badge badge--success">Alle Abteilungen</span>';
   }
 
   if (!admin.departments || admin.departments.length === 0) {
-    return '<span class="badge badge-error">Keine Abteilungen</span>';
+    return '<span class="badge badge--danger">Keine Abteilungen</span>';
   }
 
   const count = admin.departments.length;
@@ -245,7 +245,7 @@ export function getDepartmentsBadge(admin: Admin): string {
   const departmentNames = admin.departments.map((dept) => dept.name).join('\n');
 
   // Return badge with data-tooltip attribute for auto-initialization
-  return `<span class="badge badge-info" data-tooltip="${departmentNames}">${String(count)} ${label}</span>`;
+  return `<span class="badge badge--info" data-tooltip="${departmentNames}">${String(count)} ${label}</span>`;
 }
 
 // Load and populate departments in select
@@ -415,7 +415,7 @@ export function validatePosition(): boolean {
  */
 function generateUsernameFromEmail(email: string): string {
   // Take the part before @ (local part of email)
-  const localPart = email.split('@')[0];
+  const localPart = email.split('@')[0] ?? email;
 
   // Replace any character that's not a letter, number, underscore, or hyphen with underscore
   // This ensures the username matches the backend regex: /^[\w-]+$/

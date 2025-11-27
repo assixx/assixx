@@ -93,7 +93,7 @@ describe('KVP API v2', () => {
       email: adminUser.email,
       password: 'TestPass123!',
     });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     const employeeUser = await createTestUser(testDb, {
       username: 'kvp_employee_v2',
@@ -109,7 +109,7 @@ describe('KVP API v2', () => {
       email: employeeUser.email,
       password: 'TestPass123!',
     });
-    employeeToken = employeeLoginRes.body.data.accessToken;
+    employeeToken = employeeLoginRes.body.data['accessToken'];
   });
 
   afterEach(async () => {
@@ -137,7 +137,7 @@ describe('KVP API v2', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data['length']).toBeGreaterThan(0);
       expect(response.body.data[0]).toMatchObject({
         id: expect.any(Number),
         name: '__AUTOTEST__Productivity',
@@ -184,7 +184,7 @@ describe('KVP API v2', () => {
           submittedBy: employeeUserId,
         });
 
-        testSuggestionId = response.body.data.id;
+        testSuggestionId = response.body.data['id'];
       });
 
       it('should validate required fields', async () => {
@@ -273,7 +273,7 @@ describe('KVP API v2', () => {
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(Array.isArray(response.body.data)).toBe(true);
-        expect(response.body.data.length).toBeGreaterThanOrEqual(3);
+        expect(response.body.data['length']).toBeGreaterThanOrEqual(3);
         expect(response.body.meta.pagination).toMatchObject({
           currentPage: 1,
           pageSize: 10,
@@ -289,7 +289,7 @@ describe('KVP API v2', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
-        expect(response.body.data.every((s: any) => s.status === 'new')).toBe(true);
+        expect(response.body.data['every']((s: any) => s.status === 'new')).toBe(true);
       });
 
       it('should respect employee visibility rules', async () => {
@@ -300,10 +300,10 @@ describe('KVP API v2', () => {
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         // Employee should see their own suggestions and implemented ones
-        // const statuses = response.body.data.map((s: any) => s.status);
-        // const submitters = response.body.data.map((s: any) => s.submittedBy);
+        // const statuses = response.body.data['map']((s: any) => s.status);
+        // const submitters = response.body.data['map']((s: any) => s.submittedBy);
 
-        response.body.data.forEach((suggestion: any) => {
+        response.body.data['forEach']((suggestion: any) => {
           const isOwnSuggestion = suggestion.submittedBy === employeeUserId;
           const isImplemented = suggestion.status === 'implemented';
           expect(isOwnSuggestion || isImplemented).toBe(true);
@@ -330,7 +330,7 @@ describe('KVP API v2', () => {
             'new',
           ],
         );
-        testSuggestionId = result.insertId;
+        testSuggestionId = result['insertId'];
       });
 
       it('should get suggestion details', async () => {
@@ -377,7 +377,7 @@ describe('KVP API v2', () => {
             'new',
           ],
         );
-        testSuggestionId = result.insertId;
+        testSuggestionId = result['insertId'];
       });
 
       it('should update own suggestion', async () => {
@@ -412,7 +412,7 @@ describe('KVP API v2', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
-        expect(response.body.data.status).toBe('in_review');
+        expect(response.body.data['status']).toBe('in_review');
       });
 
       it('should prevent employee from updating others suggestions', async () => {
@@ -434,7 +434,7 @@ describe('KVP API v2', () => {
             'new',
           ],
         );
-        const adminSuggestionId = result.insertId;
+        const adminSuggestionId = result['insertId'];
 
         const response = await request(app)
           .put(`/api/v2/kvp/${adminSuggestionId}`)
@@ -469,7 +469,7 @@ describe('KVP API v2', () => {
             'new',
           ],
         );
-        const deleteId = result.insertId;
+        const deleteId = result['insertId'];
 
         const response = await request(app)
           .delete(`/api/v2/kvp/${deleteId}`)
@@ -506,7 +506,7 @@ describe('KVP API v2', () => {
           'new',
         ],
       );
-      testSuggestionId = result.insertId;
+      testSuggestionId = result['insertId'];
     });
 
     it('should add comment to suggestion', async () => {
@@ -549,7 +549,7 @@ describe('KVP API v2', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
-      expect(response.body.data.length).toBe(2);
+      expect(response.body.data['length']).toBe(2);
     });
 
     it('should hide internal comments from employees', async () => {
@@ -571,7 +571,7 @@ describe('KVP API v2', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.length).toBe(1);
+      expect(response.body.data['length']).toBe(1);
       expect(response.body.data[0].comment).toBe('Public comment');
     });
   });
@@ -650,7 +650,7 @@ describe('KVP API v2', () => {
           'implemented',
         ],
       );
-      testSuggestionId = result.insertId;
+      testSuggestionId = result['insertId'];
     });
 
     it('should award points to user (admin only)', async () => {
@@ -744,7 +744,7 @@ describe('KVP API v2', () => {
           'new',
         ],
       );
-      testSuggestionId = result.insertId;
+      testSuggestionId = result['insertId'];
     });
 
     it('should get attachments for suggestion', async () => {

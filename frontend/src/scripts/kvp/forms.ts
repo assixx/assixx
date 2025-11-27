@@ -261,7 +261,7 @@ export class KvpFormsManager {
     console.log('Current user object:', this.currentUser);
     console.log('Current user departmentId:', this.currentUser?.departmentId);
     console.log('Sending KVP data to API:', data);
-    console.log('Data.departmentId being sent:', data.departmentId);
+    console.log('Data.departmentId being sent:', data['departmentId']);
   }
 
   /**

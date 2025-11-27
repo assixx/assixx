@@ -185,7 +185,7 @@ class StateManager {
     if (docIndex !== -1) {
       // eslint-disable-next-line security/detect-object-injection
       const doc = this.state.documents[docIndex];
-      if (!doc.isRead) {
+      if (doc !== undefined && !doc.isRead) {
         // Safe: docIndex is validated by findIndex !== -1
         const documents = [...this.state.documents];
         // eslint-disable-next-line security/detect-object-injection
@@ -358,8 +358,8 @@ class StateManager {
       console.info(`[StateManager] Loaded ${documents.length} documents after refresh`);
 
       // DEBUG: Log first document (newest) with all relevant fields
-      if (documents.length > 0) {
-        const newest = documents[0];
+      const newest = documents[0];
+      if (newest !== undefined) {
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const uploadDate = new Date(newest.uploadedAt);

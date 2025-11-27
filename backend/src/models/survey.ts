@@ -127,37 +127,45 @@ interface SurveyFilters {
   limit?: number;
 }
 
+export interface SurveyStatisticsQuestion {
+  id: number;
+  question_text: string;
+  question_type: string;
+  responses?:
+    | {
+        answer_text?: string | undefined;
+        selected_option_id?: number | undefined;
+        rating?: number | undefined;
+        user_id?: number | null | undefined;
+        first_name?: string | null | undefined;
+        last_name?: string | null | undefined;
+      }[]
+    | undefined;
+  options?:
+    | {
+        option_id: number;
+        option_text: string;
+        count: number;
+      }[]
+    | undefined;
+  statistics?:
+    | {
+        average: number | null;
+        min: number | null;
+        max: number | null;
+        total_responses: number;
+      }
+    | undefined;
+}
+
 export interface SurveyStatistics {
   survey_id: number;
   total_responses: number;
   completed_responses: number;
   completion_rate: number;
-  first_response?: Date | null;
-  last_response?: Date | null;
-  questions: {
-    id: number;
-    question_text: string;
-    question_type: string;
-    responses?: {
-      answer_text?: string;
-      selected_option_id?: number;
-      rating?: number;
-      user_id?: number | null;
-      first_name?: string | null;
-      last_name?: string | null;
-    }[];
-    options?: {
-      option_id: number;
-      option_text: string;
-      count: number;
-    }[];
-    statistics?: {
-      average: number | null;
-      min: number | null;
-      max: number | null;
-      total_responses: number;
-    };
-  }[];
+  first_response?: Date | null | undefined;
+  last_response?: Date | null | undefined;
+  questions: SurveyStatisticsQuestion[];
 }
 
 // Query result types for type safety
@@ -376,7 +384,7 @@ export async function getAllSurveysByTenant(
 
   const params: unknown[] = [tenantId];
 
-  if (status) {
+  if (status !== undefined) {
     query += ' AND s.status = ?';
     params.push(status);
   }
@@ -388,13 +396,52 @@ export async function getAllSurveysByTenant(
   return surveys;
 }
 
+/** Get employee department and area info */
+async function getEmployeeDeptInfo(
+  employeeUserId: number,
+  tenantId: number,
+): Promise<UserDepartmentResult | null> {
+  const [userInfo] = await typedQuery<UserDepartmentResult[]>(
+    `SELECT u.department_id, d.area_id FROM users u
+     LEFT JOIN departments d ON u.department_id = d.id
+     WHERE u.id = ? AND u.tenant_id = ?`,
+    [employeeUserId, tenantId],
+  );
+  return userInfo[0] ?? null;
+}
+
+/** Get employee team IDs */
+async function getEmployeeTeamIds(employeeUserId: number, tenantId: number): Promise<number[]> {
+  const [userTeams] = await typedQuery<UserTeamResult[]>(
+    `SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?`,
+    [employeeUserId, tenantId],
+  );
+  return userTeams.map((team: UserTeamResult) => team.team_id);
+}
+
+/** Build team condition SQL for survey query */
+function buildTeamCondition(teamIds: number[]): string {
+  return teamIds.length > 0 ?
+      `(sa.assignment_type = 'team' AND sa.team_id IN (${teamIds.map(() => '?').join(',')}))`
+    : `(sa.assignment_type = 'team' AND 1=0)`;
+}
+
+/** Build employee survey query */
+function buildEmployeeSurveyQuery(teamCondition: string): string {
+  return `SELECT DISTINCT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name,
+    COUNT(DISTINCT sr.id) as response_count,
+    COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
+    FROM surveys s LEFT JOIN users u ON s.created_by = u.id
+    LEFT JOIN survey_responses sr ON s.id = sr.survey_id
+    INNER JOIN survey_assignments sa ON s.id = sa.survey_id
+    WHERE s.tenant_id = ? AND (
+      sa.assignment_type = 'all_users' OR (sa.assignment_type = 'area' AND sa.area_id = ?)
+      OR (sa.assignment_type = 'department' AND sa.department_id = ?)
+      OR ${teamCondition} OR (sa.assignment_type = 'user' AND sa.user_id = ?))`;
+}
+
 /**
  * Get surveys for employee based on assignments
- * Returns surveys that are:
- * 1. Assigned to "all_users" (whole company), OR
- * 2. Assigned to the employee's department, OR
- * 3. Assigned to the employee's team, OR
- * 4. Assigned directly to the employee
  */
 export async function getAllSurveysByTenantForEmployee(
   tenantId: number,
@@ -404,68 +451,17 @@ export async function getAllSurveysByTenantForEmployee(
   const { status, page = 1, limit = 20 } = filters;
   const offset = (page - 1) * limit;
 
-  // First get employee's department info, then get area from department
-  const [userInfo] = await typedQuery<UserDepartmentResult[]>(
-    `SELECT u.department_id, d.area_id
-     FROM users u
-     LEFT JOIN departments d ON u.department_id = d.id
-     WHERE u.id = ? AND u.tenant_id = ?`,
-    [employeeUserId, tenantId],
-  );
+  const userRow = await getEmployeeDeptInfo(employeeUserId, tenantId);
+  if (userRow === null) return [];
 
-  if (userInfo.length === 0) {
-    return [];
-  }
+  const { department_id: departmentId, area_id: areaId } = userRow;
+  const teamIds = await getEmployeeTeamIds(employeeUserId, tenantId);
+  const teamCondition = buildTeamCondition(teamIds);
 
-  const { department_id: departmentId, area_id: areaId } = userInfo[0];
-
-  // Get employee's team IDs from user_teams table
-  const [userTeams] = await typedQuery<UserTeamResult[]>(
-    `SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?`,
-    [employeeUserId, tenantId],
-  );
-
-  const teamIds: number[] = userTeams.map((team: UserTeamResult) => team.team_id);
-
-  // Build the query with dynamic team IDs
-  const teamCondition =
-    teamIds.length > 0 ?
-      `(sa.assignment_type = 'team' AND sa.team_id IN (${teamIds.map(() => '?').join(',')}))`
-    : `(sa.assignment_type = 'team' AND 1=0)`; // Never match if no teams
-
-  let query = `
-      SELECT DISTINCT
-        s.*,
-        u.first_name as creator_first_name,
-        u.last_name as creator_last_name,
-        COUNT(DISTINCT sr.id) as response_count,
-        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
-      FROM surveys s
-      LEFT JOIN users u ON s.created_by = u.id
-      LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-      INNER JOIN survey_assignments sa ON s.id = sa.survey_id
-      WHERE s.tenant_id = ?
-      AND (
-        -- Employee can see surveys assigned to all users
-        sa.assignment_type = 'all_users'
-        OR
-        -- Employee can see surveys assigned to their area
-        (sa.assignment_type = 'area' AND sa.area_id = ?)
-        OR
-        -- Employee can see surveys assigned to their department
-        (sa.assignment_type = 'department' AND sa.department_id = ?)
-        OR
-        -- Employee can see surveys assigned to their teams
-        ${teamCondition}
-        OR
-        -- Employee can see surveys assigned directly to them
-        (sa.assignment_type = 'user' AND sa.user_id = ?)
-      )
-    `;
-
+  let query = buildEmployeeSurveyQuery(teamCondition);
   const params: unknown[] = [tenantId, areaId, departmentId, ...teamIds, employeeUserId];
 
-  if (status) {
+  if (status !== undefined) {
     query += ' AND s.status = ?';
     params.push(status);
   }
@@ -521,7 +517,7 @@ export async function getAllSurveysByTenantForAdmin(
 
   const params: unknown[] = [adminUserId, tenantId, adminUserId];
 
-  if (status) {
+  if (status !== undefined) {
     query += ' AND s.status = ?';
     params.push(status);
   }
@@ -576,7 +572,7 @@ async function loadQuestionOptions(
 function processSurveyQuestions(questions: DbSurveyQuestion[]): void {
   for (const question of questions) {
     // Convert Buffer to string if needed
-    if (question.question_text && Buffer.isBuffer(question.question_text)) {
+    if (question.question_text !== '' && Buffer.isBuffer(question.question_text)) {
       question.question_text = question.question_text.toString();
     }
   }
@@ -600,6 +596,9 @@ export async function getSurveyById(surveyId: number, tenantId: number): Promise
   }
 
   const survey = surveys[0];
+  if (survey === undefined) {
+    return null;
+  }
 
   // Convert Buffer to string if needed
   const hasDescription = survey.description != null && survey.description !== '';
@@ -672,6 +671,9 @@ export async function getSurveyByUUID(
   }
 
   const survey = surveys[0];
+  if (survey === undefined) {
+    return null;
+  }
 
   // Convert Buffer to string if needed
   const hasDescription = survey.description != null && survey.description !== '';
@@ -906,18 +908,31 @@ export async function createSurveyFromTemplate(
   }
 
   const template = templates[0];
+  if (template === undefined) {
+    throw new Error('Template not found');
+  }
+
   const templateData = JSON.parse(template.template_data) as {
     title: string;
-    description: string;
+    description?: string;
     questions: unknown;
   };
 
+  // Build surveyData conditionally to satisfy exactOptionalPropertyTypes
   const surveyData: SurveyCreateData = {
     title: templateData.title,
-    description: templateData.description,
-    questions: templateData.questions as SurveyCreateData['questions'],
     status: 'draft',
   };
+
+  // Only add optional properties if they have values
+  if (templateData.description !== undefined) {
+    surveyData.description = templateData.description;
+  }
+
+  const questions = templateData.questions as SurveyCreateData['questions'];
+  if (questions !== undefined) {
+    surveyData.questions = questions;
+  }
 
   return await createSurvey(surveyData, tenantId, createdBy);
 }
@@ -925,31 +940,22 @@ export async function createSurveyFromTemplate(
 /**
  * Get survey statistics
  */
-interface QuestionStatistic {
-  id: number;
-  question_text: string;
-  question_type: string;
-  responses: {
-    answer_text?: string;
-    selected_option_id?: number;
-    rating?: number;
-  }[];
-  options?: {
-    option_id: number;
-    option_text: string;
-    count: number;
-  }[];
-  statistics?: {
-    average: number | null;
-    min: number | null;
-    max: number | null;
-    total_responses: number;
-  };
+interface OptionStat {
+  option_id: number;
+  option_text: string;
+  count: number;
 }
 
-async function getChoiceQuestionStats(
-  question: DbSurveyQuestion,
-): Promise<QuestionStatistic['options']> {
+interface RatingStat {
+  average: number | null;
+  min: number | null;
+  max: number | null;
+  total_responses: number;
+}
+
+// Use SurveyStatisticsQuestion from above (already exported)
+
+async function getChoiceQuestionStats(question: DbSurveyQuestion): Promise<OptionStat[]> {
   // For yes_no questions: use hardcoded options (not stored in survey_question_options table)
   let options: { id: number; option_text: string }[];
 
@@ -1004,7 +1010,7 @@ async function getChoiceQuestionStats(
 
 async function getTextQuestionResponses(
   questionId: number,
-): Promise<QuestionStatistic['responses']> {
+): Promise<SurveyStatisticsQuestion['responses']> {
   const [textResponses] = await typedQuery<TextResponseResult[]>(
     `
       SELECT
@@ -1027,9 +1033,7 @@ async function getTextQuestionResponses(
   }));
 }
 
-async function getRatingQuestionStats(
-  questionId: number,
-): Promise<QuestionStatistic['statistics']> {
+async function getRatingQuestionStats(questionId: number): Promise<RatingStat> {
   const [numericStats] = await typedQuery<NumericStatsResult[]>(
     `
       SELECT
@@ -1043,11 +1047,19 @@ async function getRatingQuestionStats(
     [questionId],
   );
   const numStats = numericStats[0];
+  if (numStats === undefined) {
+    return {
+      average: null,
+      min: null,
+      max: null,
+      total_responses: 0,
+    };
+  }
   return {
     average: numStats.average,
     min: numStats.min,
     max: numStats.max,
-    total_responses: numStats.total_responses || 0,
+    total_responses: numStats.total_responses,
   };
 }
 
@@ -1055,7 +1067,7 @@ async function getRatingQuestionStats(
  * Get date question statistics
  * Returns date options with counts, sorted by most selected
  */
-async function getDateQuestionStats(questionId: number): Promise<QuestionStatistic['options']> {
+async function getDateQuestionStats(questionId: number): Promise<OptionStat[]> {
   interface DateCountResult extends RowDataPacket {
     answer_date: Date | string;
     count: number;
@@ -1074,14 +1086,81 @@ async function getDateQuestionStats(questionId: number): Promise<QuestionStatist
     [questionId],
   );
 
-  return dateStats.map((row: DateCountResult, index: number) => ({
-    option_id: index + 1,
-    option_text:
+  return dateStats.map((row: DateCountResult, index: number) => {
+    const dateText =
       row.answer_date instanceof Date ?
         row.answer_date.toISOString().split('T')[0]
-      : row.answer_date.split('T')[0],
-    count: row.count,
-  }));
+      : row.answer_date.split('T')[0];
+    return {
+      option_id: index + 1,
+      option_text: dateText ?? '',
+      count: row.count,
+    };
+  });
+}
+
+/** Safely parse integer with NaN check */
+function safeParseInt(value: unknown): number {
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+/** Process single question stats based on type */
+async function processQuestionStat(question: DbSurveyQuestion): Promise<SurveyStatisticsQuestion> {
+  const questionStat: SurveyStatisticsQuestion = {
+    id: question.id,
+    question_text: question.question_text,
+    question_type: question.question_type,
+    responses: [],
+  };
+
+  const questionType = question.question_type as string;
+  const isChoiceQuestion =
+    questionType === 'single_choice' ||
+    questionType === 'multiple_choice' ||
+    questionType === 'yes_no';
+
+  if (isChoiceQuestion) {
+    questionStat.options = await getChoiceQuestionStats(question);
+  } else if (questionType === 'text') {
+    questionStat.responses = await getTextQuestionResponses(question.id);
+  } else if (questionType === 'date') {
+    questionStat.options = await getDateQuestionStats(question.id);
+  } else if (questionType === 'rating' || questionType === 'number') {
+    questionStat.statistics = await getRatingQuestionStats(question.id);
+  }
+  return questionStat;
+}
+
+/** Build statistics result from stats row */
+function buildStatsResult(
+  surveyId: number,
+  statsRow: SurveyStatsResult | undefined,
+  questionStats: SurveyStatisticsQuestion[],
+): SurveyStatistics {
+  if (statsRow === undefined) {
+    return {
+      survey_id: surveyId,
+      total_responses: 0,
+      completed_responses: 0,
+      completion_rate: 0,
+      first_response: null,
+      last_response: null,
+      questions: questionStats,
+    };
+  }
+  const totalResponses = safeParseInt(statsRow.total_responses);
+  const completedResponses = safeParseInt(statsRow.completed_responses);
+  return {
+    survey_id: surveyId,
+    total_responses: totalResponses,
+    completed_responses: completedResponses,
+    completion_rate:
+      totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0,
+    first_response: statsRow.first_response,
+    last_response: statsRow.last_response,
+    questions: questionStats,
+  };
 }
 
 export async function getSurveyStatistics(
@@ -1090,66 +1169,23 @@ export async function getSurveyStatistics(
 ): Promise<SurveyStatistics> {
   try {
     const [stats] = await typedQuery<SurveyStatsResult[]>(
-      `
-        SELECT
-          COUNT(DISTINCT sr.id) as total_responses,
-          COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_responses,
-          MIN(sr.started_at) as first_response,
-          MAX(sr.completed_at) as last_response
-        FROM surveys s
-        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-        WHERE s.id = ? AND s.tenant_id = ?
-      `,
+      `SELECT COUNT(DISTINCT sr.id) as total_responses,
+        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_responses,
+        MIN(sr.started_at) as first_response, MAX(sr.completed_at) as last_response
+        FROM surveys s LEFT JOIN survey_responses sr ON s.id = sr.survey_id
+        WHERE s.id = ? AND s.tenant_id = ?`,
       [surveyId, tenantId],
     );
 
     const survey = await getSurveyById(surveyId, tenantId);
-    if (!survey) {
-      throw new Error('Survey not found');
-    }
+    if (survey === null) throw new Error('Survey not found');
 
-    const questionStats: QuestionStatistic[] = [];
-
+    const questionStats: SurveyStatisticsQuestion[] = [];
     for (const question of survey.questions ?? []) {
-      const questionStat: QuestionStatistic = {
-        id: question.id,
-        question_text: question.question_text,
-        question_type: question.question_type,
-        responses: [],
-      };
-
-      const questionType = question.question_type as string;
-      const isChoiceQuestion =
-        questionType === 'single_choice' ||
-        questionType === 'multiple_choice' ||
-        questionType === 'yes_no';
-
-      if (isChoiceQuestion) {
-        questionStat.options = await getChoiceQuestionStats(question);
-      } else if (questionType === 'text') {
-        questionStat.responses = await getTextQuestionResponses(question.id);
-      } else if (questionType === 'date') {
-        questionStat.options = await getDateQuestionStats(question.id);
-      } else if (questionType === 'rating' || questionType === 'number') {
-        questionStat.statistics = await getRatingQuestionStats(question.id);
-      }
-
-      questionStats.push(questionStat);
+      questionStats.push(await processQuestionStat(question));
     }
 
-    const totalResponses = Number.parseInt(String(stats[0].total_responses)) || 0;
-    const completedResponses = Number.parseInt(String(stats[0].completed_responses)) || 0;
-
-    return {
-      survey_id: surveyId,
-      total_responses: totalResponses,
-      completed_responses: completedResponses,
-      completion_rate:
-        totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0,
-      first_response: stats[0].first_response,
-      last_response: stats[0].last_response,
-      questions: questionStats,
-    };
+    return buildStatsResult(surveyId, stats[0], questionStats);
   } catch (error: unknown) {
     console.error('Error in getStatistics:', error);
     throw error;

@@ -211,7 +211,7 @@ class KvpPage {
         const target = e.target as HTMLElement;
         if (!target.closest('.action-btn')) {
           const cardEl = card as HTMLElement;
-          const uuid = cardEl.dataset.uuid; // NEW: Use UUID instead of numeric ID
+          const uuid = cardEl.dataset['uuid']; // NEW: Use UUID instead of numeric ID
           if (uuid !== undefined && uuid !== '') this.viewSuggestion(uuid);
         }
       });
@@ -227,7 +227,7 @@ class KvpPage {
    * Render action buttons for a suggestion
    */
   private renderActionButtonsForSuggestion(actionButtons: HTMLElement): void {
-    const suggestionId = Number.parseInt(actionButtons.dataset.suggestionId ?? '0', 10);
+    const suggestionId = Number.parseInt(actionButtons.dataset['suggestionId'] ?? '0', 10);
     const suggestion = this.dataManager?.suggestions.find((s) => s.id === suggestionId);
     if (!suggestion || !this.currentUser) return;
 
@@ -269,9 +269,9 @@ class KvpPage {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const btnEl = btn as HTMLElement;
-        const action = btnEl.dataset.action;
-        const uuid = btnEl.dataset.uuid; // For view action
-        const id = btnEl.dataset.id; // For share/unshare actions
+        const action = btnEl.dataset['action'];
+        const uuid = btnEl.dataset['uuid']; // For view action
+        const id = btnEl.dataset['id']; // For share/unshare actions
 
         if (action !== undefined && action !== '') {
           if (action === 'view' && uuid !== undefined && uuid !== '') {
@@ -369,7 +369,7 @@ class KvpPage {
         });
         btn.classList.add('active');
         if (btn instanceof HTMLElement) {
-          this.currentFilter = btn.dataset.filter ?? 'all';
+          this.currentFilter = btn.dataset['filter'] ?? 'all';
           if (this.dataManager) {
             this.dataManager.setCurrentFilter(this.currentFilter);
           }
@@ -413,8 +413,8 @@ class KvpPage {
       const target = e.target as HTMLElement;
       const kvpCategoryOption = target.closest('[data-action="select-kvp-category"]');
       if (kvpCategoryOption instanceof HTMLElement) {
-        const value = kvpCategoryOption.dataset.value;
-        const text = kvpCategoryOption.dataset.text;
+        const value = kvpCategoryOption.dataset['value'];
+        const text = kvpCategoryOption.dataset['text'];
         if (value !== undefined && value !== '' && text !== undefined && text !== '') {
           kvpUIHelpers.selectDropdownValue('kvpCategory', value, text);
         }

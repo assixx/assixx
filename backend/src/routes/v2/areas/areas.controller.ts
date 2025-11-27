@@ -26,6 +26,56 @@ import {
 } from './areas.validation.zod.js';
 import { AreaFilters, CreateAreaRequest, UpdateAreaRequest } from './types.js';
 
+// Constants
+const USER_AGENT_HEADER = 'user-agent';
+
+/** Build create area request from validated body */
+function buildCreateRequest(body: CreateAreaBody): CreateAreaRequest {
+  const data: CreateAreaRequest = { name: body.name, type: body.type };
+  if (body.description !== undefined) data.description = body.description;
+  if (body.capacity !== undefined && body.capacity !== null) data.capacity = body.capacity;
+  if (body.parentId !== undefined && body.parentId !== null) data.parentId = body.parentId;
+  if (body.address !== undefined) data.address = body.address;
+  return data;
+}
+
+/** Build update area request from validated body */
+function buildUpdateRequest(body: UpdateAreaBody): UpdateAreaRequest {
+  const data: UpdateAreaRequest = {};
+  if (body.name !== undefined) data.name = body.name;
+  if (body.description !== undefined) data.description = body.description;
+  if (body.type !== undefined) data.type = body.type;
+  if (body.capacity !== undefined && body.capacity !== null) data.capacity = body.capacity;
+  if (body.parentId !== undefined) data.parentId = body.parentId;
+  if (body.address !== undefined) data.address = body.address;
+  if (body.isActive !== undefined) data.isActive = body.isActive;
+  return data;
+}
+
+/** Log area action to audit log */
+async function logAreaAction(
+  req: AuthenticatedRequest,
+  action: string,
+  entityId: number,
+  details: string,
+  oldValues?: Record<string, unknown>,
+  newValues?: Record<string, unknown>,
+): Promise<void> {
+  await rootLog.create({
+    tenant_id: req.user.tenant_id,
+    user_id: req.user.id,
+    action,
+    entity_type: 'area',
+    entity_id: entityId,
+    details,
+    old_values: oldValues,
+    new_values: newValues,
+    ip_address: req.ip ?? req.socket.remoteAddress,
+    user_agent: req.get(USER_AGENT_HEADER),
+    was_role_switched: false,
+  });
+}
+
 /**
  * Get all areas
  * GET /api/v2/areas
@@ -38,10 +88,10 @@ export async function getAreasController(req: AuthenticatedRequest, res: Respons
     // TypeScript can't track this transformation, so we need explicit assertion
     const query = req.query as unknown as GetAreasQuery;
     const filters: AreaFilters = {
-      type: query.type,
-      isActive: query.isActive,
-      parentId: query.parentId,
-      search: query.search,
+      ...(query.type !== undefined && { type: query.type }),
+      ...(query.isActive !== undefined && { isActive: query.isActive }),
+      ...(query.parentId !== undefined && { parentId: query.parentId }),
+      ...(query.search !== undefined && { search: query.search }),
     };
 
     const areas = await getAreas(req.user.tenant_id, filters);
@@ -112,43 +162,22 @@ export async function createAreaController(
   res: Response,
 ): Promise<void> {
   try {
-    // Only admin and root can create areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
-    // Zod middleware validates body and replaces req.body with validated data
     const body = req.body as CreateAreaBody;
-    const data: CreateAreaRequest = {
-      name: body.name,
-      description: body.description,
-      type: body.type,
-      capacity: body.capacity ?? undefined,
-      parentId: body.parentId ?? undefined,
-      address: body.address,
-    };
+    const data = buildCreateRequest(body);
     const newArea = await createArea(data, req.user.tenant_id, req.user.id);
 
-    // Log area creation
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'create',
-      entity_type: 'area',
-      entity_id: newArea.id,
-      details: `Erstellt: ${data.name}`,
-      new_values: {
-        name: data.name,
-        type: data.type,
-        parent_id: data.parentId,
-        address: data.address,
-        capacity: data.capacity,
-        created_by: req.user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
-      was_role_switched: false,
+    await logAreaAction(req, 'create', newArea.id, `Erstellt: ${data.name}`, undefined, {
+      name: data.name,
+      type: data.type,
+      parent_id: data.parentId,
+      address: data.address,
+      capacity: data.capacity,
+      created_by: req.user.email,
     });
 
     res.status(201).json(successResponse(newArea, 'Area created successfully'));
@@ -181,43 +210,24 @@ export async function updateAreaController(
   res: Response,
 ): Promise<void> {
   try {
-    // Only admin and root can update areas
     if (req.user.role !== 'admin' && req.user.role !== 'root') {
       res.status(403).json(errorResponse('FORBIDDEN', 'Access denied'));
       return;
     }
 
-    // Zod middleware validates and transforms params/body at runtime
-    // Params need explicit assertion due to string→number transformation
     const params = req.params as unknown as AreaIdParam;
-    // Body can use simple assertion (Express body-parser already gives correct types)
     const body = req.body as UpdateAreaBody;
     const areaId = params.id;
-
-    // Get old area data for logging
     const oldArea = await getAreaById(areaId, req.user.tenant_id);
-
-    // req.body is already validated by Zod middleware
-    const data: UpdateAreaRequest = {
-      name: body.name,
-      description: body.description,
-      type: body.type,
-      capacity: body.capacity ?? undefined,
-      parentId: body.parentId ?? undefined,
-      address: body.address,
-      isActive: body.isActive,
-    };
+    const data = buildUpdateRequest(body);
     const updatedArea = await updateArea(areaId, data, req.user.tenant_id);
 
-    // Log area update
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'update',
-      entity_type: 'area',
-      entity_id: areaId,
-      details: `Aktualisiert: ${data.name ?? 'Unbekannt'}`,
-      old_values: {
+    await logAreaAction(
+      req,
+      'update',
+      areaId,
+      `Aktualisiert: ${data.name ?? 'Unbekannt'}`,
+      {
         name: oldArea?.name,
         type: oldArea?.type,
         parent_id: oldArea?.parent_id,
@@ -225,7 +235,7 @@ export async function updateAreaController(
         capacity: oldArea?.capacity,
         is_active: oldArea?.is_active,
       },
-      new_values: {
+      {
         name: data.name,
         type: data.type,
         parent_id: data.parentId,
@@ -234,10 +244,7 @@ export async function updateAreaController(
         is_active: data.isActive,
         updated_by: req.user.email,
       },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
-      was_role_switched: false,
-    });
+    );
 
     res.json(successResponse(updatedArea, 'Area updated successfully'));
   } catch (error: unknown) {
@@ -281,32 +288,18 @@ export async function deleteAreaController(
     const areaId = params.id;
 
     // Get force parameter from query string (e.g., /areas/123?force=true)
-    const force = req.query.force === 'true';
+    const force = req.query['force'] === 'true';
 
-    // Get area data before deletion for logging
     const deletedArea = await getAreaById(areaId, req.user.tenant_id);
-
     await deleteArea(areaId, req.user.tenant_id, force);
 
-    // Log area deletion
-    await rootLog.create({
-      tenant_id: req.user.tenant_id,
-      user_id: req.user.id,
-      action: 'delete',
-      entity_type: 'area',
-      entity_id: areaId,
-      details: `Gelöscht: ${String(deletedArea?.name)}`,
-      old_values: {
-        name: deletedArea?.name,
-        type: deletedArea?.type,
-        parent_id: deletedArea?.parent_id,
-        address: deletedArea?.address,
-        capacity: deletedArea?.capacity,
-        deleted_by: req.user.email,
-      },
-      ip_address: req.ip ?? req.socket.remoteAddress,
-      user_agent: req.get('user-agent'),
-      was_role_switched: false,
+    await logAreaAction(req, 'delete', areaId, `Gelöscht: ${String(deletedArea?.name)}`, {
+      name: deletedArea?.name,
+      type: deletedArea?.type,
+      parent_id: deletedArea?.parent_id,
+      address: deletedArea?.address,
+      capacity: deletedArea?.capacity,
+      deleted_by: req.user.email,
     });
 
     res.json(successResponse(null, 'Area deleted successfully'));

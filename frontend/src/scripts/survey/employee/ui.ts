@@ -180,8 +180,8 @@ function createActionButtonHtml(completed: boolean): string {
 export function createSurveyCard(survey: Survey, completed: boolean): HTMLElement {
   const card = document.createElement('div');
   card.className = 'card card--clickable';
-  card.dataset.surveyId = String(survey.id);
-  card.dataset.action = completed ? 'view-response' : 'start-survey';
+  card.dataset['surveyId'] = String(survey.id);
+  card.dataset['action'] = completed ? 'view-response' : 'start-survey';
 
   const badgeClass = getStatusBadgeClass(survey.status);
 

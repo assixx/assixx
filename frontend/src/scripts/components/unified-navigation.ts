@@ -4,6 +4,17 @@
  * Verwendet rolle-basierte Menüs mit Glassmorphismus-Design
  */
 
+// Development mode flag - verbose logs only in dev
+// Uses hostname check since import.meta.env requires Vite type definitions
+const IS_DEV = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
+/** Dev-only logging - silenced in production */
+function devLog(message: string, ...args: unknown[]): void {
+  if (IS_DEV) {
+    console.info(message, ...args);
+  }
+}
+
 // Import types
 import type { User, Tenant } from '../../types/api.types';
 import type { NavItem } from '../../types/utils.types';
@@ -168,7 +179,7 @@ class UnifiedNavigation {
    */
   public canAccessPage(path: string, role: 'admin' | 'employee' | 'root'): boolean {
     // Normalisiere den Pfad (entferne Query-Parameter und Hash)
-    const normalizedPath = path.split('?')[0].split('#')[0];
+    const normalizedPath = (path.split('?')[0] ?? path).split('#')[0] ?? path;
 
     // Prüfe ob der Pfad in der Map existiert (Map ist sicher gegen Object Injection)
     const allowedRoles = accessControlMap.get(normalizedPath);
@@ -420,8 +431,8 @@ class UnifiedNavigation {
 
   private parseTokenPayload():
     | (TokenPayload & {
-        activeRole?: string;
-        isRoleSwitched?: boolean;
+        activeRole?: string | undefined;
+        isRoleSwitched?: boolean | undefined;
       })
     | null {
     const token = localStorage.getItem('token');
@@ -430,9 +441,11 @@ class UnifiedNavigation {
     }
 
     try {
-      return JSON.parse(atob(token.split('.')[1])) as TokenPayload & {
-        activeRole?: string;
-        isRoleSwitched?: boolean;
+      const tokenPart = token.split('.')[1];
+      if (tokenPart === undefined) return null;
+      return JSON.parse(atob(tokenPart)) as TokenPayload & {
+        activeRole?: string | undefined;
+        isRoleSwitched?: boolean | undefined;
       };
     } catch (error) {
       console.error('Error parsing token:', error);
@@ -455,7 +468,7 @@ class UnifiedNavigation {
 
   private determineActiveRole(
     dashboardType: 'root' | 'admin' | 'employee' | null,
-    payload: TokenPayload & { activeRole?: string },
+    payload: TokenPayload & { activeRole?: string | undefined },
   ): 'root' | 'admin' | 'employee' {
     // Dashboard type takes precedence
     if (dashboardType !== null) {
@@ -505,7 +518,7 @@ class UnifiedNavigation {
     this.currentRole = this.determineActiveRole(dashboardType, payload);
     this.updateActiveRoleInStorage(dashboardType, storedUserRole);
 
-    console.info('[UnifiedNav] Role determined:', {
+    devLog('[UnifiedNav] Role determined:', {
       currentPath,
       storedUserRole,
       tokenRole: payload.role,
@@ -521,7 +534,7 @@ class UnifiedNavigation {
       const token = localStorage.getItem('token');
       if (token === null || token === 'test-mode') return;
 
-      console.info('[UnifiedNav] Fetching full user profile with company data');
+      devLog('[UnifiedNav] Fetching full user profile with company data');
 
       // Always try to load v2 user profile
       await this.loadV2UserProfile();
@@ -533,9 +546,9 @@ class UnifiedNavigation {
   private async loadV2UserProfile(): Promise<void> {
     try {
       // Use cached user data from auth.js to prevent duplicate API calls
-      console.info('[UnifiedNav] Using cached user data from auth.js');
+      devLog('[UnifiedNav] Using cached user data from auth.js');
       const userData = (await loadUserInfoFromAuth()) as UserProfileResponse;
-      console.info('[UnifiedNav] Full user data from cache:', userData);
+      devLog('[UnifiedNav] Full user data from cache:', userData);
 
       this.updateCompanyInfo(userData);
       this.updateUserInfo(userData);
@@ -554,7 +567,7 @@ class UnifiedNavigation {
     const companyElement = $$('#sidebar-company-name');
     const companyName = userData.tenant?.companyName ?? userData.companyName;
     if (companyElement && companyName !== undefined) {
-      console.info('[UnifiedNav] Setting company name to:', companyName);
+      devLog('[UnifiedNav] Setting company name to:', companyName);
       companyElement.textContent = companyName;
     }
 
@@ -601,7 +614,7 @@ class UnifiedNavigation {
       userDataTyped.data?.employeeNumber;
 
     if (employeeNumber !== undefined) {
-      console.info('[UnifiedNav] Setting employee number to:', employeeNumber);
+      devLog('[UnifiedNav] Setting employee number to:', employeeNumber);
       // Set display flex and center content
       sidebarEmployeeNumber.style.display = 'flex';
       sidebarEmployeeNumber.style.justifyContent = 'center';
@@ -635,11 +648,11 @@ class UnifiedNavigation {
       (userData as { position?: string }).position ?? (userData.data as { position?: string } | undefined)?.position;
 
     if (position !== undefined && position !== '') {
-      console.info('[UnifiedNav] Setting admin position to:', position);
+      devLog('[UnifiedNav] Setting admin position to:', position);
       positionElement.textContent = position;
       positionElement.style.display = 'block';
     } else {
-      console.info('[UnifiedNav] No position found for admin');
+      devLog('[UnifiedNav] No position found for admin');
       positionElement.style.display = 'none';
     }
   }
@@ -650,16 +663,16 @@ class UnifiedNavigation {
 
     const firstName = userData.firstName ?? userData.data?.firstName ?? '';
     const lastName = userData.lastName ?? userData.data?.lastName ?? '';
-    console.info('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
+    devLog('[UnifiedNav] Updating header user name:', { firstName, lastName, userData });
 
     if (firstName !== '' || lastName !== '') {
       const fullName = `${firstName} ${lastName}`.trim();
       headerUserName.textContent = fullName;
-      console.info('[UnifiedNav] Set header name to:', fullName);
+      devLog('[UnifiedNav] Set header name to:', fullName);
     } else {
       // No fallback - keep empty if no name available
       headerUserName.textContent = '';
-      console.info('[UnifiedNav] No name available, keeping empty');
+      devLog('[UnifiedNav] No name available, keeping empty');
     }
   }
 
@@ -734,6 +747,13 @@ class UnifiedNavigation {
         label: 'Übersicht',
         url: '/admin-dashboard',
         section: 'dashboard',
+      },
+      {
+        id: 'blackboard',
+        icon: this.getSVGIcon('pin'),
+        label: 'Schwarzes Brett',
+        url: '/blackboard',
+        section: 'blackboard',
       },
       {
         id: 'employees',
@@ -850,6 +870,12 @@ class UnifiedNavigation {
         url: EMPLOYEE_DASHBOARD_URL,
       },
       {
+        id: 'blackboard',
+        icon: this.getSVGIcon('pin'),
+        label: 'Schwarzes Brett',
+        url: '/blackboard',
+      },
+      {
         id: 'documents',
         icon: this.getSVGIcon('document'),
         label: 'Dokumente',
@@ -905,6 +931,12 @@ class UnifiedNavigation {
         icon: this.getSVGIcon('home'),
         label: 'Root Dashboard',
         url: ROOT_DASHBOARD_URL,
+      },
+      {
+        id: 'blackboard',
+        icon: this.getSVGIcon('pin'),
+        label: 'Schwarzes Brett',
+        url: '/blackboard',
       },
       {
         id: 'root-users',
@@ -1040,6 +1072,7 @@ class UnifiedNavigation {
         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/></svg>',
       blackboard:
         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>',
+      pin: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"/></svg>',
       calendar:
         '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7v-5z"/></svg>',
       clock:
@@ -1587,15 +1620,6 @@ class UnifiedNavigation {
                         <span id="role-indicator" class="role-badge ${this.currentRole ?? ''}">${this.currentRole === 'admin' ? 'Admin' : this.currentRole === 'root' ? 'Root' : 'Mitarbeiter'}</span>
                     </div>
                 </div>
-                <button class="sidebar-title blackboard-button" data-action="navigate-blackboard" title="Zum Schwarzen Brett">
-                    <span class="title-icon pinned-icon">
-                        <span class="pin-head"></span>
-                        <span class="pin-needle"></span>
-                    </span>
-                    <span class="title-content">
-                        <span class="title-text">Schwarzes Brett</span>
-                    </span>
-                </button>
 
         `;
   }
@@ -1772,14 +1796,14 @@ class UnifiedNavigation {
     }
 
     const parentLink = parentItem.querySelector<HTMLElement>('.sidebar-link');
-    const parentId = parentLink?.dataset.navId;
+    const parentId = parentLink?.dataset['navId'];
     if (parentId !== undefined) {
       localStorage.setItem('openSubmenu', parentId);
     }
   }
 
   private checkKvpSubmenuClick(submenuLink: HTMLElement): void {
-    const submenuNavId = submenuLink.dataset.navId;
+    const submenuNavId = submenuLink.dataset['navId'];
     if (submenuNavId === 'kvp' && (this.currentRole === 'admin' || this.currentRole === 'root')) {
       void this.resetKvpBadge();
     }
@@ -1872,18 +1896,21 @@ class UnifiedNavigation {
   }
 
   private debugSidebarInfo(sidebar: Element | null, toggleBtn: Element | null, mainContent: Element | null): void {
+    // Only log in development mode to reduce console noise in production
+    if (!IS_DEV) return;
+
     const allSidebars = document.querySelectorAll('.sidebar');
-    console.info('[UnifiedNav] Number of sidebars found:', allSidebars.length);
+    devLog('[UnifiedNav] Number of sidebars found:', allSidebars.length);
     allSidebars.forEach((sb, index) => {
-      console.info(`[UnifiedNav] Sidebar ${index}:`, sb);
-      console.info(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
+      devLog(`[UnifiedNav] Sidebar ${index}:`, sb);
+      devLog(`[UnifiedNav] Sidebar ${index} parent:`, sb.parentElement);
     });
 
-    console.info('[UnifiedNav] Toggle button:', toggleBtn);
-    console.info('[UnifiedNav] Sidebar:', sidebar);
-    console.info('[UnifiedNav] Sidebar ID:', sidebar?.id);
-    console.info('[UnifiedNav] Sidebar class:', sidebar?.className);
-    console.info('[UnifiedNav] Main content:', mainContent);
+    devLog('[UnifiedNav] Toggle button:', toggleBtn);
+    devLog('[UnifiedNav] Sidebar:', sidebar);
+    devLog('[UnifiedNav] Sidebar ID:', sidebar?.id);
+    devLog('[UnifiedNav] Sidebar class:', sidebar?.className);
+    devLog('[UnifiedNav] Main content:', mainContent);
   }
 
   private applySavedCollapsedState(
@@ -1913,9 +1940,8 @@ class UnifiedNavigation {
       e.preventDefault();
       e.stopPropagation();
 
-      console.info('[UnifiedNav] Toggle clicked!');
-      console.info('[UnifiedNav] Sidebar classes before:', sidebar.className);
-      console.info('[UnifiedNav] Sidebar computed width:', window.getComputedStyle(sidebar).width);
+      devLog('[UnifiedNav] Toggle clicked!');
+      devLog('[UnifiedNav] Sidebar classes before:', sidebar.className);
 
       const isCurrentlyCollapsed = sidebar.classList.contains('collapsed');
       const newState = !isCurrentlyCollapsed;
@@ -1944,9 +1970,7 @@ class UnifiedNavigation {
         headerLogo.src = newState ? '/assets/images/logo_collapsed.png' : '/assets/images/logo.png';
       }
 
-      console.info('[UnifiedNav] Sidebar collapsed state:', newState);
-      console.info('[UnifiedNav] Sidebar classes after:', sidebar.className);
-      console.info('[UnifiedNav] Sidebar computed width after:', window.getComputedStyle(sidebar).width);
+      devLog('[UnifiedNav] Sidebar collapsed state:', newState);
     });
   }
 
@@ -2081,11 +2105,11 @@ class UnifiedNavigation {
     if (isActive) {
       dropdownDisplay.classList.remove('active');
       dropdownOptions.classList.remove('active');
-      console.info('[UnifiedNav] Dropdown closed');
+      devLog('[UnifiedNav] Dropdown closed');
     } else {
       dropdownDisplay.classList.add('active');
       dropdownOptions.classList.add('active');
-      console.info('[UnifiedNav] Dropdown opened');
+      devLog('[UnifiedNav] Dropdown opened');
     }
   }
 
@@ -2093,7 +2117,7 @@ class UnifiedNavigation {
     dropdownDisplay.addEventListener('click', (e) => {
       e.stopPropagation();
       e.preventDefault();
-      console.info('[UnifiedNav] Dropdown clicked');
+      devLog('[UnifiedNav] Dropdown clicked');
       console.info('[UnifiedNav] Current classes:', dropdownDisplay.className, dropdownOptions.className);
       this.toggleDropdown(dropdownDisplay, dropdownOptions);
     });
@@ -2110,7 +2134,7 @@ class UnifiedNavigation {
       return;
     }
 
-    const selectedRole = option.dataset.value as 'root' | 'admin' | 'employee';
+    const selectedRole = option.dataset['value'] as 'root' | 'admin' | 'employee';
     console.info('[UnifiedNav] Role switch dropdown changed to:', selectedRole);
 
     // Update display with icon and text - copy innerHTML from option
@@ -2173,7 +2197,7 @@ class UnifiedNavigation {
     }
 
     // Mark as initialized
-    dropdownDisplay.dataset.initialized = 'true';
+    dropdownDisplay.dataset['initialized'] = 'true';
 
     this.setupDropdownToggle(dropdownDisplay, dropdownOptions);
     this.setupRoleSelectionHandlers(dropdownDisplay, dropdownOptions);
@@ -2194,24 +2218,24 @@ class UnifiedNavigation {
         }
 
         // Mark as initialized
-        dropdownDisplay.dataset.initialized = 'true';
+        dropdownDisplay.dataset['initialized'] = 'true';
 
         // Toggle dropdown on click
         dropdownDisplay.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
-          console.info('[UnifiedNav] Dropdown clicked');
+          devLog('[UnifiedNav] Dropdown clicked');
 
           const isActive = dropdownDisplay.classList.contains('active');
 
           if (isActive) {
             dropdownDisplay.classList.remove('active');
             dropdownOptions.classList.remove('active');
-            console.info('[UnifiedNav] Dropdown closed');
+            devLog('[UnifiedNav] Dropdown closed');
           } else {
             dropdownDisplay.classList.add('active');
             dropdownOptions.classList.add('active');
-            console.info('[UnifiedNav] Dropdown opened');
+            devLog('[UnifiedNav] Dropdown opened');
           }
         });
 
@@ -2221,7 +2245,7 @@ class UnifiedNavigation {
           option.addEventListener('click', (e) => {
             void (async () => {
               e.stopPropagation();
-              const roleValue = (option as HTMLElement).dataset.value;
+              const roleValue = (option as HTMLElement).dataset['value'];
               if (roleValue === 'root' || roleValue === 'admin' || roleValue === 'employee') {
                 const selectedRole = roleValue;
                 console.info('[UnifiedNav] Admin view switching to role:', selectedRole);
@@ -2257,7 +2281,7 @@ class UnifiedNavigation {
     link.closest(SIDEBAR_ITEM_SELECTOR)?.classList.add('active');
 
     // Store active navigation
-    const navId = link.dataset.navId;
+    const navId = link.dataset['navId'];
     if (navId !== undefined && navId !== '') {
       localStorage.setItem('activeNavigation', navId);
 
@@ -2469,7 +2493,7 @@ class UnifiedNavigation {
       parentItem.classList.add('active');
 
       const parentLink = parentItem.querySelector<HTMLElement>('.sidebar-link');
-      const parentId = parentLink?.dataset.navId;
+      const parentId = parentLink?.dataset['navId'];
       if (parentId !== undefined && parentId !== '') {
         localStorage.setItem('openSubmenu', parentId);
       }
@@ -2988,7 +3012,7 @@ class UnifiedNavigation {
       const actionElement = target.closest<HTMLElement>('[data-action]');
 
       if (actionElement !== null) {
-        const action = actionElement.dataset.action ?? '';
+        const action = actionElement.dataset['action'] ?? '';
 
         switch (action) {
           case 'dismiss-role-banner':
@@ -2997,17 +3021,13 @@ class UnifiedNavigation {
             }
             break;
 
-          case 'navigate-blackboard':
-            window.location.href = '/blackboard';
-            break;
-
           case 'navigate-storage-upgrade':
             window.location.href = '/storage-upgrade';
             break;
 
           case 'toggle-submenu': {
             e.preventDefault();
-            const navId = actionElement.dataset.navId ?? '';
+            const navId = actionElement.dataset['navId'] ?? '';
             if (navId !== '') {
               (window as unknown as NavigationWindow).toggleSubmenu(e, navId);
             }
@@ -3125,7 +3145,7 @@ class UnifiedNavigation {
   private injectCSS(): void {
     // CSS is already loaded via <link> tags in HTML files
     // No dynamic injection needed anymore
-    console.info('[UnifiedNav] CSS loaded via HTML link tags');
+    devLog('[UnifiedNav] CSS loaded via HTML link tags');
   }
 
   // Storage Widget erstellen (nur für Root User)
@@ -3241,7 +3261,7 @@ class UnifiedNavigation {
 
 // CSS automatisch einbinden
 // CSS loading removed - now handled via static HTML link tags
-console.info('[UnifiedNav] CSS loaded via HTML link tags');
+devLog('[UnifiedNav] CSS loaded via HTML link tags');
 
 // Export to window for backwards compatibility
 

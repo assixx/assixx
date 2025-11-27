@@ -115,6 +115,7 @@ class CalendarState {
 
   private _departments: Department[] = [];
   private _teams: Team[] = [];
+  private _areas: { id: number; name: string }[] = [];
   private _employees: User[] = [];
 
   /**
@@ -143,6 +144,20 @@ class CalendarState {
    */
   public set teams(teams: Team[]) {
     this._teams = teams;
+  }
+
+  /**
+   * Get areas
+   */
+  public get areas(): { id: number; name: string }[] {
+    return this._areas;
+  }
+
+  /**
+   * Set areas
+   */
+  public set areas(areas: { id: number; name: string }[]) {
+    this._areas = areas;
   }
 
   /**

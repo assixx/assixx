@@ -22,9 +22,9 @@ export type PartialFields<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K
 // Form Data Types
 export interface FormField<T = string> {
   value: T;
-  error?: string;
-  touched?: boolean;
-  required?: boolean;
+  error?: string | undefined;
+  touched?: boolean | undefined;
+  required?: boolean | undefined;
 }
 
 export interface FormState<T extends Record<string, unknown>> {
@@ -40,8 +40,8 @@ export interface FormState<T extends Record<string, unknown>> {
 export interface PaginationParams {
   page: number;
   limit: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: string | undefined;
+  sortOrder?: 'asc' | 'desc' | undefined;
 }
 
 export interface PaginatedResponse<T> {
@@ -56,39 +56,39 @@ export interface PaginatedResponse<T> {
 export interface FilterOption {
   label: string;
   value: string | number;
-  count?: number;
+  count?: number | undefined;
 }
 
 export interface FilterGroup {
   name: string;
   key: string;
   options: FilterOption[];
-  multiple?: boolean;
+  multiple?: boolean | undefined;
 }
 
 // Table Types
 export interface TableColumn<T = unknown> {
   key: keyof T | string;
   label: string;
-  sortable?: boolean;
-  width?: string;
-  align?: 'left' | 'center' | 'right';
-  render?: (value: unknown, row: T) => string;
+  sortable?: boolean | undefined;
+  width?: string | undefined;
+  align?: 'left' | 'center' | 'right' | undefined;
+  render?: ((value: unknown, row: T) => string) | undefined;
 }
 
 // Navigation Types
 export interface NavItem {
   id: string;
   label: string;
-  icon?: string;
-  url?: string;
-  section?: string;
-  badge?: string;
-  badgeId?: string;
-  children?: NavItem[];
-  hasSubmenu?: boolean;
-  submenu?: NavItem[];
-  roles?: string[];
+  icon?: string | undefined;
+  url?: string | undefined;
+  section?: string | undefined;
+  badge?: string | undefined;
+  badgeId?: string | undefined;
+  children?: NavItem[] | undefined;
+  hasSubmenu?: boolean | undefined;
+  submenu?: NavItem[] | undefined;
+  roles?: string[] | undefined;
 }
 
 // Notification Types
@@ -96,9 +96,9 @@ export interface Notification {
   id: string;
   type: 'success' | 'error' | 'warning' | 'info';
   title: string;
-  message?: string;
-  duration?: number;
-  actions?: NotificationAction[];
+  message?: string | undefined;
+  duration?: number | undefined;
+  actions?: NotificationAction[] | undefined;
 }
 
 export interface NotificationAction {
@@ -110,9 +110,9 @@ export interface NotificationAction {
 export interface ChartDataset {
   label: string;
   data: number[];
-  backgroundColor?: string | string[];
-  borderColor?: string | string[];
-  borderWidth?: number;
+  backgroundColor?: string | string[] | undefined;
+  borderColor?: string | string[] | undefined;
+  borderWidth?: number | undefined;
 }
 
 export interface ChartConfig {
@@ -128,10 +128,10 @@ export interface UploadFile {
   name: string;
   size: number;
   type: string;
-  progress?: number;
+  progress?: number | undefined;
   status: 'pending' | 'uploading' | 'success' | 'error';
-  error?: string;
-  url?: string;
+  error?: string | undefined;
+  url?: string | undefined;
 }
 
 // WebSocket Types
@@ -145,5 +145,5 @@ export interface WSMessage<T = unknown> {
 export interface StorageItem<T = unknown> {
   key: string;
   value: T;
-  expiry?: number;
+  expiry?: number | undefined;
 }

@@ -369,6 +369,41 @@ function updateProgress(): void {
 }
 
 /**
+ * Convert answers map to array format for API submission
+ */
+function convertAnswersToArray(answerMap: AnswerMap): unknown[] {
+  const result: unknown[] = [];
+
+  for (const questionId in answerMap) {
+    // eslint-disable-next-line security/detect-object-injection -- questionId comes from controlled survey data
+    const answer = answerMap[questionId];
+    if (answer === undefined) continue;
+
+    if (answer.selectedOptions !== undefined) {
+      // Multiple choice
+      result.push({
+        questionId: Number(questionId),
+        answerOptions: answer.selectedOptions,
+      });
+    } else if (answer.answerOptions !== undefined) {
+      // Single choice
+      result.push({
+        questionId: Number(questionId),
+        answerOptions: answer.answerOptions,
+      });
+    } else {
+      // Other answer types (text, number, date)
+      result.push({
+        ...answer,
+        questionId: Number(questionId),
+      });
+    }
+  }
+
+  return result;
+}
+
+/**
  * Submit survey response
  */
 export async function handleSubmit(e: Event): Promise<void> {
@@ -389,41 +424,11 @@ export async function handleSubmit(e: Event): Promise<void> {
     return;
   }
 
-  // Convert answers to array format
-  const answersArray: unknown[] = [];
-
-  for (const questionId in answers) {
-    // eslint-disable-next-line security/detect-object-injection -- questionId comes from controlled survey data
-    const answer = answers[questionId];
-
-    if (answer.selectedOptions !== undefined) {
-      // Multiple choice
-      answersArray.push({
-        questionId: Number(questionId),
-        answerOptions: answer.selectedOptions,
-      });
-    } else if (answer.answerOptions !== undefined) {
-      // Single choice
-      answersArray.push({
-        questionId: Number(questionId),
-        answerOptions: answer.answerOptions,
-      });
-    } else {
-      // Other answer types (text, number, date)
-      answersArray.push({
-        ...answer,
-        questionId: Number(questionId),
-      });
-    }
-  }
-
+  const answersArray = convertAnswersToArray(answers);
   const success = await submitResponse(currentSurvey.id, answersArray);
 
   if (success) {
-    // Show toast notification
     showSuccessAlert('Vielen Dank für Ihre Teilnahme!');
-
-    // Close modal and reload
     closeModal();
     setTimeout(() => {
       window.location.reload();

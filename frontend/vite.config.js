@@ -383,16 +383,16 @@ export default defineConfig({
         if (!existsSync(stylesDir)) mkdirSync(stylesDir, { recursive: true });
         if (!existsSync(fontsDir)) mkdirSync(fontsDir, { recursive: true });
 
-        // Copy critical scripts
-        const criticalScriptsDir = resolve(distDir, 'scripts/critical');
-        if (!existsSync(criticalScriptsDir)) mkdirSync(criticalScriptsDir, { recursive: true });
+        // TEMPORARILY DISABLED FOR TESTING - sidebar-init.js might not be needed
+        // const criticalScriptsDir = resolve(distDir, 'scripts/critical');
+        // if (!existsSync(criticalScriptsDir)) mkdirSync(criticalScriptsDir, { recursive: true });
 
-        const sidebarInitSource = resolve(__dirname, 'src/scripts/critical/sidebar-init.js');
-        const sidebarInitDest = resolve(criticalScriptsDir, 'sidebar-init.js');
-        if (existsSync(sidebarInitSource)) {
-          copyFileSync(sidebarInitSource, sidebarInitDest);
-          console.info('✅ Copied sidebar-init.js to dist/scripts/critical');
-        }
+        // const sidebarInitSource = resolve(__dirname, 'src/scripts/critical/sidebar-init.js');
+        // const sidebarInitDest = resolve(criticalScriptsDir, 'sidebar-init.js');
+        // if (existsSync(sidebarInitSource)) {
+        //   copyFileSync(sidebarInitSource, sidebarInitDest);
+        //   console.info('✅ Copied sidebar-init.js to dist/scripts/critical');
+        // }
 
         // Copy purify.min.js to dist/js
         const jsDir = resolve(distDir, 'js');

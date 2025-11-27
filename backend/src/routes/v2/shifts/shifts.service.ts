@@ -162,7 +162,7 @@ function parseTimeFromDateTime(
   dateTimeValue: string | Date | undefined,
   fieldName: string,
 ): string | undefined {
-  if (!dateTimeValue) {
+  if (dateTimeValue === undefined) {
     return undefined;
   }
 
@@ -187,7 +187,7 @@ function parseTimeFromDateTime(
  * @returns Formatted date string or undefined
  */
 function parseDateToString(dateValue: string | Date | undefined): string | undefined {
-  if (!dateValue) {
+  if (dateValue === undefined) {
     return undefined;
   }
 
@@ -215,18 +215,18 @@ function dbShiftToApi(dbShift: DbShiftData): ShiftApiResponse {
 
   // Extract and format times
   const startTime = parseTimeFromDateTime(dbShift.start_time, 'start_time');
-  if (startTime) {
+  if (startTime !== undefined && startTime !== '') {
     apiShift.startTime = startTime;
   }
 
   const endTime = parseTimeFromDateTime(dbShift.end_time, 'end_time');
-  if (endTime) {
+  if (endTime !== undefined && endTime !== '') {
     apiShift.endTime = endTime;
   }
 
   // Format date
   const formattedDate = parseDateToString(dbShift.date);
-  if (formattedDate) {
+  if (formattedDate !== undefined && formattedDate !== '') {
     apiShift.date = formattedDate;
   }
 
@@ -647,14 +647,26 @@ class ShiftsService {
         throw new ServiceError('FORBIDDEN', 'You can only request swaps for your own shifts');
       }
 
-      const dbData = {
+      const dbData: {
+        shift_id: number;
+        requested_by: number;
+        requested_with?: number;
+        reason?: string;
+        tenant_id: number;
+        status: string;
+      } = {
         shift_id: data.shiftId,
         requested_by: userId,
-        requested_with: data.requestedWithUserId,
-        reason: data.reason,
         tenant_id: tenantId,
         status: 'pending',
       };
+
+      if (data.requestedWithUserId !== undefined) {
+        dbData.requested_with = data.requestedWithUserId;
+      }
+      if (data.reason !== undefined) {
+        dbData.reason = data.reason;
+      }
 
       const requestId = await shiftModel.createSwapRequest(dbData);
 

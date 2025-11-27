@@ -67,7 +67,7 @@ export function displayRootUsers(users: RootUser[]): void {
   setHTML(
     container,
     `
-    <div class="overflow-x-auto">
+    <div class="table-responsive">
       <table class="data-table data-table--hover data-table--striped">
         <thead>
           <tr>

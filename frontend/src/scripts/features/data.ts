@@ -99,9 +99,11 @@ export const featureCategories: Record<string, FeatureCategory> = {
  * Parse JWT token to get tenant ID
  * Supports both snake_case (tenant_id) and camelCase (tenantId)
  */
-function parseJwt(token: string): { tenant_id?: number; tenantId?: number } | null {
+function parseJwt(token: string): { tenant_id?: number | undefined; tenantId?: number | undefined } | null {
   try {
-    return JSON.parse(atob(token.split('.')[1])) as { tenant_id?: number; tenantId?: number };
+    const tokenPart = token.split('.')[1];
+    if (tokenPart === undefined) return null;
+    return JSON.parse(atob(tokenPart)) as { tenant_id?: number | undefined; tenantId?: number | undefined };
   } catch {
     return null;
   }

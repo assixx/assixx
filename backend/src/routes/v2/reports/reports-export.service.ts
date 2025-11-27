@@ -22,8 +22,8 @@ async function getReportDataByType(
     case 'overview':
       return await getOverviewReport({
         tenantId: params.tenantId,
-        dateFrom: params.filters.dateFrom,
-        dateTo: params.filters.dateTo,
+        ...(params.filters.dateFrom !== undefined && { dateFrom: params.filters.dateFrom }),
+        ...(params.filters.dateTo !== undefined && { dateTo: params.filters.dateTo }),
       });
     case 'employees':
       return await getEmployeeReport({
@@ -34,8 +34,8 @@ async function getReportDataByType(
       return {
         departments: await getDepartmentReport({
           tenantId: params.tenantId,
-          dateFrom: params.filters.dateFrom,
-          dateTo: params.filters.dateTo,
+          ...(params.filters.dateFrom !== undefined && { dateFrom: params.filters.dateFrom }),
+          ...(params.filters.dateTo !== undefined && { dateTo: params.filters.dateTo }),
         }),
       };
     case 'shifts':
@@ -46,23 +46,27 @@ async function getReportDataByType(
     case 'kvp':
       return await getKvpReport({
         tenantId: params.tenantId,
-        dateFrom: params.filters.dateFrom,
-        dateTo: params.filters.dateTo,
+        ...(params.filters.dateFrom !== undefined && { dateFrom: params.filters.dateFrom }),
+        ...(params.filters.dateTo !== undefined && { dateTo: params.filters.dateTo }),
       });
     case 'attendance':
       return getAttendanceReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom ?? getDefaultDateFrom(),
         dateTo: params.filters.dateTo ?? getDefaultDateTo(),
-        departmentId: params.filters.departmentId,
-        teamId: params.filters.teamId,
+        ...(params.filters.departmentId !== undefined && {
+          departmentId: params.filters.departmentId,
+        }),
+        ...(params.filters.teamId !== undefined && { teamId: params.filters.teamId }),
       });
     case 'compliance':
       return getComplianceReport({
         tenantId: params.tenantId,
         dateFrom: params.filters.dateFrom ?? getDefaultDateFrom(),
         dateTo: params.filters.dateTo ?? getDefaultDateTo(),
-        departmentId: params.filters.departmentId,
+        ...(params.filters.departmentId !== undefined && {
+          departmentId: params.filters.departmentId,
+        }),
       });
     default:
       throw new ServiceError('Invalid report type', 'INVALID_REPORT_TYPE', 400);
@@ -86,7 +90,7 @@ function convertToCSV(data: Record<string, unknown>): Buffer {
   const flattenObject = (obj: Record<string, unknown>, prefix: string = ''): string[] => {
     const rows: string[] = [];
     for (const [key, value] of Object.entries(obj)) {
-      const fullKey = prefix ? `${prefix}.${key}` : key;
+      const fullKey = prefix !== '' ? `${prefix}.${key}` : key;
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
         rows.push(...flattenObject(value as Record<string, unknown>, fullKey));
       } else if (Array.isArray(value)) {
@@ -115,7 +119,8 @@ function formatReportForExport(
   reportType: string,
   format: string,
 ): ExportResult {
-  const timestamp = new Date().toISOString().split('T')[0];
+  const dateParts = new Date().toISOString().split('T');
+  const timestamp = dateParts[0] ?? 'unknown';
 
   switch (format) {
     case 'pdf':

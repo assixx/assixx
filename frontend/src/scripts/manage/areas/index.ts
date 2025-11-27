@@ -133,7 +133,7 @@ class AreasManager {
       // Handle edit area (from table)
       const editBtn = target.closest<HTMLElement>('[data-action="edit-area"]');
       if (editBtn) {
-        const areaId = editBtn.dataset.areaId;
+        const areaId = editBtn.dataset['areaId'];
         if (areaId !== undefined) {
           this.editArea(Number.parseInt(areaId, 10));
         }
@@ -143,7 +143,7 @@ class AreasManager {
       // Handle edit from search results
       const searchResultItem = target.closest<HTMLElement>('[data-action="edit-from-search"]');
       if (searchResultItem) {
-        const areaId = searchResultItem.dataset.areaId;
+        const areaId = searchResultItem.dataset['areaId'];
         if (areaId !== undefined) {
           closeSearchResults();
           this.editArea(Number.parseInt(areaId, 10));
@@ -154,7 +154,7 @@ class AreasManager {
       // Handle delete area
       const deleteBtn = target.closest<HTMLElement>('[data-action="delete-area"]');
       if (deleteBtn) {
-        const areaId = deleteBtn.dataset.areaId;
+        const areaId = deleteBtn.dataset['areaId'];
         if (areaId !== undefined) {
           this.showConfirmDeleteModal(Number.parseInt(areaId, 10));
         }
@@ -298,7 +298,7 @@ class AreasManager {
       button.classList.add('active');
 
       // Filter areas by status
-      const status = button.dataset.status as 'active' | 'inactive' | 'all';
+      const status = button.dataset['status'] as 'active' | 'inactive' | 'all';
       this.filterByStatus(status);
     });
   }
@@ -443,7 +443,7 @@ class AreasManager {
         errorObj.message?.includes('Abhängigkeiten') === true
       ) {
         const details = errorObj.details ?? {};
-        const totalDependencies = typeof details.totalDependencies === 'number' ? details.totalDependencies : 0;
+        const totalDependencies = typeof details['totalDependencies'] === 'number' ? details['totalDependencies'] : 0;
         this.showForceDeleteWarning(id, totalDependencies, details);
       } else {
         this.handleDeleteError(error);

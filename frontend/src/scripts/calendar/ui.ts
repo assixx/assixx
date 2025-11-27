@@ -144,7 +144,7 @@ export function createEventItem(
 ): HTMLElement {
   const eventItem = document.createElement('div');
   eventItem.className = 'event-item';
-  eventItem.dataset.id = event.id.toString();
+  eventItem.dataset['id'] = event.id.toString();
 
   const dateDiv = createEventDateSection(event);
   eventItem.append(dateDiv);
@@ -197,7 +197,7 @@ export function displayUpcomingEvents(
 function createDepartmentOption(dept: { id: number; name: string }, _action: string): HTMLDivElement {
   const option = document.createElement('div');
   option.className = 'dropdown__option'; // Design System BEM class
-  option.dataset.value = dept.id.toString();
+  option.dataset['value'] = dept.id.toString();
   option.textContent = dept.name;
   // data-action not needed - handled by initDropdown()
   return option;
@@ -452,7 +452,7 @@ export function loadTeamsForDepartment(departmentId: number): void {
   departmentTeams.forEach((team) => {
     const option = document.createElement('div');
     option.className = 'dropdown__option'; // Design System BEM class
-    option.dataset.value = team.id.toString();
+    option.dataset['value'] = team.id.toString();
     option.textContent = team.name;
     // data-action not needed - handled by initDropdown()
     teamDropdown.append(option);

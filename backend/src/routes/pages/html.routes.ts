@@ -5,8 +5,8 @@
 import express, { Request, RequestHandler, Response, Router } from 'express';
 import path from 'path';
 
-import { authenticateToken, requireRole } from '../../middleware/auth.js';
 import { rateLimiter } from '../../middleware/rateLimiter.js';
+import { authenticateV2, requireRoleV2 } from '../../middleware/v2/auth.middleware.js';
 
 const router: Router = express.Router();
 
@@ -40,30 +40,36 @@ router.get('/pages/signup', rateLimiter.public, (_req: Request, res: Response) =
 }); // Redirect old URL
 
 // Development only - Design System Style Guide
-if (process.env.NODE_ENV !== 'production') {
+if (process.env['NODE_ENV'] !== 'production') {
   router.get('/design-standards', rateLimiter.public, servePage('design-standards'));
 }
 
 // Authenticated pages - All users
-router.get('/dashboard', rateLimiter.authenticated, authenticateToken, servePage('dashboard'));
-router.get('/profile', rateLimiter.authenticated, authenticateToken, servePage('profile'));
+router.get('/dashboard', rateLimiter.authenticated, authenticateV2, servePage('dashboard'));
+router.get('/profile', rateLimiter.authenticated, authenticateV2, servePage('profile'));
 router.get(
   '/profile-picture',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('profile-picture'),
 );
-router.get('/settings', rateLimiter.authenticated, authenticateToken, servePage('settings'));
-router.get('/chat', rateLimiter.authenticated, authenticateToken, servePage('chat'));
-router.get('/blackboard', rateLimiter.authenticated, authenticateToken, servePage('blackboard'));
-router.get('/calendar', rateLimiter.authenticated, authenticateToken, servePage('calendar'));
-router.get('/kvp', rateLimiter.authenticated, authenticateToken, servePage('kvp'));
-router.get('/kvp-detail', rateLimiter.authenticated, authenticateToken, servePage('kvp-detail'));
+router.get('/settings', rateLimiter.authenticated, authenticateV2, servePage('settings'));
+router.get('/chat', rateLimiter.authenticated, authenticateV2, servePage('chat'));
+router.get('/blackboard', rateLimiter.authenticated, authenticateV2, servePage('blackboard'));
+router.get('/calendar', rateLimiter.authenticated, authenticateV2, servePage('calendar'));
+router.get('/kvp', rateLimiter.authenticated, authenticateV2, servePage('kvp'));
+router.get('/kvp-detail', rateLimiter.authenticated, authenticateV2, servePage('kvp-detail'));
+router.get(
+  '/blackboard-detail',
+  rateLimiter.authenticated,
+  authenticateV2,
+  servePage('blackboard-detail'),
+);
 // Redirect main documents page to explorer
 router.get(
   '/documents',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   (_req: Request, res: Response) => {
     res.redirect('/documents-explorer');
   },
@@ -72,7 +78,7 @@ router.get(
 router.get(
   '/documents-personal',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   (_req: Request, res: Response) => {
     res.redirect('/documents-explorer/personal');
   },
@@ -80,7 +86,7 @@ router.get(
 router.get(
   '/documents-payroll',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   (_req: Request, res: Response) => {
     res.redirect('/documents-explorer/payroll');
   },
@@ -88,7 +94,7 @@ router.get(
 router.get(
   '/documents-company',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   (_req: Request, res: Response) => {
     res.redirect('/documents-explorer/company');
   },
@@ -96,7 +102,7 @@ router.get(
 router.get(
   '/documents-department',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   (_req: Request, res: Response) => {
     res.redirect('/documents-explorer/department');
   },
@@ -104,7 +110,7 @@ router.get(
 router.get(
   '/documents-team',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   (_req: Request, res: Response) => {
     res.redirect('/documents-explorer/team');
   },
@@ -118,14 +124,14 @@ router.get('/documents-search', (_req: Request, res: Response) => {
 router.get(
   '/documents-explorer',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('documents-explorer'),
 );
 // Documents Explorer with category parameter (for client-side routing)
 router.get(
   '/documents-explorer/:category',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('documents-explorer'),
 );
 
@@ -133,63 +139,63 @@ router.get(
 router.get(
   '/employee-dashboard',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('employee-dashboard'),
 );
 router.get(
   '/employee-profile',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('employee-profile'),
 );
 router.get(
   '/employee-documents',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('employee-documents'),
 );
 router.get(
   '/salary-documents',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('salary-documents'),
 );
 router.get(
   '/survey-employee',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('survey-employee'),
 );
-router.get('/shifts', rateLimiter.authenticated, authenticateToken, servePage('shifts'));
+router.get('/shifts', rateLimiter.authenticated, authenticateV2, servePage('shifts'));
 
 // Admin pages
 router.get(
   '/admin-dashboard',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('admin-dashboard'),
 );
 router.get(
   '/admin-config',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('admin-config'),
 );
 router.get(
   '/org-management',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('org-management'),
 );
 // Redirect old upload page to explorer (upload is now integrated)
 router.get(
   '/document-upload',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   (_req: Request, res: Response) => {
     res.redirect('/documents-explorer');
   },
@@ -197,98 +203,98 @@ router.get(
 router.get(
   '/archived-employees',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('archived-employees'),
 );
 router.get(
   '/manage-departments',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('manage-departments'),
 );
 router.get(
   '/manage-employees',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('manage-employees'),
 );
 router.get(
   '/manage-areas',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('manage-areas'),
 );
 router.get(
   '/manage-teams',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('manage-teams'),
 );
 router.get(
   '/manage-machines',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('manage-machines'),
 );
 router.get(
   '/admin-profile',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('admin-profile'),
 );
 router.get(
   '/manage-admins',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('manage-admins'),
 );
 router.get(
   '/manage-department-groups',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('manage-department-groups'),
 );
 router.get(
   '/storage-upgrade',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('storage-upgrade'),
 );
 router.get(
   '/feature-management',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('feature-management'),
 );
 router.get(
   '/survey-admin',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('survey-admin'),
 );
 router.get(
   '/survey-results',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('admin') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('admin') as RequestHandler,
   servePage('survey-results'),
 );
 router.get(
   '/survey-details',
   rateLimiter.authenticated,
-  authenticateToken,
+  authenticateV2,
   servePage('survey-details'),
 );
 
@@ -296,55 +302,55 @@ router.get(
 router.get(
   '/root-dashboard',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('root') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
   servePage('root-dashboard'),
 );
 router.get(
   '/root-features',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('root') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
   servePage('root-features'),
 );
 router.get(
   '/root-profile',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('root') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
   servePage('root-profile'),
 );
 router.get(
   '/manage-root',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('root') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
   servePage('manage-root'),
 );
 router.get(
   '/account-settings',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('root') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
   servePage('account-settings'),
 );
 router.get(
   '/tenant-deletion-status',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('root') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
   servePage('tenant-deletion-status'),
 );
 router.get(
   '/logs',
   rateLimiter.admin,
-  authenticateToken,
-  requireRole('root') as RequestHandler,
+  authenticateV2,
+  requireRoleV2('root') as RequestHandler,
   servePage('logs'),
 );
 
 // Development only pages
-if (process.env.NODE_ENV !== 'production') {
+if (process.env['NODE_ENV'] !== 'production') {
   router.get('/api-test', rateLimiter.public, servePage('api-test'));
   router.get('/test-db', rateLimiter.public, servePage('test-db'));
   router.get('/debug-dashboard', rateLimiter.public, servePage('debug-dashboard'));

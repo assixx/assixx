@@ -50,10 +50,10 @@ export class StorageUpgradeController {
       }
 
       const buttonEl = button as HTMLElement;
-      const action = buttonEl.dataset.action;
+      const action = buttonEl.dataset['action'];
 
       if (action === 'upgrade-storage') {
-        const plan = buttonEl.dataset.plan;
+        const plan = buttonEl.dataset['plan'];
         if (plan !== undefined) {
           void this.upgradeStorage(plan);
         }

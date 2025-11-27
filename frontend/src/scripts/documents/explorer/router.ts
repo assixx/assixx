@@ -99,6 +99,7 @@ class Router {
       department: 'Abteilung',
       company: 'Firma',
       payroll: 'Gehaltsabrechnungen',
+      blackboard: 'Schwarzes Brett',
     };
 
     // Safe: category is typed as DocumentCategory union, always returns valid string

@@ -76,7 +76,12 @@ export const CreateEventBodySchema = z
     startTime: z.iso.datetime({ message: 'Valid start time is required' }),
     endTime: z.iso.datetime({ message: 'Valid end time is required' }),
     allDay: z.boolean().optional(),
-    orgLevel: OrgLevelSchema,
+    // Multi-organization support - arrays of IDs
+    departmentIds: z.array(z.number().int().positive()).optional().default([]),
+    teamIds: z.array(z.number().int().positive()).optional().default([]),
+    areaIds: z.array(z.number().int().positive()).optional().default([]),
+    // Legacy fields (backwards compatibility)
+    orgLevel: OrgLevelSchema.optional(),
     orgId: IdSchema.optional(),
     description: z.string().optional(),
     location: z.string().optional(),
@@ -86,23 +91,11 @@ export const CreateEventBodySchema = z
     attendeeIds: z.array(IdSchema).optional(),
   })
   .refine(
-    (data: { endTime: string; startTime: string }) =>
+    (data: { startTime: string; endTime: string }): boolean =>
       new Date(data.endTime) > new Date(data.startTime),
     {
       message: 'End time must be after start time',
       path: ['endTime'],
-    },
-  )
-  .refine(
-    (data: { orgLevel: string; orgId?: number }) => {
-      if (data.orgLevel === 'department' || data.orgLevel === 'team' || data.orgLevel === 'area') {
-        return data.orgId !== undefined;
-      }
-      return true;
-    },
-    {
-      message: 'Organization ID is required for department/team/area events',
-      path: ['orgId'],
     },
   );
 
@@ -115,6 +108,11 @@ export const UpdateEventBodySchema = z
     startTime: z.iso.datetime().optional(),
     endTime: z.iso.datetime().optional(),
     allDay: z.boolean().optional(),
+    // Multi-organization support - arrays of IDs
+    departmentIds: z.array(z.number().int().positive()).optional(),
+    teamIds: z.array(z.number().int().positive()).optional(),
+    areaIds: z.array(z.number().int().positive()).optional(),
+    // Legacy fields (backwards compatibility)
     orgLevel: OrgLevelSchema.optional(),
     orgId: IdSchema.optional(),
     description: z.string().optional(),
@@ -125,7 +123,7 @@ export const UpdateEventBodySchema = z
     status: UpdateEventStatusSchema.optional(),
   })
   .refine(
-    (data: { startTime?: string; endTime?: string }) => {
+    (data: { startTime?: string | undefined; endTime?: string | undefined }): boolean => {
       if (data.startTime !== undefined && data.endTime !== undefined) {
         return new Date(data.endTime) > new Date(data.startTime);
       }

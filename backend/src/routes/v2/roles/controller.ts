@@ -50,7 +50,7 @@ class RolesController {
     // Validation is now handled by Zod middleware in routes
 
     try {
-      const roleId = req.params.id as RoleName;
+      const roleId = req.params['id'] as RoleName;
       const role = rolesService.getRoleById(roleId);
 
       res.json({

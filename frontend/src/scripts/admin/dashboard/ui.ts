@@ -175,7 +175,7 @@ export class DashboardUI {
     const levelText = this.getOrgLevelText(orgLevel);
 
     const eventItem = createElement('div', { className: 'event-item' });
-    eventItem.dataset.id = event.id.toString();
+    eventItem.dataset['id'] = event.id.toString();
 
     // Event date section
     const eventDate = createElement('div', { className: 'event-date' });
@@ -234,7 +234,7 @@ export class DashboardUI {
   }
 }
 
-// BlackboardUI class removed - using shared blackboard-widget.js instead
+// BlackboardUI class removed - using shared blackboard/widget.ts instead
 // The widget is initialized directly in admin-dashboard.ts
 
 /**

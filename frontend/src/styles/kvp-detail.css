@@ -11,7 +11,9 @@
    ======================================== */
 
 @import "../design-system/primitives/avatar/avatar.css";
+@import "../design-system/primitives/badges/badge.base.css";
 @import "../design-system/primitives/badges/badge.kvp.css";
+@import "../design-system/primitives/badges/badge.count.css";
 @import "../design-system/primitives/choice-cards/choice-card.base.css";
 
 /* ========================================
@@ -156,6 +158,7 @@
   /* Text styling */
   line-height: 1.6;
   color: rgb(255 255 255 / 90%);
+  overflow-wrap: anywhere;
 
   background: var(--glass-bg);
   backdrop-filter: var(--glass-backdrop);

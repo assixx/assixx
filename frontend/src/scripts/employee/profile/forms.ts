@@ -294,12 +294,12 @@ function handlePasswordChangeError(error: unknown): void {
   // Handle Zod validation errors with details array
   if (errorObj.details !== undefined && errorObj.details.length > 0) {
     const firstError = errorObj.details[0];
-    if (firstError.field === 'newPassword') {
+    if (firstError?.field === 'newPassword') {
       highlightPasswordFieldError('new_password', 'new-password-error', firstError.message);
       showErrorAlert(firstError.message);
       return;
     }
-    if (firstError.field === 'confirmPassword') {
+    if (firstError?.field === 'confirmPassword') {
       highlightPasswordFieldError('confirm_password', 'password-mismatch-error', firstError.message);
       showErrorAlert(firstError.message);
       return;
@@ -380,7 +380,9 @@ function getUserContextInputs(
   }
   if (emailInput !== null && emailInput.value !== '') {
     const emailLocalPart = emailInput.value.split('@')[0];
-    userInputs.push(emailLocalPart.toLowerCase());
+    if (emailLocalPart !== undefined) {
+      userInputs.push(emailLocalPart.toLowerCase());
+    }
   }
 
   return userInputs;

@@ -11,9 +11,9 @@
 // Base API Response
 export interface ApiResponse<T = unknown> {
   success: boolean;
-  data?: T;
-  error?: string;
-  message?: string;
+  data?: T | undefined;
+  error?: string | undefined;
+  message?: string | undefined;
 }
 
 // User Types
@@ -21,39 +21,39 @@ export interface User {
   id: number;
   username: string;
   email: string;
-  firstName?: string;
-  lastName?: string;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
   role: 'admin' | 'employee' | 'root';
   tenantId: number;
-  profilePicture?: string;
-  phone?: string;
-  position?: string;
-  birthdate?: string;
+  profilePicture?: string | undefined;
+  phone?: string | undefined;
+  position?: string | undefined;
+  birthdate?: string | undefined;
   isActive: boolean;
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
   // Additional fields that may exist
-  employeeId?: string;
-  employeeNumber?: string; // Employee number (used in some modules)
-  department?: string;
-  departmentId?: number;
-  departmentName?: string;
-  team?: string;
-  teamId?: number;
-  teamName?: string;
-  hireDate?: string;
-  street?: string;
-  houseNumber?: string;
-  postalCode?: string;
-  city?: string;
-  profilePictureUrl?: string;
-  tenant?: Tenant;
+  employeeId?: string | undefined;
+  employeeNumber?: string | undefined; // Employee number (used in some modules)
+  department?: string | undefined;
+  departmentId?: number | undefined;
+  departmentName?: string | undefined;
+  team?: string | undefined;
+  teamId?: number | undefined;
+  teamName?: string | undefined;
+  hireDate?: string | undefined;
+  street?: string | undefined;
+  houseNumber?: string | undefined;
+  postalCode?: string | undefined;
+  city?: string | undefined;
+  profilePictureUrl?: string | undefined;
+  tenant?: Tenant | undefined;
   // Availability fields (used in shifts/employees modules)
-  availabilityStatus?: string;
-  availabilityStart?: string;
-  availabilityEnd?: string;
-  availabilityNotes?: string;
+  availabilityStatus?: string | undefined;
+  availabilityStart?: string | undefined;
+  availabilityEnd?: string | undefined;
+  availabilityNotes?: string | undefined;
 }
 
 // Auth Types
@@ -71,7 +71,7 @@ export interface JWTPayload {
   id: number;
   username: string;
   role: string;
-  activeRole?: string;
+  activeRole?: string | undefined;
   tenantId: number;
   iat: number;
   exp: number;
@@ -83,11 +83,11 @@ export interface Tenant {
   companyName: string;
   subdomain: string;
   email: string;
-  phone?: string;
-  address?: string;
-  city?: string;
-  postalCode?: string;
-  country?: string;
+  phone?: string | undefined;
+  address?: string | undefined;
+  city?: string | undefined;
+  postalCode?: string | undefined;
+  country?: string | undefined;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -100,7 +100,7 @@ export interface Feature {
   description: string;
   category: string;
   basePrice: number | string;
-  maxUsers?: number;
+  maxUsers?: number | undefined;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -110,10 +110,10 @@ export interface TenantFeature {
   tenantId: number;
   featureCode: string;
   isAvailable: boolean;
-  priceOverride?: number;
-  config?: Record<string, unknown>;
-  activatedAt?: string;
-  deactivatedAt?: string;
+  priceOverride?: number | undefined;
+  config?: Record<string, unknown> | undefined;
+  activatedAt?: string | undefined;
+  deactivatedAt?: string | undefined;
 }
 
 // Document Types
@@ -121,49 +121,69 @@ export interface Document {
   id: number;
   tenantId: number;
   uploadedBy: number;
-  uploadedByName?: string;
-  uploaderName?: string;
-  targetUserId?: number;
-  targetDepartmentId?: number;
-  targetTeamId?: number;
+  uploadedByName?: string | undefined;
+  uploaderName?: string | undefined;
+  targetUserId?: number | undefined;
+  targetDepartmentId?: number | undefined;
+  targetTeamId?: number | undefined;
   category: string;
-  scope?: 'company' | 'department' | 'team' | 'personal';
+  scope?: 'company' | 'department' | 'team' | 'personal' | undefined;
   filePath: string;
   filename: string;
-  storedFilename?: string;
+  storedFilename?: string | undefined;
   fileSize: number;
   fileType: string;
-  mimeType?: string;
-  description?: string;
-  tags?: string[];
-  isRead?: boolean;
-  isArchived?: boolean;
+  mimeType?: string | undefined;
+  description?: string | undefined;
+  tags?: string[] | undefined;
+  isRead?: boolean | undefined;
+  isArchived?: boolean | undefined;
   isDeleted: boolean;
-  recipientId?: number;
-  downloadUrl?: string;
-  previewUrl?: string;
+  recipientId?: number | undefined;
+  downloadUrl?: string | undefined;
+  previewUrl?: string | undefined;
   createdAt: string;
   updatedAt: string;
 }
 
-// Blackboard Types
+// Blackboard Types (API v2 - matches backend/src/routes/v2/blackboard/blackboard.service.ts)
 export interface BlackboardEntry {
   id: number;
   tenantId: number;
-  createdBy: number;
-  createdByName?: string;
   title: string;
   content: string;
-  category: string;
-  priority: 'low' | 'medium' | 'high';
-  tags?: string[];
-  color?: string;
-  isPinned: boolean;
-  isActive: boolean;
-  validFrom?: string;
-  validUntil?: string;
+  orgLevel: 'company' | 'department' | 'team';
+  orgId: number | null;
+  authorId: number;
+  expiresAt?: string | null | undefined;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  color: 'yellow' | 'blue' | 'green' | 'red' | 'orange' | 'pink';
+  status: 'active' | 'archived';
   createdAt: string;
   updatedAt: string;
+
+  // Extended fields from joins
+  authorName?: string | undefined;
+  authorFirstName?: string | undefined;
+  authorLastName?: string | undefined;
+  authorFullName?: string | undefined;
+  isConfirmed?: boolean | undefined;
+  attachmentCount?: number | undefined;
+  attachments?:
+    | {
+        id: number;
+        entryId: number;
+        filename: string;
+        originalName: string;
+        fileSize: number;
+        mimeType: string;
+        filePath: string;
+        uploadedBy: number;
+        uploadedAt: string;
+        uploaderName?: string | undefined;
+      }[]
+    | undefined;
+  tags?: string[] | undefined;
 }
 
 // Chat Types
@@ -171,12 +191,12 @@ export interface ChatMessage {
   id: number;
   tenantId: number;
   senderId: number;
-  receiverId?: number;
+  receiverId?: number | undefined;
   message: string;
   isRead: boolean;
   createdAt: string;
-  sender?: User;
-  receiver?: User;
+  sender?: User | undefined;
+  receiver?: User | undefined;
 }
 
 // Calendar Types
@@ -185,15 +205,15 @@ export interface CalendarEvent {
   tenantId: number;
   createdBy: number;
   title: string;
-  description?: string;
+  description?: string | undefined;
   startDate: string;
   endDate: string;
   allDay: boolean;
-  location?: string;
+  location?: string | undefined;
   category: string;
-  color?: string;
-  recurring?: boolean;
-  recurrencePattern?: string;
+  color?: string | undefined;
+  recurring?: boolean | undefined;
+  recurrencePattern?: string | undefined;
   createdAt: string;
   updatedAt: string;
 }
@@ -208,10 +228,10 @@ export interface Shift {
   breakDuration: number;
   shiftType: string;
   status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
-  notes?: string;
+  notes?: string | undefined;
   createdAt: string;
   updatedAt: string;
-  employee?: User;
+  employee?: User | undefined;
 }
 
 // KVP Types
@@ -223,12 +243,12 @@ export interface KVPIdea {
   description: string;
   category: string;
   status: 'submitted' | 'under_review' | 'approved' | 'rejected' | 'implemented';
-  pointsAwarded?: number;
-  implementationDate?: string;
-  savingsAmount?: number;
+  pointsAwarded?: number | undefined;
+  implementationDate?: string | undefined;
+  savingsAmount?: number | undefined;
   createdAt: string;
   updatedAt: string;
-  submitter?: User;
+  submitter?: User | undefined;
 }
 
 // Survey Types
@@ -237,12 +257,12 @@ export interface Survey {
   tenantId: number;
   createdBy: number;
   title: string;
-  description?: string;
+  description?: string | undefined;
   category: string;
   isAnonymous: boolean;
   isActive: boolean;
   startDate: string;
-  endDate?: string;
+  endDate?: string | undefined;
   createdAt: string;
   updatedAt: string;
 }
@@ -252,7 +272,7 @@ export interface SurveyQuestion {
   surveyId: number;
   questionText: string;
   questionType: 'multiple_choice' | 'text' | 'rating' | 'yes_no';
-  options?: string[];
+  options?: string[] | undefined;
   isRequired: boolean;
   orderPosition: number;
 }

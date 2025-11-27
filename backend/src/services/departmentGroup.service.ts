@@ -171,11 +171,14 @@ class DepartmentGroupService {
       );
 
       directDepts.forEach((dept: DepartmentPartialResult) => {
-        departments.set(dept.id, {
+        const departmentData: Department = {
           id: dept.id,
           name: dept.name,
-          description: dept.description ?? undefined,
-        });
+        };
+        if (dept.description !== null) {
+          departmentData.description = dept.description;
+        }
+        departments.set(dept.id, departmentData);
       });
 
       // Get departments from subgroups if requested
@@ -227,13 +230,65 @@ class DepartmentGroupService {
     return [...departments.values()];
   }
 
+  /** Build assignment map from department-group memberships */
+  private buildAssignmentMap(
+    assignments: DepartmentWithGroupIdResult[],
+  ): Map<number, Department[]> {
+    const assignmentMap = new Map<number, Department[]>();
+    assignments.forEach((row: DepartmentWithGroupIdResult) => {
+      if (!assignmentMap.has(row.group_id)) {
+        assignmentMap.set(row.group_id, []);
+      }
+      const departmentData: Department = { id: row.dept_id, name: row.dept_name };
+      if (row.dept_desc !== null) {
+        departmentData.description = row.dept_desc;
+      }
+      assignmentMap.get(row.group_id)?.push(departmentData);
+    });
+    return assignmentMap;
+  }
+
+  /** Build hierarchy tree from flat group list */
+  private buildHierarchyTree(
+    groups: DepartmentGroupPartialResult[],
+    assignmentMap: Map<number, Department[]>,
+  ): DepartmentGroup[] {
+    const groupMap = new Map<number, DepartmentGroup>();
+    const rootGroups: DepartmentGroup[] = [];
+
+    // First pass: create all group objects
+    groups.forEach((row: DepartmentGroupPartialResult) => {
+      const group: DepartmentGroup = {
+        id: row.id,
+        name: row.name,
+        departments: assignmentMap.get(row.id) ?? [],
+        subgroups: [],
+      };
+      if (row.description !== null) group.description = row.description;
+      if (row.parent_group_id !== null) group.parent_group_id = row.parent_group_id;
+      groupMap.set(row.id, group);
+    });
+
+    // Second pass: build hierarchy
+    groups.forEach((row: DepartmentGroupPartialResult) => {
+      const group = groupMap.get(row.id);
+      if (!group) return;
+      if (row.parent_group_id === null) {
+        rootGroups.push(group);
+      } else {
+        groupMap.get(row.parent_group_id)?.subgroups?.push(group);
+      }
+    });
+
+    return rootGroups;
+  }
+
   /**
    * Get the complete group hierarchy for a tenant
    * @param tenantId - The tenant ID
    */
   async getGroupHierarchy(tenantId: number): Promise<DepartmentGroup[]> {
     try {
-      // Get all groups
       const [groups] = await execute<DepartmentGroupPartialResult[]>(
         `SELECT id, name, description, parent_group_id
          FROM department_groups
@@ -242,7 +297,6 @@ class DepartmentGroupService {
         [tenantId],
       );
 
-      // Get all department assignments
       const [assignments] = await execute<DepartmentWithGroupIdResult[]>(
         `SELECT dgm.group_id, d.id as dept_id, d.name as dept_name, d.description as dept_desc
          FROM department_group_members dgm
@@ -251,51 +305,8 @@ class DepartmentGroupService {
         [tenantId],
       );
 
-      // Build assignment map
-      const assignmentMap = new Map<number, Department[]>();
-      assignments.forEach((row: DepartmentWithGroupIdResult) => {
-        if (!assignmentMap.has(row.group_id)) {
-          assignmentMap.set(row.group_id, []);
-        }
-        assignmentMap.get(row.group_id)?.push({
-          id: row.dept_id,
-          name: row.dept_name,
-          description: row.dept_desc ?? undefined,
-        });
-      });
-
-      // Build hierarchy
-      const groupMap = new Map<number, DepartmentGroup>();
-      const rootGroups: DepartmentGroup[] = [];
-
-      // First pass: create all group objects
-      groups.forEach((row: DepartmentGroupPartialResult) => {
-        const group: DepartmentGroup = {
-          id: row.id,
-          name: row.name,
-          description: row.description ?? undefined,
-          parent_group_id: row.parent_group_id ?? undefined,
-          departments: assignmentMap.get(row.id) ?? [],
-          subgroups: [],
-        };
-        groupMap.set(row.id, group);
-      });
-
-      // Second pass: build hierarchy
-      groups.forEach((row: DepartmentGroupPartialResult) => {
-        const group = groupMap.get(row.id);
-        if (!group) return;
-        if (row.parent_group_id === null) {
-          rootGroups.push(group);
-        } else {
-          const parent = groupMap.get(row.parent_group_id);
-          if (parent) {
-            parent.subgroups?.push(group);
-          }
-        }
-      });
-
-      return rootGroups;
+      const assignmentMap = this.buildAssignmentMap(assignments);
+      return this.buildHierarchyTree(groups, assignmentMap);
     } catch (error: unknown) {
       logger.error('Error getting group hierarchy:', error);
       return [];
@@ -351,7 +362,11 @@ class DepartmentGroupService {
         [groupId, tenantId],
       );
 
-      if (permissions[0].count > 0) {
+      const permissionRow = permissions[0];
+      if (permissionRow === undefined) {
+        throw new Error('Failed to check admin permissions');
+      }
+      if (permissionRow.count > 0) {
         throw new Error('Cannot delete group with active admin permissions');
       }
 
@@ -362,7 +377,11 @@ class DepartmentGroupService {
         [groupId, tenantId],
       );
 
-      if (subgroups[0].count > 0) {
+      const subgroupRow = subgroups[0];
+      if (subgroupRow === undefined) {
+        throw new Error('Failed to check subgroups');
+      }
+      if (subgroupRow.count > 0) {
         throw new Error('Cannot delete group with subgroups');
       }
 
@@ -410,11 +429,15 @@ class DepartmentGroupService {
       [groupId, tenantId],
     );
 
-    if (parents.length === 0 || parents[0].parent_group_id === null) {
+    const parentRow = parents[0];
+    if (parentRow === undefined) {
+      return false;
+    }
+    if (parentRow.parent_group_id === null) {
       return false;
     }
 
-    return await this.checkCircularDependency(parents[0].parent_group_id, targetId, tenantId);
+    return await this.checkCircularDependency(parentRow.parent_group_id, targetId, tenantId);
   }
 }
 

@@ -89,7 +89,7 @@ export class TenantDeletionService {
    * Validate tenant ID
    */
   private validateTenantId(tenantId: number): void {
-    if (!tenantId || tenantId <= 0 || !Number.isInteger(tenantId)) {
+    if (tenantId <= 0 || !Number.isInteger(tenantId)) {
       throw new Error(`INVALID TENANT_ID: ${tenantId} - must be positive integer`);
     }
   }
@@ -119,7 +119,7 @@ export class TenantDeletionService {
       FROM INFORMATION_SCHEMA.COLUMNS
       WHERE COLUMN_NAME = 'user_id'
       AND TABLE_SCHEMA = DATABASE()
-      ${placeholders ? `AND TABLE_NAME NOT IN (${placeholders})` : ''}`,
+      ${placeholders !== '' ? `AND TABLE_NAME NOT IN (${placeholders})` : ''}`,
       this.CRITICAL_TABLES,
     )) as unknown as [TableNameRow[], unknown];
     return tables;
@@ -135,7 +135,11 @@ export class TenantDeletionService {
     )) as unknown as [LegalHoldRow[], unknown];
 
     if (holds.length > 0) {
-      throw new Error(`Tenant has active legal hold: ${holds[0].reason ?? 'No reason specified'}`);
+      const firstHold = holds[0];
+      if (!firstHold) {
+        throw new Error('Tenant has active legal hold: No reason specified');
+      }
+      throw new Error(`Tenant has active legal hold: ${firstHold.reason ?? 'No reason specified'}`);
     }
   }
 
@@ -294,13 +298,14 @@ export class TenantDeletionService {
         'SELECT * FROM tenants WHERE id = ?',
         [tenantId],
       );
-      const tenantInfo = tenantResults[0] as TenantInfoRow | undefined;
+      const tenantInfo = (tenantResults?.[0] as TenantInfoRow | undefined) ?? undefined;
 
-      const [userResults] = await conn.query<CountResult[]>(
+      const userResults = await conn.query<CountResult[]>(
         'SELECT COUNT(*) as count FROM users WHERE tenant_id = ?',
         [tenantId],
       );
-      const userCount = (userResults[0] as CountResult | undefined)?.count ?? 0;
+      const firstUserResult: CountResult | undefined = userResults[0];
+      const userCount = firstUserResult?.count ?? 0;
 
       await conn.query(
         `INSERT INTO deletion_audit_trail
@@ -331,6 +336,43 @@ export class TenantDeletionService {
     }
   }
 
+  /** Execute core table deletions */
+  private async executeDeletions(
+    tenantId: number,
+    wrappedConn: ConnectionWrapper,
+  ): Promise<DeletionLog[]> {
+    const deletionLog: DeletionLog[] = [];
+    const tables = await this.getTablesWithTenantId(wrappedConn);
+    logger.info(`Found ${tables.length} tables with tenant_id column`);
+
+    for (const tableRow of tables) {
+      const tableName = tableRow.TABLE_NAME;
+      if (this.CRITICAL_TABLES.includes(tableName)) {
+        logger.info(`⏭️ Skipping critical table: ${tableName}`);
+        continue;
+      }
+      const result = await this.deleteFromTable(tableName, tenantId, wrappedConn);
+      if (result) deletionLog.push(result);
+    }
+
+    // Delete user-related tables
+    const userRelatedTables = await this.getUserRelatedTables(wrappedConn);
+    const userDeletions = await this.deleteFromUserRelatedTables(
+      userRelatedTables,
+      tenantId,
+      wrappedConn,
+    );
+    deletionLog.push(...userDeletions);
+
+    // Delete tenant record
+    const tenantResult = (await wrappedConn.query('DELETE FROM tenants WHERE id = ?', [
+      tenantId,
+    ])) as unknown as ResultSetHeader;
+    deletionLog.push({ table: 'tenants', deleted: tenantResult.affectedRows });
+
+    return deletionLog;
+  }
+
   /**
    * Main deletion method - DYNAMIC approach
    */
@@ -341,88 +383,34 @@ export class TenantDeletionService {
     reason?: string,
     ipAddress?: string,
   ): Promise<DeletionResult> {
-    // Validate tenant ID
     this.validateTenantId(tenantId);
-
     logger.warn(`🚨 STARTING DYNAMIC DELETION FOR TENANT ${tenantId}`);
-
-    const deletionLog: DeletionLog[] = [];
 
     return await transaction(async (conn: PoolConnection) => {
       const wrappedConn = wrapConnection(conn);
 
       try {
-        // 1. CHECK LEGAL HOLDS
         await this.checkLegalHolds(tenantId, wrappedConn);
-
-        // 2. CREATE GDPR DATA EXPORT
         const exportPath = await this.createTenantDataExport(tenantId, wrappedConn);
         logger.info(`GDPR export created: ${exportPath}`);
-
-        // 3. CREATE AUDIT TRAIL
         await this.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress, wrappedConn);
 
-        // 4. FIND ALL TABLES WITH tenant_id
-        const tables = await this.getTablesWithTenantId(wrappedConn);
-        logger.info(`Found ${tables.length} tables with tenant_id column`);
-
-        // 5. DISABLE FOREIGN KEY CHECKS (for clean deletion)
         await wrappedConn.query('SET FOREIGN_KEY_CHECKS = 0');
-
+        let deletionLog: DeletionLog[];
         try {
-          // 6. DELETE FROM ALL TABLES (except critical ones)
-          for (const tableRow of tables) {
-            const tableName = tableRow.TABLE_NAME;
-
-            if (this.CRITICAL_TABLES.includes(tableName)) {
-              logger.info(`⏭️ Skipping critical table: ${tableName}`);
-              continue;
-            }
-
-            const result = await this.deleteFromTable(tableName, tenantId, wrappedConn);
-            if (result) {
-              deletionLog.push(result);
-            }
-          }
-
-          // 7. DELETE USER-RELATED TABLES (via user_id FK)
-          const userRelatedTables = await this.getUserRelatedTables(wrappedConn);
-          const userDeletions = await this.deleteFromUserRelatedTables(
-            userRelatedTables,
-            tenantId,
-            wrappedConn,
-          );
-          deletionLog.push(...userDeletions);
-
-          // 8. FINALLY DELETE THE TENANT RECORD
-          const tenantResult = (await wrappedConn.query('DELETE FROM tenants WHERE id = ?', [
-            tenantId,
-          ])) as unknown as ResultSetHeader;
-          deletionLog.push({
-            table: 'tenants',
-            deleted: tenantResult.affectedRows,
-          });
+          deletionLog = await this.executeDeletions(tenantId, wrappedConn);
         } finally {
-          // 9. RE-ENABLE FOREIGN KEY CHECKS
           await wrappedConn.query('SET FOREIGN_KEY_CHECKS = 1');
         }
 
-        // 10. UPDATE QUEUE STATUS
         await wrappedConn.query(
           'UPDATE tenant_deletion_queue SET status = ?, completed_at = NOW() WHERE id = ?',
           ['completed', queueId],
         );
-
-        // 11. CLEAR REDIS CACHE
         await this.clearRedisCache(tenantId);
-
-        // 12. VERIFY DELETION
         await this.verifyCompleteDeletion(tenantId, wrappedConn);
-
-        // 13. LOG AND RETURN RESULT
         return this.logAndReturnResult(tenantId, deletionLog, exportPath);
       } catch (error) {
-        // Update queue with error
         await wrappedConn.query(
           'UPDATE tenant_deletion_queue SET status = ?, error_message = ? WHERE id = ?',
           ['failed', error instanceof Error ? error.message : 'Unknown error', queueId],
@@ -494,13 +482,14 @@ export class TenantDeletionService {
         continue;
       }
 
-      const [result] = await conn.query<CountResult[]>(
+      const countResult = await conn.query<CountResult[]>(
         `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = ?`,
         [tenantId],
       );
 
-      if ((result[0] as CountResult).count > 0) {
-        remainingData.push(`${tableName}: ${(result[0] as CountResult).count} rows remaining`);
+      const firstResult: CountResult | undefined = countResult[0];
+      if (firstResult !== undefined && firstResult.count > 0) {
+        remainingData.push(`${tableName}: ${String(firstResult.count)} rows remaining`);
       }
     }
 
@@ -584,9 +573,14 @@ export class TenantDeletionService {
       throw new Error('No pending deletion found');
     }
 
+    const firstQueueItem = queue[0];
+    if (!firstQueueItem) {
+      throw new Error('No pending deletion found');
+    }
+
     await execute(
       'UPDATE tenant_deletion_queue SET status = "cancelled", completed_at = NOW() WHERE id = ?',
-      [queue[0].id],
+      [firstQueueItem.id],
     );
 
     await execute('UPDATE tenants SET deletion_status = NULL WHERE id = ?', [tenantId]);
@@ -614,6 +608,10 @@ export class TenantDeletionService {
       }
 
       const queueItem = queueItems[0];
+      if (!queueItem) {
+        return; // Nothing to process
+      }
+
       await this.deleteTenant(
         queueItem.tenant_id,
         queueItem.id,
@@ -655,7 +653,10 @@ export class TenantDeletionService {
     );
 
     if (legalHolds.length > 0) {
-      report.blockers.push(`Legal hold active: ${legalHolds[0].reason}`);
+      const firstHold = legalHolds[0];
+      if (firstHold) {
+        report.blockers.push(`Legal hold active: ${firstHold.reason}`);
+      }
     }
 
     // Count records in each table
@@ -667,12 +668,13 @@ export class TenantDeletionService {
         const tableName = tableRow.TABLE_NAME;
 
         try {
-          const [result] = await wrappedConn.query<CountResult[]>(
+          const countResult = await wrappedConn.query<CountResult[]>(
             `SELECT COUNT(*) as count FROM \`${tableName}\` WHERE tenant_id = ?`,
             [tenantId],
           );
 
-          const count = (result[0] as CountResult | undefined)?.count ?? 0;
+          const firstResult: CountResult | undefined = countResult[0];
+          const count: number = firstResult?.count ?? 0;
           // Use Object.defineProperty to safely set the property and avoid injection
           Object.defineProperty(report.affectedRecords, tableName, {
             value: count,
@@ -744,8 +746,11 @@ export class TenantDeletionService {
     );
 
     if (queueRows.length > 0) {
-      const tenantId = queueRows[0].tenant_id;
-      await this.cancelDeletion(tenantId, rejectedBy);
+      const firstRow = queueRows[0];
+      if (firstRow) {
+        const tenantId = firstRow.tenant_id;
+        await this.cancelDeletion(tenantId, rejectedBy);
+      }
     }
   }
 
@@ -786,12 +791,26 @@ export class TenantDeletionService {
     }
 
     const row = rows[0];
-    return {
+    if (!row) {
+      return { status: 'not_scheduled' };
+    }
+
+    const result: {
+      status: string;
+      queueId?: number;
+      scheduledDate?: Date;
+      approvalStatus?: string;
+    } = {
       status: row.status,
       queueId: row.id,
-      scheduledDate: row.scheduled_deletion_date,
       approvalStatus: row.approval_status,
     };
+
+    if (row.scheduled_deletion_date !== undefined) {
+      result.scheduledDate = row.scheduled_deletion_date;
+    }
+
+    return result;
   }
 
   /**

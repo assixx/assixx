@@ -162,7 +162,7 @@ class FeaturesManager {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('.toggle-group__btn');
       if (btn === null) return;
 
-      const filter = btn.dataset.filter as FeatureFilter | undefined;
+      const filter = btn.dataset['filter'] as FeatureFilter | undefined;
       if (filter === undefined) return;
 
       // Update active button
@@ -204,20 +204,20 @@ class FeaturesManager {
 
       if (actionElement === null) return;
 
-      const action = actionElement.dataset.action;
+      const action = actionElement.dataset['action'];
 
       switch (action) {
         case 'toggle-feature': {
-          const featureCode = actionElement.dataset.feature;
-          const state = actionElement.dataset.state === 'true';
+          const featureCode = actionElement.dataset['feature'];
+          const state = actionElement.dataset['state'] === 'true';
           if (featureCode !== undefined) {
             void this.handleFeatureToggle(featureCode, state);
           }
           break;
         }
         case 'adjust-addon': {
-          const addonType = actionElement.dataset.type as 'employees' | 'admins' | 'storage' | undefined;
-          const amount = Number.parseInt(actionElement.dataset.amount ?? '0', 10);
+          const addonType = actionElement.dataset['type'] as 'employees' | 'admins' | 'storage' | undefined;
+          const amount = Number.parseInt(actionElement.dataset['amount'] ?? '0', 10);
           if (addonType !== undefined) {
             this.handleAddonAdjust(addonType, amount);
           }
@@ -242,7 +242,9 @@ class FeaturesManager {
 
     // Get plan name (plans is Record<string, Plan>, all keys have Plan values)
     // eslint-disable-next-line security/detect-object-injection -- Safe: newPlanCode comes from data-plan attributes rendered by renderPlanCards(), limited to 'basic'|'professional'|'enterprise'
-    const planName = plans[newPlanCode].name;
+    const plan = plans[newPlanCode];
+    if (plan === undefined) return;
+    const planName = plan.name;
 
     // Confirm change
     if (!confirm(`Möchten Sie wirklich zum ${planName} Plan wechseln?`)) {

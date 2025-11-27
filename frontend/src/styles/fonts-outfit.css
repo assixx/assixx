@@ -3,8 +3,3 @@
    Do NOT use @import here as it causes multiple font downloads */
 
 /* CSS Variables for Outfit */
-:root {
-  --font-primary: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
-  --font-display: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
-  --font-body: "Outfit", -apple-system, blinkmacsystemfont, "Segoe UI", roboto, arial, sans-serif;
-}

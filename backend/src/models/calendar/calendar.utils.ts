@@ -23,7 +23,7 @@ export function processCalendarEvents(events: DbCalendarEvent[]): void {
     // Map database column names to API property names
     event.start_time = event.start_date;
     event.end_time = event.end_date;
-    event.reminder_time = event.reminder_minutes;
+    event.reminder_time = event.reminder_minutes ?? null;
     event.created_by = event.user_id;
 
     // Convert Buffer description to String if needed
@@ -117,6 +117,49 @@ export function applyDateAndSearchFilters(
 }
 
 /**
+ * Apply access control for 'all' filter (privacy protection)
+ */
+function applyAllFilterAccess(
+  query: string,
+  params: unknown[],
+  userDepartmentId: number | null | undefined,
+  userId: number,
+): { query: string; params: unknown[] } {
+  const accessQuery =
+    query +
+    ` AND (
+      e.org_level = 'company' OR
+      (e.org_level = 'department' AND e.department_id = ?) OR
+      (e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)) OR
+      (e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = ?)) OR
+      e.user_id = ? OR
+      EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
+    )`;
+  return {
+    query: accessQuery,
+    params: [...params, userDepartmentId, userId, userDepartmentId, userId, userId],
+  };
+}
+
+/**
+ * Apply access control for count queries (non-admin users)
+ */
+function applyCountQueryAccess(
+  query: string,
+  params: unknown[],
+  userId: number,
+): { query: string; params: unknown[] } {
+  const accessQuery =
+    query +
+    ` AND (
+      e.type IN ('meeting', 'training') OR
+      e.user_id = ? OR
+      EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
+    )`;
+  return { query: accessQuery, params: [...params, userId, userId] };
+}
+
+/**
  * Apply org level and access filters to query
  */
 export function applyEventFilters(
@@ -134,62 +177,39 @@ export function applyEventFilters(
     isCountQuery?: boolean;
   },
 ): { query: string; params: unknown[] } {
-  let updatedQuery = query;
-  let updatedParams = [...params];
+  let result = { query, params: [...params] };
 
-  // Apply org level filter based on new structure
   if (options.filter !== 'all') {
-    const orgResult = applyOrgLevelFilter(
-      updatedQuery,
-      updatedParams,
+    result = applyOrgLevelFilter(
+      result.query,
+      result.params,
       options.filter,
       options.userDepartmentId,
       options.userTeamId,
       options.userId,
     );
-    updatedQuery = orgResult.query;
-    updatedParams = orgResult.params;
   }
 
-  // Apply access control for ALL users (including admins) for privacy
-  if (options.filter === 'all' && !options.isCountQuery) {
-    updatedQuery += ` AND (
-          e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.department_id = ?) OR
-          (e.org_level = 'team' AND e.team_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)) OR
-          (e.org_level = 'area' AND e.area_id = (SELECT area_id FROM departments WHERE id = ?)) OR
-          e.user_id = ? OR
-          EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
-        )`;
-    updatedParams.push(
+  if (options.filter === 'all' && options.isCountQuery !== true) {
+    result = applyAllFilterAccess(
+      result.query,
+      result.params,
       options.userDepartmentId,
-      options.userId, // for team check via user_teams
-      options.userDepartmentId, // for area check via department.area_id
-      options.userId,
       options.userId,
     );
   }
 
-  // Apply access control for non-admin users for count
-  if (options.isCountQuery && options.role !== 'admin' && options.role !== 'root') {
-    updatedQuery += ` AND (
-          e.type IN ('meeting', 'training') OR
-          e.user_id = ? OR
-          EXISTS (SELECT 1 FROM calendar_attendees WHERE event_id = e.id AND user_id = ?)
-        )`;
-    updatedParams.push(options.userId, options.userId);
+  if (options.isCountQuery === true && options.role !== 'admin' && options.role !== 'root') {
+    result = applyCountQueryAccess(result.query, result.params, options.userId);
   }
 
-  // Apply date range and search filters
-  const filterResult = applyDateAndSearchFilters(
-    updatedQuery,
-    updatedParams,
+  return applyDateAndSearchFilters(
+    result.query,
+    result.params,
     options.startDate,
     options.endDate,
     options.search,
   );
-
-  return { query: filterResult.query, params: filterResult.params };
 }
 
 /**
@@ -221,6 +241,11 @@ export async function getEventCount(
     { ...options, isCountQuery: true },
   );
   const [countResult] = await executeQuery<CountResult[]>(filteredCountQuery, countParams);
+
+  if (countResult[0] === undefined) {
+    return 0;
+  }
+
   return countResult[0].total;
 }
 

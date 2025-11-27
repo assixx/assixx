@@ -108,17 +108,25 @@ export class ChatWebSocketServer {
 
   private init(): void {
     this.wss.on('connection', (ws: ExtendedWebSocket, request: IncomingMessage) => {
-      void this.handleConnection(ws, request);
+      // Extract only the properties we need from IncomingMessage to satisfy exactOptionalPropertyTypes
+      const sanitizedRequest = {
+        url: request.url,
+        headers: {
+          host: request.headers.host,
+          authorization: request.headers.authorization,
+        },
+      };
+      void this.handleConnection(ws, sanitizedRequest);
     });
   }
 
   private async handleConnection(
     ws: ExtendedWebSocket,
     request: {
-      url?: string;
+      url: string | undefined;
       headers: {
-        host?: string;
-        authorization?: string;
+        host: string | undefined;
+        authorization: string | undefined;
       };
     },
   ): Promise<void> {
@@ -128,14 +136,14 @@ export class ChatWebSocketServer {
       const token =
         url.searchParams.get('token') ?? request.headers.authorization?.replace('Bearer ', '');
 
-      if (!token) {
+      if (token === undefined || token === '') {
         ws.close(1008, 'Token erforderlich');
         return;
       }
 
       // Token verifizieren
-      const jwtSecret = process.env.JWT_SECRET;
-      if (!jwtSecret) {
+      const jwtSecret = process.env['JWT_SECRET'];
+      if (jwtSecret === undefined || jwtSecret === '') {
         ws.close(1008, 'JWT Secret nicht konfiguriert');
         return;
       }
@@ -289,6 +297,33 @@ export class ChatWebSocketServer {
       | undefined;
   }
 
+  /**
+   * Get display name from sender info with fallbacks
+   */
+  private getSenderDisplayName(
+    sender:
+      | { first_name?: string | null; last_name?: string | null; username?: string | null }
+      | null
+      | undefined,
+    fallback: string,
+  ): string {
+    if (sender === null || sender === undefined) return fallback;
+
+    const fullName = [sender.first_name, sender.last_name]
+      .filter(
+        (part: string | null | undefined): part is string =>
+          part !== undefined && part !== null && part !== '',
+      )
+      .join(' ');
+    if (fullName !== '') return fullName;
+
+    if (sender.username !== undefined && sender.username !== null && sender.username !== '') {
+      return sender.username;
+    }
+
+    return fallback;
+  }
+
   private buildMessageData(
     messageId: number,
     conversationId: number,
@@ -303,12 +338,7 @@ export class ChatWebSocketServer {
       conversation_id: conversationId,
       content,
       sender_id: senderId,
-      sender_name:
-        sender ?
-          [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
-          sender.username ||
-          UNKNOWN_USER
-        : UNKNOWN_USER,
+      sender_name: this.getSenderDisplayName(sender, UNKNOWN_USER),
       first_name: sender?.first_name ?? '',
       last_name: sender?.last_name ?? '',
       username: sender?.username ?? '',
@@ -320,43 +350,38 @@ export class ChatWebSocketServer {
     };
   }
 
+  /**
+   * Broadcast message to all participants in a conversation
+   */
+  private broadcastToParticipants(participantIds: number[], type: string, data: unknown): void {
+    for (const participantId of participantIds) {
+      const clientWs = this.clients.get(participantId);
+      if (clientWs !== undefined && clientWs.readyState === WebSocket.OPEN) {
+        this.sendMessage(clientWs, { type, data });
+      }
+    }
+  }
+
+  /**
+   * Check if user has permission to send to conversation
+   */
+  private checkUserInParticipants(userId: number, participantIds: number[]): boolean {
+    const participantIdsStr = participantIds.map((id: number) => String(id));
+    return participantIdsStr.includes(String(userId));
+  }
+
   private async handleSendMessage(ws: ExtendedWebSocket, data: SendMessageData): Promise<void> {
     const { conversationId, content, attachments = [] } = data;
 
-    // Check if user is authenticated
     if (ws.userId === undefined || ws.tenantId === undefined) {
-      this.sendMessage(ws, {
-        type: 'error',
-        data: { message: 'Not authenticated' },
-      });
+      this.sendMessage(ws, { type: 'error', data: { message: 'Not authenticated' } });
       return;
     }
 
-    logger.debug(`Handling send message:`, {
-      conversationId,
-      userId: ws.userId,
-      tenantId: ws.tenantId,
-      contentLength: content.length,
-      hasAttachments: attachments.length > 0,
-    });
-
     try {
-      // Verify access and get participant IDs
       const participantIds = await this.verifyConversationAccess(conversationId, ws.tenantId);
 
-      const participantIdsStr = participantIds.map((id: number) => String(id));
-
-      logger.error(`[WebSocket Debug] Permission check:`, {
-        conversationId,
-        wsUserId: ws.userId,
-        wsTenantId: ws.tenantId,
-        participantIds,
-        participantIdsStr,
-        userIdString: String(ws.userId),
-        isIncluded: participantIdsStr.includes(String(ws.userId)),
-      });
-
-      if (!participantIdsStr.includes(String(ws.userId))) {
+      if (!this.checkUserInParticipants(ws.userId, participantIds)) {
         this.sendMessage(ws, {
           type: 'error',
           data: { message: 'Keine Berechtigung für diese Unterhaltung' },
@@ -364,13 +389,8 @@ export class ChatWebSocketServer {
         return;
       }
 
-      // Save message to database
       const messageId = await this.saveMessage(conversationId, ws.userId, content, ws.tenantId);
-
-      // Get sender information
       const sender = await this.getSenderInfo(ws.userId);
-
-      // Build message data for broadcast
       const messageData = this.buildMessageData(
         messageId,
         conversationId,
@@ -380,18 +400,7 @@ export class ChatWebSocketServer {
         attachments,
       );
 
-      // Send message to all participants
-      for (const participantId of participantIds) {
-        const clientWs = this.clients.get(participantId);
-        if (clientWs && clientWs.readyState === WebSocket.OPEN) {
-          this.sendMessage(clientWs, {
-            type: 'new_message',
-            data: messageData,
-          });
-        }
-      }
-
-      // Send confirmation to sender
+      this.broadcastToParticipants(participantIds, 'new_message', messageData);
       this.sendMessage(ws, {
         type: 'message_sent',
         data: { messageId, timestamp: new Date().toISOString() },
@@ -476,7 +485,7 @@ export class ChatWebSocketServer {
       `;
       const [messageInfo] = await query<MessageInfoResult[]>(messageQuery, [messageId]);
 
-      if (messageInfo.length > 0) {
+      if (messageInfo.length > 0 && messageInfo[0] !== undefined) {
         const senderId = messageInfo[0].sender_id;
         const senderWs = this.clients.get(senderId);
 
@@ -544,7 +553,7 @@ export class ChatWebSocketServer {
   }
 
   private async handleDisconnection(ws: ExtendedWebSocket): Promise<void> {
-    if (ws.userId) {
+    if (ws.userId !== undefined) {
       this.clients.delete(ws.userId);
 
       // Offline-Status senden
@@ -619,89 +628,67 @@ export class ChatWebSocketServer {
     }, 30000); // Alle 30 Sekunden
   }
 
+  /**
+   * Process a single scheduled message - mark delivered and broadcast
+   */
+  private async processOneScheduledMessage(message: MessageDetailsResult): Promise<void> {
+    await execute<ResultSetHeader>(
+      'UPDATE messages SET delivery_status = "delivered", scheduled_delivery = NULL WHERE id = ?',
+      [message.id],
+    );
+
+    const [participants] = await query<ConversationParticipantResult[]>(
+      'SELECT user_id FROM conversation_participants WHERE conversation_id = ?',
+      [message.conversation_id],
+    );
+
+    const [senderInfo] = await query<UserInfoResult[]>(
+      'SELECT first_name, last_name, profile_picture as profile_picture_url FROM users WHERE id = ?',
+      [message.sender_id],
+    );
+    const sender = senderInfo[0] as
+      | { first_name: string | null; last_name: string | null; profile_picture_url: string | null }
+      | undefined;
+
+    const messageData = {
+      id: message.id,
+      conversation_id: message.conversation_id,
+      content: message.content,
+      sender_id: message.sender_id,
+      sender_name: this.getSenderDisplayName(sender, 'Unbekannter Benutzer'),
+      first_name: sender?.first_name ?? '',
+      last_name: sender?.last_name ?? '',
+      profile_picture_url: sender?.profile_picture_url ?? null,
+      created_at: message.created_at as string,
+      delivery_status: 'delivered',
+      is_read: false,
+      is_scheduled: true,
+      attachments: [] as {
+        filename: string;
+        content?: string | Buffer;
+        path?: string;
+        contentType?: string;
+      }[],
+    };
+
+    const participantIds = participants.map((p: ConversationParticipantResult) => p.user_id);
+    this.broadcastToParticipants(participantIds, 'scheduled_message_delivered', messageData);
+  }
+
   // Geplante Nachrichten verarbeiten
   private async processScheduledMessages(): Promise<void> {
     try {
-      const scheduledQuery = `
+      const [scheduledMessages] = await query<MessageDetailsResult[]>(`
         SELECT m.*, c.id as conversation_id
         FROM messages m
         JOIN conversations c ON m.conversation_id = c.id
         WHERE m.scheduled_delivery IS NOT NULL
         AND m.scheduled_delivery <= NOW()
         AND m.delivery_status = 'scheduled'
-      `;
-
-      const [scheduledMessages] = await query<MessageDetailsResult[]>(scheduledQuery);
+      `);
 
       for (const message of scheduledMessages) {
-        // Nachricht als zugestellt markieren
-        await execute<ResultSetHeader>(
-          'UPDATE messages SET delivery_status = "delivered", scheduled_delivery = NULL WHERE id = ?',
-          [message.id],
-        );
-
-        // Nachricht an alle Teilnehmer senden
-        const participantQuery = `
-          SELECT user_id FROM conversation_participants
-          WHERE conversation_id = ?
-        `;
-        const [participants] = await query<ConversationParticipantResult[]>(participantQuery, [
-          message.conversation_id,
-        ]);
-
-        // Sender-Informationen abrufen
-        const senderQuery = `
-          SELECT first_name, last_name, profile_picture as profile_picture_url
-          FROM users WHERE id = ?
-        `;
-        const [senderInfo] = await query<UserInfoResult[]>(senderQuery, [message.sender_id]);
-        const sender = senderInfo[0] as
-          | {
-              id: number;
-              username: string;
-              first_name: string | null;
-              last_name: string | null;
-              profile_picture_url: string | null;
-            }
-          | undefined;
-
-        const UNKNOWN_USER_NAME = 'Unbekannter Benutzer';
-        const messageData = {
-          id: message.id,
-          conversation_id: message.conversation_id,
-          content: message.content,
-          sender_id: message.sender_id,
-          sender_name:
-            sender ?
-              [sender.first_name, sender.last_name].filter(Boolean).join(' ') ||
-              sender.username ||
-              UNKNOWN_USER_NAME
-            : UNKNOWN_USER_NAME,
-          first_name: sender?.first_name ?? '',
-          last_name: sender?.last_name ?? '',
-          profile_picture_url: sender?.profile_picture_url ?? null,
-          created_at: message.created_at as string,
-          delivery_status: 'delivered',
-          is_read: false,
-          is_scheduled: true,
-          attachments: [] as {
-            filename: string;
-            content?: string | Buffer;
-            path?: string;
-            contentType?: string;
-          }[],
-        };
-
-        for (const participant of participants) {
-          const userId = participant.user_id;
-          const clientWs = this.clients.get(userId);
-          if (clientWs && clientWs.readyState === WebSocket.OPEN) {
-            this.sendMessage(clientWs, {
-              type: 'scheduled_message_delivered',
-              data: messageData,
-            });
-          }
-        }
+        await this.processOneScheduledMessage(message);
       }
     } catch (error: unknown) {
       logger.error('Fehler beim Verarbeiten geplanter Nachrichten:', error);
@@ -770,8 +757,10 @@ export class ChatWebSocketServer {
       conversation_id: message.conversation_id,
       content: message.content,
       sender_id: message.sender_id,
-      sender_name:
-        `${message.first_name ?? ''} ${message.last_name ?? ''}`.trim() || 'Unbekannter Benutzer',
+      sender_name: (() => {
+        const name = `${message.first_name ?? ''} ${message.last_name ?? ''}`.trim();
+        return name !== '' ? name : 'Unbekannter Benutzer';
+      })(),
       first_name: message.first_name ?? '',
       last_name: message.last_name ?? '',
       profile_picture_url: message.profile_picture_url ?? null,

@@ -45,7 +45,7 @@ function applyTypeFilter(
   params: (string | number | boolean)[],
   type: string | undefined,
 ): string {
-  if (type && type !== '') {
+  if (type !== undefined && type !== '') {
     params.push(type);
     return query + ' AND a.type = ?';
   }
@@ -78,7 +78,7 @@ function applySearchFilter(
   params: (string | number | boolean)[],
   search: string | undefined,
 ): string {
-  if (search && search !== '') {
+  if (search !== undefined && search !== '') {
     params.push(`%${search}%`, `%${search}%`);
     return query + ' AND (a.name LIKE ? OR a.description LIKE ?)';
   }
@@ -100,7 +100,7 @@ function buildAreaQuery(
     FROM areas a
     LEFT JOIN areas p ON a.parent_id = p.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
-    WHERE a.tenant_id = ?
+    WHERE a.tenant_id = ? AND a.is_active = 1
   `;
 
   const params: (string | number | boolean)[] = [tenantId];
@@ -114,10 +114,7 @@ function buildAreaQuery(
   // Apply each filter
   query = applyTypeFilter(query, params, filters.type);
 
-  if (filters.isActive !== undefined) {
-    query += ' AND a.is_active = ?';
-    params.push(filters.isActive ? 1 : 0);
-  }
+  // NOTE: is_active = 1 is already in baseQuery, no need to apply again
 
   query = applyParentFilter(query, params, filters.parentId);
   query = applySearchFilter(query, params, filters.search);
@@ -135,23 +132,27 @@ export async function getAreas(tenantId: number, filters?: AreaFilters): Promise
 
   const [rows] = await execute<AreaRow[]>(query, params);
 
-  return rows.map(
-    (row: AreaRow): Area => ({
+  return rows.map((row: AreaRow): Area => {
+    const area: Area = {
       id: row.id,
       tenant_id: row.tenant_id,
       name: row.name,
-      description: row.description,
       type: row.type,
-      capacity: row.capacity,
-      parent_id: row.parent_id,
-      address: row.address,
       is_active: row.is_active,
       created_by: row.created_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      employee_count: row.employee_count,
-    }),
-  );
+    };
+
+    // Conditionally add optional properties only when defined
+    if (row.description !== undefined) area.description = row.description;
+    if (row.capacity !== undefined) area.capacity = row.capacity;
+    if (row.parent_id !== undefined) area.parent_id = row.parent_id;
+    if (row.address !== undefined) area.address = row.address;
+    if (row.employee_count !== undefined) area.employee_count = row.employee_count;
+
+    return area;
+  });
 }
 
 /**
@@ -179,21 +180,29 @@ export async function getAreaById(id: number, tenantId: number): Promise<Area | 
   }
 
   const row = rows[0];
-  return {
+  if (row === undefined) {
+    return null;
+  }
+
+  const area: Area = {
     id: row.id,
     tenant_id: row.tenant_id,
     name: row.name,
-    description: row.description,
     type: row.type,
-    capacity: row.capacity,
-    parent_id: row.parent_id,
-    address: row.address,
     is_active: row.is_active,
     created_by: row.created_by,
     created_at: row.created_at,
     updated_at: row.updated_at,
-    employee_count: row.employee_count,
   };
+
+  // Conditionally add optional properties only when defined
+  if (row.description !== undefined) area.description = row.description;
+  if (row.capacity !== undefined) area.capacity = row.capacity;
+  if (row.parent_id !== undefined) area.parent_id = row.parent_id;
+  if (row.address !== undefined) area.address = row.address;
+  if (row.employee_count !== undefined) area.employee_count = row.employee_count;
+
+  return area;
 }
 
 /**
@@ -219,17 +228,20 @@ export async function getAreaHierarchy(tenantId: number): Promise<Area[]> {
       id: row.id,
       tenant_id: row.tenant_id,
       name: row.name,
-      description: row.description,
       type: row.type,
-      capacity: row.capacity,
-      parent_id: row.parent_id,
-      address: row.address,
       is_active: row.is_active,
       created_by: row.created_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
       children: [],
     };
+
+    // Conditionally add optional properties only when defined
+    if (row.description !== undefined) area.description = row.description;
+    if (row.capacity !== undefined) area.capacity = row.capacity;
+    if (row.parent_id !== undefined) area.parent_id = row.parent_id;
+    if (row.address !== undefined) area.address = row.address;
+
     areasMap.set(area.id, area);
   });
 
@@ -431,12 +443,12 @@ async function checkAreaDependencies(
   total: number;
 }> {
   const [children] = await execute<RowDataPacket[]>(
-    'SELECT id FROM areas WHERE parent_id = ? AND tenant_id = ?',
+    'SELECT id FROM areas WHERE parent_id = ? AND tenant_id = ? AND is_active = 1',
     [id, tenantId],
   );
 
   const [departments] = await execute<RowDataPacket[]>(
-    'SELECT id FROM departments WHERE area_id = ? AND tenant_id = ?',
+    'SELECT id FROM departments WHERE area_id = ? AND tenant_id = ? AND is_active = 1',
     [id, tenantId],
   );
 
@@ -542,12 +554,12 @@ function buildDependencyDetails(
   const details: Record<string, number> = { totalDependencies: deps.total };
 
   // Build details object with explicit property assignment (safe from injection)
-  if (deps.children > 0) details.childAreas = deps.children;
-  if (deps.departments > 0) details.departments = deps.departments;
-  if (deps.machines > 0) details.machines = deps.machines;
-  if (deps.shifts > 0) details.shifts = deps.shifts;
-  if (deps.shiftPlans > 0) details.shiftPlans = deps.shiftPlans;
-  if (deps.shiftFavorites > 0) details.shiftFavorites = deps.shiftFavorites;
+  if (deps.children > 0) details['childAreas'] = deps.children;
+  if (deps.departments > 0) details['departments'] = deps.departments;
+  if (deps.machines > 0) details['machines'] = deps.machines;
+  if (deps.shifts > 0) details['shifts'] = deps.shifts;
+  if (deps.shiftPlans > 0) details['shiftPlans'] = deps.shiftPlans;
+  if (deps.shiftFavorites > 0) details['shiftFavorites'] = deps.shiftFavorites;
 
   return details;
 }
@@ -643,9 +655,19 @@ export async function getAreaStats(tenantId: number): Promise<{
     byType[typeKey] = count;
   });
 
-  const totalAreas = stats[0].total_areas || 0;
-  const activeAreas = stats[0].active_areas || 0;
-  const totalCapacity = stats[0].total_capacity || 0;
+  const statsRow = stats[0];
+  if (statsRow === undefined) {
+    return {
+      totalAreas: 0,
+      activeAreas: 0,
+      totalCapacity: 0,
+      byType,
+    };
+  }
+
+  const totalAreas = statsRow.total_areas;
+  const activeAreas = statsRow.active_areas;
+  const totalCapacity = statsRow.total_capacity;
 
   return {
     totalAreas,

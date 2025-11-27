@@ -17,6 +17,47 @@ import type {
 // Constants
 const INTERNAL_ERROR_MESSAGE = 'An unexpected error occurred';
 
+// Helper types
+interface RotationHistoryFilters {
+  patternId?: number;
+  userId?: number;
+  startDate?: string;
+  endDate?: string;
+  status?: string;
+}
+
+/**
+ * Parse rotation history query parameters into filters object
+ * Extracted to reduce cognitive complexity
+ */
+function parseRotationHistoryFilters(query: Record<string, unknown>): RotationHistoryFilters {
+  const filters: RotationHistoryFilters = {};
+
+  const patternIdQuery = query['pattern_id'] as string | undefined;
+  const userIdQuery = query['user_id'] as string | undefined;
+  const startDateQuery = query['start_date'] as string | undefined;
+  const endDateQuery = query['end_date'] as string | undefined;
+  const statusQuery = query['status'] as string | undefined;
+
+  if (patternIdQuery !== undefined && patternIdQuery !== '') {
+    filters.patternId = Number(patternIdQuery);
+  }
+  if (userIdQuery !== undefined && userIdQuery !== '') {
+    filters.userId = Number(userIdQuery);
+  }
+  if (startDateQuery !== undefined && startDateQuery !== '') {
+    filters.startDate = startDateQuery;
+  }
+  if (endDateQuery !== undefined && endDateQuery !== '') {
+    filters.endDate = endDateQuery;
+  }
+  if (statusQuery !== undefined && statusQuery !== '') {
+    filters.status = statusQuery;
+  }
+
+  return filters;
+}
+
 /**
  * Get all rotation patterns
  */
@@ -25,7 +66,7 @@ export const getRotationPatterns = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const activeOnly = req.query.active_only !== 'false';
+    const activeOnly = req.query['active_only'] !== 'false';
     const patterns = await rotationService.getRotationPatterns(req.user.tenant_id, activeOnly);
 
     res.json(successResponse({ patterns }));
@@ -46,7 +87,7 @@ export const getRotationPattern = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const patternId = Number(req.params.id);
+    const patternId = Number(req.params['id']);
     const pattern = await rotationService.getRotationPattern(patternId, req.user.tenant_id);
 
     res.json(successResponse({ pattern }));
@@ -106,7 +147,7 @@ export const updateRotationPattern = async (
       throw new ServiceError('FORBIDDEN', 'Only admins can update rotation patterns', 403);
     }
 
-    const patternId = Number(req.params.id);
+    const patternId = Number(req.params['id']);
     const data = req.body as Partial<CreateRotationPatternRequest>;
 
     const pattern = await rotationService.updateRotationPattern(
@@ -137,7 +178,7 @@ export const deleteRotationPattern = async (
       throw new ServiceError('FORBIDDEN', 'Only admins can delete rotation patterns', 403);
     }
 
-    const patternId = Number(req.params.id);
+    const patternId = Number(req.params['id']);
     await rotationService.deleteRotationPattern(patternId, req.user.tenant_id);
 
     res.json(successResponse(null));
@@ -222,14 +263,7 @@ export const getRotationHistory = async (
   res: Response,
 ): Promise<void> => {
   try {
-    const filters = {
-      patternId: req.query.pattern_id ? Number(req.query.pattern_id) : undefined,
-      userId: req.query.user_id ? Number(req.query.user_id) : undefined,
-      startDate: req.query.start_date as string | undefined,
-      endDate: req.query.end_date as string | undefined,
-      status: req.query.status as string | undefined,
-    };
-
+    const filters = parseRotationHistoryFilters(req.query as Record<string, unknown>);
     const history = await rotationService.getRotationHistory(req.user.tenant_id, filters);
 
     res.json(successResponse({ history }));
@@ -251,11 +285,11 @@ export const deleteRotationHistory = async (
 ): Promise<void> => {
   try {
     // Get team_id from query params - CRITICAL for multi-tenant isolation
-    const teamId = req.query.team_id ? Number(req.query.team_id) : undefined;
-
-    if (!teamId) {
+    const teamIdQuery = req.query['team_id'] as string | undefined;
+    if (teamIdQuery === undefined || teamIdQuery === '') {
       throw new ServiceError('BAD_REQUEST', 'team_id is required', 400);
     }
+    const teamId = Number(teamIdQuery);
 
     const deletedCounts = await rotationService.deleteRotationHistory(req.user.tenant_id, teamId);
 

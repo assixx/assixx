@@ -7,6 +7,7 @@
     "strictPropertyInitialization": false,
     "noPropertyAccessFromIndexSignature": false,
     "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
     "module": "NodeNext",
     "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,

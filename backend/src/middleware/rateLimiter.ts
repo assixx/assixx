@@ -18,7 +18,7 @@ import {
 import { logger } from '../utils/logger.js';
 
 // Check if we're in test environment
-const isTestEnv = process.env.NODE_ENV === 'test';
+const isTestEnv = process.env['NODE_ENV'] === 'test';
 
 // Constants
 const RATE_LIMIT_PATH = '/rate-limit';
@@ -87,7 +87,10 @@ void createRedisStore()
 const createRateLimitHandler = (message: string) => {
   return (req: Request, res: Response): void => {
     // Check if this is an API request
-    if (req.path.startsWith('/api/') || req.headers['content-type']?.includes('application/json')) {
+    const contentType = req.headers['content-type'];
+    const isJsonRequest =
+      typeof contentType === 'string' && contentType.includes('application/json');
+    if (req.path.startsWith('/api/') || isJsonRequest) {
       // Return JSON for API requests
       res.status(429).json({
         error: 'Rate limit exceeded',
@@ -101,102 +104,75 @@ const createRateLimitHandler = (message: string) => {
   };
 };
 
-// Rate limiter configurations
-// Using 'satisfies' to ensure all RateLimiterType keys are present while maintaining type inference
-const rateLimiterConfigs = {
-  // Public endpoints (login, signup, password reset)
-  [RateLimiterType.PUBLIC]: {
-    windowMs: 20 * 1000, // 20 seconds
-    max: isTestEnv ? 100000 : 500, // 500 requests for public endpoints (ERHÖHT)
-    handler: createRateLimitHandler('Too many requests from this IP, please try again later.'),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => isTestEnv, // Skip rate limiting in tests
-    store: redisStore, // Redis store for distributed rate limiting
-  },
+/**
+ * Build rate limiter config with optional Redis store
+ * Only includes store property when redisStore is defined (Best Practice: exactOptionalPropertyTypes)
+ */
+function buildRateLimiterConfig(
+  windowMs: number,
+  max: number,
+  message: string,
+  options?: { skipSuccessfulRequests?: boolean },
+): Parameters<typeof rateLimit>[0] {
+  const baseConfig = {
+    windowMs,
+    max: isTestEnv ? 100000 : max,
+    handler: createRateLimitHandler(message),
+    standardHeaders: true as const,
+    legacyHeaders: false as const,
+    skip: (): boolean => isTestEnv,
+    ...options,
+  };
 
-  // Authentication endpoints (login, signup)
-  [RateLimiterType.AUTH]: {
-    windowMs: 20 * 1000, // 20 seconds
-    max: isTestEnv ? 100000 : 50, // 50 attempts in 20 seconds
-    handler: createRateLimitHandler('Too many authentication attempts, please try again later.'),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skipSuccessfulRequests: false, // Count ALL requests for security
-    skip: () => isTestEnv, // Skip rate limiting in tests
-    store: redisStore, // Redis store for distributed rate limiting
-  },
+  // Only add store if redisStore is defined (avoids exactOptionalPropertyTypes error)
+  if (redisStore !== undefined) {
+    return { ...baseConfig, store: redisStore };
+  }
+  return baseConfig;
+}
 
-  // Authenticated user endpoints
-  [RateLimiterType.AUTHENTICATED]: {
-    windowMs: 20 * 1000, // 20 seconds
-    max: isTestEnv ? 100000 : 20000, // 20000 requests in 20 seconds for normal users (erhöht für Dashboard)
-    handler: createRateLimitHandler('Rate limit exceeded, please slow down.'),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => isTestEnv, // Skip rate limiting in tests
-    store: redisStore, // Redis store for distributed rate limiting
-  },
+// Rate limiter configurations - built dynamically to handle optional Redis store
+const rateLimiterConfigs: Record<RateLimiterType, Parameters<typeof rateLimit>[0]> = {
+  [RateLimiterType.PUBLIC]: buildRateLimiterConfig(
+    20 * 1000,
+    500,
+    'Too many requests from this IP, please try again later.',
+  ),
+  [RateLimiterType.AUTH]: buildRateLimiterConfig(
+    20 * 1000,
+    50,
+    'Too many authentication attempts, please try again later.',
+    { skipSuccessfulRequests: false },
+  ),
+  [RateLimiterType.AUTHENTICATED]: buildRateLimiterConfig(
+    20 * 1000,
+    20000,
+    'Rate limit exceeded, please slow down.',
+  ),
+  [RateLimiterType.ADMIN]: buildRateLimiterConfig(20 * 1000, 25000, 'Admin rate limit exceeded.'),
+  [RateLimiterType.API]: buildRateLimiterConfig(20 * 1000, 20000, 'API rate limit exceeded.'),
+  [RateLimiterType.UPLOAD]: buildRateLimiterConfig(
+    60 * 60 * 1000,
+    100,
+    'Upload limit exceeded, please try again later.',
+  ),
+  [RateLimiterType.DOWNLOAD]: buildRateLimiterConfig(
+    15 * 60 * 1000,
+    500,
+    'Download limit exceeded, please try again later.',
+  ),
+};
 
-  // Admin endpoints
-  [RateLimiterType.ADMIN]: {
-    windowMs: 20 * 1000, // 20 seconds
-    max: isTestEnv ? 100000 : 25000, // 25000 requests in 20 seconds for admins (erhöht für Dashboard)
-    handler: createRateLimitHandler('Admin rate limit exceeded.'),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => isTestEnv, // Skip rate limiting in tests
-    store: redisStore, // Redis store for distributed rate limiting
-  },
-
-  // API endpoints (for external integrations)
-  [RateLimiterType.API]: {
-    windowMs: 20 * 1000, // 20 seconds
-    max: isTestEnv ? 100000 : 20000, // 20000 requests per 20 seconds for API (erhöht für Dashboard)
-    handler: createRateLimitHandler('API rate limit exceeded.'),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => isTestEnv, // Skip rate limiting in tests
-    store: redisStore, // Redis store for distributed rate limiting
-  },
-
-  // File upload endpoints
-  [RateLimiterType.UPLOAD]: {
-    windowMs: 60 * 60 * 1000, // 1 hour
-    max: isTestEnv ? 100000 : 100, // 100 uploads per hour
-    handler: createRateLimitHandler('Upload limit exceeded, please try again later.'),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => isTestEnv, // Skip rate limiting in tests
-    store: redisStore, // Redis store for distributed rate limiting
-  },
-
-  // File download endpoints
-  [RateLimiterType.DOWNLOAD]: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: isTestEnv ? 100000 : 500, // 500 downloads in 15 minutes
-    handler: createRateLimitHandler('Download limit exceeded, please try again later.'),
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: () => isTestEnv, // Skip rate limiting in tests
-    store: redisStore, // Redis store for distributed rate limiting
-  },
-} satisfies Record<RateLimiterType, Parameters<typeof rateLimit>[0]>;
-
-// Create rate limiter instances
-// Object.entries loses the enum type, so we explicitly type the accumulator and cast the initial value
-const rateLimiters = Object.entries(rateLimiterConfigs).reduce<
-  Record<RateLimiterType, RateLimitMiddleware>
->(
-  (
-    acc: Record<RateLimiterType, RateLimitMiddleware>,
-    [type, config]: [string, Parameters<typeof rateLimit>[0]],
-  ) => ({
-    ...acc,
-    [type]: rateLimit(config),
-  }),
-  {} as Record<RateLimiterType, RateLimitMiddleware>,
-);
+// Create rate limiter instances using explicit iteration (avoids Object.entries type erasure)
+const rateLimiters: Record<RateLimiterType, RateLimitMiddleware> = {
+  [RateLimiterType.PUBLIC]: rateLimit(rateLimiterConfigs[RateLimiterType.PUBLIC]),
+  [RateLimiterType.AUTH]: rateLimit(rateLimiterConfigs[RateLimiterType.AUTH]),
+  [RateLimiterType.AUTHENTICATED]: rateLimit(rateLimiterConfigs[RateLimiterType.AUTHENTICATED]),
+  [RateLimiterType.ADMIN]: rateLimit(rateLimiterConfigs[RateLimiterType.ADMIN]),
+  [RateLimiterType.API]: rateLimit(rateLimiterConfigs[RateLimiterType.API]),
+  [RateLimiterType.UPLOAD]: rateLimit(rateLimiterConfigs[RateLimiterType.UPLOAD]),
+  [RateLimiterType.DOWNLOAD]: rateLimit(rateLimiterConfigs[RateLimiterType.DOWNLOAD]),
+};
 
 // ✅ IMPLEMENTED: Advanced rate limiting with Redis store (Best Practice 2025)
 // - Distributed rate limiting across multiple server instances
@@ -205,19 +181,28 @@ const rateLimiters = Object.entries(rateLimiterConfigs).reduce<
 // - See createRedisStore() function above for implementation
 
 // Type-safe rate limiter middleware factory
+// ESLint flags these as unsafe due to Object.entries type erasure, but they are safe:
+// 1. rateLimiterConfigs uses 'satisfies' to ensure all enum keys exist
+// 2. rateLimiters is explicitly typed as Record<RateLimiterType, RateLimitMiddleware>
+// 3. All access uses RateLimiterType enum values (not arbitrary strings)
 export const rateLimiter: RateLimiterMiddleware = Object.assign(
   (type: RateLimiterType) => {
-    // Safe: type is an enum value, not user input
-    // eslint-disable-next-line security/detect-object-injection
+    // eslint-disable-next-line security/detect-object-injection -- Type-safe: type is enum value, rateLimiters is properly typed Record
     return rateLimiters[type];
   },
   {
     public: rateLimiters[RateLimiterType.PUBLIC],
+
     auth: rateLimiters[RateLimiterType.AUTH],
+
     authenticated: rateLimiters[RateLimiterType.AUTHENTICATED],
+
     admin: rateLimiters[RateLimiterType.ADMIN],
+
     api: rateLimiters[RateLimiterType.API],
+
     upload: rateLimiters[RateLimiterType.UPLOAD],
+
     download: rateLimiters[RateLimiterType.DOWNLOAD],
   },
 );

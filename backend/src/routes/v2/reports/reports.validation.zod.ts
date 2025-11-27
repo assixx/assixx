@@ -65,10 +65,13 @@ function withDateValidation(schema: z.ZodType): z.ZodType {
   return schema.refine(
     (data: unknown) => {
       const dateData = data as { dateFrom?: string; dateTo?: string };
-      if (dateData.dateFrom && dateData.dateTo) {
-        return new Date(dateData.dateTo) >= new Date(dateData.dateFrom);
+      const fromStr = dateData.dateFrom;
+      const toStr = dateData.dateTo;
+      // Only validate if both dates are provided and non-empty
+      if (fromStr === undefined || fromStr === '' || toStr === undefined || toStr === '') {
+        return true;
       }
-      return true;
+      return new Date(toStr) >= new Date(fromStr);
     },
     {
       message: 'dateTo must be after dateFrom',
@@ -122,7 +125,7 @@ export const AttendanceReportQuerySchema = z
     teamId: IdSchema.optional(),
   })
   .refine(
-    (data: { dateFrom: string; dateTo: string; departmentId?: number; teamId?: number }) => {
+    (data: { dateFrom: string; dateTo: string }): boolean => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       return dateTo >= dateFrom;
@@ -133,7 +136,7 @@ export const AttendanceReportQuerySchema = z
     },
   )
   .refine(
-    (data: { dateFrom: string; dateTo: string; departmentId?: number; teamId?: number }) => {
+    (data: { dateFrom: string; dateTo: string }): boolean => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       const daysDiff = (dateTo.getTime() - dateFrom.getTime()) / (1000 * 60 * 60 * 24);
@@ -194,15 +197,7 @@ export const CustomReportBodySchema = z
     groupBy: GroupBySchema.optional(),
   })
   .refine(
-    (data: {
-      name: string;
-      description?: string;
-      metrics: string[];
-      dateFrom: string;
-      dateTo: string;
-      filters?: { departmentIds?: number[]; teamIds?: number[] };
-      groupBy?: string;
-    }) => {
+    (data: { dateFrom: string; dateTo: string }): boolean => {
       const dateFrom = new Date(data.dateFrom);
       const dateTo = new Date(data.dateTo);
       return dateTo >= dateFrom;

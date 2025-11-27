@@ -62,7 +62,7 @@ export function sanitizeFilename(filename: string): string {
     .trim();
 
   // Ensure filename is not empty after sanitization
-  if (!sanitized || sanitized === '_') {
+  if (sanitized === '' || sanitized === '_') {
     sanitized = `file_${String(Date.now())}`;
   }
 
@@ -94,7 +94,7 @@ export function getUploadDirectory(type: string): string {
 
   // eslint-disable-next-line security/detect-object-injection -- Safe: type is validated against predefined keys
   const dir = uploadDirs[type];
-  if (!dir) {
+  if (dir === undefined) {
     throw new Error(`Invalid upload type: ${type}`);
   }
 

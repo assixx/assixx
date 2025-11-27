@@ -24,20 +24,22 @@ export interface KontischichtPattern {
   name: string;
   patternType: 'custom' | '3er-rotation' | '4er-standard' | '4er-lang' | 'auto-detect';
   cycleLengthWeeks: number;
-  employeeCount?: number;
+  employeeCount?: number | undefined;
   patternConfig: {
-    customPattern?: {
-      week1: WeekData;
-      week2: WeekData;
-      week3?: WeekData;
-      week4?: WeekData;
-    };
-    rotationType?: 'forward' | 'backward';
-    shiftDuration?: number; // days per shift type
+    customPattern?:
+      | {
+          week1: WeekData;
+          week2: WeekData;
+          week3?: WeekData | undefined;
+          week4?: WeekData | undefined;
+        }
+      | undefined;
+    rotationType?: 'forward' | 'backward' | undefined;
+    shiftDuration?: number | undefined; // days per shift type
   };
   startsAt: string;
-  endsAt?: string;
-  teamId?: number;
+  endsAt?: string | undefined;
+  teamId?: number | undefined;
 }
 
 export interface PatternTemplate {

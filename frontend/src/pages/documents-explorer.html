@@ -169,6 +169,14 @@
                         <span class="badge badge--error ml-auto">0</span>
                       </div>
                     </div>
+                    <!-- NEW 2025-11-24: Blackboard attachments folder -->
+                    <div class="nav-item folder-item" data-category="blackboard">
+                      <div class="nav-item__content">
+                        <i class="fas fa-clipboard-list nav-item__icon"></i>
+                        <span class="nav-item__label">Schwarzes Brett</span>
+                        <span class="badge badge--error ml-auto" id="blackboard-count">0</span>
+                      </div>
+                    </div>
                   </nav>
                 </div>
 
@@ -316,15 +324,17 @@
                 <p class="file-upload-zone__helper">Erlaubt: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG • Max. 10 MB</p>
               </div>
 
-              <!-- Selected File Display -->
-              <div id="selected-file" class="hidden p-4 bg-[var(--background-secondary)] rounded-lg border border-[var(--color-border)]">
-                <div class="flex items-center gap-3">
-                  <i id="file-icon" class="fas fa-file text-3xl text-[var(--color-primary)]"></i>
-                  <div class="flex-1">
-                    <div id="file-name" class="text-[var(--color-text-primary)] font-medium"></div>
-                    <div id="file-size" class="text-[var(--color-text-secondary)] text-sm"></div>
+              <!-- Selected File Display (Design System: file-upload-list) -->
+              <div id="selected-file" class="file-upload-list file-upload-list--compact hidden">
+                <div class="file-upload-item">
+                  <div id="file-preview" class="file-upload-item__preview">
+                    <i id="file-icon" class="fas fa-file"></i>
                   </div>
-                  <button type="button" id="remove-file" class="btn btn-sm btn-danger">
+                  <div class="file-upload-item__info">
+                    <div id="file-name" class="file-upload-item__name"></div>
+                    <div id="file-size" class="file-upload-item__meta"></div>
+                  </div>
+                  <button type="button" id="remove-file" class="file-upload-item__remove" aria-label="Datei entfernen">
                     <i class="fas fa-times"></i>
                   </button>
                 </div>

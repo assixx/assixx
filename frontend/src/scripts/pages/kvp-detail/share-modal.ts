@@ -94,10 +94,10 @@ export class KvpDetailShareModal {
 
     // Pre-select if needed
     const dropdown = document.querySelector<HTMLElement>(`#${dropdownId}`);
-    const preselect = dropdown?.dataset.preselect;
+    const preselect = dropdown?.dataset['preselect'];
     if (preselect !== undefined && dropdown !== null) {
       this.selectDropdownOption(triggerId, menuId, preselect);
-      delete dropdown.dataset.preselect;
+      delete dropdown.dataset['preselect'];
     }
   }
 
@@ -162,7 +162,7 @@ export class KvpDetailShareModal {
     if (teamDropdown === null) return;
 
     teamDropdown.removeAttribute('hidden');
-    teamDropdown.dataset.preselect = String(teamId);
+    teamDropdown.dataset['preselect'] = String(teamId);
   }
 
   /**
@@ -175,7 +175,7 @@ export class KvpDetailShareModal {
     if (deptDropdown === null) return;
 
     deptDropdown.removeAttribute('hidden');
-    deptDropdown.dataset.preselect = String(departmentId);
+    deptDropdown.dataset['preselect'] = String(departmentId);
   }
 
   /**
@@ -188,7 +188,7 @@ export class KvpDetailShareModal {
     if (areaDropdown === null) return;
 
     areaDropdown.removeAttribute('hidden');
-    areaDropdown.dataset.preselect = String(areaId);
+    areaDropdown.dataset['preselect'] = String(areaId);
   }
 
   /**

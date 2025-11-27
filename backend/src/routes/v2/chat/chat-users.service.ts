@@ -110,12 +110,17 @@ export async function getChatUsers(
       [currentUserId, tenantId],
     );
 
-    if (!userRows.length) {
+    if (userRows.length === 0) {
+      throw new ServiceError('USER_NOT_FOUND', 'Current user not found', 404);
+    }
+
+    const currentUser = userRows[0];
+    if (currentUser === undefined) {
       throw new ServiceError('USER_NOT_FOUND', 'Current user not found', 404);
     }
 
     // Build query based on user permissions
-    const { query, params } = buildChatUsersQuery(userRows[0], tenantId, currentUserId);
+    const { query, params } = buildChatUsersQuery(currentUser, tenantId, currentUserId);
     const [users] = await execute<ChatUserRow[]>(query, params);
 
     // Apply search filter if provided

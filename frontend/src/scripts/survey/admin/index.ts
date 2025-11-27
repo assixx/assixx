@@ -101,9 +101,9 @@ export class SurveyAdminManager {
   }
 
   private handleActionClick(e: MouseEvent, actionElement: HTMLElement): void {
-    const action = actionElement.dataset.action ?? '';
-    const surveyId = actionElement.dataset.surveyId ?? '';
-    const params = actionElement.dataset.params ?? '';
+    const action = actionElement.dataset['action'] ?? '';
+    const surveyId = actionElement.dataset['surveyId'] ?? '';
+    const params = actionElement.dataset['params'] ?? '';
 
     // Stop propagation for buttons within cards
     if (actionElement.tagName === 'BUTTON' && actionElement.closest('.card') !== null) {
@@ -187,7 +187,9 @@ export class SurveyAdminManager {
 
   private handleSaveSurvey(target: HTMLElement): void {
     const status =
-      target.dataset.status === 'draft' || target.dataset.status === 'active' ? target.dataset.status : 'draft';
+      target.dataset['status'] === 'draft' || target.dataset['status'] === 'active'
+        ? target.dataset['status']
+        : 'draft';
     void saveSurvey(status);
   }
 
@@ -270,6 +272,7 @@ export class SurveyAdminManager {
 
   private handleSelectQuestionType(params: string): void {
     const [questionId, type, text] = params.split('|');
+    if (questionId === undefined || type === undefined || text === undefined) return;
     this.selectQuestionType(questionId, type, text);
   }
 
@@ -303,10 +306,10 @@ export class SurveyAdminManager {
   }
 
   private handleSelectAssignment(params: string, target: HTMLElement): void {
-    const value = target.dataset.value ?? params;
+    const value = target.dataset['value'] ?? params;
     // dataset.text can be undefined at runtime even though TypeScript types suggest otherwise
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const text = target.dataset.text ?? target.textContent ?? '';
+    const text = target.dataset['text'] ?? target.textContent ?? '';
 
     this.updateAssignmentDropdown(value, text);
 

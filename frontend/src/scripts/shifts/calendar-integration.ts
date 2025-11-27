@@ -116,7 +116,7 @@ export class ShiftCalendarIntegration {
     button.className = this.showShifts ? 'toggle-group__btn active' : 'toggle-group__btn';
     button.id = 'showShiftsToggle';
     button.title = 'Schichten anzeigen/ausblenden';
-    button.dataset.action = 'toggle-shifts';
+    button.dataset['action'] = 'toggle-shifts';
 
     shiftButton = button;
 
@@ -215,7 +215,7 @@ export class ShiftCalendarIntegration {
     this.shiftsCache.clear();
     shifts.forEach((shift) => {
       // Convert date string to YYYY-MM-DD format (remove time part)
-      const dateOnly = shift.date.split('T')[0];
+      const dateOnly = shift.date.split('T')[0] ?? '';
       this.shiftsCache.set(dateOnly, shift);
     });
 
@@ -234,7 +234,7 @@ export class ShiftCalendarIntegration {
     const dayCells = document.querySelectorAll('.fc-daygrid-day');
 
     dayCells.forEach((cell) => {
-      const dateAttr = (cell as HTMLElement).dataset.date;
+      const dateAttr = (cell as HTMLElement).dataset['date'];
       if (dateAttr === undefined || dateAttr === '') return;
 
       const shift = this.shiftsCache.get(dateAttr);

@@ -16,7 +16,11 @@ export async function countUsersWithFilters(filters: UserFilter): Promise<number
     const query = buildCountQuery(filters, values);
 
     const [rows] = await executeQuery<CountResult[]>(query, values);
-    return rows[0].total;
+    const row = rows[0];
+    if (row === undefined) {
+      return 0;
+    }
+    return row.total;
   } catch (error: unknown) {
     logger.error(`Error counting users: ${(error as Error).message}`);
     throw error;
@@ -78,8 +82,12 @@ export async function userHasDocuments(userId: number): Promise<boolean> {
       `;
 
     const [rows] = await executeQuery<DocumentCountResult[]>(query, [userId]);
+    const row = rows[0];
+    if (row === undefined) {
+      return false;
+    }
 
-    return rows[0].document_count > 0;
+    return row.document_count > 0;
   } catch (error: unknown) {
     logger.error(`Error checking if user ${userId} has documents: ${(error as Error).message}`);
     throw error;
@@ -98,8 +106,12 @@ export async function getUserDocumentCount(userId: number): Promise<number> {
       `;
 
     const [rows] = await executeQuery<DocumentCountResult[]>(query, [userId]);
+    const row = rows[0];
+    if (row === undefined) {
+      return 0;
+    }
 
-    return rows[0].document_count;
+    return row.document_count;
   } catch (error: unknown) {
     logger.error(`Error counting documents for user ${userId}: ${(error as Error).message}`);
     throw error;
@@ -135,7 +147,8 @@ export async function getUserDepartmentAndTeam(userId: number): Promise<{
 
     const [rows] = await executeQuery<UserDepartmentTeam[]>(query, [userId]);
 
-    if (rows.length === 0) {
+    const user = rows[0];
+    if (user === undefined) {
       return {
         role: null,
         departmentId: null,
@@ -145,7 +158,6 @@ export async function getUserDepartmentAndTeam(userId: number): Promise<{
       };
     }
 
-    const user = rows[0];
     return {
       role: user.role,
       departmentId: user.department_id,

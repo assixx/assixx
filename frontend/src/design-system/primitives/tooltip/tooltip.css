@@ -369,3 +369,65 @@
   visibility: visible;
   opacity: 100%;
 }
+
+/* ========================================
+   FIXED POSITIONING FOR SCROLL CONTAINERS
+   ======================================== */
+
+/**
+ * .tooltip--fixed - Uses position:fixed to escape overflow:auto containers
+ *
+ * USAGE:
+ * 1. Add class .tooltip--fixed to tooltip container
+ * 2. Use JavaScript to set CSS custom properties for positioning:
+ *    --tooltip-top: calculated viewport Y position
+ *    --tooltip-left: calculated viewport X position
+ *
+ * Example JS:
+ *   const rect = trigger.getBoundingClientRect();
+ *   tooltip.style.setProperty('--tooltip-top', `${rect.top - tooltipHeight - 8}px`);
+ *   tooltip.style.setProperty('--tooltip-left', `${rect.left + rect.width / 2}px`);
+ *
+ * WHY THIS IS NEEDED:
+ * CSS Spec: overflow:auto creates a new stacking context that clips position:absolute
+ * Solution: Use position:fixed which positions relative to viewport, not parent
+ */
+.tooltip--fixed .tooltip__content {
+  position: fixed;
+  top: var(--tooltip-top, auto);
+  bottom: auto;
+  left: var(--tooltip-left, auto);
+  transform: translateX(-50%);
+}
+
+/* Override position variants for fixed tooltips */
+.tooltip--fixed .tooltip__content--top,
+.tooltip--fixed .tooltip__content--bottom,
+.tooltip--fixed .tooltip__content--right {
+  top: var(--tooltip-top, auto);
+  bottom: auto;
+  left: var(--tooltip-left, auto);
+}
+
+/* Show state for fixed tooltips */
+.tooltip--fixed .tooltip__content.show,
+.tooltip--fixed:hover .tooltip__content {
+  transform: translateX(-50%);
+}
+
+/* ========================================
+   TABLE-RESPONSIVE AUTO-FIX
+   ======================================== */
+
+/**
+ * Auto-apply fixed behavior for tooltips inside .table-responsive
+ * NOTE: Requires JavaScript to set position variables
+ * This CSS hook enables the behavior, JS calculates the actual position
+ */
+.table-responsive .tooltip.tooltip--auto-fixed .tooltip__content {
+  position: fixed;
+  top: var(--tooltip-top, auto);
+  bottom: auto;
+  left: var(--tooltip-left, auto);
+  transform: translateX(-50%);
+}

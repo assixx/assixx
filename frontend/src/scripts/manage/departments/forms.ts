@@ -63,33 +63,14 @@ function setStatusDropdown(department: Department): void {
     return;
   }
 
-  statusInput.value = department.status;
+  // Convert boolean to string for form input
+  statusInput.value = department.isActive ? '1' : '0';
 
   const statusTriggerSpan = statusTrigger.querySelector('span');
   if (statusTriggerSpan !== null) {
-    const badgeClass = department.status === 'active' ? 'badge--success' : 'badge--warning';
-    const badgeText = department.status === 'active' ? 'Aktiv' : 'Inaktiv';
+    const badgeClass = department.isActive ? 'badge--success' : 'badge--warning';
+    const badgeText = department.isActive ? 'Aktiv' : 'Inaktiv';
     setSafeHTML(statusTriggerSpan, `<span class="badge ${badgeClass}">${badgeText}</span>`);
-  }
-}
-
-/**
- * Helper: Set Visibility Dropdown value and display
- */
-function setVisibilityDropdown(department: Department): void {
-  const visibilityInput = $$id('department-visibility') as HTMLInputElement | null;
-  const visibilityTrigger = $$id('visibility-trigger');
-
-  if (visibilityInput === null || visibilityTrigger === null) {
-    return;
-  }
-
-  const visibilityValue = department.visibility ?? 'public';
-  visibilityInput.value = visibilityValue;
-
-  const visibilityTriggerSpan = visibilityTrigger.querySelector('span');
-  if (visibilityTriggerSpan !== null) {
-    visibilityTriggerSpan.textContent = visibilityValue === 'public' ? 'Öffentlich' : 'Privat';
   }
 }
 
@@ -128,7 +109,6 @@ export function showEditDepartmentModal(department: Department): void {
   // Set custom dropdowns
   setAreaDropdown(department);
   setStatusDropdown(department);
-  setVisibilityDropdown(department);
 
   modal?.classList.add(MODAL_ACTIVE_CLASS);
 }
@@ -180,7 +160,7 @@ export function loadAndPopulateAreas(areas: Area[]): void {
   areas.forEach((area) => {
     const option = document.createElement('div');
     option.className = 'dropdown__option';
-    option.dataset.value = String(area.id);
+    option.dataset['value'] = String(area.id);
     option.textContent = area.name;
     areaMenu.appendChild(option);
   });

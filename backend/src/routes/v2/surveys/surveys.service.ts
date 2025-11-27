@@ -95,6 +95,62 @@ export interface SurveyUpdateData {
   assignments?: AssignmentCreateData[];
 }
 
+// Internal types for DB payloads
+interface QuestionDbPayload {
+  question_text: string;
+  question_type: 'text' | 'single_choice' | 'multiple_choice' | 'rating' | 'number';
+  is_required: boolean;
+  order_position: number;
+  options?: string[];
+}
+
+interface AssignmentDbPayload {
+  type: 'all_users' | 'area' | 'department' | 'team' | 'user';
+  area_id?: number | null;
+  department_id?: number | null;
+  team_id?: number | null;
+  user_id?: number | null;
+}
+
+/**
+ * Transform API questions to DB format
+ */
+function transformQuestionsToDb(questions: QuestionCreateData[]): QuestionDbPayload[] {
+  return questions.map((q: QuestionCreateData, index: number) => {
+    const question: QuestionDbPayload = {
+      question_text: q.questionText,
+      question_type: q.questionType,
+      is_required: q.isRequired ?? true,
+      order_position: q.orderPosition ?? index + 1,
+    };
+    if (q.options !== undefined) {
+      question.options = q.options;
+    }
+    return question;
+  });
+}
+
+/**
+ * Transform API assignments to DB format
+ */
+function transformAssignmentsToDb(assignments: AssignmentCreateData[]): AssignmentDbPayload[] {
+  return assignments.map((a: AssignmentCreateData) => {
+    const assignment: AssignmentDbPayload = {
+      type: a.type,
+    };
+    if (a.departmentId !== undefined) {
+      assignment.department_id = a.departmentId;
+    }
+    if (a.teamId !== undefined) {
+      assignment.team_id = a.teamId;
+    }
+    if (a.userId !== undefined) {
+      assignment.user_id = a.userId;
+    }
+    return assignment;
+  });
+}
+
 /**
  *
  */
@@ -217,14 +273,16 @@ class SurveysService {
   private transformSurveyToApi(surveyData: Record<string, unknown>): unknown {
     const apisurvey = dbToApi(surveyData);
 
-    if (surveyData.questions) {
-      apisurvey.questions = (surveyData.questions as Record<string, unknown>[]).map(
+    const questions = surveyData['questions'];
+    if (questions !== undefined && questions !== null && Array.isArray(questions)) {
+      apisurvey['questions'] = (questions as Record<string, unknown>[]).map(
         (q: Record<string, unknown>) => {
           const transformedQuestion = dbToApi(q);
 
           // Transform nested options array (option_text → optionText)
-          if (q.options !== null && q.options !== undefined && Array.isArray(q.options)) {
-            transformedQuestion.options = q.options.map((opt: unknown) => {
+          const options = q['options'];
+          if (options !== null && options !== undefined && Array.isArray(options)) {
+            transformedQuestion['options'] = options.map((opt: unknown) => {
               if (typeof opt === 'string') return opt;
               if (typeof opt === 'object' && opt !== null) {
                 return dbToApi(opt as Record<string, unknown>);
@@ -235,14 +293,15 @@ class SurveysService {
 
           return {
             ...transformedQuestion,
-            orderPosition: q.order_position ?? q.order_index,
+            orderPosition: q['order_position'] ?? q['order_index'],
           };
         },
       );
     }
 
-    if (surveyData.assignments) {
-      apisurvey.assignments = (surveyData.assignments as Record<string, unknown>[]).map(
+    const assignments = surveyData['assignments'];
+    if (assignments !== undefined && assignments !== null && Array.isArray(assignments)) {
+      apisurvey['assignments'] = (assignments as Record<string, unknown>[]).map(
         (a: Record<string, unknown>) => dbToApi(a),
       );
     }
@@ -312,6 +371,59 @@ class SurveysService {
   }
 
   /**
+   * Set payload field if value is defined
+   */
+  private setPayloadField(payload: Record<string, unknown>, key: string, value: unknown): void {
+    if (value !== undefined) {
+      Object.defineProperty(payload, key, {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    }
+  }
+
+  /**
+   * Build survey payload for DB from API data
+   */
+  private buildSurveyPayload(data: SurveyCreateData | SurveyUpdateData): Record<string, unknown> {
+    const isCreate = 'title' in data && typeof data.title === 'string';
+    const payload: Record<string, unknown> = {};
+
+    // For create: set required fields with defaults
+    // For update: only set fields that are provided
+    this.setPayloadField(
+      payload,
+      'title',
+      isCreate ? (data as SurveyCreateData).title : data.title,
+    );
+    this.setPayloadField(payload, 'status', isCreate ? (data.status ?? 'draft') : data.status);
+    this.setPayloadField(
+      payload,
+      'is_anonymous',
+      isCreate ? (data.isAnonymous ?? false) : data.isAnonymous,
+    );
+    this.setPayloadField(
+      payload,
+      'is_mandatory',
+      isCreate ? (data.isMandatory ?? false) : data.isMandatory,
+    );
+    this.setPayloadField(payload, 'description', data.description);
+    this.setPayloadField(payload, 'start_date', data.startDate);
+    this.setPayloadField(payload, 'end_date', data.endDate);
+
+    if (data.questions !== undefined) {
+      payload['questions'] = transformQuestionsToDb(data.questions);
+    }
+    if (data.assignments !== undefined) {
+      payload['assignments'] = transformAssignmentsToDb(data.assignments);
+    }
+
+    return payload;
+  }
+
+  /**
    * Create a new survey
    * @param data - The data object
    * @param tenantId - The tenant ID
@@ -327,31 +439,13 @@ class SurveysService {
     userAgent?: string,
   ): Promise<unknown> {
     try {
-      // Transform API data to DB format
-      const surveyData = {
-        title: data.title,
-        description: data.description,
-        status: data.status ?? 'draft',
-        is_anonymous: data.isAnonymous ?? false,
-        is_mandatory: data.isMandatory ?? false,
-        start_date: data.startDate,
-        end_date: data.endDate,
-        questions: data.questions?.map((q: QuestionCreateData, index: number) => ({
-          question_text: q.questionText,
-          question_type: q.questionType,
-          is_required: q.isRequired ?? true,
-          order_position: q.orderPosition ?? index + 1,
-          options: q.options,
-        })),
-        assignments: data.assignments?.map((a: AssignmentCreateData) => ({
-          type: a.type,
-          department_id: a.departmentId,
-          team_id: a.teamId,
-          user_id: a.userId,
-        })),
-      };
-
-      const surveyId = await survey.create(surveyData, tenantId, userId);
+      const surveyData = this.buildSurveyPayload(data);
+      // Type assertion: buildSurveyPayload guarantees title is set for create operations
+      const surveyId = await survey.create(
+        surveyData as unknown as Parameters<typeof survey.create>[0],
+        tenantId,
+        userId,
+      );
 
       // Log the action
       await rootLog.create({
@@ -366,12 +460,20 @@ class SurveysService {
       });
 
       // Emit event for SSE notifications
-      eventBus.emitSurveyCreated(tenantId, {
+      const eventPayload: {
+        id: number;
+        title: string;
+        deadline?: string;
+        created_at?: string;
+      } = {
         id: surveyId,
         title: data.title,
-        deadline: data.endDate ?? undefined,
-        created_at: new Date().toISOString(),
-      });
+      };
+      if (data.endDate !== null && data.endDate !== undefined) {
+        eventPayload.deadline = data.endDate;
+      }
+      eventPayload.created_at = new Date().toISOString();
+      eventBus.emitSurveyCreated(tenantId, eventPayload);
 
       // Return the created survey
       return await this.getSurveyById(surveyId, tenantId, userId, 'admin');
@@ -406,9 +508,9 @@ class SurveysService {
 
       // Type assertions for existingsurvey properties
       const surveyData = existingsurvey as Record<string, unknown>;
-      const existingTitle = surveyData.title as string;
-      const existingStatus = surveyData.status as string;
-      const responseCount = (surveyData.responseCount as number | undefined) ?? 0;
+      const existingTitle = surveyData['title'] as string;
+      const existingStatus = surveyData['status'] as string;
+      const responseCount = (surveyData['responseCount'] as number | undefined) ?? 0;
 
       if (userRole === 'employee') {
         throw new ServiceError('FORBIDDEN', 'Only admins can update surveys');
@@ -419,31 +521,13 @@ class SurveysService {
         throw new ServiceError('CONFLICT', 'Cannot update survey with existing responses');
       }
 
-      // Transform API data to DB format
-      const updateData = {
-        title: data.title,
-        description: data.description,
-        status: data.status,
-        is_anonymous: data.isAnonymous,
-        is_mandatory: data.isMandatory,
-        start_date: data.startDate,
-        end_date: data.endDate,
-        questions: data.questions?.map((q: QuestionCreateData, index: number) => ({
-          question_text: q.questionText,
-          question_type: q.questionType,
-          is_required: q.isRequired ?? true,
-          order_position: q.orderPosition ?? index + 1,
-          options: q.options,
-        })),
-        assignments: data.assignments?.map((a: AssignmentCreateData) => ({
-          type: a.type,
-          department_id: a.departmentId,
-          team_id: a.teamId,
-          user_id: a.userId,
-        })),
-      };
-
-      await survey.update(surveyId, updateData, tenantId);
+      const updateData = this.buildSurveyPayload(data);
+      // Type assertion: buildSurveyPayload returns correct structure for update
+      await survey.update(
+        surveyId,
+        updateData as unknown as Parameters<typeof survey.update>[1],
+        tenantId,
+      );
 
       // Log the action
       await rootLog.create({
@@ -496,9 +580,9 @@ class SurveysService {
 
       // Type assertions for existingsurvey properties
       const surveyData = existingsurvey as Record<string, unknown>;
-      const existingTitle = surveyData.title as string;
-      const existingStatus = surveyData.status as string;
-      const responseCount = (surveyData.responseCount as number | undefined) ?? 0;
+      const existingTitle = surveyData['title'] as string;
+      const existingStatus = surveyData['status'] as string;
+      const responseCount = (surveyData['responseCount'] as number | undefined) ?? 0;
 
       if (userRole === 'employee') {
         throw new ServiceError('FORBIDDEN', 'Only admins can delete surveys');
@@ -591,6 +675,54 @@ class SurveysService {
   }
 
   /**
+   * Transform a single question for statistics response
+   */
+  private transformStatisticsQuestion(
+    q: SurveyStatistics['questions'][number],
+  ): SurveyStatisticsResponse['questions'][number] {
+    const question: SurveyStatisticsResponse['questions'][number] = {
+      id: q.id,
+      questionText: q.question_text,
+      questionType: q.question_type,
+    };
+
+    if (q.responses !== undefined) {
+      type ResponseItem = NonNullable<SurveyStatistics['questions'][number]['responses']>[number];
+      type ApiResponseItem = NonNullable<
+        SurveyStatisticsResponse['questions'][number]['responses']
+      >[number];
+      question.responses = q.responses.map((r: ResponseItem): ApiResponseItem => {
+        const response: ApiResponseItem = {};
+        if (r.answer_text !== undefined) response.answerText = r.answer_text;
+        if (r.user_id !== undefined) response.userId = r.user_id;
+        if (r.first_name !== undefined) response.firstName = r.first_name;
+        if (r.last_name !== undefined) response.lastName = r.last_name;
+        return response;
+      });
+    }
+
+    if (q.options !== undefined) {
+      type OptionItem = NonNullable<SurveyStatistics['questions'][number]['options']>[number];
+      question.options = q.options.map((opt: OptionItem) => ({
+        optionId: opt.option_id,
+        optionText: opt.option_text,
+        count: opt.count,
+      }));
+    }
+
+    if (q.statistics !== undefined) {
+      question.statistics = {
+        average: q.statistics.average,
+        min: q.statistics.min,
+        max: q.statistics.max,
+        totalResponses: q.statistics.total_responses,
+      };
+    }
+
+    return question;
+  }
+
+  /**
    * Get survey statistics
    * @param surveyId - The surveyId parameter
    * @param tenantId - The tenant ID
@@ -614,42 +746,22 @@ class SurveysService {
       const statistics: SurveyStatistics = await survey.getStatistics(surveyId, tenantId);
 
       // Transform to API format
-      const response: SurveyStatisticsResponse = {
+      const responseBase = {
         surveyId: statistics.survey_id,
         totalResponses: statistics.total_responses,
         completedResponses: statistics.completed_responses,
         completionRate: statistics.completion_rate,
-        firstResponse: statistics.first_response,
-        lastResponse: statistics.last_response,
-        questions: statistics.questions.map((q: SurveyStatistics['questions'][number]) => ({
-          id: q.id,
-          questionText: q.question_text,
-          questionType: q.question_type,
-          responses: q.responses?.map(
-            (r: NonNullable<SurveyStatistics['questions'][number]['responses']>[number]) => ({
-              answerText: r.answer_text,
-              userId: r.user_id,
-              firstName: r.first_name,
-              lastName: r.last_name,
-            }),
-          ),
-          options: q.options?.map(
-            (opt: NonNullable<SurveyStatistics['questions'][number]['options']>[number]) => ({
-              optionId: opt.option_id,
-              optionText: opt.option_text,
-              count: opt.count,
-            }),
-          ),
-          statistics:
-            q.statistics ?
-              {
-                average: q.statistics.average,
-                min: q.statistics.min,
-                max: q.statistics.max,
-                totalResponses: q.statistics.total_responses,
-              }
-            : undefined,
-        })),
+        questions: statistics.questions.map((q: SurveyStatistics['questions'][number]) =>
+          this.transformStatisticsQuestion(q),
+        ),
+      };
+
+      const response: SurveyStatisticsResponse = {
+        ...responseBase,
+        ...(statistics.first_response !== null &&
+          statistics.first_response !== undefined && { firstResponse: statistics.first_response }),
+        ...(statistics.last_response !== null &&
+          statistics.last_response !== undefined && { lastResponse: statistics.last_response }),
       };
 
       return response;

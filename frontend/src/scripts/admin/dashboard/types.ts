@@ -38,17 +38,17 @@ export interface EmployeeFormData {
   firstName: string;
   lastName: string;
   employeeId: string;
-  position?: string;
-  departmentId?: number;
-  teamId?: number;
-  phone?: string;
-  birthDate?: string;
-  startDate?: string;
-  street?: string;
-  houseNumber?: string;
-  postalCode?: string;
-  city?: string;
-  role?: string;
+  position?: string | undefined;
+  departmentId?: number | undefined;
+  teamId?: number | undefined;
+  phone?: string | undefined;
+  birthDate?: string | undefined;
+  startDate?: string | undefined;
+  street?: string | undefined;
+  houseNumber?: string | undefined;
+  postalCode?: string | undefined;
+  city?: string | undefined;
+  role?: string | undefined;
 }
 
 export interface BlackboardAttachment {
@@ -64,18 +64,13 @@ export interface BlackboardAttachment {
 }
 
 export interface BlackboardEntryExtended extends BlackboardEntry {
-  priorityLevel?: 'low' | 'medium' | 'high' | 'critical';
-  orgLevel?: 'all' | 'department' | 'team';
-  orgId?: number;
-  departmentId?: number;
-  teamId?: number;
+  priorityLevel?: 'low' | 'medium' | 'high' | 'critical' | undefined;
+  // orgLevel inherited from BlackboardEntry: 'company' | 'department' | 'team'
+  // orgId inherited from BlackboardEntry: number | null
+  departmentId?: number | undefined;
+  teamId?: number | undefined;
   // color, createdBy, createdByName, createdAt, updatedAt inherited from BlackboardEntry
-  authorName?: string;
-  authorFirstName?: string;
-  authorLastName?: string;
-  authorFullName?: string;
-  attachmentCount?: number;
-  attachments?: BlackboardAttachment[];
+  // authorName, authorFirstName, authorLastName, authorFullName, attachmentCount, attachments inherited from BlackboardEntry
 }
 
 // Constants

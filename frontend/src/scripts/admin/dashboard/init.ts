@@ -38,7 +38,7 @@ function initButtonNavigation(): void {
 
   navigationButtons.forEach((button) => {
     button.addEventListener('click', () => {
-      const href = button.dataset.href;
+      const href = button.dataset['href'];
       if (href !== undefined && href !== '') {
         window.location.href = href;
       }

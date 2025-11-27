@@ -89,7 +89,7 @@ export async function findPlanByCode(code: string): Promise<DbPlan | null> {
   try {
     const query = 'SELECT * FROM plans WHERE code = ? AND is_active = true';
     const [plans] = await executeQuery<DbPlan[]>(query, [code]);
-    return plans.length > 0 ? plans[0] : null;
+    return plans.length > 0 ? (plans[0] ?? null) : null;
   } catch (error: unknown) {
     logger.error(`Error fetching plan by code: ${(error as Error).message}`);
     throw error;
@@ -124,7 +124,7 @@ export async function getPlanFeatures(planId: number): Promise<DbPlanFeature[]> 
 export async function getTenantPlan(tenantId: number): Promise<DbTenantPlan | null> {
   try {
     const query = `
-        SELECT 
+        SELECT
           tp.*,
           p.code as plan_code,
           p.name as plan_name
@@ -136,7 +136,7 @@ export async function getTenantPlan(tenantId: number): Promise<DbTenantPlan | nu
         LIMIT 1
       `;
     const [plans] = await executeQuery<DbTenantPlan[]>(query, [tenantId]);
-    return plans.length > 0 ? plans[0] : null;
+    return plans.length > 0 ? (plans[0] ?? null) : null;
   } catch (error: unknown) {
     logger.error(`Error fetching tenant plan: ${(error as Error).message}`);
     throw error;
@@ -284,6 +284,10 @@ export async function calculateTenantCost(tenantId: number): Promise<{
 
     const [queryResult] = await executeQuery<TenantCostResult[]>(query, [tenantId]);
     const data = queryResult[0];
+
+    if (data === undefined) {
+      throw new Error(`No cost data found for tenant ${tenantId}`);
+    }
 
     const planCost = Number.parseFloat(String(data.plan_cost ?? 0));
     const addonCost = Number.parseFloat(String(data.addon_cost));

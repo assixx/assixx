@@ -25,7 +25,7 @@ export function createErrorResponse(
   statusCode: number,
   details?: unknown,
 ): { status: number; body: object } {
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isDevelopment = process.env['NODE_ENV'] === 'development';
   const timestamp = new Date().toISOString();
 
   return {

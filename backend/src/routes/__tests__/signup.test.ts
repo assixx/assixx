@@ -30,8 +30,8 @@ describe('Signup API Endpoints', () => {
   beforeAll(async () => {
     // Set up test database
     testDb = await createTestDatabase();
-    process.env.NODE_ENV = 'test';
-    process.env.JWT_SECRET = 'test-secret-key';
+    process.env['NODE_ENV'] = 'test';
+    process.env['JWT_SECRET'] = 'test-secret-key';
   });
 
   afterAll(async () => {
@@ -145,7 +145,7 @@ describe('Signup API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.trialEndsAt).toBeDefined();
+      expect(response.body.data['trialEndsAt']).toBeDefined();
 
       // Verify trial end date is set
       const [rows] = await testDb.execute('SELECT trial_ends_at FROM tenants WHERE subdomain = ?', [

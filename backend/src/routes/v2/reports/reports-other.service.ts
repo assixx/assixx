@@ -134,26 +134,30 @@ export async function generateCustomReport(
   for (const metric of params.metrics) {
     switch (metric) {
       case 'employees':
-        data.employees = await getEmployeeMetrics(params.tenantId, params.dateFrom, params.dateTo);
+        data['employees'] = await getEmployeeMetrics(
+          params.tenantId,
+          params.dateFrom,
+          params.dateTo,
+        );
         break;
       case 'departments':
-        data.departments = await getDepartmentReport({
+        data['departments'] = await getDepartmentReport({
           tenantId: params.tenantId,
           dateFrom: params.dateFrom,
           dateTo: params.dateTo,
         });
         break;
       case 'shifts':
-        data.shifts = await getShiftMetrics(params.tenantId, params.dateFrom, params.dateTo);
+        data['shifts'] = await getShiftMetrics(params.tenantId, params.dateFrom, params.dateTo);
         break;
       case 'kvp':
-        data.kvp = await getKvpMetrics(params.tenantId, params.dateFrom, params.dateTo);
+        data['kvp'] = await getKvpMetrics(params.tenantId, params.dateFrom, params.dateTo);
         break;
       case 'attendance':
-        data.attendance = getAttendanceMetrics(params.tenantId, params.dateFrom, params.dateTo);
+        data['attendance'] = getAttendanceMetrics(params.tenantId, params.dateFrom, params.dateTo);
         break;
       case 'compliance':
-        data.compliance = getComplianceReport({
+        data['compliance'] = getComplianceReport({
           tenantId: params.tenantId,
           dateFrom: params.dateFrom,
           dateTo: params.dateTo,

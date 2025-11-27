@@ -10,7 +10,7 @@ import { Blackboard } from '../blackboard.js';
  */
 
 // Set NODE_ENV to production to avoid test-specific SQL
-process.env.NODE_ENV = 'production';
+process.env['NODE_ENV'] = 'production';
 
 // Mock only the logger
 jest.mock('../../utils/logger', () => ({
@@ -113,7 +113,7 @@ describe('Blackboard Model - Integration Test', () => {
 
       // Verify in database
       const [entries] = await pool.execute('SELECT * FROM blackboard_entries WHERE id = ?', [
-        result.id,
+        result['id'],
       ]);
       expect((entries as any[]).length).toBe(1);
       expect((entries as any[])[0].title).toBe('Company Announcement');
@@ -186,7 +186,7 @@ describe('Blackboard Model - Integration Test', () => {
       // Verify tags in database
       const [tags] = await pool.execute(
         'SELECT tag FROM blackboard_tags WHERE entry_id = ? ORDER BY tag',
-        [result.id],
+        [result['id']],
       );
       expect((tags as any[]).map((t) => t.tag)).toEqual(['tag1', 'tag2', 'tag3']);
     });

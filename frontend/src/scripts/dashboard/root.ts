@@ -328,7 +328,7 @@ async function loadAdmins(): Promise<void> {
     tbody.querySelectorAll('.btn-promote, .btn-demote').forEach((button) => {
       button.addEventListener('click', () => {
         if (button instanceof HTMLElement) {
-          const adminId = Number.parseInt(button.dataset.id ?? '0', 10);
+          const adminId = Number.parseInt(button.dataset['id'] ?? '0', 10);
           const newuserRole = button.classList.contains('btn-promote') ? 'admin' : 'employee';
           void updateAdmin(adminId, newuserRole);
         }
@@ -339,7 +339,7 @@ async function loadAdmins(): Promise<void> {
     tbody.querySelectorAll('.btn-cancel').forEach((button) => {
       button.addEventListener('click', () => {
         if (button instanceof HTMLElement) {
-          const adminId = Number.parseInt(button.dataset.id ?? '0', 10);
+          const adminId = Number.parseInt(button.dataset['id'] ?? '0', 10);
           void deleteAdmin(adminId);
         }
       });

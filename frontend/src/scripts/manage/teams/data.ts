@@ -112,7 +112,7 @@ export async function updateTeamRelations(
 
   // Handle team members and machines for existing teams
   if ('id' in teamData && manager !== null) {
-    const currentTeam = await manager.getTeamDetails(Number(teamData.id));
+    const currentTeam = await manager.getTeamDetails(Number(teamData['id']));
     if (currentTeam !== null) {
       await Promise.all([
         updateTeamMembers(savedTeam.id, currentTeam.members ?? [], userIds),

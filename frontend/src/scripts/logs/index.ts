@@ -41,10 +41,10 @@ interface LogDetails {
 type Pagination = LogsResponse['pagination'];
 
 interface Filters {
-  user?: string;
-  action?: string;
-  entity_type?: string;
-  timerange?: string;
+  user?: string | undefined;
+  action?: string | undefined;
+  entity_type?: string | undefined;
+  timerange?: string | undefined;
 }
 
 interface LogsWindow extends Window {
@@ -586,7 +586,7 @@ function updateDeleteButtonState() {
     // Handle show details
     const detailsBtn = target.closest<HTMLElement>('[data-action="show-details"]');
     if (detailsBtn) {
-      const details = detailsBtn.dataset.details;
+      const details = detailsBtn.dataset['details'];
       if (details !== undefined && details !== '') {
         (window as unknown as LogsWindow).showFullDetails(details);
       }

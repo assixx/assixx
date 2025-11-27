@@ -105,7 +105,7 @@ export class LoginFormController {
    * Handle click actions via data-action attributes
    */
   private handleAction(element: HTMLElement, e: Event): void {
-    const action = element.dataset.action;
+    const action = element.dataset['action'];
     if (action === undefined || action === '') return;
 
     e.preventDefault();

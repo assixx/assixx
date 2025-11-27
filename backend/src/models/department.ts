@@ -8,8 +8,7 @@ interface DbDepartment extends RowDataPacket {
   description?: string;
   manager_id?: number;
   area_id?: number;
-  status?: string;
-  visibility?: string;
+  is_active?: number; // TINYINT(1) from DB
   tenant_id: number;
   created_at?: Date;
   updated_at?: Date;
@@ -32,22 +31,12 @@ interface DbUser extends RowDataPacket {
   employee_id?: string;
 }
 
-interface DbColumn extends RowDataPacket {
-  Field: string;
-  Type: string;
-  Null: string;
-  Key: string;
-  Default: string | null;
-  Extra: string;
-}
-
 interface DepartmentCreateData {
   name: string;
   description?: string;
   manager_id?: number;
   area_id?: number;
-  status?: string;
-  visibility?: string;
+  is_active?: number; // TINYINT(1) 0 or 1
   tenant_id: number;
 }
 
@@ -56,8 +45,7 @@ interface DepartmentUpdateData {
   description?: string;
   manager_id?: number;
   area_id?: number;
-  status?: string;
-  visibility?: string;
+  is_active?: number; // TINYINT(1) 0 or 1
 }
 
 export async function createDepartment(departmentData: DepartmentCreateData): Promise<number> {
@@ -66,35 +54,17 @@ export async function createDepartment(departmentData: DepartmentCreateData): Pr
     description,
     manager_id: managerId,
     area_id: areaId,
-    status = 'active',
-    visibility = 'public',
+    is_active: isActive = 1,
     tenant_id: tenantId,
   } = departmentData;
   logger.info(`Creating new department: ${name}`);
 
-  // Check if columns exist, fallback to basic query if not
   try {
-    const [columns] = await executeQuery<DbColumn[]>('DESCRIBE departments');
-    const hasStatus = columns.some((col: DbColumn) => col.Field === 'status');
-    const hasVisibility = columns.some((col: DbColumn) => col.Field === 'visibility');
-
-    let query: string;
-    let params: unknown[];
-
-    if (hasStatus && hasVisibility) {
-      query = `
-          INSERT INTO departments (name, description, manager_id, area_id, status, visibility, tenant_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `;
-      params = [name, description, managerId, areaId, status, visibility, tenantId];
-    } else {
-      logger.warn('Status/visibility columns not found, using basic query');
-      query = `
-          INSERT INTO departments (name, description, manager_id, area_id, tenant_id)
-          VALUES (?, ?, ?, ?, ?)
-        `;
-      params = [name, description, managerId, areaId, tenantId];
-    }
+    const query = `
+      INSERT INTO departments (name, description, manager_id, area_id, is_active, tenant_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    const params = [name, description, managerId, areaId, isActive, tenantId];
 
     const [result] = await executeQuery<ResultSetHeader>(query, params);
     logger.info(`Department created successfully with ID ${result.insertId}`);
@@ -150,6 +120,7 @@ export async function findAllDepartments(
         LEFT JOIN employee_counts ec ON ec.department_id = d.id
         LEFT JOIN team_counts tc ON tc.department_id = d.id
         WHERE d.tenant_id = ?
+          AND d.is_active = 1
         ORDER BY d.name
       `;
 
@@ -163,7 +134,8 @@ export async function findAllDepartments(
     );
 
     // Fallback to simple query
-    const simpleQuery = 'SELECT * FROM departments WHERE tenant_id = ? ORDER BY name';
+    const simpleQuery =
+      'SELECT * FROM departments WHERE tenant_id = ? AND is_active = 1 ORDER BY name';
     const [rows] = await executeQuery<DbDepartment[]>(simpleQuery, [tenantId]);
     logger.info(`Retrieved ${rows.length} departments with simple query`);
 
@@ -186,7 +158,7 @@ export async function findDepartmentById(
     }
     logger.info(`Department ${id} retrieved successfully`);
 
-    return rows[0];
+    return rows[0] ?? null;
   } catch (error: unknown) {
     logger.error(`Error fetching department ${id}: ${(error as Error).message}`);
     throw error;
@@ -218,13 +190,9 @@ export async function updateDepartment(
     fields.push('area_id = ?');
     values.push(departmentData.area_id);
   }
-  if (departmentData.status !== undefined) {
-    fields.push('status = ?');
-    values.push(departmentData.status);
-  }
-  if (departmentData.visibility !== undefined) {
-    fields.push('visibility = ?');
-    values.push(departmentData.visibility);
+  if (departmentData.is_active !== undefined) {
+    fields.push('is_active = ?');
+    values.push(departmentData.is_active);
   }
 
   if (fields.length === 0) {
@@ -269,8 +237,8 @@ export async function deleteDepartment(id: number): Promise<boolean> {
 export async function getUsersByDepartment(departmentId: number): Promise<DbUser[]> {
   logger.info(`Fetching users for department ${departmentId}`);
   const query = `
-      SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id 
-      FROM users u 
+      SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id
+      FROM users u
       WHERE u.department_id = ?
     `;
 

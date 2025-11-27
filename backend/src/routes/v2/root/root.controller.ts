@@ -66,10 +66,15 @@ class RootController {
    */
   async getAdminById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const admin = await rootService.getAdminById(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-      );
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
+      const admin = await rootService.getAdminById(Number.parseInt(id), req.user.tenant_id);
 
       if (!admin) {
         res.status(404).json({
@@ -198,8 +203,16 @@ class RootController {
    */
   async updateAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
       const data = req.body as UpdateAdminRequest;
-      await rootService.updateAdmin(Number.parseInt(req.params.id, 10), data, req.user.tenant_id);
+      await rootService.updateAdmin(Number.parseInt(id, 10), data, req.user.tenant_id);
 
       res.json({ message: 'Admin updated successfully' });
     } catch (error: unknown) {
@@ -244,9 +257,17 @@ class RootController {
    */
   async deleteAdmin(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      await rootService.deleteAdmin(Number.parseInt(req.params.id), req.user.tenant_id);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
+      await rootService.deleteAdmin(Number.parseInt(id), req.user.tenant_id);
 
-      logger.info(`Admin deleted: ${req.params.id}`);
+      logger.info(`Admin deleted: ${id}`);
       res.json({ message: 'Admin deleted successfully' });
     } catch (error: unknown) {
       logger.error('Error deleting admin:', error);
@@ -295,13 +316,17 @@ class RootController {
    */
   async getAdminLogs(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const daysParam = Number.parseInt(req.query.days as string, 10);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Admin ID is required',
+        });
+        return;
+      }
+      const daysParam = Number.parseInt(req.query['days'] as string, 10);
       const days = Number.isNaN(daysParam) ? 30 : daysParam;
-      const logs = await rootService.getAdminLogs(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-        days,
-      );
+      const logs = await rootService.getAdminLogs(Number.parseInt(id), req.user.tenant_id, days);
 
       res.json({ logs });
     } catch (error: unknown) {
@@ -401,10 +426,15 @@ class RootController {
    */
   async getRootUserById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const user = await rootService.getRootUserById(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-      );
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Root user ID is required',
+        });
+        return;
+      }
+      const user = await rootService.getRootUserById(Number.parseInt(id), req.user.tenant_id);
 
       if (!user) {
         res.status(404).json({
@@ -512,8 +542,16 @@ class RootController {
    */
   async updateRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Root user ID is required',
+        });
+        return;
+      }
       const data = req.body as UpdateRootUserRequest;
-      await rootService.updateRootUser(Number.parseInt(req.params.id), data, req.user.tenant_id);
+      await rootService.updateRootUser(Number.parseInt(id), data, req.user.tenant_id);
 
       res.json({ message: 'Root user updated successfully' });
     } catch (error: unknown) {
@@ -560,13 +598,17 @@ class RootController {
    */
   async deleteRootUser(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      await rootService.deleteRootUser(
-        Number.parseInt(req.params.id),
-        req.user.tenant_id,
-        req.user.id,
-      );
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Root user ID is required',
+        });
+        return;
+      }
+      await rootService.deleteRootUser(Number.parseInt(id), req.user.tenant_id, req.user.id);
 
-      logger.warn(`Root user ${req.params.id} deleted by ${req.user.email}`);
+      logger.warn(`Root user ${id} deleted by ${req.user.email}`);
       res.json({ message: 'Root user deleted successfully' });
     } catch (error: unknown) {
       logger.error('Error deleting root user:', error);
@@ -996,7 +1038,15 @@ class RootController {
    */
   async approveDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const queueId = Number.parseInt(req.params.queueId);
+      const queueIdParam = req.params['queueId'];
+      if (queueIdParam === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Queue ID is required',
+        });
+        return;
+      }
+      const queueId = Number.parseInt(queueIdParam);
       const { comment } = req.body as { comment?: string };
 
       await tenantDeletionService.approveDeletion(queueId, req.user.id, comment);
@@ -1046,10 +1096,18 @@ class RootController {
    */
   async rejectDeletion(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const queueId = Number.parseInt(req.params.queueId);
+      const queueIdParam = req.params['queueId'];
+      if (queueIdParam === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Queue ID is required',
+        });
+        return;
+      }
+      const queueId = Number.parseInt(queueIdParam);
       const { reason } = req.body as { reason?: string };
 
-      if (!reason) {
+      if (reason === undefined || reason === '') {
         res.status(400).json({
           error: 'REASON_REQUIRED',
           message: 'Reason for rejection is required',
@@ -1091,7 +1149,15 @@ class RootController {
    */
   async emergencyStop(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const queueId = Number.parseInt(req.params.queueId);
+      const queueIdParam = req.params['queueId'];
+      if (queueIdParam === undefined) {
+        res.status(400).json({
+          error: 'BAD_REQUEST',
+          message: 'Queue ID is required',
+        });
+        return;
+      }
+      const queueId = Number.parseInt(queueIdParam);
 
       await tenantDeletionService.triggerEmergencyStop(queueId, req.user.id);
 

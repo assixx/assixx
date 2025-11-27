@@ -121,7 +121,7 @@ class TeamsManager {
       const button = (e.target as HTMLElement).closest<HTMLElement>('.toggle-group__btn');
       if (button === null) return;
 
-      const status = button.dataset.status as 'all' | 'active' | 'inactive' | undefined;
+      const status = button.dataset['status'] as 'all' | 'active' | 'inactive' | undefined;
       if (status === undefined) return;
 
       // Update active button
@@ -235,7 +235,7 @@ class TeamsManager {
     // Handle result click - open edit modal
     resultsContainer.querySelectorAll('.search-input__result-item').forEach((item) => {
       item.addEventListener('click', () => {
-        const teamId = (item as HTMLElement).dataset.teamId;
+        const teamId = (item as HTMLElement).dataset['teamId'];
         if (teamId !== undefined && teamId !== '') {
           const w = window as unknown as WindowWithTeamHandlers;
           if (w.editTeam !== undefined) {
@@ -323,7 +323,7 @@ class TeamsManager {
     const editBtn = target.closest<HTMLElement>('[data-action="edit-team"]');
     if (!editBtn) return;
 
-    const teamId = editBtn.dataset.teamId;
+    const teamId = editBtn.dataset['teamId'];
     if (teamId !== undefined && w.editTeam) {
       void w.editTeam(Number.parseInt(teamId, 10));
     }
@@ -333,7 +333,7 @@ class TeamsManager {
     const deleteBtn = target.closest<HTMLElement>('[data-action="delete-team"]');
     if (!deleteBtn) return;
 
-    const teamId = deleteBtn.dataset.teamId;
+    const teamId = deleteBtn.dataset['teamId'];
     if (teamId !== undefined && w.deleteTeam) {
       w.deleteTeam(Number.parseInt(teamId, 10));
     }
@@ -388,23 +388,25 @@ class TeamsManager {
     toggleTableVisibility(true, this.currentFilter);
 
     const tableHTML = `
-      <table class="data-table data-table--striped">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Abteilung</th>
-            <th>Team-Lead</th>
-            <th>Mitglieder</th>
-            <th>Maschinen</th>
-            <th>Status</th>
-            <th>Erstellt am</th>
-            <th>Aktionen</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${this.filteredTeams.map((team) => createTeamRow(team)).join('')}
-        </tbody>
-      </table>
+      <div class="table-responsive">
+        <table class="data-table data-table--striped">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Abteilung</th>
+              <th>Team-Lead</th>
+              <th>Mitglieder</th>
+              <th>Maschinen</th>
+              <th>Status</th>
+              <th>Erstellt am</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this.filteredTeams.map((team) => createTeamRow(team)).join('')}
+          </tbody>
+        </table>
+      </div>
     `;
 
     // eslint-disable-next-line no-unsanitized/property -- Safe: We control all data in tableHTML
@@ -598,11 +600,25 @@ function initDataTooltips(): void {
 
   elements.forEach((element) => {
     const tooltipText = element.getAttribute('data-tooltip');
-    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
 
     if (tooltipText === null || tooltipText === '') {
       return;
     }
+
+    // CRITICAL: Inside scroll containers (overflow:auto), position:absolute tooltips
+    // will ALWAYS be clipped - no matter if top or bottom.
+    // Solution: Use native title attribute which browser renders outside any container
+    const isInsideScrollContainer = element.closest('.table-responsive') !== null;
+
+    if (isInsideScrollContainer) {
+      // Use native title - browser handles positioning, never clipped
+      element.setAttribute('title', tooltipText);
+      element.removeAttribute('data-tooltip');
+      return;
+    }
+
+    // For elements NOT in scroll containers: use custom tooltip
+    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
 
     // Wrap element if not already wrapped
     const isAlreadyWrapped = element.parentElement?.classList.contains('tooltip') ?? false;

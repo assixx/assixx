@@ -19,7 +19,7 @@ export function isFeatureIncludedInPlan(featureCode: string, planCode: string): 
 
   // eslint-disable-next-line security/detect-object-injection -- Safe: planCode validated against validPlans array above
   const planData = plans[planCode];
-  if (planData.features === undefined) {
+  if (planData?.features === undefined) {
     console.warn(`Plan data not found for plan: ${planCode}`);
     return false;
   }
@@ -210,7 +210,7 @@ export function renderPlanCards(): string {
     .map((code) => {
       // eslint-disable-next-line security/detect-object-injection -- Safe: code is from planOrder array with literal types
       const plan = plans[code];
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime safety: plans object may not be loaded yet
+
       if (plan === undefined) return '';
       const isCurrent = code === currentPlan;
       const isRecommended = code === 'professional';
@@ -229,7 +229,7 @@ export function updatePlanUI(): void {
   if (badge !== null) {
     // eslint-disable-next-line security/detect-object-injection -- Safe: currentPlan is controlled by loadCurrentPlan() and limited to valid plan codes
     const planData = plans[currentPlan];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime safety: plans may not be loaded yet, defensive fallback
+
     const planName = planData?.name ?? currentPlan;
     badge.textContent = `${planName} Plan`;
   }
@@ -280,7 +280,7 @@ export function updateSummary(addons: TenantAddons): void {
   // Get plan data
   // eslint-disable-next-line security/detect-object-injection -- Safe: currentPlan is controlled by loadCurrentPlan() and limited to valid plan codes
   const planData = plans[currentPlan];
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime safety: defensive check in case plans not loaded
+
   if (planData === undefined) {
     console.warn('Plan data not found for:', currentPlan);
     return;
@@ -315,7 +315,7 @@ export function filterFeatures(filter: 'all' | 'active' | 'included' | 'addons')
   const cards = document.querySelectorAll<HTMLElement>('[data-feature]');
 
   cards.forEach((card) => {
-    const featureCode = card.dataset.feature ?? '';
+    const featureCode = card.dataset['feature'] ?? '';
     let show = true;
 
     switch (filter) {

@@ -17,6 +17,9 @@ import {
   UpdateGroupRequest,
 } from './types.js';
 
+// Constants
+const GROUP_NOT_FOUND_MSG = 'Group not found';
+
 interface GroupRow extends RowDataPacket {
   id: number;
   name: string;
@@ -61,7 +64,7 @@ class DepartmentGroupsService {
     parentGroupId: number | undefined,
     tenantId: number,
   ): Promise<void> {
-    if (!parentGroupId) return;
+    if (parentGroupId === undefined) return;
 
     const hasCircular = await this.checkCircularDependency(parentGroupId, 0, tenantId);
     if (hasCircular) {
@@ -126,6 +129,95 @@ class DepartmentGroupsService {
         values.flat(),
       );
     }
+  }
+
+  /** Build department assignment map from rows */
+  private buildAssignmentMap(assignments: AssignmentRow[]): Map<number, GroupDepartment[]> {
+    const assignmentMap = new Map<number, GroupDepartment[]>();
+    assignments.forEach((row: AssignmentRow) => {
+      if (!assignmentMap.has(row.group_id)) {
+        assignmentMap.set(row.group_id, []);
+      }
+      const dept: GroupDepartment = { id: row.dept_id, name: row.dept_name };
+      if (row.dept_desc !== undefined) dept.description = row.dept_desc;
+      assignmentMap.get(row.group_id)?.push(dept);
+    });
+    return assignmentMap;
+  }
+
+  /** Check if group has admin permissions */
+  private async checkGroupHasPermissions(
+    connection: PoolConnection,
+    groupId: number,
+    tenantId: number,
+  ): Promise<void> {
+    const [permissions] = await connection.execute<CountResult[]>(
+      `SELECT COUNT(*) as count FROM admin_group_permissions WHERE group_id = ? AND tenant_id = ?`,
+      [groupId, tenantId],
+    );
+    const row = permissions[0];
+    if (row === undefined) throw new ServiceError('SERVER_ERROR', 'Failed to check permissions');
+    if (row.count > 0) {
+      throw new ServiceError(
+        'HAS_PERMISSIONS',
+        'Cannot delete group with active admin permissions',
+      );
+    }
+  }
+
+  /** Check if group has subgroups */
+  private async checkGroupHasSubgroups(
+    connection: PoolConnection,
+    groupId: number,
+    tenantId: number,
+  ): Promise<void> {
+    const [subgroups] = await connection.execute<CountResult[]>(
+      `SELECT COUNT(*) as count FROM department_groups WHERE parent_group_id = ? AND tenant_id = ?`,
+      [groupId, tenantId],
+    );
+    const row = subgroups[0];
+    if (row === undefined) throw new ServiceError('SERVER_ERROR', 'Failed to check subgroups');
+    if (row.count > 0) {
+      throw new ServiceError('HAS_SUBGROUPS', 'Cannot delete group with subgroups');
+    }
+  }
+
+  /** Get group name for logging */
+  private async getGroupName(
+    connection: PoolConnection,
+    groupId: number,
+    tenantId: number,
+  ): Promise<string> {
+    interface GroupNameRow extends RowDataPacket {
+      name: string;
+    }
+    const [groupData] = await connection.execute<GroupNameRow[]>(
+      `SELECT name FROM department_groups WHERE id = ? AND tenant_id = ?`,
+      [groupId, tenantId],
+    );
+    const row = groupData[0];
+    if (row === undefined) throw new ServiceError('NOT_FOUND', GROUP_NOT_FOUND_MSG);
+    return row.name;
+  }
+
+  /** Create group object from row data */
+  private createGroupFromRow(
+    row: GroupRow,
+    assignmentMap: Map<number, GroupDepartment[]>,
+  ): DepartmentGroupWithHierarchy {
+    const group: DepartmentGroupWithHierarchy = {
+      id: row.id,
+      name: row.name,
+      memberCount: row.member_count,
+      createdAt: new Date(row.created_at).toISOString(),
+      updatedAt: new Date(row.updated_at).toISOString(),
+      createdBy: row.created_by,
+      departments: assignmentMap.get(row.id) ?? [],
+      subgroups: [],
+    };
+    if (row.description !== undefined) group.description = row.description;
+    if (row.parent_group_id !== undefined) group.parentGroupId = row.parent_group_id;
+    return group;
   }
 
   /**
@@ -201,71 +293,35 @@ class DepartmentGroupsService {
    */
   async getGroupHierarchy(tenantId: number): Promise<DepartmentGroupWithHierarchy[]> {
     try {
-      // Get all groups with member count
       const [groups] = await execute<GroupRow[]>(
-        `SELECT g.*,
-         (SELECT COUNT(*) FROM department_group_members dgm WHERE dgm.group_id = g.id) as member_count
-         FROM department_groups g
-         WHERE g.tenant_id = ?
-         ORDER BY g.parent_group_id, g.name`,
+        `SELECT g.*, (SELECT COUNT(*) FROM department_group_members dgm WHERE dgm.group_id = g.id) as member_count
+         FROM department_groups g WHERE g.tenant_id = ? ORDER BY g.parent_group_id, g.name`,
         [tenantId],
       );
 
-      // Get all department assignments
       const [assignments] = await execute<AssignmentRow[]>(
         `SELECT dgm.group_id, d.id as dept_id, d.name as dept_name, d.description as dept_desc
-         FROM department_group_members dgm
-         JOIN departments d ON dgm.department_id = d.id
-         WHERE dgm.tenant_id = ? AND d.status = 'active'`,
+         FROM department_group_members dgm JOIN departments d ON dgm.department_id = d.id
+         WHERE dgm.tenant_id = ? AND d.is_active = 1`,
         [tenantId],
       );
 
-      // Build assignment map
-      const assignmentMap = new Map<number, GroupDepartment[]>();
-      assignments.forEach((row: AssignmentRow) => {
-        if (!assignmentMap.has(row.group_id)) {
-          assignmentMap.set(row.group_id, []);
-        }
-        assignmentMap.get(row.group_id)?.push({
-          id: row.dept_id,
-          name: row.dept_name,
-          description: row.dept_desc,
-        });
-      });
-
-      // Build hierarchy
+      const assignmentMap = this.buildAssignmentMap(assignments);
       const groupMap = new Map<number, DepartmentGroupWithHierarchy>();
       const rootGroups: DepartmentGroupWithHierarchy[] = [];
 
-      // First pass: create all group objects
       groups.forEach((row: GroupRow) => {
-        const group: DepartmentGroupWithHierarchy = {
-          id: row.id,
-          name: row.name,
-          description: row.description,
-          parentGroupId: row.parent_group_id ?? undefined,
-          memberCount: row.member_count,
-          createdAt: new Date(row.created_at).toISOString(),
-          updatedAt: new Date(row.updated_at).toISOString(),
-          createdBy: row.created_by,
-          departments: assignmentMap.get(row.id) ?? [],
-          subgroups: [],
-        };
-        groupMap.set(row.id, group);
+        groupMap.set(row.id, this.createGroupFromRow(row, assignmentMap));
       });
 
-      // Second pass: build hierarchy
       groups.forEach((row: GroupRow) => {
         const group = groupMap.get(row.id);
-        if (!group) return;
+        if (group === undefined) return;
 
-        if (!row.parent_group_id) {
+        if (row.parent_group_id === undefined) {
           rootGroups.push(group);
         } else {
-          const parent = groupMap.get(row.parent_group_id);
-          if (parent) {
-            parent.subgroups.push(group);
-          }
+          groupMap.get(row.parent_group_id)?.subgroups.push(group);
         }
       });
 
@@ -292,20 +348,29 @@ class DepartmentGroupsService {
       );
 
       if (rows.length === 0) {
-        throw new ServiceError('NOT_FOUND', 'Group not found');
+        throw new ServiceError('NOT_FOUND', GROUP_NOT_FOUND_MSG);
       }
 
       const row = rows[0];
-      return {
+      if (!row) {
+        throw new ServiceError('NOT_FOUND', GROUP_NOT_FOUND_MSG);
+      }
+
+      const result: DepartmentGroup = {
         id: row.id,
         name: row.name,
-        description: row.description,
-        parentGroupId: row.parent_group_id ?? undefined,
         memberCount: row.member_count,
         createdAt: new Date(row.created_at).toISOString(),
         updatedAt: new Date(row.updated_at).toISOString(),
         createdBy: row.created_by,
       };
+      if (row.description !== undefined) {
+        result.description = row.description;
+      }
+      if (row.parent_group_id !== undefined) {
+        result.parentGroupId = row.parent_group_id;
+      }
+      return result;
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       logger.error('Error getting group by ID:', error);
@@ -340,7 +405,7 @@ class DepartmentGroupsService {
       );
 
       if (result.affectedRows === 0) {
-        throw new ServiceError('NOT_FOUND', 'Group not found');
+        throw new ServiceError('NOT_FOUND', GROUP_NOT_FOUND_MSG);
       }
 
       // Sync departments if provided
@@ -374,65 +439,21 @@ class DepartmentGroupsService {
 
     try {
       await connection.beginTransaction();
+      await this.checkGroupHasPermissions(connection, groupId, tenantId);
+      await this.checkGroupHasSubgroups(connection, groupId, tenantId);
+      const groupName = await this.getGroupName(connection, groupId, tenantId);
 
-      // Check if any admin has permissions on this group
-      const [permissions] = await connection.execute<CountResult[]>(
-        `SELECT COUNT(*) as count FROM admin_group_permissions
-         WHERE group_id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
-      );
-
-      if (permissions[0].count > 0) {
-        throw new ServiceError(
-          'HAS_PERMISSIONS',
-          'Cannot delete group with active admin permissions',
-        );
-      }
-
-      // Check if group has subgroups
-      const [subgroups] = await connection.execute<CountResult[]>(
-        `SELECT COUNT(*) as count FROM department_groups
-         WHERE parent_group_id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
-      );
-
-      if (subgroups[0].count > 0) {
-        throw new ServiceError('HAS_SUBGROUPS', 'Cannot delete group with subgroups');
-      }
-
-      // Get group name for logging
-      interface GroupNameRow extends RowDataPacket {
-        name: string;
-      }
-
-      const [groupData] = await connection.execute<GroupNameRow[]>(
-        `SELECT name FROM department_groups WHERE id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
-      );
-
-      if (groupData.length === 0) {
-        throw new ServiceError('NOT_FOUND', 'Group not found');
-      }
-
-      const groupName = groupData[0].name;
-
-      // Delete department assignments
       await connection.execute(
-        `DELETE FROM department_group_members
-         WHERE group_id = ? AND tenant_id = ?`,
+        `DELETE FROM department_group_members WHERE group_id = ? AND tenant_id = ?`,
         [groupId, tenantId],
       );
 
-      // Delete the group
-      await connection.execute(
-        `DELETE FROM department_groups
-         WHERE id = ? AND tenant_id = ?`,
-        [groupId, tenantId],
-      );
+      await connection.execute(`DELETE FROM department_groups WHERE id = ? AND tenant_id = ?`, [
+        groupId,
+        tenantId,
+      ]);
 
       await connection.commit();
-
-      // Log the deletion
       await rootLog.log(
         'department_group_deleted',
         deletedBy,
@@ -472,7 +493,7 @@ class DepartmentGroupsService {
       );
 
       if (groupCheck.length === 0) {
-        throw new ServiceError('NOT_FOUND', 'Group not found');
+        throw new ServiceError('NOT_FOUND', GROUP_NOT_FOUND_MSG);
       }
 
       // Prepare bulk insert values
@@ -560,16 +581,19 @@ class DepartmentGroupsService {
         `SELECT d.id, d.name, d.description
          FROM departments d
          JOIN department_group_members dgm ON d.id = dgm.department_id
-         WHERE dgm.group_id = ? AND dgm.tenant_id = ? AND d.status = 'active'`,
+         WHERE dgm.group_id = ? AND dgm.tenant_id = ? AND d.is_active = 1`,
         [groupId, tenantId],
       );
 
       directDepts.forEach((dept: DepartmentRow) => {
-        departments.set(dept.id, {
+        const groupDept: GroupDepartment = {
           id: dept.id,
           name: dept.name,
-          description: dept.description,
-        });
+        };
+        if (dept.description !== undefined) {
+          groupDept.description = dept.description;
+        }
+        departments.set(dept.id, groupDept);
       });
 
       // Get departments from subgroups if requested
@@ -648,11 +672,12 @@ class DepartmentGroupsService {
       [groupId, tenantId],
     );
 
-    if (parents.length === 0 || !parents[0].parent_group_id) {
+    const parentGroupId = parents[0]?.parent_group_id;
+    if (parentGroupId === undefined || parentGroupId === null) {
       return false;
     }
 
-    return await this.checkCircularDependency(parents[0].parent_group_id, targetId, tenantId);
+    return await this.checkCircularDependency(parentGroupId, targetId, tenantId);
   }
 }
 

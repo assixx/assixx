@@ -12,7 +12,8 @@ import { logger } from '../../../utils/logger.js';
 import { departmentGroupsService } from './service.js';
 import { AddDepartmentsRequest, CreateGroupRequest, UpdateGroupRequest } from './types.js';
 
-// Validation helper removed - using Zod validation in routes
+// Constants
+const GROUP_ID_REQUIRED = 'Group ID is required';
 
 /**
  *
@@ -50,7 +51,18 @@ class DepartmentGroupsController {
    */
   async getGroupById(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const groupId = Number.parseInt(req.params.id);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_ID',
+            message: GROUP_ID_REQUIRED,
+          },
+        });
+        return;
+      }
+      const groupId = Number.parseInt(id);
       const group = await departmentGroupsService.getGroupById(groupId, req.user.tenant_id);
 
       res.json({
@@ -156,7 +168,18 @@ class DepartmentGroupsController {
     // Validation is now handled by Zod middleware in routes
 
     try {
-      const groupId = Number.parseInt(req.params.id);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_ID',
+            message: GROUP_ID_REQUIRED,
+          },
+        });
+        return;
+      }
+      const groupId = Number.parseInt(id);
       await departmentGroupsService.updateGroup(
         groupId,
         req.body as UpdateGroupRequest,
@@ -211,7 +234,18 @@ class DepartmentGroupsController {
     // Validation is now handled by Zod middleware in routes
 
     try {
-      const groupId = Number.parseInt(req.params.id);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_ID',
+            message: GROUP_ID_REQUIRED,
+          },
+        });
+        return;
+      }
+      const groupId = Number.parseInt(id);
       await departmentGroupsService.deleteGroup(groupId, req.user.tenant_id, req.user.id);
 
       res.json({
@@ -261,7 +295,18 @@ class DepartmentGroupsController {
     // Validation is now handled by Zod middleware in routes
 
     try {
-      const groupId = Number.parseInt(req.params.id);
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_ID',
+            message: GROUP_ID_REQUIRED,
+          },
+        });
+        return;
+      }
+      const groupId = Number.parseInt(id);
       const { departmentIds } = req.body as AddDepartmentsRequest;
       await departmentGroupsService.addDepartmentsToGroup(
         groupId,
@@ -317,8 +362,20 @@ class DepartmentGroupsController {
     // Validation is now handled by Zod middleware in routes
 
     try {
-      const groupId = Number.parseInt(req.params.id);
-      const departmentId = Number.parseInt(req.params.departmentId);
+      const id = req.params['id'];
+      const deptId = req.params['departmentId'];
+      if (id === undefined || deptId === undefined) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_ID',
+            message: 'Group ID and Department ID are required',
+          },
+        });
+        return;
+      }
+      const groupId = Number.parseInt(id);
+      const departmentId = Number.parseInt(deptId);
 
       await departmentGroupsService.removeDepartmentFromGroup(
         groupId,
@@ -362,8 +419,19 @@ class DepartmentGroupsController {
     // Validation is now handled by Zod middleware in routes
 
     try {
-      const groupId = Number.parseInt(req.params.id);
-      const includeSubgroups = req.query.includeSubgroups !== 'false';
+      const id = req.params['id'];
+      if (id === undefined) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_ID',
+            message: GROUP_ID_REQUIRED,
+          },
+        });
+        return;
+      }
+      const groupId = Number.parseInt(id);
+      const includeSubgroups = req.query['includeSubgroups'] !== 'false';
 
       const departments = await departmentGroupsService.getGroupDepartments(
         groupId,

@@ -13,7 +13,7 @@ import { tenantDeletionService } from '../tenantDeletion.service.js';
  */
 
 // Set NODE_ENV to production to avoid test-specific SQL
-process.env.NODE_ENV = 'production';
+process.env['NODE_ENV'] = 'production';
 
 // Mock only external services, not database
 jest.mock('../../utils/logger', () => ({
@@ -105,9 +105,9 @@ describe('TenantDeletionService - Integration Test', () => {
         reason,
       );
 
-      expect(result.success).toBe(true);
-      expect(result.queueId).toBeDefined();
-      expect(result.message).toContain('scheduled for deletion');
+      expect(result['success']).toBe(true);
+      expect(result['queueId']).toBeDefined();
+      expect(result['message']).toContain('scheduled for deletion');
 
       // Verify tenant was marked in database
       const [tenants] = await pool.execute('SELECT deletion_status FROM tenants WHERE id = ?', [
@@ -180,9 +180,9 @@ describe('TenantDeletionService - Integration Test', () => {
       // Process the queue
       const result = await tenantDeletionService.processDeletionQueue();
 
-      expect(result.processed).toBe(1);
-      expect(result.successful).toBe(1);
-      expect(result.failed).toBe(0);
+      expect(result['processed']).toBe(1);
+      expect(result['successful']).toBe(1);
+      expect(result['failed']).toBe(0);
 
       // Verify tenant is marked as suspended
       const [tenants] = await pool.execute('SELECT deletion_status FROM tenants WHERE id = ?', [
@@ -217,9 +217,9 @@ describe('TenantDeletionService - Integration Test', () => {
       // Process the queue
       const result = await tenantDeletionService.processDeletionQueue();
 
-      expect(result.processed).toBe(1);
-      expect(result.successful).toBe(0);
-      expect(result.failed).toBe(1);
+      expect(result['processed']).toBe(1);
+      expect(result['successful']).toBe(0);
+      expect(result['failed']).toBe(1);
     });
   });
 
@@ -245,7 +245,7 @@ describe('TenantDeletionService - Integration Test', () => {
         'Changed our mind',
       );
 
-      expect(result.success).toBe(true);
+      expect(result['success']).toBe(true);
 
       // Verify tenant status is restored
       const [tenants] = await pool.execute('SELECT deletion_status FROM tenants WHERE id = ?', [

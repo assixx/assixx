@@ -33,7 +33,7 @@ describe('Departments v2 API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-departments-v2-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-departments-v2-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'deptsv2test1', 'Departments v2 Test Company 1');
@@ -92,7 +92,7 @@ describe('Departments v2 API Endpoints', () => {
       console.info('Tried to login with email:', adminUser.email);
       throw new Error('Admin login failed');
     }
-    adminTokenV2 = adminLoginRes.body.data.accessToken;
+    adminTokenV2 = adminLoginRes.body.data['accessToken'];
 
     const employeeLoginRes = await request(app).post('/api/v2/auth/login').send({
       email: employeeUser.email,
@@ -104,7 +104,7 @@ describe('Departments v2 API Endpoints', () => {
       console.info('Tried to login with email:', employeeUser.email);
       throw new Error('Employee login failed');
     }
-    employeeTokenV2 = employeeLoginRes.body.data.accessToken;
+    employeeTokenV2 = employeeLoginRes.body.data['accessToken'];
 
     const rootLoginRes = await request(app).post('/api/v2/auth/login').send({
       email: rootUser.email,
@@ -116,7 +116,7 @@ describe('Departments v2 API Endpoints', () => {
       console.info('Tried to login with email:', rootUser.email);
       throw new Error('Root login failed');
     }
-    rootTokenV2 = rootLoginRes.body.data.accessToken;
+    rootTokenV2 = rootLoginRes.body.data['accessToken'];
 
     const tenant2LoginRes = await request(app).post('/api/v2/auth/login').send({
       email: tenant2User.email,
@@ -128,7 +128,7 @@ describe('Departments v2 API Endpoints', () => {
       console.info('Tried to login with email:', tenant2User.email);
       throw new Error('Tenant2 login failed');
     }
-    tenant2TokenV2 = tenant2LoginRes.body.data.accessToken;
+    tenant2TokenV2 = tenant2LoginRes.body.data['accessToken'];
 
     // Create initial test departments
     dept1Id = await createTestDepartment(testDb, tenant1Id, 'Engineering', undefined, adminUser.id);
@@ -163,7 +163,7 @@ describe('Departments v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBeGreaterThanOrEqual(2);
+      expect(response.body.data['length']).toBeGreaterThanOrEqual(2);
 
       // Check department structure
       const dept = response.body.data[0];
@@ -231,8 +231,8 @@ describe('Departments v2 API Endpoints', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('totalDepartments');
       expect(response.body.data).toHaveProperty('totalTeams');
-      expect(response.body.data.totalDepartments).toBeGreaterThanOrEqual(2);
-      expect(response.body.data.totalTeams).toBeGreaterThanOrEqual(1);
+      expect(response.body.data['totalDepartments']).toBeGreaterThanOrEqual(2);
+      expect(response.body.data['totalTeams']).toBeGreaterThanOrEqual(1);
     });
 
     it("should return stats only for user's tenant", async () => {
@@ -245,7 +245,7 @@ describe('Departments v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.totalDepartments).toBeGreaterThanOrEqual(1); // At least the one we just created
+      expect(response.body.data['totalDepartments']).toBeGreaterThanOrEqual(1); // At least the one we just created
     });
   });
 
@@ -257,10 +257,10 @@ describe('Departments v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.id).toBe(dept1Id);
-      expect(response.body.data.name).toBe('Engineering');
-      expect(response.body.data.managerId).toBe(adminUser.id);
-      expect(response.body.data.managerName).toBe(adminUser.username);
+      expect(response.body.data['id']).toBe(dept1Id);
+      expect(response.body.data['name']).toBe('Engineering');
+      expect(response.body.data['managerId']).toBe(adminUser.id);
+      expect(response.body.data['managerName']).toBe(adminUser.username);
     });
 
     it('should return 404 for non-existent department', async () => {
@@ -309,10 +309,10 @@ describe('Departments v2 API Endpoints', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.name).toBe('Marketing');
-      expect(response.body.data.managerId).toBe(adminUser.id);
-      expect(response.body.data.description).toBe('Marketing department');
-      expect(response.body.data.id).toBeDefined();
+      expect(response.body.data['name']).toBe('Marketing');
+      expect(response.body.data['managerId']).toBe(adminUser.id);
+      expect(response.body.data['description']).toBe('Marketing department');
+      expect(response.body.data['id']).toBeDefined();
     });
 
     it('should create a department with parent', async () => {
@@ -328,8 +328,8 @@ describe('Departments v2 API Endpoints', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.name).toBe('Frontend Team');
-      expect(response.body.data.parentId).toBe(dept1Id);
+      expect(response.body.data['name']).toBe('Frontend Team');
+      expect(response.body.data['parentId']).toBe(dept1Id);
     });
 
     it('should require admin or root role', async () => {
@@ -386,9 +386,9 @@ describe('Departments v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.name).toBe('Engineering Team');
-      expect(response.body.data.description).toBe('Updated description');
-      expect(response.body.data.managerId).toBe(rootUser.id);
+      expect(response.body.data['name']).toBe('Engineering Team');
+      expect(response.body.data['description']).toBe('Updated description');
+      expect(response.body.data['managerId']).toBe(rootUser.id);
     });
 
     it('should require admin or root role for update', async () => {
@@ -434,7 +434,7 @@ describe('Departments v2 API Endpoints', () => {
         .set('Authorization', `Bearer ${adminTokenV2}`)
         .send({ name: 'ToDelete' });
 
-      const deptId = createRes.body.data.id;
+      const deptId = createRes.body.data['id'];
 
       const response = await request(app)
         .delete(`/api/v2/departments/${deptId}`)
@@ -442,7 +442,7 @@ describe('Departments v2 API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.message).toContain('Department deleted successfully');
+      expect(response.body.data['message']).toContain('Department deleted successfully');
     });
 
     it('should not delete department with assigned users', async () => {
@@ -492,7 +492,7 @@ describe('Departments v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBe(2);
+      expect(response.body.data['length']).toBe(2);
 
       // Check member structure
       const member = response.body.data[0];
@@ -519,7 +519,7 @@ describe('Departments v2 API Endpoints', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeInstanceOf(Array);
-      expect(response.body.data.length).toBe(0);
+      expect(response.body.data['length']).toBe(0);
     });
 
     it("should not return members from other tenant's department", async () => {
@@ -544,7 +544,7 @@ describe('Departments v2 API Endpoints', () => {
         .get('/api/v2/departments')
         .set('Authorization', `Bearer ${adminTokenV2}`);
 
-      const deptNames = listResponse.body.data.map((d: any) => d.name);
+      const deptNames = listResponse.body.data['map']((d: any) => d.name);
       expect(deptNames).not.toContain(tenant2TestDeptName);
     });
 

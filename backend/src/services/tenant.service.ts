@@ -109,7 +109,7 @@ class TenantService {
    * PLANNED FEATURE - Not yet implemented
    *
    * Required before implementation:
-   * 1. Add updateTenant() function to tenant.ts model
+   * 1. Add updateTenant() function to tenant['ts'] model
    * 2. Define which fields are safe to update (e.g., company_name, email, phone)
    * 3. Implement subdomain change logic (complex - affects routing, URLs, files)
    * 4. Add validation for status transitions (trial → active → suspended)

@@ -58,9 +58,9 @@ loadLoginRedirect(app);
 loadErrorHandler(app);
 
 // Log successful initialization
-if (process.env.NODE_ENV !== 'production') {
+if (process.env['NODE_ENV'] !== 'production') {
   console.log('🚀 Application initialized successfully');
-  console.log(`📝 Environment: ${process.env.NODE_ENV ?? 'development'}`);
+  console.log(`📝 Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
   console.log(`🔒 Trust Proxy: ${String(app.get('trust proxy'))}`);
 }
 

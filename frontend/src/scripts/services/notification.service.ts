@@ -396,11 +396,11 @@ export default notificationService;
 
 // Export for backwards compatibility
 if (typeof window !== 'undefined') {
-  (window as unknown as Record<string, unknown>).NotificationService = NotificationService;
-  (window as unknown as Record<string, unknown>).notificationService = notificationService;
+  (window as unknown as Record<string, unknown>)['NotificationService'] = NotificationService;
+  (window as unknown as Record<string, unknown>)['notificationService'] = notificationService;
 
   // Also export shorthand functions
-  (window as unknown as Record<string, unknown>).notify = {
+  (window as unknown as Record<string, unknown>)['notify'] = {
     success: (title: string, message?: string) => notificationService.success(title, message),
     error: (title: string, message?: string) => notificationService.error(title, message),
     warning: (title: string, message?: string) => notificationService.warning(title, message),

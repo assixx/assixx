@@ -158,11 +158,25 @@ function initDataTooltips() {
 
   elements.forEach((element) => {
     const tooltipText = element.getAttribute('data-tooltip');
-    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
 
     if (tooltipText === null || tooltipText === '') {
       return;
     }
+
+    // CRITICAL: Inside scroll containers (overflow:auto), position:absolute tooltips
+    // will ALWAYS be clipped - no matter if top or bottom.
+    // Solution: Use native title attribute which browser renders outside any container
+    const isInsideScrollContainer = element.closest('.table-responsive') !== null;
+
+    if (isInsideScrollContainer) {
+      // Use native title - browser handles positioning, never clipped
+      element.setAttribute('title', tooltipText);
+      element.removeAttribute('data-tooltip');
+      return;
+    }
+
+    // For elements NOT in scroll containers: use custom tooltip
+    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
 
     // Wrap element if not already wrapped
     const isAlreadyWrapped = element.parentElement?.classList.contains('tooltip') ?? false;
@@ -458,7 +472,7 @@ function handleSearchKeyboard(e: KeyboardEvent, searchContainer: HTMLElement): v
     e.preventDefault();
     // eslint-disable-next-line security/detect-object-injection -- Safe: selectedResultIndex is a controlled index from our keyboard navigation (bounded by resultItems.length)
     const selectedItem = resultItems[selectedResultIndex] as HTMLElement;
-    const adminId = selectedItem.dataset.adminId;
+    const adminId = selectedItem.dataset['adminId'];
     if (adminId !== undefined) {
       handleResultItemClick(searchContainer, adminId);
       selectedResultIndex = -1;
@@ -502,7 +516,7 @@ function setupSearchInput(): void {
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     const resultItem = target.closest<HTMLElement>('[data-action="edit-from-search"]');
-    const adminId = resultItem?.dataset.adminId;
+    const adminId = resultItem?.dataset['adminId'];
     if (resultItem !== null && adminId !== undefined) {
       handleResultItemClick(searchContainer, adminId);
     }
@@ -554,7 +568,7 @@ function setupStatusToggle(): void {
     }
 
     // Get status from data attribute
-    const status = btn.dataset.status as AdminStatusFilter | undefined;
+    const status = btn.dataset['status'] as AdminStatusFilter | undefined;
     if (status === undefined) {
       return;
     }
@@ -753,7 +767,7 @@ function attachTableActionListeners(): void {
     // Handle edit admin
     const editBtn = target.closest<HTMLElement>('[data-action="edit-admin"]');
     if (editBtn) {
-      const adminId = editBtn.dataset.adminId;
+      const adminId = editBtn.dataset['adminId'];
       if (adminId !== undefined) {
         void editAdminHandler(Number.parseInt(adminId, 10));
       }
@@ -762,7 +776,7 @@ function attachTableActionListeners(): void {
     // Handle delete admin
     const deleteBtn = target.closest<HTMLElement>('[data-action="delete-admin"]');
     if (deleteBtn) {
-      const adminId = deleteBtn.dataset.adminId;
+      const adminId = deleteBtn.dataset['adminId'];
       if (adminId !== undefined) {
         showDeleteModal(Number.parseInt(adminId, 10));
       }
@@ -771,7 +785,7 @@ function attachTableActionListeners(): void {
     // Handle permissions
     const permBtn = target.closest<HTMLElement>('[data-action="show-permissions"]');
     if (permBtn) {
-      const adminId = permBtn.dataset.adminId;
+      const adminId = permBtn.dataset['adminId'];
       if (adminId !== undefined) {
         void showPermissionsModal(Number.parseInt(adminId, 10));
       }

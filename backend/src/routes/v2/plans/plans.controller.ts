@@ -83,7 +83,7 @@ router.get(
   '/',
   typed.public(async (req: PublicRequest, res: Response) => {
     try {
-      const includeInactive = req.query.includeInactive === 'true';
+      const includeInactive = req.query['includeInactive'] === 'true';
       const plans = await PlansService.getAllPlans(includeInactive);
 
       res.json(successResponse(plans));
@@ -515,12 +515,15 @@ router.put(
   typed.body<UpgradePlanRequest>(async (req: BodyRequest<UpgradePlanRequest>, res: Response) => {
     try {
       const tenantId = req.user.tenant_id;
-      const { newPlanCode, effectiveDate } = req.body;
+      const { newPlanCode, effectiveDate } = req.body as {
+        newPlanCode: string;
+        effectiveDate?: string;
+      };
 
       const result = await PlansService.upgradePlan(
         tenantId,
         newPlanCode,
-        effectiveDate ? new Date(effectiveDate) : undefined,
+        effectiveDate !== undefined && effectiveDate !== '' ? new Date(effectiveDate) : undefined,
         req.user.id,
       );
 

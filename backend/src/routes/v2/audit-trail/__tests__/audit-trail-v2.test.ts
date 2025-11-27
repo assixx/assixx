@@ -76,17 +76,17 @@ describe('Audit Trail API v2', () => {
     const adminLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: adminUser.email, password: 'Admin123!' });
-    adminToken = adminLogin.body.data.accessToken;
+    adminToken = adminLogin.body.data['accessToken'];
 
     const userLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: regularUser.email, password: 'User123!' });
-    userToken = userLogin.body.data.accessToken;
+    userToken = userLogin.body.data['accessToken'];
 
     const rootLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: rootUser.email, password: 'Root123!' });
-    rootToken = rootLogin.body.data.accessToken;
+    rootToken = rootLogin.body.data['accessToken'];
 
     // Create the audit_trail table
     await testDb.execute(`
@@ -131,8 +131,8 @@ describe('Audit Trail API v2', () => {
         (?, ?, 'Regular User', 'employee', 'delete', 'chat_message', 300, 'Message #300', NULL, '192.168.1.2', 'Test Agent', 'failure')`,
         [tenantId, adminUserId, tenantId, userId, tenantId, adminUserId, tenantId, userId],
       );
-      testEntryId = result.insertId;
-      logError(`Created ${result.affectedRows} test audit entries`);
+      testEntryId = result['insertId'];
+      logError(`Created ${result['affectedRows']} test audit entries`);
     } catch (error: unknown) {
       logError('Failed to create test audit entries:', error);
       throw error;
@@ -193,7 +193,7 @@ describe('Audit Trail API v2', () => {
       });
 
       // Should only see their own entries
-      const otherUserEntries = response.body.data.entries.filter((e: any) => e.userId !== userId);
+      const otherUserEntries = response.body.data['entries'].filter((e: any) => e.userId !== userId);
       expect(otherUserEntries).toHaveLength(0);
     });
 
@@ -204,8 +204,8 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.data.entries).toHaveLength(2);
-      expect(response.body.data.pagination.pageSize).toBe(2);
+      expect(response.body.data['entries']).toHaveLength(2);
+      expect(response.body.data['pagination'].pageSize).toBe(2);
     });
 
     it('should support filtering by action', async () => {
@@ -215,7 +215,7 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      const entries = response.body.data.entries;
+      const entries = response.body.data['entries'];
       expect(entries.every((e: any) => e.action === 'create')).toBe(true);
     });
 
@@ -226,7 +226,7 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      const entries = response.body.data.entries;
+      const entries = response.body.data['entries'];
       expect(entries.every((e: any) => e.resourceType === 'user')).toBe(true);
     });
 
@@ -237,7 +237,7 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
-      const entries = response.body.data.entries;
+      const entries = response.body.data['entries'];
       expect(entries.every((e: any) => e.status === 'failure')).toBe(true);
     });
 
@@ -256,7 +256,7 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(response.body.data.entries.length).toBeGreaterThan(0);
+      expect(response.body.data['entries'].length).toBeGreaterThan(0);
     });
 
     it('should support search', async () => {
@@ -266,7 +266,7 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${rootToken}`)
         .expect(200);
 
-      expect(response.body.data.entries.length).toBeGreaterThan(0);
+      expect(response.body.data['entries'].length).toBeGreaterThan(0);
     });
 
     it('should allow root to see all entries', async () => {
@@ -276,7 +276,7 @@ describe('Audit Trail API v2', () => {
         .expect(200);
 
       // Should see entries from multiple users
-      const userIds = new Set(response.body.data.entries.map((e: any) => e.userId));
+      const userIds = new Set(response.body.data['entries'].map((e: any) => e.userId));
       expect(userIds.size).toBeGreaterThan(1);
     });
 
@@ -492,7 +492,7 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
-      expect(checkResponse.body.data.entries).toEqual(
+      expect(checkResponse.body.data['entries']).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             action: 'export',
@@ -579,7 +579,7 @@ describe('Audit Trail API v2', () => {
         .set('Authorization', `Bearer ${rootToken}`)
         .expect(200);
 
-      expect(checkResponse.body.data.entries).toEqual(
+      expect(checkResponse.body.data['entries']).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
             action: 'delete',
@@ -612,7 +612,7 @@ describe('Audit Trail API v2', () => {
       const otherLogin = await request(app)
         .post('/api/v2/auth/login')
         .send({ email: otherUser.email, password: 'Other123!' });
-      otherTenantToken = otherLogin.body.data.accessToken;
+      otherTenantToken = otherLogin.body.data['accessToken'];
 
       // Create audit entry for other tenant
       await testDb.execute(
@@ -630,7 +630,7 @@ describe('Audit Trail API v2', () => {
         .expect(200);
 
       // Should not see entries from the main test tenant
-      const mainTenantEntries = response.body.data.entries.filter(
+      const mainTenantEntries = response.body.data['entries'].filter(
         (e: any) => e.tenantId === tenantId,
       );
       expect(mainTenantEntries).toHaveLength(0);

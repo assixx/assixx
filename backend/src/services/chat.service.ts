@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 /**
  * Chat Service
  * Handles chat-related business logic
@@ -15,10 +14,10 @@ dotenv.config({ path: path.join(currentDir, '.env') });
 
 // Create database connection pool
 const db = mysql.createPool({
-  host: process.env.DB_HOST ?? 'localhost',
-  user: process.env.DB_USER ?? 'root',
-  password: process.env.DB_PASSWORD ?? '',
-  database: process.env.DB_NAME ?? 'main',
+  host: process.env['DB_HOST'] ?? 'localhost',
+  user: process.env['DB_USER'] ?? 'root',
+  password: process.env['DB_PASSWORD'] ?? '',
+  database: process.env['DB_NAME'] ?? 'main',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -168,71 +167,31 @@ interface UserUsernameResult extends RowDataPacket {
  *
  */
 class ChatService {
-  /**
-   * Build query for fetching users based on role
-   */
+  /** Common SELECT fields for user queries */
+  private readonly userSelectFields = `u.id, u.username, u.first_name, u.last_name, u.email, u.role, u.department_id, d.name as department, NULL as employee_number, NULL as position, u.profile_picture as profile_image_url, 0 AS is_online, NULL as shift_type, NULL as start_time, NULL as end_time, NULL as location`;
+
+  /** Build query for fetching users based on role */
   private buildUsersQuery(
     userRole: string,
     userDepartmentId: number | null,
   ): { query: string; params: number[] } {
-    const selectFields = `
-      u.id,
-      u.username,
-      u.first_name,
-      u.last_name,
-      u.email,
-      u.role,
-      u.department_id,
-      d.name as department,
-      NULL as employee_number,
-      NULL as position,
-      u.profile_picture as profile_image_url,
-      0 AS is_online,
-      NULL as shift_type,
-      NULL as start_time,
-      NULL as end_time,
-      NULL as location
-    `;
-
     if (userRole === 'root' || userRole === 'admin') {
       return {
-        query: `
-          SELECT ${selectFields}
-          FROM users u
-          LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ?
-            AND u.id != ?
-          ORDER BY u.role DESC, d.name, u.last_name, u.first_name
-        `,
+        query: `SELECT ${this.userSelectFields} FROM users u LEFT JOIN departments d ON u.department_id = d.id
+          WHERE u.tenant_id = ? AND u.id != ? ORDER BY u.role DESC, d.name, u.last_name, u.first_name`,
         params: [],
       };
     }
-
     if (userDepartmentId == null) {
       return {
-        query: `
-          SELECT ${selectFields}
-          FROM users u
-          LEFT JOIN departments d ON u.department_id = d.id
-          WHERE u.tenant_id = ?
-            AND u.id != ?
-            AND u.role IN ('admin', 'root')
-          ORDER BY u.role DESC, u.last_name, u.first_name
-        `,
+        query: `SELECT ${this.userSelectFields} FROM users u LEFT JOIN departments d ON u.department_id = d.id
+          WHERE u.tenant_id = ? AND u.id != ? AND u.role IN ('admin', 'root') ORDER BY u.role DESC, u.last_name, u.first_name`,
         params: [],
       };
     }
-
     return {
-      query: `
-        SELECT ${selectFields}
-        FROM users u
-        LEFT JOIN departments d ON u.department_id = d.id
-        WHERE u.tenant_id = ?
-          AND u.id != ?
-          AND (u.department_id = ? OR u.role IN ('admin', 'root'))
-        ORDER BY u.role DESC, u.last_name, u.first_name
-      `,
+      query: `SELECT ${this.userSelectFields} FROM users u LEFT JOIN departments d ON u.department_id = d.id
+        WHERE u.tenant_id = ? AND u.id != ? AND (u.department_id = ? OR u.role IN ('admin', 'root')) ORDER BY u.role DESC, u.last_name, u.first_name`,
       params: [userDepartmentId],
     };
   }
@@ -267,8 +226,13 @@ class ChatService {
         throw new Error('Current user not found');
       }
 
-      const userRole = currentUserInfo[0].role;
-      const userDepartmentId = currentUserInfo[0].department_id;
+      const firstUser = currentUserInfo[0];
+      if (firstUser == null) {
+        throw new Error('Current user data is null');
+      }
+
+      const userRole = firstUser.role;
+      const userDepartmentId = firstUser.department_id;
 
       // Build query based on user role and department
       const { query, params: additionalParams } = this.buildUsersQuery(userRole, userDepartmentId);
@@ -447,7 +411,12 @@ class ChatService {
       throw new Error('Current user not found');
     }
 
-    const userRole = currentUserInfo[0].role;
+    const firstUser = currentUserInfo[0];
+    if (firstUser == null) {
+      throw new Error('Current user data is null');
+    }
+
+    const userRole = firstUser.role;
 
     // Employee permission check for non-group conversations
     if (userRole === 'employee' && !isGroup) {
@@ -456,7 +425,8 @@ class ChatService {
         [participantIds[0], tenantId],
       );
 
-      if (targetUserInfo.length > 0 && targetUserInfo[0].role === 'employee') {
+      const firstTarget = targetUserInfo[0];
+      if (targetUserInfo.length > 0 && firstTarget?.role === 'employee') {
         throw new Error('Mitarbeiter können keine Nachrichten an andere Mitarbeiter initiieren');
       }
     }
@@ -489,7 +459,8 @@ class ChatService {
       [tenantId, userId, targetUserId],
     );
 
-    return existing.length > 0 ? existing[0].id : null;
+    const firstExisting = existing[0];
+    return existing.length > 0 && firstExisting != null ? firstExisting.id : null;
   }
 
   /**
@@ -550,11 +521,16 @@ class ChatService {
 
       // Check for existing 1:1 conversation
       if (!resolvedIsGroup && participantIds.length === 1) {
+        const firstParticipant = participantIds[0];
+        if (firstParticipant == null) {
+          throw new Error('First participant ID is null');
+        }
+
         const existingId = await this.findExistingConversation(
           connection,
           tenantId,
           userId,
-          participantIds[0],
+          firstParticipant,
         );
 
         if (existingId !== null) {
@@ -584,14 +560,27 @@ class ChatService {
     }
   }
 
-  /**
-   * Holt Nachrichten einer Konversation
-   * @param tenantId - The tenant ID
-   * @param conversationId - The conversationId parameter
-   * @param userId - The user ID
-   * @param limit - The result limit
-   * @param offset - The result offset
-   */
+  /** Check if user is participant in conversation */
+  private async checkParticipant(conversationId: number, userId: number): Promise<void> {
+    const [participant] = await db
+      .promise()
+      .query<
+        RowDataPacket[]
+      >('SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, userId]);
+    if (participant.length === 0) throw new Error('Nicht autorisiert');
+  }
+
+  /** Get group conversation participants */
+  private async getGroupParticipants(conversationId: number): Promise<Participant[]> {
+    const [data] = await db.promise().query<Participant[]>(
+      `SELECT u.id, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url
+       FROM conversation_participants cp JOIN users u ON cp.user_id = u.id WHERE cp.conversation_id = ?`,
+      [conversationId],
+    );
+    return data;
+  }
+
+  /** Get messages for conversation */
   async getMessages(
     tenantId: string | number,
     conversationId: number,
@@ -599,82 +588,57 @@ class ChatService {
     limit?: number,
     offset?: number,
   ): Promise<MessagesResponse> {
-    const resolvedLimit = limit ?? 50;
-    const resolvedOffset = offset ?? 0;
+    await this.checkParticipant(conversationId, userId);
 
-    // Prüfe Berechtigung
-    const [participant] = await db
-      .promise()
-      .query<
-        RowDataPacket[]
-      >('SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, userId]);
-
-    if (participant.length === 0) {
-      throw new Error('Nicht autorisiert');
-    }
-
-    // Hole Konversationsdetails
     const [conversationData] = await db.promise().query<ConversationDetails[]>(
-      `SELECT c.*,
-        CASE
-          WHEN c.is_group = 1 THEN c.name
-          ELSE CONCAT(u.first_name, ' ', u.last_name)
-        END AS display_name,
-        u.profile_picture as profile_image_url
-      FROM conversations c
-      LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id
-        AND cp.user_id != ? AND c.is_group = 0
-      LEFT JOIN users u ON cp.user_id = u.id
-      WHERE c.id = ? AND c.tenant_id = ?`,
+      `SELECT c.*, CASE WHEN c.is_group = 1 THEN c.name ELSE CONCAT(u.first_name, ' ', u.last_name) END AS display_name, u.profile_picture as profile_image_url
+       FROM conversations c LEFT JOIN conversation_participants cp ON c.id = cp.conversation_id AND cp.user_id != ? AND c.is_group = 0
+       LEFT JOIN users u ON cp.user_id = u.id WHERE c.id = ? AND c.tenant_id = ?`,
       [userId, conversationId, tenantId],
     );
 
-    // Hole Nachrichten
     const [messages] = await db.promise().query<Message[]>(
-      `SELECT
-        m.*,
-        u.username,
-        u.first_name,
-        u.last_name,
-        u.profile_picture as profile_image_url,
-        0 AS is_read
-      FROM messages m
-      LEFT JOIN users u ON m.sender_id = u.id
-      WHERE m.conversation_id = ? AND m.tenant_id = ?
-      ORDER BY m.created_at DESC
-      LIMIT ? OFFSET ?`,
-      [conversationId, tenantId, resolvedLimit, resolvedOffset],
+      `SELECT m.*, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url, 0 AS is_read
+       FROM messages m LEFT JOIN users u ON m.sender_id = u.id WHERE m.conversation_id = ? AND m.tenant_id = ?
+       ORDER BY m.created_at DESC LIMIT ? OFFSET ?`,
+      [conversationId, tenantId, limit ?? 50, offset ?? 0],
     );
 
-    // Hole Teilnehmer für Gruppenkonversationen
-    let participants: Participant[] = [];
-    if (conversationData[0]?.is_group === true) {
-      const [participantData] = await db.promise().query<Participant[]>(
-        `SELECT u.id, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url
-         FROM conversation_participants cp
-         JOIN users u ON cp.user_id = u.id
-         WHERE cp.conversation_id = ?`,
-        [conversationId],
-      );
-      participants = participantData;
-    }
+    const firstConversation = conversationData[0];
+    if (firstConversation == null) throw new Error('Conversation not found');
 
-    return {
-      conversation: conversationData[0],
-      messages: messages.reverse(),
-      participants,
-    };
+    const participants =
+      firstConversation.is_group === true ? await this.getGroupParticipants(conversationId) : [];
+    return { conversation: firstConversation, messages: messages.reverse(), participants };
   }
 
-  /**
-   * Sendet eine Nachricht
-   * Prüft Chat-Permissions basierend auf Rollen
-   * @param tenantId - The tenant ID
-   * @param conversationId - The conversationId parameter
-   * @param senderId - The senderId parameter
-   * @param content - The content parameter
-   * @param attachment - The attachment parameter
-   */
+  /** Get user role for permission check */
+  private async getUserRole(senderId: number, tenantId: string | number): Promise<string> {
+    const [info] = await db
+      .promise()
+      .query<
+        UserRoleResult[]
+      >('SELECT role FROM users WHERE id = ? AND tenant_id = ?', [senderId, tenantId]);
+    if (info.length === 0 || info[0] == null) throw new Error('Sender not found');
+    return info[0].role;
+  }
+
+  /** Check if employee can send (needs admin message first) */
+  private async checkEmployeeSendPermission(
+    conversationId: number,
+    tenantId: string | number,
+  ): Promise<void> {
+    const [adminMessages] = await db.promise().query<CountResult[]>(
+      `SELECT COUNT(*) as count FROM messages m JOIN users u ON m.sender_id = u.id
+       WHERE m.conversation_id = ? AND u.role IN ('admin', 'root') AND m.tenant_id = ?`,
+      [conversationId, tenantId],
+    );
+    if (adminMessages[0] == null || adminMessages[0].count === 0) {
+      throw new Error('Mitarbeiter können nur antworten, wenn ein Admin bereits geschrieben hat');
+    }
+  }
+
+  /** Send a message */
   async sendMessage(
     tenantId: string | number,
     conversationId: number,
@@ -682,79 +646,37 @@ class ChatService {
     content: string,
     attachment: AttachmentData | null = null,
   ): Promise<Message> {
-    // Prüfe Berechtigung
-    const [participant] = await db
+    await this.checkParticipant(conversationId, senderId);
+    const senderRole = await this.getUserRole(senderId, tenantId);
+    if (senderRole === 'employee') await this.checkEmployeeSendPermission(conversationId, tenantId);
+
+    const [result] = await db
       .promise()
-      .query<
-        RowDataPacket[]
-      >('SELECT 1 FROM conversation_participants WHERE conversation_id = ? AND user_id = ?', [conversationId, senderId]);
-
-    if (participant.length === 0) {
-      throw new Error('Nicht autorisiert');
-    }
-
-    // Hole Sender-Rolle und prüfe Permissions
-    const [senderInfo] = await db
-      .promise()
-      .query<
-        UserRoleResult[]
-      >(`SELECT role FROM users WHERE id = ? AND tenant_id = ?`, [senderId, tenantId]);
-
-    if (senderInfo.length === 0) {
-      throw new Error('Sender not found');
-    }
-
-    const senderRole = senderInfo[0].role;
-
-    // Für Employees: Prüfe ob sie überhaupt in dieser Konversation schreiben dürfen
-    if (senderRole === 'employee') {
-      // Prüfe ob bereits Nachrichten von einem Admin in dieser Konversation existieren
-      const [adminMessages] = await db.promise().query<CountResult[]>(
-        `SELECT COUNT(*) as count
-         FROM messages m
-         JOIN users u ON m.sender_id = u.id
-         WHERE m.conversation_id = ?
-         AND u.role IN ('admin', 'root')
-         AND m.tenant_id = ?`,
-        [conversationId, tenantId],
+      .query<ResultSetHeader>(
+        `INSERT INTO messages (tenant_id, conversation_id, sender_id, content, attachment_path, attachment_name, attachment_type) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          tenantId,
+          conversationId,
+          senderId,
+          content,
+          attachment?.path ?? null,
+          attachment?.name ?? null,
+          attachment?.type ?? null,
+        ],
       );
 
-      if (adminMessages[0].count === 0) {
-        throw new Error('Mitarbeiter können nur antworten, wenn ein Admin bereits geschrieben hat');
-      }
-    }
-
-    // Erstelle Nachricht
-    const [result] = await db.promise().query<ResultSetHeader>(
-      `INSERT INTO messages (tenant_id, conversation_id, sender_id, content, attachment_path, attachment_name, attachment_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [
-        tenantId,
-        conversationId,
-        senderId,
-        content,
-        attachment?.path ?? null,
-        attachment?.name ?? null,
-        attachment?.type ?? null,
-      ],
-    );
-
-    // Update conversation updated_at timestamp
     await db
       .promise()
       .query('UPDATE conversations SET updated_at = CURRENT_TIMESTAMP WHERE id = ?', [
         conversationId,
       ]);
 
-    // Hole die erstellte Nachricht mit Benutzerdetails
-    const [message] = await db.promise().query<Message[]>(
-      `SELECT m.*, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url
-       FROM messages m
-       LEFT JOIN users u ON m.sender_id = u.id
-       WHERE m.id = ?`,
-      [result.insertId],
-    );
-
+    const [message] = await db
+      .promise()
+      .query<
+        Message[]
+      >(`SELECT m.*, u.username, u.first_name, u.last_name, u.profile_picture as profile_image_url FROM messages m LEFT JOIN users u ON m.sender_id = u.id WHERE m.id = ?`, [result.insertId]);
+    if (message[0] == null) throw new Error('Created message not found');
     return message[0];
   }
 
@@ -814,7 +736,12 @@ class ChatService {
         [userId, userId, tenantId, userId],
       );
 
-      return result[0].count;
+      const firstResult = result[0];
+      if (firstResult == null) {
+        return 0;
+      }
+
+      return firstResult.count;
     } catch (error: unknown) {
       console.error('Error in getUnreadCount:', error);
       return 0;
@@ -899,8 +826,13 @@ class ChatService {
         throw new Error('Conversation not found or access denied');
       }
 
-      const isGroup = Boolean(conversation[0].is_group);
-      const participantCount = conversation[0].participant_count;
+      const firstConversation = conversation[0];
+      if (firstConversation == null) {
+        throw new Error('Conversation data is null');
+      }
+
+      const isGroup = Boolean(firstConversation.is_group);
+      const participantCount = firstConversation.participant_count;
 
       if (!isGroup || participantCount <= 2) {
         // For 1:1 chats or groups with only 2 participants left, delete everything
@@ -1012,12 +944,13 @@ class ChatService {
       .promise()
       .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ?', [userId]);
 
-    if (userInfo.length > 0) {
+    const firstUser = userInfo[0];
+    if (userInfo.length > 0 && firstUser != null) {
       await db
         .promise()
         .execute(
           'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
-          [conversationId, addedBy, `${userInfo[0].username} wurde zur Unterhaltung hinzugefügt`],
+          [conversationId, addedBy, `${firstUser.username} wurde zur Unterhaltung hinzugefügt`],
         );
     }
   }
@@ -1060,12 +993,13 @@ class ChatService {
       .promise()
       .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ?', [userId]);
 
-    if (userInfo.length > 0) {
+    const firstUser = userInfo[0];
+    if (userInfo.length > 0 && firstUser != null) {
       await db
         .promise()
         .execute(
           'INSERT INTO messages (conversation_id, user_id, content, is_system, created_at) VALUES (?, ?, ?, 1, NOW())',
-          [conversationId, removedBy, `${userInfo[0].username} hat die Unterhaltung verlassen`],
+          [conversationId, removedBy, `${firstUser.username} hat die Unterhaltung verlassen`],
         );
     }
   }

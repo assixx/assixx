@@ -11,7 +11,7 @@ import { pool } from '../../database.js';
  */
 
 // Set NODE_ENV to production to avoid test-specific SQL in auth middleware
-process.env.NODE_ENV = 'production';
+process.env['NODE_ENV'] = 'production';
 
 // Nur externe Services mocken
 jest.mock('../../utils/emailService', () => ({
@@ -84,7 +84,7 @@ describe('Document Upload - Integration Test', () => {
         role: 'admin',
         tenant_id: testTenantId,
       },
-      process.env.JWT_SECRET ?? 'schneeseekleerehfeedrehzehwehtee',
+      process.env['JWT_SECRET'] ?? 'schneeseekleerehfeedrehzehwehtee',
       { expiresIn: '1h' },
     );
   });

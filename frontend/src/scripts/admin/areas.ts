@@ -96,11 +96,11 @@ class AreasManager {
       const params: Record<string, string> = {};
 
       if (this.currentFilter !== 'all') {
-        params.type = this.currentFilter;
+        params['type'] = this.currentFilter;
       }
 
       if (this.searchTerm.length > 0) {
-        params.search = this.searchTerm;
+        params['search'] = this.searchTerm;
       }
 
       const response = await this.apiClient.request<Area[]>('/areas', {
@@ -180,8 +180,8 @@ class AreasManager {
     tbody.querySelectorAll('button[data-action]').forEach((button) => {
       button.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLButtonElement;
-        const action = target.dataset.action;
-        const id = Number.parseInt(target.dataset.id ?? '0', 10);
+        const action = target.dataset['action'];
+        const id = Number.parseInt(target.dataset['id'] ?? '0', 10);
         const w = window as WindowWithAreaHandlers;
 
         if (action === 'edit' && w.editArea) {
@@ -377,7 +377,7 @@ function extractAreaData(form: HTMLFormElement): Record<string, string | number>
 
 // Validate area data
 function validateAreaData(areaData: Record<string, string | number>): boolean {
-  return typeof areaData.name === 'string' && areaData.name.length > 0;
+  return typeof areaData['name'] === 'string' && areaData['name'].length > 0;
 }
 
 // Setup visibility checking for areas section

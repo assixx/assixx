@@ -92,11 +92,10 @@ function createChildEventData(
   newStartDate: Date,
   newEndDate: Date,
 ): EventCreateData {
-  return {
+  const baseData: EventCreateData = {
     tenant_id: parentEvent.tenant_id,
     title: parentEvent.title,
     description: convertDescription(parentEvent.description),
-    location: parentEvent.location,
     start_time: newStartDate.toISOString(),
     end_time: newEndDate.toISOString(),
     all_day: Boolean(parentEvent.all_day),
@@ -104,10 +103,21 @@ function createChildEventData(
     department_id: parentEvent.department_id ?? null,
     team_id: parentEvent.team_id ?? null,
     created_by: parentEvent.created_by ?? parentEvent.user_id,
-    reminder_time: parentEvent.reminder_time,
-    color: parentEvent.color,
     parent_event_id: parentEvent.id,
   };
+
+  // Conditionally add optional properties only if they exist
+  if (parentEvent.location !== undefined) {
+    baseData.location = parentEvent.location;
+  }
+  if (parentEvent.reminder_time !== null && parentEvent.reminder_time !== undefined) {
+    baseData.reminder_time = parentEvent.reminder_time;
+  }
+  if (parentEvent.color !== undefined) {
+    baseData.color = parentEvent.color;
+  }
+
+  return baseData;
 }
 
 /**
@@ -127,13 +137,18 @@ export async function generateRecurringEvents(
 ): Promise<void> {
   try {
     // Parse recurrence rule
-    const [pattern, ...options] = recurrenceRule.split(';');
+    const ruleParts = recurrenceRule.split(';');
+    const pattern = ruleParts[0] ?? 'weekly'; // Default to weekly if no pattern specified
+    const options = ruleParts.slice(1);
     const { count, until } = parseRecurrenceOptions(options);
     const intervalDays = getIntervalDays(pattern);
 
     // Generate occurrences
-    const startDate = new Date(parentEvent.start_time ?? parentEvent.start_date);
-    const endDate = new Date(parentEvent.end_time ?? parentEvent.end_date);
+    // Use start_time/end_time if available, otherwise fall back to start_date/end_date
+    const startDateValue = parentEvent.start_time ?? parentEvent.start_date;
+    const endDateValue = parentEvent.end_time ?? parentEvent.end_date;
+    const startDate = new Date(startDateValue);
+    const endDate = new Date(endDateValue);
     const duration = endDate.getTime() - startDate.getTime();
 
     let currentDate = new Date(startDate);

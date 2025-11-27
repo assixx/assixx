@@ -157,7 +157,7 @@ export function getInitialsFromToken(token: string | null): string {
     // Parse JWT token
     const base64Url = token.split('.')[1];
     // Runtime validation for malformed JWT tokens
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- Runtime safety check for malformed tokens
+
     if (base64Url === undefined) {
       return '...';
     }

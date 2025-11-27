@@ -1,0 +1,77 @@
+/**
+ * Critical Sidebar State Initialization
+ * @module critical/sidebar-init
+ *
+ * IMPORTANT: This script runs BEFORE DOM ready to prevent layout shift.
+ * It reads the saved sidebar collapsed state from localStorage and applies
+ * the CSS class immediately, ensuring the page renders with the correct
+ * sidebar state from the start.
+ *
+ * This prevents:
+ * - Visual "jump" when sidebar collapses after page load
+ * - Cumulative Layout Shift (CLS) issues
+ * - Poor user experience
+ *
+ * Called from: All pages with sidebar navigation (30+ HTML files)
+ * Timing: <head> tag, before stylesheets load
+ */
+
+(function () {
+  'use strict';
+
+  /**
+   * Apply sidebar collapsed state immediately when DOM is ready
+   * This runs as early as possible to prevent layout shift
+   * @returns {void}
+   */
+  function initSidebarState() {
+    // Read saved state from localStorage
+    /** @type {boolean} */
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+
+    if (!isCollapsed) {
+      // Default state, no action needed
+      return;
+    }
+
+    // Apply collapsed state as soon as DOM is interactive
+    // This ensures the sidebar renders collapsed from the start
+    const applyCollapsedState = function () {
+      /** @type {Element | null} */
+      const sidebar = document.querySelector('.sidebar');
+      /** @type {Element | null} */
+      const mainContent = document.querySelector('.main-content');
+      /** @type {Element | null} */
+      const chatMain = document.querySelector('.chat-main');
+      /** @type {Element | null} */
+      const chatSidebar = document.querySelector('.chat-sidebar');
+
+      if (sidebar !== null) {
+        sidebar.classList.add('collapsed');
+      }
+
+      if (mainContent !== null) {
+        mainContent.classList.add('sidebar-collapsed');
+      }
+
+      if (chatMain !== null) {
+        chatMain.classList.add('sidebar-collapsed');
+      }
+
+      if (chatSidebar !== null) {
+        chatSidebar.classList.add('sidebar-collapsed');
+      }
+    };
+
+    // Apply state when DOM is ready (but before full load)
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', applyCollapsedState);
+    } else {
+      // DOM already loaded
+      applyCollapsedState();
+    }
+  }
+
+  // Execute immediately
+  initSidebarState();
+})();

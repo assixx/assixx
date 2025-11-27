@@ -7,6 +7,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import userModel from '../../../models/user/index.js';
+import type { AvailabilityData, UserFilter } from '../../../models/user/user.types.js';
 import { apiToDb, dbToApi } from '../../../utils/fieldMapping.js';
 import {
   CreateUserBody,
@@ -33,7 +34,7 @@ export class ServiceError extends Error {
    */
   constructor(
     public code: string,
-    public message: string,
+    public override message: string,
     public statusCode: number = 500,
     public details?: { field: string; message: string }[],
   ) {
@@ -53,10 +54,10 @@ const sanitizeUser = <T extends Record<string, unknown>>(
   'password' | 'password_reset_token' | 'password_reset_expires' | 'two_factor_secret'
 > => {
   const sanitized = { ...user };
-  delete (sanitized as Record<string, unknown>).password;
-  delete (sanitized as Record<string, unknown>).password_reset_token;
-  delete (sanitized as Record<string, unknown>).password_reset_expires;
-  delete (sanitized as Record<string, unknown>).two_factor_secret;
+  delete (sanitized as Record<string, unknown>)['password'];
+  delete (sanitized as Record<string, unknown>)['password_reset_token'];
+  delete (sanitized as Record<string, unknown>)['password_reset_expires'];
+  delete (sanitized as Record<string, unknown>)['two_factor_secret'];
   return sanitized as Omit<
     T,
     'password' | 'password_reset_token' | 'password_reset_expires' | 'two_factor_secret'
@@ -67,57 +68,70 @@ const sanitizeUser = <T extends Record<string, unknown>>(
  * Users Service Class
  */
 export class UsersService {
-  /**
-   * List users with pagination and filters
-   * @param tenantId - The tenant ID
-   * @param query - The query parameters
-   */
+  /** Parse string boolean query param */
+  private parseBooleanParam(value: string | undefined): boolean | undefined {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return undefined;
+  }
+
+  /** Build search filters object */
+  private buildSearchFilters(
+    tenantId: number,
+    params: {
+      search: string | undefined;
+      role: string | undefined;
+      isActive: boolean | undefined;
+      isArchived: boolean | undefined;
+      limit: number;
+      page: number;
+      sortBy: string;
+      sortOrder: 'asc' | 'desc';
+    },
+  ): UserFilter {
+    const filters: UserFilter = {
+      tenant_id: tenantId,
+      limit: params.limit,
+      page: params.page,
+      sort_by: params.sortBy,
+      sort_dir: params.sortOrder,
+    };
+    const ext = filters as unknown as Record<string, unknown>;
+    if (params.search !== undefined) ext['search'] = params.search;
+    if (params.role !== undefined && params.role !== '') ext['role'] = params.role;
+    if (params.isActive !== undefined) ext['is_active'] = params.isActive;
+    if (params.isArchived !== undefined) ext['is_archived'] = params.isArchived;
+    return filters;
+  }
+
+  /** List users with pagination and filters */
   async listUsers(tenantId: number, query: ListUsersQuery): Promise<unknown> {
     const page = Number.parseInt(query.page ?? '1', 10);
     const limit = Number.parseInt(query.limit ?? '20', 10);
-    const search = query.search;
-    const role = query.role;
-    const isActive =
-      query.isActive === 'true' ? true
-      : query.isActive === 'false' ? false
-      : undefined;
-    const isArchived =
-      query.isArchived === 'true' ? true
-      : query.isArchived === 'false' ? false
-      : undefined;
-    const sortBy = query.sortBy ?? 'created_at';
-    const sortOrder = query.sortOrder ?? 'desc';
+    const isActive = this.parseBooleanParam(query.isActive);
+    const isArchived = this.parseBooleanParam(query.isArchived);
 
-    // Build filters
-    const filters: UserDbFields = {
-      tenant_id: tenantId,
-    };
-
-    if (role !== undefined && role !== '') filters.role = role;
+    const filters: UserDbFields = { tenant_id: tenantId };
+    if (query.role !== undefined && query.role !== '') filters.role = query.role;
     if (isActive !== undefined) filters.is_active = isActive;
     if (isArchived !== undefined) filters.is_archived = isArchived;
 
-    // Get total count
     const total = await userModel.countWithFilters(filters);
-
-    // Get users
-    const searchFilters = {
-      ...filters,
-      search,
+    const sortOrder: 'asc' | 'desc' = query.sortOrder === 'asc' ? 'asc' : 'desc';
+    const searchFilters = this.buildSearchFilters(tenantId, {
+      search: query.search,
+      role: query.role,
+      isActive,
+      isArchived,
       limit,
       page,
-      sort_by: sortBy,
-      sort_dir: sortOrder,
-    };
+      sortBy: query.sortBy ?? 'created_at',
+      sortOrder,
+    });
     const users = await userModel.search(searchFilters);
 
-    // Sanitize and convert to camelCase
-    const sanitizedUsers = users.map((user: Record<string, unknown>) =>
-      dbToApi(sanitizeUser(user)),
-    );
-
     return {
-      data: sanitizedUsers,
+      data: users.map((user: Record<string, unknown>) => dbToApi(sanitizeUser(user))),
       pagination: {
         currentPage: page,
         totalPages: Math.ceil(total / limit),
@@ -222,15 +236,15 @@ export class UsersService {
     const dbUpdateData = apiToDb(updateData as Record<string, unknown>);
 
     // Handle password update if provided
-    if (updateData.password) {
-      dbUpdateData.password = await bcrypt.hash(updateData.password, 10);
+    if (updateData.password !== undefined && updateData.password !== '') {
+      dbUpdateData['password'] = await bcrypt.hash(updateData.password, 10);
     } else {
-      delete dbUpdateData.password;
+      delete dbUpdateData['password'];
     }
 
     // Remove fields that shouldn't be updated this way
-    delete dbUpdateData.tenant_id;
-    delete dbUpdateData.created_at;
+    delete dbUpdateData['tenant_id'];
+    delete dbUpdateData['created_at'];
 
     return dbUpdateData;
   }
@@ -532,12 +546,22 @@ export class UsersService {
     }
 
     // Update availability
-    await userModel.updateAvailability(userId, tenantId, {
+    const availabilityUpdate: AvailabilityData = {
       availability_status: availabilityData.availabilityStatus,
-      availability_start: availabilityData.availabilityStart ?? undefined,
-      availability_end: availabilityData.availabilityEnd ?? undefined,
-      availability_notes: availabilityData.availabilityNotes ?? undefined,
-    });
+    };
+    if (availabilityData.availabilityStart !== undefined) {
+      (availabilityUpdate as unknown as Record<string, unknown>)['availability_start'] =
+        availabilityData.availabilityStart;
+    }
+    if (availabilityData.availabilityEnd !== undefined) {
+      (availabilityUpdate as unknown as Record<string, unknown>)['availability_end'] =
+        availabilityData.availabilityEnd;
+    }
+    if (availabilityData.availabilityNotes !== undefined) {
+      (availabilityUpdate as unknown as Record<string, unknown>)['availability_notes'] =
+        availabilityData.availabilityNotes;
+    }
+    await userModel.updateAvailability(userId, tenantId, availabilityUpdate);
 
     // Fetch updated user
     const updatedUser = await userModel.findById(userId, tenantId);

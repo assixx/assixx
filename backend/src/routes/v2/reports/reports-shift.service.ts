@@ -8,6 +8,14 @@ import { getDefaultDateFrom, getDefaultDateTo } from './reports-metrics.service.
 import type { ReportFilters } from './reports.types.js';
 
 /**
+ * Safely convert unknown value to number, defaulting to 0 for NaN
+ */
+function toSafeNumber(value: unknown): number {
+  const num = Number(value);
+  return Number.isNaN(num) ? 0 : num;
+}
+
+/**
  * Build shift query conditions from filters
  */
 function buildShiftQueryConditions(filters: ReportFilters): {
@@ -23,12 +31,12 @@ function buildShiftQueryConditions(filters: ReportFilters): {
   conditions.push(`s.date BETWEEN ? AND ?`);
   params.push(dateFrom, dateTo);
 
-  if (filters.departmentId) {
+  if (filters.departmentId !== undefined) {
     conditions.push(`s.department_id = ?`);
     params.push(filters.departmentId);
   }
 
-  if (filters.teamId) {
+  if (filters.teamId !== undefined) {
     conditions.push(`s.team_id = ?`);
     params.push(filters.teamId);
   }
@@ -132,22 +140,25 @@ export async function getShiftReport(filters: ReportFilters): Promise<Record<str
     getPeakHoursAnalysis(filters.tenantId, dateFrom, dateTo),
   ]);
 
+  const totalShifts = toSafeNumber(summary['total_shifts']);
+  const totalFilled = toSafeNumber(summary['total_filled']);
+
   return {
     period: { from: dateFrom, to: dateTo },
-    totalShifts: Number(summary.total_shifts) || 0,
+    totalShifts,
     coverage: {
-      scheduled: Number(summary.total_required) || 0,
-      filled: Number(summary.total_filled) || 0,
-      rate: Number(summary.coverage_rate) || 0,
+      scheduled: toSafeNumber(summary['total_required']),
+      filled: totalFilled,
+      rate: toSafeNumber(summary['coverage_rate']),
     },
     overtime: {
-      totalHours: Number(summary.total_overtime_hours) || 0,
-      totalCost: Number(summary.total_overtime_cost) || 0,
+      totalHours: toSafeNumber(summary['total_overtime_hours']),
+      totalCost: toSafeNumber(summary['total_overtime_cost']),
       byDepartment: overtimeByDept.map((row: Record<string, unknown>) => dbToApi(row)),
     },
     patterns: {
       peakHours: peakHours.map((row: Record<string, unknown>) => dbToApi(row)),
-      understaffedShifts: (Number(summary.total_shifts) || 0) - (Number(summary.total_filled) || 0),
+      understaffedShifts: totalShifts - totalFilled,
     },
   };
 }

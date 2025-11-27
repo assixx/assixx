@@ -81,7 +81,7 @@ export async function populateDepartmentDropdown(): Promise<void> {
     departments.forEach((dept) => {
       const option = document.createElement('div');
       option.className = 'dropdown__option';
-      option.dataset.value = String(dept.id);
+      option.dataset['value'] = String(dept.id);
       option.textContent = dept.name;
       departmentMenu.appendChild(option);
     });
@@ -116,7 +116,7 @@ export async function populateAreaDropdown(): Promise<void> {
     areas.forEach((area) => {
       const option = document.createElement('div');
       option.className = 'dropdown__option';
-      option.dataset.value = String(area.id);
+      option.dataset['value'] = String(area.id);
       option.textContent = area.name;
       areaMenu.appendChild(option);
     });
@@ -302,7 +302,7 @@ async function populateFormWithMachineData(machine: Machine): Promise<void> {
   // Handle date field (convert to YYYY-MM-DD format)
   if (machine.nextMaintenance !== undefined && machine.nextMaintenance !== '') {
     const date = new Date(machine.nextMaintenance);
-    setInputById('machine-next-maintenance', date.toISOString().split('T')[0]);
+    setInputById('machine-next-maintenance', date.toISOString().split('T')[0] ?? '');
   }
 
   // Set custom dropdowns
@@ -400,7 +400,7 @@ export async function handleFormSubmit(e: Event): Promise<void> {
   });
 
   // Validate required fields
-  if (typeof machineData.name !== 'string' || machineData.name.length === 0) {
+  if (typeof machineData['name'] !== 'string' || machineData['name'].length === 0) {
     showErrorAlert('Bitte geben Sie einen Maschinennamen ein');
     return;
   }

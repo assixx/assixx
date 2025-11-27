@@ -71,9 +71,9 @@ function extractFormDataToRecord(form: HTMLFormElement, isUpdate: boolean): Reco
   });
 
   // Special handling: if availabilityStatus is 'available', set dates to null
-  if (data.availabilityStatus === 'available') {
-    data.availabilityStart = null;
-    data.availabilityEnd = null;
+  if (data['availabilityStatus'] === 'available') {
+    data['availabilityStart'] = null;
+    data['availabilityEnd'] = null;
   }
 
   return data;
@@ -84,12 +84,12 @@ function extractFormDataToRecord(form: HTMLFormElement, isUpdate: boolean): Reco
  */
 function validateRequiredEmployeeFields(data: Record<string, unknown>): { valid: boolean; message?: string } {
   if (
-    typeof data.email !== 'string' ||
-    data.email.length === 0 ||
-    typeof data.firstName !== 'string' ||
-    data.firstName.length === 0 ||
-    typeof data.lastName !== 'string' ||
-    data.lastName.length === 0
+    typeof data['email'] !== 'string' ||
+    data['email'].length === 0 ||
+    typeof data['firstName'] !== 'string' ||
+    data['firstName'].length === 0 ||
+    typeof data['lastName'] !== 'string' ||
+    data['lastName'].length === 0
   ) {
     return { valid: false, message: 'Bitte füllen Sie alle Pflichtfelder aus' };
   }
@@ -100,8 +100,8 @@ function validateRequiredEmployeeFields(data: Record<string, unknown>): { valid:
  * Validate employee password if provided
  */
 function validateEmployeePasswordField(data: Record<string, unknown>): { valid: boolean; message?: string } {
-  if (typeof data.password === 'string' && data.password !== '') {
-    const passwordValidation = validatePasswordOnSubmit(data.password);
+  if (typeof data['password'] === 'string' && data['password'] !== '') {
+    const passwordValidation = validatePasswordOnSubmit(data['password']);
     if (!passwordValidation.valid) {
       return { valid: false, message: passwordValidation.message };
     }
@@ -119,7 +119,7 @@ function validateEmployeePasswordField(data: Record<string, unknown>): { valid: 
  */
 function generateUsernameFromEmail(email: string): string {
   // Take the part before @ (local part of email)
-  const localPart = email.split('@')[0];
+  const localPart = email.split('@')[0] ?? email;
 
   // Replace any character that's not a letter, number, underscore, or hyphen with underscore
   // This ensures the username matches the backend regex: /^[\w-]+$/
@@ -130,10 +130,10 @@ function generateUsernameFromEmail(email: string): string {
  * Prepare employee data for save operation
  */
 function prepareEmployeeDataForSave(data: Record<string, unknown>): void {
-  data.role = 'employee';
-  data.username = typeof data.email === 'string' ? generateUsernameFromEmail(data.email) : data.email;
-  if (data.isActive !== undefined) {
-    data.isActive = data.isActive === '1' || data.isActive === true;
+  data['role'] = 'employee';
+  data['username'] = typeof data['email'] === 'string' ? generateUsernameFromEmail(data['email']) : data['email'];
+  if (data['isActive'] !== undefined) {
+    data['isActive'] = data['isActive'] === '1' || data['isActive'] === true;
   }
 }
 
@@ -217,7 +217,7 @@ export async function handleLoadDepartments(): Promise<void> {
     departments.forEach((dept) => {
       const option = document.createElement('div');
       option.className = 'dropdown__option';
-      option.dataset.value = dept.id.toString();
+      option.dataset['value'] = dept.id.toString();
       option.textContent = dept.name;
       menu.append(option);
     });
@@ -249,7 +249,7 @@ export async function handleLoadTeams(): Promise<void> {
     filteredTeams.forEach((team) => {
       const option = document.createElement('div');
       option.className = 'dropdown__option';
-      option.dataset.value = team.id.toString();
+      option.dataset['value'] = team.id.toString();
       option.textContent = team.name;
       menu.append(option);
     });

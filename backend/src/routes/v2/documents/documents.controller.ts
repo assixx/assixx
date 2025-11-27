@@ -19,6 +19,7 @@ import { logger } from '../../../utils/logger.js';
 import {
   DocumentCreateInput,
   DocumentFilters,
+  DocumentUpdateInput,
   ServiceError,
   documentsService,
 } from './documents.service.js';
@@ -32,6 +33,25 @@ interface Document {
   mimeType?: string;
   accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll';
   [key: string]: unknown;
+}
+
+// Error message constants
+const ERROR_DOCUMENT_ID_REQUIRED = 'Document ID is required';
+
+/**
+ * Check if query parameter has a value (not undefined)
+ */
+function hasQueryParam(value: unknown): value is string {
+  return value !== undefined;
+}
+
+/**
+ * Parse query parameter as integer with default value
+ */
+function parseQueryInt(value: unknown, defaultValue: number): number {
+  if (value === undefined || typeof value !== 'string') return defaultValue;
+  const parsed = Number.parseInt(value);
+  return Number.isNaN(parsed) ? defaultValue : parsed;
 }
 
 // Configure multer for file uploads
@@ -201,20 +221,55 @@ function buildStoragePath(
  */
 // NEW: Parse filters with clean structure (refactored 2025-01-10)
 function parseDocumentFilters(query: AuthenticatedRequest['query']): DocumentFilters {
-  return {
-    category: query.category as string,
-    accessScope: query.accessScope as 'personal' | 'team' | 'department' | 'company' | 'payroll',
-    ownerUserId: query.ownerUserId ? Number.parseInt(query.ownerUserId as string) : undefined,
-    targetTeamId: query.targetTeamId ? Number.parseInt(query.targetTeamId as string) : undefined,
-    targetDepartmentId:
-      query.targetDepartmentId ? Number.parseInt(query.targetDepartmentId as string) : undefined,
-    salaryYear: query.salaryYear ? Number.parseInt(query.salaryYear as string) : undefined,
-    salaryMonth: query.salaryMonth ? Number.parseInt(query.salaryMonth as string) : undefined,
-    isArchived: query.isArchived === 'true',
-    search: query.search as string,
-    page: query.page ? Number.parseInt(query.page as string) : 1,
-    limit: query.limit ? Number.parseInt(query.limit as string) : 20,
+  const filters: DocumentFilters = {
+    isArchived: query['isArchived'] === 'true',
+    page: parseQueryInt(query['page'], 1),
+    limit: parseQueryInt(query['limit'], 20),
   };
+
+  // Only add optional properties when they're defined
+  const category = query['category'] as string | undefined;
+  if (category !== undefined) {
+    filters.category = category;
+  }
+
+  const accessScope = query['accessScope'] as
+    | 'personal'
+    | 'team'
+    | 'department'
+    | 'company'
+    | 'payroll'
+    | undefined;
+  if (accessScope !== undefined) {
+    filters.accessScope = accessScope;
+  }
+
+  if (hasQueryParam(query['ownerUserId'])) {
+    filters.ownerUserId = Number.parseInt(query['ownerUserId']);
+  }
+
+  if (hasQueryParam(query['targetTeamId'])) {
+    filters.targetTeamId = Number.parseInt(query['targetTeamId']);
+  }
+
+  if (hasQueryParam(query['targetDepartmentId'])) {
+    filters.targetDepartmentId = Number.parseInt(query['targetDepartmentId']);
+  }
+
+  if (hasQueryParam(query['salaryYear'])) {
+    filters.salaryYear = Number.parseInt(query['salaryYear']);
+  }
+
+  if (hasQueryParam(query['salaryMonth'])) {
+    filters.salaryMonth = Number.parseInt(query['salaryMonth']);
+  }
+
+  const search = query['search'] as string | undefined;
+  if (search !== undefined) {
+    filters.search = search;
+  }
+
+  return filters;
 }
 
 export async function listDocuments(req: AuthenticatedRequest, res: Response): Promise<void> {
@@ -273,7 +328,12 @@ export async function listDocuments(req: AuthenticatedRequest, res: Response): P
  */
 export async function getDocumentById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('BAD_REQUEST', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
+    }
+    const documentId = Number.parseInt(idParam);
 
     const document = await documentsService.getDocumentById(
       documentId,
@@ -364,7 +424,7 @@ export async function getDocumentById(req: AuthenticatedRequest, res: Response):
  */
 /**
  * Ensure filename has file extension
- * If user provides "document" but file is "document.pdf", result will be "document.pdf"
+ * If user provides "document" but file is "document['pdf']", result will be "document['pdf']"
  */
 function ensureFileExtension(userProvidedName: string, originalFilename: string): string {
   const trimmedName = userProvidedName.trim();
@@ -379,53 +439,80 @@ function ensureFileExtension(userProvidedName: string, originalFilename: string)
   return trimmedName + fileExtension;
 }
 
+/**
+ * Add optional fields to document input from body
+ */
+function addOptionalDocumentFields(
+  docInput: DocumentCreateInput,
+  body: Record<string, string>,
+): void {
+  if (body['ownerUserId'] !== undefined)
+    docInput.ownerUserId = Number.parseInt(body['ownerUserId']);
+  if (body['targetTeamId'] !== undefined)
+    docInput.targetTeamId = Number.parseInt(body['targetTeamId']);
+  if (body['targetDepartmentId'] !== undefined)
+    docInput.targetDepartmentId = Number.parseInt(body['targetDepartmentId']);
+  if (body['description'] !== undefined) docInput.description = body['description'];
+  if (body['salaryYear'] !== undefined) docInput.salaryYear = Number.parseInt(body['salaryYear']);
+  if (body['salaryMonth'] !== undefined)
+    docInput.salaryMonth = Number.parseInt(body['salaryMonth']);
+  if (body['tags'] !== undefined) docInput.tags = JSON.parse(body['tags']) as string[];
+  if (body['expiresAt'] !== undefined) docInput.expiresAt = new Date(body['expiresAt']);
+}
+
+/**
+ * Get user-provided document name with extension
+ */
+function getUserProvidedName(body: Record<string, string>, originalName: string): string {
+  const documentNameValue = body['documentName'];
+  if (documentNameValue !== undefined && documentNameValue.trim() !== '') {
+    return ensureFileExtension(documentNameValue.trim(), originalName);
+  }
+  return originalName;
+}
+
 // NEW: Parse document data with clean structure (refactored 2025-01-10)
 function parseDocumentData(
   file: Express.Multer.File,
   body: Record<string, string>,
   tenantId: number,
 ): DocumentCreateInput {
-  // Generate UUID and metadata
   const metadata = generateFileMetadata(file);
-  const storagePath = buildStoragePath(tenantId, body.category, metadata.uuid, metadata.extension);
+  const categoryValue = body['category'];
+  if (categoryValue === undefined) {
+    throw new Error('Category is required');
+  }
 
-  // Use documentName from frontend if provided, otherwise fallback to original filename
-  // IMPORTANT: Always ensure the extension is included (user may type "document" for "document.pdf")
-  const userProvidedName =
-    body.documentName && body.documentName.trim() !== '' ?
-      ensureFileExtension(body.documentName.trim(), file.originalname)
-    : file.originalname;
+  const storagePath = buildStoragePath(tenantId, categoryValue, metadata.uuid, metadata.extension);
+  const userProvidedName = getUserProvidedName(body, file.originalname);
 
   logger.info(
-    `Document name mapping: documentName="${body.documentName}" → originalName="${userProvidedName}"`,
+    `Document name mapping: documentName="${body['documentName'] ?? 'undefined'}" → originalName="${userProvidedName}"`,
   );
 
-  return {
-    filename: `${metadata.uuid}${metadata.extension}`, // UUID-based filename for storage
-    originalName: userProvidedName, // User-visible name from modal input (WITH extension)
+  const docInput: DocumentCreateInput = {
+    filename: `${metadata.uuid}${metadata.extension}`,
+    originalName: userProvidedName,
     fileSize: file.size,
     fileContent: file.buffer,
     mimeType: file.mimetype,
-    category: body.category,
-    // NEW: Clean access control
-    accessScope: body.accessScope as 'personal' | 'team' | 'department' | 'company' | 'payroll',
-    ownerUserId: body.ownerUserId ? Number.parseInt(body.ownerUserId) : undefined,
-    targetTeamId: body.targetTeamId ? Number.parseInt(body.targetTeamId) : undefined,
-    targetDepartmentId:
-      body.targetDepartmentId ? Number.parseInt(body.targetDepartmentId) : undefined,
-    description: body.description,
-    // NEW: Payroll fields
-    salaryYear: body.salaryYear ? Number.parseInt(body.salaryYear) : undefined,
-    salaryMonth: body.salaryMonth ? Number.parseInt(body.salaryMonth) : undefined,
-    tags: body.tags ? (JSON.parse(body.tags) as string[]) : undefined,
-    isPublic: body.isPublic === 'true',
-    expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
-    // UUID-based storage
+    category: categoryValue,
+    accessScope: body['accessScope'] as
+      | 'personal'
+      | 'team'
+      | 'department'
+      | 'company'
+      | 'payroll'
+      | 'blackboard',
+    isPublic: body['isPublic'] === 'true',
     fileUuid: metadata.uuid,
     fileChecksum: metadata.checksum,
     filePath: storagePath,
     storageType: 'filesystem',
   };
+
+  addOptionalDocumentFields(docInput, body);
+  return docInput;
 }
 
 // NEW: Log document upload with clean structure (refactored 2025-01-10)
@@ -434,15 +521,19 @@ async function logDocumentUpload(
   documentData: DocumentCreateInput,
   req: AuthenticatedRequest,
 ): Promise<void> {
+  const doc = document as Document;
+  // doc.filename is required string, so check for empty string only
+  const effectiveFilename = doc.filename !== '' ? doc.filename : documentData.filename;
+
   await rootLog.create({
     tenant_id: req.user.tenant_id,
     user_id: req.user.id,
     action: 'upload',
     entity_type: 'document',
-    entity_id: (document as Document).id,
-    details: `Hochgeladen: ${(document as Document).filename || documentData.filename}`,
+    entity_id: doc.id,
+    details: `Hochgeladen: ${effectiveFilename}`,
     new_values: {
-      filename: (document as Document).filename || documentData.filename,
+      filename: effectiveFilename,
       category: documentData.category,
       file_size: documentData.fileSize,
       mime_type: documentData.mimeType,
@@ -549,28 +640,38 @@ export async function createDocument(req: AuthenticatedRequest, res: Response): 
  *       500:
  *         description: Server error
  */
+interface UpdateDocumentBody {
+  filename?: string;
+  category?: string;
+  description?: string;
+  tags?: string[];
+  isPublic?: boolean;
+  expiresAt?: string;
+}
+
+/**
+ * Build update data from request body
+ */
+function buildDocumentUpdateData(body: UpdateDocumentBody): DocumentUpdateInput {
+  const updateData: DocumentUpdateInput = {};
+  if (body.filename !== undefined) updateData.filename = body.filename;
+  if (body.category !== undefined) updateData.category = body.category;
+  if (body.description !== undefined) updateData.description = body.description;
+  if (body.tags !== undefined) updateData.tags = body.tags;
+  if (body.isPublic !== undefined) updateData.isPublic = body.isPublic;
+  if (body.expiresAt !== undefined) updateData.expiresAt = new Date(body.expiresAt);
+  return updateData;
+}
+
 export async function updateDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = Number.parseInt(req.params.id);
-    interface UpdateDocumentBody {
-      filename?: string;
-      category?: string;
-      description?: string;
-      tags?: string[];
-      isPublic?: boolean;
-      expiresAt?: string;
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('BAD_REQUEST', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
     }
-
-    const body = req.body as UpdateDocumentBody;
-
-    const updateData = {
-      filename: body.filename,
-      category: body.category,
-      description: body.description,
-      tags: body.tags,
-      isPublic: body.isPublic,
-      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
-    };
+    const documentId = Number.parseInt(idParam);
+    const updateData = buildDocumentUpdateData(req.body as UpdateDocumentBody);
 
     await documentsService.updateDocument(documentId, updateData, req.user.id, req.user.tenant_id);
 
@@ -628,7 +729,12 @@ export async function updateDocument(req: AuthenticatedRequest, res: Response): 
  */
 export async function deleteDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('BAD_REQUEST', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
+    }
+    const documentId = Number.parseInt(idParam);
 
     // Get document details before deletion for logging
     const document = await documentsService.getDocumentById(
@@ -639,6 +745,9 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response): 
 
     await documentsService.deleteDocument(documentId, req.user.id, req.user.tenant_id);
 
+    const doc = document as unknown as Document | null;
+    const recipientType = doc !== null ? (doc['recipientType'] as string | undefined) : undefined;
+
     // Log document deletion
     await rootLog.create({
       tenant_id: req.user.tenant_id,
@@ -646,13 +755,13 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response): 
       action: 'delete',
       entity_type: 'document',
       entity_id: documentId,
-      details: `Gelöscht: ${(document as unknown as Document | null)?.filename ?? 'unknown'}`,
+      details: `Gelöscht: ${doc?.filename ?? 'unknown'}`,
       old_values: {
-        filename: (document as unknown as Document | null)?.filename ?? 'unknown',
-        category: (document as unknown as Document | null)?.category ?? 'unknown',
-        file_size: (document as unknown as Document | null)?.fileSize ?? 0,
-        mime_type: (document as unknown as Document | null)?.mimeType ?? 'unknown',
-        recipient_type: (document as unknown as Document | null)?.recipientType ?? 'unknown',
+        filename: doc?.filename ?? 'unknown',
+        category: doc?.category ?? 'unknown',
+        file_size: doc?.fileSize ?? 0,
+        mime_type: doc?.mimeType ?? 'unknown',
+        recipient_type: recipientType ?? 'unknown',
         deleted_by: req.user.email,
       },
       ip_address: req.ip ?? req.socket.remoteAddress,
@@ -714,7 +823,12 @@ export async function deleteDocument(req: AuthenticatedRequest, res: Response): 
  */
 export async function archiveDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('BAD_REQUEST', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
+    }
+    const documentId = Number.parseInt(idParam);
     logger.info(`Archiving document ${documentId} for user ${req.user.id}`);
 
     await documentsService.archiveDocument(documentId, true, req.user.id, req.user.tenant_id);
@@ -773,7 +887,12 @@ export async function archiveDocument(req: AuthenticatedRequest, res: Response):
  */
 export async function unarchiveDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('BAD_REQUEST', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
+    }
+    const documentId = Number.parseInt(idParam);
 
     await documentsService.archiveDocument(documentId, false, req.user.id, req.user.tenant_id);
 
@@ -824,7 +943,12 @@ export async function unarchiveDocument(req: AuthenticatedRequest, res: Response
  */
 export async function downloadDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('BAD_REQUEST', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
+    }
+    const documentId = Number.parseInt(idParam);
 
     const documentContent = await documentsService.getDocumentContent(
       documentId,
@@ -888,7 +1012,12 @@ export async function downloadDocument(req: AuthenticatedRequest, res: Response)
  */
 export async function previewDocument(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const documentId = Number.parseInt(req.params.id);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('BAD_REQUEST', ERROR_DOCUMENT_ID_REQUIRED));
+      return;
+    }
+    const documentId = Number.parseInt(idParam);
 
     const documentContent = await documentsService.getDocumentContent(
       documentId,

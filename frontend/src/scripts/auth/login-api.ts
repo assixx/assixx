@@ -96,10 +96,8 @@ function storeV2Tokens(data: Required<Pick<LoginResponse, 'data'>>): {
   localStorage.setItem('refreshToken', refreshToken);
   localStorage.setItem('token', token); // Compatibility
 
-  // Set cookie for server-side page protection
-  setTimeout(() => {
-    document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
-  }, 0);
+  // Set cookie for server-side page protection - SYNCHRONOUS (must be before redirect!)
+  document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
 
   return {
     token,

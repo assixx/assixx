@@ -96,21 +96,21 @@ export interface CalendarEvent {
 
   // Organization fields (v1 snake_case)
   org_level: OrgLevel;
-  org_id?: number;
+  org_id?: number | undefined;
 
   // Organization fields (v2 camelCase)
-  orgLevel?: OrgLevel;
-  orgId?: number;
+  orgLevel?: OrgLevel | undefined;
+  orgId?: number | undefined;
 
   // Display color
-  color?: string;
+  color?: string | undefined;
 
   // Reminder fields (v1 snake_case)
-  reminder_time?: number;
+  reminder_time?: number | undefined;
 
   // Reminder fields (v2 camelCase)
-  reminderTime?: number;
-  reminderMinutes?: number;
+  reminderTime?: number | undefined;
+  reminderMinutes?: number | undefined;
 
   // Creator fields (v1 snake_case)
   created_by: number;
@@ -118,28 +118,28 @@ export interface CalendarEvent {
   updated_at: string;
 
   // Creator fields (v2 camelCase)
-  createdBy?: number;
-  createdAt?: string;
-  updatedAt?: string;
+  createdBy?: number | undefined;
+  createdAt?: string | undefined;
+  updatedAt?: string | undefined;
 
   // Additional fields from joins (v1 snake_case)
-  creator_name?: string;
-  department_name?: string;
-  team_name?: string;
+  creator_name?: string | undefined;
+  department_name?: string | undefined;
+  team_name?: string | undefined;
 
   // Additional fields from joins (v2 camelCase)
-  creatorName?: string;
-  departmentName?: string;
-  teamName?: string;
+  creatorName?: string | undefined;
+  departmentName?: string | undefined;
+  teamName?: string | undefined;
 
   // User-specific fields (v1 snake_case)
-  user_response?: ResponseStatus;
+  user_response?: ResponseStatus | undefined;
 
   // User-specific fields (v2 camelCase)
-  userResponse?: ResponseStatus;
+  userResponse?: ResponseStatus | undefined;
 
   // Attendees
-  attendees?: EventAttendee[];
+  attendees?: EventAttendee[] | undefined;
 }
 
 /**

@@ -8,7 +8,7 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
 import rootLog, { type DbRootLog } from '../../../models/rootLog.js';
 import tenantModel from '../../../models/tenant.js';
-import userModel, { type DbUser } from '../../../models/user/index.js';
+import userModel, { type DbUser, type UserCreateData } from '../../../models/user/index.js';
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
 import { UsersRow } from '../../../types/database-rows.types.js';
 import type { DatabaseTenant } from '../../../types/models.js';
@@ -97,8 +97,131 @@ interface DeletionRequestWithDetails extends RowDataPacket {
  * Helper: Convert MySQL Date|string to Date
  */
 function toDate(value: Date | string | null | undefined): Date | undefined {
-  if (!value) return undefined;
+  if (value === null || value === undefined) return undefined;
   return typeof value === 'string' ? new Date(value) : value;
+}
+
+/**
+ * Map DbUser to AdminUser with optional tenant name and last login
+ * @param admin - Database user record
+ * @param tenantName - Optional tenant name from join
+ * @param lastLogin - Optional last login date
+ */
+// Storage limits by plan (in bytes)
+const STORAGE_LIMITS = {
+  basic: 5 * 1024 * 1024 * 1024, // 5 GB
+  professional: 25 * 1024 * 1024 * 1024, // 25 GB
+  enterprise: 100 * 1024 * 1024 * 1024, // 100 GB
+} as const;
+
+type StoragePlan = keyof typeof STORAGE_LIMITS;
+
+/**
+ * Safely get storage limit for a plan, avoiding object injection
+ */
+function getStorageLimit(plan: string): number | undefined {
+  const validPlans: StoragePlan[] = ['basic', 'professional', 'enterprise'];
+  if (validPlans.includes(plan as StoragePlan)) {
+    return STORAGE_LIMITS[plan as StoragePlan];
+  }
+  return undefined;
+}
+
+/** Storage total query result */
+interface StorageTotalResult extends RowDataPacket {
+  total: number;
+}
+
+/**
+ * Execute storage query and return total, throwing on undefined result
+ */
+async function getStorageTotal(query: string, params: unknown[]): Promise<number> {
+  const [rows] = await execute<StorageTotalResult[]>(query, params);
+  const row = rows[0];
+  if (row === undefined) {
+    throw new ServiceError('SERVER_ERROR', 'Failed to get storage total', 500);
+  }
+  return row.total;
+}
+
+/**
+ * Map deletion queue record to TenantDeletionStatus
+ */
+function mapDeletionToStatus(
+  deletion: DeletionQueueWithDetails,
+  canCancel: boolean,
+  canApprove: boolean,
+): TenantDeletionStatus {
+  const result: TenantDeletionStatus = {
+    queueId: deletion.id,
+    tenantId: deletion.tenant_id,
+    status: deletion.status as TenantDeletionStatus['status'],
+    requestedBy: deletion.created_by,
+    requestedAt:
+      typeof deletion.created_at === 'string' ? new Date(deletion.created_at) : deletion.created_at,
+    coolingOffHours: deletion.cooling_off_hours,
+    canCancel,
+    canApprove,
+    requestedByName: deletion.requested_by_name,
+    reason: deletion.reason,
+  };
+
+  // Add nullable properties only if not null
+  if (deletion.approved_by !== null) result.approvedBy = deletion.approved_by;
+  if (deletion.error_message !== null) result.errorMessage = deletion.error_message;
+
+  const approvedAtDate = toDate(deletion.approved_at);
+  if (approvedAtDate !== undefined) result.approvedAt = approvedAtDate;
+
+  const scheduledForDate = toDate(deletion.scheduled_for);
+  if (scheduledForDate !== undefined) result.scheduledFor = scheduledForDate;
+
+  return result;
+}
+
+/**
+ * Handle MySQL duplicate entry errors
+ * @throws ServiceError with appropriate code based on duplicate field
+ */
+function handleDuplicateEntryError(error: unknown): never {
+  const dbError = error as { code?: string; message?: string };
+  const errorMessage = dbError.message ?? '';
+
+  if (errorMessage.includes('employee_number')) {
+    throw new ServiceError('DUPLICATE_EMPLOYEE_NUMBER', 'Employee number already exists', error);
+  }
+  if (errorMessage.includes('email')) {
+    throw new ServiceError('DUPLICATE_EMAIL', 'Email already exists', error);
+  }
+  if (errorMessage.includes('username')) {
+    throw new ServiceError('DUPLICATE_USERNAME', 'Username already exists', error);
+  }
+  throw new ServiceError('DUPLICATE_ENTRY', 'Username or email already exists', error);
+}
+
+function mapDbUserToAdminUser(admin: DbUser, tenantName?: string, lastLogin?: Date): AdminUser {
+  const result: AdminUser = {
+    id: admin.id,
+    username: admin.username,
+    email: admin.email,
+    firstName: admin.first_name,
+    lastName: admin.last_name,
+    isActive: Boolean(admin.is_active),
+    isArchived: admin.is_archived,
+    tenantId: admin.tenant_id ?? 0,
+    createdAt: admin.created_at ?? new Date(),
+    updatedAt: admin.updated_at ?? new Date(),
+  };
+
+  // Add optional properties only if defined
+  if (admin.company !== undefined) result.company = admin.company;
+  if (admin.notes !== undefined) result.notes = admin.notes;
+  if (admin.position !== undefined) result.position = admin.position;
+  if (admin.employee_number !== undefined) result.employeeNumber = admin.employee_number;
+  if (tenantName !== undefined) result.tenantName = tenantName;
+  if (lastLogin !== undefined) result.lastLogin = lastLogin;
+
+  return result;
 }
 
 /**
@@ -122,29 +245,11 @@ class RootService {
       return await Promise.all(
         admins.map(async (admin: DbUser) => {
           let tenantName: string | undefined;
-          if (admin.tenant_id) {
+          if (admin.tenant_id !== undefined) {
             const tenant = await tenantModel.findById(admin.tenant_id);
             tenantName = tenant?.company_name;
           }
-
-          return {
-            id: admin.id,
-            username: admin.username,
-            email: admin.email,
-            firstName: admin.first_name || '',
-            lastName: admin.last_name || '',
-            company: admin.company,
-            notes: admin.notes,
-            position: admin.position,
-            employeeNumber: admin.employee_number,
-            isActive: Boolean(admin.is_active),
-            isArchived: admin.is_archived,
-            tenantId: admin.tenant_id ?? 0,
-            tenantName,
-            createdAt: admin.created_at ?? new Date(),
-            updatedAt: admin.updated_at ?? new Date(),
-            lastLogin: admin.last_login,
-          };
+          return mapDbUserToAdminUser(admin, tenantName, admin.last_login);
         }),
       );
     } catch (error: unknown) {
@@ -167,32 +272,16 @@ class RootService {
 
       // Get tenant name
       let tenantName: string | undefined;
-      if (admin.tenant_id) {
+      if (admin.tenant_id !== undefined) {
         const tenant = await tenantModel.findById(admin.tenant_id);
         tenantName = tenant?.company_name;
       }
 
       // Get last login
-      const lastLogin = await rootLog.getLastLogin(id);
+      const lastLoginRecord = await rootLog.getLastLogin(id);
+      const lastLogin = lastLoginRecord?.created_at;
 
-      return {
-        id: admin.id,
-        username: admin.username,
-        email: admin.email,
-        firstName: admin.first_name || '',
-        lastName: admin.last_name || '',
-        company: admin.company,
-        notes: admin.notes,
-        position: admin.position,
-        employeeNumber: admin.employee_number,
-        isActive: Boolean(admin.is_active),
-        isArchived: admin.is_archived,
-        tenantId: admin.tenant_id ?? 0,
-        tenantName,
-        createdAt: admin.created_at ?? new Date(),
-        updatedAt: admin.updated_at ?? new Date(),
-        lastLogin: lastLogin?.created_at,
-      };
+      return mapDbUserToAdminUser(admin, tenantName, lastLogin);
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin', error);
     }
@@ -208,20 +297,29 @@ class RootService {
       // Hash password before passing to model
       const hashedPassword = await bcrypt.hash(data.password, 10);
 
-      const adminData = {
+      // Build base data (exactOptionalPropertyTypes compliant) using UserCreateData interface
+      const adminData: UserCreateData = {
         username: data.username,
         email: data.email,
         password: hashedPassword,
         first_name: data.firstName ?? '',
         last_name: data.lastName ?? '',
-        role: 'admin' as const,
+        role: 'admin',
         tenant_id: tenantId,
         is_active: true,
-        company: data.company,
-        notes: data.notes,
         employee_number: data.employeeNumber ?? '',
-        position: data.position ?? '',
       };
+
+      // Add optional properties only if defined
+      if (data.company !== undefined) {
+        adminData.company = data.company;
+      }
+      if (data.notes !== undefined) {
+        adminData.notes = data.notes;
+      }
+      if (data.position !== undefined) {
+        adminData.position = data.position;
+      }
 
       const adminId = await userModel.create(adminData);
 
@@ -238,25 +336,9 @@ class RootService {
 
       return adminId;
     } catch (error: unknown) {
-      const dbError = error as { code?: string; message?: string };
+      const dbError = error as { code?: string };
       if (dbError.code === 'ER_DUP_ENTRY') {
-        // Parse MySQL error message to determine which field is duplicate
-        const errorMessage = dbError.message ?? '';
-
-        if (errorMessage.includes('employee_number')) {
-          throw new ServiceError(
-            'DUPLICATE_EMPLOYEE_NUMBER',
-            'Employee number already exists',
-            error,
-          );
-        } else if (errorMessage.includes('email')) {
-          throw new ServiceError('DUPLICATE_EMAIL', 'Email already exists', error);
-        } else if (errorMessage.includes('username')) {
-          throw new ServiceError('DUPLICATE_USERNAME', 'Username already exists', error);
-        }
-
-        // Fallback for unknown duplicate
-        throw new ServiceError('DUPLICATE_ENTRY', 'Username or email already exists', error);
+        handleDuplicateEntryError(error);
       }
       throw new ServiceError('SERVER_ERROR', 'Failed to create admin', error);
     }
@@ -268,36 +350,36 @@ class RootService {
   private buildUpdateData(data: UpdateAdminRequest): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
 
-    // Explicit property assignments to avoid object injection warnings
+    // Explicit property assignments using bracket notation for index signature
     if (data.username !== undefined) {
-      updateData.username = data.username;
+      updateData['username'] = data.username;
     }
     if (data.email !== undefined) {
-      updateData.email = data.email;
+      updateData['email'] = data.email;
     }
     if (data.firstName !== undefined) {
-      updateData.first_name = data.firstName;
+      updateData['first_name'] = data.firstName;
     }
     if (data.lastName !== undefined) {
-      updateData.last_name = data.lastName;
+      updateData['last_name'] = data.lastName;
     }
     if (data.company !== undefined) {
-      updateData.company = data.company;
+      updateData['company'] = data.company;
     }
     if (data.notes !== undefined) {
-      updateData.notes = data.notes;
+      updateData['notes'] = data.notes;
     }
     if (data.isActive !== undefined) {
-      updateData.is_active = data.isActive;
+      updateData['is_active'] = data.isActive;
     }
     if (data.isArchived !== undefined) {
-      updateData.is_archived = data.isArchived;
+      updateData['is_archived'] = data.isArchived;
     }
     if (data.employeeNumber !== undefined) {
-      updateData.employee_number = data.employeeNumber;
+      updateData['employee_number'] = data.employeeNumber;
     }
     if (data.position !== undefined) {
-      updateData.position = data.position;
+      updateData['position'] = data.position;
     }
 
     return updateData;
@@ -310,8 +392,8 @@ class RootService {
     password: string | undefined,
     updateData: Record<string, unknown>,
   ): Promise<void> {
-    if (password) {
-      updateData.password = await bcrypt.hash(password, 10);
+    if (password !== undefined && password !== '') {
+      updateData['password'] = await bcrypt.hash(password, 10);
     }
   }
 
@@ -381,17 +463,24 @@ class RootService {
 
       const logs = await rootLog.getByUserId(adminId, days ?? 0);
 
-      return logs.map((log: DbRootLog) => ({
-        id: log.id,
-        userId: log.user_id,
-        action: log.action,
-        entityType: log.entity_type ?? '',
-        entityId: log.entity_id,
-        description: log.details ?? undefined,
-        ipAddress: log.ip_address,
-        userAgent: log.user_agent,
-        createdAt: log.created_at,
-      }));
+      return logs.map((log: DbRootLog) => {
+        // Build base object (exactOptionalPropertyTypes compliant)
+        const result: AdminLog = {
+          id: log.id,
+          userId: log.user_id,
+          action: log.action,
+          entityType: log.entity_type ?? '',
+          createdAt: log.created_at,
+        };
+
+        // Add optional properties only if defined
+        if (log.entity_id !== undefined) result.entityId = log.entity_id;
+        if (log.details !== undefined) result.description = log.details;
+        if (log.ip_address !== undefined) result.ipAddress = log.ip_address;
+        if (log.user_agent !== undefined) result.userAgent = log.user_agent;
+
+        return result;
+      });
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve admin logs', error);
@@ -434,22 +523,41 @@ class RootService {
             [tenant.id],
           );
 
-          return {
+          // Validate query results
+          const adminCountRow = adminCount[0];
+          if (adminCountRow === undefined) {
+            throw new ServiceError('SERVER_ERROR', 'Failed to get admin count', 500);
+          }
+
+          const employeeCountRow = employeeCount[0];
+          if (employeeCountRow === undefined) {
+            throw new ServiceError('SERVER_ERROR', 'Failed to get employee count', 500);
+          }
+
+          const storageUsedRow = storageUsed[0];
+          if (storageUsedRow === undefined) {
+            throw new ServiceError('SERVER_ERROR', 'Failed to get storage usage', 500);
+          }
+
+          // Build base object (exactOptionalPropertyTypes compliant)
+          const result: Tenant = {
             id: tenant.id,
             companyName: tenant.company_name,
             subdomain: tenant.subdomain,
-            currentPlan: tenant.current_plan ?? undefined,
             status: tenant.status as Tenant['status'],
-            maxUsers: 0, // TODO: Get from plan limits
-            maxAdmins: 0, // TODO: Get from plan limits
-            industry: undefined, // Removed from schema
-            country: undefined, // Removed from schema
             createdAt: tenant.created_at,
             updatedAt: tenant.updated_at,
-            adminCount: adminCount[0].count,
-            employeeCount: employeeCount[0].count,
-            storageUsed: storageUsed[0].total,
           };
+
+          // Add optional properties only if defined
+          if (tenant.current_plan !== null) {
+            result.currentPlan = tenant.current_plan;
+          }
+          result.adminCount = adminCountRow.count;
+          result.employeeCount = employeeCountRow.count;
+          result.storageUsed = storageUsedRow.total;
+
+          return result;
         }),
       );
     } catch (error: unknown) {
@@ -473,23 +581,31 @@ class RootService {
         [tenantId],
       );
 
-      return users.map((user: UsersRow) => ({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        firstName: user.first_name ?? '',
-        lastName: user.last_name ?? '',
-        position: user.position ?? undefined,
-        notes: user.notes ?? undefined,
-        employeeNumber: user.employee_number,
-        departmentId: user.department_id ?? undefined,
-        isActive: Boolean(user.is_active),
-        employeeId: user.employee_id ?? '',
-        createdAt:
-          typeof user.created_at === 'string' ? new Date(user.created_at) : user.created_at,
-        updatedAt:
-          typeof user.updated_at === 'string' ? new Date(user.updated_at) : user.updated_at,
-      }));
+      return users.map((user: UsersRow) => {
+        // Build base object (exactOptionalPropertyTypes compliant)
+        const result: RootUser = {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.first_name ?? '',
+          lastName: user.last_name ?? '',
+          isActive: Boolean(user.is_active),
+          createdAt:
+            typeof user.created_at === 'string' ? new Date(user.created_at) : user.created_at,
+          updatedAt:
+            typeof user.updated_at === 'string' ? new Date(user.updated_at) : user.updated_at,
+        };
+
+        // Add optional properties only if defined (UsersRow uses | null not | undefined)
+        if (user.position !== null) result.position = user.position;
+        if (user.notes !== null) result.notes = user.notes;
+        // employee_number is non-nullable in UsersRow
+        result.employeeNumber = user.employee_number;
+        if (user.department_id !== null) result.departmentId = user.department_id;
+        if (user.employee_id !== null) result.employeeId = user.employee_id;
+
+        return result;
+      });
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root users', error);
     }
@@ -511,21 +627,19 @@ class RootService {
         [id, tenantId],
       );
 
-      if (users.length === 0) {
+      const user = users[0];
+      if (user === undefined) {
         return null;
       }
 
-      const user = users[0];
-      return {
+      // Build base object (exactOptionalPropertyTypes compliant)
+      const result: RootUser = {
         id: user.id,
         username: user.username,
         email: user.email,
         firstName: user.first_name ?? '',
         lastName: user.last_name ?? '',
-        position: user.position ?? undefined,
-        notes: user.notes ?? undefined,
         employeeNumber: user.employee_number,
-        departmentId: user.department_id ?? undefined,
         isActive: Boolean(user.is_active),
         employeeId: user.employee_id ?? '',
         createdAt:
@@ -533,6 +647,19 @@ class RootService {
         updatedAt:
           typeof user.updated_at === 'string' ? new Date(user.updated_at) : user.updated_at,
       };
+
+      // Add optional properties only if defined
+      if (user.position !== null) {
+        result.position = user.position;
+      }
+      if (user.notes !== null) {
+        result.notes = user.notes;
+      }
+      if (user.department_id !== null) {
+        result.departmentId = user.department_id;
+      }
+
+      return result;
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve root user', error);
     }
@@ -609,7 +736,7 @@ class RootService {
           role, position, notes, employee_number, department_id, is_active, tenant_id, created_at, updated_at
         ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
         [
-          data.username || data.email,
+          data.username !== '' ? data.username : data.email,
           data.email,
           hashedPassword,
           data.firstName,
@@ -733,7 +860,8 @@ class RootService {
         [tenantId, id],
       );
 
-      if (rootCount[0].count < 1) {
+      const rootCountRow = rootCount[0];
+      if (rootCountRow === undefined || rootCountRow.count < 1) {
         throw new ServiceError(
           'LAST_ROOT_USER',
           'At least one root user must remain in the system',
@@ -769,6 +897,11 @@ class RootService {
         "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
       );
 
+      const tenantCountRow = tenantCount[0];
+      if (tenantCountRow === undefined) {
+        throw new ServiceError('SERVER_ERROR', 'Failed to get tenant count', 500);
+      }
+
       // Get active features
       const [features] = await execute<FeatureCodeResult[]>(
         `SELECT f.code
@@ -791,7 +924,7 @@ class RootService {
         adminCount: admins.length,
         employeeCount: employees.length,
         totalUsers: admins.length + employees.length + 1, // +1 for root
-        tenantCount: tenantCount[0].count,
+        tenantCount: tenantCountRow.count,
         activeFeatures,
         systemHealth,
       };
@@ -806,61 +939,47 @@ class RootService {
    */
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
     try {
-      // Get tenant information
       const tenant = await tenantModel.findById(tenantId);
       if (!tenant) {
         throw new ServiceError('NOT_FOUND', 'Tenant not found', 404);
       }
 
-      // Storage limits by plan
-      const storageLimits: Record<string, number> = {
-        basic: 5 * 1024 * 1024 * 1024, // 5 GB
-        professional: 25 * 1024 * 1024 * 1024, // 25 GB
-        enterprise: 100 * 1024 * 1024 * 1024, // 100 GB
-      };
-
-      const totalStorage = storageLimits[tenant.current_plan ?? 'basic'] ?? storageLimits.basic;
-
-      // Get storage breakdown
-      interface StorageTotalResult extends RowDataPacket {
-        total: number;
+      const planKey = tenant.current_plan ?? 'basic';
+      const totalStorage = getStorageLimit(planKey);
+      if (totalStorage === undefined) {
+        throw new ServiceError('SERVER_ERROR', `Unknown plan type: ${planKey}`, 500);
       }
-      const [documents] = await execute<StorageTotalResult[]>(
-        'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
-        [tenantId],
-      );
 
-      const [attachments] = await execute<StorageTotalResult[]>(
-        `SELECT COALESCE(SUM(ka.file_size), 0) as total
-         FROM kvp_attachments ka
-         JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id
-         WHERE ks.tenant_id = ?`,
-        [tenantId],
-      );
+      // Get storage breakdown in parallel
+      const [documentsSize, attachmentsSize, logsSize] = await Promise.all([
+        getStorageTotal(
+          'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = ?',
+          [tenantId],
+        ),
+        getStorageTotal(
+          `SELECT COALESCE(SUM(ka.file_size), 0) as total FROM kvp_attachments ka
+           JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id WHERE ks.tenant_id = ?`,
+          [tenantId],
+        ),
+        getStorageTotal(
+          "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
+          [tenantId],
+        ),
+      ]);
 
-      const [logs] = await execute<StorageTotalResult[]>(
-        "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = ?",
-        [tenantId],
-      );
-
-      const documentsSize = documents[0].total;
-      const attachmentsSize = attachments[0].total;
-      const logsSize = logs[0].total;
-      const backupsSize = 0; // Placeholder
-
-      const usedStorage = documentsSize + attachmentsSize + logsSize + backupsSize;
+      const usedStorage = documentsSize + attachmentsSize + logsSize;
       const percentage = Math.round((usedStorage / totalStorage) * 100);
 
       return {
         used: usedStorage,
         total: totalStorage,
         percentage: Math.min(percentage, 100),
-        plan: tenant.current_plan ?? 'basic',
+        plan: planKey,
         breakdown: {
           documents: documentsSize,
           attachments: attachmentsSize,
           logs: logsSize,
-          backups: backupsSize,
+          backups: 0,
         },
       };
     } catch (error: unknown) {
@@ -923,56 +1042,27 @@ class RootService {
   ): Promise<TenantDeletionStatus | null> {
     try {
       const [deletions] = await execute<DeletionQueueWithDetails[]>(
-        `SELECT
-          dq.*,
-          t.company_name,
-          u.username as requested_by_name
+        `SELECT dq.*, t.company_name, u.username as requested_by_name
         FROM tenant_deletion_queue dq
         JOIN tenants t ON t.id = dq.tenant_id
         JOIN users u ON u.id = dq.created_by
-        WHERE dq.tenant_id = ?
-        AND dq.status NOT IN ('cancelled', 'completed')
-        ORDER BY dq.created_at DESC
-        LIMIT 1`,
+        WHERE dq.tenant_id = ? AND dq.status NOT IN ('cancelled', 'completed')
+        ORDER BY dq.created_at DESC LIMIT 1`,
         [tenantId],
       );
 
-      if (deletions.length === 0) {
+      const deletion = deletions[0];
+      if (deletion === undefined) {
         return null;
       }
 
-      const deletion = deletions[0];
       // CRITICAL: Two-person principle - creator cannot approve their own deletion request
-      const isCreator = currentUserId ? deletion.created_by === currentUserId : false;
+      const hasUserId = currentUserId !== undefined && currentUserId !== 0;
+      const isCreator = hasUserId ? deletion.created_by === currentUserId : false;
       const canApprove = deletion.status === 'pending_approval' && !isCreator;
       const canCancel = ['pending_approval', 'approved'].includes(deletion.status) && isCreator;
 
-      return {
-        queueId: deletion.id,
-        tenantId: deletion.tenant_id,
-        status: deletion.status as
-          | 'cancelled'
-          | 'pending'
-          | 'approved'
-          | 'executing'
-          | 'completed'
-          | 'failed'
-          | 'stopped',
-        requestedBy: deletion.created_by,
-        requestedByName: deletion.requested_by_name,
-        requestedAt:
-          typeof deletion.created_at === 'string' ?
-            new Date(deletion.created_at)
-          : deletion.created_at,
-        approvedBy: deletion.approved_by ?? undefined,
-        approvedAt: toDate(deletion.approved_at),
-        scheduledFor: toDate(deletion.scheduled_for),
-        reason: deletion.reason,
-        errorMessage: deletion.error_message ?? undefined,
-        coolingOffHours: deletion.cooling_off_hours,
-        canCancel,
-        canApprove,
-      };
+      return mapDeletionToStatus(deletion, canCancel, canApprove);
     } catch (error: unknown) {
       throw new ServiceError('SERVER_ERROR', 'Failed to get deletion status', error);
     }
@@ -1068,21 +1158,22 @@ class RootService {
       const tenant = await tenantModel.findById(tenantId);
       const companyName = tenant?.company_name ?? 'Unknown';
 
-      // Transform to our API format
+      // Transform to our API format (bracket notation for index signatures, ?? for nullish coalescing)
+      const records = report.affectedRecords as Record<string, number | undefined>;
       return {
         tenantId: report.tenantId,
         companyName,
         estimatedDuration: `${report.estimatedDuration} minutes`,
         affectedRecords: {
-          users: report.affectedRecords.users || 0,
-          documents: report.affectedRecords.documents || 0,
-          departments: report.affectedRecords.departments || 0,
-          teams: report.affectedRecords.teams || 0,
-          shifts: report.affectedRecords.shifts || 0,
-          kvpSuggestions: report.affectedRecords.kvp_suggestions || 0,
-          surveys: report.affectedRecords.surveys || 0,
-          logs: report.affectedRecords.logs || 0,
-          total: report.totalRecords || 0,
+          users: records['users'] ?? 0,
+          documents: records['documents'] ?? 0,
+          departments: records['departments'] ?? 0,
+          teams: records['teams'] ?? 0,
+          shifts: records['shifts'] ?? 0,
+          kvpSuggestions: records['kvp_suggestions'] ?? 0,
+          surveys: records['surveys'] ?? 0,
+          logs: records['logs'] ?? 0,
+          total: report.totalRecords,
         },
         storageToFree: 0, // Not provided by service
         warnings: report.warnings,

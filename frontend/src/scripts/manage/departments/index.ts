@@ -65,7 +65,7 @@ class DepartmentsManager {
         return;
       }
 
-      const status = btn.dataset.status as DepartmentStatusFilter | undefined;
+      const status = btn.dataset['status'] as DepartmentStatusFilter | undefined;
       if (status === undefined) {
         return;
       }
@@ -229,7 +229,7 @@ class DepartmentsManager {
         errorObj.message?.includes('Abhängigkeiten') === true
       ) {
         const details = errorObj.details ?? {};
-        const totalDependencies = typeof details.totalDependencies === 'number' ? details.totalDependencies : 0;
+        const totalDependencies = typeof details['totalDependencies'] === 'number' ? details['totalDependencies'] : 0;
         this.showForceDeleteWarning(departmentId, totalDependencies, details);
       } else {
         this.handleDeleteError(error);
@@ -241,10 +241,9 @@ class DepartmentsManager {
    * Initialize custom dropdown components
    */
   private initCustomDropdowns(): void {
-    // Initialize all dropdowns (area, status, visibility)
+    // Initialize all dropdowns (area, status)
     this.initDropdown('area-dropdown', 'area-trigger', 'area-menu', 'department-area');
     this.initDropdown('status-dropdown', 'status-trigger', 'status-menu', 'department-status');
-    this.initDropdown('visibility-dropdown', 'visibility-trigger', 'visibility-menu', 'department-visibility');
   }
 
   /**
@@ -256,7 +255,7 @@ class DepartmentsManager {
     hiddenInput: HTMLInputElement | null,
     dropdownId: string,
   ): void {
-    const value = option.dataset.value ?? '';
+    const value = option.dataset['value'] ?? '';
     const trimmedText = option.textContent.trim();
     const displayText = trimmedText !== '' ? trimmedText : value;
 
@@ -280,14 +279,13 @@ class DepartmentsManager {
   /**
    * Update trigger text for non-badge dropdowns
    */
-  private updateTriggerText(triggerSpan: Element, option: HTMLElement, dropdownId: string, displayText: string): void {
-    const mainLabel = option.querySelector('span:first-child');
-    if (mainLabel !== null && dropdownId === 'visibility-dropdown') {
-      const trimmed = mainLabel.textContent.trim();
-      triggerSpan.textContent = trimmed !== '' ? trimmed : displayText;
-    } else {
-      triggerSpan.textContent = displayText;
-    }
+  private updateTriggerText(
+    triggerSpan: Element,
+    _option: HTMLElement,
+    _dropdownId: string,
+    displayText: string,
+  ): void {
+    triggerSpan.textContent = displayText;
   }
 
   /**
@@ -348,7 +346,7 @@ class DepartmentsManager {
       // Handle edit department (from table)
       const editBtn = target.closest<HTMLElement>('[data-action="edit-department"]');
       if (editBtn) {
-        const departmentId = editBtn.dataset.deptId;
+        const departmentId = editBtn.dataset['deptId'];
         if (departmentId !== undefined) {
           void w.editDepartment?.(Number.parseInt(departmentId, 10));
         }
@@ -357,7 +355,7 @@ class DepartmentsManager {
       // Handle edit from search results
       const searchResultItem = target.closest<HTMLElement>('[data-action="edit-from-search"]');
       if (searchResultItem) {
-        const departmentId = searchResultItem.dataset.deptId;
+        const departmentId = searchResultItem.dataset['deptId'];
         if (departmentId !== undefined) {
           closeSearchResults();
           void w.editDepartment?.(Number.parseInt(departmentId, 10));
@@ -367,7 +365,7 @@ class DepartmentsManager {
       // Handle delete department
       const deleteBtn = target.closest<HTMLElement>('[data-action="delete-department"]');
       if (deleteBtn) {
-        const departmentId = deleteBtn.dataset.deptId;
+        const departmentId = deleteBtn.dataset['deptId'];
         if (departmentId !== undefined) {
           void w.deleteDepartment?.(Number.parseInt(departmentId, 10));
         }
@@ -380,9 +378,9 @@ class DepartmentsManager {
    */
   private filterByStatus(departments: Department[]): Department[] {
     if (this.currentFilter === 'active') {
-      return departments.filter((dept) => dept.status === 'active');
+      return departments.filter((dept) => dept.isActive);
     } else if (this.currentFilter === 'inactive') {
-      return departments.filter((dept) => dept.status === 'inactive');
+      return departments.filter((dept) => !dept.isActive);
     }
     return departments;
   }
@@ -582,9 +580,9 @@ async function handleSaveDepartment(): Promise<void> {
         // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from FormData, not user input
         data[key] = null;
       } else if (key === 'area_id' && value === '') {
-        data.areaId = null; // camelCase for API v2
+        data['areaId'] = null; // camelCase for API v2
       } else if (key === 'area_id' && value !== '') {
-        data.areaId = Number.parseInt(value, 10); // camelCase for API v2
+        data['areaId'] = Number.parseInt(value, 10); // camelCase for API v2
       } else {
         // eslint-disable-next-line security/detect-object-injection -- Safe: key comes from FormData, not user input
         data[key] = value;
@@ -593,7 +591,7 @@ async function handleSaveDepartment(): Promise<void> {
   });
 
   // Ensure required fields
-  if (typeof data.name !== 'string' || data.name.length === 0) {
+  if (typeof data['name'] !== 'string' || data['name'].length === 0) {
     showErrorAlert('Bitte füllen Sie alle Pflichtfelder aus');
     return;
   }
@@ -682,11 +680,25 @@ function initDataTooltips(): void {
 
   elements.forEach((element) => {
     const tooltipText = element.getAttribute('data-tooltip');
-    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
 
     if (tooltipText === null || tooltipText === '') {
       return;
     }
+
+    // CRITICAL: Inside scroll containers (overflow:auto), position:absolute tooltips
+    // will ALWAYS be clipped - no matter if top or bottom.
+    // Solution: Use native title attribute which browser renders outside any container
+    const isInsideScrollContainer = element.closest('.table-responsive') !== null;
+
+    if (isInsideScrollContainer) {
+      // Use native title - browser handles positioning, never clipped
+      element.setAttribute('title', tooltipText);
+      element.removeAttribute('data-tooltip');
+      return;
+    }
+
+    // For elements NOT in scroll containers: use custom tooltip
+    const tooltipPosition = element.getAttribute('data-tooltip-position') ?? 'top';
 
     // Wrap element if not already wrapped
     const isAlreadyWrapped = element.parentElement?.classList.contains('tooltip') ?? false;

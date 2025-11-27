@@ -26,12 +26,12 @@ export interface IEmployeesManager {
 }
 
 export interface Employee extends User {
-  employeeId?: string;
+  employeeId?: string | undefined;
   // employeeNumber inherited from User
   // departmentId inherited from User
-  departmentName?: string;
+  departmentName?: string | undefined;
   // teamId inherited from User
-  teamName?: string;
+  teamName?: string | undefined;
   // position inherited from User
   hireDate?: string;
   birthday?: string; // Birthday field for form

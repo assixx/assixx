@@ -134,12 +134,22 @@
   position: relative;
 }
 
-/* Tooltip erscheint bei Hover (optional, falls natives tooltip nicht gewünscht) */
+/**
+ * Custom tooltip via ::after pseudo-element
+ *
+ * WARNING: This uses position:absolute which gets clipped by overflow:auto containers!
+ * Inside .table-responsive, use native title="" attribute instead.
+ *
+ * BEST PRACTICE FOR TABLES:
+ * - Use title="Bearbeiten" for action buttons (native, never clipped)
+ * - Avoid data-tooltip in scroll containers
+ */
 .action-icon[data-tooltip]::after {
   pointer-events: none;
   content: attr(data-tooltip);
 
   position: absolute;
+  z-index: 9999;
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%) translateY(-4px);
@@ -159,6 +169,14 @@
 
 .action-icon[data-tooltip]:hover::after {
   opacity: 100%;
+}
+
+/**
+ * Disable ::after tooltip inside scroll containers
+ * Native title="" attribute will be used instead (browser renders it outside scroll context)
+ */
+.table-responsive .action-icon[data-tooltip]::after {
+  display: none;
 }
 
 /* ========== RESPONSIVE ========== */

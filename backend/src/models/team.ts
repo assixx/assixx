@@ -102,7 +102,7 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN users u ON t.team_lead_id = u.id
-      ${tenant_id != null && tenant_id !== 0 ? 'WHERE t.tenant_id = ?' : ''}
+      ${tenant_id != null && tenant_id !== 0 ? 'WHERE t.tenant_id = ? AND t.is_active = 1' : 'WHERE t.is_active = 1'}
       ORDER BY t.name
     `;
 
@@ -140,7 +140,7 @@ export async function findTeamById(id: number, tenantId: number): Promise<DbTeam
       return null;
     }
     logger.info(`Team ${String(id)} retrieved successfully for tenant ${String(tenantId)}`);
-    return rows[0];
+    return rows[0] ?? null;
   } catch (error: unknown) {
     logger.error(`Error fetching team ${String(id)}: ${(error as Error).message}`);
     throw error;

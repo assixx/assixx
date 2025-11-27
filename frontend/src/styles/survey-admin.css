@@ -119,10 +119,6 @@
    SURVEY-SPECIFIC: Question Options
    ======================================== */
 
-.options-container {
-  margin-top: var(--spacing-4);
-}
-
 .option-item {
   display: flex;
   gap: var(--spacing-2);

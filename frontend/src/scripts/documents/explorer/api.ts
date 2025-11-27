@@ -24,7 +24,7 @@ function mapBackendDocument(backendDoc: Record<string, unknown>): Document {
   return {
     ...backendDoc,
     // Map fileSize to size (fileSize comes from backend mapping)
-    size: typeof backendDoc.fileSize === 'number' ? backendDoc.fileSize : 0,
+    size: typeof backendDoc['fileSize'] === 'number' ? backendDoc['fileSize'] : 0,
   } as Document;
 }
 

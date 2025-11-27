@@ -17,15 +17,49 @@ interface TenantIdResult extends RowDataPacket {
 
 // Type guard to check if request is authenticated
 function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user != null;
+  return 'user' in req;
+}
+
+// Error result type
+interface TenantIdResultError {
+  tenantId: number;
+  error: { status: number; message: Record<string, unknown> };
+}
+interface TenantIdResultSuccess {
+  tenantId: number;
+  error?: undefined;
+}
+type TenantIdExtractResult = TenantIdResultSuccess | TenantIdResultError;
+
+// Not found error constant
+const TENANT_NOT_FOUND_ERROR: TenantIdResultError = {
+  tenantId: 0,
+  error: { status: 404, message: { error: 'Tenant nicht gefunden', upgrade_required: true } },
+};
+
+/**
+ * Look up tenant ID by subdomain
+ */
+async function lookupTenantBySubdomain(subdomain: string): Promise<TenantIdExtractResult> {
+  const [tenantRows] = await query<TenantIdResult[]>('SELECT id FROM tenants WHERE subdomain = ?', [
+    subdomain,
+  ]);
+
+  if (tenantRows.length === 0) {
+    return TENANT_NOT_FOUND_ERROR;
+  }
+
+  const tenant = tenantRows[0];
+  if (tenant === undefined) {
+    return TENANT_NOT_FOUND_ERROR;
+  }
+  return { tenantId: tenant.id };
 }
 
 /**
  * Extract numeric tenant ID from request
  */
-async function extractTenantId(
-  req: AuthenticatedRequest,
-): Promise<{ tenantId: number; error?: { status: number; message: Record<string, unknown> } }> {
+async function extractTenantId(req: AuthenticatedRequest): Promise<TenantIdExtractResult> {
   // Use req.tenantId if available
   if (req.tenantId != null) {
     // Already numeric
@@ -40,26 +74,11 @@ async function extractTenantId(
     }
 
     // Must be a subdomain - look it up
-    const [tenantRows] = await query<TenantIdResult[]>(
-      'SELECT id FROM tenants WHERE subdomain = ?',
-      [req.tenantId],
-    );
-
-    if (tenantRows.length === 0) {
-      return {
-        tenantId: 0,
-        error: {
-          status: 404,
-          message: { error: 'Tenant nicht gefunden', upgrade_required: true },
-        },
-      };
-    }
-
-    return { tenantId: tenantRows[0].id };
+    return await lookupTenantBySubdomain(req.tenantId);
   }
 
   // Fallback to JWT tenant_id
-  if (req.user.tenant_id) {
+  if (req.user.tenant_id !== 0) {
     return { tenantId: req.user.tenant_id };
   }
 
@@ -168,7 +187,7 @@ export const checkAnyFeature =
 
       // Check if any feature is active
       const activeFeature = await checkAnyFeatureActive(featureCodes, tenantId);
-      if (activeFeature) {
+      if (activeFeature !== null) {
         logger.info(`At least one feature (${activeFeature}) is active for tenant ${tenantId}`);
         next();
         return;
