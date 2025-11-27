@@ -88,18 +88,6 @@
   transform: scale(1.05);
 }
 
-.login-title {
-  margin: 0;
-  font-size: 36px;
-  font-weight: 700;
-  color: var(--primary-color);
-}
-
-.login-subtitle {
-  margin-top: var(--spacing-1);
-  color: var(--text-secondary);
-}
-
 .login-card {
   width: 100%;
   max-width: 450px;
@@ -112,18 +100,6 @@
   box-shadow: var(--shadow-sm);
 
   /* animation: fadeInUp 0.6s ease-out; */
-}
-
-@keyframes fade-in-up {
-  from {
-    transform: translateY(30px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
 }
 
 .login-company {
@@ -157,10 +133,6 @@
 @media (width <= 480px) {
   .login-card {
     padding: var(--spacing-6);
-  }
-
-  .login-title {
-    font-size: 28px;
   }
 
   .login-logo {
@@ -298,32 +270,7 @@
   line-height: 1.5;
 }
 
-@keyframes slide-down {
-  from {
-    transform: translateY(-20px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
-
 /* Logo Animation */
 /* .login-logo {
   animation: subtle-pulse 3s ease-in-out infinite;
 } */
-
-@keyframes subtle-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 100%;
-  }
-
-  50% {
-    transform: scale(1.02);
-    opacity: 95%;
-  }
-}

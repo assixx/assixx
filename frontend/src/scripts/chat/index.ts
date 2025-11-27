@@ -108,7 +108,9 @@ class ChatClient {
     // Fallback für currentUserId wenn user object nicht komplett ist
     if (parsedUser.id === undefined && this.token !== null && this.token !== '' && this.token !== 'test-mode') {
       try {
-        const payload = JSON.parse(atob(this.token.split('.')[1])) as JWTPayload;
+        const tokenPart = this.token.split('.')[1];
+        if (tokenPart === undefined) throw new Error('Invalid token');
+        const payload = JSON.parse(atob(tokenPart)) as JWTPayload;
         parsedUser.id = payload.id;
         this.currentUser.id = payload.id;
         if (parsedUser.username === undefined || parsedUser.username === '') {
@@ -1259,7 +1261,7 @@ class ChatClient {
     const tempMessages = messagesContainer.querySelectorAll('.message.own');
     tempMessages.forEach((msg) => {
       const msgText = msg.querySelector('.message-text')?.textContent;
-      if (msgText === message.content && ((msg as HTMLElement).dataset.messageId?.length ?? 0) > 10) {
+      if (msgText === message.content && ((msg as HTMLElement).dataset['messageId']?.length ?? 0) > 10) {
         msg.remove();
       }
     });
@@ -1559,7 +1561,7 @@ class ChatClient {
 
     if (!separatorExists) {
       if (messages.length > 0) {
-        const lastMessageDate = lastMessage.dataset.date;
+        const lastMessageDate = lastMessage.dataset['date'];
         if (lastMessageDate !== '' && lastMessageDate !== messageDate) {
           this.addDateSeparator(messageDate, messagesContainer);
         }
@@ -1589,8 +1591,8 @@ class ChatClient {
     const isOwnMessage = senderId === this.currentUserId;
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isOwnMessage ? 'own' : ''}`;
-    messageDiv.dataset.messageId = message.id.toString();
-    messageDiv.dataset.date = messageDate;
+    messageDiv.dataset['messageId'] = message.id.toString();
+    messageDiv.dataset['date'] = messageDate;
 
     const createdAt = message.createdAt;
     const time = new Date(createdAt).toLocaleTimeString('de-DE', {
@@ -1643,7 +1645,7 @@ class ChatClient {
     // Check if a separator for this date already exists
     const existingSeparators = container.querySelectorAll<HTMLElement>('.date-separator');
     const separatorExists = [...existingSeparators].some((separator) => {
-      return separator.dataset.date === dateString;
+      return separator.dataset['date'] === dateString;
     });
 
     // Don't add duplicate separator
@@ -1660,7 +1662,11 @@ class ChatClient {
     if (dateString.includes('.')) {
       // German format: dd.mm.yyyy
       const [day, month, year] = dateString.split('.');
-      messageDate = new Date(Number.parseInt(year, 10), Number.parseInt(month, 10) - 1, Number.parseInt(day, 10));
+      messageDate = new Date(
+        Number.parseInt(year ?? '0', 10),
+        Number.parseInt(month ?? '0', 10) - 1,
+        Number.parseInt(day ?? '0', 10),
+      );
     } else {
       // Assume ISO format or other parseable format
       messageDate = new Date(dateString);
@@ -1693,7 +1699,7 @@ class ChatClient {
 
     const separator = document.createElement('div');
     separator.className = 'date-separator';
-    separator.dataset.date = dateString;
+    separator.dataset['date'] = dateString;
     // Use safe setText from dom-utils instead of innerHTML
     const span = document.createElement('span');
     span.textContent = displayDate;
@@ -1963,14 +1969,14 @@ class ChatClient {
 
       const removeButton = document.createElement('button');
       removeButton.className = 'remove-file';
-      removeButton.dataset.index = index.toString();
+      removeButton.dataset['index'] = index.toString();
       const removeIcon = document.createElement('i');
       removeIcon.className = 'fas fa-times';
       removeButton.append(removeIcon);
 
       removeButton.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement | null;
-        const fileIndex = Number.parseInt(target?.dataset.index ?? '0', 10);
+        const fileIndex = Number.parseInt(target?.dataset['index'] ?? '0', 10);
         this.removeFile(fileIndex);
       });
 
@@ -2068,7 +2074,7 @@ class ChatClient {
   private createConversationItem(conversation: Conversation): HTMLDivElement {
     const item = document.createElement('div');
     item.className = 'conversation-item';
-    item.dataset.conversationId = conversation.id.toString();
+    item.dataset['conversationId'] = conversation.id.toString();
 
     this.applyConversationState(item, conversation);
 
@@ -2467,7 +2473,7 @@ class ChatClient {
 
         const target = e.currentTarget as HTMLElement | null;
         if (!target) return;
-        const type = target.dataset.type;
+        const type = target.dataset['type'];
 
         console.info('Tab clicked:', type);
 
@@ -2684,7 +2690,7 @@ class ChatClient {
 
   private getSelectedUserId(): number | null {
     const activeTab = $$('.chat-type-tab.active');
-    const tabType = activeTab?.dataset.type;
+    const tabType = activeTab?.dataset['type'];
 
     if (tabType === 'employee') {
       return this.getEmployeeUserId();
@@ -2939,7 +2945,7 @@ class ChatClient {
       category.addEventListener('click', (e) => {
         const target = e.target as HTMLElement | null;
         if (!target) return;
-        const categoryName = target.dataset.category;
+        const categoryName = target.dataset['category'];
         if (categoryName !== undefined && categoryName !== '') {
           this.showEmojiCategory(categoryName);
           $all('.emoji-category').forEach((cat) => {
@@ -3318,7 +3324,7 @@ class ChatClient {
       "'": '&#039;',
     };
     // eslint-disable-next-line security/detect-object-injection -- m kommt aus Regex-Match von definierten Zeichen ["&'<>], kein beliebiger User-Input
-    return text.replace(/["&'<>]/g, (m) => map[m]);
+    return text.replace(/["&'<>]/g, (m) => map[m] ?? m);
   }
 
   parseEmojis(text: string): string {
@@ -3360,7 +3366,7 @@ class ChatClient {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     // eslint-disable-next-line security/detect-object-injection -- i ist berechneter Index (0-3) basiert auf Math.log(), kein User-Input, 100% sicher
-    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i] ?? 'Bytes'}`;
   }
 }
 

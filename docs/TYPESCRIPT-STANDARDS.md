@@ -11,6 +11,8 @@ Dieses Dokument ist unser **Code of Conduct** - die einzige Wahrheit für TypeSc
 
 **Goldene Regel:** Code, der gegen diese Standards verstößt, wird NICHT gemerged.
 
+> **Pflichtlektüre:** [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - 10 Regeln für Safety-Critical Code (NASA/JPL), adaptiert für TypeScript.
+
 ---
 
 ## 📁 1. Prettier Code Formatting
@@ -1077,6 +1079,7 @@ backend/src/
 
 ## References
 
+- [Power of Ten Rules](./POWER-OF-TEN-RULES.md) - **PFLICHTLEKTÜRE** - 10 Regeln für Safety-Critical Code (NASA/JPL)
 - [TypeScript Security Best Practices](../../docs/TYPESCRIPT-SECURITY-BEST-PRACTICES.md)
 - [User Update Security Fix](./USER_UPDATE_SECURITY_FIX_SUMMARY.md)
 - [Phase 2 Migration Guide](../../docs/PHASE2-MIGRATION-GUIDE.md)

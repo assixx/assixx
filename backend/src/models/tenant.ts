@@ -36,8 +36,8 @@ interface TenantCreateData {
   company_name: string;
   subdomain: string;
   email: string;
-  phone?: string;
-  address?: string;
+  phone?: string | undefined;
+  address?: string | undefined;
   admin_email: string;
   admin_password: string;
   admin_first_name: string;
@@ -128,7 +128,11 @@ async function assignBasicPlan(connection: PoolConnection, tenantId: number): Pr
   );
 
   if (plans.length > 0) {
-    const basicPlanId = plans[0].id;
+    const plan = plans[0];
+    if (plan === undefined) {
+      throw new Error('Basic plan not found');
+    }
+    const basicPlanId = plan.id;
 
     await connection.query(
       `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
@@ -296,6 +300,10 @@ export async function checkTenantTrialStatus(
   if (result.length === 0) return null;
 
   const tenant = result[0];
+  if (tenant === undefined) {
+    return null;
+  }
+
   const now = new Date();
   const trialEnd = new Date(tenant.trial_ends_at);
 

@@ -238,7 +238,7 @@ function handleSearchKeyboard(e: KeyboardEvent, searchContainer: HTMLElement): v
     e.preventDefault();
     // eslint-disable-next-line security/detect-object-injection -- Safe: selectedResultIndex is a controlled index from our keyboard navigation (bounded by resultItems.length)
     const selectedItem = resultItems[selectedResultIndex] as HTMLElement;
-    const machineId = selectedItem.dataset.machineId;
+    const machineId = selectedItem.dataset['machineId'];
     if (machineId !== undefined) {
       handleResultItemClick(searchContainer, machineId);
       selectedResultIndex = -1;
@@ -296,7 +296,7 @@ function setupSearchInput(): void {
   document.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
     const resultItem = target.closest<HTMLElement>('[data-action="edit-from-search"]');
-    const machineId = resultItem?.dataset.machineId;
+    const machineId = resultItem?.dataset['machineId'];
     if (resultItem !== null && machineId !== undefined) {
       handleResultItemClick(searchContainer, machineId);
     }
@@ -334,7 +334,7 @@ function setupStatusToggle(): void {
     }
 
     // Get status from data attribute
-    const status = btn.dataset.status as MachineStatusFilter | undefined;
+    const status = btn.dataset['status'] as MachineStatusFilter | undefined;
     if (status === undefined) {
       return;
     }
@@ -431,7 +431,7 @@ function attachTableActionListeners(): void {
     // Handle edit machine
     const editBtn = target.closest<HTMLElement>('[data-action="edit-machine"]');
     if (editBtn) {
-      const machineId = editBtn.dataset.machineId;
+      const machineId = editBtn.dataset['machineId'];
       if (machineId !== undefined) {
         void editMachineHandler(Number.parseInt(machineId, 10));
       }
@@ -440,7 +440,7 @@ function attachTableActionListeners(): void {
     // Handle view machine details
     const viewBtn = target.closest<HTMLElement>('[data-action="view-machine-details"]');
     if (viewBtn) {
-      const machineId = viewBtn.dataset.machineId;
+      const machineId = viewBtn.dataset['machineId'];
       if (machineId !== undefined) {
         void viewMachineDetailsHandler(Number.parseInt(machineId, 10));
       }
@@ -449,7 +449,7 @@ function attachTableActionListeners(): void {
     // Handle delete machine
     const deleteBtn = target.closest<HTMLElement>('[data-action="delete-machine"]');
     if (deleteBtn) {
-      const machineId = deleteBtn.dataset.machineId;
+      const machineId = deleteBtn.dataset['machineId'];
       if (machineId !== undefined) {
         void deleteMachineHandler(Number.parseInt(machineId, 10));
       }
@@ -537,7 +537,7 @@ function handleDropdownSelection(
   hiddenInput: HTMLInputElement | null,
   _dropdownId: string,
 ): void {
-  const value = option.dataset.value ?? '';
+  const value = option.dataset['value'] ?? '';
   const text = option.textContent;
   const trimmedText = text !== '' ? text.trim() : '';
   const displayText = trimmedText !== '' ? trimmedText : value;

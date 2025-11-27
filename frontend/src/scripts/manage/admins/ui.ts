@@ -191,7 +191,7 @@ export function renderAdminTable(
   console.info('Admins to render:', adminsToRender);
 
   const tableHTML = `
-    <div class="overflow-x-auto">
+    <div class="table-responsive">
       <table class="data-table data-table--hover data-table--striped" id="admins-table">
         <thead>
           <tr>

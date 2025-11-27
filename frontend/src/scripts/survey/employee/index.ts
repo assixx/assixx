@@ -85,13 +85,13 @@ export class SurveyEmployeeManager {
 
     // Handle rating clicks (rating buttons have data-rating-value attribute)
     const ratingButton = target.closest<HTMLElement>('[data-rating-value]');
-    if (ratingButton?.dataset.ratingValue !== undefined) {
+    if (ratingButton?.dataset['ratingValue'] !== undefined) {
       this.handleRatingClick(ratingButton);
     }
   }
 
   private handleActionClick(e: MouseEvent, actionElement: HTMLElement): void {
-    const action = actionElement.dataset.action ?? '';
+    const action = actionElement.dataset['action'] ?? '';
 
     // Prevent default for buttons
     if (actionElement.tagName === 'BUTTON') {
@@ -103,8 +103,8 @@ export class SurveyEmployeeManager {
   }
 
   private handleSurveyCardClick(e: MouseEvent, card: HTMLElement): void {
-    const surveyId = card.dataset.surveyId;
-    const action = card.dataset.action;
+    const surveyId = card.dataset['surveyId'];
+    const action = card.dataset['action'];
 
     if (surveyId == null) return;
 
@@ -119,8 +119,8 @@ export class SurveyEmployeeManager {
   }
 
   private handleRatingClick(ratingOption: HTMLElement): void {
-    const questionId = ratingOption.dataset.questionId;
-    const ratingValue = ratingOption.dataset.ratingValue;
+    const questionId = ratingOption.dataset['questionId'];
+    const ratingValue = ratingOption.dataset['ratingValue'];
 
     if (questionId != null && ratingValue != null) {
       selectRating(Number(questionId), Number(ratingValue));
@@ -132,8 +132,8 @@ export class SurveyEmployeeManager {
       return;
     }
 
-    const questionId = target.dataset.questionId;
-    const type = target.dataset.type;
+    const questionId = target.dataset['questionId'];
+    const type = target.dataset['type'];
 
     if (questionId == null) return;
 
@@ -161,7 +161,7 @@ export class SurveyEmployeeManager {
   private executeAction(action: string, target: HTMLElement): void {
     console.log('[SurveyEmployee] Executing action:', action);
 
-    const surveyId = target.dataset.surveyId ?? '';
+    const surveyId = target.dataset['surveyId'] ?? '';
 
     switch (action) {
       case 'start-survey':

@@ -68,7 +68,7 @@ export interface MiddlewareFactories {
 
 // Type guard to check if request is authenticated
 export function isAuthenticated(req: Request): req is AuthenticatedRequest {
-  return 'user' in req && req.user != null && typeof req.user === 'object';
+  return 'user' in req && typeof req.user === 'object';
 }
 
 // Type guard to check if user has specific role

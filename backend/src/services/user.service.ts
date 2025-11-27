@@ -141,12 +141,17 @@ class UserService {
         throw new Error('Tenant ID is required');
       }
 
-      const users = await User.findAll({
+      // Build filter object conditionally to avoid TS2379
+      const filter: { limit: number; tenant_id: number; role?: string } = {
         limit,
-        // offset, // offset is not part of UserFilter
-        role,
         tenant_id: tenantId,
-      });
+      };
+
+      if (role !== undefined) {
+        filter.role = role;
+      }
+
+      const users = await User.findAll(filter);
 
       // Map to response format
       const total = users.length; // Would need proper count from DB
@@ -192,9 +197,10 @@ class UserService {
       const cleanUpdateData: Record<string, unknown> = { ...updateData };
 
       // These deletions are redundant due to TypeScript types, but kept for runtime safety
-      delete cleanUpdateData.id;
-      delete cleanUpdateData.password;
-      delete cleanUpdateData.role;
+      // Using bracket notation to satisfy TS4111
+      delete cleanUpdateData['id'];
+      delete cleanUpdateData['password'];
+      delete cleanUpdateData['role'];
 
       await User.update(userId, cleanUpdateData, tenantId);
       return await this.getUserById(userId, tenantId);

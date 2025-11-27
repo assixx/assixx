@@ -16,7 +16,7 @@ describe('DEBUG Calendar v2 Test User Creation', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-calendar-v2-debug';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-calendar-v2-debug';
   });
 
   afterAll(async () => {

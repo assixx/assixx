@@ -8,6 +8,9 @@ import { setHTML } from '../../../utils/dom-utils';
 import { getAuthToken } from '../../auth';
 import { showInfoModal } from '../../utils/alerts';
 
+// CSS class constants
+const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
+
 // Re-export types that UI functions need
 export interface KvpAPIResponse {
   id?: number;
@@ -77,10 +80,10 @@ export interface KvpSuggestion {
   isShared: number; // 0 = private (only creator + team leader), 1 = shared
   departmentId: number;
   departmentName: string;
-  areaId?: number;
-  areaName?: string;
-  teamId?: number;
-  teamName?: string;
+  areaId?: number | undefined;
+  areaName?: string | undefined;
+  teamId?: number | undefined;
+  teamName?: string | undefined;
   submittedBy: number;
   submittedByName: string;
   submittedByLastname: string;
@@ -88,17 +91,17 @@ export interface KvpSuggestion {
   categoryName: string;
   categoryIcon: string;
   categoryColor: string;
-  sharedBy?: number;
-  sharedByName?: string;
-  sharedAt?: string;
+  sharedBy?: number | undefined;
+  sharedByName?: string | undefined;
+  sharedAt?: string | undefined;
   createdAt: string;
-  expectedBenefit?: string;
-  estimatedCost?: number;
-  actualSavings?: number;
-  implementationDate?: string;
-  assignedTo?: number;
-  rejectionReason?: string;
-  roi?: number;
+  expectedBenefit?: string | undefined;
+  estimatedCost?: number | undefined;
+  actualSavings?: number | undefined;
+  implementationDate?: string | undefined;
+  assignedTo?: number | undefined;
+  rejectionReason?: string | undefined;
+  roi?: number | undefined;
 }
 
 export interface Comment {
@@ -122,8 +125,8 @@ export interface Attachment {
   fileType: string;
   fileSize: number;
   uploadedBy: number;
-  uploadedByName: string;
-  uploadedByLastname: string;
+  firstName: string; // From users table JOIN
+  lastName: string; // From users table JOIN
   uploadedAt: string;
 }
 
@@ -228,7 +231,7 @@ export function renderComments(comments: Comment[], container: HTMLElement): voi
     container,
     comments
       .map((comment) => {
-        const initials = `${comment.firstName[0]}${comment.lastName[0]}`.toUpperCase();
+        const initials = `${comment.firstName[0] ?? 'U'}${comment.lastName[0] ?? 'N'}`.toUpperCase();
         const avatarColor = comment.id % 10; // Design System: 10 color variants
         const commentClass = comment.isInternal ? 'comment-item comment-internal' : 'comment-item';
 
@@ -307,7 +310,7 @@ export function renderOtherAttachments(
           <div class="attachment-info">
             <div class="attachment-name">${escapeHtml(attachment.fileName)}</div>
             <div class="attachment-meta">
-              ${fileSize} • ${attachment.uploadedByName} ${attachment.uploadedByLastname}
+              ${fileSize} • ${attachment.firstName} ${attachment.lastName}
             </div>
           </div>
           <i class="fas fa-download"></i>
@@ -428,34 +431,225 @@ export function hasImplementationDate(suggestion?: KvpSuggestion): boolean {
 /* ========================================
    UI INTERACTIONS - Added 2025-11-14
    Extracted from inline JavaScript
+   Updated 2025-11-26: Preview Modal (like documents-explorer)
    ======================================== */
 
-/* LIGHTBOX MANAGEMENT */
-export function openLightbox(src: string): void {
-  const lightboxImage = document.querySelector<HTMLImageElement>('#lightboxImage');
-  const photoLightbox = document.querySelector<HTMLElement>('#photoLightbox');
+/* PREVIEW MODAL MANAGEMENT */
 
-  if (lightboxImage !== null && photoLightbox !== null) {
-    lightboxImage.src = src;
-    photoLightbox.classList.add('active');
+/** Current attachment being previewed - needed for download */
+let currentPreviewAttachment: Attachment | null = null;
+
+/** All loaded attachments - used to find attachment by UUID for photo gallery */
+let loadedAttachments: Attachment[] = [];
+
+/**
+ * Store attachments for later lookup (called from renderer after loading)
+ */
+export function setLoadedAttachments(attachments: Attachment[]): void {
+  loadedAttachments = attachments;
+}
+
+/**
+ * Get file type category for preview
+ */
+function getPreviewFileType(fileName: string, mimeType: string): 'pdf' | 'image' | 'other' {
+  const extension = fileName.toLowerCase().split('.').pop() ?? '';
+
+  if (extension === 'pdf' || mimeType === 'application/pdf') return 'pdf';
+  if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension) || mimeType.startsWith('image/')) return 'image';
+  return 'other';
+}
+
+/**
+ * Get icon class based on file type
+ */
+function getPreviewIcon(fileType: 'pdf' | 'image' | 'other'): string {
+  const iconMap = {
+    pdf: 'fas fa-file-pdf text-error-500',
+    image: 'fas fa-image text-success-500',
+    other: 'fas fa-file text-content-secondary',
+  } as const;
+  // eslint-disable-next-line security/detect-object-injection -- fileType is constrained union type, not user input
+  return iconMap[fileType];
+}
+
+/**
+ * Build KVP download URL with auth token
+ */
+function buildKvpDownloadUrl(fileUuid: string): string {
+  const token = getAuthToken();
+  const tokenParam = token !== null && token !== '' ? encodeURIComponent(token) : '';
+  return `/api/v2/kvp/attachments/${fileUuid}/download?token=${tokenParam}`;
+}
+
+/**
+ * Update modal header elements for KVP attachment
+ */
+function updateKvpModalHeader(attachment: Attachment, fileType: 'pdf' | 'image' | 'other'): void {
+  const titleEl = document.getElementById('preview-title');
+  const iconEl = document.getElementById('preview-icon');
+  const sizeEl = document.getElementById('preview-size');
+  const uploaderEl = document.getElementById('preview-uploader');
+
+  titleEl?.replaceChildren(attachment.fileName);
+  if (iconEl !== null) iconEl.className = getPreviewIcon(fileType) + ' mr-2';
+
+  const sizeSpan = sizeEl?.querySelector('span');
+  sizeSpan?.replaceChildren(formatFileSize(attachment.fileSize));
+
+  const uploaderSpan = uploaderEl?.querySelector('span');
+  uploaderSpan?.replaceChildren(`${attachment.firstName} ${attachment.lastName}`);
+}
+
+/**
+ * Show preview content based on file type
+ */
+function showKvpPreviewContent(fileType: 'pdf' | 'image' | 'other', downloadUrl: string, filename: string): void {
+  const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement | null;
+  const imageContainer = document.getElementById('preview-image-container');
+  const image = document.getElementById('preview-image') as HTMLImageElement | null;
+  const noPreview = document.getElementById('preview-no-preview');
+
+  // Hide all containers first
+  iframe?.classList.add('hidden');
+  imageContainer?.classList.add('hidden');
+  noPreview?.classList.add('hidden');
+
+  // Show appropriate preview
+  if (fileType === 'pdf' && iframe !== null) {
+    iframe.classList.remove('hidden');
+    iframe.src = downloadUrl;
+  } else if (fileType === 'image' && imageContainer !== null && image !== null) {
+    imageContainer.classList.remove('hidden');
+    image.src = downloadUrl;
+    image.alt = filename;
+  } else if (noPreview !== null) {
+    noPreview.classList.remove('hidden');
+  }
+}
+
+/**
+ * Open preview modal for an attachment
+ */
+export function openPreviewModal(attachment: Attachment): void {
+  const modal = document.getElementById('preview-modal');
+  if (modal === null) return;
+
+  currentPreviewAttachment = attachment;
+
+  const downloadUrl = buildKvpDownloadUrl(attachment.fileUuid);
+  const fileType = getPreviewFileType(attachment.fileName, attachment.fileType);
+
+  updateKvpModalHeader(attachment, fileType);
+  showKvpPreviewContent(fileType, downloadUrl, attachment.fileName);
+
+  modal.classList.add(MODAL_ACTIVE_CLASS);
+  document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Close preview modal
+ */
+export function closePreviewModal(): void {
+  const modal = document.getElementById('preview-modal');
+  const iframe = document.getElementById('preview-iframe') as HTMLIFrameElement | null;
+  const image = document.getElementById('preview-image') as HTMLImageElement | null;
+
+  if (modal === null) return;
+
+  // Clear preview content to stop loading/playback
+  if (iframe !== null) {
+    iframe.onerror = null;
+    iframe.src = '';
+  }
+  if (image !== null) {
+    image.onerror = null;
+    image.src = '';
+  }
+
+  // Clear current attachment
+  currentPreviewAttachment = null;
+
+  // Hide modal (Design System pattern)
+  modal.classList.remove(MODAL_ACTIVE_CLASS);
+  document.body.style.overflow = '';
+}
+
+/**
+ * Download current preview attachment
+ */
+function downloadCurrentAttachment(): void {
+  if (currentPreviewAttachment === null) return;
+
+  const token = getAuthToken();
+  const tokenParam = token !== null && token !== '' ? encodeURIComponent(token) : '';
+  const downloadUrl = `/api/v2/kvp/attachments/${currentPreviewAttachment.fileUuid}/download?token=${tokenParam}`;
+
+  // Create temporary link and trigger download
+  const link = document.createElement('a');
+  link.href = downloadUrl;
+  link.download = currentPreviewAttachment.fileName;
+  link.target = '_blank';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/**
+ * Initialize preview modal event listeners
+ */
+function initPreviewModal(): void {
+  const modal = document.getElementById('preview-modal');
+
+  // Close on overlay click
+  modal?.addEventListener('click', (e: MouseEvent) => {
+    if (e.target === modal) {
+      closePreviewModal();
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && modal?.classList.contains(MODAL_ACTIVE_CLASS) === true) {
+      closePreviewModal();
+    }
+  });
+}
+
+/* LEGACY LIGHTBOX - kept for backwards compatibility with photo gallery */
+export function openLightbox(src: string): void {
+  // Photo gallery now uses the preview modal too
+  // Extract UUID from URL - format: /api/v2/kvp/attachments/{uuid}/download?token=...
+  const uuidMatch = /attachments\/([^/]+)\/download/.exec(src);
+  const fileUuid = uuidMatch?.[1] ?? '';
+
+  // Try to find the attachment in loaded attachments (has real filename)
+  const foundAttachment = loadedAttachments.find((att) => att.fileUuid === fileUuid);
+
+  if (foundAttachment !== undefined) {
+    // Found the attachment - use it with real filename
+    openPreviewModal(foundAttachment);
+  } else {
+    // Fallback: create temp attachment with generic name
+    const tempAttachment: Attachment = {
+      id: 0,
+      fileUuid: fileUuid,
+      suggestionId: 0,
+      fileName: 'Bild',
+      filePath: src,
+      fileType: 'image/jpeg',
+      fileSize: 0,
+      uploadedBy: 0,
+      firstName: '',
+      lastName: '',
+      uploadedAt: '',
+    };
+    openPreviewModal(tempAttachment);
   }
 }
 
 export function closeLightbox(): void {
-  const photoLightbox = document.querySelector<HTMLElement>('#photoLightbox');
-  if (photoLightbox !== null) {
-    photoLightbox.classList.remove('active');
-  }
-}
-
-function initLightbox(): void {
-  // Close lightbox on click outside
-  const photoLightbox = document.querySelector<HTMLElement>('#photoLightbox');
-  photoLightbox?.addEventListener('click', function (e: MouseEvent) {
-    if (e.target === this) {
-      closeLightbox();
-    }
-  });
+  closePreviewModal();
 }
 
 /* SHARE MODAL MANAGEMENT */
@@ -464,7 +658,7 @@ export function openShareModal(): void {
   if (shareModal !== null) {
     // Design System pattern: remove hidden + add active class
     shareModal.removeAttribute('hidden');
-    shareModal.classList.add('modal-overlay--active');
+    shareModal.classList.add(MODAL_ACTIVE_CLASS);
     // NOTE: Organization data is pre-loaded by share-modal.ts before this is called
     // No need to dispatch loadOrgData event (would cause infinite loop)
   }
@@ -474,7 +668,7 @@ export function closeShareModal(): void {
   const shareModal = document.querySelector<HTMLElement>('#shareModal');
   if (shareModal === null) return;
 
-  shareModal.classList.remove('modal-overlay--active');
+  shareModal.classList.remove(MODAL_ACTIVE_CLASS);
   shareModal.setAttribute('hidden', '');
 
   // Reset selections
@@ -664,7 +858,7 @@ function handleDropdownTriggerClick(target: HTMLElement, e: MouseEvent): boolean
  * Extract label from dropdown option
  */
 function getDropdownOptionLabel(dropdownOption: HTMLElement): string {
-  const dataLabel = dropdownOption.dataset.label;
+  const dataLabel = dropdownOption.dataset['label'];
   const textLabel = dropdownOption.textContent.trim();
   return dataLabel !== undefined && dataLabel !== '' ? dataLabel : textLabel;
 }
@@ -709,8 +903,8 @@ function handleDropdownOptionClick(target: HTMLElement, e: MouseEvent): boolean 
   const dropdown = dropdownOption.closest('.dropdown');
   if (dropdown === null) return true;
 
-  const action = dropdownOption.dataset.action ?? '';
-  const value = dropdownOption.dataset.value ?? '';
+  const action = dropdownOption.dataset['action'] ?? '';
+  const value = dropdownOption.dataset['value'] ?? '';
   const label = getDropdownOptionLabel(dropdownOption);
 
   updateDropdownUI(dropdown, label, value);
@@ -732,7 +926,7 @@ function handleLegacyActions(target: HTMLElement): boolean {
   // Handle toggle dropdown (old pattern)
   const toggleBtn = target.closest<HTMLElement>('[data-action="toggle-dropdown"]');
   if (toggleBtn !== null) {
-    const dropdownType = toggleBtn.dataset.dropdown;
+    const dropdownType = toggleBtn.dataset['dropdown'];
     if (dropdownType !== undefined) {
       toggleDropdown(`#${dropdownType}`);
     }
@@ -742,8 +936,8 @@ function handleLegacyActions(target: HTMLElement): boolean {
   // Handle select status (old pattern)
   const statusOption = target.closest<HTMLElement>('[data-action="select-status"]');
   if (statusOption !== null && statusOption.closest('.dropdown__option') === null) {
-    const value = statusOption.dataset.value ?? '';
-    const label = statusOption.dataset.label ?? '';
+    const value = statusOption.dataset['value'] ?? '';
+    const label = statusOption.dataset['label'] ?? '';
     selectStatus(value, label);
     return true;
   }
@@ -756,10 +950,17 @@ function handleLegacyActions(target: HTMLElement): boolean {
  * @returns true if event was handled, false otherwise
  */
 function handleModalActions(target: HTMLElement): boolean {
-  // Handle close lightbox
-  const closeLightboxBtn = target.closest<HTMLElement>('[data-action="close-lightbox"]');
-  if (closeLightboxBtn !== null) {
-    closeLightbox();
+  // Handle close preview modal (new Design System pattern)
+  const closePreviewBtn = target.closest<HTMLElement>('[data-action="close-preview-modal"]');
+  if (closePreviewBtn !== null) {
+    closePreviewModal();
+    return true;
+  }
+
+  // Handle download from preview modal
+  const downloadPreviewBtn = target.closest<HTMLElement>('[data-action="download-preview"]');
+  if (downloadPreviewBtn !== null) {
+    downloadCurrentAttachment();
     return true;
   }
 
@@ -777,10 +978,10 @@ function handleModalActions(target: HTMLElement): boolean {
     return true;
   }
 
-  // Handle open lightbox from photo gallery
+  // Handle open lightbox from photo gallery (now uses preview modal)
   const openLightboxBtn = target.closest<HTMLElement>('[data-action="open-lightbox"]');
   if (openLightboxBtn !== null) {
-    const url = openLightboxBtn.dataset.url;
+    const url = openLightboxBtn.dataset['url'];
     if (url !== undefined) {
       openLightbox(url);
     }
@@ -814,7 +1015,7 @@ function initEventDelegation(): void {
 
 /* INITIALIZATION */
 export function initUIInteractions(): void {
-  initLightbox();
+  initPreviewModal();
   initShareModal();
   initDropdowns();
   initEventDelegation();

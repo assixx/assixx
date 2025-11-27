@@ -55,7 +55,12 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
+      const adminIdParam = req.params['adminId'];
+      if (adminIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'Admin ID is required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
       logger.info('[Admin Permissions v2] Admin ID:', adminId);
 
       // Get the admin's tenant ID
@@ -90,7 +95,7 @@ export const adminPermissionsController = {
    */
   async getMyPermissions(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      if (!req.tenantId) {
+      if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', 'Authentication required'));
         return;
       }
@@ -204,8 +209,16 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
-      const departmentId = Number.parseInt(req.params.departmentId);
+      const adminIdParam = req.params['adminId'];
+      const departmentIdParam = req.params['departmentId'];
+      if (adminIdParam === undefined || departmentIdParam === undefined) {
+        res
+          .status(400)
+          .json(errorResponse('BAD_REQUEST', 'Admin ID and Department ID are required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
+      const departmentId = Number.parseInt(departmentIdParam);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
@@ -251,8 +264,14 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
-      const groupId = Number.parseInt(req.params.groupId);
+      const adminIdParam = req.params['adminId'];
+      const groupIdParam = req.params['groupId'];
+      if (adminIdParam === undefined || groupIdParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', 'Admin ID and Group ID are required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
+      const groupId = Number.parseInt(groupIdParam);
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);
@@ -293,7 +312,7 @@ export const adminPermissionsController = {
       // Validation is now handled by Zod middleware in routes
 
       // Check permissions
-      if (req.user.role !== 'root' || !req.tenantId) {
+      if (req.user.role !== 'root' || req.tenantId === undefined) {
         res.status(403).json(errorResponse(FORBIDDEN_ERROR, ROOT_ACCESS_REQUIRED));
         return;
       }
@@ -341,10 +360,20 @@ export const adminPermissionsController = {
         return;
       }
 
-      const adminId = Number.parseInt(req.params.adminId);
-      const departmentId = Number.parseInt(req.params.departmentId);
+      const adminIdParam = req.params['adminId'];
+      const departmentIdParam = req.params['departmentId'];
+      if (adminIdParam === undefined || departmentIdParam === undefined) {
+        res
+          .status(400)
+          .json(errorResponse('BAD_REQUEST', 'Admin ID and Department ID are required'));
+        return;
+      }
+      const adminId = Number.parseInt(adminIdParam);
+      const departmentId = Number.parseInt(departmentIdParam);
       const permissionLevel: PermissionLevel =
-        req.params.permissionLevel ? (req.params.permissionLevel as PermissionLevel) : 'read';
+        req.params['permissionLevel'] !== undefined ?
+          (req.params['permissionLevel'] as PermissionLevel)
+        : 'read';
 
       // Get the admin's tenant ID
       const [adminRows] = await execute<RowDataPacket[]>(GET_ADMIN_TENANT_QUERY, [adminId]);

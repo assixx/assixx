@@ -106,7 +106,7 @@
     inset: 0;
 
     background: linear-gradient(
-      5deg,
+      360deg,
       transparent,
       rgb(0 142 255 / 10%) 100%,
       rgb(1 0 4 / 51%) 0,
@@ -199,4 +199,10 @@
   ::-webkit-scrollbar-thumb:hover {
     background: rgb(255 255 255 / 30%);
   }
+
+  /* NOTE: .overflow-x-visible was REMOVED (2025-11)
+   * Use .table-responsive from Design System instead
+   * Reason: overflow-x:visible doesn't enable scrolling!
+   * See: design-system/primitives/data-display/table.base.css
+   */
 }

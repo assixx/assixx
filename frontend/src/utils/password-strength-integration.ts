@@ -154,7 +154,7 @@ function updateStrengthUI(
 ): void {
   if (result !== null && strengthBar !== null && strengthLabel !== null && strengthTime !== null) {
     // Update strength bar score
-    strengthBar.dataset.score = result.score.toString();
+    strengthBar.dataset['score'] = result.score.toString();
 
     // Update strength label
     strengthLabel.textContent = getStrengthLabel(result.score);

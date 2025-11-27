@@ -85,24 +85,6 @@ body {
 }
 
 /* Kompakte Pricing Info */
-.pricing-info {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.pricing-item {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.pricing-item strong {
-  color: var(--primary-color);
-}
 
 /* Weniger kompakte Form - 3 Spalten */
 .form-grid {
@@ -520,12 +502,6 @@ body {
 }
 
 @media (width <= 768px) {
-  .signup-container {
-    padding: 16px;
-
-    /* animation: none; */
-  }
-
   .signup-header {
     flex-direction: column;
     gap: 8px;
@@ -542,10 +518,6 @@ body {
     gap: 12px;
     align-items: stretch;
   }
-
-  .submit-button {
-    width: 100%;
-  }
 }
 
 /* ========================================
@@ -556,19 +528,6 @@ body {
 /* .signup-logo {
         animation: subtle-pulse 3s ease-in-out infinite;
       } */
-
-@keyframes subtle-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 100%;
-  }
-
-  50% {
-    transform: scale(1.02);
-    opacity: 95%;
-  }
-}
 
 /* Glassmorphismus für alle Cards */
 .card {

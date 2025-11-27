@@ -32,6 +32,8 @@ import type {
 // Constants
 const NOT_IMPLEMENTED = 'NOT_IMPLEMENTED';
 const NOT_IMPLEMENTED_MESSAGE = 'Feature not yet implemented';
+const VALIDATION_ERROR = 'VALIDATION_ERROR';
+const CONVERSATION_ID_REQUIRED = 'Conversation ID is required';
 
 interface ChatConversationResult {
   id: number;
@@ -43,6 +45,32 @@ interface ChatMessageResult {
   id: number;
   messageId: number;
   [key: string]: unknown;
+}
+
+/**
+ * Helper to parse optional query string as integer with default
+ */
+function parseIntQuery(value: string | undefined, defaultVal: number): number {
+  return value !== undefined && value !== '' ? Number.parseInt(value) : defaultVal;
+}
+
+/**
+ * Helper to set optional filter property if value exists
+ */
+function setOptionalFilter(
+  filters: Record<string, unknown>,
+  key: string,
+  value: string | undefined,
+  transform?: (v: string) => unknown,
+): void {
+  if (value !== undefined && value !== '') {
+    Object.defineProperty(filters, key, {
+      value: transform !== undefined ? transform(value) : value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+  }
 }
 
 /**
@@ -70,7 +98,7 @@ class ChatController {
       const { user } = req;
       const tenantId = user.tenant_id;
       const userId = user.id;
-      const search = req.query.search as string | undefined;
+      const search = req.query['search'] as string | undefined;
 
       const users = await getChatUsers(tenantId, userId, search);
 
@@ -101,16 +129,25 @@ class ChatController {
       const tenantId = user.tenant_id;
       const userId = user.id;
 
+      const pageQuery = req.query['page'] as string | undefined;
+      const limitQuery = req.query['limit'] as string | undefined;
+      const searchQuery = req.query['search'] as string | undefined;
+
       const filters: ConversationFilters = {
-        search: req.query.search as string,
-        isGroup:
-          req.query.isGroup === 'true' ? true
-          : req.query.isGroup === 'false' ? false
-          : undefined,
-        hasUnread: req.query.hasUnread === 'true',
-        page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 20,
+        hasUnread: req.query['hasUnread'] === 'true',
+        page: pageQuery !== undefined && pageQuery !== '' ? Number.parseInt(pageQuery) : 1,
+        limit: limitQuery !== undefined && limitQuery !== '' ? Number.parseInt(limitQuery) : 20,
       };
+
+      // Conditionally add optional properties to avoid exactOptionalPropertyTypes error
+      if (searchQuery !== undefined && searchQuery !== '') {
+        (filters as Record<string, unknown>)['search'] = searchQuery;
+      }
+      if (req.query['isGroup'] === 'true') {
+        (filters as Record<string, unknown>)['isGroup'] = true;
+      } else if (req.query['isGroup'] === 'false') {
+        (filters as Record<string, unknown>)['isGroup'] = false;
+      }
 
       const result = await getConversations(tenantId, userId, filters);
 
@@ -148,21 +185,28 @@ class ChatController {
       };
       const data: CreateConversationData = {
         participantIds: body.participantIds ?? [],
-        name: body.name,
-        isGroup: body.isGroup,
       };
+
+      // Conditionally add optional properties to avoid exactOptionalPropertyTypes error
+      if (body.name !== undefined) {
+        (data as unknown as Record<string, unknown>)['name'] = body.name;
+      }
+      if (body.isGroup !== undefined) {
+        (data as unknown as Record<string, unknown>)['isGroup'] = body.isGroup;
+      }
 
       const result = await createConversation(tenantId, userId, data);
 
       // Log conversation creation
+      const resultTyped = result as unknown as ChatConversationResult;
+      const entityId =
+        resultTyped.conversationId !== 0 ? resultTyped.conversationId : resultTyped.id;
       await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'create',
         entity_type: 'chat_conversation',
-        entity_id:
-          (result as unknown as ChatConversationResult).conversationId ||
-          (result as unknown as ChatConversationResult).id,
+        entity_id: entityId,
         details: `Erstellt: ${data.name ?? 'Chat-Unterhaltung'}`,
         new_values: {
           name: data.name,
@@ -194,16 +238,34 @@ class ChatController {
       const { user } = req;
       const tenantId = user.tenant_id;
       const userId = user.id;
-      const conversationId = Number.parseInt(req.params.id);
+      const conversationIdParam = req.params['id'];
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
 
       const filters: MessageFilters = {
-        search: req.query.search as string,
-        startDate: req.query.startDate ? new Date(req.query.startDate as string) : undefined,
-        endDate: req.query.endDate ? new Date(req.query.endDate as string) : undefined,
-        hasAttachment: req.query.hasAttachment === 'true',
-        page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-        limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 50,
+        hasAttachment: req.query['hasAttachment'] === 'true',
+        page: parseIntQuery(req.query['page'] as string | undefined, 1),
+        limit: parseIntQuery(req.query['limit'] as string | undefined, 50),
       };
+
+      // Conditionally add optional properties to avoid exactOptionalPropertyTypes error
+      const filtersRecord = filters as Record<string, unknown>;
+      setOptionalFilter(filtersRecord, 'search', req.query['search'] as string | undefined);
+      setOptionalFilter(
+        filtersRecord,
+        'startDate',
+        req.query['startDate'] as string | undefined,
+        (v: string) => new Date(v),
+      );
+      setOptionalFilter(
+        filtersRecord,
+        'endDate',
+        req.query['endDate'] as string | undefined,
+        (v: string) => new Date(v),
+      );
 
       const result = await getMessages(tenantId, conversationId, userId, filters);
 
@@ -224,7 +286,12 @@ class ChatController {
       const { user } = req;
       const tenantId = user.tenant_id;
       const userId = user.id;
-      const conversationId = Number.parseInt(req.params.id);
+      const conversationIdParam = req.params['id'];
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
 
       const body = req.body as { message?: string; content?: string };
       const data: SendMessageData = {
@@ -241,29 +308,30 @@ class ChatController {
         };
 
         // If no content provided with attachment, use a default message
-        if (!data.content) {
+        if (data.content === '') {
           data.content = '📎 Attachment';
         }
       }
 
-      if (!data.content && !data.attachment) {
+      if (data.content === '' && data.attachment === undefined) {
         res
           .status(400)
-          .json(errorResponse('VALIDATION_ERROR', 'Message content or attachment is required'));
+          .json(errorResponse(VALIDATION_ERROR, 'Message content or attachment is required'));
         return;
       }
 
       const result = await sendMessage(tenantId, conversationId, userId, data);
 
       // Log message sending
+      const msgResultTyped = result as unknown as ChatMessageResult;
+      const msgEntityId =
+        msgResultTyped.messageId !== 0 ? msgResultTyped.messageId : msgResultTyped.id;
       await rootLog.create({
         tenant_id: tenantId,
         user_id: userId,
         action: 'send_message',
         entity_type: 'chat_message',
-        entity_id:
-          (result as unknown as ChatMessageResult).messageId ||
-          (result as unknown as ChatMessageResult).id,
+        entity_id: msgEntityId,
         details: `Nachricht gesendet${data.attachment ? ' mit Anhang' : ''}`,
         new_values: {
           conversation_id: conversationId,
@@ -319,7 +387,12 @@ class ChatController {
       logError('[Chat Controller] markAsRead called');
       const { user } = req;
       const userId = user.id;
-      const conversationId = Number.parseInt(req.params.id);
+      const conversationIdParam = req.params['id'];
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
       logError('[Chat Controller] markAsRead - conversationId:', conversationId, 'userId:', userId);
 
       const result = await markConversationAsRead(conversationId, userId);
@@ -346,7 +419,12 @@ class ChatController {
       const { user } = req;
       const userId = user.id;
       const userRole = user.role;
-      const conversationId = Number.parseInt(req.params.id);
+      const conversationIdParam = req.params['id'];
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
 
       await deleteConversation(conversationId, userId, userRole);
 
@@ -390,14 +468,18 @@ class ChatController {
     next: NextFunction,
   ): Promise<void> {
     try {
-      const filename = req.params.filename;
-      const forceDownload = req.query.download === 'true';
+      const filename = req.params['filename'];
+      if (filename === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, 'Filename is required'));
+        return;
+      }
+      const forceDownload = req.query['download'] === 'true';
 
       // Validate filename
       const uploadsDir = getUploadDirectory('chat');
       const filePath = validatePath(filename, uploadsDir);
 
-      if (!filePath) {
+      if (filePath === null || filePath === '') {
         res.status(400).json(errorResponse('INVALID_PATH', 'Invalid file path'));
         return;
       }
@@ -441,7 +523,12 @@ class ChatController {
       const { user } = req;
       const tenantId = user.tenant_id;
       const userId = user.id;
-      const conversationId = Number.parseInt(req.params.id);
+      const conversationIdParam = req.params['id'];
+      if (conversationIdParam === undefined) {
+        res.status(400).json(errorResponse(VALIDATION_ERROR, CONVERSATION_ID_REQUIRED));
+        return;
+      }
+      const conversationId = Number.parseInt(conversationIdParam);
 
       // Get single conversation
       const conversation = await getConversation(tenantId, conversationId, userId);

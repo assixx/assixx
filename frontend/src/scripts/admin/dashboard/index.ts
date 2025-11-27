@@ -8,16 +8,12 @@ import { $$, $$id, setText, hide } from '../../../utils/dom-utils';
 import { getAuthToken, showError } from '../../auth';
 // showSection removed - deprecated, sections are now separate pages
 import type { EmployeeFormData } from './types';
-// Type for the BlackboardWidget from blackboard-widget.js
+// Import BlackboardWidget to ensure widget.ts is loaded
+import '../../blackboard/widget';
+// Type for the BlackboardWidget from blackboard/widget.ts
 interface BlackboardWidgetInstance {
-  container: HTMLElement | null;
-  entries: unknown[];
-  loading: boolean;
-  sidebarCollapsed: boolean;
   init: () => Promise<void>;
-  setupSidebarListener: () => void;
-  render: () => void;
-  loadEntries: () => Promise<void>;
+  refresh: () => void;
 }
 import {
   DashboardService,
@@ -247,41 +243,21 @@ class AdminDashboard {
 
   private loadBlackboardWidget(): void {
     try {
-      // Initialize the blackboard widget from blackboard-widget.js
-      // The widget handles its own data loading
+      // Blackboard widget is loaded via separate script tag in HTML
+      // Just capture the reference if it exists
       if ($$id('blackboard-widget-container') !== null) {
-        // Check if BlackboardWidget class is available
-        if (typeof window.BlackboardWidget === 'undefined') {
-          // Dynamically load the blackboard widget script
-          const script = document.createElement('script');
-          script.src = '/scripts/blackboard/widget.js';
-          script.onload = () => {
-            // Script will auto-initialize when loaded
-            // Just capture the reference once it's initialized
-            setTimeout(() => {
-              if (window.blackboardWidget) {
-                this.blackboardWidget = window.blackboardWidget;
-              }
-            }, 500);
-          };
-          document.head.appendChild(script);
-        } else {
-          // Widget class already available, check if initialized
+        // Wait for widget to be initialized by its own module
+        setTimeout(() => {
           if (window.blackboardWidget) {
             this.blackboardWidget = window.blackboardWidget;
-          } else if (window.initializeBlackboardWidget) {
-            // Manually trigger initialization if needed
-            window.initializeBlackboardWidget();
-            setTimeout(() => {
-              if (window.blackboardWidget) {
-                this.blackboardWidget = window.blackboardWidget;
-              }
-            }, 500);
+            console.log('[Admin Dashboard] Blackboard widget reference captured');
+          } else {
+            console.warn('[Admin Dashboard] Blackboard widget not found - container may be on different page');
           }
-        }
+        }, 500);
       }
     } catch (error) {
-      console.error('Error initializing blackboard widget:', error);
+      console.error('Error capturing blackboard widget reference:', error);
     }
   }
 

@@ -15,6 +15,26 @@ import type {
 } from './reports.types.js';
 
 // ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+
+/**
+ * Parse a value as integer, returning 0 for NaN
+ */
+function parseIntOrZero(value: unknown): number {
+  const parsed = Number.parseInt(String(value));
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * Parse a value as float, returning 0 for NaN
+ */
+function parseFloatOrZero(value: unknown): number {
+  const parsed = Number.parseFloat(String(value));
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+// ============================================================
 // DATE HELPERS
 // ============================================================
 
@@ -24,14 +44,24 @@ import type {
 export function getDefaultDateFrom(): string {
   const date = new Date();
   date.setDate(date.getDate() - 30);
-  return date.toISOString().split('T')[0];
+  const isoDate = date.toISOString().split('T')[0];
+  // split() on ISO string always returns at least one element
+  if (isoDate === undefined) {
+    throw new Error('Failed to format date');
+  }
+  return isoDate;
 }
 
 /**
  * Get default "to" date (today)
  */
 export function getDefaultDateTo(): string {
-  return new Date().toISOString().split('T')[0];
+  const isoDate = new Date().toISOString().split('T')[0];
+  // split() on ISO string always returns at least one element
+  if (isoDate === undefined) {
+    throw new Error('Failed to format date');
+  }
+  return isoDate;
 }
 
 // ============================================================
@@ -56,10 +86,10 @@ export async function getEmployeeMetrics(
       COUNT(*) as total,
       COUNT(CASE WHEN status = 'active' THEN 1 END) as active,
       COUNT(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 END) as new_this_month,
-      (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND status = 'active') as department_count,
+      (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND is_active = 1) as department_count,
       CASE
-        WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND status = 'active') > 0
-        THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND status = 'active')
+        WHEN (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND is_active = 1) > 0
+        THEN COUNT(*) / (SELECT COUNT(*) FROM departments WHERE tenant_id = ? AND is_active = 1)
         ELSE 0
       END as avg_per_department
     FROM users
@@ -71,11 +101,11 @@ export async function getEmployeeMetrics(
 
   const metrics = (resultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    total: Number.parseInt(String(metrics.total)) || 0,
-    active: Number.parseInt(String(metrics.active)) || 0,
-    newThisMonth: Number.parseInt(String(metrics.new_this_month)) || 0,
-    departments: Number.parseInt(String(metrics.department_count)) || 0,
-    avgPerDepartment: Number.parseFloat(String(metrics.avg_per_department)) || 0,
+    total: parseIntOrZero(metrics['total']),
+    active: parseIntOrZero(metrics['active']),
+    newThisMonth: parseIntOrZero(metrics['new_this_month']),
+    departments: parseIntOrZero(metrics['department_count']),
+    avgPerDepartment: parseFloatOrZero(metrics['avg_per_department']),
   };
 }
 
@@ -114,8 +144,8 @@ export async function getDepartmentMetrics(
 
   const metrics = (deptResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    total: Number.parseInt(String(metrics.total)) || 0,
-    avgEmployees: Number.parseFloat(String(metrics.avg_employees)) || 0,
+    total: parseIntOrZero(metrics['total']),
+    avgEmployees: parseFloatOrZero(metrics['avg_employees']),
   };
 }
 
@@ -150,9 +180,9 @@ export async function getShiftMetrics(
 
   const metrics = (shiftResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    totalScheduled: Number.parseInt(String(metrics.total_scheduled)) || 0,
-    overtimeHours: Number.parseFloat(String(metrics.overtime_hours)) || 0,
-    coverageRate: Number.parseFloat(String(metrics.coverage_rate)) || 0,
+    totalScheduled: parseIntOrZero(metrics['total_scheduled']),
+    overtimeHours: parseFloatOrZero(metrics['overtime_hours']),
+    coverageRate: parseFloatOrZero(metrics['coverage_rate']),
   };
 }
 
@@ -189,10 +219,10 @@ export async function getKvpMetrics(
 
   const metrics = (kvpResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    totalSuggestions: Number.parseInt(String(metrics.total_suggestions)) || 0,
-    implemented: Number.parseInt(String(metrics.implemented)) || 0,
-    totalSavings: Number.parseFloat(String(metrics.total_savings)) || 0,
-    avgROI: Number.parseFloat(String(metrics.avg_roi)) || 0,
+    totalSuggestions: parseIntOrZero(metrics['total_suggestions']),
+    implemented: parseIntOrZero(metrics['implemented']),
+    totalSavings: parseFloatOrZero(metrics['total_savings']),
+    avgROI: parseFloatOrZero(metrics['avg_roi']),
   };
 }
 
@@ -237,9 +267,9 @@ export async function getSurveyMetrics(
 
   const metrics = (surveyResultRows as Record<string, unknown>[])[0] ?? {};
   return {
-    totalSurveys: Number.parseInt(String(metrics.active_surveys)) || 0,
+    totalSurveys: parseIntOrZero(metrics['active_surveys']),
     completedSurveys: 0, // Not available in current query
-    avgParticipation: Number.parseFloat(String(metrics.avg_response_rate)) || 0,
+    avgParticipation: parseFloatOrZero(metrics['avg_response_rate']),
     avgSatisfaction: 0, // Not available in current query
   };
 }
@@ -307,8 +337,8 @@ export async function getPerformanceMetrics(
 
   const kvpData = (kvpResultRows as Record<string, unknown>[])[0] ?? {};
   const kvpParticipation =
-    Number(kvpData.total_employees) > 0 ?
-      Number(kvpData.participants) / Number(kvpData.total_employees)
+    Number(kvpData['total_employees']) > 0 ?
+      Number(kvpData['participants']) / Number(kvpData['total_employees'])
     : 0;
 
   // Mock shift completion rate for now

@@ -90,22 +90,22 @@ describe('Features API v2', () => {
     const adminLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: adminUser.email, password: 'Admin123!' });
-    adminToken = adminLogin.body.data.accessToken;
+    adminToken = adminLogin.body.data['accessToken'];
 
     const userLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: regularUser.email, password: 'User123!' });
-    userToken = userLogin.body.data.accessToken;
+    userToken = userLogin.body.data['accessToken'];
 
     const rootLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: rootUser.email, password: 'Root123!' });
-    rootToken = rootLogin.body.data.accessToken;
+    rootToken = rootLogin.body.data['accessToken'];
 
     const otherLogin = await request(app)
       .post('/api/v2/auth/login')
       .send({ email: otherTenantUser.email, password: 'Other123!' });
-    otherTenantToken = otherLogin.body.data.accessToken;
+    otherTenantToken = otherLogin.body.data['accessToken'];
 
     // Ensure we have some test features
     const [features] = await testDb.execute<any[]>(
@@ -117,7 +117,7 @@ describe('Features API v2', () => {
         `INSERT INTO features (code, name, description, category, base_price, is_active, sort_order) 
          VALUES ('test_feature_v2', 'Test Feature V2', 'Test feature for v2 API', 'premium', 99.99, 1, 999)`,
       );
-      testFeatureId = result.insertId;
+      testFeatureId = result['insertId'];
     } else {
       testFeatureId = features[0].id;
     }
@@ -164,7 +164,7 @@ describe('Features API v2', () => {
       });
 
       // Check if test feature is included
-      const testFeature = response.body.data.find((f: any) => f.code === 'test_feature_v2');
+      const testFeature = response.body.data['find']((f: any) => f.code === 'test_feature_v2');
       expect(testFeature).toBeDefined();
       expect(testFeature).toMatchObject({
         code: 'test_feature_v2',
@@ -181,13 +181,13 @@ describe('Features API v2', () => {
       // Without includeInactive
       const response1 = await request(app).get('/api/v2/features').expect(200);
 
-      const hasInactive1 = response1.body.data.some((f: any) => f.code === 'test_feature_v2');
+      const hasInactive1 = response1.body.data['some']((f: any) => f.code === 'test_feature_v2');
       expect(hasInactive1).toBe(false);
 
       // With includeInactive
       const response2 = await request(app).get('/api/v2/features?includeInactive=true').expect(200);
 
-      const hasInactive2 = response2.body.data.some((f: any) => f.code === 'test_feature_v2');
+      const hasInactive2 = response2.body.data['some']((f: any) => f.code === 'test_feature_v2');
       expect(hasInactive2).toBe(true);
 
       // Reactivate for other tests
@@ -278,7 +278,7 @@ describe('Features API v2', () => {
       });
 
       // Find test feature
-      const testFeature = response.body.data.find((f: any) => f.code === 'test_feature_v2');
+      const testFeature = response.body.data['find']((f: any) => f.code === 'test_feature_v2');
       expect(testFeature).toBeDefined();
       expect(testFeature.tenantFeature).toMatchObject({
         status: 'active',
@@ -505,7 +505,7 @@ describe('Features API v2', () => {
 
     it('should allow root to view any tenant features', async () => {
       // TODO: This test shows that root users are also subject to tenant isolation
-      // The controller checks req.user.role but middleware may block access first
+      // The controller checks req.user['role'] but middleware may block access first
       await request(app)
         .get(`/api/v2/features/tenant/${tenantId2}`)
         .set('Authorization', `Bearer ${rootToken}`)
@@ -648,8 +648,8 @@ describe('Features API v2', () => {
       });
 
       // Find our test tenants in the results
-      const tenant1 = response.body.data.find((t: any) => t.id === tenantId1);
-      const tenant2 = response.body.data.find((t: any) => t.id === tenantId2);
+      const tenant1 = response.body.data['find']((t: any) => t.id === tenantId1);
+      const tenant2 = response.body.data['find']((t: any) => t.id === tenantId2);
 
       expect(tenant1).toBeDefined();
       expect(tenant1.featuresummary.activeFeatures).toBe(1);
@@ -674,7 +674,7 @@ describe('Features API v2', () => {
         .set('Authorization', `Bearer ${userToken}`)
         .expect(200);
 
-      const hasFeature1 = response1.body.data.some(
+      const hasFeature1 = response1.body.data['some'](
         (f: any) => f.code === 'test_feature_v2' && f.tenantFeature?.isActive,
       );
       expect(hasFeature1).toBe(true);
@@ -685,7 +685,7 @@ describe('Features API v2', () => {
         .set('Authorization', `Bearer ${otherTenantToken}`)
         .expect(200);
 
-      const hasFeature2 = response2.body.data.some(
+      const hasFeature2 = response2.body.data['some'](
         (f: any) => f.code === 'test_feature_v2' && f.tenantFeature?.isActive,
       );
       expect(hasFeature2).toBe(false);

@@ -73,12 +73,6 @@
   letter-spacing: 0.5px;
 }
 
-.info-value {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 /* Custom Dropdown Styles */
 .custom-dropdown {
   position: relative;
@@ -864,16 +858,6 @@
 }
 
 /* Checkbox and Pattern Builder Styles */
-.checkbox-group {
-  overflow-y: auto;
-
-  max-height: 200px;
-  padding: 10px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 8px;
-
-  background: rgb(255 255 255 / 5%);
-}
 
 .pattern-builder {
   display: grid;
@@ -883,83 +867,8 @@
 }
 
 /* Tab System */
-.content-tabs {
-  display: flex;
-  gap: 0;
-
-  margin-bottom: 2rem;
-  padding: 4px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-
-  background: rgb(255 255 255 / 10%);
-  backdrop-filter: blur(10px);
-}
-
-.tab-btn {
-  cursor: pointer;
-
-  flex: 1;
-
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-light);
-
-  background: transparent;
-}
-
-.tab-btn:hover {
-  color: #fff;
-  background: rgb(255 255 255 / 10%);
-}
-
-.tab-btn.active {
-  color: var(--primary-color);
-  background: rgb(52 152 219 / 20%);
-  box-shadow: 0 1px 8px rgb(52 152 219 / 20%);
-}
-
-.tab-content {
-  min-height: 600px;
-}
-
-.tab-pane {
-  display: none;
-
-  /* animation: fadeIn 0.3s ease; */
-}
-
-.tab-pane.active {
-  display: block;
-}
 
 /* Section Headers */
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-}
-
-.section-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.section-actions {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
 
 /* Filters */
 .filters {
@@ -990,40 +899,8 @@
 }
 
 /* Overview Grid */
-.overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 2rem;
-}
-
-.overview-card {
-  padding: 2rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 16px;
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
-.overview-card:hover {
-  transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.overview-card h3 {
-  margin: 0 0 1.5rem;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #fff;
-}
 
 /* Plans Grid */
-.plans-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
-}
 
 .plan-card {
   cursor: pointer;
@@ -1042,129 +919,7 @@
   background: rgb(255 255 255 / 8%);
 }
 
-.plan-card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.plan-card-title {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.plan-status {
-  padding: 4px 12px;
-  border-radius: 20px;
-
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.plan-status.draft {
-  color: #ffc107;
-  background: rgb(255 193 7 / 20%);
-}
-
-.plan-status.published {
-  color: #28a745;
-  background: rgb(40 167 69 / 20%);
-}
-
-.plan-status.archived {
-  color: #6c757d;
-  background: rgb(108 117 125 / 20%);
-}
-
-.plan-card-meta {
-  margin-bottom: 1rem;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.plan-card-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.plan-card-actions button {
-  cursor: pointer;
-
-  flex: 1;
-
-  padding: 8px 12px;
-  border: 1px solid rgb(52 152 219 / 30%);
-  border-radius: var(--radius-xl);
-
-  font-size: 12px;
-  color: var(--primary-color);
-
-  background: rgb(52 152 219 / 20%);
-}
-
-.plan-card-actions button:hover {
-  border-color: var(--primary-color);
-  background: rgb(52 152 219 / 30%);
-}
-
 /* Templates Grid */
-.templates-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.template-card {
-  position: relative;
-
-  padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 16px;
-
-  background: rgb(255 255 255 / 5%);
-  backdrop-filter: blur(10px);
-}
-
-.template-card:hover {
-  transform: translateY(-2px);
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.template-color-indicator {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgb(255 255 255 / 30%);
-  border-radius: 50%;
-}
-
-.template-card-title {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.template-time {
-  margin-bottom: 0.5rem;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.template-duration {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--primary-color);
-}
 
 /* Shift List */
 .shift-list {
@@ -1241,117 +996,8 @@
 }
 
 /* Availability Grid */
-.availability-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.availability-day {
-  cursor: pointer;
-
-  padding: 1rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-
-  text-align: center;
-
-  background: rgb(255 255 255 / 5%);
-}
-
-.availability-day:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.availability-day.available {
-  border-color: rgb(40 167 69 / 50%);
-  background: rgb(40 167 69 / 10%);
-}
-
-.availability-day.unavailable {
-  border-color: rgb(220 53 69 / 50%);
-  background: rgb(220 53 69 / 10%);
-}
-
-.availability-day-name {
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #fff;
-}
-
-.availability-day-date {
-  font-size: 14px;
-  color: var(--text-light);
-}
 
 /* Exchange Grid */
-.exchange-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.exchange-item {
-  padding: 1.5rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-  background: rgb(255 255 255 / 5%);
-}
-
-.exchange-item:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.exchange-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.exchange-type {
-  padding: 4px 12px;
-  border-radius: 20px;
-
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-}
-
-.exchange-type.give-away {
-  color: #ffc107;
-  background: rgb(255 193 7 / 20%);
-}
-
-.exchange-type.swap {
-  color: var(--primary-color);
-  background: rgb(52 152 219 / 20%);
-}
-
-.exchange-details {
-  line-height: 1.5;
-  color: var(--text-light);
-}
-
-.exchange-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.exchange-actions .action-btn {
-  cursor: pointer;
-
-  padding: 8px 16px;
-  border: none;
-  border-radius: var(--radius-xl);
-
-  font-size: 14px;
-  font-weight: 500;
-}
 
 .btn-accept {
   border: 1px solid rgb(40 167 69 / 30%);
@@ -1374,40 +1020,6 @@
 }
 
 /* Assignments Grid */
-.assignments-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-
-.assignment-card {
-  padding: 1rem;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 12px;
-  background: rgb(255 255 255 / 5%);
-}
-
-.assignment-card:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: rgb(255 255 255 / 8%);
-}
-
-.assignment-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-}
-
-.assignment-time {
-  font-weight: 600;
-  color: #fff;
-}
-
-.assignment-employee {
-  font-size: 14px;
-  color: var(--text-light);
-}
 
 /* Calendar Grid */
 .calendar-grid {
@@ -1639,26 +1251,6 @@
 
 /* Responsive Design */
 @media (width <=768px) {
-  .content-tabs {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .tab-btn {
-    flex: 1 1 calc(50% - 2px);
-    padding: 10px 8px;
-    font-size: 12px;
-  }
-
-  .overview-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .plans-grid,
-  .templates-grid {
-    grid-template-columns: 1fr;
-  }
-
   .form-row {
     grid-template-columns: 1fr;
   }
@@ -1678,10 +1270,6 @@
 
   .calendar-day {
     min-height: 80px;
-  }
-
-  .availability-grid {
-    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -1762,26 +1350,7 @@
   );
 }
 
-.weekly-notes[readonly] {
-  cursor: not-allowed;
-  opacity: 80%;
-  background: rgb(0 0 0 / 20%);
-}
-
 /* Edit Mode Button */
-.edit-schedule-btn,
-.update-schedule-btn {
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-.edit-schedule-btn:hover,
-.update-schedule-btn:hover {
-  transform: translateY(-2px);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  box-shadow: 0 6px 20px rgb(102 126 234 / 40%);
-}
 
 /* ================================
    Kontischicht Ansicht Styles
@@ -1999,10 +1568,6 @@
 }
 
 /* Simplified selector for scrollbar hover */
-.kontischicht-scrollbar-hover::-webkit-scrollbar-thumb:hover {
-  border-color: rgb(255 255 255 / 20%);
-  background: linear-gradient(90deg, rgb(52 152 219 / 80%), rgb(52 152 219 / 60%));
-}
 
 /* Make shift label sticky like the Schicht header and same size */
 .shift-row.kontischicht-scroll-container .shift-label {
@@ -2180,9 +1745,6 @@
 }
 
 /* Simplified selector for employee item hover */
-.employee-item-hover::after {
-  color: rgb(255 255 255 / 80%);
-}
 
 /* Responsive Design */
 @media (width <=768px) {
@@ -2557,11 +2119,6 @@
   color: var(--text-primary);
 }
 
-.member-details {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
 .shift-cell.drop-invalid {
   border-color: var(--error-color) !important;
   border-width: 2px !important;
@@ -2577,18 +2134,6 @@
 }
 
 /* Employee info in sidebar */
-.employee-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: var(--spacing-1);
-}
-
-.employee-name-sidebar {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
 
 .employee-details {
   font-size: 12px;

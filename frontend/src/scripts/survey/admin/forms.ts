@@ -268,7 +268,7 @@ function populateDateFields(survey: Survey): void {
   const startTimeInput = $(SELECTORS.START_TIME) as HTMLInputElement | null;
   if (startDateInput !== null && startTimeInput !== null && survey.startDate !== undefined) {
     const date = new Date(survey.startDate);
-    startDateInput.value = date.toISOString().split('T')[0];
+    startDateInput.value = date.toISOString().split('T')[0] ?? '';
     // Use UTC time to avoid timezone conversion
     const hours = String(date.getUTCHours()).padStart(2, '0');
     const minutes = String(date.getUTCMinutes()).padStart(2, '0');
@@ -279,7 +279,7 @@ function populateDateFields(survey: Survey): void {
   const endTimeInput = $(SELECTORS.END_TIME) as HTMLInputElement | null;
   if (endDateInput !== null && endTimeInput !== null && survey.endDate !== undefined) {
     const date = new Date(survey.endDate);
-    endDateInput.value = date.toISOString().split('T')[0];
+    endDateInput.value = date.toISOString().split('T')[0] ?? '';
     // Use UTC time to avoid timezone conversion
     const hours = String(date.getUTCHours()).padStart(2, '0');
     const minutes = String(date.getUTCMinutes()).padStart(2, '0');
@@ -296,6 +296,9 @@ function populateAssignmentFields(survey: Survey): void {
   }
 
   const assignment = survey.assignments[0];
+  if (assignment === undefined) {
+    return;
+  }
 
   // Use assignmentType to determine which fields to populate
   switch (assignment.assignmentType ?? assignment.type) {

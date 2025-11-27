@@ -102,7 +102,7 @@ function initTabs(): void {
       // Trigger the tab click event for custom handlers
       const event = new CustomEvent<TabClickDetail>('tabClick', {
         detail: {
-          value: target.dataset.value,
+          value: target.dataset['value'] ?? '',
           id: target.id,
         },
       });

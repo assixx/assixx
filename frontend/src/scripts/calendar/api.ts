@@ -41,14 +41,14 @@ function extractV2Events(
   const apiData = data;
   const dataObj = apiData.data as Record<string, unknown>;
 
-  if ('data' in dataObj && Array.isArray(dataObj.data)) {
-    console.info('[CALENDAR API] v2 events found:', dataObj.data.length);
-    return dataObj.data as CalendarEvent[];
+  if ('data' in dataObj && Array.isArray(dataObj['data'])) {
+    console.info('[CALENDAR API] v2 events found:', dataObj['data'].length);
+    return dataObj['data'] as CalendarEvent[];
   }
 
-  if ('events' in dataObj && Array.isArray(dataObj.events)) {
-    console.info('[CALENDAR API] v2 events (from data.events) found:', dataObj.events.length);
-    return dataObj.events as CalendarEvent[];
+  if ('events' in dataObj && Array.isArray(dataObj['events'])) {
+    console.info('[CALENDAR API] v2 events (from data.events) found:', dataObj['events'].length);
+    return dataObj['events'] as CalendarEvent[];
   }
 
   return null;
@@ -127,8 +127,8 @@ export function normalizeEventData(data: unknown, alwaysV2: boolean = true): Cal
 
   if (typeof data === 'object' && data !== null && 'data' in data) {
     const v2Data = data as { data: { event?: CalendarEvent } | CalendarEvent };
-    if (typeof v2Data.data === 'object' && 'event' in v2Data.data && v2Data.data.event !== undefined) {
-      eventData = v2Data.data.event;
+    if (typeof v2Data.data === 'object' && 'event' in v2Data.data) {
+      eventData = v2Data.data.event ?? ({} as CalendarEvent);
     } else {
       eventData = v2Data.data as CalendarEvent;
     }
@@ -152,11 +152,11 @@ function extractDashboardEvents(
     return data;
   }
 
-  if ('data' in data && data.data && Array.isArray((data as ApiV2Response<CalendarEvent>).data.data)) {
+  if ('data' in data && Array.isArray((data as ApiV2Response<CalendarEvent>).data.data)) {
     return (data as ApiV2Response<CalendarEvent>).data.data;
   }
 
-  if ('success' in data && data.success === true && 'data' in data && data.data) {
+  if ('success' in data && 'data' in data) {
     return (data as ApiV1Response<CalendarEvent>).data ?? [];
   }
 
@@ -545,12 +545,12 @@ export interface EventSaveParams {
   location: string;
   orgLevel: string;
   color: string;
-  departmentId?: number;
-  teamId?: number;
-  areaId?: number;
-  reminderMinutes?: number;
-  attendeeIds?: number[];
-  recurrenceRule?: string;
+  departmentId?: number | undefined;
+  teamId?: number | undefined;
+  areaId?: number | undefined;
+  reminderMinutes?: number | undefined;
+  attendeeIds?: number[] | undefined;
+  recurrenceRule?: string | undefined;
 }
 
 /**
@@ -570,7 +570,7 @@ function convertToIsoDateTime(datetimeLocal: string): string {
   }
 
   const [, year, month, day, hours, minutes] = parts;
-  return `${year}-${month}-${day}T${hours}:${minutes}:00Z`;
+  return `${year ?? ''}-${month ?? ''}-${day ?? ''}T${hours ?? ''}:${minutes ?? ''}:00Z`;
 }
 
 /**
@@ -588,13 +588,13 @@ function buildEventDataV2(params: EventSaveParams): Record<string, unknown> {
     color: params.color,
   };
 
-  if (params.departmentId !== undefined) eventData.departmentId = params.departmentId;
-  if (params.teamId !== undefined) eventData.teamId = params.teamId;
-  if (params.areaId !== undefined) eventData.areaId = params.areaId;
-  if (params.reminderMinutes !== undefined) eventData.reminderMinutes = params.reminderMinutes;
-  if (params.attendeeIds !== undefined && params.attendeeIds.length > 0) eventData.attendeeIds = params.attendeeIds;
+  if (params.departmentId !== undefined) eventData['departmentId'] = params.departmentId;
+  if (params.teamId !== undefined) eventData['teamId'] = params.teamId;
+  if (params.areaId !== undefined) eventData['areaId'] = params.areaId;
+  if (params.reminderMinutes !== undefined) eventData['reminderMinutes'] = params.reminderMinutes;
+  if (params.attendeeIds !== undefined && params.attendeeIds.length > 0) eventData['attendeeIds'] = params.attendeeIds;
   if (params.recurrenceRule !== undefined && params.recurrenceRule !== '') {
-    eventData.recurrenceRule = params.recurrenceRule;
+    eventData['recurrenceRule'] = params.recurrenceRule;
   }
 
   return eventData;
@@ -726,6 +726,20 @@ async function loadTeams(token: string): Promise<Team[]> {
 }
 
 /**
+ * Load areas
+ */
+async function loadAreas(token: string): Promise<{ id: number; name: string }[]> {
+  const url = '/api/v2/areas';
+  const data = await fetchApiData(url, token);
+
+  if (data !== null) {
+    return extractArrayFromApiResponse<{ id: number; name: string }>(data);
+  }
+
+  return [];
+}
+
+/**
  * Load employees
  */
 async function loadEmployees(token: string): Promise<User[]> {
@@ -747,7 +761,7 @@ async function loadEmployees(token: string): Promise<User[]> {
 }
 
 /**
- * Load all organization data (departments, teams, employees)
+ * Load all organization data (departments, teams, areas, employees)
  * Updates state with loaded data
  */
 export async function loadDepartmentsAndTeams(): Promise<void> {
@@ -755,24 +769,27 @@ export async function loadDepartmentsAndTeams(): Promise<void> {
   if (token === null || token === '') return;
 
   try {
-    const [departments, teams, employees] = await Promise.all([
+    const [departments, teams, areas, employees] = await Promise.all([
       loadDepartments(token),
       loadTeams(token),
+      loadAreas(token),
       loadEmployees(token),
     ]);
 
     // Update state
     state.departments = departments;
     state.teams = teams;
+    state.areas = areas;
     state.employees = employees;
 
     console.info('[CALENDAR API] Loaded org data:', {
       departments: departments.length,
       teams: teams.length,
+      areas: areas.length,
       employees: employees.length,
     });
   } catch (error: unknown) {
-    console.error('Error loading departments, teams, and employees:', error);
+    console.error('Error loading departments, teams, areas, and employees:', error);
   }
 }
 

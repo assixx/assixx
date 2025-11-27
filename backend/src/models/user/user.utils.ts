@@ -26,7 +26,11 @@ export async function generateInitialEmployeeId(
 
   if (tenantResult.length > 0) {
     // subdomain is NOT NULL in schema, type system guarantees this
-    const subdomain = tenantResult[0].subdomain;
+    const tenant = tenantResult[0];
+    if (tenant === undefined) {
+      return undefined;
+    }
+    const subdomain = tenant.subdomain;
     const { tempId } = generateTempEmployeeId(subdomain, role ?? 'employee');
     return tempId;
   }
@@ -54,7 +58,11 @@ export async function updateTemporaryEmployeeId(
 
     if (tenantResult.length > 0) {
       // subdomain is NOT NULL in schema, type system guarantees this
-      const subdomain = tenantResult[0].subdomain;
+      const tenant = tenantResult[0];
+      if (tenant === undefined) {
+        return;
+      }
+      const subdomain = tenant.subdomain;
       const newEmployeeId = generateEmployeeId(subdomain, role ?? 'employee', userId);
       await executeQuery('UPDATE users SET employee_id = ? WHERE id = ?', [newEmployeeId, userId]);
     }
@@ -225,8 +233,10 @@ export function buildOrderByClause(filters: UserFilter): string {
  */
 export function buildPaginationClause(filters: UserFilter, values: unknown[]): string {
   if (filters.limit != null && filters.limit !== 0) {
-    const limit = Number.parseInt(filters.limit.toString()) || 20;
-    const page = Number.parseInt((filters.page ?? 1).toString()) || 1;
+    const parsedLimit = Number.parseInt(filters.limit.toString());
+    const limit = Number.isNaN(parsedLimit) || parsedLimit === 0 ? 20 : parsedLimit;
+    const parsedPage = Number.parseInt((filters.page ?? 1).toString());
+    const page = Number.isNaN(parsedPage) || parsedPage === 0 ? 1 : parsedPage;
     const offset = (page - 1) * limit;
 
     values.push(limit, offset);

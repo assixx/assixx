@@ -127,7 +127,7 @@ class EmployeesManager {
         return;
       }
 
-      const status = btn.dataset.status as 'active' | 'inactive' | 'all' | undefined;
+      const status = btn.dataset['status'] as 'active' | 'inactive' | 'all' | undefined;
       if (status === undefined) {
         return;
       }
@@ -240,7 +240,7 @@ class EmployeesManager {
       // Handle edit employee (from table)
       const editBtn = target.closest<HTMLElement>('[data-action="edit-employee"]');
       if (editBtn) {
-        const employeeId = editBtn.dataset.employeeId;
+        const employeeId = editBtn.dataset['employeeId'];
         if (employeeId !== undefined) {
           void w.editEmployee?.(Number.parseInt(employeeId, 10));
         }
@@ -249,7 +249,7 @@ class EmployeesManager {
       // Handle edit from search results
       const searchResultItem = target.closest<HTMLElement>('[data-action="edit-from-search"]');
       if (searchResultItem) {
-        const employeeId = searchResultItem.dataset.employeeId;
+        const employeeId = searchResultItem.dataset['employeeId'];
         if (employeeId !== undefined) {
           closeSearchResults();
           void w.editEmployee?.(Number.parseInt(employeeId, 10));
@@ -259,7 +259,7 @@ class EmployeesManager {
       // Handle delete employee
       const deleteBtn = target.closest<HTMLElement>('[data-action="delete-employee"]');
       if (deleteBtn) {
-        const employeeId = deleteBtn.dataset.employeeId;
+        const employeeId = deleteBtn.dataset['employeeId'];
         if (employeeId !== undefined) {
           void w.deleteEmployee?.(Number.parseInt(employeeId, 10));
         }
@@ -314,7 +314,7 @@ class EmployeesManager {
         return;
       }
 
-      const value = option.dataset.value ?? '';
+      const value = option.dataset['value'] ?? '';
       const displayText = option.textContent.trim() !== '' ? option.textContent.trim() : value;
 
       // Update hidden input
@@ -379,11 +379,11 @@ class EmployeesManager {
       const params: Record<string, string> = {};
 
       if (this.currentFilter !== 'all') {
-        params.status = this.currentFilter;
+        params['status'] = this.currentFilter;
       }
 
       if (this.searchTerm.length > 0) {
-        params.search = this.searchTerm;
+        params['search'] = this.searchTerm;
       }
 
       // ApiClient adds /api/v2 or /api prefix automatically based on feature flag

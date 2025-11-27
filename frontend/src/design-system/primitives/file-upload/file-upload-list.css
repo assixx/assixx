@@ -130,16 +130,22 @@
   color: var(--color-danger);
 }
 
-.file-upload-item__preview--doc {
+.file-upload-item__preview--doc,
+.file-upload-item__preview--word {
   color: var(--color-primary);
 }
 
-.file-upload-item__preview--xls {
+.file-upload-item__preview--xls,
+.file-upload-item__preview--excel {
   color: var(--color-success);
 }
 
 .file-upload-item__preview--zip {
   color: var(--color-warning);
+}
+
+.file-upload-item__preview--image {
+  color: var(--color-info, #3b82f6);
 }
 
 /* ============================================================

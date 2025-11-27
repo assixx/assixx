@@ -33,8 +33,9 @@ export async function addEventAttendee(
         'SELECT tenant_id FROM calendar_events WHERE id = ?',
         [eventId],
       );
-      if (event.length > 0) {
-        finalTenantId = event[0].tenant_id;
+      const firstEvent = event[0];
+      if (firstEvent !== undefined) {
+        finalTenantId = firstEvent.tenant_id;
       }
     }
 

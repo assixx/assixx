@@ -31,7 +31,7 @@ async function verifyConversationAccess(
     [conversationId, userId, tenantId],
   );
 
-  if (!participant.length) {
+  if (participant.length === 0) {
     throw new ServiceError(
       'CONVERSATION_ACCESS_DENIED',
       'You are not a participant of this conversation',
@@ -51,7 +51,7 @@ function buildMessagesWhereClause(
   let whereClause = 'WHERE m.conversation_id = ? AND m.tenant_id = ?';
   const params: unknown[] = [conversationId, tenantId];
 
-  if (filters.search) {
+  if (filters.search !== undefined && filters.search !== '') {
     whereClause += ' AND m.content LIKE ?';
     params.push(`%${filters.search}%`);
   }
@@ -66,7 +66,7 @@ function buildMessagesWhereClause(
     params.push(filters.endDate);
   }
 
-  if (filters.hasAttachment) {
+  if (filters.hasAttachment === true) {
     whereClause += ' AND m.attachment_path IS NOT NULL';
   }
 
@@ -74,19 +74,168 @@ function buildMessagesWhereClause(
 }
 
 /**
+ * Calculate pagination values from filters
+ */
+function calculatePagination(filters: MessageFilters): {
+  page: number;
+  limit: number;
+  offset: number;
+} {
+  const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
+  const limit = Math.min(
+    100,
+    Math.max(1, Number.isNaN(filters.limit) ? 50 : (filters.limit ?? 50)),
+  );
+  const offset = (page - 1) * limit;
+  return { page, limit, offset };
+}
+
+/**
+ * Build pagination metadata
+ */
+function buildPaginationMeta(page: number, limit: number, totalItems: number): PaginationMeta {
+  const totalPages = Math.ceil(totalItems / limit);
+  return {
+    currentPage: page,
+    totalPages,
+    pageSize: limit,
+    totalItems,
+    hasNext: page < totalPages,
+    hasPrev: page > 1,
+  };
+}
+
+/**
+ * Build messages query with user context
+ */
+function buildMessagesQuery(
+  conversationId: number,
+  tenantId: number,
+  userId: number,
+  limit: number,
+  offset: number,
+): string {
+  return `
+    SELECT
+      m.id, m.conversation_id, m.sender_id, m.content,
+      m.attachment_path, m.attachment_name, m.attachment_type, m.attachment_size,
+      m.created_at, m.deleted_at,
+      u.username as sender_username, u.first_name as sender_first_name,
+      u.last_name as sender_last_name, u.profile_picture as sender_profile_picture,
+      CASE WHEN m.sender_id = ${userId} THEN 1
+           WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN 1 ELSE 0 END as is_read,
+      CASE WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN cp.last_read_at ELSE NULL END as read_at
+    FROM messages m
+    INNER JOIN users u ON m.sender_id = u.id
+    LEFT JOIN conversation_participants cp ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
+    WHERE m.conversation_id = ${conversationId} AND m.tenant_id = ${tenantId}
+    ORDER BY m.created_at ASC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+}
+
+/**
+ * Sender row type for user info queries
+ */
+interface SenderRow extends RowDataPacket {
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture: string | null;
+}
+
+/**
+ * Insert a new message into database
+ */
+async function insertMessage(
+  tenantId: number,
+  conversationId: number,
+  senderId: number,
+  data: SendMessageData,
+): Promise<number> {
+  const [result] = await execute<ResultSetHeader>(
+    `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
+       attachment_path, attachment_name, attachment_type, attachment_size, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [
+      tenantId,
+      conversationId,
+      senderId,
+      data.content,
+      data.attachment?.path ?? null,
+      data.attachment?.filename ?? null,
+      data.attachment?.mimeType ?? null,
+      data.attachment?.size ?? null,
+    ],
+  );
+  return result.insertId;
+}
+
+/**
+ * Fetch sender info from database
+ */
+async function getSenderInfo(senderId: number): Promise<SenderRow> {
+  const [rows] = await execute<SenderRow[]>(
+    `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = ?`,
+    [senderId],
+  );
+  const sender = rows[0];
+  if (sender === undefined) {
+    throw new ServiceError('SENDER_NOT_FOUND', 'Sender user not found', 404);
+  }
+  return sender;
+}
+
+/**
+ * Build message response object
+ */
+function buildMessageResponse(
+  messageId: number,
+  conversationId: number,
+  senderId: number,
+  sender: SenderRow,
+  data: SendMessageData,
+): Message {
+  const fullName = `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim();
+  return {
+    id: messageId,
+    conversationId,
+    senderId,
+    senderName: fullName !== '' ? fullName : 'Unknown',
+    senderUsername: sender.username,
+    senderProfilePicture: sender.profile_picture,
+    content: data.content,
+    attachment:
+      data.attachment !== undefined ?
+        {
+          url: data.attachment.path,
+          filename: data.attachment.filename,
+          mimeType: data.attachment.mimeType,
+          size: data.attachment.size,
+        }
+      : null,
+    isRead: false,
+    readAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+/**
  * Transform message row from database to API format
  */
 function transformMessage(msg: MessageRow): Message {
+  const fullName = `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim();
   return {
     id: msg.id,
     conversationId: msg.conversation_id,
     senderId: msg.sender_id,
-    senderName: `${msg.sender_first_name ?? ''} ${msg.sender_last_name ?? ''}`.trim() || 'Unknown',
-    senderUsername: msg.sender_username || 'unknown',
+    senderName: fullName !== '' ? fullName : 'Unknown',
+    senderUsername: msg.sender_username !== '' ? msg.sender_username : 'unknown',
     senderProfilePicture: msg.sender_profile_picture,
     content: msg.content,
     attachment:
-      msg.attachment_path ?
+      msg.attachment_path !== null ?
         {
           url: msg.attachment_path,
           filename: msg.attachment_name ?? 'attachment',
@@ -94,7 +243,7 @@ function transformMessage(msg: MessageRow): Message {
           size: typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,
         }
       : null,
-    isRead: !!msg.is_read,
+    isRead: msg.is_read !== undefined && msg.is_read !== 0,
     readAt: msg.read_at ? new Date(msg.read_at) : null,
     createdAt: new Date(msg.created_at),
     updatedAt: new Date(msg.created_at), // Messages don't have updated_at
@@ -117,79 +266,23 @@ export async function getMessages(
   filters: MessageFilters = {},
 ): Promise<{ data: Message[]; pagination: PaginationMeta }> {
   try {
-    // Calculate pagination
-    const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
-    const limit = Math.min(
-      100,
-      Math.max(1, Number.isNaN(filters.limit) ? 50 : (filters.limit ?? 50)),
-    );
-    const offset = (page - 1) * limit;
-
-    // Verify access
+    const { page, limit, offset } = calculatePagination(filters);
     await verifyConversationAccess(conversationId, userId, tenantId);
 
-    // Build WHERE clause
-    const { whereClause, params } = buildMessagesWhereClause(filters, conversationId, tenantId);
-
     // Get total count
-    const countQuery = `SELECT COUNT(*) as total FROM messages m ${whereClause}`;
-    const [countResult] = await execute<CountResult[]>(countQuery, params);
+    const { whereClause, params } = buildMessagesWhereClause(filters, conversationId, tenantId);
+    const [countResult] = await execute<CountResult[]>(
+      `SELECT COUNT(*) as total FROM messages m ${whereClause}`,
+      params,
+    );
     const totalItems = countResult[0]?.total ?? 0;
 
-    // Get messages with sender info and read status
-    const messagesQuery = `
-      SELECT
-        m.id,
-        m.conversation_id,
-        m.sender_id,
-        m.content,
-        m.attachment_path,
-        m.attachment_name,
-        m.attachment_type,
-        m.attachment_size,
-        m.created_at,
-        m.deleted_at,
-        u.username as sender_username,
-        u.first_name as sender_first_name,
-        u.last_name as sender_last_name,
-        u.profile_picture as sender_profile_picture,
-        CASE
-          WHEN m.sender_id = ${userId} THEN 1
-          WHEN m.id <= COALESCE(cp.last_read_message_id, 0) THEN 1
-          ELSE 0
-        END as is_read,
-        CASE
-          WHEN m.id <= COALESCE(cp.last_read_message_id, 0)
-          THEN cp.last_read_at
-          ELSE NULL
-        END as read_at
-      FROM messages m
-      INNER JOIN users u ON m.sender_id = u.id
-      LEFT JOIN conversation_participants cp
-        ON cp.conversation_id = m.conversation_id AND cp.user_id = ${userId}
-      WHERE m.conversation_id = ${conversationId} AND m.tenant_id = ${tenantId}
-      ORDER BY m.created_at ASC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+    // Fetch and transform messages
+    const query = buildMessagesQuery(conversationId, tenantId, userId, limit, offset);
+    const [messages] = await execute<MessageRow[]>(query);
+    const data = messages.map((msg: MessageRow) => transformMessage(msg));
 
-    const [messages] = await execute<MessageRow[]>(messagesQuery);
-
-    // Transform messages
-    const transformedMessages = messages.map((msg: MessageRow) => transformMessage(msg));
-
-    // Return with pagination
-    const totalPages = Math.ceil(totalItems / limit);
-    return {
-      data: transformedMessages,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        pageSize: limit,
-        totalItems,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
-      },
-    };
+    return { data, pagination: buildPaginationMeta(page, limit, totalItems) };
   } catch (error: unknown) {
     throw error instanceof ServiceError ? error : (
         new ServiceError('GET_MESSAGES_ERROR', 'Failed to fetch messages', 500)
@@ -213,82 +306,16 @@ export async function sendMessage(
   data: SendMessageData,
 ): Promise<{ message: Message }> {
   try {
-    // First check if sender is participant of the conversation
-    const [participant] = await execute<RowDataPacket[]>(
-      `SELECT 1 FROM conversation_participants
-       WHERE conversation_id = ? AND user_id = ? AND tenant_id = ?`,
-      [conversationId, senderId, tenantId],
-    );
+    // Verify sender is participant
+    await verifyConversationAccess(conversationId, senderId, tenantId);
 
-    if (!participant.length) {
-      throw new ServiceError(
-        'CONVERSATION_ACCESS_DENIED',
-        'You are not a participant of this conversation',
-        403,
-      );
-    }
-
-    // Insert message
-    const [messageResult] = await execute<ResultSetHeader>(
-      `INSERT INTO messages (tenant_id, conversation_id, sender_id, content,
-         attachment_path, attachment_name, attachment_type, attachment_size, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [
-        tenantId,
-        conversationId,
-        senderId,
-        data.content,
-        data.attachment?.path ?? null,
-        data.attachment?.filename ?? null,
-        data.attachment?.mimeType ?? null,
-        data.attachment?.size ?? null,
-      ],
-    );
-
-    const messageId = messageResult.insertId;
-
-    // Update conversation's updated_at timestamp
+    // Insert message and update conversation
+    const messageId = await insertMessage(tenantId, conversationId, senderId, data);
     await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = ?`, [conversationId]);
 
-    // Get sender info
-    interface SenderRow extends RowDataPacket {
-      username: string;
-      first_name: string | null;
-      last_name: string | null;
-      profile_picture: string | null;
-    }
-
-    const [senderRows] = await execute<SenderRow[]>(
-      `SELECT username, first_name, last_name, profile_picture
-       FROM users WHERE id = ?`,
-      [senderId],
-    );
-
-    const sender = senderRows[0];
-
-    // Return message in v2 format
-    const message: Message = {
-      id: messageId,
-      conversationId,
-      senderId,
-      senderName: `${sender.first_name ?? ''} ${sender.last_name ?? ''}`.trim() || 'Unknown',
-      senderUsername: sender.username,
-      senderProfilePicture: sender.profile_picture,
-      content: data.content,
-      attachment:
-        data.attachment ?
-          {
-            url: data.attachment.path,
-            filename: data.attachment.filename,
-            mimeType: data.attachment.mimeType,
-            size: data.attachment.size,
-          }
-        : null,
-      isRead: false,
-      readAt: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    // Build response with sender info
+    const sender = await getSenderInfo(senderId);
+    const message = buildMessageResponse(messageId, conversationId, senderId, sender, data);
 
     return { message };
   } catch (error: unknown) {
@@ -392,7 +419,7 @@ export async function markConversationAsRead(
        WHERE conversation_id = ${conversationId} AND user_id = ${userId}`,
     );
 
-    if (!participant.length) {
+    if (participant.length === 0) {
       throw new ServiceError(
         'CONVERSATION_ACCESS_DENIED',
         'You are not a participant of this conversation',

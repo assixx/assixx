@@ -19,6 +19,9 @@ export default [
   {
     ignores: [
       'node_modules/**',
+      'archive/**',
+      'scripts/analyze-css.cjs',
+      'scripts/purge-css-inplace.cjs',
       'node_modules_old_backup/**',
       '**/node_modules_old_backup/**',
       'dist/**',
@@ -131,11 +134,13 @@ export default [
       ...typescriptPlugin.configs['stylistic-type-checked'].rules,
 
       'prettier/prettier': 'error',
-      'tsdoc/syntax': 'warn',
+      'tsdoc/syntax': 'error', // Regel 10: Zero Warnings
 
       // Enterprise Code Quality Standards
+      // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
+      // See: docs/POWER-OF-TEN-RULES.md
       'max-lines': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
           max: 800,
           skipBlankLines: true,
@@ -143,21 +148,21 @@ export default [
         },
       ],
       'max-lines-per-function': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
-          max: 80,
+          max: 60, // Regel 4: Max 60 Zeilen pro Funktion
           skipBlankLines: true,
           skipComments: true,
           IIFEs: true,
         },
       ],
-      'max-depth': ['warn', 5],
-      'max-nested-callbacks': ['warn', 4],
-      'max-classes-per-file': ['warn', 2],
+      'max-depth': ['error', 4], // Regel 9: Max 3-4 Referenz-Levels, Regel 10: Zero Warnings
+      'max-nested-callbacks': ['error', 4], // Regel 10: Zero Warnings
+      'max-classes-per-file': ['error', 2], // Regel 10: Zero Warnings
 
       // Line Length Control
       'max-len': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
           code: 120,
           tabWidth: 2,
@@ -171,7 +176,7 @@ export default [
 
       // Import Dependencies Limit
       'import-x/max-dependencies': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
           max: 25,
           ignoreTypeImports: true,
@@ -225,8 +230,20 @@ export default [
       ],
       '@typescript-eslint/prefer-optional-chain': 'error',
 
-      // --- ANGEPASST --- Deaktiviert wegen Circular Fix Konflikt
-      '@typescript-eslint/strict-boolean-expressions': 'off',
+      // Power of Ten Regel 7: Parameter validieren, Regel 10: Zero Warnings
+      // Reaktiviert - Circular Fix Konflikt muss manuell gelöst werden
+      '@typescript-eslint/strict-boolean-expressions': [
+        'error',
+        {
+          allowString: false,
+          allowNumber: false,
+          allowNullableObject: true,
+          allowNullableBoolean: false,
+          allowNullableString: false,
+          allowNullableNumber: false,
+          allowAny: false,
+        },
+      ],
       '@typescript-eslint/no-unsafe-assignment': 'error',
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
@@ -296,7 +313,8 @@ export default [
       'no-unsanitized': noUnsanitizedPlugin,
     },
     rules: {
-      'security/detect-eval-with-expression': 'warn',
+      // Power of Ten Regel 10: Zero Warnings - Security Rules
+      'security/detect-eval-with-expression': 'error',
       'security/detect-non-literal-fs-filename': 'error',
       'security/detect-non-literal-regexp': 'error',
       'security/detect-unsafe-regex': 'error',
@@ -306,9 +324,10 @@ export default [
       'security/detect-no-csrf-before-method-override': 'error',
       'security/detect-possible-timing-attacks': 'error',
       'security/detect-pseudoRandomBytes': 'error',
+      // detect-object-injection bleibt warn - zu viele false positives bei computed properties
       'security/detect-object-injection': 'warn',
 
-      'no-unsanitized/method': 'warn',
+      'no-unsanitized/method': 'error', // Regel 10: Zero Warnings
       'no-unsanitized/property': 'error',
 
       'no-restricted-syntax': [
@@ -356,11 +375,11 @@ export default [
       'sonarjs/no-use-of-empty-return-value': 'error',
       'sonarjs/non-existent-operator': 'error',
 
-      // --- ANGEPASST --- Kognitive Komplexität auf einen realistischen Wert gesetzt.
-      'sonarjs/cognitive-complexity': ['warn', 10],
+      // Power of Ten Regel 1: Einfacher Kontrollfluss, Regel 10: Zero Warnings
+      'sonarjs/cognitive-complexity': ['error', 10],
       'sonarjs/no-collapsible-if': 'error',
       'sonarjs/no-collection-size-mischeck': 'error',
-      'sonarjs/no-duplicate-string': ['warn', { threshold: 5 }],
+      'sonarjs/no-duplicate-string': ['error', { threshold: 5 }], // Regel 10: Zero Warnings
       'sonarjs/no-duplicated-branches': 'error',
       'sonarjs/no-gratuitous-expressions': 'error',
       'sonarjs/no-inverted-boolean-check': 'error',
@@ -383,7 +402,7 @@ export default [
     rules: {
       // Keep only critical unicorn rules
       'unicorn/no-new-buffer': 'error', // Security: deprecated API
-      'unicorn/prefer-number-properties': 'warn', // Type safety: Number.isNaN vs isNaN
+      'unicorn/prefer-number-properties': 'error', // Regel 10: Zero Warnings - Type safety: Number.isNaN vs isNaN
     },
   }, // JSDoc Plugin - NUR für wichtige/public APIs (SELEKTIV)
   {
@@ -500,30 +519,32 @@ export default [
       'no-undef': 'off',
 
       // Enterprise Standards for Frontend (stricter than backend)
+      // Power of Ten Rules: https://spinroot.com/gerard/pdf/P10.pdf
+      // See: docs/POWER-OF-TEN-RULES.md
       'max-lines': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
-          max: 400, // Stricter for frontend
+          max: 400,
           skipBlankLines: true,
           skipComments: true,
         },
       ],
       'max-lines-per-function': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
-          max: 60, // Stricter for frontend
+          max: 60, // Regel 4: Max 60 Zeilen pro Funktion
           skipBlankLines: true,
           skipComments: true,
           IIFEs: true,
         },
       ],
-      'max-depth': ['warn', 5],
-      'max-nested-callbacks': ['warn', 4], // Stricter for frontend
-      'max-classes-per-file': ['warn', 2],
+      'max-depth': ['error', 4], // Regel 9: Max 3-4 Referenz-Levels, Regel 10: Zero Warnings
+      'max-nested-callbacks': ['error', 4], // Regel 10: Zero Warnings
+      'max-classes-per-file': ['error', 2], // Regel 10: Zero Warnings
 
       // Line Length Control
       'max-len': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
           code: 120,
           tabWidth: 2,
@@ -535,11 +556,11 @@ export default [
         },
       ],
 
-      // Import Dependencies Limit (stricter for frontend)
+      // Import Dependencies Limit
       'import-x/max-dependencies': [
-        'warn',
+        'error', // Regel 10: Zero Warnings
         {
-          max: 30, // Frontend should have fewer dependencies
+          max: 30,
           ignoreTypeImports: true,
         },
       ],
@@ -644,9 +665,9 @@ export default [
         },
       ],
 
-      // --- ANGEPASST --- Korrigierte und vereinfachte Import-Reihenfolge.
+      // Import-Reihenfolge - Regel 10: Zero Warnings
       'import-x/order': [
-        'warn',
+        'error',
         {
           groups: ['builtin', 'external', 'internal', ['parent', 'sibling'], 'index'],
           'newlines-between': 'never',
@@ -754,8 +775,8 @@ export default [
       'object-shorthand': 'error',
       'prefer-template': 'error',
       'no-return-await': 'error',
-      'max-depth': 'off',
-      'max-lines': ['warn', 400],
+      'max-depth': ['error', 4], // Regel 9: Max 3-4 Levels, Regel 10: Zero Warnings
+      'max-lines': ['error', 400], // Regel 10: Zero Warnings
       'require-await': 'error',
       'no-async-promise-executor': 'error',
       'prefer-promise-reject-errors': 'error',

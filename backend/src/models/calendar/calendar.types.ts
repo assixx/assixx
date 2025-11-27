@@ -73,6 +73,7 @@ export interface EventQueryOptions {
 
 /**
  * Data required to create a new calendar event
+ * Multi-organization support: Event can belong to multiple departments/teams/areas
  */
 export interface EventCreateData {
   tenant_id: number;
@@ -82,7 +83,12 @@ export interface EventCreateData {
   start_time: string | Date;
   end_time: string | Date;
   all_day?: boolean;
-  org_level: 'company' | 'department' | 'team' | 'area' | 'personal';
+  // Multi-organization support - arrays of IDs
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
+  // Legacy fields (optional for backwards compatibility)
+  org_level?: 'company' | 'department' | 'team' | 'area' | 'personal';
   department_id?: number | null;
   team_id?: number | null;
   area_id?: number | null;
@@ -97,6 +103,7 @@ export interface EventCreateData {
 
 /**
  * Data for updating an existing calendar event
+ * Multi-organization support: Event can belong to multiple departments/teams/areas
  */
 export interface EventUpdateData {
   title?: string;
@@ -105,6 +112,11 @@ export interface EventUpdateData {
   start_time?: string | Date;
   end_time?: string | Date;
   all_day?: boolean;
+  // Multi-organization support - arrays of IDs
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
+  // Legacy fields (optional for backwards compatibility)
   org_level?: 'company' | 'department' | 'team' | 'area' | 'personal';
   department_id?: number | null;
   team_id?: number | null;

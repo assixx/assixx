@@ -34,7 +34,7 @@ describe("KVP API Endpoints", () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = "test-secret-key-for-kvp-tests";
+    process.env['JWT_SECRET'] = "test-secret-key-for-kvp-tests";
 
     // Create test tenants
     tenant1Id = await createTestTenant(
@@ -145,12 +145,12 @@ describe("KVP API Endpoints", () => {
         success: true,
         message: expect.stringContaining("erfolgreich eingereicht"),
       });
-      expect(response.body.data.suggestionId).toBeDefined();
+      expect(response.body.data['suggestionId']).toBeDefined();
 
       // Verify suggestion was created
       const [rows] = await testDb.execute(
         "SELECT * FROM kvp_suggestions WHERE id = ?",
-        [response.body.data.suggestionId],
+        [response.body.data['suggestionId']],
       );
       const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0]).toMatchObject({
@@ -179,7 +179,7 @@ describe("KVP API Endpoints", () => {
       // Verify anonymity
       const [rows] = await testDb.execute(
         "SELECT * FROM kvp_suggestions WHERE id = ?",
-        [response.body.data.suggestionId],
+        [response.body.data['suggestionId']],
       );
       const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].submitted_by).toBe(employeeUser1.id); // Still tracked internally
@@ -202,7 +202,7 @@ describe("KVP API Endpoints", () => {
 
       const [rows] = await testDb.execute(
         "SELECT department_id, visibility FROM kvp_suggestions WHERE id = ?",
-        [response.body.data.suggestionId],
+        [response.body.data['suggestionId']],
       );
       const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].department_id).toBe(dept1Id);
@@ -237,7 +237,7 @@ describe("KVP API Endpoints", () => {
       // Verify attachments were saved
       const [rows] = await testDb.execute(
         "SELECT * FROM kvp_attachments WHERE suggestion_id = ?",
-        [response.body.data.suggestionId],
+        [response.body.data['suggestionId']],
       );
       const attachments = asTestRows<unknown>(rows);
       expect(attachments.length).toBe(2);
@@ -298,7 +298,7 @@ describe("KVP API Endpoints", () => {
 
       const [rows] = await testDb.execute(
         "SELECT status FROM kvp_suggestions WHERE id = ?",
-        [response.body.data.suggestionId],
+        [response.body.data['suggestionId']],
       );
       const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].status).toBe("submitted");
@@ -334,7 +334,7 @@ describe("KVP API Endpoints", () => {
 
       const [rows] = await testDb.execute(
         "SELECT tenant_id FROM kvp_suggestions WHERE id = ?",
-        [response.body.data.suggestionId],
+        [response.body.data['suggestionId']],
       );
       const suggestions = asTestRows<unknown>(rows);
       expect(suggestions[0].tenant_id).toBe(tenant1Id);
@@ -428,7 +428,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(adminResponse.status).toBe(200);
-      expect(adminResponse.body.data.suggestions.length).toBe(4);
+      expect(adminResponse.body.data['suggestions'].length).toBe(4);
 
       // Employee1 (dept1) should see public + dept1
       const emp1Response = await request(app)
@@ -436,8 +436,8 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken1}`);
 
       expect(emp1Response.status).toBe(200);
-      expect(emp1Response.body.data.suggestions.length).toBe(3);
-      const emp1Ids = emp1Response.body.data.suggestions.map((s) => s.id);
+      expect(emp1Response.body.data['suggestions'].length).toBe(3);
+      const emp1Ids = emp1Response.body.data['suggestions'].map((s) => s.id);
       expect(emp1Ids).toContain(publicSuggestionId);
       expect(emp1Ids).toContain(dept1SuggestionId);
       expect(emp1Ids).toContain(anonymousSuggestionId);
@@ -449,7 +449,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken2}`);
 
       expect(emp2Response.status).toBe(200);
-      expect(emp2Response.body.data.suggestions.length).toBe(3);
+      expect(emp2Response.body.data['suggestions'].length).toBe(3);
     });
 
     it("should hide submitter info for anonymous suggestions", async () => {
@@ -458,7 +458,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken2}`);
 
       expect(response.status).toBe(200);
-      const anonymousSugg = response.body.data.suggestions.find(
+      const anonymousSugg = response.body.data['suggestions'].find(
         (s) => s.id === anonymousSuggestionId,
       );
       expect(anonymousSugg.submitter_name).toBe("Anonym");
@@ -471,7 +471,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const suggestions = response.body.data.suggestions;
+      const suggestions = response.body.data['suggestions'];
       expect(suggestions.every((s) => s.status === "submitted")).toBe(true);
     });
 
@@ -481,7 +481,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const suggestions = response.body.data.suggestions;
+      const suggestions = response.body.data['suggestions'];
       expect(
         suggestions.every((s) => s.category === "process_improvement"),
       ).toBe(true);
@@ -493,7 +493,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const suggestions = response.body.data.suggestions;
+      const suggestions = response.body.data['suggestions'];
       expect(suggestions.some((s) => s.id === dept1SuggestionId)).toBe(true);
     });
 
@@ -503,7 +503,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const suggestions = response.body.data.suggestions;
+      const suggestions = response.body.data['suggestions'];
       // Verify descending order
       for (let i = 1; i < suggestions.length; i++) {
         expect(
@@ -518,8 +518,8 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.suggestions.length).toBe(2);
-      expect(response.body.data.pagination).toMatchObject({
+      expect(response.body.data['suggestions'].length).toBe(2);
+      expect(response.body.data['pagination']).toMatchObject({
         page: 1,
         limit: 2,
         total: 4,
@@ -543,7 +543,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const publicSugg = response.body.data.suggestions.find(
+      const publicSugg = response.body.data['suggestions'].find(
         (s) => s.id === publicSuggestionId,
       );
       expect(publicSugg.vote_count).toBe(2);
@@ -570,7 +570,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const suggestions = response.body.data.suggestions;
+      const suggestions = response.body.data['suggestions'];
       expect(suggestions.every((s) => s.tenant_id === tenant1Id)).toBe(true);
     });
 
@@ -580,7 +580,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const suggestions = response.body.data.suggestions;
+      const suggestions = response.body.data['suggestions'];
       // Should include both regular and anonymous suggestions by user1
       expect(suggestions.length).toBe(2);
     });
@@ -641,8 +641,8 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.comments).toHaveLength(1);
-      expect(response.body.data.comments[0]).toMatchObject({
+      expect(response.body.data['comments']).toHaveLength(1);
+      expect(response.body.data['comments'][0]).toMatchObject({
         comment: "Great idea!",
         user: expect.objectContaining({
           first_name: "Admin",
@@ -671,8 +671,8 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.attachments).toHaveLength(1);
-      expect(response.body.data.attachments[0].filename).toBe("diagram.pdf");
+      expect(response.body.data['attachments']).toHaveLength(1);
+      expect(response.body.data['attachments'][0].filename).toBe("diagram.pdf");
     });
 
     it("should hide submitter for anonymous suggestion", async () => {
@@ -699,8 +699,8 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken2}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.submitter).toBeNull();
-      expect(response.body.data.is_anonymous).toBe(true);
+      expect(response.body.data['submitter']).toBeNull();
+      expect(response.body.data['is_anonymous']).toBe(true);
     });
 
     it("should return 404 for non-existent suggestion", async () => {
@@ -1009,12 +1009,12 @@ describe("KVP API Endpoints", () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.commentId).toBeDefined();
+      expect(response.body.data['commentId']).toBeDefined();
 
       // Verify comment was created
       const [rows] = await testDb.execute(
         "SELECT * FROM kvp_comments WHERE id = ?",
-        [response.body.data.commentId],
+        [response.body.data['commentId']],
       );
       const comments = asTestRows<unknown>(rows);
       expect(comments[0]).toMatchObject({
@@ -1039,7 +1039,7 @@ describe("KVP API Endpoints", () => {
 
       const [rows] = await testDb.execute(
         "SELECT is_internal FROM kvp_comments WHERE id = ?",
-        [response.body.data.commentId],
+        [response.body.data['commentId']],
       );
       const comments = asTestRows<unknown>(rows);
       expect(comments[0].is_internal).toBe(1);
@@ -1473,8 +1473,8 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.leaderboard).toBeDefined();
-      expect(Array.isArray(response.body.data.leaderboard)).toBe(true);
+      expect(response.body.data['leaderboard']).toBeDefined();
+      expect(Array.isArray(response.body.data['leaderboard'])).toBe(true);
     });
 
     it("should enforce tenant isolation in statistics", async () => {
@@ -1483,7 +1483,7 @@ describe("KVP API Endpoints", () => {
         .set("Authorization", `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.overview.total_suggestions).toBe(0); // No suggestions in tenant2
+      expect(response.body.data['overview'].total_suggestions).toBe(0); // No suggestions in tenant2
     });
   });
 

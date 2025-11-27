@@ -42,6 +42,105 @@ export interface SurveyResponse {
   answers?: SurveyAnswer[];
 }
 
+/** Normalized answer type for database insertion */
+interface NormalizedAnswer {
+  question_id: number | undefined;
+  answer_text: string | undefined;
+  answer_number: number | undefined;
+  answer_date: string | undefined;
+  answer_options: number[] | undefined;
+}
+
+/**
+ * Normalize answer field names (convert camelCase to snake_case)
+ */
+function normalizeAnswers(answers: SurveyAnswer[]): NormalizedAnswer[] {
+  return answers.map((answer: SurveyAnswer) => ({
+    question_id: answer.questionId ?? answer.question_id,
+    answer_text: answer.answerText ?? answer.answer_text,
+    answer_number: answer.answerNumber ?? answer.answer_number,
+    answer_date: answer.answerDate ?? answer.answer_date,
+    answer_options: answer.answerOptions ?? answer.answer_options,
+  }));
+}
+
+/**
+ * Insert answers into database
+ */
+async function insertAnswers(
+  connection: PoolConnection,
+  responseId: number,
+  answers: NormalizedAnswer[],
+  tenantId: number,
+): Promise<void> {
+  for (const answer of answers) {
+    if (answer.answer_text !== undefined && answer.answer_text !== '') {
+      await connection.query(
+        `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id) VALUES (?, ?, ?, ?)`,
+        [responseId, answer.question_id, answer.answer_text, tenantId] as unknown[],
+      );
+    } else if (answer.answer_number !== undefined) {
+      await connection.query(
+        `INSERT INTO survey_answers (response_id, question_id, answer_number, tenant_id) VALUES (?, ?, ?, ?)`,
+        [responseId, answer.question_id, answer.answer_number, tenantId] as unknown[],
+      );
+    } else if (answer.answer_date !== undefined && answer.answer_date !== '') {
+      await connection.query(
+        `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id) VALUES (?, ?, ?, ?)`,
+        [responseId, answer.question_id, answer.answer_date, tenantId] as unknown[],
+      );
+    } else if (answer.answer_options !== undefined && answer.answer_options.length > 0) {
+      await connection.query(
+        `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id) VALUES (?, ?, ?, ?)`,
+        [
+          responseId,
+          answer.question_id,
+          JSON.stringify(answer.answer_options),
+          tenantId,
+        ] as unknown[],
+      );
+    }
+  }
+}
+
+/**
+ * Transform answer from DB to API format
+ */
+function transformAnswer(a: SurveyAnswerWithQuestionResult): SurveyAnswer {
+  const transformed = dbToApi(a as unknown as Record<string, unknown>) as unknown as SurveyAnswer;
+  if (a.answer_date !== null && typeof a.answer_date !== 'string') {
+    transformed.answerDate = a.answer_date.toISOString();
+  }
+  return transformed;
+}
+
+/**
+ * Transform response from DB to API format with answers
+ */
+async function transformResponseWithAnswers(
+  dbResponse: SurveyResponseWithUserResult,
+  tenantId: number,
+): Promise<SurveyResponse> {
+  const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
+    `SELECT sa.*, sq.question_type, sq.question_text FROM survey_answers sa
+     JOIN survey_questions sq ON sa.question_id = sq.id WHERE sa.response_id = ? AND sa.tenant_id = ?`,
+    [dbResponse.id, tenantId],
+  );
+
+  const baseResponse = dbToApi(
+    dbResponse as unknown as Record<string, unknown>,
+  ) as unknown as SurveyResponse;
+
+  if (typeof dbResponse.started_at !== 'string') {
+    baseResponse.startedAt = dbResponse.started_at.toISOString();
+  }
+  if (dbResponse.completed_at !== null && typeof dbResponse.completed_at !== 'string') {
+    baseResponse.completedAt = dbResponse.completed_at.toISOString();
+  }
+
+  return { ...baseResponse, answers: answers.map(transformAnswer) };
+}
+
 class ResponsesService {
   /**
    * Submit a response to a survey
@@ -54,87 +153,35 @@ class ResponsesService {
   ): Promise<number> {
     // Check if survey exists and is active
     const [surveys] = await query<SurveyFlagsResult[]>(
-      `SELECT id, status, allow_multiple_responses
-       FROM surveys
+      `SELECT id, status, allow_multiple_responses FROM surveys
        WHERE id = ? AND tenant_id = ? AND status = 'active'`,
       [surveyId, tenantId] as unknown[],
     );
 
-    if (surveys.length === 0) {
+    const survey = surveys[0];
+    if (survey === undefined) {
       throw new ServiceError('NOT_FOUND', 'Umfrage nicht gefunden oder nicht aktiv');
     }
 
-    const survey = surveys[0];
-
     // Check if user already responded (if multiple responses not allowed)
-    if (!survey.allow_multiple_responses) {
-      const [existingResponses] = await query<IdResult[]>(
-        `SELECT id FROM survey_responses
-         WHERE survey_id = ? AND user_id = ? AND tenant_id = ?`,
+    if (survey.allow_multiple_responses !== 1) {
+      const [existing] = await query<IdResult[]>(
+        `SELECT id FROM survey_responses WHERE survey_id = ? AND user_id = ? AND tenant_id = ?`,
         [surveyId, userId, tenantId] as unknown[],
       );
-
-      if (existingResponses.length > 0) {
+      if (existing.length > 0) {
         throw new ServiceError('BAD_REQUEST', 'Sie haben bereits an dieser Umfrage teilgenommen');
       }
     }
 
-    // Normalize answer field names (convert camelCase to snake_case)
-    const normalizedAnswers = answers.map((answer: SurveyAnswer) => ({
-      question_id: answer.questionId ?? answer.question_id,
-      answer_text: answer.answerText ?? answer.answer_text,
-      answer_number: answer.answerNumber ?? answer.answer_number,
-      answer_date: answer.answerDate ?? answer.answer_date,
-      answer_options: answer.answerOptions ?? answer.answer_options,
-    }));
-
-    // Use transaction helper
     return await transaction(async (connection: PoolConnection) => {
-      // Create response record
-      const [responseResult] = await connection.query<ResultSetHeader>(
+      const [result] = await connection.query<ResultSetHeader>(
         `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, status)
          VALUES (?, ?, ?, NOW(), NOW(), 'completed')`,
         [surveyId, userId, tenantId] as unknown[],
       );
-
-      const responseId = responseResult.insertId;
-
-      // Insert answers
-      for (const answer of normalizedAnswers) {
-        if (answer.answer_text !== undefined && answer.answer_text !== '') {
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [responseId, answer.question_id, answer.answer_text, tenantId] as unknown[],
-          );
-        } else if (answer.answer_number !== undefined) {
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_number, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [responseId, answer.question_id, answer.answer_number, tenantId] as unknown[],
-          );
-        } else if (answer.answer_date !== undefined && answer.answer_date !== '') {
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [responseId, answer.question_id, answer.answer_date, tenantId] as unknown[],
-          );
-        } else if (answer.answer_options && answer.answer_options.length > 0) {
-          // For multiple choice questions - store as JSON
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [
-              responseId,
-              answer.question_id,
-              JSON.stringify(answer.answer_options),
-              tenantId,
-            ] as unknown[],
-          );
-        }
-      }
-
-      return responseId;
+      await insertAnswers(connection, result.insertId, normalizeAnswers(answers), tenantId);
+      return result.insertId;
     });
   }
 
@@ -163,7 +210,12 @@ class ResponsesService {
       throw new ServiceError('NOT_FOUND', 'Umfrage nicht gefunden');
     }
 
-    const isAnonymous = Boolean(surveyInfo[0].is_anonymous);
+    const surveyData = surveyInfo[0];
+    if (surveyData === undefined) {
+      throw new ServiceError('NOT_FOUND', 'Umfrage nicht gefunden');
+    }
+
+    const isAnonymous = Boolean(surveyData.is_anonymous);
 
     // Get total count
     const [countResult] = await query<TotalCountResult[]>(
@@ -173,66 +225,32 @@ class ResponsesService {
       [surveyId, tenantId] as unknown[],
     );
 
-    const total = countResult[0].total;
+    const countData = countResult[0];
+    if (countData === undefined) {
+      throw new ServiceError('INTERNAL_ERROR', 'Fehler beim Abrufen der Anzahl');
+    }
+
+    const total = countData.total;
     const offset = (options.page - 1) * options.limit;
 
-    // Get responses with user info (if not anonymous)
+    // Build query based on anonymity
+    const userFields =
+      isAnonymous ?
+        'NULL as first_name, NULL as last_name, NULL as username'
+      : 'u.first_name, u.last_name, u.username';
+    const userJoin = isAnonymous ? '' : 'LEFT JOIN users u ON sr.user_id = u.id';
+
     const [responses] = await query<SurveyResponseWithUserResult[]>(
-      `SELECT sr.*,
-       ${isAnonymous ? 'NULL as first_name, NULL as last_name, NULL as username' : 'u.first_name, u.last_name, u.username'}
-       FROM survey_responses sr
-       ${!isAnonymous ? 'LEFT JOIN users u ON sr.user_id = u.id' : ''}
-       WHERE sr.survey_id = ? AND sr.tenant_id = ?
-       ORDER BY sr.completed_at DESC
-       LIMIT ? OFFSET ?`,
+      `SELECT sr.*, ${userFields} FROM survey_responses sr ${userJoin}
+       WHERE sr.survey_id = ? AND sr.tenant_id = ? ORDER BY sr.completed_at DESC LIMIT ? OFFSET ?`,
       [surveyId, tenantId, options.limit, offset] as unknown[],
     );
 
-    // Fetch answers for each response
-    const responsesWithAnswers: SurveyResponse[] = await Promise.all(
-      responses.map(async (dbResponse: SurveyResponseWithUserResult): Promise<SurveyResponse> => {
-        const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
-          `SELECT sa.*, sq.question_type, sq.question_text
-           FROM survey_answers sa
-           JOIN survey_questions sq ON sa.question_id = sq.id
-           WHERE sa.response_id = ? AND sa.tenant_id = ?`,
-          [dbResponse.id, tenantId],
-        );
-
-        // Transform response from snake_case to camelCase (API v2 standard)
-        const baseResponse = dbToApi(
-          dbResponse as unknown as Record<string, unknown>,
-        ) as unknown as SurveyResponse;
-
-        // Handle Date objects conversion to ISO strings
-        if (typeof dbResponse.started_at !== 'string') {
-          baseResponse.startedAt = dbResponse.started_at.toISOString();
-        }
-        if (dbResponse.completed_at !== null && typeof dbResponse.completed_at !== 'string') {
-          baseResponse.completedAt = dbResponse.completed_at.toISOString();
-        }
-
-        return {
-          ...baseResponse,
-          answers: answers.map((a: SurveyAnswerWithQuestionResult) => {
-            // Transform snake_case to camelCase using dbToApi
-            const transformed = dbToApi(
-              a as unknown as Record<string, unknown>,
-            ) as unknown as SurveyAnswer;
-            // Handle Date object conversion to ISO string
-            if (a.answer_date !== null && typeof a.answer_date !== 'string') {
-              transformed.answerDate = a.answer_date.toISOString();
-            }
-            return transformed;
-          }),
-        };
-      }),
+    const responsesWithAnswers = await Promise.all(
+      responses.map((r: SurveyResponseWithUserResult) => transformResponseWithAnswers(r, tenantId)),
     );
 
-    return {
-      responses: responsesWithAnswers,
-      total,
-    };
+    return { responses: responsesWithAnswers, total };
   }
 
   /**
@@ -257,6 +275,9 @@ class ResponsesService {
     }
 
     const dbResponse = responses[0];
+    if (dbResponse === undefined) {
+      return null;
+    }
 
     // Get answers
     const [answers] = await query<SurveyAnswerWithQuestionResult[]>(
@@ -317,6 +338,9 @@ class ResponsesService {
     }
 
     const dbResponse = responses[0];
+    if (dbResponse === undefined) {
+      throw new ServiceError('NOT_FOUND', 'Antwort nicht gefunden');
+    }
 
     // Check permissions (user can only see their own response unless admin/root)
     if (userRole !== 'root' && userRole !== 'admin' && dbResponse.user_id !== userId) {
@@ -382,63 +406,21 @@ class ResponsesService {
       throw new ServiceError('NOT_FOUND', 'Antwort nicht gefunden');
     }
 
-    if (!responses[0].allow_edit_responses) {
+    const responseData = responses[0];
+    if (responseData === undefined) {
+      throw new ServiceError('NOT_FOUND', 'Antwort nicht gefunden');
+    }
+
+    if (responseData.allow_edit_responses !== 1) {
       throw new ServiceError('FORBIDDEN', 'Bearbeitung von Antworten nicht erlaubt');
     }
 
-    // Normalize answer field names (convert camelCase to snake_case)
-    const normalizedAnswers = answers.map((answer: SurveyAnswer) => ({
-      question_id: answer.questionId ?? answer.question_id,
-      answer_text: answer.answerText ?? answer.answer_text,
-      answer_number: answer.answerNumber ?? answer.answer_number,
-      answer_date: answer.answerDate ?? answer.answer_date,
-      answer_options: answer.answerOptions ?? answer.answer_options,
-    }));
-
-    // Use transaction helper
     await transaction(async (connection: PoolConnection) => {
-      // Delete existing answers
       await connection.query(`DELETE FROM survey_answers WHERE response_id = ? AND tenant_id = ?`, [
         responseId,
         tenantId,
       ]);
-
-      // Insert new answers (similar to submitResponse)
-      for (const answer of normalizedAnswers) {
-        if (answer.answer_text !== undefined && answer.answer_text !== '') {
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [responseId, answer.question_id, answer.answer_text, tenantId] as unknown[],
-          );
-        } else if (answer.answer_number !== undefined) {
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_number, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [responseId, answer.question_id, answer.answer_number, tenantId] as unknown[],
-          );
-        } else if (answer.answer_date !== undefined && answer.answer_date !== '') {
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [responseId, answer.question_id, answer.answer_date, tenantId] as unknown[],
-          );
-        } else if (answer.answer_options && answer.answer_options.length > 0) {
-          // Store as JSON
-          await connection.query(
-            `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id)
-             VALUES (?, ?, ?, ?)`,
-            [
-              responseId,
-              answer.question_id,
-              JSON.stringify(answer.answer_options),
-              tenantId,
-            ] as unknown[],
-          );
-        }
-      }
-
-      // Update completion time
+      await insertAnswers(connection, responseId, normalizeAnswers(answers), tenantId);
       await connection.query(
         `UPDATE survey_responses SET completed_at = NOW() WHERE id = ? AND tenant_id = ?`,
         [responseId, tenantId] as unknown[],
@@ -504,15 +486,19 @@ class ResponsesService {
   }
 
   private formatAsCSV(data: SurveyExportResult[]): Buffer {
-    // Simple CSV formatting
     const headers = ['Response ID', 'User', 'Completed', 'Question', 'Answer'];
-    const rows = data.map((row: SurveyExportResult) => [
-      String(row.response_id),
-      `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() || (row.username ?? ''),
-      row.completed_at ? String(row.completed_at) : '',
-      row.question_text,
-      String(row.answer_text ?? row.answer_number ?? row.answer_date ?? row.answer_options ?? ''),
-    ]);
+    const rows = data.map((row: SurveyExportResult) => {
+      const fullName = `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim();
+      const userName = fullName !== '' ? fullName : (row.username ?? '');
+      const completed = row.completed_at !== null ? String(row.completed_at) : '';
+      return [
+        String(row.response_id),
+        userName,
+        completed,
+        row.question_text,
+        String(row.answer_text ?? row.answer_number ?? row.answer_date ?? row.answer_options ?? ''),
+      ];
+    });
 
     const csv = [
       headers.join(','),

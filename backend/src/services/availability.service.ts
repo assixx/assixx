@@ -166,14 +166,14 @@ class AvailabilityService {
       `;
 
       const [result] = await execute<ResultSetHeader>(query, [
-        dbData.employee_id,
-        dbData.tenant_id,
-        dbData.status ?? 'unavailable',
-        dbData.start_date,
-        dbData.end_date,
-        dbData.reason ?? null,
-        dbData.notes ?? null,
-        dbData.created_by ?? null,
+        dbData['employee_id'],
+        dbData['tenant_id'],
+        dbData['status'] ?? 'unavailable',
+        dbData['start_date'],
+        dbData['end_date'],
+        dbData['reason'] ?? null,
+        dbData['notes'] ?? null,
+        dbData['created_by'] ?? null,
       ]);
 
       // Update user's availability status
@@ -203,25 +203,25 @@ class AvailabilityService {
       const fields = [];
       const values = [];
 
-      if (dbData.status !== undefined) {
+      if (dbData['status'] !== undefined) {
         fields.push('status = ?');
-        values.push(dbData.status);
+        values.push(dbData['status']);
       }
-      if (dbData.start_date !== undefined) {
+      if (dbData['start_date'] !== undefined) {
         fields.push('start_date = ?');
-        values.push(dbData.start_date);
+        values.push(dbData['start_date']);
       }
-      if (dbData.end_date !== undefined) {
+      if (dbData['end_date'] !== undefined) {
         fields.push('end_date = ?');
-        values.push(dbData.end_date);
+        values.push(dbData['end_date']);
       }
-      if (dbData.reason !== undefined) {
+      if (dbData['reason'] !== undefined) {
         fields.push('reason = ?');
-        values.push(dbData.reason);
+        values.push(dbData['reason']);
       }
-      if (dbData.notes !== undefined) {
+      if (dbData['notes'] !== undefined) {
         fields.push('notes = ?');
-        values.push(dbData.notes);
+        values.push(dbData['notes']);
       }
 
       if (fields.length === 0) {

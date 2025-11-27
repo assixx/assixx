@@ -411,11 +411,11 @@ export class SessionManager {
     warningModal.addEventListener('click', (e: MouseEvent) => {
       const target = e.target as HTMLElement;
 
-      if (target.dataset.action === 'extend-session') {
+      if (target.dataset['action'] === 'extend-session') {
         void this.extendSession(); // Async call - don't block UI
       }
 
-      if (target.dataset.action === 'session-logout') {
+      if (target.dataset['action'] === 'session-logout') {
         this.logout();
       }
     });

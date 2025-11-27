@@ -177,8 +177,31 @@ class ShiftPlansService {
   }
 
   /**
+   * Log shift plan creation error details
+   */
+  private logShiftPlanError(
+    error: unknown,
+    data: ShiftPlanData,
+    tenantId: number,
+    userId: number,
+  ): void {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[SHIFT PLAN ERROR] Details:', {
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      data: {
+        startDate: data.startDate,
+        endDate: data.endDate,
+        shiftsCount: data.shifts.length,
+        tenantId,
+        userId,
+      },
+    });
+  }
+
+  /**
    * Create a complete shift plan with shifts and notes
-   * @param data - Shift plan data containing startDate, endDate, areaId, departmentId, teamId, machineId, name, shiftNotes, and shifts array
+   * @param data - Shift plan data
    * @param tenantId - Tenant ID for multi-tenant isolation
    * @param userId - ID of user creating the plan
    * @returns Object containing planId, shiftIds array and success message
@@ -203,31 +226,23 @@ class ShiftPlansService {
 
       await query('START TRANSACTION');
 
-      // Prepare plan name
       const weekNumber = this.getWeekNumber(new Date(data.startDate));
       const planName =
         data.name ??
         `Wochenplan KW ${String(weekNumber)}/${String(new Date(data.startDate).getFullYear())}`;
 
-      // Determine date range based on plan type
       const isKontischicht = kontischichtService.isKontischichtPlan(
         planName,
         data.name,
         data.kontischichtPattern,
       );
-
       const dateRange =
         isKontischicht ?
           kontischichtService.calculateKontischichtDateRange(data.startDate, data.endDate)
         : { planStartDate: data.startDate, planEndDate: data.endDate };
 
-      // Create the shift plan
       const planId = await this.createShiftPlanRecord(data, tenantId, userId, planName, dateRange);
-
-      // Prepare shifts (with Kontischicht pattern generation if needed)
       const shiftsToCreate = kontischichtService.prepareShiftsForCreation(data, isKontischicht);
-
-      // Create all shifts
       const shiftIds = await this.createShiftRecords(
         shiftsToCreate,
         planId,
@@ -237,7 +252,6 @@ class ShiftPlansService {
       );
 
       await query('COMMIT');
-
       return {
         planId,
         shiftIds,
@@ -246,20 +260,8 @@ class ShiftPlansService {
     } catch (error) {
       await query('ROLLBACK');
       logger.error('Error creating shift plan:', error);
-
+      this.logShiftPlanError(error, data, tenantId, userId);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('[SHIFT PLAN ERROR] Details:', {
-        error: errorMessage,
-        stack: error instanceof Error ? error.stack : undefined,
-        data: {
-          startDate: data.startDate,
-          endDate: data.endDate,
-          shiftsCount: data.shifts.length,
-          tenantId,
-          userId,
-        },
-      });
-
       throw new ServiceError('CREATE_PLAN_ERROR', `Failed to create shift plan: ${errorMessage}`);
     }
   }
@@ -335,7 +337,12 @@ class ShiftPlansService {
       throw new ServiceError('NOT_FOUND', 'Shift plan not found');
     }
 
-    return (existingPlans as { id: number; department_id: number }[])[0];
+    const plan = (existingPlans as { id: number; department_id: number }[])[0];
+    if (plan === undefined) {
+      throw new ServiceError('NOT_FOUND', 'Shift plan not found');
+    }
+
+    return plan;
   }
 
   /**
@@ -391,10 +398,53 @@ class ShiftPlansService {
   }
 
   /**
+   * Build filter query conditions for shift plans
+   */
+  private buildPlanFilterQuery(
+    filters: {
+      areaId?: number;
+      departmentId?: number;
+      teamId?: number;
+      machineId?: number;
+      startDate?: string;
+      endDate?: string;
+    },
+    tenantId: number,
+  ): { query: string; params: (string | number)[] } {
+    let query = 'SELECT * FROM shift_plans WHERE tenant_id = ?';
+    const params: (string | number)[] = [tenantId];
+
+    if (filters.departmentId !== undefined) {
+      query += ' AND department_id = ?';
+      params.push(filters.departmentId);
+    }
+    if (filters.teamId !== undefined) {
+      query += ' AND team_id = ?';
+      params.push(filters.teamId);
+    }
+    if (filters.machineId !== undefined) {
+      query += ' AND machine_id = ?';
+      params.push(filters.machineId);
+    }
+    if (filters.areaId !== undefined) {
+      query += ' AND area_id = ?';
+      params.push(filters.areaId);
+    }
+    if (
+      filters.startDate !== undefined &&
+      filters.startDate !== '' &&
+      filters.endDate !== undefined &&
+      filters.endDate !== ''
+    ) {
+      query += ' AND start_date <= ? AND end_date >= ?';
+      params.push(filters.endDate, filters.startDate);
+    }
+    query += ' ORDER BY created_at DESC LIMIT 1';
+    return { query, params };
+  }
+
+  /**
    * Get shift plan with all shifts and notes
-   * @param filters - Filter object containing areaId, departmentId, teamId, machineId, startDate, and endDate
-   * @param tenantId - Tenant ID for multi-tenant isolation
-   * @returns Object containing plan details, shifts array and notes
    */
   async getShiftPlan(
     filters: {
@@ -406,47 +456,9 @@ class ShiftPlansService {
       endDate?: string;
     },
     tenantId: number,
-  ): Promise<{
-    plan?: unknown;
-    shifts: unknown[];
-    notes: unknown[];
-  }> {
+  ): Promise<{ plan?: unknown; shifts: unknown[]; notes: unknown[] }> {
     try {
-      // Find plan
-      let planQuery = `
-        SELECT * FROM shift_plans
-        WHERE tenant_id = ?
-      `;
-      const params: (string | number)[] = [tenantId];
-
-      if (filters.departmentId !== undefined) {
-        planQuery += ' AND department_id = ?';
-        params.push(filters.departmentId);
-      }
-      if (filters.teamId !== undefined) {
-        planQuery += ' AND team_id = ?';
-        params.push(filters.teamId);
-      }
-      if (filters.machineId !== undefined) {
-        planQuery += ' AND machine_id = ?';
-        params.push(filters.machineId);
-      }
-      if (filters.areaId !== undefined) {
-        planQuery += ' AND area_id = ?';
-        params.push(filters.areaId);
-      }
-      if (
-        filters.startDate !== undefined &&
-        filters.startDate !== '' &&
-        filters.endDate !== undefined &&
-        filters.endDate !== ''
-      ) {
-        planQuery += ' AND start_date <= ? AND end_date >= ?';
-        params.push(filters.endDate, filters.startDate);
-      }
-
-      planQuery += ' ORDER BY created_at DESC LIMIT 1';
-
+      const { query: planQuery, params } = this.buildPlanFilterQuery(filters, tenantId);
       const [plans] = await execute(planQuery, params);
       const plan = (plans as unknown[])[0];
 
@@ -454,24 +466,16 @@ class ShiftPlansService {
         return { shifts: [], notes: [] };
       }
 
-      // Get shifts for this plan
       const [shifts] = await execute(
-        `SELECT s.*, u.first_name, u.last_name, u.username
-         FROM shifts s
-         LEFT JOIN users u ON s.user_id = u.id
-         WHERE s.plan_id = ?
-         ORDER BY s.date, s.start_time`,
+        `SELECT s.*, u.first_name, u.last_name, u.username FROM shifts s
+         LEFT JOIN users u ON s.user_id = u.id WHERE s.plan_id = ? ORDER BY s.date, s.start_time`,
         [(plan as { id: number }).id],
       );
-
-      // REMOVED: Loading from shift_notes - using shift_plans.description instead
-      // The plan.description contains the weekly notes
-      // Return empty notes array for backward compatibility
 
       return {
         plan: dbToApi(plan as Record<string, unknown>),
         shifts: (shifts as unknown[]).map((s: unknown) => dbToApi(s as Record<string, unknown>)),
-        notes: [], // Empty - notes are in plan.description now
+        notes: [],
       };
     } catch (error) {
       logger.error('Error getting shift plan:', error);

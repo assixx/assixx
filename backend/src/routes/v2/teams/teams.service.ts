@@ -39,7 +39,7 @@ export class ServiceError extends Error {
    */
   constructor(
     public code: string,
-    public message: string,
+    public override message: string,
     public statusCode?: number,
     public details?: unknown,
   ) {
@@ -89,18 +89,18 @@ class TeamsService {
       // Apply filters
       let filteredTeams = teams;
 
-      if (filters?.departmentId) {
+      if (filters?.departmentId !== undefined) {
         filteredTeams = filteredTeams.filter(
           (team: DbTeam) => team.department_id === filters.departmentId,
         );
       }
 
-      if (filters?.search) {
+      if (filters?.search !== undefined && filters.search !== '') {
         const searchLower = filters.search.toLowerCase();
         filteredTeams = filteredTeams.filter(
           (team: DbTeam) =>
             team.name.toLowerCase().includes(searchLower) ||
-            team.description?.toLowerCase().includes(searchLower),
+            (team.description?.toLowerCase().includes(searchLower) ?? false),
         );
       }
 
@@ -110,28 +110,29 @@ class TeamsService {
 
         // Map team_lead_id to leaderId
         if ('teamLeadId' in apiTeam) {
-          apiTeam.leaderId = apiTeam.teamLeadId;
-          delete apiTeam.teamLeadId;
+          apiTeam['leaderId'] = apiTeam['teamLeadId'];
+          delete apiTeam['teamLeadId'];
         }
 
         // Map team_lead_name to leaderName
         if ('teamLeadName' in apiTeam) {
-          apiTeam.leaderName = apiTeam.teamLeadName;
-          delete apiTeam.teamLeadName;
+          apiTeam['leaderName'] = apiTeam['teamLeadName'];
+          delete apiTeam['teamLeadName'];
         }
 
         // Map isActive (boolean) to status (string)
         if ('isActive' in apiTeam) {
-          apiTeam.status = apiTeam.isActive ? 'active' : 'inactive';
+          const isActive = apiTeam['isActive'];
+          apiTeam['status'] = isActive === true ? 'active' : 'inactive';
         } else {
-          apiTeam.status = 'active'; // Default fallback
+          apiTeam['status'] = 'active'; // Default fallback
         }
 
         // Convert empty strings to null for optional fields
-        if (apiTeam.description === '') {
-          apiTeam.description = null;
+        if (apiTeam['description'] === '') {
+          apiTeam['description'] = null;
         }
-        apiTeam.leaderId ??= null;
+        apiTeam['leaderId'] ??= null;
 
         return apiTeam;
       });
@@ -146,13 +147,13 @@ class TeamsService {
    */
   private mapTeamLeaderFields(apiTeam: Record<string, unknown>): void {
     if ('teamLeadId' in apiTeam) {
-      apiTeam.leaderId = apiTeam.teamLeadId;
-      delete apiTeam.teamLeadId;
+      apiTeam['leaderId'] = apiTeam['teamLeadId'];
+      delete apiTeam['teamLeadId'];
     }
 
     if ('teamLeadName' in apiTeam) {
-      apiTeam.leaderName = apiTeam.teamLeadName;
-      delete apiTeam.teamLeadName;
+      apiTeam['leaderName'] = apiTeam['teamLeadName'];
+      delete apiTeam['teamLeadName'];
     }
   }
 
@@ -162,16 +163,17 @@ class TeamsService {
   private normalizeTeamFields(apiTeam: Record<string, unknown>): void {
     // Map isActive (boolean) to status (string)
     if ('isActive' in apiTeam) {
-      apiTeam.status = apiTeam.isActive ? 'active' : 'inactive';
+      const isActive = apiTeam['isActive'];
+      apiTeam['status'] = isActive === true ? 'active' : 'inactive';
     } else {
-      apiTeam.status = 'active'; // Default fallback
+      apiTeam['status'] = 'active'; // Default fallback
     }
 
     // Convert empty strings to null for optional fields
-    if (apiTeam.description === '') {
-      apiTeam.description = null;
+    if (apiTeam['description'] === '') {
+      apiTeam['description'] = null;
     }
-    apiTeam.leaderId ??= null;
+    apiTeam['leaderId'] ??= null;
   }
 
   /**
@@ -216,8 +218,8 @@ class TeamsService {
       this.normalizeTeamFields(apiTeam);
 
       // Add related data
-      apiTeam.members = members.map((m: TeamMemberResult) => this.mapTeamMember(m));
-      apiTeam.machines = machines;
+      apiTeam['members'] = members.map((m: TeamMemberResult) => this.mapTeamMember(m));
+      apiTeam['machines'] = machines;
 
       return apiTeam;
     } catch (error: unknown) {
@@ -230,55 +232,46 @@ class TeamsService {
   }
 
   /**
+   * Check if team name is duplicate
+   */
+  private async checkDuplicateTeamName(name: string, tenantId: number): Promise<void> {
+    const existingTeams = await Team.findAll(tenantId);
+    const duplicate = existingTeams.find(
+      (t: DbTeam) => t.name.toLowerCase() === name.toLowerCase(),
+    );
+    if (duplicate) {
+      throw new ServiceError('CONFLICT', 'Team with this name already exists', 409);
+    }
+  }
+
+  /**
+   * Build team create data from input
+   */
+  private buildTeamCreateData(data: TeamCreateInput, tenantId: number): TeamCreateData {
+    const teamData: TeamCreateData = { name: data.name, tenant_id: tenantId };
+    if (data.description !== undefined) teamData.description = data.description;
+    if (data.departmentId !== undefined) teamData.department_id = data.departmentId;
+    if (data.leaderId !== undefined) teamData.team_lead_id = data.leaderId;
+    return teamData;
+  }
+
+  /**
    * Create a new team
    * @param data - The data object
    * @param tenantId - The tenant ID
    */
   async createTeam(data: TeamCreateInput, tenantId: number): Promise<Record<string, unknown>> {
     try {
-      // Validate department if provided
-      if (data.departmentId) {
-        const dept = await Department.findById(data.departmentId, tenantId);
-        if (!dept) {
-          throw new ServiceError('BAD_REQUEST', 'Invalid department ID', 400);
-        }
-      }
+      await this.validateDepartment(data.departmentId, tenantId);
+      await this.validateLeader(data.leaderId, tenantId);
+      await this.checkDuplicateTeamName(data.name, tenantId);
 
-      // Validate leader if provided
-      if (data.leaderId) {
-        const leader = await User.findById(data.leaderId, tenantId);
-        if (!leader) {
-          throw new ServiceError('BAD_REQUEST', 'Invalid leader ID', 400);
-        }
-      }
-
-      // Check for duplicate name
-      const existingTeams = await Team.findAll(tenantId);
-      const duplicate = existingTeams.find(
-        (t: DbTeam) => t.name.toLowerCase() === data.name.toLowerCase(),
-      );
-
-      if (duplicate) {
-        throw new ServiceError('CONFLICT', 'Team with this name already exists', 409);
-      }
-
-      // Create the team
-      const teamData: TeamCreateData = {
-        name: data.name,
-        description: data.description,
-        department_id: data.departmentId,
-        team_lead_id: data.leaderId,
-        tenant_id: tenantId,
-      };
-
+      const teamData = this.buildTeamCreateData(data, tenantId);
       const teamId = await Team.create(teamData);
 
-      // Return the created team
       return await this.getTeamById(teamId, tenantId);
     } catch (error: unknown) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
+      if (error instanceof ServiceError) throw error;
       logger.error(`Error creating team: ${(error as Error).message}`);
       throw new ServiceError('SERVER_ERROR', 'Failed to create team', 500);
     }
@@ -302,7 +295,7 @@ class TeamsService {
     departmentId: number | undefined,
     tenantId: number,
   ): Promise<void> {
-    if (departmentId === undefined || !departmentId) return;
+    if (departmentId === undefined) return;
 
     const dept = await Department.findById(departmentId, tenantId);
     if (!dept) {
@@ -311,7 +304,7 @@ class TeamsService {
   }
 
   private async validateLeader(leaderId: number | undefined, tenantId: number): Promise<void> {
-    if (leaderId === undefined || !leaderId) return;
+    if (leaderId === undefined) return;
 
     const leader = await User.findById(leaderId, tenantId);
     if (!leader) {
@@ -325,7 +318,7 @@ class TeamsService {
     teamId: number,
     tenantId: number,
   ): Promise<void> {
-    if (!name || name === currentName) return;
+    if (name === undefined || name === '' || name === currentName) return;
 
     const teams = await Team.findAll(tenantId);
     const duplicate = teams.find(

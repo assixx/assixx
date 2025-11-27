@@ -1,19 +1,16 @@
 /**
  * Blackboard API v2 Routes
+ * Updated 2025-11-24: Now uses documents system for attachments (memoryStorage)
 
  * tags:
  *   - name: Blackboard v2
  *     description: Company announcements and bulletin board API v2
  */
 import { Request, Router } from 'express';
-import fsCallback from 'fs';
 import multer from 'multer';
-import path from 'path';
 
 import { authenticateV2 } from '../../../middleware/v2/auth.middleware.js';
 import { requireRoleV2 } from '../../../middleware/v2/roleCheck.middleware.js';
-import type { AuthenticatedRequest } from '../../../types/request.types.js';
-import { getUploadDirectory, sanitizeFilename } from '../../../utils/pathSecurity.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import * as blackboardController from './blackboard.controller.js';
 import { blackboardValidationZod } from './blackboard.validation.zod.js';
@@ -21,49 +18,8 @@ import { blackboardValidationZod } from './blackboard.validation.zod.js';
 const router = Router();
 
 // Configure multer for blackboard attachments
-// Note: multer requires callback-based API, cannot use async/await
-const storage = multer.diskStorage({
-  destination: (
-    req: Request,
-    _file: Express.Multer.File,
-    cb: (error: Error | null, destination: string) => void,
-  ) => {
-    const authReq = req as AuthenticatedRequest;
-    const tenantId = authReq.user.tenant_id;
-    const baseUploadDir = getUploadDirectory('blackboard');
-    const uploadDir = path.join(baseUploadDir, tenantId.toString());
-
-    // Use callback version of fs.mkdir to match multer's callback pattern
-    // We MUST use callbacks here because:
-    // 1. Multer's diskStorage.destination expects a callback, not a Promise
-    // 2. Using fs/promises would create a "promise-in-callback" anti-pattern
-    // 3. The callback version is the only way to properly integrate with multer
-
-    // SECURITY JUSTIFICATION: Dynamic path is required for multi-tenant isolation.
-    // Path components are from trusted sources only:
-    // - baseUploadDir: from getUploadDirectory() with hardcoded paths
-    // - tenantId: from authenticated user object, not user input
-    // - path.join() prevents directory traversal attacks
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    fsCallback.mkdir(uploadDir, { recursive: true }, (error: Error | null) => {
-      if (error) {
-        cb(error, '');
-      } else {
-        cb(null, uploadDir);
-      }
-    });
-  },
-  filename: (
-    _req: Request,
-    file: Express.Multer.File,
-    cb: (error: Error | null, filename: string) => void,
-  ) => {
-    const sanitized = sanitizeFilename(file.originalname);
-    const ext = path.extname(sanitized);
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, uniqueSuffix + ext);
-  },
-});
+// NEW 2025-11-24: Using memoryStorage since documents service handles file writing
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage,
@@ -111,11 +67,6 @@ const upload = multer({
  *           type: string
  *           enum: [low, medium, high, urgent]
  *         description: Filter by priority
- *       - in: query
- *         name: requiresConfirmation
- *         schema:
- *           type: boolean
- *         description: Filter by confirmation requirement
  *       - in: query
  *         name: page
  *         schema:
@@ -186,6 +137,37 @@ router.get(
   authenticateV2,
   blackboardValidationZod.getById,
   typed.auth(blackboardController.getEntryById),
+);
+
+/**
+ * /api/v2/blackboard/entries/\{id\}/full:
+ *   get:
+ *     summary: Get full entry with comments and attachments (optimized)
+ *     description: Combined endpoint that returns entry, comments, and attachments in one request
+ *     tags: [Blackboard v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           oneOf:
+ *             - type: integer
+ *             - type: string
+ *               format: uuid
+ *         description: Entry ID (numeric or UUID)
+ *     responses:
+ *       200:
+ *         description: Full entry details with comments and attachments
+ *       404:
+ *         $ref: '#/components/responses/NotFoundV2'
+ */
+router.get(
+  '/entries/:id/full',
+  authenticateV2,
+  blackboardValidationZod.getById,
+  typed.auth(blackboardController.getEntryFull),
 );
 
 /**
@@ -417,7 +399,7 @@ router.get(
   '/entries/:id/confirmations',
   authenticateV2,
   requireRoleV2(['admin', 'root']),
-  blackboardValidationZod.getById,
+  blackboardValidationZod.confirmationStatus,
   typed.auth(blackboardController.getConfirmationStatus),
 );
 
@@ -451,24 +433,6 @@ router.get(
   blackboardValidationZod.dashboard,
   typed.auth(blackboardController.getDashboardEntries),
 );
-
-/**
-
- * /api/v2/blackboard/tags:
- *   get:
- *     summary: Get all available tags
- *     tags: [Blackboard v2]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of tags
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/TagsResponseV2'
- */
-router.get('/tags', authenticateV2, typed.auth(blackboardController.getAllTags));
 
 /**
 
@@ -580,6 +544,82 @@ router.get(
 
 /**
 
+ * /api/v2/blackboard/attachments/\{attachmentId\}/preview:
+ *   get:
+ *     summary: Preview attachment inline
+ *     tags: [Blackboard v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: attachmentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Attachment/Document ID
+ *     responses:
+ *       200:
+ *         description: File for inline preview
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/*:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         $ref: '#/components/responses/NotFoundV2'
+ */
+router.get(
+  '/attachments/:attachmentId/preview',
+  authenticateV2,
+  blackboardValidationZod.downloadAttachment,
+  typed.auth(blackboardController.previewAttachment),
+);
+
+/**
+
+ * /api/v2/blackboard/attachments/\{fileUuid\}/download:
+ *   get:
+ *     summary: Download attachment by file UUID (secure)
+ *     description: Download using UUID for secure, non-guessable URLs (like KVP pattern)
+ *     tags: [Blackboard v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: fileUuid
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: File UUID (prevents enumeration attacks)
+ *     responses:
+ *       200:
+ *         description: File for inline viewing (photos/PDFs)
+ *         content:
+ *           application/pdf:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/*:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         $ref: '#/components/responses/NotFoundV2'
+ */
+router.get(
+  '/attachments/:fileUuid/download',
+  authenticateV2,
+  blackboardValidationZod.downloadByFileUuid,
+  typed.auth(blackboardController.downloadByFileUuid),
+);
+
+/**
+
  * /api/v2/blackboard/attachments/\{attachmentId\}:
  *   delete:
  *     summary: Delete attachment
@@ -609,6 +649,126 @@ router.delete(
   requireRoleV2(['admin', 'root']),
   blackboardValidationZod.deleteAttachment,
   typed.auth(blackboardController.deleteAttachment),
+);
+
+// ============================================================================
+// Comment Routes (NEW 2025-11-24)
+// ============================================================================
+
+/**
+
+ * /api/v2/blackboard/entries/\{id\}/comments:
+ *   get:
+ *     summary: Get comments for a blackboard entry
+ *     tags: [Blackboard v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           oneOf:
+ *             - type: integer
+ *             - type: string
+ *               format: uuid
+ *         description: Entry ID (numeric or UUID)
+ *     responses:
+ *       200:
+ *         description: List of comments
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CommentsResponseV2'
+ */
+router.get(
+  '/entries/:id/comments',
+  authenticateV2,
+  blackboardValidationZod.getComments,
+  typed.auth(blackboardController.getComments),
+);
+
+/**
+
+ * /api/v2/blackboard/entries/\{id\}/comments:
+ *   post:
+ *     summary: Add a comment to a blackboard entry
+ *     tags: [Blackboard v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           oneOf:
+ *             - type: integer
+ *             - type: string
+ *               format: uuid
+ *         description: Entry ID (numeric or UUID)
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - comment
+ *             properties:
+ *               comment:
+ *                 type: string
+ *                 maxLength: 5000
+ *               isInternal:
+ *                 type: boolean
+ *                 default: false
+ *     responses:
+ *       201:
+ *         description: Comment added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CommentAddedResponseV2'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestV2'
+ */
+router.post(
+  '/entries/:id/comments',
+  authenticateV2,
+  blackboardValidationZod.addComment,
+  typed.auth(blackboardController.addComment),
+);
+
+/**
+
+ * /api/v2/blackboard/comments/\{commentId\}:
+ *   delete:
+ *     summary: Delete a comment (admin only)
+ *     tags: [Blackboard v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: commentId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Comment ID
+ *     responses:
+ *       200:
+ *         description: Comment deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponseV2'
+ *       404:
+ *         $ref: '#/components/responses/NotFoundV2'
+ */
+router.delete(
+  '/comments/:commentId',
+  authenticateV2,
+  requireRoleV2(['admin', 'root']),
+  blackboardValidationZod.deleteComment,
+  typed.auth(blackboardController.deleteComment),
 );
 
 export default router;

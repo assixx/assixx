@@ -1,5 +1,7 @@
 /* eslint-disable max-lines */
 /* eslint-disable @typescript-eslint/naming-convention */
+import { v7 as uuidv7 } from 'uuid';
+
 import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
 import { logger } from '../utils/logger.js';
 
@@ -7,7 +9,8 @@ import { logger } from '../utils/logger.js';
 interface DbDocument extends RowDataPacket {
   id: number;
   // NEW: Clean access control fields (refactored 2025-01-10)
-  access_scope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  // Updated 2025-11-24: Added 'blackboard' access_scope
+  access_scope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
   owner_user_id?: number | null;
   target_team_id?: number | null;
   target_department_id?: number | null;
@@ -24,6 +27,8 @@ interface DbDocument extends RowDataPacket {
   // NEW: Payroll-specific fields
   salary_year?: number;
   salary_month?: number;
+  // NEW: Blackboard reference (2025-11-24)
+  blackboard_entry_id?: number | null;
   upload_date: Date;
   uploaded_at?: string;
   is_archived: boolean;
@@ -42,7 +47,8 @@ interface DbDocument extends RowDataPacket {
 
 interface DocumentCreateData {
   // NEW: Clean access control (refactored 2025-01-10)
-  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  // Updated 2025-11-24: Added 'blackboard' access scope
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
   ownerUserId?: number | null;
   targetTeamId?: number | null;
   targetDepartmentId?: number | null;
@@ -55,6 +61,8 @@ interface DocumentCreateData {
   // NEW: Payroll-specific fields
   salaryYear?: number;
   salaryMonth?: number;
+  // NEW: Blackboard reference (2025-11-24)
+  blackboardEntryId?: number | null;
   tenant_id: number;
   createdBy?: number; // The user who uploads the document
   tags?: string[]; // Tags for the document
@@ -87,12 +95,15 @@ interface DocumentFilters {
   // NEW: Payroll filters (refactored 2025-01-10)
   salaryYear?: number;
   salaryMonth?: number;
+  // NEW: Blackboard filter (2025-11-24)
+  blackboardEntryId?: number;
   isArchived?: boolean;
   searchTerm?: string;
   uploadDateFrom?: Date;
   uploadDateTo?: Date;
   // NEW: Access scope filter instead of recipientType
-  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  // Updated 2025-11-24: Added 'blackboard'
+  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
   orderBy?: string;
   orderDirection?: 'ASC' | 'DESC';
   limit?: number;
@@ -113,58 +124,50 @@ interface TotalSizeResult extends RowDataPacket {
   total_size: number | string | null; // SUM of OCTET_LENGTH can be string or number or null
 }
 
-export async function createDocument({
-  accessScope,
-  ownerUserId,
-  targetTeamId,
-  targetDepartmentId,
-  fileName,
-  originalName, // User-visible name from modal input
-  fileContent,
-  category = 'other',
-  description = '',
-  salaryYear,
-  salaryMonth,
-  tenant_id,
-  createdBy,
-  tags,
-  mimeType = 'application/octet-stream',
-  fileUuid,
-  fileChecksum,
-  storageType = 'filesystem',
-  version = 1,
-  parentVersionId,
-}: DocumentCreateData): Promise<number> {
-  logger.info(`Creating document with access_scope=${accessScope} for tenant ${tenant_id}`);
+/** Build query parameters for document creation */
+function buildCreateParams(data: DocumentCreateData, documentUuid: string): unknown[] {
+  return [
+    documentUuid,
+    data.tenant_id,
+    data.accessScope,
+    data.ownerUserId ?? null,
+    data.targetTeamId ?? null,
+    data.targetDepartmentId ?? null,
+    data.salaryYear ?? null,
+    data.salaryMonth ?? null,
+    data.blackboardEntryId ?? null,
+    data.fileName,
+    data.originalName ?? data.fileName,
+    `/uploads/documents/${data.fileName}`,
+    data.fileContent ? data.fileContent.length : 0,
+    data.mimeType ?? 'application/octet-stream',
+    data.fileContent,
+    data.category ?? 'other',
+    data.description ?? '',
+    data.createdBy ?? data.ownerUserId ?? 1,
+    data.tags ? JSON.stringify(data.tags) : null,
+    data.fileUuid ?? null,
+    data.fileChecksum ?? null,
+    data.storageType ?? 'filesystem',
+    data.version ?? 1,
+    data.parentVersionId ?? null,
+  ];
+}
 
-  // NEW: Clean database structure (refactored 2025-01-10)
-  const query =
-    'INSERT INTO documents (tenant_id, access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month, filename, original_name, file_path, file_size, mime_type, file_content, category, description, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+const CREATE_DOCUMENT_SQL =
+  'INSERT INTO documents (uuid, tenant_id, access_scope, owner_user_id, target_team_id, target_department_id, salary_year, salary_month, blackboard_entry_id, filename, original_name, file_path, file_size, mime_type, file_content, category, description, created_by, tags, file_uuid, file_checksum, storage_type, version, parent_version_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+
+export async function createDocument(data: DocumentCreateData): Promise<number> {
+  logger.info(
+    `Creating document with access_scope=${data.accessScope} for tenant ${data.tenant_id}`,
+  );
+
+  // Generate UUIDv7 for the document record (time-sortable, unique index required)
+  const documentUuid = uuidv7();
+  const params = buildCreateParams(data, documentUuid);
+
   try {
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      tenant_id,
-      accessScope,
-      ownerUserId ?? null, // owner_user_id for personal/payroll
-      targetTeamId ?? null, // target_team_id for team scope
-      targetDepartmentId ?? null, // target_department_id for department scope
-      salaryYear ?? null, // salary_year for payroll documents
-      salaryMonth ?? null, // salary_month for payroll documents
-      fileName, // UUID-based filename for storage
-      originalName ?? fileName, // User-visible name (fallback to fileName if not provided)
-      `/uploads/documents/${fileName}`, // file_path - will be updated by controller with UUID path
-      fileContent ? fileContent.length : 0, // file_size
-      mimeType, // mime_type - use provided or default
-      fileContent,
-      category,
-      description,
-      createdBy ?? ownerUserId ?? 1, // created_by - use createdBy if provided, otherwise ownerUserId, otherwise 1
-      tags ? JSON.stringify(tags) : null, // tags as JSON
-      fileUuid ?? null, // UUID for unique filename
-      fileChecksum ?? null, // SHA-256 checksum
-      storageType, // storage type
-      version, // version number
-      parentVersionId ?? null, // parent version for versioning
-    ]);
+    const [result] = await executeQuery<ResultSetHeader>(CREATE_DOCUMENT_SQL, params);
     logger.info(`Document created with ID ${result.insertId}`);
     return result.insertId;
   } catch (error: unknown) {
@@ -233,10 +236,36 @@ export async function findDocumentById(id: number, tenantId: number): Promise<Db
       logger.warn(`Document with ID ${id} not found in tenant ${tenantId}`);
       return null;
     }
-    return rows[0];
+    return rows[0] ?? null;
   } catch (error: unknown) {
     logger.error(
       `Error fetching document ${id} for tenant ${tenantId}: ${(error as Error).message}`,
+    );
+    throw error;
+  }
+}
+
+/**
+ * Find document by file_uuid (secure download URL)
+ * Used by blackboard and other systems that use UUID-based URLs
+ * @param fileUuid - The file UUID (UUIDv4)
+ * @param tenantId - The tenant ID for isolation
+ */
+export async function findDocumentByFileUuid(
+  fileUuid: string,
+  tenantId: number,
+): Promise<DbDocument | null> {
+  const query = 'SELECT * FROM documents WHERE file_uuid = ? AND tenant_id = ?';
+  try {
+    const [rows] = await executeQuery<DbDocument[]>(query, [fileUuid, tenantId]);
+    if (rows.length === 0) {
+      logger.warn(`Document with file_uuid ${fileUuid} not found in tenant ${tenantId}`);
+      return null;
+    }
+    return rows[0] ?? null;
+  } catch (error: unknown) {
+    logger.error(
+      `Error fetching document by file_uuid ${fileUuid} for tenant ${tenantId}: ${(error as Error).message}`,
     );
     throw error;
   }
@@ -461,6 +490,10 @@ export async function searchDocumentsWithEmployeeAccess(
       tenant_id, // team
       userId, // department
       tenant_id, // department
+      userId, // blackboard department check
+      tenant_id, // blackboard department check
+      userId, // blackboard team check
+      tenant_id, // blackboard team check
     ]);
     logger.info(`Found ${rows.length} accessible documents matching search for employee ${userId}`);
     return rows;
@@ -508,7 +541,7 @@ export async function countDocuments(filters?: DocumentCountFilter): Promise<num
 
   try {
     const [rows] = await executeQuery<CountResult[]>(query, params);
-    return rows[0].total;
+    return rows[0]?.total ?? 0;
   } catch (error: unknown) {
     logger.error(`Error counting documents: ${(error as Error).message}`);
     throw error;
@@ -523,6 +556,7 @@ export async function findDocumentsByUser(userId: number, tenantId: number): Pro
 
 // Helper: Build access condition SQL for documents
 // NEW: Uses clean access_scope structure (refactored 2025-01-10)
+// UPDATED 2025-11-24: Added blackboard document visibility check
 function buildAccessCondition(): string {
   return `(
     -- Personal documents (only owner can access)
@@ -543,6 +577,17 @@ function buildAccessCondition(): string {
     OR
     -- Company-wide documents (all users in tenant)
     d.access_scope = 'company'
+    OR
+    -- Blackboard documents (user can see parent entry based on org_level)
+    -- NEW 2025-11-24: Visibility matches parent blackboard entry
+    (d.access_scope = 'blackboard' AND d.blackboard_entry_id IN (
+      SELECT be.id FROM blackboard_entries be
+      WHERE be.tenant_id = d.tenant_id AND (
+        be.org_level = 'company'
+        OR (be.org_level = 'department' AND be.org_id = (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
+        OR (be.org_level = 'team' AND be.org_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?))
+      )
+    ))
   )`;
 }
 
@@ -588,6 +633,8 @@ function applyDocumentFilters(
     // NEW: Payroll filters (refactored 2025-01-10)
     { field: 'salaryYear', condition: ' AND d.salary_year = ?', type: 'number' },
     { field: 'salaryMonth', condition: ' AND d.salary_month = ?', type: 'number' },
+    // NEW: Blackboard filter (2025-11-24)
+    { field: 'blackboardEntryId', condition: ' AND d.blackboard_entry_id = ?', type: 'number' },
     // NEW: Access scope filter instead of recipientType
     { field: 'accessScope', condition: ' AND d.access_scope = ?', type: 'string' },
   ];
@@ -629,103 +676,109 @@ function addOrdering(query: string, filters?: DocumentFilters): string {
   return query + ' ORDER BY d.uploaded_at DESC';
 }
 
+/** Build base params for document access queries */
+function buildAccessParams(tenantId: number, userId: number): unknown[] {
+  return [
+    tenantId,
+    userId,
+    userId,
+    userId,
+    tenantId,
+    userId,
+    tenantId,
+    userId,
+    tenantId,
+    userId,
+    tenantId,
+  ];
+}
+
+/** Employee document SELECT columns (excludes file_content for performance) */
+const EMPLOYEE_DOC_SELECT = `
+  SELECT DISTINCT d.id, d.file_uuid, d.version, d.parent_version_id, d.tenant_id,
+    d.access_scope, d.owner_user_id, d.target_team_id, d.target_department_id,
+    d.salary_year, d.salary_month, d.blackboard_entry_id, d.category,
+    d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
+    d.mime_type, d.description, d.tags, d.is_public, d.expires_at,
+    d.is_archived, d.archived_at, d.storage_type, d.created_by, d.uploaded_at,
+    u.first_name, u.last_name, CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
+    uploader.first_name AS uploader_first_name, uploader.last_name AS uploader_last_name,
+    CONCAT(uploader.first_name, ' ', uploader.last_name) AS uploaded_by_name,
+    t.name as team_name, dept.name as department_name,
+    CASE WHEN d.access_scope = 'personal' THEN CONCAT(u.first_name, ' ', u.last_name)
+         WHEN d.access_scope = 'team' THEN CONCAT('Team: ', t.name)
+         WHEN d.access_scope = 'department' THEN CONCAT('Abteilung: ', dept.name)
+         WHEN d.access_scope = 'company' THEN 'Gesamte Firma'
+         WHEN d.access_scope = 'payroll' THEN 'Gehalt' ELSE 'Unbekannt' END as recipient_display`;
+
+/** Document FROM/JOIN clause */
+const DOC_FROM_JOINS = `
+  FROM documents d
+  LEFT JOIN users u ON d.owner_user_id = u.id
+  LEFT JOIN users uploader ON d.created_by = uploader.id
+  LEFT JOIN teams t ON d.target_team_id = t.id
+  LEFT JOIN departments dept ON d.target_department_id = dept.id`;
+
 // Helper: Execute count query
-// NEW: Updated for clean access_scope structure (refactored 2025-01-10)
 async function getDocumentCount(
-  tenant_id: number,
+  tenantId: number,
   userId: number,
   filters?: DocumentFilters,
 ): Promise<number> {
-  const baseQuery = `
-    SELECT COUNT(DISTINCT d.id) as total
-    FROM documents d
-    LEFT JOIN users u ON d.owner_user_id = u.id
-    LEFT JOIN teams t ON d.target_team_id = t.id
-    LEFT JOIN departments dept ON d.target_department_id = dept.id
+  const baseQuery = `SELECT COUNT(DISTINCT d.id) as total ${DOC_FROM_JOINS}
     WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
-
-  // NEW: Parameters for buildAccessCondition: userId (personal), userId (payroll), userId (team), tenant_id (team), userId (dept), tenant_id (dept)
-  const baseParams: unknown[] = [tenant_id, userId, userId, userId, tenant_id, userId, tenant_id];
+  const baseParams = buildAccessParams(tenantId, userId);
   const { query, params } = applyDocumentFilters(baseQuery, baseParams, filters);
-
   const [countResult] = await executeQuery<CountResult[]>(query, params);
   return countResult[0]?.total ?? 0;
 }
 
-// Find all documents accessible to an employee (personal, team, department, company)
+/** Add pagination to query */
+function addPaginationToQuery(
+  query: string,
+  params: unknown[],
+  filters?: DocumentFilters,
+): { query: string; params: unknown[] } {
+  let finalQuery = query;
+  const finalParams = [...params];
+  if (filters?.limit != null && filters.limit !== 0) {
+    finalQuery += ' LIMIT ?';
+    finalParams.push(filters.limit);
+    if (filters.offset != null && filters.offset !== 0) {
+      finalQuery += ' OFFSET ?';
+      finalParams.push(filters.offset);
+    }
+  }
+  return { query: finalQuery, params: finalParams };
+}
 
+/** Find all documents accessible to an employee */
 export async function findDocumentsByEmployeeWithAccess(
   userId: number,
-  tenant_id: number,
+  tenantId: number,
   filters?: DocumentFilters,
 ): Promise<{ documents: DbDocument[]; total: number }> {
-  logger.info(`Fetching all accessible documents for employee ${userId} in tenant ${tenant_id}`);
+  logger.info(`Fetching accessible documents for employee ${userId} in tenant ${tenantId}`);
 
-  // NEW: Clean structure with access_scope (refactored 2025-01-10)
-  // IMPORTANT: Exclude file_content from SELECT for performance (only load for downloads)
-  const baseQuery = `
-    SELECT DISTINCT d.id, d.file_uuid, d.version, d.parent_version_id, d.tenant_id,
-      d.access_scope, d.owner_user_id, d.target_team_id, d.target_department_id,
-      d.salary_year, d.salary_month, d.category,
-      d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
-      d.mime_type, d.description, d.tags, d.is_public, d.expires_at,
-      d.is_archived, d.archived_at, d.storage_type,
-      d.created_by, d.uploaded_at,
-      u.first_name, u.last_name,
-      CONCAT(u.first_name, ' ', u.last_name) AS employee_name,
-      uploader.first_name AS uploader_first_name,
-      uploader.last_name AS uploader_last_name,
-      CONCAT(uploader.first_name, ' ', uploader.last_name) AS uploaded_by_name,
-      t.name as team_name,
-      dept.name as department_name,
-      CASE
-        WHEN d.access_scope = 'personal' THEN CONCAT(u.first_name, ' ', u.last_name)
-        WHEN d.access_scope = 'team' THEN CONCAT('Team: ', t.name)
-        WHEN d.access_scope = 'department' THEN CONCAT('Abteilung: ', dept.name)
-        WHEN d.access_scope = 'company' THEN 'Gesamte Firma'
-        WHEN d.access_scope = 'payroll' THEN 'Gehalt'
-        ELSE 'Unbekannt'
-      END as recipient_display
-    FROM documents d
-    LEFT JOIN users u ON d.owner_user_id = u.id
-    LEFT JOIN users uploader ON d.created_by = uploader.id
-    LEFT JOIN teams t ON d.target_team_id = t.id
-    LEFT JOIN departments dept ON d.target_department_id = dept.id
+  const baseQuery = `${EMPLOYEE_DOC_SELECT} ${DOC_FROM_JOINS}
     WHERE d.tenant_id = ? AND ${buildAccessCondition()}`;
-
-  // NEW: Parameters for buildAccessCondition
-  const baseParams: unknown[] = [tenant_id, userId, userId, userId, tenant_id, userId, tenant_id];
+  const baseParams = buildAccessParams(tenantId, userId);
 
   try {
-    // Get total count
-    const total = await getDocumentCount(tenant_id, userId, filters);
-
-    // Build main query with filters
+    const total = await getDocumentCount(tenantId, userId, filters);
     const { query: filteredQuery, params } = applyDocumentFilters(baseQuery, baseParams, filters);
-    let finalQuery = addOrdering(filteredQuery, filters);
-
-    // Add pagination if provided
-    const finalParams = [...params];
-    if (filters?.limit != null && filters.limit !== 0) {
-      finalQuery += ' LIMIT ?';
-      finalParams.push(filters.limit);
-
-      if (filters.offset != null && filters.offset !== 0) {
-        finalQuery += ' OFFSET ?';
-        finalParams.push(filters.offset);
-      }
-    }
+    const orderedQuery = addOrdering(filteredQuery, filters);
+    const { query: finalQuery, params: finalParams } = addPaginationToQuery(
+      orderedQuery,
+      params,
+      filters,
+    );
 
     const [rows] = await executeQuery<DbDocument[]>(finalQuery, finalParams);
-    logger.info(
-      `Retrieved ${rows.length} accessible documents (total: ${total}) for employee ${userId}`,
-    );
-
+    logger.info(`Retrieved ${rows.length} documents (total: ${total}) for employee ${userId}`);
     return { documents: rows, total };
   } catch (error: unknown) {
-    logger.error(
-      `Error fetching accessible documents for employee ${userId}: ${(error as Error).message}`,
-    );
+    logger.error(`Error fetching documents for employee ${userId}: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -752,7 +805,8 @@ export async function getTotalStorageUsed(tenant_id: number): Promise<number> {
       [tenant_id],
     );
     // MySQL SUM can return null or string, ensure we return a number
-    return Number.parseInt(String(rows[0]?.total_size ?? '0')) || 0;
+    const parsed = Number.parseInt(String(rows[0]?.total_size ?? '0'));
+    return Number.isNaN(parsed) ? 0 : parsed;
   } catch (error: unknown) {
     logger.error(`Error calculating storage for tenant ${tenant_id}: ${(error as Error).message}`);
     return 0;
@@ -836,7 +890,7 @@ export async function findDocumentsWithFilters(
   const baseQuery = `
       SELECT d.id, d.file_uuid, d.version, d.parent_version_id, d.tenant_id,
              d.access_scope, d.owner_user_id, d.target_team_id, d.target_department_id,
-             d.salary_year, d.salary_month, d.category,
+             d.salary_year, d.salary_month, d.blackboard_entry_id, d.category,
              d.filename, d.original_name, d.file_path, d.file_size, d.file_checksum,
              d.mime_type, d.description, d.tags, d.is_public, d.expires_at,
              d.is_archived, d.archived_at, d.storage_type,
@@ -956,6 +1010,10 @@ export async function getUnreadDocumentCountForUser(
     tenant_id, // buildAccessCondition: team
     userId, // buildAccessCondition: department
     tenant_id, // buildAccessCondition: department
+    userId, // buildAccessCondition: blackboard department
+    tenant_id, // buildAccessCondition: blackboard department
+    userId, // buildAccessCondition: blackboard team
+    tenant_id, // buildAccessCondition: blackboard team
   ]);
   return (results[0] as { unread_count?: number }).unread_count ?? 0;
 }
@@ -994,15 +1052,20 @@ export async function getDocumentCountsByCategory(
     tenant_id, // buildAccessCondition: team
     userId, // buildAccessCondition: department
     tenant_id, // buildAccessCondition: department
+    userId, // buildAccessCondition: blackboard department
+    tenant_id, // buildAccessCondition: blackboard department
+    userId, // buildAccessCondition: blackboard team
+    tenant_id, // buildAccessCondition: blackboard team
   ]);
 
-  // Convert to object
+  // Convert to object (including blackboard category)
   const counts: Record<string, number> = {
     personal: 0,
     work: 0,
     training: 0,
     general: 0,
     salary: 0,
+    blackboard: 0,
   };
 
   results.forEach((row: CategoryCount) => {
@@ -1020,6 +1083,7 @@ const Document = {
   findByUserId: findDocumentsByUserId,
   findByUserIdAndCategory: findDocumentsByUserIdAndCategory,
   findById: findDocumentById,
+  findByFileUuid: findDocumentByFileUuid,
   incrementDownloadCount,
   update: updateDocument,
   archiveDocument,

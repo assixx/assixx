@@ -15,8 +15,8 @@ export async function connectRedis(): Promise<RedisClientType> {
     if (redisClient === null) {
       redisClient = createClient({
         socket: {
-          host: process.env.REDIS_HOST ?? 'redis',
-          port: Number.parseInt(process.env.REDIS_PORT ?? '6379'),
+          host: process.env['REDIS_HOST'] ?? 'redis',
+          port: Number.parseInt(process.env['REDIS_PORT'] ?? '6379'),
         },
       });
 

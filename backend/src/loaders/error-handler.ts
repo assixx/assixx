@@ -28,7 +28,7 @@ export function loadErrorHandler(app: Application): void {
     console.error('[ERROR]', {
       name: err.name,
       message: err.message,
-      stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+      stack: process.env['NODE_ENV'] === 'production' ? undefined : err.stack,
       timestamp: new Date().toISOString(),
     });
 
@@ -63,7 +63,7 @@ export function loadErrorHandler(app: Application): void {
     }
 
     // Default 500 error - hide details in production
-    const isDevelopment = process.env.NODE_ENV === 'development';
+    const isDevelopment = process.env['NODE_ENV'] === 'development';
     const response = createErrorResponse(
       'INTERNAL_SERVER_ERROR',
       isDevelopment ? err.message : 'An unexpected error occurred',

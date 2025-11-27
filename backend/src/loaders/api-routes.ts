@@ -48,7 +48,7 @@ function mountRoute(
   router: express.Router | express.RequestHandler,
 ): void {
   app.use(path, router);
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env['NODE_ENV'] !== 'production') {
     console.info(`[DEBUG] Route mounted: ${path}`);
   }
 }

@@ -21,6 +21,9 @@
   align-items: center;
   justify-content: center;
 
+  /* ========== SIZING ========== */
+  width: fit-content; /* Prevent stretching in grid/flex containers */
+
   /* ========== SPACING ========== */
   padding: 4px 12px;
 

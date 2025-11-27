@@ -157,7 +157,7 @@
               <span class="text-red-500">*</span>
             </label>
             <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="department-status" name="status" value="active" />
+            <input type="hidden" id="department-status" name="isActive" value="1" />
             <!-- Custom Dropdown -->
             <div class="dropdown" id="status-dropdown">
               <div class="dropdown__trigger" id="status-trigger">
@@ -165,40 +165,11 @@
                 <i class="fas fa-chevron-down"></i>
               </div>
               <div class="dropdown__menu" id="status-menu">
-                <div class="dropdown__option" data-value="active">
+                <div class="dropdown__option" data-value="1">
                   <span class="badge badge--success">Aktiv</span>
                 </div>
-                <div class="dropdown__option" data-value="inactive">
+                <div class="dropdown__option" data-value="0">
                   <span class="badge badge--warning">Inaktiv</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-field">
-            <label class="form-field__label" for="department-visibility">Sichtbarkeit</label>
-            <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="department-visibility" name="visibility" value="public" />
-            <!-- Custom Dropdown -->
-            <div class="dropdown" id="visibility-dropdown">
-              <div class="dropdown__trigger" id="visibility-trigger">
-                <span>Öffentlich</span>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-              <div class="dropdown__menu" id="visibility-menu">
-                <div class="dropdown__option" data-value="public">
-                  <div style="display: flex; flex-direction: column; gap: 2px">
-                    <span style="font-weight: 500">Öffentlich</span>
-                    <span style="font-size: 0.813rem; color: var(--color-text-secondary)">
-                      Alle Mitarbeiter können diese Abteilung sehen
-                    </span>
-                  </div>
-                </div>
-                <div class="dropdown__option" data-value="private">
-                  <div style="display: flex; flex-direction: column; gap: 2px">
-                    <span style="font-weight: 500">Privat</span>
-                    <span style="font-size: 0.813rem; color: var(--color-text-secondary)">Nur Mitglieder können diese Abteilung sehen</span>
-                  </div>
                 </div>
               </div>
             </div>

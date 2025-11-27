@@ -10,8 +10,9 @@
 /**
  * Document category types
  * Maps to backend recipient types
+ * Updated 2025-11-24: Added 'blackboard' for blackboard attachments
  */
-export type DocumentCategory = 'all' | 'personal' | 'team' | 'department' | 'company' | 'payroll';
+export type DocumentCategory = 'all' | 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
 
 /**
  * View mode for document display
@@ -45,8 +46,9 @@ export interface Document {
   /** Document category/type */
   category: string;
 
-  /** NEW: Access scope - WHO can see this document */
-  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  /** NEW: Access scope - WHO can see this document
+   * Updated 2025-11-24: Added 'blackboard' */
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
 
   /** NEW: Owner user ID (for personal/payroll documents) */
   ownerUserId?: number | null;
@@ -62,6 +64,9 @@ export interface Document {
 
   /** NEW: Salary month 1-12 (for payroll documents) */
   salaryMonth?: number | null;
+
+  /** NEW: Blackboard entry ID (for blackboard attachments, 2025-11-24) */
+  blackboardEntryId?: number | null;
 
   /** File size in bytes */
   size: number;

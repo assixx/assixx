@@ -77,7 +77,9 @@ function getCurrentUserId(): number | null {
   const token = localStorage.getItem('token');
   if (token !== null && token !== '') {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1])) as { id?: number };
+      const tokenPart = token.split('.')[1];
+      if (tokenPart === undefined) return null;
+      const payload = JSON.parse(atob(tokenPart)) as { id?: number };
       return payload.id ?? null;
     } catch {
       return null;

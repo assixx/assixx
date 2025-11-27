@@ -210,7 +210,7 @@ function handleDropdownSelection(
   const option = (e.target as HTMLElement).closest<HTMLElement>('.dropdown__option');
   if (option === null) return;
 
-  const value = option.dataset.value ?? '';
+  const value = option.dataset['value'] ?? '';
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- textContent can be null
   const text = option.textContent !== null ? option.textContent.trim() : '';
 

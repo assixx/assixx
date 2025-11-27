@@ -199,8 +199,8 @@ const pagePermissions: Partial<Record<string, PageConfig>> = {
  * Extract token from cookie or Authorization header
  */
 function getTokenFromRequest(req: Request): string | null {
-  // Try cookie first
-  const cookieToken = req.cookies.token as string | undefined;
+  // Try cookie first (bracket notation for index signature)
+  const cookieToken = req.cookies['token'] as string | undefined;
   if (cookieToken != null && cookieToken !== '') return cookieToken;
 
   // Try Authorization header
@@ -265,7 +265,10 @@ export function protectPage(req: Request, res: Response, next: NextFunction): vo
 
   try {
     // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET ?? 'your-secret-key') as DecodedToken;
+    const decoded = jwt.verify(
+      token,
+      process.env['JWT_SECRET'] ?? 'your-secret-key',
+    ) as DecodedToken;
 
     // Check if user's role is allowed
     if (!pageConfig.allowedRoles.includes(decoded.role)) {
@@ -298,7 +301,10 @@ export function redirectToDashboard(req: Request, res: Response): void {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET ?? 'your-secret-key') as DecodedToken;
+    const decoded = jwt.verify(
+      token,
+      process.env['JWT_SECRET'] ?? 'your-secret-key',
+    ) as DecodedToken;
     const dashboardUrl = getDashboardForRole(decoded.role);
     res.redirect(dashboardUrl);
   } catch (error: unknown) {

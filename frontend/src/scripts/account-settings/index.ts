@@ -71,7 +71,7 @@ class AccountSettingsController {
 
       // Type assertion safe: closest() with attribute selector returns Element
       const htmlTarget = target as HTMLElement;
-      const action = htmlTarget.dataset.action;
+      const action = htmlTarget.dataset['action'];
       if (action === undefined || action === '') return;
 
       this.handleAction(action, htmlTarget);
@@ -233,7 +233,7 @@ class AccountSettingsController {
    * Navigates to URL specified in data-href attribute
    */
   private handleNavigation(target: HTMLElement): void {
-    const href = target.dataset.href;
+    const href = target.dataset['href'];
     if (href !== undefined && href !== '') {
       window.location.href = href;
     }

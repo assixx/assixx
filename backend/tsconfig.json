@@ -93,6 +93,7 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "src/__tests__/**/*",
+    "src/**/__tests__/**/*",
     "src/**/*.test.ts",
     "src/routes/v1/**/*"
   ]

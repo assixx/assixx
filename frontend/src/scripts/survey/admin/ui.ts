@@ -119,6 +119,9 @@ function getAssignmentInfo(survey: Survey): string {
   }
 
   const assignment = survey.assignments[0];
+  if (assignment === undefined) {
+    return '';
+  }
   const assignmentType = assignment.assignmentType ?? assignment.type;
 
   switch (assignmentType) {
@@ -445,8 +448,8 @@ export function updateQuestionTypeDisplay(questionElement: Element, qType: strin
   };
 
   const validTypes = ['text', 'single_choice', 'multiple_choice', 'rating', 'yes_no', 'number', 'date'];
-  // eslint-disable-next-line security/detect-object-injection
-  const labelText = validTypes.includes(qType) ? typeLabels[qType] : 'Textantwort';
+  // eslint-disable-next-line security/detect-object-injection -- qType validated against validTypes
+  const labelText = validTypes.includes(qType) ? (typeLabels[qType] ?? 'Textantwort') : 'Textantwort';
   typeDisplay.textContent = labelText;
 }
 
@@ -527,8 +530,8 @@ export function getStatusText(status: string): string {
   // Validate status is one of the known keys to prevent object injection
   const validStatuses = ['draft', 'active', 'paused', 'completed', 'archived', 'closed'];
   // Safe: status is validated to be in validStatuses before accessing statusMap
-  // eslint-disable-next-line security/detect-object-injection
-  return validStatuses.includes(status) ? statusMap[status] : status;
+  // eslint-disable-next-line security/detect-object-injection -- status validated against validStatuses
+  return validStatuses.includes(status) ? (statusMap[status] ?? status) : status;
 }
 
 /**
@@ -546,9 +549,9 @@ export function getStatusBadgeClass(status: string): string {
     completed: 'badge--success', // Green
   };
   const validStatuses = ['draft', 'active', 'closed', 'archived', 'paused', 'completed'];
-  // Safe: status is validated to be in validStatuses before accessing statusMap
-  // eslint-disable-next-line security/detect-object-injection
-  return validStatuses.includes(status) ? badgeMap[status] : 'badge--secondary';
+  // Safe: status is validated to be in validStatuses before accessing badgeMap
+  // eslint-disable-next-line security/detect-object-injection -- status validated against validStatuses
+  return validStatuses.includes(status) ? (badgeMap[status] ?? 'badge--secondary') : 'badge--secondary';
 }
 
 export function toBool(value: unknown): boolean {

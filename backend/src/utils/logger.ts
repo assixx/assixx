@@ -46,7 +46,7 @@ interface LoggerConfig {
 
 // Create logger instance
 const logger: winston.Logger = winston.createLogger({
-  level: process.env.LOG_LEVEL ?? 'info',
+  level: process.env['LOG_LEVEL'] ?? 'info',
   format: winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.errors({ stack: true }),
@@ -72,7 +72,7 @@ const logger: winston.Logger = winston.createLogger({
 } as LoggerConfig);
 
 // Console logging for development
-if (process.env.NODE_ENV !== 'production') {
+if (process.env['NODE_ENV'] !== 'production') {
   logger.add(
     new winston.transports.Console({
       format: winston.format.combine(winston.format.colorize(), winston.format.simple()),

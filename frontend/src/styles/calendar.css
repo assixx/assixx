@@ -645,6 +645,11 @@
   display: none !important;
 }
 
+/* Hide "Neuer Termin" button in fullscreen mode */
+.calendar-fullscreen-mode #newEventBtn {
+  display: none !important;
+}
+
 /* Buttons get enhanced visibility in fullscreen */
 .calendar-fullscreen-mode #calendarContainer .card__header .btn {
   border: 1px solid rgb(255 255 255 / 10%);

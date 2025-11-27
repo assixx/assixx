@@ -41,7 +41,7 @@ export class LandingPageController {
       }
 
       const buttonEl = button as HTMLElement;
-      const action = buttonEl.dataset.action;
+      const action = buttonEl.dataset['action'];
 
       if (action === 'reload-page') {
         window.location.reload();

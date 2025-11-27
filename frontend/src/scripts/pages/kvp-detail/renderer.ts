@@ -16,6 +16,8 @@ import {
   getPriorityText,
   formatCurrency,
   hasImplementationDate,
+  openPreviewModal,
+  setLoadedAttachments,
 } from './ui';
 
 interface User {
@@ -345,6 +347,12 @@ export class KvpDetailRenderer {
     const container = document.querySelector('#commentList');
     if (!container || !(container instanceof HTMLElement)) return;
     renderComments(comments, container);
+
+    // Update comment count badge
+    const countBadge = document.querySelector('#commentCount');
+    if (countBadge !== null) {
+      countBadge.textContent = String(comments.length);
+    }
   }
 
   renderPhotoGalleryWrapper(photos: Attachment[]): void {
@@ -356,19 +364,23 @@ export class KvpDetailRenderer {
     }
   }
 
-  renderOtherAttachmentsWrapper(otherFiles: Attachment[], onDownload: (fileUuid: string) => void): HTMLElement | null {
+  renderOtherAttachmentsWrapper(otherFiles: Attachment[], _onDownload: (fileUuid: string) => void): HTMLElement | null {
     const attachmentsCard = document.querySelector('#attachmentsCard');
     const container = document.querySelector('#attachmentList');
 
     if (attachmentsCard instanceof HTMLElement && container instanceof HTMLElement) {
       const updatedContainer = renderOtherAttachments(otherFiles, attachmentsCard, container);
 
-      // Add click handlers
+      // Add click handlers - open preview modal instead of direct download
       updatedContainer.querySelectorAll('.attachment-item').forEach((item) => {
         item.addEventListener('click', () => {
           const uuid = getData(item as HTMLElement, 'uuid');
           if (uuid !== undefined && uuid !== '') {
-            onDownload(uuid);
+            // Find the attachment object by UUID
+            const attachment = otherFiles.find((att) => att.fileUuid === uuid);
+            if (attachment !== undefined) {
+              openPreviewModal(attachment);
+            }
           }
         });
       });
@@ -381,6 +393,9 @@ export class KvpDetailRenderer {
 
   renderAttachments(attachments: Attachment[], onDownload: (fileUuid: string) => void): void {
     if (attachments.length === 0) return;
+
+    // Store all attachments for lookup by UUID (used by photo gallery click handler)
+    setLoadedAttachments(attachments);
 
     // Filter photo attachments
     const photoTypes = ['image/jpeg', 'image/jpg', 'image/png'];

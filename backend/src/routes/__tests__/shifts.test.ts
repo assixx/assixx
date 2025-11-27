@@ -36,7 +36,7 @@ describe('Shift Planning API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-shift-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-shift-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'shifttest1', 'Shift Test Company 1');
@@ -148,11 +148,11 @@ describe('Shift Planning API Endpoints', () => {
         success: true,
         message: expect.stringContaining('erfolgreich erstellt'),
       });
-      expect(response.body.data.templateId).toBeDefined();
+      expect(response.body.data['templateId']).toBeDefined();
 
       // Verify template was created
       const [rows] = await testDb.execute('SELECT * FROM shift_templates WHERE id = ?', [
-        response.body.data.templateId,
+        response.body.data['templateId'],
       ]);
       const templates = asTestRows<unknown>(rows);
       expect(templates[0]).toMatchObject({
@@ -184,7 +184,7 @@ describe('Shift Planning API Endpoints', () => {
 
       const [rows] = await testDb.execute(
         'SELECT department_id FROM shift_templates WHERE id = ?',
-        [response.body.data.templateId],
+        [response.body.data['templateId']],
       );
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].department_id).toBe(dept1Id);
@@ -255,7 +255,7 @@ describe('Shift Planning API Endpoints', () => {
 
       const [rows] = await testDb.execute(
         'SELECT duration_minutes FROM shift_templates WHERE id = ?',
-        [response.body.data.templateId],
+        [response.body.data['templateId']],
       );
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].duration_minutes).toBe(510); // 8.5 hours * 60
@@ -276,7 +276,7 @@ describe('Shift Planning API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT is_overnight FROM shift_templates WHERE id = ?', [
-        response.body.data.templateId,
+        response.body.data['templateId'],
       ]);
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].is_overnight).toBe(1);
@@ -303,7 +303,7 @@ describe('Shift Planning API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT tenant_id FROM shift_templates WHERE id = ?', [
-        response.body.data.templateId,
+        response.body.data['templateId'],
       ]);
       const templates = asTestRows<unknown>(rows);
       expect(templates[0].tenant_id).toBe(tenant1Id);
@@ -351,7 +351,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.templates.length).toBe(3);
+      expect(response.body.data['templates'].length).toBe(3);
     });
 
     it('should filter by department', async () => {
@@ -360,7 +360,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const templates = response.body.data.templates;
+      const templates = response.body.data['templates'];
       expect(templates.some((t) => t.id === template3Id)).toBe(true);
       expect(templates.some((t) => t.department_id === null)).toBe(true); // Global templates included
     });
@@ -371,7 +371,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const templates = response.body.data.templates;
+      const templates = response.body.data['templates'];
       expect(templates.length).toBe(2);
       expect(templates.every((t) => t.is_active)).toBe(true);
     });
@@ -398,7 +398,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const templates = response.body.data.templates;
+      const templates = response.body.data['templates'];
       expect(templates.every((t) => t.tenant_id === tenant1Id)).toBe(true);
     });
   });
@@ -541,11 +541,11 @@ describe('Shift Planning API Endpoints', () => {
         success: true,
         message: expect.stringContaining('erfolgreich erstellt'),
       });
-      expect(response.body.data.planId).toBeDefined();
+      expect(response.body.data['planId']).toBeDefined();
 
       // Verify plan was created
       const [rows] = await testDb.execute('SELECT * FROM shift_plans WHERE id = ?', [
-        response.body.data.planId,
+        response.body.data['planId'],
       ]);
       const plans = asTestRows<unknown>(rows);
       expect(plans[0]).toMatchObject({
@@ -647,7 +647,7 @@ describe('Shift Planning API Endpoints', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.copiedAssignments).toBeGreaterThan(0);
+      expect(response.body.data['copiedAssignments']).toBeGreaterThan(0);
     });
 
     it('should deny plan creation for non-admin', async () => {
@@ -702,7 +702,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.plans.length).toBe(2);
+      expect(response.body.data['plans'].length).toBe(2);
     });
 
     it('should filter by department', async () => {
@@ -711,7 +711,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const plans = response.body.data.plans;
+      const plans = response.body.data['plans'];
       expect(plans.length).toBe(1);
       expect(plans[0].department_id).toBe(dept1Id);
     });
@@ -722,7 +722,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const plans = response.body.data.plans;
+      const plans = response.body.data['plans'];
       expect(plans.every((p) => p.status === 'published')).toBe(true);
     });
 
@@ -735,7 +735,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.plans.length).toBe(2);
+      expect(response.body.data['plans'].length).toBe(2);
     });
 
     it('should show only published plans to employees', async () => {
@@ -744,7 +744,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const plans = response.body.data.plans;
+      const plans = response.body.data['plans'];
       expect(plans.every((p) => p.status === 'published')).toBe(true);
     });
 
@@ -754,7 +754,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const plans = response.body.data.plans;
+      const plans = response.body.data['plans'];
       // Employee1 is in dept1, should only see published dept1 plans
       expect(plans.length).toBe(0); // No published plans for dept1
     });
@@ -773,7 +773,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const plans = response.body.data.plans;
+      const plans = response.body.data['plans'];
       expect(plans.every((p) => p.tenant_id === tenant1Id)).toBe(true);
     });
   });
@@ -823,11 +823,11 @@ describe('Shift Planning API Endpoints', () => {
         success: true,
         message: expect.stringContaining('zugewiesen'),
       });
-      expect(response.body.data.assignmentId).toBeDefined();
+      expect(response.body.data['assignmentId']).toBeDefined();
 
       // Verify assignment was created
       const [rows] = await testDb.execute('SELECT * FROM shift_assignments WHERE id = ?', [
-        response.body.data.assignmentId,
+        response.body.data['assignmentId'],
       ]);
       const assignments = asTestRows<unknown>(rows);
       expect(assignments[0]).toMatchObject({
@@ -861,7 +861,7 @@ describe('Shift Planning API Endpoints', () => {
         .send(bulkData);
 
       expect(response.status).toBe(201);
-      expect(response.body.data.created).toBe(2);
+      expect(response.body.data['created']).toBe(2);
     });
 
     it('should prevent double booking', async () => {
@@ -1137,11 +1137,11 @@ describe('Shift Planning API Endpoints', () => {
         success: true,
         message: expect.stringContaining('Tauschantrag erstellt'),
       });
-      expect(response.body.data.requestId).toBeDefined();
+      expect(response.body.data['requestId']).toBeDefined();
 
       // Verify request was created
       const [rowsRequest] = await testDb.execute('SELECT * FROM shift_swap_requests WHERE id = ?', [
-        response.body.data.requestId,
+        response.body.data['requestId'],
       ]);
       const requests = asTestRows<unknown>(rowsRequest);
       expect(requests[0]).toMatchObject({
@@ -1431,8 +1431,8 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.shifts.length).toBeGreaterThan(0);
-      expect(response.body.data.shifts.every((s) => s.user_id === employeeUser1.id)).toBe(true);
+      expect(response.body.data['shifts'].length).toBeGreaterThan(0);
+      expect(response.body.data['shifts'].every((s) => s.user_id === employeeUser1.id)).toBe(true);
     });
 
     it('should filter by date range', async () => {
@@ -1444,7 +1444,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.shifts.length).toBe(2); // Today and next week
+      expect(response.body.data['shifts'].length).toBe(2); // Today and next week
     });
 
     it('should include shift details', async () => {
@@ -1453,7 +1453,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      const shift = response.body.data.shifts[0];
+      const shift = response.body.data['shifts'][0];
       expect(shift.template).toBeDefined();
       expect(shift.plan).toBeDefined();
     });
@@ -1465,7 +1465,7 @@ describe('Shift Planning API Endpoints', () => {
 
       expect(response.status).toBe(200);
       // Should not include past shifts by default
-      const shifts = response.body.data.shifts;
+      const shifts = response.body.data['shifts'];
       expect(shifts.every((s) => new Date(s.date) >= new Date())).toBe(true);
     });
   });
@@ -1542,7 +1542,7 @@ describe('Shift Planning API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.coverage).toBeDefined();
+      expect(response.body.data['coverage']).toBeDefined();
     });
 
     it('should enforce department access for employees', async () => {

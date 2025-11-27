@@ -12,24 +12,64 @@ import { auditTrailService } from './audit-trail.service.js';
 import { AuditEntry, AuditFilter } from './types.js';
 
 /**
+ * Parse optional string query params into filter object
+ */
+function applyStringParams(query: AuthenticatedRequest['query'], filter: AuditFilter): void {
+  const stringKeys: (keyof AuditFilter)[] = [
+    'action',
+    'resourceType',
+    'status',
+    'dateFrom',
+    'dateTo',
+    'search',
+    'sortBy',
+    'sortOrder',
+  ];
+  for (const key of stringKeys) {
+    // eslint-disable-next-line security/detect-object-injection -- key is from static stringKeys array, not user input
+    const value = query[key];
+    if (typeof value === 'string' && value !== '') {
+      // eslint-disable-next-line security/detect-object-injection -- key is from static stringKeys array, not user input
+      (filter as unknown as Record<string, unknown>)[key] = value;
+    }
+  }
+}
+
+/**
+ * Parse optional numeric query params into filter object
+ */
+function applyNumericParams(query: AuthenticatedRequest['query'], filter: AuditFilter): void {
+  const numericKeys: (keyof AuditFilter)[] = ['userId', 'resourceId'];
+  for (const key of numericKeys) {
+    // eslint-disable-next-line security/detect-object-injection -- key is from static numericKeys array, not user input
+    const value = query[key];
+    if (typeof value === 'string' && value !== '') {
+      // eslint-disable-next-line security/detect-object-injection -- key is from static numericKeys array, not user input
+      (filter as unknown as Record<string, unknown>)[key] = Number.parseInt(value, 10);
+    }
+  }
+}
+
+/**
  * Build audit filter from request query
  */
 function buildAuditFilter(req: AuthenticatedRequest): AuditFilter {
-  return {
+  const pageParam = req.query['page'];
+  const limitParam = req.query['limit'];
+  const parsedPage =
+    typeof pageParam === 'string' && pageParam !== '' ? Number.parseInt(pageParam, 10) : 1;
+  const parsedLimit =
+    typeof limitParam === 'string' && limitParam !== '' ? Number.parseInt(limitParam, 10) : 50;
+  const filter: AuditFilter = {
     tenantId: req.user.tenant_id,
-    userId: req.query.userId ? Number.parseInt(req.query.userId as string) : undefined,
-    action: req.query.action as string,
-    resourceType: req.query.resourceType as string,
-    resourceId: req.query.resourceId ? Number.parseInt(req.query.resourceId as string) : undefined,
-    status: req.query.status as 'success' | 'failure',
-    dateFrom: req.query.dateFrom as string,
-    dateTo: req.query.dateTo as string,
-    search: req.query.search as string,
-    page: req.query.page ? Number.parseInt(req.query.page as string) : 1,
-    limit: req.query.limit ? Number.parseInt(req.query.limit as string) : 50,
-    sortBy: req.query.sortBy as 'created_at' | 'action' | 'user_id' | 'resource_type' | undefined,
-    sortOrder: req.query.sortOrder as 'asc' | 'desc',
+    page: parsedPage,
+    limit: parsedLimit,
   };
+
+  applyStringParams(req.query, filter);
+  applyNumericParams(req.query, filter);
+
+  return filter;
 }
 
 /**
@@ -40,7 +80,8 @@ function validateAuditAccess(
   filter: AuditFilter,
 ): ReturnType<typeof errorResponse> | null {
   if (user.role !== 'root') {
-    if (filter.userId && filter.userId !== user.id) {
+    const filterUserId = filter.userId;
+    if (filterUserId !== undefined && filterUserId !== user.id) {
       return errorResponse('FORBIDDEN', "Cannot view other users' audit entries");
     }
     filter.userId = user.id;
@@ -119,7 +160,12 @@ export const auditTrailController = {
    */
   async getEntry(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
-      const id = Number.parseInt(req.params.id);
+      const idParam = req.params['id'];
+      if (idParam === undefined || idParam === '') {
+        res.status(400).json(errorResponse('VALIDATION_ERROR', 'Entry ID is required'));
+        return;
+      }
+      const id = Number.parseInt(idParam);
       const entry = await auditTrailService.getEntryById(id, req.user.tenant_id);
 
       // Only root users can see entries from other users
@@ -154,8 +200,8 @@ export const auditTrailController = {
 
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
-        dateFrom: req.query.dateFrom as string,
-        dateTo: req.query.dateTo as string,
+        dateFrom: req.query['dateFrom'] as string,
+        dateTo: req.query['dateTo'] as string,
       };
 
       const stats = await auditTrailService.getStats(filter);
@@ -222,11 +268,12 @@ export const auditTrailController = {
         return;
       }
 
-      const format = (req.query.format as string) || 'json';
+      const formatParam = req.query['format'];
+      const format = typeof formatParam === 'string' && formatParam !== '' ? formatParam : 'json';
       const filter: AuditFilter = {
         tenantId: req.user.tenant_id,
-        dateFrom: req.query.dateFrom as string,
-        dateTo: req.query.dateTo as string,
+        dateFrom: req.query['dateFrom'] as string,
+        dateTo: req.query['dateTo'] as string,
         // No pagination for export
         page: 1,
         limit: 10000, // Max export limit
@@ -288,7 +335,7 @@ export const auditTrailController = {
         confirmPassword: string;
       };
 
-      if (!olderThanDays || olderThanDays < 90) {
+      if (Number.isNaN(olderThanDays) || olderThanDays < 90) {
         res
           .status(400)
           .json(errorResponse('VALIDATION_ERROR', 'Cannot delete entries newer than 90 days'));

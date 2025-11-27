@@ -5,6 +5,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 
+import { getEntryById as getBlackboardEntry } from '../../../models/blackboard.js';
 // Model classes are exported as PascalCase objects for backward compatibility
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import Department from '../../../models/department.js';
@@ -45,7 +46,7 @@ export class ServiceError extends Error {
    */
   constructor(
     public code: string,
-    public message: string,
+    public override message: string,
     public statusCode: number = 500,
     public details?: unknown,
   ) {
@@ -55,21 +56,25 @@ export class ServiceError extends Error {
 }
 
 // NEW: Clean filter structure (refactored 2025-01-10)
+// Updated 2025-11-24: Added 'blackboard' accessScope and blackboardEntryId filter
 export interface DocumentFilters {
   category?: string;
-  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  accessScope?: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
   ownerUserId?: number;
   targetTeamId?: number;
   targetDepartmentId?: number;
   salaryYear?: number;
   salaryMonth?: number;
+  blackboardEntryId?: number;
   isArchived?: boolean;
   search?: string;
   page?: number;
   limit?: number;
+  offset?: number;
 }
 
 // NEW: Clean create input structure (refactored 2025-01-10)
+// Updated 2025-11-24: Added 'blackboard' accessScope and blackboardEntryId
 export interface DocumentCreateInput {
   filename: string;
   originalName: string;
@@ -77,8 +82,8 @@ export interface DocumentCreateInput {
   fileContent: Buffer;
   mimeType: string;
   category: string;
-  // NEW: Clean access control
-  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll';
+  // NEW: Clean access control (updated 2025-11-24: added 'blackboard')
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
   ownerUserId?: number;
   targetTeamId?: number;
   targetDepartmentId?: number;
@@ -86,6 +91,8 @@ export interface DocumentCreateInput {
   // NEW: Payroll fields
   salaryYear?: number;
   salaryMonth?: number;
+  // NEW: Blackboard reference (2025-11-24)
+  blackboardEntryId?: number;
   tags?: string[];
   isPublic?: boolean;
   expiresAt?: Date;
@@ -115,6 +122,98 @@ export interface DocumentListResponse {
   };
 }
 
+/** Interface for document creation data */
+interface DocumentCreateData {
+  tenant_id: number;
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard';
+  ownerUserId?: number | null;
+  targetTeamId?: number | null;
+  targetDepartmentId?: number | null;
+  category?: string;
+  fileName: string;
+  originalName?: string;
+  fileContent?: Buffer;
+  description?: string;
+  salaryYear?: number;
+  salaryMonth?: number;
+  blackboardEntryId?: number | null;
+  createdBy?: number;
+  tags?: string[];
+  mimeType?: string;
+  fileUuid?: string;
+  fileChecksum?: string;
+  storageType?: 'database' | 'filesystem' | 's3';
+}
+
+/** Add optional metadata fields to document data */
+function addOptionalMetadata(documentData: DocumentCreateData, data: DocumentCreateInput): void {
+  if (data.description !== undefined) documentData.description = data.description;
+  if (data.tags !== undefined) documentData.tags = data.tags;
+  if (data.fileUuid !== undefined) documentData.fileUuid = data.fileUuid;
+  if (data.fileChecksum !== undefined) documentData.fileChecksum = data.fileChecksum;
+}
+
+/** Build document creation data from input */
+function buildDocumentCreateData(
+  data: DocumentCreateInput,
+  createdBy: number,
+  tenantId: number,
+): DocumentCreateData {
+  const documentData: DocumentCreateData = {
+    tenant_id: tenantId,
+    accessScope: data.accessScope,
+    fileName: data.filename,
+    originalName: data.originalName,
+    fileContent: data.fileContent,
+    createdBy,
+    storageType: data.storageType ?? 'filesystem',
+    category: data.category,
+    mimeType: data.mimeType,
+  };
+
+  const isPersonalOrPayroll = data.accessScope === 'personal' || data.accessScope === 'payroll';
+  const ownerUserId = data.ownerUserId ?? (isPersonalOrPayroll ? createdBy : undefined);
+  if (ownerUserId !== undefined) documentData.ownerUserId = ownerUserId;
+  if (data.targetTeamId !== undefined) documentData.targetTeamId = data.targetTeamId;
+  if (data.targetDepartmentId !== undefined)
+    documentData.targetDepartmentId = data.targetDepartmentId;
+  if (data.salaryYear !== undefined) documentData.salaryYear = data.salaryYear;
+  if (data.salaryMonth !== undefined) documentData.salaryMonth = data.salaryMonth;
+  if (data.blackboardEntryId !== undefined) documentData.blackboardEntryId = data.blackboardEntryId;
+  addOptionalMetadata(documentData, data);
+
+  return documentData;
+}
+
+/** Write file to disk for filesystem storage */
+async function writeFileToDisk(filePath: string, content: Buffer): Promise<void> {
+  const absolutePath = path.join(process.cwd(), filePath);
+  const directory = path.dirname(absolutePath);
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based
+  await fs.mkdir(directory, { recursive: true });
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based
+  await fs.writeFile(absolutePath, content);
+  logger.info(`File written successfully: ${filePath}`);
+}
+
+/** Build model filters from input filters */
+function buildModelFilters(
+  filters: DocumentFilters | undefined,
+  limit: number,
+  offset: number,
+): DocumentFilters {
+  const modelFilters: DocumentFilters = { isArchived: filters?.isArchived ?? false, limit, offset };
+  if (filters?.category !== undefined) modelFilters.category = filters.category;
+  if (filters?.accessScope !== undefined) modelFilters.accessScope = filters.accessScope;
+  if (filters?.ownerUserId !== undefined) modelFilters.ownerUserId = filters.ownerUserId;
+  if (filters?.salaryYear !== undefined) modelFilters.salaryYear = filters.salaryYear;
+  if (filters?.salaryMonth !== undefined) modelFilters.salaryMonth = filters.salaryMonth;
+  if (filters?.blackboardEntryId !== undefined)
+    modelFilters.blackboardEntryId = filters.blackboardEntryId;
+  if (filters?.search !== undefined) modelFilters.search = filters.search;
+  return modelFilters;
+}
+
 /**
  *
  */
@@ -135,44 +234,24 @@ class DocumentsService {
       const limit = filters?.limit ?? 20;
       const offset = (page - 1) * limit;
 
-      // Get user for access control
       const user = await User.findById(userId, tenantId);
       if (!user) {
         throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.USER_NOT_FOUND, 404);
       }
 
-      // Build filter object for model (NEW: clean structure, refactored 2025-01-10)
-      const modelFilters = {
-        category: filters?.category,
-        accessScope: filters?.accessScope,
-        userId: filters?.ownerUserId, // Map ownerUserId -> userId for model compatibility
-        salaryYear: filters?.salaryYear,
-        salaryMonth: filters?.salaryMonth,
-        isArchived: filters?.isArchived ?? false,
-        searchTerm: filters?.search, // Map 'search' to 'searchTerm' for model
-        limit,
-        offset,
-      };
+      const modelFilters = buildModelFilters(filters, limit, offset);
 
       // Get documents based on user role
-      let documents: DbDocument[];
-      let totalCount: number;
+      const isAdmin = user.role === 'admin' || user.role === 'root';
+      const result =
+        isAdmin ?
+          await Document.findWithFilters(tenantId, modelFilters)
+        : await Document.findByEmployeeWithAccess(userId, tenantId, modelFilters);
 
-      if (user.role === 'admin' || user.role === 'root') {
-        // Admins can see all documents in their tenant
-        const result = await Document.findWithFilters(tenantId, modelFilters);
-        documents = result.documents;
-        totalCount = result.total;
-      } else {
-        // Regular users only see documents they have access to
-        const result = await Document.findByEmployeeWithAccess(userId, tenantId, modelFilters);
-        documents = result.documents;
-        totalCount = result.total;
-      }
-
-      // Enrich documents with metadata and access status
       const documentsWithStatus = await Promise.all(
-        documents.map((doc: DbDocument) => this.enrichDocumentWithMetadata(doc, userId, tenantId)),
+        result.documents.map((doc: DbDocument) =>
+          this.enrichDocumentWithMetadata(doc, userId, tenantId),
+        ),
       );
 
       return {
@@ -180,8 +259,8 @@ class DocumentsService {
         pagination: {
           page,
           limit,
-          total: totalCount,
-          totalPages: Math.ceil(totalCount / limit),
+          total: result.total,
+          totalPages: Math.ceil(result.total / limit),
         },
       };
     } catch (error: unknown) {
@@ -206,11 +285,11 @@ class DocumentsService {
     const apiDoc = dbToApi(doc);
 
     // Parse tags if stored as JSON string
-    if (typeof apiDoc.tags === 'string') {
+    if (typeof apiDoc['tags'] === 'string') {
       try {
-        apiDoc.tags = JSON.parse(apiDoc.tags);
+        apiDoc['tags'] = JSON.parse(apiDoc['tags']);
       } catch {
-        apiDoc.tags = [];
+        apiDoc['tags'] = [];
       }
     }
 
@@ -221,10 +300,10 @@ class DocumentsService {
     return {
       ...apiDoc,
       // Frontend expects: filename = user-facing name, storedFilename = UUID-based
-      filename: apiDoc.originalName ?? doc.original_name ?? apiDoc.filename,
-      storedFilename: apiDoc.filename ?? doc.filename,
-      uploadedBy: apiDoc.createdBy ?? doc.created_by ?? userId,
-      uploaderName: apiDoc.uploadedByName ?? doc.uploaded_by_name ?? 'Unbekannt',
+      filename: apiDoc['originalName'] ?? doc.original_name ?? apiDoc['filename'],
+      storedFilename: apiDoc['filename'] ?? doc.filename,
+      uploadedBy: apiDoc['createdBy'] ?? doc.created_by ?? userId,
+      uploaderName: apiDoc['uploadedByName'] ?? doc.uploaded_by_name ?? 'Unbekannt',
       recipientId,
       isRead,
       downloadUrl: `/api/v2/documents/${doc.id}/download`,
@@ -237,16 +316,16 @@ class DocumentsService {
    * NEW: Uses clean access_scope structure (refactored 2025-01-10)
    */
   private extractRecipientId(apiDoc: Record<string, unknown>): number | null {
-    const accessScope = apiDoc.accessScope as string;
+    const accessScope = apiDoc['accessScope'] as string;
 
     if (accessScope === 'personal' || accessScope === 'payroll') {
-      return typeof apiDoc.ownerUserId === 'number' ? apiDoc.ownerUserId : null;
+      return typeof apiDoc['ownerUserId'] === 'number' ? apiDoc['ownerUserId'] : null;
     }
     if (accessScope === 'team') {
-      return typeof apiDoc.targetTeamId === 'number' ? apiDoc.targetTeamId : null;
+      return typeof apiDoc['targetTeamId'] === 'number' ? apiDoc['targetTeamId'] : null;
     }
     if (accessScope === 'department') {
-      return typeof apiDoc.targetDepartmentId === 'number' ? apiDoc.targetDepartmentId : null;
+      return typeof apiDoc['targetDepartmentId'] === 'number' ? apiDoc['targetDepartmentId'] : null;
     }
     // Company-wide documents have no specific recipient
     return null;
@@ -257,22 +336,22 @@ class DocumentsService {
    * NEW: Uses clean field names (refactored 2025-01-10)
    */
   private mapRecipientIds(apiDoc: Record<string, unknown>): void {
-    if (apiDoc.ownerUserId === null) apiDoc.ownerUserId = undefined;
+    if (apiDoc['ownerUserId'] === null) apiDoc['ownerUserId'] = undefined;
 
-    if (apiDoc.targetTeamId === null) apiDoc.targetTeamId = undefined;
+    if (apiDoc['targetTeamId'] === null) apiDoc['targetTeamId'] = undefined;
 
-    if (apiDoc.targetDepartmentId === null) apiDoc.targetDepartmentId = undefined;
+    if (apiDoc['targetDepartmentId'] === null) apiDoc['targetDepartmentId'] = undefined;
   }
 
   /**
    * Parse tags from string to array
    */
   private parseTags(apiDoc: Record<string, unknown>): void {
-    if (typeof apiDoc.tags === 'string') {
+    if (typeof apiDoc['tags'] === 'string') {
       try {
-        apiDoc.tags = JSON.parse(apiDoc.tags);
+        apiDoc['tags'] = JSON.parse(apiDoc['tags']);
       } catch {
-        apiDoc.tags = [];
+        apiDoc['tags'] = [];
       }
     }
   }
@@ -347,10 +426,8 @@ class DocumentsService {
     tenantId: number,
   ): Promise<Record<string, unknown>> {
     try {
-      // Validate recipient based on type
       await this.validateRecipient(data, tenantId);
 
-      // Validate file type
       if (!this.isAllowedFileType(data.mimeType)) {
         throw new ServiceError(
           ERROR_CODES.BAD_REQUEST,
@@ -359,67 +436,18 @@ class DocumentsService {
         );
       }
 
-      // Create document data (NEW: clean structure, refactored 2025-01-10)
-      const documentData = {
-        tenant_id: tenantId,
-        // NEW: Clean access control
-        accessScope: data.accessScope,
-        ownerUserId:
-          data.ownerUserId ??
-          (data.accessScope === 'personal' || data.accessScope === 'payroll' ?
-            createdBy
-          : undefined),
-        targetTeamId: data.targetTeamId,
-        targetDepartmentId: data.targetDepartmentId,
-        // File fields
-        category: data.category,
-        fileName: data.filename, // UUID-based filename for storage
-        originalName: data.originalName, // User-visible name from modal input
-        fileContent: data.fileContent,
-        description: data.description,
-        // NEW: Payroll fields
-        salaryYear: data.salaryYear,
-        salaryMonth: data.salaryMonth,
-        createdBy: createdBy,
-        tags: data.tags,
-        mimeType: data.mimeType, // Pass the mime type to store it correctly
-        // UUID-based storage
-        fileUuid: data.fileUuid,
-        fileChecksum: data.fileChecksum,
-        storageType: data.storageType ?? 'filesystem',
-      };
+      const documentData = buildDocumentCreateData(data, createdBy, tenantId);
 
       // Write file to disk if storageType is 'filesystem' and filePath is provided
-      if (data.storageType === 'filesystem' && data.filePath) {
-        try {
-          // Build absolute path from project root
-          // Path is validated via path.join() which prevents path traversal attacks
-          const absolutePath = path.join(process.cwd(), data.filePath);
-          const directory = path.dirname(absolutePath);
-
-          // Create directory structure recursively
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based, safe from traversal
-          await fs.mkdir(directory, { recursive: true });
-
-          // Write file to disk
-          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based, safe from traversal
-          await fs.writeFile(absolutePath, data.fileContent);
-
-          logger.info(`File written successfully: ${data.filePath}`);
-        } catch (fsError: unknown) {
-          logger.error(`Failed to write file to disk: ${(fsError as Error).message}`);
-          throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to write file to disk', 500);
-        }
+      const filePath = data.filePath;
+      if (data.storageType === 'filesystem' && filePath !== undefined && filePath !== '') {
+        await writeFileToDisk(filePath, data.fileContent);
       }
 
       const documentId = await Document.create(documentData);
-
-      // Return the created document without marking as read (so uploader sees "Neu" badge)
       return await this.getDocumentById(documentId, createdBy, tenantId, false);
     } catch (error: unknown) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
+      if (error instanceof ServiceError) throw error;
       logger.error(`Error creating document: ${(error as Error).message}`);
       throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to create document', 500);
     }
@@ -431,10 +459,10 @@ class DocumentsService {
   private buildUpdateData(data: DocumentUpdateInput): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
 
-    if (data.filename !== undefined) updateData.filename = data.filename;
-    if (data.category !== undefined) updateData.category = data.category;
-    if (data.description !== undefined) updateData.description = data.description;
-    if (data.tags !== undefined) updateData.tags = data.tags;
+    if (data.filename !== undefined) updateData['filename'] = data.filename;
+    if (data.category !== undefined) updateData['category'] = data.category;
+    if (data.description !== undefined) updateData['description'] = data.description;
+    if (data.tags !== undefined) updateData['tags'] = data.tags;
 
     return updateData;
   }
@@ -629,14 +657,14 @@ class DocumentsService {
       if (document.file_content != null) {
         // File stored in database (Buffer exists)
         content = document.file_content;
-      } else if (document.file_path != null) {
+      } else if (document['file_path'] != null) {
         // File stored on filesystem
         const fs = await import('fs/promises');
         const path = await import('path');
 
         // Construct absolute path (file_path is relative from project root)
         // Safe: we already checked file_path != null above
-        const absolutePath = path.join(process.cwd(), String(document.file_path));
+        const absolutePath = path.join(process.cwd(), String(document['file_path']));
 
         try {
           content = await fs.readFile(absolutePath);
@@ -663,6 +691,86 @@ class DocumentsService {
         throw error;
       }
       logger.error(`Error getting document content ${id}: ${(error as Error).message}`);
+      throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to get document content', 500);
+    }
+  }
+
+  /**
+   * Get document content by file UUID (secure download URL)
+   * Used by blackboard and other systems that use UUID-based URLs
+   * @param fileUuid - The file UUID (UUIDv4)
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   */
+  async getDocumentContentByFileUuid(
+    fileUuid: string,
+    userId: number,
+    tenantId: number,
+  ): Promise<{
+    content: Buffer;
+    originalName: string;
+    mimeType: string;
+    fileSize: number;
+  }> {
+    try {
+      const document = await Document.findByFileUuid(fileUuid, tenantId);
+
+      if (document === null) {
+        throw new ServiceError(ERROR_CODES.NOT_FOUND, ERROR_MESSAGES.DOCUMENT_NOT_FOUND, 404);
+      }
+
+      // Check access
+      const hasAccess = await this.checkDocumentAccess(document, userId, tenantId);
+
+      if (!hasAccess) {
+        throw new ServiceError(
+          ERROR_CODES.FORBIDDEN,
+          "You don't have access to this document",
+          403,
+        );
+      }
+
+      // Increment download count
+      await Document.incrementDownloadCount(document.id, tenantId);
+
+      // Get file content: try DB first, then filesystem
+      let content: Buffer;
+
+      if (document.file_content != null) {
+        // File stored in database (Buffer exists)
+        content = document.file_content;
+      } else if (document['file_path'] != null) {
+        // File stored on filesystem
+        const absolutePath = path.join(process.cwd(), String(document['file_path']));
+
+        try {
+          // eslint-disable-next-line security/detect-non-literal-fs-filename -- Path is validated via path.join() and UUID-based
+          content = await fs.readFile(absolutePath);
+        } catch (fsError) {
+          logger.error(`Failed to read file from filesystem: ${absolutePath}`, fsError);
+          throw new ServiceError(
+            ERROR_CODES.NOT_FOUND,
+            'Document file not found on filesystem',
+            404,
+          );
+        }
+      } else {
+        throw new ServiceError(ERROR_CODES.NOT_FOUND, 'Document has no content or file path', 404);
+      }
+
+      return {
+        content,
+        originalName: document.original_name ?? document.filename ?? '',
+        mimeType: document.mime_type ?? 'application/octet-stream',
+        fileSize: document.file_size ?? 0,
+      };
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) {
+        throw error;
+      }
+      logger.error(
+        `Error getting document content by fileUuid ${fileUuid}: ${(error as Error).message}`,
+      );
       throw new ServiceError(ERROR_CODES.SERVER_ERROR, 'Failed to get document content', 500);
     }
   }
@@ -749,7 +857,7 @@ class DocumentsService {
 
       case 'team': {
         // Check if user is member of the target team
-        if (!document.target_team_id) return false;
+        if (document.target_team_id === null || document.target_team_id === undefined) return false;
         const teamMembers = await Team.getTeamMembers(document.target_team_id);
         return teamMembers.some((member: { id: number }) => member.id === userId);
       }
@@ -762,6 +870,24 @@ class DocumentsService {
         // All users in tenant can see company documents
         return true;
 
+      case 'blackboard': {
+        // Check if user can see the parent blackboard entry
+        // Entry visibility is based on org_level (company/department/team)
+        if (document.blackboard_entry_id === null || document.blackboard_entry_id === undefined) {
+          // No parent entry - should not happen, but allow admins
+          return user.role === 'admin' || user.role === 'root';
+        }
+
+        try {
+          // getBlackboardEntry returns null if user has no access
+          const entry = await getBlackboardEntry(document.blackboard_entry_id, tenantId, userId);
+          return entry !== null;
+        } catch {
+          // Error accessing entry - deny access
+          return false;
+        }
+      }
+
       default:
         return false;
     }
@@ -772,7 +898,7 @@ class DocumentsService {
    * NEW: Validates ownerUserId (refactored 2025-01-10)
    */
   private async validateOwnerUser(userId: number | undefined, tenantId: number): Promise<void> {
-    if (!userId) {
+    if (userId === undefined || userId === 0) {
       throw new ServiceError(
         ERROR_CODES.BAD_REQUEST,
         'Owner user ID is required for personal/payroll documents',
@@ -790,7 +916,7 @@ class DocumentsService {
    * NEW: Validates targetTeamId (refactored 2025-01-10)
    */
   private async validateTargetTeam(teamId: number | undefined, tenantId: number): Promise<void> {
-    if (!teamId) {
+    if (teamId === undefined || teamId === 0) {
       throw new ServiceError(
         ERROR_CODES.BAD_REQUEST,
         'Target team ID is required for team documents',
@@ -811,7 +937,7 @@ class DocumentsService {
     departmentId: number | undefined,
     tenantId: number,
   ): Promise<void> {
-    if (!departmentId) {
+    if (departmentId === undefined || departmentId === 0) {
       throw new ServiceError(
         ERROR_CODES.BAD_REQUEST,
         'Target department ID is required for department documents',
@@ -849,6 +975,11 @@ class DocumentsService {
         // No specific recipient needed for company-wide documents
         break;
 
+      case 'blackboard':
+        // Blackboard documents require entry ID (validated separately)
+        // Access is determined by blackboard entry visibility, not document recipients
+        break;
+
       default:
         throw new ServiceError(ERROR_CODES.BAD_REQUEST, 'Invalid access scope', 400);
     }
@@ -856,6 +987,7 @@ class DocumentsService {
 
   /**
    * Check if file type is allowed
+   * Updated 2025-11-24: Added image/gif for blackboard attachments
    * @param mimeType - The mimeType parameter
    */
   private isAllowedFileType(mimeType: string): boolean {
@@ -863,12 +995,38 @@ class DocumentsService {
       'application/pdf', // PDF
       'image/jpeg', // JPG/JPEG
       'image/png', // PNG
+      'image/gif', // GIF (for blackboard)
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // DOCX
       'application/msword', // DOC
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // XLSX
       'application/vnd.ms-excel', // XLS
     ];
     return allowedTypes.includes(mimeType);
+  }
+
+  /**
+   * Get documents for a specific blackboard entry
+   * NEW 2025-11-24: For blackboard attachment integration
+   * @param entryId - Blackboard entry ID
+   * @param tenantId - Tenant ID
+   * @param userId - User ID for access validation
+   */
+  async getDocumentsByBlackboardEntry(
+    entryId: number,
+    tenantId: number,
+    userId: number,
+  ): Promise<Record<string, unknown>[]> {
+    try {
+      const result = await this.listDocuments(userId, tenantId, {
+        accessScope: 'blackboard',
+        blackboardEntryId: entryId,
+        limit: 100, // Max attachments per entry
+      });
+      return result.documents;
+    } catch (error: unknown) {
+      logger.error(`Error getting blackboard documents: ${(error as Error).message}`);
+      return [];
+    }
   }
 }
 

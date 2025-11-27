@@ -38,14 +38,22 @@ export function generateRandomString(length: number = 32): string {
 }
 
 /**
+ * Parse integer with default value
+ */
+function parseIntOrDefault(value: unknown, defaultValue: number): number {
+  const parsed = Number.parseInt(String(value));
+  return Number.isNaN(parsed) ? defaultValue : parsed;
+}
+
+/**
  * Parse pagination parameters
  * @param query - Query parameters
  * @returns Parsed pagination object
  */
 export function parsePagination(query: QueryParams): PaginationResult {
-  const page = Number.parseInt(String(query.page)) || PAGINATION.DEFAULT_PAGE;
+  const page = parseIntOrDefault(query.page, PAGINATION.DEFAULT_PAGE);
   const limit = Math.min(
-    Number.parseInt(String(query.limit)) || PAGINATION.DEFAULT_LIMIT,
+    parseIntOrDefault(query.limit, PAGINATION.DEFAULT_LIMIT),
     PAGINATION.MAX_LIMIT,
   );
   const offset = (page - 1) * limit;
@@ -146,7 +154,7 @@ export function formatDateTime(date: Date | string | null | undefined): string {
  * @returns Percentage
  */
 export function calculatePercentage(value: number, total: number): number {
-  if (!total || total === 0) return 0;
+  if (total === 0) return 0;
   return Math.round((value / total) * 100);
 }
 

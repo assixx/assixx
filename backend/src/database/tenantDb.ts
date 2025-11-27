@@ -27,10 +27,10 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
     // Tenant-spezifische Datenbank-Konfiguration
     // In der Entwicklungsumgebung verwenden wir die Haupt-Datenbank statt tenant-spezifischer DBs
     const dbConfig: PoolOptions = {
-      host: process.env.DB_HOST ?? 'localhost',
-      user: process.env.DB_USER ?? 'root',
-      password: process.env.DB_PASSWORD ?? '',
-      database: process.env.DB_NAME ?? 'lohnabrechnung', // Verwende DB_NAME aus .env statt tenant-spezifischer DB
+      host: process.env['DB_HOST'] ?? 'localhost',
+      user: process.env['DB_USER'] ?? 'root',
+      password: process.env['DB_PASSWORD'] ?? '',
+      database: process.env['DB_NAME'] ?? 'lohnabrechnung', // Verwende DB_NAME aus .env statt tenant-spezifischer DB
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
@@ -66,16 +66,16 @@ export async function createTenantConnection(tenantId: string): Promise<Pool> {
  */
 export async function initializeTenantDatabase(tenantId: string): Promise<void> {
   // Im Entwicklungsmodus verwenden wir die Haupt-Datenbank
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env['NODE_ENV'] === 'development') {
     console.info(`Dev-Modus: Verwende vorhandene Datenbank für Tenant ${tenantId}`);
     return;
   }
 
   // Im Produktionsmodus führen wir die ursprüngliche Logik aus
   const connection: Connection = await mysql.createConnection({
-    host: process.env.DB_HOST ?? 'localhost',
-    user: process.env.DB_USER ?? 'root',
-    password: process.env.DB_PASSWORD ?? '',
+    host: process.env['DB_HOST'] ?? 'localhost',
+    user: process.env['DB_USER'] ?? 'root',
+    password: process.env['DB_PASSWORD'] ?? '',
   });
 
   try {
@@ -93,10 +93,10 @@ export async function initializeTenantDatabase(tenantId: string): Promise<void> 
     // Tabellen erstellen (Schema aus schema.sql verwenden)
     const schemaPath = path.join(projectRoot, 'backend', 'src', 'database', 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
-    const statements = schema.split(';').filter((stmt: string) => stmt.trim());
+    const statements = schema.split(';').filter((stmt: string) => stmt.trim() !== '');
 
     for (const statement of statements) {
-      if (statement.trim()) {
+      if (statement.trim() !== '') {
         await connection.query(statement);
       }
     }

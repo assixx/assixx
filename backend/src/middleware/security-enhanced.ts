@@ -57,7 +57,7 @@ interface AuditEntry {
 }
 
 // CSRF Protection Configuration - Simplified implementation
-// const csrfSecret = process.env.CSRF_SECRET  ?? 'assixx-csrf-secret-change-in-production';
+// const csrfSecret = process.env['CSRF_SECRET']  ?? 'assixx-csrf-secret-change-in-production';
 
 // Simple CSRF token generation
 function generateToken(_req: AuthenticatedRequest, _res: Response): string {
@@ -85,8 +85,8 @@ export const generateCSRFTokenMiddleware = (
 ): void => {
   try {
     const token = generateToken(req as AuthenticatedRequest, res);
-    // Note: res.locals implicit any is unavoidable due to Express typing
-    res.locals.csrfToken = token;
+    // Bracket notation for index signature access
+    res.locals['csrfToken'] = token;
     next();
   } catch (error: unknown) {
     console.error('Error generating CSRF token:', error);
@@ -123,16 +123,17 @@ export const validateCSRFToken = (req: Request, res: Response, next: NextFunctio
 
 // CSRF Token Response Helper
 export const attachCSRFToken = (_req: Request, res: Response, next: NextFunction): void => {
-  // Note: res.locals implicit any is unavoidable due to Express typing
-  if (res.locals.csrfToken !== null && res.locals.csrfToken !== undefined) {
-    res.setHeader('X-CSRF-Token', String(res.locals.csrfToken));
+  // Bracket notation for index signature access
+  const csrfToken = res.locals['csrfToken'] as string | undefined;
+  if (csrfToken !== undefined) {
+    res.setHeader('X-CSRF-Token', csrfToken);
   }
   next();
 };
 
 // HTTPS Enforcement
 export const enforceHTTPS = (req: Request, res: Response, next: NextFunction): void => {
-  if (req.header('x-forwarded-proto') !== 'https' && process.env.NODE_ENV === 'production') {
+  if (req.header('x-forwarded-proto') !== 'https' && process.env['NODE_ENV'] === 'production') {
     res.redirect(`https://${String(req.header('host'))}${req.url}`);
     return;
   }
@@ -418,7 +419,7 @@ const createTenantRateLimiter = (windowMs: number, max: number): RateLimitReques
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => process.env.NODE_ENV === 'test', // Skip rate limiting in tests
+    skip: () => process.env['NODE_ENV'] === 'test', // Skip rate limiting in tests
   });
 
 // API Rate Limiters - Enhanced with more granular controls
@@ -430,7 +431,7 @@ const GENERAL_LIMIT_DEV = GENERAL_LIMIT_PROD; // Dev = Prod (change only if abso
 
 export const generalLimiter = createTenantRateLimiter(
   20 * 1000, // 20 seconds window
-  process.env.NODE_ENV === 'test' ? 100000 : GENERAL_LIMIT_DEV,
+  process.env['NODE_ENV'] === 'test' ? 100000 : GENERAL_LIMIT_DEV,
 ); // Test: unlimited, Dev/Prod: 20000 per 20 sec
 // Special auth limiter with custom handler for login attempts
 // IMPORTANT: Always 5 attempts in Dev and Prod (Brute-Force protection must be realistic!)
@@ -439,16 +440,17 @@ const AUTH_LIMIT_DEV = AUTH_LIMIT_PROD; // Dev = Prod (DO NOT change unless test
 
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes window (industry standard)
-  max: process.env.NODE_ENV === 'test' ? 100000 : AUTH_LIMIT_DEV, // Test: unlimited, Dev/Prod: 5 per 15 min
+  max: process.env['NODE_ENV'] === 'test' ? 100000 : AUTH_LIMIT_DEV, // Test: unlimited, Dev/Prod: 5 per 15 min
   handler: (req: Request, res: Response) => {
     const retryAfterMinutes = 15; // Always 15 minutes for auth
 
     // Check if this is an API request (expects JSON)
-    if (
-      req.path.startsWith('/api/') ||
-      req.headers['content-type']?.includes('application/json') ||
-      req.headers.accept?.includes('application/json')
-    ) {
+    const contentType = req.headers['content-type'];
+    const acceptHeader = req.headers.accept;
+    const isJsonRequest =
+      (typeof contentType === 'string' && contentType.includes('application/json')) ||
+      (typeof acceptHeader === 'string' && acceptHeader.includes('application/json'));
+    if (req.path.startsWith('/api/') || isJsonRequest) {
       // Return JSON for API/AJAX requests
       res.status(429).json({
         success: false,
@@ -472,7 +474,7 @@ export const authLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  skip: () => process.env.NODE_ENV === 'test',
+  skip: () => process.env['NODE_ENV'] === 'test',
   skipSuccessfulRequests: false, // Count ALL attempts for security
 }); // Prevents brute force while allowing typos
 
@@ -481,7 +483,7 @@ const UPLOAD_LIMIT_PROD = 100; // Production: 100 uploads per 15 minutes
 const UPLOAD_LIMIT_DEV = UPLOAD_LIMIT_PROD; // Dev = Prod
 export const uploadLimiter = createTenantRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === 'test' ? 100000 : UPLOAD_LIMIT_DEV,
+  process.env['NODE_ENV'] === 'test' ? 100000 : UPLOAD_LIMIT_DEV,
 );
 
 // Strict auth limiter (for additional auth endpoints)
@@ -489,7 +491,7 @@ const STRICT_AUTH_LIMIT_PROD = 20; // Production: 20 per 5 minutes
 const STRICT_AUTH_LIMIT_DEV = STRICT_AUTH_LIMIT_PROD; // Dev = Prod
 export const strictAuthLimiter = createTenantRateLimiter(
   5 * 60 * 1000,
-  process.env.NODE_ENV === 'test' ? 100000 : STRICT_AUTH_LIMIT_DEV,
+  process.env['NODE_ENV'] === 'test' ? 100000 : STRICT_AUTH_LIMIT_DEV,
 );
 
 // API limiter (for normal dashboard/data requests)
@@ -497,7 +499,7 @@ const API_LIMIT_PROD = 500; // hier ändern!! und die 60 da unten (shiftfavbutto
 const API_LIMIT_DEV = API_LIMIT_PROD; // Dev = Prod (increase only for load testing!)
 export const apiLimiter = createTenantRateLimiter(
   60 * 1000,
-  process.env.NODE_ENV === 'test' ? 100000 : API_LIMIT_DEV,
+  process.env['NODE_ENV'] === 'test' ? 100000 : API_LIMIT_DEV,
 );
 
 // Search limiter
@@ -505,7 +507,7 @@ const SEARCH_LIMIT_PROD = 500; // Production: 500 searches per 20 seconds
 const SEARCH_LIMIT_DEV = SEARCH_LIMIT_PROD; // Dev = Prod
 export const searchLimiter = createTenantRateLimiter(
   20 * 1000,
-  process.env.NODE_ENV === 'test' ? 100000 : SEARCH_LIMIT_DEV,
+  process.env['NODE_ENV'] === 'test' ? 100000 : SEARCH_LIMIT_DEV,
 );
 export const bulkOperationLimiter = createTenantRateLimiter(60 * 60 * 1000, 50); // 50 bulk operations per hour
 export const reportLimiter = createTenantRateLimiter(60 * 60 * 1000, 100); // 100 reports per hour
@@ -563,7 +565,7 @@ export const suspiciousActivityLimiter = rateLimit({
 export const progressiveApiLimiter = createProgressiveRateLimiter(20 * 1000, 1000); // 1000 requests per 20 seconds
 export const progressiveAuthLimiter = createProgressiveRateLimiter(
   15 * 60 * 1000,
-  process.env.NODE_ENV === 'development' ? 200 : 50,
+  process.env['NODE_ENV'] === 'development' ? 200 : 50,
 ); // 200 auth attempts in dev, 50 in prod
 
 // Tenant Context Validation
@@ -649,7 +651,10 @@ export const auditLogger =
       const auditEntry: AuditEntry = {
         timestamp: new Date().toISOString(),
         tenant_id: authReq.tenant?.id ?? 'public',
-        userId: 'user' in authReq && authReq.user.id ? authReq.user.id.toString() : 'anonymous',
+        userId:
+          'user' in authReq && typeof authReq.user.id === 'number' && authReq.user.id !== 0 ?
+            authReq.user.id.toString()
+          : 'anonymous',
         action,
         resource,
         method: authReq.method,

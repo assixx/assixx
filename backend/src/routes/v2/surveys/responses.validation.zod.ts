@@ -45,18 +45,8 @@ const AnswerSchema = z
     answer_options: z.array(IdSchema).optional(),
   })
   .refine(
-    (data: {
-      question_id?: number;
-      questionId?: number;
-      answerText?: string;
-      answerNumber?: number;
-      answerDate?: string;
-      answerOptions?: number[];
-      answer_text?: string;
-      answer_number?: number;
-      answer_date?: string;
-      answer_options?: number[];
-    }) => data.question_id !== undefined || data.questionId !== undefined,
+    (data: { question_id?: number | undefined; questionId?: number | undefined }): boolean =>
+      data.question_id !== undefined || data.questionId !== undefined,
     {
       message: 'Either question_id or questionId is required',
       path: ['question_id'],

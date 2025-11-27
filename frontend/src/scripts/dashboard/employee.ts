@@ -236,7 +236,7 @@ function formatFileSize(bytes: number): string {
   const sizeIndex = Math.min(i, sizes.length - 1);
 
   // eslint-disable-next-line security/detect-object-injection -- sizeIndex ist begrenzt auf 0-3 durch Math.min(), kein User-Input, 100% sicher
-  return `${Number.parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2))} ${sizes[sizeIndex]}`;
+  return `${Number.parseFloat((bytes / Math.pow(k, sizeIndex)).toFixed(2))} ${sizes[sizeIndex] ?? 'Bytes'}`;
 }
 
 /**
@@ -345,7 +345,7 @@ function createEventItem(event: CalendarEventApi): HTMLElement {
   const levelText = getOrgLevelText(orgLevel);
 
   const eventItem = createElement('div', { className: 'event-item' });
-  eventItem.dataset.id = event.id.toString();
+  eventItem.dataset['id'] = event.id.toString();
 
   // Event date section
   const eventDate = createElement('div', { className: 'event-date' });
@@ -465,7 +465,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const button = target.closest('[data-action="download-document"]');
 
     if (button instanceof HTMLButtonElement) {
-      const docId = button.dataset.docId;
+      const docId = button.dataset['docId'];
       if (docId !== undefined) {
         downloadDocument(docId);
       }

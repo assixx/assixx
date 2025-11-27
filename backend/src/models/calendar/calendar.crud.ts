@@ -31,6 +31,44 @@ interface UserIdResult extends RowDataPacket {
   user_id: number;
 }
 
+/** Filter options for event queries */
+interface EventFilterOptions {
+  filter: string;
+  userDepartmentId?: number | null;
+  userTeamId?: number | null;
+  userId: number;
+  role?: string | null;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
+  isCountQuery?: boolean;
+}
+
+/** Build filter options from query options */
+function buildFilterOptions(
+  filter: string,
+  userId: number,
+  role: string | null,
+  opts: {
+    userDepartmentId?: number | null | undefined;
+    userTeamId?: number | null | undefined;
+    startDate?: string | undefined;
+    endDate?: string | undefined;
+    search?: string | undefined;
+  },
+  isCountQuery: boolean = false,
+): EventFilterOptions {
+  const result: EventFilterOptions = { filter, userId };
+  if (!isCountQuery) result.isCountQuery = false;
+  if (opts.userDepartmentId !== undefined) result.userDepartmentId = opts.userDepartmentId;
+  if (opts.userTeamId !== undefined) result.userTeamId = opts.userTeamId;
+  if (role !== null) result.role = role;
+  if (opts.startDate !== undefined) result.startDate = opts.startDate;
+  if (opts.endDate !== undefined) result.endDate = opts.endDate;
+  if (opts.search !== undefined && opts.search !== '') result.search = opts.search;
+  return result;
+}
+
 /**
  * Get all calendar events visible to the user
  */
@@ -56,33 +94,27 @@ export async function getAllEvents(
 
     const dbStatus = status === 'active' ? 'confirmed' : status;
     const { role } = await user.getUserDepartmentAndTeam(userId);
+    const filterOpts = { userDepartmentId, userTeamId, startDate, endDate, search };
 
     // Build base query
     const baseQuery = `
-        SELECT e.*,
-               u.username as creator_name
+        SELECT e.*, u.username as creator_name
         FROM calendar_events e
         LEFT JOIN users u ON e.user_id = u.id
         WHERE e.tenant_id = ? AND e.status = ?
       `;
-    const baseParams: unknown[] = [tenantId, dbStatus];
 
-    // Apply filters
-    const { query: filteredQuery, params: queryParams } = applyEventFilters(baseQuery, baseParams, {
-      filter,
-      userDepartmentId,
-      userTeamId,
-      userId,
-      role,
-      startDate,
-      endDate,
-      search,
-      isCountQuery: false,
-    });
+    // Apply filters and execute query
+    const filterOptions = buildFilterOptions(filter, userId, role, filterOpts, false);
+    const { query: filteredQuery, params: queryParams } = applyEventFilters(
+      baseQuery,
+      [tenantId, dbStatus],
+      filterOptions,
+    );
 
     // Apply sorting and pagination
-    const finalQuery = filteredQuery + ` ORDER BY e.${sortBy} ${sortDir} LIMIT ? OFFSET ?`;
     const offset = (page - 1) * limit;
+    const finalQuery = filteredQuery + ` ORDER BY e.${sortBy} ${sortDir} LIMIT ? OFFSET ?`;
     queryParams.push(Number.parseInt(limit.toString(), 10), offset);
 
     // Execute query
@@ -90,16 +122,8 @@ export async function getAllEvents(
     processCalendarEvents(events);
 
     // Get total count for pagination
-    const totalEvents = await getEventCount(tenantId, dbStatus, {
-      filter,
-      userDepartmentId,
-      userTeamId,
-      userId,
-      role,
-      startDate,
-      endDate,
-      search,
-    });
+    const countOptions = buildFilterOptions(filter, userId, role, filterOpts, true);
+    const totalEvents = await getEventCount(tenantId, dbStatus, countOptions);
 
     return {
       events,
@@ -160,6 +184,9 @@ export async function getEventById(
     }
 
     const event = events[0];
+    if (event === undefined) {
+      return null;
+    }
 
     // Process event fields
     processCalendarEvents([event]);
@@ -174,6 +201,41 @@ export async function getEventById(
   }
 }
 
+/** Build insert parameters for new event */
+function buildEventInsertParams(eventData: EventCreateData, eventUuid: string): unknown[] {
+  return [
+    eventUuid,
+    eventData.tenant_id,
+    eventData.created_by, // user_id
+    eventData.title,
+    eventData.description ?? null,
+    eventData.location ?? null,
+    formatDateForMysql(eventData.start_time),
+    formatDateForMysql(eventData.end_time),
+    eventData.all_day === true ? 1 : 0,
+    eventData.org_level,
+    eventData.department_id ?? null,
+    eventData.team_id ?? null,
+    eventData.created_by_role ?? 'user',
+    eventData.allow_attendees === true ? 1 : 0,
+    'other', // type
+    'confirmed', // status
+    0, // is_private
+    eventData.reminder_time ?? null,
+    eventData.color ?? '#3498db',
+    eventData.recurrence_rule ?? null,
+    eventData.parent_event_id ?? null,
+  ];
+}
+
+const INSERT_EVENT_QUERY = `
+  INSERT INTO calendar_events
+  (uuid, tenant_id, user_id, title, description, location, start_date, end_date, all_day,
+   org_level, department_id, team_id, created_by_role, allow_attendees,
+   type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`;
+
 /**
  * Create a new calendar event
  */
@@ -182,19 +244,9 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
     const {
       tenant_id: tenantId,
       title,
-      description,
-      location,
+      created_by: createdBy,
       start_time: startTime,
       end_time: endTime,
-      all_day: allDay,
-      org_level: orgLevel,
-      department_id: departmentId,
-      team_id: teamId,
-      created_by: createdBy,
-      created_by_role: createdByRole,
-      allow_attendees: allowAttendees,
-      reminder_time: reminderTime,
-      color,
       recurrence_rule: recurrenceRule,
       parent_event_id: parentEventId,
     } = eventData;
@@ -203,62 +255,26 @@ export async function createEvent(eventData: EventCreateData): Promise<DbCalenda
     if (tenantId === 0 || title === '' || createdBy === 0) {
       throw new Error('Missing required fields');
     }
-
-    // Ensure dates are valid
     if (new Date(startTime) > new Date(endTime)) {
       throw new Error('Start time must be before end time');
     }
 
-    // Generate UUIDv7 for external identifier (time-sortable, like KVP and Survey)
+    // Generate UUIDv7 and insert event
     const eventUuid = uuidv7();
+    const [result] = await executeQuery<ResultSetHeader>(
+      INSERT_EVENT_QUERY,
+      buildEventInsertParams(eventData, eventUuid),
+    );
 
-    // Insert new event
-    const query = `
-        INSERT INTO calendar_events
-        (uuid, tenant_id, user_id, title, description, location, start_date, end_date, all_day,
-         org_level, department_id, team_id, created_by_role, allow_attendees,
-         type, status, is_private, reminder_minutes, color, recurrence_rule, parent_event_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-
-    const [result] = await executeQuery<ResultSetHeader>(query, [
-      eventUuid,
-      tenantId,
-      createdBy, // user_id
-      title,
-      description ?? null,
-      location ?? null,
-      formatDateForMysql(startTime),
-      formatDateForMysql(endTime),
-      allDay === true ? 1 : 0,
-      orgLevel,
-      departmentId ?? null,
-      teamId ?? null,
-      createdByRole ?? 'user',
-      allowAttendees === true ? 1 : 0,
-      'other', // type
-      'confirmed', // status
-      0, // is_private
-      reminderTime ?? null,
-      color ?? '#3498db',
-      recurrenceRule ?? null,
-      parentEventId ?? null,
-    ]);
-
-    // Get the created event
+    // Get the created event and add creator as attendee
     const createdEvent = await getEventById(result.insertId, tenantId, createdBy);
-
-    // Add the creator as an attendee
     if (createdEvent) {
       await addEventAttendee(createdEvent.id, createdBy);
-
-      // If this is a recurring event, generate future occurrences
-      // Use Dependency Injection to pass createEvent function
+      // Generate recurring events if applicable
       if (recurrenceRule != null && recurrenceRule !== '' && parentEventId == null) {
         await generateRecurringEvents(createdEvent, recurrenceRule, createEvent);
       }
     }
-
     return createdEvent;
   } catch (error: unknown) {
     logger.error('Error in createEvent:', error);
@@ -291,7 +307,12 @@ export async function updateEvent(
       return null;
     }
 
-    return await getEventById(id, tenantId, eventRows[0].user_id);
+    const eventRow = eventRows[0];
+    if (eventRow === undefined) {
+      return null;
+    }
+
+    return await getEventById(id, tenantId, eventRow.user_id);
   } catch (error: unknown) {
     logger.error('Error in updateEvent:', error);
     throw error;
@@ -375,31 +396,7 @@ export async function getDashboardEvents(
     queryParams.push(Number.parseInt(resolvedLimit.toString(), 10));
 
     const [events] = await executeQuery<DbCalendarEvent[]>(query, queryParams);
-
-    // Map database fields to API fields
-    events.forEach((event: DbCalendarEvent) => {
-      // Map database column names to API property names
-      event.start_time = event.start_date;
-      event.end_time = event.end_date;
-      event.reminder_time = event.reminder_minutes;
-      event.created_by = event.user_id;
-
-      // org_level and org_id are now stored directly in the database
-      // No need to map them based on type
-
-      // Convert Buffer description to String if needed
-      if (event.description != null && Buffer.isBuffer(event.description)) {
-        event.description = event.description.toString('utf8');
-      } else if (
-        event.description != null &&
-        typeof event.description === 'object' &&
-        'type' in event.description &&
-        Array.isArray(event.description.data)
-      ) {
-        event.description = Buffer.from(event.description.data).toString('utf8');
-      }
-    });
-
+    processCalendarEvents(events);
     return events;
   } catch (error: unknown) {
     logger.error('Error in getDashboardEvents:', error);
@@ -427,6 +424,9 @@ export async function canManageEvent(
     }
 
     const event = events[0];
+    if (event === undefined) {
+      return false;
+    }
 
     // Get user info if not provided
     const userRole = userInfo ? userInfo.role : null;

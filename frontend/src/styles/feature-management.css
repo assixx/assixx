@@ -100,17 +100,6 @@
 }
 
 /* Animationen */
-@keyframes fade-in-up {
-  from {
-    transform: translateY(30px);
-    opacity: 0%;
-  }
-
-  to {
-    transform: translateY(0);
-    opacity: 100%;
-  }
-}
 
 /* Notification Styles */
 .notification {
@@ -144,36 +133,6 @@
   transform: translateX(0);
 }
 
-.notification.notification-error {
-  border-left: 4px solid #f44;
-  color: #d32f2f;
-}
-
-.notification.notification-error i {
-  font-size: 16px;
-  color: #f44;
-}
-
-.notification.notification-success {
-  border-left: 4px solid #4caf50;
-  color: #2e7d32;
-}
-
-.notification.notification-success i {
-  font-size: 16px;
-  color: #4caf50;
-}
-
-.notification.notification-info {
-  border-left: 4px solid #2196f3;
-  color: #1976d2;
-}
-
-.notification.notification-info i {
-  font-size: 16px;
-  color: #2196f3;
-}
-
 /* ========================================
    Second Style Block - Status Categories
    ======================================== */
@@ -195,25 +154,4 @@
 
 .status-disabled {
   color: #6c757d;
-}
-
-.category-basic {
-  padding: 2px 8px;
-  border-radius: 3px;
-  color: #1976d2;
-  background-color: #e3f2fd;
-}
-
-.category-premium {
-  padding: 2px 8px;
-  border-radius: 3px;
-  color: #7b1fa2;
-  background-color: #f3e5f5;
-}
-
-.category-enterprise {
-  padding: 2px 8px;
-  border-radius: 3px;
-  color: #c2185b;
-  background-color: #fce4ec;
 }

@@ -100,6 +100,9 @@ class AuditTrailService {
       }
 
       const user = userRows[0];
+      if (user === undefined) {
+        throw new ServiceError('USER_NOT_FOUND', 'User data is undefined');
+      }
 
       const [result] = await connection.execute<ResultSetHeader>(
         `INSERT INTO audit_trail (
@@ -131,99 +134,90 @@ class AuditTrailService {
   }
 
   /**
-   * Get audit entries with filters
-   * @param filter - The filter parameter
+   * Build WHERE clause conditions and params from filter
    */
-  async getEntries(filter: AuditFilter): Promise<{ entries: AuditEntry[]; total: number }> {
-    const {
-      tenantId,
-      userId,
-      action,
-      resourceType,
-      resourceId,
-      status,
-      dateFrom,
-      dateTo,
-      search,
-      page = 1,
-      limit = 50,
-      sortBy = 'created_at',
-      sortOrder = 'desc',
-    } = filter;
-
-    const offset = (page - 1) * limit;
+  private buildWhereClause(filter: AuditFilter): {
+    whereClause: string;
+    params: (string | number)[];
+  } {
     const conditions: string[] = ['tenant_id = ?'];
-    const params: (string | number | boolean)[] = [tenantId];
+    const params: (string | number)[] = [filter.tenantId];
 
-    // Build WHERE conditions
-    if (userId) {
+    if (filter.userId !== undefined) {
       conditions.push('user_id = ?');
-      params.push(userId);
+      params.push(filter.userId);
     }
-    if (action) {
+    if (filter.action !== undefined) {
       conditions.push('action = ?');
-      params.push(action);
+      params.push(filter.action);
     }
-    if (resourceType) {
+    if (filter.resourceType !== undefined) {
       conditions.push('resource_type = ?');
-      params.push(resourceType);
+      params.push(filter.resourceType);
     }
-    if (resourceId) {
+    if (filter.resourceId !== undefined) {
       conditions.push('resource_id = ?');
-      params.push(resourceId);
+      params.push(filter.resourceId);
     }
-    if (status) {
+    if (filter.status !== undefined) {
       conditions.push('status = ?');
-      params.push(status);
+      params.push(filter.status);
     }
-    if (dateFrom) {
+    if (filter.dateFrom !== undefined) {
       conditions.push('created_at >= ?');
-      params.push(dateFrom);
+      params.push(filter.dateFrom);
     }
-    if (dateTo) {
+    if (filter.dateTo !== undefined) {
       conditions.push('created_at <= ?');
-      params.push(dateTo);
+      params.push(filter.dateTo);
     }
-    if (search) {
+    if (filter.search !== undefined) {
       conditions.push('(user_name LIKE ? OR resource_name LIKE ? OR action LIKE ?)');
-      const searchPattern = `%${search}%`;
+      const searchPattern = `%${filter.search}%`;
       params.push(searchPattern, searchPattern, searchPattern);
     }
 
-    const whereClause = conditions.join(' AND ');
+    return { whereClause: conditions.join(' AND '), params };
+  }
 
-    // Get total count
+  /**
+   * Get total count of entries matching filter
+   */
+  private async getEntriesCount(whereClause: string, params: (string | number)[]): Promise<number> {
     const [countRows] = await execute<CountResult[]>(
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
-    const total = countRows[0].total;
+    const firstCount = countRows[0];
+    if (firstCount === undefined) {
+      throw new ServiceError('DATABASE_ERROR', 'Failed to get count from database');
+    }
+    return firstCount.total;
+  }
 
-    // Get paginated entries
+  /**
+   * Get audit entries with filters
+   */
+  async getEntries(filter: AuditFilter): Promise<{ entries: AuditEntry[]; total: number }> {
+    const page = filter.page ?? 1;
+    const limit = filter.limit ?? 50;
+    const sortBy = filter.sortBy ?? 'created_at';
+    const sortOrder = filter.sortOrder ?? 'desc';
+    const offset = (page - 1) * limit;
+
+    const { whereClause, params } = this.buildWhereClause(filter);
+    const total = await this.getEntriesCount(whereClause, params);
+
     const validSortFields = ['created_at', 'action', 'user_id', 'resource_type'];
     const orderBy = validSortFields.includes(sortBy) ? sortBy : 'created_at';
     const order = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
-    // Debug logging
-    console.info('[Audit Trail Service] Query params:', {
-      whereClause,
-      params,
-      limit,
-      offset,
-      finalParams: [...params, limit, offset],
-    });
-
     const [rows] = await query<DbAuditEntry[]>(
-      `SELECT * FROM audit_trail
-       WHERE ${whereClause}
-       ORDER BY ${orderBy} ${order}
-       LIMIT ? OFFSET ?`,
+      `SELECT * FROM audit_trail WHERE ${whereClause} ORDER BY ${orderBy} ${order} LIMIT ? OFFSET ?`,
       [...params, limit, offset],
     );
 
-    const entries = rows.map((row: DbAuditEntry) => this.mapToAuditEntry(row));
-
-    return { entries, total };
+    return { entries: rows.map((row: DbAuditEntry) => this.mapToAuditEntry(row)), total };
   }
 
   /**
@@ -241,7 +235,12 @@ class AuditTrailService {
       throw new ServiceError('NOT_FOUND', 'Audit entry not found');
     }
 
-    return this.mapToAuditEntry(rows[0]);
+    const row = rows[0];
+    if (row === undefined) {
+      throw new ServiceError('NOT_FOUND', 'Audit entry data is undefined');
+    }
+
+    return this.mapToAuditEntry(row);
   }
 
   /**
@@ -256,11 +255,11 @@ class AuditTrailService {
     const conditions: string[] = ['tenant_id = ?'];
     const params: (string | number | Date)[] = [tenantId];
 
-    if (dateFrom) {
+    if (dateFrom !== undefined && dateFrom !== '') {
       conditions.push('created_at >= ?');
       params.push(dateFrom);
     }
-    if (dateTo) {
+    if (dateTo !== undefined && dateTo !== '') {
       conditions.push('created_at <= ?');
       params.push(dateTo);
     }
@@ -346,8 +345,13 @@ class AuditTrailService {
       statusRows,
     );
 
+    const firstTotal = totalRows[0];
+    if (firstTotal === undefined) {
+      throw new ServiceError('DATABASE_ERROR', 'Failed to get total count from database');
+    }
+
     return {
-      totalEntries: totalRows[0].total,
+      totalEntries: firstTotal.total,
       byAction,
       byResourceType,
       byUser,
@@ -454,32 +458,39 @@ class AuditTrailService {
   }
 
   /**
+   * Apply optional string fields from DB row to entry
+   */
+  private applyOptionalStringFields(entry: AuditEntry, row: DbAuditEntry): void {
+    if (row.user_name !== undefined) entry.userName = row.user_name;
+    if (row.user_role !== undefined) entry.userRole = row.user_role;
+    if (row.resource_name !== undefined) entry.resourceName = row.resource_name;
+    if (row.ip_address !== undefined) entry.ipAddress = row.ip_address;
+    if (row.user_agent !== undefined) entry.userAgent = row.user_agent;
+    if (row.error_message !== undefined) entry.errorMessage = row.error_message;
+  }
+
+  /**
    * Map database row to AuditEntry
-   * @param row - The row parameter
    */
   private mapToAuditEntry(row: DbAuditEntry): AuditEntry {
-    return {
+    const entry: AuditEntry = {
       id: row.id,
       tenantId: row.tenant_id,
       userId: row.user_id,
-      userName: row.user_name,
-      userRole: row.user_role,
       action: row.action,
       resourceType: row.resource_type,
-      resourceId: row.resource_id,
-      resourceName: row.resource_name,
-      changes:
-        row.changes ?
-          typeof row.changes === 'string' ?
-            (JSON.parse(row.changes) as Record<string, unknown>)
-          : (row.changes as Record<string, unknown>)
-        : undefined,
-      ipAddress: row.ip_address,
-      userAgent: row.user_agent,
       status: row.status,
-      errorMessage: row.error_message,
       createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
     };
+
+    this.applyOptionalStringFields(entry, row);
+
+    if (row.resource_id !== undefined) entry.resourceId = row.resource_id;
+    if (row.changes !== undefined) {
+      entry.changes = JSON.parse(row.changes) as Record<string, unknown>;
+    }
+
+    return entry;
   }
 }
 

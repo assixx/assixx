@@ -19,12 +19,12 @@ function extractTenantIdFromRequest(req: AuthenticatedRequest): string | undefin
   }
 
   // Try route params
-  if (req.params.tenantId) {
-    return req.params.tenantId;
+  if (req.params['tenantId'] !== undefined && req.params['tenantId'] !== '') {
+    return req.params['tenantId'];
   }
 
   // Try query params
-  const queryTenantId = req.query.tenant_id;
+  const queryTenantId = req.query['tenant_id'];
   if (queryTenantId === undefined) {
     return undefined;
   }
@@ -77,7 +77,7 @@ export function validateTenantIsolation(
 ): void {
   try {
     // Check if user is authenticated
-    if (!req.user.tenant_id) {
+    if (typeof req.user.tenant_id !== 'number' || req.user.tenant_id === 0) {
       logger.warn('Tenant isolation: No user or tenant_id in request');
       res.status(401).json(errorResponse('Nicht authentifiziert', 401));
       return;

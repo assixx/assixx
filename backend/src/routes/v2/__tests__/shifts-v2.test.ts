@@ -67,7 +67,7 @@ describe('Shifts API v2', () => {
       email: adminUser.email,
       password: 'TestPass123!',
     });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     const employeeUser = await createTestUser(testDb, {
       username: 'shifts_employee_v2',
@@ -83,7 +83,7 @@ describe('Shifts API v2', () => {
       email: employeeUser.email,
       password: 'TestPass123!',
     });
-    employeeToken = employeeLoginRes.body.data.accessToken;
+    employeeToken = employeeLoginRes.body.data['accessToken'];
   });
 
   afterEach(async () => {
@@ -127,7 +127,7 @@ describe('Shifts API v2', () => {
         departmentId,
         title: shiftData.title,
       });
-      // testShiftId = res.body.data.id; // Not used in current tests
+      // testShiftId = res.body.data['id']; // Not used in current tests
     });
 
     it('should fail to create shift without admin role', async () => {
@@ -174,7 +174,7 @@ describe('Shifts API v2', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.data.length).toBeGreaterThan(0);
+      expect(res.body.data['length']).toBeGreaterThan(0);
     });
 
     it('should get shift by ID', async () => {
@@ -193,7 +193,7 @@ describe('Shifts API v2', () => {
           adminUserId,
         ],
       );
-      const shiftId = result.insertId;
+      const shiftId = result['insertId'];
 
       const res = await request(app)
         .get(`/api/v2/shifts/${shiftId}`)
@@ -201,7 +201,7 @@ describe('Shifts API v2', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.id).toBe(shiftId);
+      expect(res.body.data['id']).toBe(shiftId);
     });
 
     it('should update a shift', async () => {
@@ -220,7 +220,7 @@ describe('Shifts API v2', () => {
           adminUserId,
         ],
       );
-      const shiftId = result.insertId;
+      const shiftId = result['insertId'];
 
       const updateData = {
         startTime: '09:00',
@@ -235,8 +235,8 @@ describe('Shifts API v2', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.startTime).toBe(updateData.startTime);
-      expect(res.body.data.status).toBe(updateData.status);
+      expect(res.body.data['startTime']).toBe(updateData.startTime);
+      expect(res.body.data['status']).toBe(updateData.status);
     });
 
     it('should delete a shift', async () => {
@@ -255,7 +255,7 @@ describe('Shifts API v2', () => {
           adminUserId,
         ],
       );
-      const shiftId = result.insertId;
+      const shiftId = result['insertId'];
 
       const res = await request(app)
         .delete(`/api/v2/shifts/${shiftId}`)
@@ -287,8 +287,8 @@ describe('Shifts API v2', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.name).toBe(templateData.name);
-      // templateId = res.body.data.id; // Not used in current tests
+      expect(res.body.data['name']).toBe(templateData.name);
+      // templateId = res.body.data['id']; // Not used in current tests
     });
 
     it('should list shift templates', async () => {
@@ -305,7 +305,7 @@ describe('Shifts API v2', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.data.length).toBeGreaterThan(0);
+      expect(res.body.data['length']).toBeGreaterThan(0);
     });
 
     it('should update a template', async () => {
@@ -314,7 +314,7 @@ describe('Shifts API v2', () => {
         'INSERT INTO shift_templates (tenant_id, name, start_time, end_time, break_minutes) VALUES (?, ?, ?, ?, ?)',
         [tenantId, 'Test Template', '2025-01-30 08:00:00', '2025-01-30 16:00:00', 30],
       );
-      const templateId = result.insertId;
+      const templateId = result['insertId'];
 
       const updateData = {
         name: 'Updated Template',
@@ -328,8 +328,8 @@ describe('Shifts API v2', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.name).toBe(updateData.name);
-      expect(res.body.data.breakMinutes).toBe(updateData.breakMinutes);
+      expect(res.body.data['name']).toBe(updateData.name);
+      expect(res.body.data['breakMinutes']).toBe(updateData.breakMinutes);
     });
 
     it('should delete a template', async () => {
@@ -338,7 +338,7 @@ describe('Shifts API v2', () => {
         'INSERT INTO shift_templates (tenant_id, name, start_time, end_time) VALUES (?, ?, ?, ?)',
         [tenantId, 'Test Template', '2025-01-30 08:00:00', '2025-01-30 16:00:00'],
       );
-      const templateId = result.insertId;
+      const templateId = result['insertId'];
 
       const res = await request(app)
         .delete(`/api/v2/shifts/templates/${templateId}`)
@@ -393,7 +393,7 @@ describe('Shifts API v2', () => {
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.message).toContain('Swap request created');
+      expect(res.body.data['message']).toContain('Swap request created');
     });
 
     it("should not allow swap request for other user's shift", async () => {
@@ -412,7 +412,7 @@ describe('Shifts API v2', () => {
           adminUserId,
         ],
       );
-      const otherShiftId = result.insertId;
+      const otherShiftId = result['insertId'];
 
       const swapData = {
         shiftId: otherShiftId,
@@ -486,7 +486,7 @@ describe('Shifts API v2', () => {
         'INSERT INTO shift_swap_requests (tenant_id, assignment_id, requested_by, status) VALUES (?, ?, ?, ?)',
         [tenantId, assignmentId, employeeUserId, 'pending'],
       );
-      const requestId = result.insertId;
+      const requestId = result['insertId'];
 
       const res = await request(app)
         .put(`/api/v2/shifts/swap-requests/${requestId}/status`)
@@ -495,7 +495,7 @@ describe('Shifts API v2', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.message).toContain('approved');
+      expect(res.body.data['message']).toContain('approved');
     });
   });
 
@@ -687,7 +687,7 @@ describe('Shifts API v2', () => {
         email: otherUser.email,
         password: 'TestPass123!',
       });
-      otherTenantToken = loginRes.body.data.accessToken;
+      otherTenantToken = loginRes.body.data['accessToken'];
     });
 
     it('should not access shifts from other tenant', async () => {
@@ -704,7 +704,7 @@ describe('Shifts API v2', () => {
           adminUserId,
         ],
       );
-      const shiftId = result.insertId;
+      const shiftId = result['insertId'];
 
       const res = await request(app)
         .get(`/api/v2/shifts/${shiftId}`)
@@ -728,7 +728,7 @@ describe('Shifts API v2', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.data).toBeInstanceOf(Array);
-      expect(res.body.data.length).toBe(0);
+      expect(res.body.data['length']).toBe(0);
     });
   });
 
@@ -765,7 +765,7 @@ describe('Shifts API v2', () => {
         'INSERT INTO shift_templates (tenant_id, name, start_time, end_time) VALUES (?, ?, ?, ?)',
         [tenantId, 'Test Template', '2025-01-30 08:00:00', '2025-01-30 16:00:00'],
       );
-      const templateId = result.insertId;
+      const templateId = result['insertId'];
 
       await request(app)
         .put(`/api/v2/shifts/templates/${templateId}`)

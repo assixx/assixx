@@ -66,7 +66,7 @@ describe('Surveys API v2', () => {
       email: adminUser.email,
       password: 'TestPass123!',
     });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     const employeeUser = await createTestUser(testDb, {
       username: 'surveys_employee_v2',
@@ -83,7 +83,7 @@ describe('Surveys API v2', () => {
       email: employeeUser.email,
       password: 'TestPass123!',
     });
-    employeeToken = employeeLoginRes.body.data.accessToken;
+    employeeToken = employeeLoginRes.body.data['accessToken'];
   });
 
   afterEach(async () => {
@@ -117,7 +117,7 @@ describe('Surveys API v2', () => {
         description: surveyData.description,
         status: surveyData.status,
       });
-      testSurveyId = res.body.data.id;
+      testSurveyId = res.body.data['id'];
     });
 
     it('should fail to create survey without admin role', async () => {
@@ -178,7 +178,7 @@ describe('Surveys API v2', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(res.body.data['length']).toBeGreaterThanOrEqual(1);
     });
 
     it('should get survey by ID', async () => {
@@ -188,7 +188,7 @@ describe('Surveys API v2', () => {
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.id).toBe(testSurveyId);
+      expect(res.body.data['id']).toBe(testSurveyId);
     });
 
     it('should return 404 for non-existent survey', async () => {
@@ -211,7 +211,7 @@ describe('Surveys API v2', () => {
          VALUES (?, ?, ?, ?, ?)`,
         [tenantId, 'Test Survey', 'To be updated', 'draft', adminUserId],
       );
-      testSurveyId = result.insertId;
+      testSurveyId = result['insertId'];
     });
 
     it('should update survey fields', async () => {
@@ -287,7 +287,7 @@ describe('Surveys API v2', () => {
          VALUES (?, ?, ?, ?)`,
         [otherTenantId, 'Other Tenant Survey', 'active', otherUser.id],
       );
-      otherTenantSurveyId = result.insertId;
+      otherTenantSurveyId = result['insertId'];
     });
 
     it('should not access surveys from other tenants', async () => {
@@ -307,7 +307,7 @@ describe('Surveys API v2', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       // Should not include the other tenant's survey
-      expect(res.body.data.every((s: any) => s.id !== otherTenantSurveyId)).toBe(true);
+      expect(res.body.data['every']((s: any) => s.id !== otherTenantSurveyId)).toBe(true);
     });
   });
 });

@@ -419,9 +419,17 @@ class ListViewManager {
 
   /**
    * Get display name with extension (original name + extension from stored filename)
+   * Only appends extension if filename doesn't already have one
    * Example: "testfile" + ".pdf" = "testfile.pdf"
+   * Example: "testfile.pdf" stays "testfile.pdf" (no double extension)
    */
   private getDisplayName(doc: Document): string {
+    // Check if filename already has an extension
+    const filenameHasExtension = doc.filename.lastIndexOf('.') > 0;
+    if (filenameHasExtension) {
+      return doc.filename; // Already has extension, don't add again
+    }
+    // No extension in filename, add from stored filename
     const extension = this.getFileExtension(doc.storedFilename);
     return doc.filename + extension;
   }

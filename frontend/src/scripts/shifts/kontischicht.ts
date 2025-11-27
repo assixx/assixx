@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Kontischicht Ansicht - 2-Wochen Schichtplanung
  * Erweitert das bestehende Shift-System um flexible 2-Wochen-Muster
@@ -172,7 +173,7 @@ class KontischichtManager {
    * Create date range selection HTML
    */
   private createDateRangeSection(): string {
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0] ?? '';
     return `
       <div class="rotation-box" style="margin-bottom: 20px; background: rgba(66, 153, 225, 0.05); border: 1px solid rgba(66, 153, 225, 0.3);">
         <h4 style="color: #4299e1; margin-bottom: 15px;">Zeitraum festlegen</h4>
@@ -340,9 +341,9 @@ class KontischichtManager {
       const maxDate = new Date(today);
       maxDate.setMonth(today.getMonth() + 18);
 
-      endDateInput.min = today.toISOString().split('T')[0];
-      endDateInput.max = maxDate.toISOString().split('T')[0];
-      endDateInput.value = endOfKW1.toISOString().split('T')[0];
+      endDateInput.min = today.toISOString().split('T')[0] ?? '';
+      endDateInput.max = maxDate.toISOString().split('T')[0] ?? '';
+      endDateInput.value = endOfKW1.toISOString().split('T')[0] ?? '';
 
       // Update end date min when start date changes
       startDateInput.addEventListener('change', () => {
@@ -352,7 +353,7 @@ class KontischichtManager {
         const startDate = new Date(startDateInput.value);
         const newMaxDate = new Date(startDate);
         newMaxDate.setMonth(startDate.getMonth() + 18);
-        endDateInput.max = newMaxDate.toISOString().split('T')[0];
+        endDateInput.max = newMaxDate.toISOString().split('T')[0] ?? '';
       });
     }
 
@@ -382,7 +383,7 @@ class KontischichtManager {
 
       cardElement.addEventListener('click', (e) => {
         const target = e.currentTarget as HTMLElement;
-        const patternId = target.dataset.patternId;
+        const patternId = target.dataset['patternId'];
         if (patternId !== undefined && patternId !== '') {
           this.selectPattern(patternId);
         }
@@ -428,10 +429,12 @@ class KontischichtManager {
 
     const startDate =
       (startDateInput instanceof HTMLInputElement ? startDateInput.value : null) ??
-      new Date().toISOString().split('T')[0];
+      new Date().toISOString().split('T')[0] ??
+      '';
     const endDate =
       (endDateInput instanceof HTMLInputElement ? endDateInput.value : null) ??
-      this.getEndOfFirstWeekNextYear(new Date()).toISOString().split('T')[0];
+      this.getEndOfFirstWeekNextYear(new Date()).toISOString().split('T')[0] ??
+      '';
 
     // Store selected pattern with dates
     this.selectedPattern = {
@@ -578,7 +581,7 @@ class KontischichtManager {
   /**
    * Reset scroll container to normal state
    */
-  // eslint-disable-next-line max-lines
+
   private resetScrollContainer(): void {
     const weekSchedule = document.querySelector('.week-schedule');
     const scheduleHeader = document.querySelector(this.SCHEDULE_HEADER_SELECTOR);
@@ -811,13 +814,13 @@ class KontischichtManager {
         cell.className = 'shift-cell week-2-cell';
 
         // Set proper data attributes for drag and drop
-        cell.dataset.day = dayName;
-        cell.dataset.shift = shiftType;
+        cell.dataset['day'] = dayName;
+        cell.dataset['shift'] = shiftType;
 
         // Calculate Week 2 date (add 7 days to current week)
         const week2Date = this.getWeek2DateForCell(dayIndex);
         if (week2Date !== '') {
-          cell.dataset.date = week2Date;
+          cell.dataset['date'] = week2Date;
         }
 
         // Style the cell
@@ -858,7 +861,11 @@ class KontischichtManager {
     if (!dateMatch) return '';
 
     const [, day, month, year] = dateMatch;
-    const startDate = new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day));
+    const startDate = new Date(
+      Number.parseInt(year ?? '0'),
+      Number.parseInt(month ?? '0') - 1,
+      Number.parseInt(day ?? '0'),
+    );
 
     // Add 7 days for week 2, plus day index
     const week2Day = new Date(startDate);
@@ -997,7 +1004,7 @@ class KontischichtManager {
       const week2Date = this.getWeek2Date(index);
       const headerElement = document.createElement('div');
       headerElement.className = 'day-header week-2-header';
-      headerElement.dataset.day = index.toString();
+      headerElement.dataset['day'] = index.toString();
       // Initially hidden until Kontischicht mode is activated
       headerElement.style.display = 'none';
 
@@ -1033,7 +1040,11 @@ class KontischichtManager {
     if (!dateMatch) return `${dayIndex + 8}.09`;
 
     const [, day, month, year] = dateMatch;
-    const startDate = new Date(Number.parseInt(year), Number.parseInt(month) - 1, Number.parseInt(day));
+    const startDate = new Date(
+      Number.parseInt(year ?? '0'),
+      Number.parseInt(month ?? '0') - 1,
+      Number.parseInt(day ?? '0'),
+    );
 
     // Add 7 days for week 2, plus day index
     const week2Day = new Date(startDate);
@@ -1072,8 +1083,8 @@ class KontischichtManager {
     const weekInfo = document.querySelector('#currentWeekInfo');
     if (!(weekInfo instanceof HTMLElement)) return;
 
-    const originalText = weekInfo.dataset.original ?? weekInfo.textContent;
-    weekInfo.dataset.original ??= originalText;
+    const originalText = weekInfo.dataset['original'] ?? weekInfo.textContent;
+    weekInfo.dataset['original'] ??= originalText;
 
     weekInfo.textContent = `${originalText} (${weekLabel})`;
   }
@@ -1128,8 +1139,8 @@ class KontischichtManager {
     dayMapping: Record<string, keyof WeekData | undefined>,
     shiftMapping: Record<string, keyof DaySchedule | undefined>,
   ): void {
-    const day = cell.dataset.day;
-    const shiftType = cell.dataset.shift;
+    const day = cell.dataset['day'];
+    const shiftType = cell.dataset['shift'];
 
     if (day === undefined || day === '' || shiftType === undefined || shiftType === '') {
       console.warn('[KONTISCHICHT] Shift cell missing data attributes:', cell);
@@ -1150,8 +1161,12 @@ class KontischichtManager {
     const assignments = cell.querySelectorAll('.employee-assignment');
     assignments.forEach((assignment) => {
       const badge = assignment.querySelector('.employee-badge[data-employee-id]');
-      if (badge instanceof HTMLElement && badge.dataset.employeeId !== undefined && badge.dataset.employeeId !== '') {
-        const employeeId = Number.parseInt(badge.dataset.employeeId, 10);
+      if (
+        badge instanceof HTMLElement &&
+        badge.dataset['employeeId'] !== undefined &&
+        badge.dataset['employeeId'] !== ''
+      ) {
+        const employeeId = Number.parseInt(badge.dataset['employeeId'], 10);
         if (!Number.isNaN(employeeId)) {
           // eslint-disable-next-line security/detect-object-injection -- dayKey is validated from predefined mapping
           const daySchedule = data[dayKey];
@@ -1174,8 +1189,12 @@ class KontischichtManager {
     const employeeItems = document.querySelectorAll('.employee-item[data-employee-id]');
 
     employeeItems.forEach((item) => {
-      if (item instanceof HTMLElement && item.dataset.employeeId !== undefined && item.dataset.employeeId !== '') {
-        const id = Number.parseInt(item.dataset.employeeId, 10);
+      if (
+        item instanceof HTMLElement &&
+        item.dataset['employeeId'] !== undefined &&
+        item.dataset['employeeId'] !== ''
+      ) {
+        const id = Number.parseInt(item.dataset['employeeId'], 10);
         if (!Number.isNaN(id)) {
           allEmployeeIds.add(id);
         }
@@ -1298,7 +1317,7 @@ class KontischichtManager {
     // Use dates from selected pattern
     const startDate = this.selectedPattern?.startsAt ?? this.getCurrentStartDate();
     const endDate =
-      this.selectedPattern?.endsAt ?? this.getEndOfFirstWeekNextYear(new Date()).toISOString().split('T')[0];
+      this.selectedPattern?.endsAt ?? this.getEndOfFirstWeekNextYear(new Date()).toISOString().split('T')[0] ?? '';
 
     console.info(`[KONTISCHICHT] Creating pattern with type: ${patternType}, cycleWeeks: ${cycleLengthWeeks}`);
     console.info(`[KONTISCHICHT] Date range: ${startDate} to ${endDate}`);
@@ -1334,7 +1353,7 @@ class KontischichtManager {
    * Get current start date in ISO format
    */
   private getCurrentStartDate(): string {
-    return new Date().toISOString().split('T')[0];
+    return new Date().toISOString().split('T')[0] ?? '';
   }
 
   /**

@@ -22,14 +22,14 @@ interface RootLogCreateData {
   user_id: number;
   tenant_id: number;
   action: string;
-  ip_address?: string;
-  entity_type?: string;
-  entity_id?: number;
-  details?: string;
-  old_values?: Record<string, unknown>;
-  new_values?: Record<string, unknown>;
-  user_agent?: string;
-  was_role_switched?: boolean;
+  ip_address?: string | undefined;
+  entity_type?: string | undefined;
+  entity_id?: number | undefined;
+  details?: string | undefined;
+  old_values?: Record<string, unknown> | undefined;
+  new_values?: Record<string, unknown> | undefined;
+  user_agent?: string | undefined;
+  was_role_switched?: boolean | undefined;
 }
 
 // Convenience method for simple logging
@@ -117,7 +117,8 @@ export async function getLastRootLogin(userId: number): Promise<DbRootLog | null
 
   try {
     const [rows] = await executeQuery<DbRootLog[]>(query, [userId]);
-    return rows.length > 0 ? rows[0] : null;
+    const row = rows[0];
+    return row !== undefined ? row : null;
   } catch (error: unknown) {
     logger.error(`Error fetching last login for user ${userId}: ${(error as Error).message}`);
     throw error;
@@ -155,8 +156,8 @@ function buildLogFilterConditions(options: {
   for (const filter of filters) {
     if (filter.value === undefined) continue;
 
-    if (filter.checkZero && filter.value === 0) continue;
-    if (filter.checkEmpty && filter.value === '') continue;
+    if (filter.checkZero === true && filter.value === 0) continue;
+    if (filter.checkEmpty === true && filter.value === '') continue;
 
     whereConditions.push(filter.condition);
     params.push(filter.value);

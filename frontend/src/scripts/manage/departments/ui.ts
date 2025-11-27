@@ -27,24 +27,15 @@ function createCountBadge(count: number, names: string, singular: string, plural
 /**
  * Helper: Get status badge configuration
  */
-function getStatusBadge(status: Department['status']): { class: string; text: string } {
-  switch (status) {
-    case 'active':
-      return { class: 'badge--success', text: 'Aktiv' };
-    case 'inactive':
-      return { class: 'badge--warning', text: 'Inaktiv' };
-    case 'restructuring':
-      return { class: 'badge--info', text: 'Umstrukturierung' };
-    default:
-      return { class: 'badge--error', text: status };
-  }
+function getStatusBadge(isActive: boolean): { class: string; text: string } {
+  return isActive ? { class: 'badge--success', text: 'Aktiv' } : { class: 'badge--warning', text: 'Inaktiv' };
 }
 
 /**
  * Helper: Create a single department table row
  */
 function createDepartmentRow(dept: Department): string {
-  const statusBadge = getStatusBadge(dept.status);
+  const statusBadge = getStatusBadge(dept.isActive);
 
   // Extract counts and names for badges
 
@@ -138,22 +129,24 @@ export function renderDepartmentsTable(
 
   // Render table
   const tableHTML = `
-    <table class="data-table data-table--striped">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Beschreibung</th>
-          <th>Bereich</th>
-          <th>Status</th>
-          <th>Mitarbeiter</th>
-          <th>Teams</th>
-          <th>Aktionen</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${departments.map((dept) => createDepartmentRow(dept)).join('')}
-      </tbody>
-    </table>
+    <div class="table-responsive">
+      <table class="data-table data-table--striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Beschreibung</th>
+            <th>Bereich</th>
+            <th>Status</th>
+            <th>Mitarbeiter</th>
+            <th>Teams</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${departments.map((dept) => createDepartmentRow(dept)).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   if (tableContent !== null) {

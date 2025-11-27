@@ -49,6 +49,28 @@ interface RoleResult extends RowDataPacket {
 }
 
 /**
+ * Build permission set from a single permission result
+ */
+function toPermissionSet(perm: PermissionResult): PermissionSet {
+  return {
+    canRead: perm.can_read === 1,
+    canWrite: perm.can_write === 1,
+    canDelete: perm.can_delete === 1,
+  };
+}
+
+/**
+ * Build permission set from multiple permission results (highest permissions)
+ */
+function buildPermissionSet(perms: PermissionResult[]): PermissionSet {
+  return {
+    canRead: perms.some((p: PermissionResult) => p.can_read === 1),
+    canWrite: perms.some((p: PermissionResult) => p.can_write === 1),
+    canDelete: perms.some((p: PermissionResult) => p.can_delete === 1),
+  };
+}
+
+/**
  *
  */
 class AdminPermissionsService {
@@ -78,18 +100,10 @@ class AdminPermissionsService {
         tenantId,
       ]);
 
-      if (directPermissions.length > 0) {
-        const perm = directPermissions[0];
+      const perm = directPermissions[0];
+      if (perm !== undefined) {
         const hasAccess = this.checkPermissionLevel(perm, requiredPermission);
-        return {
-          hasAccess,
-          source: 'direct',
-          permissions: {
-            canRead: perm.can_read === 1,
-            canWrite: perm.can_write === 1,
-            canDelete: perm.can_delete === 1,
-          },
-        };
+        return { hasAccess, source: 'direct', permissions: toPermissionSet(perm) };
       }
 
       // Check group permissions
@@ -108,20 +122,15 @@ class AdminPermissionsService {
       ]);
 
       if (groupPermissions.length > 0) {
-        // Check if any group grants the required permission
         const hasAccess = groupPermissions.some((perm: PermissionResult) =>
           this.checkPermissionLevel(perm, requiredPermission),
         );
-
         if (hasAccess) {
-          // Get the highest permissions from all groups
-          const permissions: PermissionSet = {
-            canRead: groupPermissions.some((p: PermissionResult) => p.can_read === 1),
-            canWrite: groupPermissions.some((p: PermissionResult) => p.can_write === 1),
-            canDelete: groupPermissions.some((p: PermissionResult) => p.can_delete === 1),
+          return {
+            hasAccess: true,
+            source: 'group',
+            permissions: buildPermissionSet(groupPermissions),
           };
-
-          return { hasAccess: true, source: 'group', permissions };
         }
       }
 
@@ -150,7 +159,12 @@ class AdminPermissionsService {
       throw new ServiceError('NOT_FOUND', 'Admin not found');
     }
 
-    return adminRows[0].role === 'root';
+    const adminRow = adminRows[0];
+    if (adminRow === undefined) {
+      throw new ServiceError('NOT_FOUND', 'Admin not found');
+    }
+
+    return adminRow.role === 'root';
   }
 
   private async getDepartmentPermissions(
@@ -169,19 +183,24 @@ class AdminPermissionsService {
       JOIN departments d ON adp.department_id = d.id
       WHERE adp.admin_user_id = ?
       AND adp.tenant_id = ?
-      AND d.status = 'active'
+      AND d.is_active = 1
       ORDER BY d.name
     `;
     const [rows] = await execute<DepartmentPermissionRow[]>(query, [adminId, tenantId]);
 
-    return rows.map((row: DepartmentPermissionRow) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      canRead: row.can_read === 1,
-      canWrite: row.can_write === 1,
-      canDelete: row.can_delete === 1,
-    }));
+    return rows.map((row: DepartmentPermissionRow) => {
+      const result: AdminDepartment = {
+        id: row.id,
+        name: row.name,
+        canRead: row.can_read === 1,
+        canWrite: row.can_write === 1,
+        canDelete: row.can_delete === 1,
+      };
+      if (row.description !== undefined) {
+        result.description = row.description;
+      }
+      return result;
+    });
   }
 
   private async getGroupPermissions(adminId: number, tenantId: number): Promise<AdminGroup[]> {
@@ -204,20 +223,25 @@ class AdminPermissionsService {
     `;
     const [rows] = await execute<GroupPermissionRow[]>(query, [adminId, tenantId]);
 
-    return rows.map((row: GroupPermissionRow) => ({
-      id: row.id,
-      name: row.name,
-      description: row.description,
-      departmentCount: row.department_count,
-      canRead: row.can_read === 1,
-      canWrite: row.can_write === 1,
-      canDelete: row.can_delete === 1,
-    }));
+    return rows.map((row: GroupPermissionRow) => {
+      const result: AdminGroup = {
+        id: row.id,
+        name: row.name,
+        departmentCount: row.department_count,
+        canRead: row.can_read === 1,
+        canWrite: row.can_write === 1,
+        canDelete: row.can_delete === 1,
+      };
+      if (row.description !== undefined) {
+        result.description = row.description;
+      }
+      return result;
+    });
   }
 
   private async getTotalDepartments(tenantId: number): Promise<number> {
     const [countResult] = await execute<RowDataPacket[]>(
-      "SELECT COUNT(*) as total FROM departments WHERE tenant_id = ? AND status = 'active'",
+      'SELECT COUNT(*) as total FROM departments WHERE tenant_id = ? AND is_active = 1',
       [tenantId],
     );
     return (countResult[0] as { total: number }).total;
@@ -265,77 +289,65 @@ class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<void> {
-    logger.info('setDepartmentPermissions called with:', {
-      adminId,
-      departmentIds,
-      permissions,
-      modifiedBy,
-      tenantId,
-    });
+    logger.info('setDepartmentPermissions:', { adminId, departmentIds, permissions, tenantId });
 
     try {
-      logger.info('Starting to remove existing permissions...');
-      // Remove existing department permissions
+      // Remove existing and add new permissions
       await execute(
         'DELETE FROM admin_department_permissions WHERE admin_user_id = ? AND tenant_id = ?',
         [adminId, tenantId],
       );
-      logger.info('Existing permissions removed successfully');
 
-      // Add new permissions
       if (departmentIds.length > 0) {
-        logger.info('Adding new permissions for departments:', departmentIds);
-        const values = departmentIds.map((deptId: number) => [
+        await this.insertDepartmentPermissions(
           adminId,
-          deptId,
+          departmentIds,
+          permissions,
+          modifiedBy,
           tenantId,
-          permissions.canRead ? 1 : 0,
-          permissions.canWrite ? 1 : 0,
-          permissions.canDelete ? 1 : 0,
-          modifiedBy, // assigned_by
-        ]);
-
-        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
-        const flatValues = values.flat();
-
-        logger.info('SQL INSERT values:', { placeholders, flatValues });
-
-        await execute(
-          `INSERT INTO admin_department_permissions
-          (admin_user_id, department_id, tenant_id, can_read, can_write, can_delete, assigned_by)
-          VALUES ${placeholders}`,
-          flatValues,
         );
-        logger.info('Permissions inserted successfully');
       }
 
-      // Log the action
-      logger.info('Creating root log entry...');
+      // Audit log
       await createRootLog({
         action: 'update_admin_permissions',
         user_id: modifiedBy,
         tenant_id: tenantId,
-        details: `Updated department permissions for admin ${adminId}: ${departmentIds.length} departments - ${JSON.stringify(
-          {
-            adminId,
-            departmentCount: departmentIds.length,
-            permissions,
-          },
-        )}`,
+        details: `Updated permissions for admin ${adminId}: ${departmentIds.length} depts`,
       });
-      logger.info('Root log entry created successfully');
     } catch (error: unknown) {
-      logger.error('Error setting department permissions:', error);
-      logger.error('Error details:', {
-        adminId,
-        departmentIds,
-        permissions,
-        tenantId,
-        modifiedBy,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      logger.error('Error setting department permissions:', { adminId, tenantId, error });
       throw new ServiceError('SERVER_ERROR', 'Failed to set permissions');
     }
+  }
+
+  /**
+   * Insert department permissions into database
+   */
+  private async insertDepartmentPermissions(
+    adminId: number,
+    departmentIds: number[],
+    permissions: PermissionSet,
+    modifiedBy: number,
+    tenantId: number,
+  ): Promise<void> {
+    const values = departmentIds.map((deptId: number) => [
+      adminId,
+      deptId,
+      tenantId,
+      permissions.canRead ? 1 : 0,
+      permissions.canWrite ? 1 : 0,
+      permissions.canDelete ? 1 : 0,
+      modifiedBy,
+    ]);
+    const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+
+    await execute(
+      `INSERT INTO admin_department_permissions
+       (admin_user_id, department_id, tenant_id, can_read, can_write, can_delete, assigned_by)
+       VALUES ${placeholders}`,
+      values.flat(),
+    );
   }
 
   /**
@@ -518,11 +530,14 @@ class AdminPermissionsService {
       }
     }
 
-    return {
+    const result: BulkOperationResult = {
       successCount,
       totalCount: adminIds.length,
-      errors: errors.length > 0 ? errors : undefined,
     };
+    if (errors.length > 0) {
+      result.errors = errors;
+    }
+    return result;
   }
 
   /**

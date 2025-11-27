@@ -23,6 +23,9 @@ interface FrontendAnswer {
   answer_options?: number[];
 }
 
+/** Error message for missing survey ID */
+const ERR_SURVEY_ID_REQUIRED = 'Survey ID is required';
+
 /**
  * Helper: Check if string is a valid UUID format
  */
@@ -62,22 +65,43 @@ async function resolveSurveyId(
  */
 export async function submitResponse(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = await resolveSurveyId(
-      req.params.id,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse(ERR_SURVEY_ID_REQUIRED, '400'));
+      return;
+    }
+
+    const surveyId = await resolveSurveyId(idParam, req.user.tenant_id, req.user.id, req.user.role);
     const { answers: rawAnswers } = req.body as { answers: FrontendAnswer[] };
 
     // Transform camelCase from frontend to snake_case for service
-    const answers: SurveyAnswer[] = rawAnswers.map((answer: FrontendAnswer) => ({
-      question_id: answer.questionId ?? answer.question_id ?? 0,
-      answer_text: answer.answerText ?? answer.answer_text,
-      answer_number: answer.answerNumber ?? answer.answer_number,
-      answer_date: answer.answerDate ?? answer.answer_date,
-      answer_options: answer.answerOptions ?? answer.answer_options,
-    }));
+    const answers: SurveyAnswer[] = rawAnswers.map((answer: FrontendAnswer) => {
+      const surveyAnswer: SurveyAnswer = {
+        question_id: answer.questionId ?? answer.question_id ?? 0,
+      };
+
+      const answerText = answer.answerText ?? answer.answer_text;
+      if (answerText !== undefined) {
+        surveyAnswer.answer_text = answerText;
+      }
+
+      const answerNumber = answer.answerNumber ?? answer.answer_number;
+      if (answerNumber !== undefined) {
+        surveyAnswer.answer_number = answerNumber;
+      }
+
+      const answerDate = answer.answerDate ?? answer.answer_date;
+      if (answerDate !== undefined) {
+        surveyAnswer.answer_date = answerDate;
+      }
+
+      const answerOptions = answer.answerOptions ?? answer.answer_options;
+      if (answerOptions !== undefined) {
+        surveyAnswer.answer_options = answerOptions;
+      }
+
+      return surveyAnswer;
+    });
 
     const responseId = await responsesService.submitResponse(
       surveyId,
@@ -107,12 +131,13 @@ export async function submitResponse(req: AuthenticatedRequest, res: Response): 
  */
 export async function getAllResponses(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = await resolveSurveyId(
-      req.params.id,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse(ERR_SURVEY_ID_REQUIRED, '400'));
+      return;
+    }
+
+    const surveyId = await resolveSurveyId(idParam, req.user.tenant_id, req.user.id, req.user.role);
     const { page = 1, limit = 50 } = req.query;
 
     const responses = await responsesService.getAllResponses(
@@ -142,12 +167,13 @@ export async function getAllResponses(req: AuthenticatedRequest, res: Response):
  */
 export async function getMyResponse(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = await resolveSurveyId(
-      req.params.id,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse(ERR_SURVEY_ID_REQUIRED, '400'));
+      return;
+    }
+
+    const surveyId = await resolveSurveyId(idParam, req.user.tenant_id, req.user.id, req.user.role);
 
     const response = await responsesService.getUserResponse(
       surveyId,
@@ -185,13 +211,20 @@ export async function getMyResponse(req: AuthenticatedRequest, res: Response): P
  */
 export async function getResponseById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = await resolveSurveyId(
-      req.params.id,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
-    const responseId = Number.parseInt(req.params.responseId, 10);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse(ERR_SURVEY_ID_REQUIRED, '400'));
+      return;
+    }
+
+    const responseIdParam = req.params['responseId'];
+    if (responseIdParam === undefined) {
+      res.status(400).json(errorResponse('Response ID is required', '400'));
+      return;
+    }
+
+    const surveyId = await resolveSurveyId(idParam, req.user.tenant_id, req.user.id, req.user.role);
+    const responseId = Number.parseInt(responseIdParam, 10);
 
     const response = await responsesService.getResponseById(
       surveyId,
@@ -217,13 +250,20 @@ export async function getResponseById(req: AuthenticatedRequest, res: Response):
  */
 export async function updateResponse(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = await resolveSurveyId(
-      req.params.id,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
-    const responseId = Number.parseInt(req.params.responseId, 10);
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse(ERR_SURVEY_ID_REQUIRED, '400'));
+      return;
+    }
+
+    const responseIdParam = req.params['responseId'];
+    if (responseIdParam === undefined) {
+      res.status(400).json(errorResponse('Response ID is required', '400'));
+      return;
+    }
+
+    const surveyId = await resolveSurveyId(idParam, req.user.tenant_id, req.user.id, req.user.role);
+    const responseId = Number.parseInt(responseIdParam, 10);
     const { answers } = req.body as { answers: SurveyAnswer[] };
 
     await responsesService.updateResponse(
@@ -250,13 +290,15 @@ export async function updateResponse(req: AuthenticatedRequest, res: Response): 
  */
 export async function exportResponses(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const surveyId = await resolveSurveyId(
-      req.params.id,
-      req.user.tenant_id,
-      req.user.id,
-      req.user.role,
-    );
-    const format = (req.query.format as string) || 'csv';
+    const idParam = req.params['id'];
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse(ERR_SURVEY_ID_REQUIRED, '400'));
+      return;
+    }
+
+    const surveyId = await resolveSurveyId(idParam, req.user.tenant_id, req.user.id, req.user.role);
+    const formatParam = req.query['format'] as string | undefined;
+    const format = formatParam !== undefined && formatParam !== '' ? formatParam : 'csv';
 
     const exportData = await responsesService.exportResponses(
       surveyId,

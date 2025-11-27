@@ -114,7 +114,7 @@ export class DepartmentGroupAPI {
         if (group.id !== excludeId) {
           const option = document.createElement('div');
           option.className = 'dropdown__option';
-          option.dataset.value = group.id.toString();
+          option.dataset['value'] = group.id.toString();
 
           // Add indentation for subgroups (using margin-left)
           if (level > 0) {

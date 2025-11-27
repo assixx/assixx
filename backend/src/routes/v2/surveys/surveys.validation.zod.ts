@@ -89,10 +89,10 @@ const AssignmentSchema = z
   .refine(
     (data: {
       type: 'all_users' | 'area' | 'department' | 'team' | 'user';
-      areaId?: number;
-      departmentId?: number;
-      teamId?: number;
-      userId?: number;
+      areaId?: number | undefined;
+      departmentId?: number | undefined;
+      teamId?: number | undefined;
+      userId?: number | undefined;
     }) => {
       if (data.type === 'area') return data.areaId !== undefined;
       if (data.type === 'department') return data.departmentId !== undefined;
@@ -177,18 +177,15 @@ export const CreateSurveyBodySchema = z
     assignments: z.array(AssignmentSchema).optional(),
   })
   .refine(
-    (data: {
-      title: string;
-      description?: string;
-      status?: 'draft' | 'active' | 'closed';
-      isAnonymous?: boolean;
-      isMandatory?: boolean;
-      startDate?: string | null;
-      endDate?: string | null;
-      questions?: unknown[];
-      assignments?: unknown[];
-    }) => {
-      if (data.startDate && data.endDate) {
+    (data: { startDate?: string | null | undefined; endDate?: string | null | undefined }) => {
+      if (
+        data.startDate !== undefined &&
+        data.startDate !== null &&
+        data.startDate !== '' &&
+        data.endDate !== undefined &&
+        data.endDate !== null &&
+        data.endDate !== ''
+      ) {
         const start = new Date(data.startDate);
         const end = new Date(data.endDate);
         return end >= start;
@@ -226,18 +223,15 @@ export const UpdateSurveyBodySchema = z
     assignments: z.array(AssignmentSchema).optional(),
   })
   .refine(
-    (data: {
-      title?: string;
-      description?: string;
-      status?: 'draft' | 'active' | 'closed';
-      isAnonymous?: boolean;
-      isMandatory?: boolean;
-      startDate?: string | null;
-      endDate?: string | null;
-      questions?: unknown[];
-      assignments?: unknown[];
-    }) => {
-      if (data.startDate && data.endDate) {
+    (data: { startDate?: string | null | undefined; endDate?: string | null | undefined }) => {
+      if (
+        data.startDate !== undefined &&
+        data.startDate !== null &&
+        data.startDate !== '' &&
+        data.endDate !== undefined &&
+        data.endDate !== null &&
+        data.endDate !== ''
+      ) {
         const start = new Date(data.startDate);
         const end = new Date(data.endDate);
         return end >= start;

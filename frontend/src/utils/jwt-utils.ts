@@ -12,6 +12,7 @@ import type { JWTPayload } from '../types/api.types';
 export function parseJwt(token: string): JWTPayload | null {
   try {
     const base64Url = token.split('.')[1];
+    if (base64Url === undefined) return null;
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const decodedBase64 = atob(base64);
     let percentEncoded = '';

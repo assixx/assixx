@@ -95,6 +95,11 @@ export async function checkTenantFeatureAccess(
 
     const feature = results[0];
 
+    // Explicit undefined check for TypeScript strict mode
+    if (feature === undefined) {
+      return false;
+    }
+
     // Prüfe Usage-Limit wenn vorhanden
     if (
       feature.usage_limit !== null &&

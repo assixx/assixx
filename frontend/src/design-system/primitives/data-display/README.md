@@ -75,15 +75,50 @@ Glassmorphism data tables with multiple variants
 </table>
 ```
 
-**Responsive Wrapper:**
+**Responsive Wrapper (REQUIRED for wide tables):**
 
 ```html
 <div class="table-responsive">
-  <table class="data-table">
+  <table class="data-table data-table--striped data-table--hover">
     ...
   </table>
 </div>
 ```
+
+The `.table-responsive` wrapper enables horizontal scrolling for tables wider than their container.
+
+**Features:**
+
+- Custom scrollbar styling (thin, glassmorphic)
+- Smooth touch scrolling on iOS
+- Table content auto-sizes to fit (`min-width: max-content`)
+
+**⚠️ IMPORTANT - Tooltip Behavior in Scroll Containers:**
+
+When using `.table-responsive`, elements with `position: absolute` (like tooltips) will be clipped.
+
+**Solutions:**
+
+1. **Native `title` attribute (Recommended for action buttons):**
+
+   ```html
+   <button class="action-icon action-icon--edit" title="Bearbeiten">
+     <i class="fas fa-edit"></i>
+   </button>
+   ```
+
+   Native browser tooltips are NOT clipped because they're rendered by the OS.
+
+2. **Fixed positioning (For custom tooltips):**
+
+   ```html
+   <div class="tooltip tooltip--fixed">
+     <button class="tooltip__trigger">Info</button>
+     <div class="tooltip__content">Tooltip text</div>
+   </div>
+   ```
+
+   Requires JavaScript to calculate `--tooltip-top` and `--tooltip-left` CSS properties.
 
 **Use cases:**
 
@@ -620,5 +655,5 @@ export function DataList({ items, layout = 'default', borderless }: DataListProp
 ---
 
 **Maintained by:** Assixx Design System Team
-**Last Updated:** 2025-10-04
-**Version:** 1.0.0
+**Last Updated:** 2025-11-26
+**Version:** 1.1.0

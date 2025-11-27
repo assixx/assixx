@@ -66,7 +66,7 @@ describe('Reports API v2', () => {
       email: adminUser.email,
       password: 'TestPass123!',
     });
-    adminToken = adminLoginRes.body.data.accessToken;
+    adminToken = adminLoginRes.body.data['accessToken'];
 
     const employeeUser = await createTestUser(testDb, {
       username: 'reports_employee_v2',
@@ -82,7 +82,7 @@ describe('Reports API v2', () => {
       email: employeeUser.email,
       password: 'TestPass123!',
     });
-    employeeToken = employeeLoginRes.body.data.accessToken;
+    employeeToken = employeeLoginRes.body.data['accessToken'];
 
     // Create some test data for reports
     await createTestData();
@@ -221,8 +221,8 @@ describe('Reports API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.period.from).toBe(dateFrom);
-      expect(res.body.data.period.to).toBe(dateTo);
+      expect(res.body.data['period'].from).toBe(dateFrom);
+      expect(res.body.data['period'].to).toBe(dateTo);
     });
 
     it('should require authentication', async () => {
@@ -252,7 +252,7 @@ describe('Reports API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.filters.departmentId).toBe(departmentId);
+      expect(res.body.data['filters'].departmentId).toBe(departmentId);
     });
 
     it('should filter by team', async () => {
@@ -262,7 +262,7 @@ describe('Reports API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.filters.teamId).toBe(teamId);
+      expect(res.body.data['filters'].teamId).toBe(teamId);
     });
   });
 
@@ -281,7 +281,7 @@ describe('Reports API v2', () => {
       log('Department ID:', departmentId);
       log('Tenant ID:', tenantId);
 
-      if (res.body.data.length > 0) {
+      if (res.body.data['length'] > 0) {
         const dept = res.body.data[0];
         expect(dept).toHaveProperty('departmentId');
         expect(dept).toHaveProperty('departmentName');
@@ -315,9 +315,9 @@ describe('Reports API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      expect(res.body.data.overtime).toHaveProperty('totalHours');
-      expect(res.body.data.overtime).toHaveProperty('totalCost');
-      expect(res.body.data.overtime).toHaveProperty('byDepartment');
+      expect(res.body.data['overtime']).toHaveProperty('totalHours');
+      expect(res.body.data['overtime']).toHaveProperty('totalCost');
+      expect(res.body.data['overtime']).toHaveProperty('byDepartment');
     });
   });
 
@@ -340,7 +340,7 @@ describe('Reports API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      const summary = res.body.data.summary;
+      const summary = res.body.data['summary'];
       expect(summary).toHaveProperty('totalSuggestions');
       expect(summary).toHaveProperty('implemented');
       expect(summary).toHaveProperty('totalCost');
@@ -413,7 +413,7 @@ describe('Reports API v2', () => {
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(res.status).toBe(200);
-      const violations = res.body.data.violations;
+      const violations = res.body.data['violations'];
       expect(violations).toHaveProperty('total');
       expect(violations).toHaveProperty('byType');
       expect(violations.byType).toHaveProperty('maxWorkingHours');
@@ -567,7 +567,7 @@ describe('Reports API v2', () => {
         email: otherAdmin.email,
         password: 'TestPass123!',
       });
-      const otherToken = otherLoginRes.body.data.accessToken;
+      const otherToken = otherLoginRes.body.data['accessToken'];
 
       // Get overview report for other tenant
       const res = await request(app)
@@ -576,7 +576,7 @@ describe('Reports API v2', () => {
 
       expect(res.status).toBe(200);
       // Should not see data from our test tenant
-      expect(res.body.data.kvp.totalSuggestions).toBe(0);
+      expect(res.body.data['kvp'].totalSuggestions).toBe(0);
     });
   });
 });

@@ -12,8 +12,7 @@ export interface Department {
   areaName?: string;
   parentId?: number | null;
   parentName?: string;
-  status: 'active' | 'inactive' | 'restructuring';
-  visibility?: 'public' | 'private';
+  isActive: boolean;
   employeeCount?: number;
   employeeNames?: string;
   teamCount?: number;

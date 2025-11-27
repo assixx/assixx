@@ -107,7 +107,7 @@ export const CreateNotificationBodySchema = z
     scheduled_for: DateSchema.optional(),
   })
   .refine(
-    (data: { recipient_type: string; recipient_id?: number }) => {
+    (data: { recipient_type: string; recipient_id?: number | undefined }): boolean => {
       return data.recipient_type === 'all' || Boolean(data.recipient_id);
     },
     {

@@ -54,7 +54,9 @@ class AdminPermissionService {
 
       if (directPermissions.length > 0) {
         const perm = directPermissions[0];
-        return this.checkPermissionLevel(perm, requiredPermission);
+        if (perm !== undefined) {
+          return this.checkPermissionLevel(perm, requiredPermission);
+        }
       }
 
       // Check group permissions
@@ -103,6 +105,35 @@ class AdminPermissionService {
     }
   }
 
+  /** Convert DB result to DepartmentWithPermission */
+  private toDeptWithPermission(dept: DepartmentWithPermissionResult): DepartmentWithPermission {
+    return {
+      id: dept.id,
+      name: dept.name,
+      description: dept.description,
+      can_read: dept.can_read === 1,
+      can_write: dept.can_write === 1,
+      can_delete: dept.can_delete === 1,
+    };
+  }
+
+  /** Merge department permissions into map (takes maximum permissions) */
+  private mergeDeptPermissions(
+    map: Map<number, DepartmentWithPermission>,
+    depts: DepartmentWithPermissionResult[],
+  ): void {
+    for (const dept of depts) {
+      const existing = map.get(dept.id);
+      if (existing !== undefined) {
+        existing.can_read = existing.can_read || dept.can_read === 1;
+        existing.can_write = existing.can_write || dept.can_write === 1;
+        existing.can_delete = existing.can_delete || dept.can_delete === 1;
+      } else {
+        map.set(dept.id, this.toDeptWithPermission(dept));
+      }
+    }
+  }
+
   /**
    * Get all departments an admin has access to (direct + via groups)
    * @param adminId - The adminId parameter
@@ -111,89 +142,43 @@ class AdminPermissionService {
   async getAdminDepartments(
     adminId: number,
     tenantId: number,
-  ): Promise<{
-    departments: DepartmentWithPermission[];
-    hasAllAccess: boolean;
-  }> {
+  ): Promise<{ departments: DepartmentWithPermission[]; hasAllAccess: boolean }> {
     try {
-      // Check if admin has access to all departments
       const [adminInfo] = await execute<DeptCountResult[]>(
         `SELECT COUNT(*) as dept_count FROM admin_department_permissions
          WHERE admin_user_id = ? AND tenant_id = ?`,
         [adminId, tenantId],
       );
-
       const [totalDepts] = await execute<TotalCountResult[]>(
         `SELECT COUNT(*) as total FROM departments WHERE tenant_id = ?`,
         [tenantId],
       );
-
       const hasAllAccess =
-        adminInfo[0].dept_count === totalDepts[0].total && totalDepts[0].total > 0;
+        adminInfo[0] !== undefined &&
+        totalDepts[0] !== undefined &&
+        adminInfo[0].dept_count === totalDepts[0].total &&
+        totalDepts[0].total > 0;
 
-      // Get direct department permissions
       const [directDepts] = await execute<DepartmentWithPermissionResult[]>(
-        `SELECT d.id, d.name, d.description,
-                adp.can_read, adp.can_write, adp.can_delete
-         FROM departments d
-         JOIN admin_department_permissions adp ON d.id = adp.department_id
+        `SELECT d.id, d.name, d.description, adp.can_read, adp.can_write, adp.can_delete
+         FROM departments d JOIN admin_department_permissions adp ON d.id = adp.department_id
          WHERE adp.admin_user_id = ? AND adp.tenant_id = ?`,
         [adminId, tenantId],
       );
-
-      // Get departments via group permissions
       const [groupDepts] = await execute<DepartmentWithPermissionResult[]>(
         `SELECT DISTINCT d.id, d.name, d.description,
-                MAX(agp.can_read) as can_read,
-                MAX(agp.can_write) as can_write,
-                MAX(agp.can_delete) as can_delete
-         FROM departments d
-         JOIN department_group_members dgm ON d.id = dgm.department_id
+                MAX(agp.can_read) as can_read, MAX(agp.can_write) as can_write, MAX(agp.can_delete) as can_delete
+         FROM departments d JOIN department_group_members dgm ON d.id = dgm.department_id
          JOIN admin_group_permissions agp ON dgm.group_id = agp.group_id
-         WHERE agp.admin_user_id = ? AND agp.tenant_id = ?
-         GROUP BY d.id, d.name, d.description`,
+         WHERE agp.admin_user_id = ? AND agp.tenant_id = ? GROUP BY d.id, d.name, d.description`,
         [adminId, tenantId],
       );
 
-      // Merge results, avoiding duplicates
       const departmentMap = new Map<number, DepartmentWithPermission>();
+      for (const dept of directDepts) departmentMap.set(dept.id, this.toDeptWithPermission(dept));
+      this.mergeDeptPermissions(departmentMap, groupDepts);
 
-      // Add direct permissions
-      directDepts.forEach((dept: DepartmentWithPermissionResult) => {
-        departmentMap.set(dept.id, {
-          id: dept.id,
-          name: dept.name,
-          description: dept.description,
-          can_read: dept.can_read === 1,
-          can_write: dept.can_write === 1,
-          can_delete: dept.can_delete === 1,
-        });
-      });
-
-      // Add/update with group permissions (taking maximum permissions)
-      groupDepts.forEach((dept: DepartmentWithPermissionResult) => {
-        const existing = departmentMap.get(dept.id);
-        if (existing) {
-          // Take maximum permissions
-          existing.can_read = existing.can_read || dept.can_read === 1;
-          existing.can_write = existing.can_write || dept.can_write === 1;
-          existing.can_delete = existing.can_delete || dept.can_delete === 1;
-        } else {
-          departmentMap.set(dept.id, {
-            id: dept.id,
-            name: dept.name,
-            description: dept.description,
-            can_read: dept.can_read === 1,
-            can_write: dept.can_write === 1,
-            can_delete: dept.can_delete === 1,
-          });
-        }
-      });
-
-      return {
-        departments: [...departmentMap.values()],
-        hasAllAccess,
-      };
+      return { departments: [...departmentMap.values()], hasAllAccess };
     } catch (error: unknown) {
       logger.error('Error getting admin departments:', error);
       return { departments: [], hasAllAccess: false };
@@ -280,41 +265,22 @@ class AdminPermissionService {
     departmentIds: number[],
     assignedBy: number,
     tenantId: number,
-    permissions: Permission = {
-      can_read: true,
-      can_write: false,
-      can_delete: false,
-    },
+    permissions: Permission = { can_read: true, can_write: false, can_delete: false },
   ): Promise<boolean> {
     const connection = await getConnection();
-
     try {
-      logger.info(`[DEBUG] setPermissions called:`, {
-        adminId,
-        departmentIds,
-        assignedBy,
-        tenantId,
-        permissions,
-      });
-
+      logger.info(`setPermissions: admin=${adminId}, depts=${departmentIds.length}`);
       await connection.beginTransaction();
 
-      // Log old permissions for audit
       const [oldPerms] = await connection.execute(
         `SELECT department_id, can_read, can_write, can_delete
-         FROM admin_department_permissions
-         WHERE admin_user_id = ? AND tenant_id = ?`,
+         FROM admin_department_permissions WHERE admin_user_id = ? AND tenant_id = ?`,
         [adminId, tenantId],
       );
-
-      // Remove all existing permissions
       await connection.execute(
-        `DELETE FROM admin_department_permissions
-         WHERE admin_user_id = ? AND tenant_id = ?`,
+        `DELETE FROM admin_department_permissions WHERE admin_user_id = ? AND tenant_id = ?`,
         [adminId, tenantId],
       );
-
-      // Add new permissions
       await this.insertDepartmentPermissions(
         connection,
         adminId,
@@ -323,8 +289,6 @@ class AdminPermissionService {
         permissions,
         assignedBy,
       );
-
-      // Log permission change
       await this.logDepartmentPermissionChange(
         connection,
         tenantId,
@@ -336,16 +300,10 @@ class AdminPermissionService {
       );
 
       await connection.commit();
-      logger.info(`[DEBUG] Successfully set permissions for admin ${adminId}`);
       return true;
     } catch (error: unknown) {
       await connection.rollback();
-      logger.error('Error setting admin permissions:', error);
-      logger.error('[DEBUG] Error details:', {
-        message: (error as Error).message,
-        code: (error as { code?: string }).code,
-        sqlMessage: (error as { sqlMessage?: string }).sqlMessage,
-      });
+      logger.error('Error setting admin permissions:', { error, adminId, tenantId });
       return false;
     } finally {
       connection.release();

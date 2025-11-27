@@ -39,12 +39,12 @@ function buildNotificationConditions(
     OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`);
   params.push(userId, userId, userId);
 
-  if (filters.type) {
+  if (filters.type !== undefined && filters.type !== '') {
     conditions.push(`n.type = ?`);
     params.push(filters.type);
   }
 
-  if (filters.priority) {
+  if (filters.priority !== undefined && filters.priority !== '') {
     conditions.push(`n.priority = ?`);
     params.push(filters.priority);
   }
@@ -70,6 +70,10 @@ async function getNotificationCounts(
   `;
   const [[countResult]] = await executeQuery<TotalCountResult[]>(countQuery, [userId, ...params]);
 
+  if (!countResult) {
+    throw new ServiceError('INTERNAL_ERROR', 'Failed to get notification count', 500);
+  }
+
   const unreadQuery = `
     SELECT COUNT(*) as unread
     FROM notifications n
@@ -80,6 +84,10 @@ async function getNotificationCounts(
     userId,
     ...params,
   ]);
+
+  if (!unreadResult) {
+    throw new ServiceError('INTERNAL_ERROR', 'Failed to get unread count', 500);
+  }
 
   return { total: countResult.total, unreadCount: unreadResult.unread_count };
 }
@@ -206,7 +214,7 @@ export async function markAsRead(
           OR (recipient_type = 'team' AND recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`,
     [notificationId, tenantId, userId, userId, userId],
   );
-  const notification = rows[0] as RowDataPacket | undefined;
+  const notification = rows[0];
 
   if (!notification) {
     throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
@@ -282,6 +290,10 @@ export async function deleteNotification(
 
   const notification = rows2[0];
 
+  if (!notification) {
+    throw new ServiceError('NOT_FOUND', 'Notification not found', 404);
+  }
+
   // Check permissions - admin can delete any, users only their own
   if (
     userRole !== 'admin' &&
@@ -335,6 +347,22 @@ export async function getPreferences(userId: number, tenantId: number): Promise<
     }
 
     const prefs = rows[0];
+
+    if (!prefs) {
+      // Return default preferences if none exist
+      return {
+        email_notifications: true,
+        push_notifications: true,
+        sms_notifications: false,
+        notification_types: {
+          system: { email: true, push: true, sms: false },
+          task: { email: true, push: true, sms: false },
+          message: { email: false, push: true, sms: false },
+          announcement: { email: true, push: true, sms: false },
+        },
+      };
+    }
+
     let notificationTypes: Record<string, unknown> = {};
     if (prefs.preferences) {
       try {
@@ -349,9 +377,9 @@ export async function getPreferences(userId: number, tenantId: number): Promise<
     }
 
     return {
-      email_notifications: !!prefs.email_notifications,
-      push_notifications: !!prefs.push_notifications,
-      sms_notifications: !!prefs.sms_notifications,
+      email_notifications: prefs.email_notifications === 1,
+      push_notifications: prefs.push_notifications === 1,
+      sms_notifications: prefs.sms_notifications === 1,
       notification_types: notificationTypes,
     };
   } catch (error: unknown) {
@@ -427,76 +455,73 @@ export async function updatePreferences(
   });
 }
 
+/** Convert rows to record */
+function rowsToRecord<T extends { count: number }>(
+  rows: T[],
+  keyFn: (row: T) => string,
+): Record<string, number> {
+  const result: Record<string, number> = {};
+  rows.forEach((row: T) => {
+    result[keyFn(row)] = row.count;
+  });
+  return result;
+}
+
 /**
  * Get notification statistics (admin only)
  * @param tenantId - The tenant ID
  */
 export async function getStatistics(tenantId: number): Promise<unknown> {
-  // Total notifications
   const [[totalResult]] = await executeQuery<TotalCountResult[]>(
     `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = ?`,
     [tenantId],
   );
 
-  // By type
   const [byTypeRows] = await executeQuery<TypeCountResult[]>(
     `SELECT type, COUNT(*) as count FROM notifications WHERE tenant_id = ? GROUP BY type`,
     [tenantId],
   );
 
-  // By priority
   const [byPriorityRows] = await executeQuery<PriorityCountResult[]>(
     `SELECT priority, COUNT(*) as count FROM notifications WHERE tenant_id = ? GROUP BY priority`,
     [tenantId],
   );
 
-  // Read rate
   const [[readRateResult]] = await executeQuery<ReadRateResult[]>(
-    `SELECT
-      COUNT(DISTINCT n.id) as total_notifications,
-      COUNT(DISTINCT nrs.notification_id) as read_notifications
+    `SELECT COUNT(DISTINCT n.id) as total_notifications,
+            COUNT(DISTINCT nrs.notification_id) as read_notifications
      FROM notifications n
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id
      WHERE n.tenant_id = ?`,
     [tenantId],
   );
 
+  if (!readRateResult) {
+    throw new ServiceError('INTERNAL_ERROR', 'Failed to get read rate', 500);
+  }
+
   const readRate =
     readRateResult.total_notifications > 0 ?
       readRateResult.read_notifications / readRateResult.total_notifications
     : 0;
 
-  // Trends (last 30 days)
   const [trendsRows] = await executeQuery<DateCountResult[]>(
-    `SELECT
-      DATE(created_at) as date,
-      COUNT(*) as count
-     FROM notifications
+    `SELECT DATE(created_at) as date, COUNT(*) as count FROM notifications
      WHERE tenant_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-     GROUP BY DATE(created_at)
-     ORDER BY date`,
+     GROUP BY DATE(created_at) ORDER BY date`,
     [tenantId],
   );
 
-  const byType: Record<string, number> = {};
-  byTypeRows.forEach((row: TypeCountResult) => {
-    byType[row.type] = row.count;
-  });
-
-  const byPriority: Record<string, number> = {};
-  byPriorityRows.forEach((row: PriorityCountResult) => {
-    byPriority[row.priority] = row.count;
-  });
+  if (!totalResult) {
+    throw new ServiceError('INTERNAL_ERROR', 'Failed to get total count', 500);
+  }
 
   return {
     total: totalResult.total,
-    byType,
-    byPriority,
+    byType: rowsToRecord(byTypeRows, (r: TypeCountResult) => r.type),
+    byPriority: rowsToRecord(byPriorityRows, (r: PriorityCountResult) => r.priority),
     readRate,
-    trends: trendsRows.map((row: DateCountResult) => ({
-      date: row.date,
-      count: row.count,
-    })),
+    trends: trendsRows.map((row: DateCountResult) => ({ date: row.date, count: row.count })),
   };
 }
 
@@ -543,6 +568,14 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
   byTypeRows.forEach((row: TypeCountResult) => {
     byType[row.type] = row.count;
   });
+
+  if (!totalResult) {
+    throw new ServiceError('INTERNAL_ERROR', 'Failed to get total count', 500);
+  }
+
+  if (!unreadResult) {
+    throw new ServiceError('INTERNAL_ERROR', 'Failed to get unread count', 500);
+  }
 
   return {
     total: totalResult.total,

@@ -36,12 +36,6 @@
   text-decoration: none;
 }
 
-.logo-text {
-  font-size: 1.25rem; /* 20px */
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
 .header-actions {
   display: flex;
   gap: var(--spacing-4);
@@ -73,66 +67,7 @@
   overflow-x: auto;
 }
 
-.admin-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 20px;
-
-  /* Data table optimization: smaller font for better information density */
-  font-size: 12px; /* Best Practice 2025: GitHub, Linear, Stripe all use 12px */
-}
-
-.admin-table th {
-  padding: 8px 12px; /* Optimized: vertical reduced, horizontal increased */
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-
-  font-weight: 600;
-  color: var(--text-primary);
-  text-align: left;
-
-  background: rgb(33 150 243 / 10%);
-}
-
-.admin-table td {
-  padding: 8px 12px; /* Consistent with th */
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-  color: var(--text-secondary);
-}
-
-.admin-table tr:hover {
-  background: rgb(255 255 255 / 2%);
-}
-
 /* Employee Table - Data-dense optimization */
-.employee-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-top: 20px;
-
-  /* Data table optimization: smaller font for better information density */
-  font-size: 12px; /* Best Practice 2025: GitHub, Linear, Stripe all use 12px */
-}
-
-.employee-table th {
-  padding: 8px 12px; /* Optimized: vertical reduced, horizontal increased */
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-
-  font-weight: 600;
-  color: var(--text-primary);
-  text-align: left;
-
-  background: rgb(33 150 243 / 10%);
-}
-
-.employee-table td {
-  padding: 9px;
-  border-bottom: 1px solid rgb(255 255 255 / 5%);
-  color: var(--text-secondary);
-}
-
-.employee-table tr:hover {
-  background: rgb(255 255 255 / 2%);
-}
 
 /* Forms */
 .form-group {
@@ -555,133 +490,10 @@
 }
 
 /* Tab Navigation */
-.tab-navigation {
-  display: flex;
-  gap: var(--spacing-1);
-
-  margin-bottom: var(--spacing-4);
-  padding: 0 var(--spacing-6);
-  border-bottom: 2px solid var(--border-color);
-}
-
-.tab-btn {
-  cursor: pointer;
-
-  margin-bottom: -2px;
-  padding: var(--spacing-3);
-  border: none;
-  border-bottom: 2px solid transparent;
-
-  font-size: 14px;
-  color: var(--text-secondary);
-
-  background: none;
-}
-
-.tab-btn:hover {
-  color: var(--primary-color);
-}
-
-.tab-btn.active {
-  border-bottom-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.tab-content {
-  display: none;
-  padding: var(--spacing-6);
-}
-
-.tab-content.active {
-  display: block;
-}
 
 /* Admin Dashboard Grid */
-.admin-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-6);
-  margin-bottom: var(--spacing-8);
-}
-
-.compact-card {
-  display: flex;
-  flex-direction: column;
-  height: 400px;
-}
-
-.compact-content {
-  overflow-y: auto;
-  flex-grow: 1;
-  padding: var(--spacing-6);
-}
-
-.compact-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.compact-list-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  padding: var(--spacing-3);
-  border-bottom: 1px solid var(--border-color);
-
-  font-size: 13px;
-}
-
-.compact-list-item:last-child {
-  border-bottom: none;
-}
-
-.view-all-link {
-  display: block;
-
-  margin-top: var(--spacing-4);
-
-  font-weight: 500;
-  color: var(--primary-color);
-  text-align: center;
-  text-decoration: none;
-}
-
-.view-all-link:hover {
-  text-decoration: underline;
-}
 
 /* Recent Activity Grid */
-.recent-activity-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-6);
-  padding: var(--spacing-6);
-}
-
-.recent-section h3 {
-  margin-bottom: var(--spacing-4);
-  font-size: 16px;
-  color: var(--primary-color);
-}
-
-.recent-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recent-list li {
-  padding: var(--spacing-3);
-  border-bottom: 1px solid var(--border-color);
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.recent-list li:last-child {
-  border-bottom: none;
-}
 
 /* Admin Dashboard Sidebar */
 /* Layout container styles moved to unified-navigation.css to avoid duplication */
@@ -704,13 +516,6 @@
   border-color: rgb(244 67 54 / 30%);
   color: rgb(239 83 80);
   background: linear-gradient(135deg, rgb(244 67 54 / 8%) 0%, rgb(244 67 54 / 3%) 100%);
-}
-
-.option-description {
-  margin-top: 4px;
-  margin-left: 24px;
-  font-size: 0.9em;
-  color: var(--text-secondary);
 }
 
 /* General modal footer */
@@ -981,18 +786,9 @@
 }
 
 /* Logout button text - responsive */
-.logout-text {
-  display: inline-block !important;
-  margin-left: 0.25rem !important;
-  font-size: 0.875rem !important;
-}
 
 /* Hide text on small screens */
 @media (width <= 768px) {
-  .logout-text {
-    display: none !important;
-  }
-
   #logout-btn,
   .logout-btn,
   .btn-logout {

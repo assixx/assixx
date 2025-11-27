@@ -28,6 +28,11 @@ import {
 } from './shift-types.js';
 import User from './user/index.js';
 
+/** Validates that all numbers are valid (not 0 and not NaN) */
+function hasInvalidNumber(...nums: number[]): boolean {
+  return nums.some((n: number) => n === 0 || Number.isNaN(n));
+}
+
 /**
  * Get all shift templates for a tenant
  */
@@ -67,7 +72,12 @@ export async function createShiftTemplate(
     } = templateData;
 
     // Validate required fields
-    if (!tenant_id || !name || !start_time || !end_time || !duration_hours || !created_by) {
+    if (
+      hasInvalidNumber(tenant_id, duration_hours, created_by) ||
+      name === '' ||
+      start_time === '' ||
+      end_time === ''
+    ) {
       throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
@@ -96,7 +106,12 @@ export async function createShiftTemplate(
       [result.insertId],
     );
 
-    return created[0];
+    const template = created[0];
+    if (template === undefined) {
+      throw new Error('Failed to retrieve created template');
+    }
+
+    return template;
   } catch (error: unknown) {
     console.error('Error in createShiftTemplate:', error);
     throw error;
@@ -170,6 +185,33 @@ function applyShiftPlanFilters(
   return { query: updatedQuery, params: updatedParams };
 }
 
+/** Execute count query and return total */
+async function executeCountQuery(
+  tenantId: number,
+  role: string | null,
+  departmentId: number | null,
+  teamId: number | null,
+  options: ShiftPlanFilters,
+): Promise<number> {
+  const baseCountQuery = 'SELECT COUNT(*) as total FROM shift_plans sp WHERE sp.tenant_id = ?';
+  const { query: countAccessQuery, params: countAccessParams } = applyShiftPlanAccessControl(
+    baseCountQuery,
+    [tenantId],
+    role,
+    departmentId,
+    teamId,
+  );
+  const { query: finalCountQuery, params: finalCountParams } = applyShiftPlanFilters(
+    countAccessQuery,
+    countAccessParams,
+    options,
+  );
+  const [countResult] = await executeQuery<CountResult[]>(finalCountQuery, finalCountParams);
+  const countRow = countResult[0];
+  if (countRow === undefined) throw new Error('Failed to retrieve count result');
+  return countRow.total;
+}
+
 /**
  * Get all shift plans for a tenant with optional filters
  */
@@ -203,12 +245,6 @@ export async function getShiftPlans(
       WHERE sp.tenant_id = ?
     `;
 
-    // Build count query
-    const countQuery = `
-      SELECT COUNT(*) as total FROM shift_plans sp
-      WHERE sp.tenant_id = ?
-    `;
-
     // Apply access control and filters to main query
     const { query: accessControlledQuery, params: accessControlledParams } =
       applyShiftPlanAccessControl(baseQuery, [tenantId], role, departmentId, teamId);
@@ -227,24 +263,8 @@ export async function getShiftPlans(
     // Execute main query
     const [plans] = await executeQuery<DbShiftPlan[]>(paginatedQuery, paginatedParams);
 
-    // Apply same access control and filters to count query
-    const { query: countAccessQuery, params: countAccessParams } = applyShiftPlanAccessControl(
-      countQuery,
-      [tenantId],
-      role,
-      departmentId,
-      teamId,
-    );
-
-    const { query: finalCountQuery, params: finalCountParams } = applyShiftPlanFilters(
-      countAccessQuery,
-      countAccessParams,
-      options,
-    );
-
-    // Execute count query
-    const [countResult] = await executeQuery<CountResult[]>(finalCountQuery, finalCountParams);
-    const total = countResult[0].total;
+    // Execute count query using helper
+    const total = await executeCountQuery(tenantId, role, departmentId, teamId, options);
 
     return {
       plans,
@@ -309,7 +329,12 @@ export async function createShiftPlan(planData: ShiftPlanData): Promise<DbShiftP
       result.insertId,
     ]);
 
-    return created[0];
+    const plan = created[0];
+    if (plan === undefined) {
+      throw new Error('Failed to retrieve created plan');
+    }
+
+    return plan;
   } catch (error: unknown) {
     console.error('Error in createShiftPlan:', error);
     throw error;
@@ -353,7 +378,7 @@ export async function getShiftsByPlan(
       if (shift.assignments != null && shift.assignments !== '') {
         shift.assignedEmployees = shift.assignments.split('; ').map((assignment: string) => {
           const [name, status] = assignment.split(':');
-          return { name, status };
+          return { name: name ?? '', status: status ?? '' };
         });
       } else {
         shift.assignedEmployees = [];
@@ -418,10 +443,37 @@ export async function createShift(shiftData: ShiftData): Promise<DbShift> {
       result.insertId,
     ]);
 
-    return created[0];
+    const shift = created[0];
+    if (shift === undefined) {
+      throw new Error('Failed to retrieve created shift');
+    }
+
+    return shift;
   } catch (error: unknown) {
     console.error('Error in createShift:', error);
     throw error;
+  }
+}
+
+/** Check if employee is already assigned on the same day */
+async function checkSameDayConflict(
+  shiftId: number,
+  userId: number,
+  tenantId: number,
+): Promise<void> {
+  const [shiftInfo] = await executeQuery<DbShift[]>('SELECT date FROM shifts WHERE id = ?', [
+    shiftId,
+  ]);
+  if (shiftInfo.length === 0) return;
+  const shiftData = shiftInfo[0];
+  if (shiftData === undefined) throw new Error('Failed to retrieve shift information');
+  const [dayAssignments] = await executeQuery<RowDataPacket[]>(
+    `SELECT sa.* FROM shift_assignments sa JOIN shifts s ON sa.shift_id = s.id
+     WHERE sa.user_id = ? AND s.date = ? AND s.tenant_id = ?`,
+    [userId, shiftData.date, tenantId],
+  );
+  if (dayAssignments.length > 0) {
+    throw new Error('Employee is already assigned to another shift on this day');
   }
 }
 
@@ -435,7 +487,7 @@ export async function assignEmployeeToShift(
     const { tenant_id, shift_id, user_id, assigned_by } = assignmentData;
 
     // Validate required fields
-    if (!tenant_id || !shift_id || !user_id || !assigned_by) {
+    if (hasInvalidNumber(tenant_id, shift_id, user_id, assigned_by)) {
       throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
@@ -444,33 +496,10 @@ export async function assignEmployeeToShift(
       'SELECT * FROM shift_assignments WHERE shift_id = ? AND user_id = ?',
       [shift_id, user_id],
     );
+    if (existing.length > 0) throw new Error('Employee already assigned to this shift');
 
-    if (existing.length > 0) {
-      throw new Error('Employee already assigned to this shift');
-    }
-
-    // Check if employee is already assigned to another shift on the same day
-    const [shiftInfo] = await executeQuery<DbShift[]>('SELECT date FROM shifts WHERE id = ?', [
-      shift_id,
-    ]);
-
-    if (shiftInfo.length > 0) {
-      const shiftDate = shiftInfo[0].date;
-
-      const [dayAssignments] = await executeQuery<RowDataPacket[]>(
-        `
-        SELECT sa.*, s.start_time, s.end_time
-        FROM shift_assignments sa
-        JOIN shifts s ON sa.shift_id = s.id
-        WHERE sa.user_id = ? AND s.date = ? AND s.tenant_id = ?
-      `,
-        [user_id, shiftDate, tenant_id],
-      );
-
-      if (dayAssignments.length > 0) {
-        throw new Error('Employee is already assigned to another shift on this day');
-      }
-    }
+    // Check same-day conflict
+    await checkSameDayConflict(shift_id, user_id, tenant_id);
 
     const query = `
       INSERT INTO shift_assignments
@@ -496,7 +525,12 @@ export async function assignEmployeeToShift(
       [result.insertId],
     );
 
-    return created[0];
+    const assignment = created[0];
+    if (assignment === undefined) {
+      throw new Error('Failed to retrieve created assignment');
+    }
+
+    return assignment;
   } catch (error: unknown) {
     console.error('Error in assignEmployeeToShift:', error);
     throw error;
@@ -534,6 +568,55 @@ export async function getEmployeeAvailability(
   }
 }
 
+/** Update existing availability record */
+async function updateAvailabilityRecord(
+  existingRecord: DbEmployeeAvailability,
+  data: EmployeeAvailabilityData,
+): Promise<DbEmployeeAvailability> {
+  await executeQuery(
+    `UPDATE employee_availability SET availability_type = ?, start_time = ?, end_time = ?, notes = ?, updated_at = NOW() WHERE id = ?`,
+    [
+      data.availability_type,
+      data.start_time ?? null,
+      data.end_time ?? null,
+      data.notes ?? null,
+      existingRecord.id,
+    ],
+  );
+  return {
+    ...existingRecord,
+    availability_type: data.availability_type,
+    start_time: data.start_time,
+    end_time: data.end_time,
+    notes: data.notes,
+  } as DbEmployeeAvailability;
+}
+
+/** Create new availability record */
+async function createAvailabilityRecord(
+  data: EmployeeAvailabilityData,
+): Promise<DbEmployeeAvailability> {
+  const [result] = await executeQuery<ResultSetHeader>(
+    `INSERT INTO employee_availability (tenant_id, user_id, date, availability_type, start_time, end_time, notes) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [
+      data.tenant_id,
+      data.user_id,
+      formatDateOnlyForMysql(data.date),
+      data.availability_type,
+      data.start_time ?? null,
+      data.end_time ?? null,
+      data.notes ?? null,
+    ],
+  );
+  const [created] = await executeQuery<DbEmployeeAvailability[]>(
+    'SELECT * FROM employee_availability WHERE id = ?',
+    [result.insertId],
+  );
+  const availability = created[0];
+  if (availability === undefined) throw new Error('Failed to retrieve created availability record');
+  return availability;
+}
+
 /**
  * Set employee availability
  */
@@ -541,8 +624,7 @@ export async function setEmployeeAvailability(
   availabilityData: EmployeeAvailabilityData,
 ): Promise<DbEmployeeAvailability> {
   try {
-    const { tenant_id, user_id, date, availability_type, start_time, end_time, notes } =
-      availabilityData;
+    const { tenant_id, user_id, date } = availabilityData;
 
     // Validate required fields
     if (tenant_id === 0 || user_id === 0) {
@@ -556,53 +638,11 @@ export async function setEmployeeAvailability(
     );
 
     if (existing.length > 0) {
-      // Update existing
-      const query = `
-        UPDATE employee_availability
-        SET availability_type = ?, start_time = ?, end_time = ?, notes = ?, updated_at = NOW()
-        WHERE id = ?
-      `;
-
-      await executeQuery(query, [
-        availability_type,
-        start_time ?? null,
-        end_time ?? null,
-        notes ?? null,
-        existing[0].id,
-      ]);
-
-      return {
-        ...existing[0],
-        availability_type,
-        start_time,
-        end_time,
-        notes,
-      } as DbEmployeeAvailability;
-    } else {
-      // Create new
-      const query = `
-        INSERT INTO employee_availability
-        (tenant_id, user_id, date, availability_type, start_time, end_time, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-      `;
-
-      const [result] = await executeQuery<ResultSetHeader>(query, [
-        tenant_id,
-        user_id,
-        formatDateOnlyForMysql(date),
-        availability_type,
-        start_time ?? null,
-        end_time ?? null,
-        notes ?? null,
-      ]);
-
-      const [created] = await executeQuery<DbEmployeeAvailability[]>(
-        'SELECT * FROM employee_availability WHERE id = ?',
-        [result.insertId],
-      );
-
-      return created[0];
+      const existingRecord = existing[0];
+      if (existingRecord === undefined) throw new Error('Failed to retrieve existing availability');
+      return await updateAvailabilityRecord(existingRecord, availabilityData);
     }
+    return await createAvailabilityRecord(availabilityData);
   } catch (error: unknown) {
     console.error('Error in setEmployeeAvailability:', error);
     throw error;
@@ -669,7 +709,7 @@ export async function createShiftExchangeRequest(
     } = requestData;
 
     // Validate required fields
-    if (!tenant_id || !shift_id || !requester_id) {
+    if (hasInvalidNumber(tenant_id, shift_id, requester_id)) {
       throw new Error(ERROR_MESSAGES.MISSING_REQUIRED_FIELDS);
     }
 
@@ -695,7 +735,12 @@ export async function createShiftExchangeRequest(
       [result.insertId],
     );
 
-    return created[0];
+    const request = created[0];
+    if (request === undefined) {
+      throw new Error('Failed to retrieve created exchange request');
+    }
+
+    return request;
   } catch (error: unknown) {
     console.error('Error in createShiftExchangeRequest:', error);
     throw error;
@@ -719,6 +764,9 @@ export async function canAccessShiftPlan(planId: number, userId: number): Promis
     }
 
     const plan = plans[0];
+    if (plan === undefined) {
+      return false;
+    }
 
     // Admins can access all plans
     if (role === 'admin' || role === 'root') {

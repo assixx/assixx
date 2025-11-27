@@ -65,6 +65,42 @@ interface User {
 }
 
 /**
+ * File type display info for upload preview
+ */
+interface FileTypeDisplayInfo {
+  cssClass: string;
+  iconClass: string;
+}
+
+/**
+ * Detect file type and return display info (CSS class + icon)
+ * Extracted to reduce cognitive complexity in handleFileSelected
+ */
+function getFileTypeDisplayInfo(mimeType: string, extension: string): FileTypeDisplayInfo {
+  // PDF
+  if (mimeType === 'application/pdf' || extension === 'pdf') {
+    return { cssClass: 'file-upload-item__preview--pdf', iconClass: 'fas fa-file-pdf' };
+  }
+  // Images
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  if (mimeType.startsWith('image/') || imageExtensions.includes(extension)) {
+    return { cssClass: 'file-upload-item__preview--image', iconClass: 'fas fa-file-image' };
+  }
+  // Word documents
+  const wordExtensions = ['doc', 'docx'];
+  if (mimeType.includes('word') || wordExtensions.includes(extension)) {
+    return { cssClass: 'file-upload-item__preview--word', iconClass: 'fas fa-file-word' };
+  }
+  // Excel spreadsheets
+  const excelExtensions = ['xls', 'xlsx'];
+  if (mimeType.includes('excel') || mimeType.includes('spreadsheet') || excelExtensions.includes(extension)) {
+    return { cssClass: 'file-upload-item__preview--excel', iconClass: 'fas fa-file-excel' };
+  }
+  // Default: generic file
+  return { cssClass: '', iconClass: 'fas fa-file' };
+}
+
+/**
  * Upload Modal Manager
  */
 class UploadModalManager {
@@ -150,8 +186,8 @@ class UploadModalManager {
       const data: unknown = await response.json();
 
       // Type assertion after fetching - API returns user data in various formats
-      this.currentUser = ((data as Record<string, unknown>).data ??
-        (data as Record<string, unknown>).user ??
+      this.currentUser = ((data as Record<string, unknown>)['data'] ??
+        (data as Record<string, unknown>)['user'] ??
         data) as User;
       return this.currentUser;
     } catch (error) {
@@ -408,18 +444,40 @@ class UploadModalManager {
   }
 
   /**
-   * Handle file selected
+   * Handle file selected - updates preview with Design System styling
    */
   private handleFileSelected(file: File): void {
     // Show file preview
     const selectedFileDiv = this.modalEl?.querySelector('#selected-file');
     const fileName = this.modalEl?.querySelector('#file-name');
     const fileSize = this.modalEl?.querySelector('#file-size');
+    const filePreview = this.modalEl?.querySelector('#file-preview');
+    const fileIcon = this.modalEl?.querySelector('#file-icon');
 
     if (selectedFileDiv && fileName && fileSize) {
       fileName.textContent = file.name;
       fileSize.textContent = this.formatFileSize(file.size);
       selectedFileDiv.classList.remove('hidden');
+    }
+
+    // Set icon and preview class based on file type
+    if (filePreview && fileIcon) {
+      // Remove any existing type-specific classes
+      filePreview.classList.remove(
+        'file-upload-item__preview--pdf',
+        'file-upload-item__preview--image',
+        'file-upload-item__preview--word',
+        'file-upload-item__preview--excel',
+      );
+
+      const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+      const mimeType = file.type.toLowerCase();
+      const displayInfo = getFileTypeDisplayInfo(mimeType, extension);
+
+      if (displayInfo.cssClass !== '') {
+        filePreview.classList.add(displayInfo.cssClass);
+      }
+      fileIcon.className = displayInfo.iconClass;
     }
 
     // Auto-fill document name if empty
@@ -606,7 +664,7 @@ class UploadModalManager {
 
     const clampedIndex = Math.max(0, Math.min(i, sizes.length - 1));
     // eslint-disable-next-line security/detect-object-injection
-    const sizeLabel = sizes[clampedIndex];
+    const sizeLabel = sizes[clampedIndex] ?? 'Bytes';
     return `${Math.round((bytes / Math.pow(k, clampedIndex)) * 100) / 100} ${sizeLabel}`;
   }
 
@@ -653,7 +711,7 @@ class UploadModalManager {
         if (!e.dataTransfer?.files || e.dataTransfer.files.length === 0) return;
 
         const file = e.dataTransfer.files[0];
-        if (this.fileInput) {
+        if (this.fileInput && file !== undefined) {
           const dataTransfer = new DataTransfer();
           dataTransfer.items.add(file);
           this.fileInput.files = dataTransfer.files;

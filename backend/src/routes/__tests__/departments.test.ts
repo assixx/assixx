@@ -31,7 +31,7 @@ describe('Department Management API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-dept-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-dept-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'depttest1', 'Department Test Company 1');
@@ -125,7 +125,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const departments = response.body.data.departments;
+      const departments = response.body.data['departments'];
       expect(departments[0]).toHaveProperty('employee_count');
       expect(departments[0]).toHaveProperty('team_count');
     });
@@ -142,7 +142,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const departments = response.body.data.departments;
+      const departments = response.body.data['departments'];
       expect(departments.every((d) => d.status === 'active')).toBe(true);
     });
 
@@ -152,7 +152,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const departments = response.body.data.departments;
+      const departments = response.body.data['departments'];
       expect(departments.some((d) => d.name.toLowerCase().includes('engineering'))).toBe(true);
     });
 
@@ -171,7 +171,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(200);
-      const departments = response.body.data.departments;
+      const departments = response.body.data['departments'];
       expect(departments.every((d) => d.tenant_id === tenant2Id)).toBe(true);
       expect(departments.some((d) => d.tenant_id === tenant1Id)).toBe(false);
     });
@@ -182,7 +182,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const departments = response.body.data.departments;
+      const departments = response.body.data['departments'];
 
       // Check if sorted alphabetically
       for (let i = 1; i < departments.length; i++) {
@@ -212,11 +212,11 @@ describe('Department Management API Endpoints', () => {
         success: true,
         message: expect.stringContaining('erfolgreich erstellt'),
       });
-      expect(response.body.data.departmentId).toBeDefined();
+      expect(response.body.data['departmentId']).toBeDefined();
 
       // Verify creation
       const [rows] = await testDb.execute('SELECT * FROM departments WHERE id = ?', [
-        response.body.data.departmentId,
+        response.body.data['departmentId'],
       ]);
       const departments = asTestRows<unknown>(rows);
       expect(departments[0]).toMatchObject({
@@ -240,7 +240,7 @@ describe('Department Management API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT * FROM departments WHERE id = ?', [
-        response.body.data.departmentId,
+        response.body.data['departmentId'],
       ]);
       const departments = asTestRows<unknown>(rows);
       expect(departments[0].parent_id).toBe(dept1Id);
@@ -259,7 +259,7 @@ describe('Department Management API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT * FROM departments WHERE id = ?', [
-        response.body.data.departmentId,
+        response.body.data['departmentId'],
       ]);
       const departments = asTestRows<unknown>(rows);
       expect(departments[0].manager_id).toBe(adminUser1.id);
@@ -354,7 +354,7 @@ describe('Department Management API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT * FROM departments WHERE id = ?', [
-        response.body.data.departmentId,
+        response.body.data['departmentId'],
       ]);
       const departments = asTestRows<unknown>(rows);
       expect(departments[0]).toMatchObject({
@@ -406,7 +406,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.parent).toMatchObject({
+      expect(response.body.data['parent']).toMatchObject({
         id: dept1Id,
         name: 'Engineering',
       });
@@ -674,8 +674,8 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.employees).toBeDefined();
-      expect(response.body.data.employees.some((e) => e.id === employeeUser1.id)).toBe(true);
+      expect(response.body.data['employees']).toBeDefined();
+      expect(response.body.data['employees'].some((e) => e.id === employeeUser1.id)).toBe(true);
     });
 
     it('should assign employees to department', async () => {
@@ -698,7 +698,7 @@ describe('Department Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.assigned).toBe(1);
+      expect(response.body.data['assigned']).toBe(1);
 
       // Verify assignment
       const [rows] = await testDb.execute('SELECT department_id FROM users WHERE id = ?', [
@@ -740,7 +740,7 @@ describe('Department Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.transferred).toBe(1);
+      expect(response.body.data['transferred']).toBe(1);
     });
   });
 
@@ -762,8 +762,8 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.teams).toBeDefined();
-      expect(response.body.data.teams.some((t) => t.id === teamId)).toBe(true);
+      expect(response.body.data['teams']).toBeDefined();
+      expect(response.body.data['teams'].some((t) => t.id === teamId)).toBe(true);
     });
 
     it('should create team within department', async () => {
@@ -776,7 +776,7 @@ describe('Department Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.teamId).toBeDefined();
+      expect(response.body.data['teamId']).toBeDefined();
     });
   });
 
@@ -801,8 +801,8 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.chart).toBeDefined();
-      expect(Array.isArray(response.body.data.chart)).toBe(true);
+      expect(response.body.data['chart']).toBeDefined();
+      expect(Array.isArray(response.body.data['chart'])).toBe(true);
     });
   });
 
@@ -813,7 +813,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.permissions).toMatchObject({
+      expect(response.body.data['permissions']).toMatchObject({
         canView: true,
         canEdit: false,
         canDelete: false,
@@ -827,7 +827,7 @@ describe('Department Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.permissions).toMatchObject({
+      expect(response.body.data['permissions']).toMatchObject({
         canView: true,
         canEdit: true,
         canDelete: true,
@@ -858,7 +858,7 @@ describe('Department Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(3);
+      expect(response.body.data['updated']).toBe(3);
 
       // Verify all updated
       const [rows] = await testDb.execute('SELECT status FROM departments WHERE id IN (?)', [
@@ -878,7 +878,7 @@ describe('Department Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(0); // No departments updated
+      expect(response.body.data['updated']).toBe(0); // No departments updated
     });
   });
 });

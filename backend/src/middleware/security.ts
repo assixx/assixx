@@ -1,16 +1,19 @@
 /**
  * Combined Security Middleware
  * Provides easy-to-use security stacks for different endpoint types
+ * Uses v2 authentication middleware
  */
-import { RequestHandler, Router } from 'express';
+import { RequestHandler } from 'express';
 
 import { ValidationMiddleware } from '../types/middleware.types.js';
 import { RateLimiterType } from '../types/security.types.js';
-import { authenticateToken, requireRole } from './auth.js';
 import { rateLimiter } from './rateLimiter.js';
 import { validateTenantIsolation } from './tenantIsolation.js';
+import { authenticateV2, requireRoleV2 } from './v2/auth.middleware.js';
 
-// Security middleware stacks for different endpoint types
+/**
+ * Security middleware stacks for different endpoint types
+ */
 export const security = {
   /**
    * Public endpoints (no authentication required)
@@ -43,7 +46,7 @@ export const security = {
   user: (validation?: ValidationMiddleware): RequestHandler[] => {
     const stack: RequestHandler[] = [
       rateLimiter.authenticated,
-      authenticateToken as RequestHandler,
+      authenticateV2 as RequestHandler,
       validateTenantIsolation as RequestHandler,
     ];
     if (validation) {
@@ -59,9 +62,9 @@ export const security = {
   admin: (validation?: ValidationMiddleware): RequestHandler[] => {
     const stack: RequestHandler[] = [
       rateLimiter.admin,
-      authenticateToken as RequestHandler,
+      authenticateV2 as RequestHandler,
       validateTenantIsolation as RequestHandler,
-      requireRole('admin') as RequestHandler,
+      requireRoleV2('admin') as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -76,8 +79,8 @@ export const security = {
   root: (validation?: ValidationMiddleware): RequestHandler[] => {
     const stack: RequestHandler[] = [
       rateLimiter.admin,
-      authenticateToken as RequestHandler,
-      requireRole('root') as RequestHandler,
+      authenticateV2 as RequestHandler,
+      requireRoleV2('root') as RequestHandler,
     ];
     if (validation) {
       stack.push(...validation);
@@ -90,10 +93,7 @@ export const security = {
    * Can use either token auth or API key
    */
   api: (validation?: ValidationMiddleware): RequestHandler[] => {
-    const stack: RequestHandler[] = [
-      rateLimiter.api,
-      authenticateToken as RequestHandler, // TODO: Add API key support
-    ];
+    const stack: RequestHandler[] = [rateLimiter.api, authenticateV2 as RequestHandler];
     if (validation) {
       stack.push(...validation);
     }
@@ -105,7 +105,7 @@ export const security = {
    * Special rate limiting for uploads
    */
   upload: (validation?: ValidationMiddleware): RequestHandler[] => {
-    const stack: RequestHandler[] = [rateLimiter.upload, authenticateToken as RequestHandler];
+    const stack: RequestHandler[] = [rateLimiter.upload, authenticateV2 as RequestHandler];
     if (validation) {
       stack.push(...validation);
     }
@@ -124,23 +124,19 @@ export const security = {
   }): RequestHandler[] => {
     const stack: RequestHandler[] = [];
 
-    // Add rate limiter
     if (options.rateLimit != null) {
       const rateLimitMiddleware = rateLimiter[options.rateLimit];
       stack.push(rateLimitMiddleware);
     }
 
-    // Add authentication
     if (options.authenticate === true) {
-      stack.push(authenticateToken as RequestHandler);
+      stack.push(authenticateV2 as RequestHandler);
     }
 
-    // Add role authorization
     if (options.roles != null) {
-      stack.push(requireRole(options.roles) as RequestHandler);
+      stack.push(requireRoleV2(options.roles) as RequestHandler);
     }
 
-    // Add validation
     if (options.validation) {
       stack.push(...options.validation);
     }
@@ -149,69 +145,24 @@ export const security = {
   },
 };
 
-// Pre-built security stacks for common scenarios
+/**
+ * Pre-built security stacks for common scenarios
+ */
 export const securityStacks: Record<string, RequestHandler[]> = {
-  // Public routes
   publicRead: security.public(),
   publicWrite: security.public(),
-
-  // Auth routes
   login: security.auth(),
   signup: security.auth(),
   passwordReset: security.auth(),
-
-  // User routes
   userProfile: security.user(),
   userSettings: security.user(),
   userDocuments: security.user(),
-
-  // Admin routes
   adminDashboard: security.admin(),
   adminUsers: security.admin(),
   adminReports: security.admin(),
-
-  // Root routes
   rootTenants: security.root(),
   rootSystem: security.root(),
-
-  // Upload routes
   uploadDocument: security.upload(),
   uploadImage: security.upload(),
-
-  // API routes
   apiEndpoint: security.api(),
 };
-
-// Helper function to apply security to entire router
-export function applySecurityToRouter(router: Router, defaultSecurity: RequestHandler[]): void {
-  // Store original methods
-  const originalGet = router.get.bind(router);
-  const originalPost = router.post.bind(router);
-  const originalPut = router.put.bind(router);
-  const originalPatch = router.patch.bind(router);
-  const originalDelete = router.delete.bind(router);
-
-  // Override methods to prepend security middleware
-  // Type-safe method override for complex Express router signatures
-  type RouterMethod = (path: string, ...handlers: RequestHandler[]) => Router;
-
-  (router.get as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
-    return originalGet(path, ...defaultSecurity, ...handlers);
-  };
-
-  (router.post as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
-    return originalPost(path, ...defaultSecurity, ...handlers);
-  };
-
-  (router.put as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
-    return originalPut(path, ...defaultSecurity, ...handlers);
-  };
-
-  (router.patch as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
-    return originalPatch(path, ...defaultSecurity, ...handlers);
-  };
-
-  (router.delete as RouterMethod) = (path: string, ...handlers: RequestHandler[]) => {
-    return originalDelete(path, ...defaultSecurity, ...handlers);
-  };
-}

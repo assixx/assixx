@@ -1,9 +1,9 @@
 import { tokenManager } from './token-manager';
 
 interface ApiConfig {
-  version?: 'v1' | 'v2';
-  useAuth?: boolean;
-  contentType?: string;
+  version?: 'v1' | 'v2' | undefined;
+  useAuth?: boolean | undefined;
+  contentType?: string | null | undefined;
 }
 
 interface ApiResponse<T = unknown> {
@@ -70,7 +70,7 @@ export class ApiClient {
     }
 
     // Only set Content-Type for requests with body
-    if (options.body !== undefined && config.contentType !== undefined) {
+    if (options.body !== undefined && config.contentType !== undefined && config.contentType !== null) {
       headers['Content-Type'] = config.contentType;
     } else if (options.body !== undefined && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
@@ -79,7 +79,7 @@ export class ApiClient {
     // Add auth header for v2 (get token from TokenManager)
     const token = tokenManager.getAccessToken();
     if (version === 'v2' && config.useAuth !== false && token !== null) {
-      headers.Authorization = `Bearer ${token}`;
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     return headers;
@@ -106,7 +106,7 @@ export class ApiClient {
 
     // Retry request with new token
     const newToken = tokenManager.getAccessToken();
-    headers.Authorization = `Bearer ${newToken ?? ''}`;
+    headers['Authorization'] = `Bearer ${newToken ?? ''}`;
     const retryResponse = await fetch(url, {
       ...options,
       headers,
@@ -153,7 +153,7 @@ export class ApiClient {
       // False positive: We're only checking token existence (null vs string), not comparing token content
       // eslint-disable-next-line security/detect-possible-timing-attacks
       if (token !== null) {
-        headers.Authorization = `Bearer ${token}`;
+        headers['Authorization'] = `Bearer ${token}`;
       }
     }
     // If refresh failed, TokenManager already handled logout/redirect
@@ -227,19 +227,19 @@ export class ApiClient {
   }
 
   private extractErrorMessage(data: Record<string, unknown>): { message: string; details: string } {
-    const error = data.error as { message?: string; details?: string } | undefined;
+    const error = data['error'] as { message?: string; details?: string } | undefined;
 
     const message =
       typeof error?.message === 'string'
         ? error.message
-        : typeof data.error === 'string'
-          ? data.error
-          : typeof data.message === 'string'
-            ? data.message
+        : typeof data['error'] === 'string'
+          ? data['error']
+          : typeof data['message'] === 'string'
+            ? data['message']
             : '';
 
     const details =
-      typeof data.details === 'string' ? data.details : typeof error?.details === 'string' ? error.details : '';
+      typeof data['details'] === 'string' ? data['details'] : typeof error?.details === 'string' ? error.details : '';
 
     return { message, details };
   }
@@ -260,13 +260,13 @@ export class ApiClient {
   }
 
   private createApiError(response: Response, data: Record<string, unknown>): ApiError {
-    const error = data.error as { message?: string; code?: string; details?: unknown } | undefined;
+    const error = data['error'] as { message?: string; code?: string; details?: unknown } | undefined;
 
     const message =
       typeof error?.message === 'string'
         ? error.message
-        : typeof data.message === 'string'
-          ? data.message
+        : typeof data['message'] === 'string'
+          ? data['message']
           : `Request failed with status ${response.status}`;
 
     const code = typeof error?.code === 'string' ? error.code : 'API_ERROR';
@@ -276,7 +276,7 @@ export class ApiClient {
 
   private handleV2Response(response: Response, data: Record<string, unknown>): unknown {
     // Check if response has the standard v2 format with success flag
-    if ('success' in data && typeof data.success === 'boolean') {
+    if ('success' in data && typeof data['success'] === 'boolean') {
       const apiResponse = data as unknown as ApiResponse;
 
       if (!apiResponse.success) {
@@ -302,10 +302,10 @@ export class ApiClient {
   private handleV1Response(response: Response, data: Record<string, unknown>): unknown {
     if (!response.ok) {
       throw new ApiError(
-        typeof data.message === 'string'
-          ? data.message
-          : typeof data.error === 'string'
-            ? data.error
+        typeof data['message'] === 'string'
+          ? data['message']
+          : typeof data['error'] === 'string'
+            ? data['error']
             : 'Request failed',
         'API_ERROR',
         response.status,
@@ -375,14 +375,10 @@ export class ApiClient {
   }
 
   async post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
-    return await this.request<T>(
-      endpoint,
-      {
-        method: 'POST',
-        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
-      },
-      config,
-    );
+    // FormData must NOT be stringified - browser handles multipart/form-data encoding
+    const body = data === undefined || data === null ? null : data instanceof FormData ? data : JSON.stringify(data);
+
+    return await this.request<T>(endpoint, { method: 'POST', body }, config);
   }
 
   async put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
@@ -390,7 +386,7 @@ export class ApiClient {
       endpoint,
       {
         method: 'PUT',
-        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
+        body: data !== undefined && data !== null ? JSON.stringify(data) : null,
       },
       config,
     );
@@ -401,7 +397,7 @@ export class ApiClient {
       endpoint,
       {
         method: 'PATCH',
-        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
+        body: data !== undefined && data !== null ? JSON.stringify(data) : null,
       },
       config,
     );
@@ -412,7 +408,7 @@ export class ApiClient {
       endpoint,
       {
         method: 'DELETE',
-        body: data !== undefined && data !== null ? JSON.stringify(data) : undefined,
+        body: data !== undefined && data !== null ? JSON.stringify(data) : null,
       },
       config,
     );
@@ -425,7 +421,7 @@ export class ApiClient {
         method: 'POST',
         body: formData,
       },
-      { ...config, contentType: undefined }, // Let browser set content-type for multipart
+      { ...config, contentType: null }, // Let browser set content-type for multipart
     );
   }
 }

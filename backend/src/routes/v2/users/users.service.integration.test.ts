@@ -135,9 +135,9 @@ describe('UsersService Integration Tests', () => {
         limit: '10',
       });
 
-      expect(result.data).toBeInstanceOf(Array);
-      expect(result.data.length).toBeGreaterThan(0);
-      expect(result.pagination).toMatchObject({
+      expect(result['data']).toBeInstanceOf(Array);
+      expect(result['data']['length']).toBeGreaterThan(0);
+      expect(result['pagination']).toMatchObject({
         currentPage: 1,
         pageSize: 10,
       });
@@ -148,10 +148,10 @@ describe('UsersService Integration Tests', () => {
         search: '__AUTOTEST__',
       });
 
-      expect(result.data).toBeInstanceOf(Array);
+      expect(result['data']).toBeInstanceOf(Array);
 
       // Type assertion for the array
-      const users = result.data as Array<{ username: string; email: string }>;
+      const users = result['data'] as Array<{ username: string; email: string }>;
       expect(
         users.every((u) => u.username.includes('__AUTOTEST__') || u.email.includes('__AUTOTEST__')),
       ).toBe(true);

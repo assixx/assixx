@@ -44,11 +44,11 @@ export async function loadMachines(statusFilter?: string, searchTerm?: string): 
     const params: Record<string, string> = {};
 
     if (statusFilter !== undefined && statusFilter !== 'all') {
-      params.status = statusFilter;
+      params['status'] = statusFilter;
     }
 
     if (searchTerm !== undefined && searchTerm.length > 0) {
-      params.search = searchTerm;
+      params['search'] = searchTerm;
     }
 
     // Build query string from params

@@ -8,6 +8,7 @@ import type {
   DbCalendarEvent,
   EventAttendee,
   EventCreateData,
+  EventQueryOptions,
   EventUpdateData,
 } from '../../../models/calendar.js';
 import { dbToApiEvent } from '../../../utils/fieldMapping.js';
@@ -32,7 +33,12 @@ export interface CalendarEventData {
   startTime: string;
   endTime: string;
   allDay?: boolean;
-  orgLevel: 'company' | 'department' | 'team' | 'area' | 'personal';
+  // Multi-organization support - arrays of IDs
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
+  // Legacy fields (backwards compatibility)
+  orgLevel?: 'company' | 'department' | 'team' | 'area' | 'personal';
   departmentId?: number; // Explizit für department/team Events
   teamId?: number; // Explizit für team Events
   areaId?: number; // Explizit für area Events
@@ -50,6 +56,11 @@ export interface CalendarEventUpdateData {
   startTime?: string;
   endTime?: string;
   allDay?: boolean;
+  // Multi-organization support - arrays of IDs
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
+  // Legacy fields (backwards compatibility)
   orgLevel?: 'company' | 'department' | 'team' | 'area' | 'personal';
   departmentId?: number;
   teamId?: number;
@@ -60,17 +71,52 @@ export interface CalendarEventUpdateData {
   status?: 'tentative' | 'confirmed' | 'cancelled';
 }
 
+/** Map API field names to DB field names for sorting */
+const SORT_BY_MAP: Record<string, string> = {
+  startDate: 'start_date',
+  endDate: 'end_date',
+  title: 'title',
+  createdAt: 'created_at',
+};
+
 /**
  *
  */
 class CalendarService {
   /**
+   * Build query options from filters
+   */
+  private buildEventQueryOptions(
+    filters: CalendarFilters,
+    userDepartmentId: number | null,
+    userTeamId: number | null,
+  ): { queryOptions: EventQueryOptions; page: number; limit: number } {
+    const page = Math.max(1, Number.parseInt(filters.page ?? '1', 10));
+    const limit = Math.min(200, Math.max(1, Number.parseInt(filters.limit ?? '50', 10)));
+
+    const sortBy = SORT_BY_MAP[filters.sortBy ?? 'startDate'] ?? 'start_date';
+    const sortDir: 'ASC' | 'DESC' = filters.sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+    const queryOptions: EventQueryOptions = {
+      page,
+      limit,
+      sortBy,
+      sortDir,
+      userDepartmentId,
+      userTeamId,
+    };
+
+    if (filters.status !== undefined) queryOptions.status = filters.status;
+    if (filters.filter !== undefined) queryOptions.filter = filters.filter;
+    if (filters.search !== undefined) queryOptions.search = filters.search;
+    if (filters.startDate !== undefined) queryOptions.start_date = filters.startDate;
+    if (filters.endDate !== undefined) queryOptions.end_date = filters.endDate;
+
+    return { queryOptions, page, limit };
+  }
+
+  /**
    * Get paginated list of calendar events with filter optimization
-   * @param tenantId - The tenant ID
-   * @param userId - The user ID
-   * @param userDepartmentId - The userDepartmentId parameter
-   * @param userTeamId - The userTeamId parameter
-   * @param filters - The filter criteria
    */
   async listEvents(
     tenantId: number,
@@ -80,42 +126,13 @@ class CalendarService {
     filters: CalendarFilters,
   ): Promise<{
     events: CalendarEvent[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+    pagination: { page: number; limit: number; total: number; totalPages: number };
   }> {
-    const page = Math.max(1, Number.parseInt(filters.page ?? '1', 10));
-    // Performance-Limit: max 200 Events
-    const limit = Math.min(200, Math.max(1, Number.parseInt(filters.limit ?? '50', 10)));
-    // offset is calculated in the model
-
-    // Map API field names to DB field names
-    const sortByMap: Record<string, string> = {
-      startDate: 'start_date',
-      endDate: 'end_date',
-      title: 'title',
-      createdAt: 'created_at',
-    };
-
-    const sortBy = sortByMap[filters.sortBy ?? 'startDate'] ?? 'start_date';
-    const sortDir: 'ASC' | 'DESC' = filters.sortOrder?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-
-    const queryOptions = {
-      status: filters.status,
-      filter: filters.filter,
-      search: filters.search,
-      start_date: filters.startDate,
-      end_date: filters.endDate,
-      page,
-      limit,
-      sortBy,
-      sortDir,
+    const { queryOptions, page, limit } = this.buildEventQueryOptions(
+      filters,
       userDepartmentId,
       userTeamId,
-    };
+    );
 
     try {
       const result = (await calendarModel.getAllEvents(
@@ -127,21 +144,14 @@ class CalendarService {
         pagination: { total: number };
       };
 
-      // Map events to API format
       const events = result.events.map(
         (event: DbCalendarEvent) => dbToApiEvent(event) as CalendarEvent,
       );
-
       const totalPages = Math.ceil(result.pagination.total / limit);
 
       return {
         events,
-        pagination: {
-          page,
-          limit,
-          total: result.pagination.total,
-          totalPages,
-        },
+        pagination: { page, limit, total: result.pagination.total, totalPages },
       };
     } catch {
       throw new ServiceError('SERVER_ERROR', 'Failed to retrieve calendar events', 500);
@@ -242,7 +252,7 @@ class CalendarService {
     userRole: string,
     userDepartmentId?: number | null,
   ): void {
-    if (!eventData.departmentId) {
+    if (eventData.departmentId === undefined) {
       throw new ServiceError('BAD_REQUEST', 'departmentId is required for department events', 400, [
         { field: 'departmentId', message: 'Required for department events' },
       ]);
@@ -269,7 +279,7 @@ class CalendarService {
     userRole: string,
     userTeamId?: number | null,
   ): void {
-    if (!eventData.teamId || !eventData.departmentId) {
+    if (eventData.teamId === undefined || eventData.departmentId === undefined) {
       throw new ServiceError(
         'BAD_REQUEST',
         'Both teamId and departmentId are required for team events',
@@ -290,7 +300,7 @@ class CalendarService {
    * Validate area event creation
    */
   private validateAreaEvent(eventData: CalendarEventData, userRole: string): void {
-    if (!eventData.areaId) {
+    if (eventData.areaId === undefined) {
       throw new ServiceError('BAD_REQUEST', 'areaId is required for area events', 400, [
         { field: 'areaId', message: 'Required for area events' },
       ]);
@@ -302,6 +312,34 @@ class CalendarService {
   }
 
   /**
+   * Apply optional string/boolean fields to create data
+   */
+  private applyOptionalEventFields(
+    createData: EventCreateData,
+    eventData: CalendarEventData,
+  ): void {
+    if (eventData.description !== undefined) createData.description = eventData.description;
+    if (eventData.location !== undefined) createData.location = eventData.location;
+    createData.all_day = eventData.allDay ?? false;
+    if (eventData.reminderMinutes !== undefined)
+      createData.reminder_time = eventData.reminderMinutes;
+    if (eventData.color !== undefined) createData.color = eventData.color;
+    if (eventData.recurrenceRule !== undefined)
+      createData.recurrence_rule = eventData.recurrenceRule;
+  }
+
+  /**
+   * Apply organization-related fields to create data
+   */
+  private applyOrgFields(createData: EventCreateData, eventData: CalendarEventData): void {
+    if (eventData.orgLevel !== undefined) createData.org_level = eventData.orgLevel;
+    if (eventData.departmentId !== undefined)
+      createData.department_id = eventData.departmentId ?? null;
+    if (eventData.teamId !== undefined) createData.team_id = eventData.teamId ?? null;
+    if (eventData.areaId !== undefined) createData.area_id = eventData.areaId ?? null;
+  }
+
+  /**
    * Build event create data from input
    */
   private buildEventCreateData(
@@ -310,25 +348,23 @@ class CalendarService {
     userId: number,
     userRole: string,
   ): EventCreateData {
-    return {
+    const createData: EventCreateData = {
       tenant_id: tenantId,
       title: eventData.title,
-      description: eventData.description,
-      location: eventData.location,
       start_time: eventData.startTime,
       end_time: eventData.endTime,
-      all_day: eventData.allDay ?? false,
-      org_level: eventData.orgLevel,
-      department_id: eventData.departmentId ?? null,
-      team_id: eventData.teamId ?? null,
-      area_id: eventData.areaId ?? null,
       created_by: userId,
       created_by_role: userRole,
-      allow_attendees: Boolean(eventData.attendeeIds && eventData.attendeeIds.length > 0),
-      reminder_time: eventData.reminderMinutes,
-      color: eventData.color,
-      recurrence_rule: eventData.recurrenceRule,
     };
+
+    this.applyOptionalEventFields(createData, eventData);
+    this.applyOrgFields(createData, eventData);
+
+    if (eventData.attendeeIds !== undefined && eventData.attendeeIds.length > 0) {
+      createData.allow_attendees = true;
+    }
+
+    return createData;
   }
 
   /**
@@ -425,7 +461,10 @@ class CalendarService {
    * Validate date range for event updates
    */
   private validateDateRange(updateData: CalendarEventUpdateData): void {
-    if (!updateData.startTime || !updateData.endTime) {
+    if (updateData.startTime === undefined || updateData.endTime === undefined) {
+      return;
+    }
+    if (updateData.startTime === '' || updateData.endTime === '') {
       return;
     }
 
@@ -439,6 +478,47 @@ class CalendarService {
     }
   }
 
+  /**
+   * Apply core fields to update data
+   */
+  private applyUpdateCoreFields(
+    dbData: EventUpdateData,
+    updateData: CalendarEventUpdateData,
+  ): void {
+    if (updateData.title !== undefined) dbData.title = updateData.title;
+    if (updateData.description !== undefined) dbData.description = updateData.description;
+    if (updateData.location !== undefined) dbData.location = updateData.location;
+    if (updateData.startTime !== undefined) dbData.start_time = updateData.startTime;
+    if (updateData.endTime !== undefined) dbData.end_time = updateData.endTime;
+    if (updateData.allDay !== undefined) dbData.all_day = updateData.allDay;
+  }
+
+  /**
+   * Apply org and optional fields to update data
+   */
+  private applyUpdateOptionalFields(
+    dbData: EventUpdateData,
+    updateData: CalendarEventUpdateData,
+  ): void {
+    if (updateData.orgLevel !== undefined) dbData.org_level = updateData.orgLevel;
+    if (updateData.departmentId !== undefined) dbData.department_id = updateData.departmentId;
+    if (updateData.teamId !== undefined) dbData.team_id = updateData.teamId;
+    if (updateData.areaId !== undefined) dbData.area_id = updateData.areaId;
+    if (updateData.reminderMinutes !== undefined) dbData.reminder_time = updateData.reminderMinutes;
+    if (updateData.color !== undefined) dbData.color = updateData.color;
+    if (updateData.recurrenceRule !== undefined) dbData.recurrence_rule = updateData.recurrenceRule;
+  }
+
+  /**
+   * Build update data from input
+   */
+  private buildEventUpdateData(updateData: CalendarEventUpdateData): EventUpdateData {
+    const dbData: EventUpdateData = {};
+    this.applyUpdateCoreFields(dbData, updateData);
+    this.applyUpdateOptionalFields(dbData, updateData);
+    return dbData;
+  }
+
   async updateEvent(
     eventId: number,
     updateData: CalendarEventUpdateData,
@@ -446,40 +526,19 @@ class CalendarService {
     userId: number,
     userRole: string,
   ): Promise<{ success: boolean }> {
-    // Validate permissions and get event
     await this.validateUpdatePermissions(eventId, tenantId, userId, userRole);
-
-    // Validate dates if provided
     this.validateDateRange(updateData);
 
-    // Map API fields to DB fields
-    const dbUpdateData: EventUpdateData = {
-      title: updateData.title,
-      description: updateData.description,
-      location: updateData.location,
-      start_time: updateData.startTime,
-      end_time: updateData.endTime,
-      all_day: updateData.allDay,
-      org_level: updateData.orgLevel,
-      department_id: updateData.departmentId,
-      team_id: updateData.teamId,
-      area_id: updateData.areaId,
-      reminder_time: updateData.reminderMinutes,
-      color: updateData.color,
-      recurrence_rule: updateData.recurrenceRule,
-    };
+    const dbUpdateData = this.buildEventUpdateData(updateData);
 
     try {
       const success = await calendarModel.updateEvent(eventId, dbUpdateData, tenantId);
       if (!success) {
         throw new ServiceError('SERVER_ERROR', 'Failed to update event', 500);
       }
-
       return { success: true };
     } catch (error: unknown) {
-      if (error instanceof ServiceError) {
-        throw error;
-      }
+      if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to update event', 500);
     }
   }
@@ -566,19 +625,19 @@ class CalendarService {
    * @param eventData - The event data to validate
    */
   private validateEventData(eventData: CalendarEventData): void {
-    if (!eventData.title) {
+    if (eventData.title === '') {
       throw new ServiceError('BAD_REQUEST', 'Title is required', 400, [
         { field: 'title', message: 'Title is required' },
       ]);
     }
 
-    if (!eventData.startTime) {
+    if (eventData.startTime === '') {
       throw new ServiceError('BAD_REQUEST', 'Start time is required', 400, [
         { field: 'startTime', message: 'Start time is required' },
       ]);
     }
 
-    if (!eventData.endTime) {
+    if (eventData.endTime === '') {
       throw new ServiceError('BAD_REQUEST', 'End time is required', 400, [
         { field: 'endTime', message: 'End time is required' },
       ]);
@@ -607,7 +666,7 @@ class CalendarService {
   private convertDescriptionToString(
     description?: string | Buffer | { type: 'Buffer'; data: number[] },
   ): string {
-    if (!description) return '';
+    if (description === undefined) return '';
     if (typeof description === 'string') return description;
     if (Buffer.isBuffer(description)) return description.toString('utf8');
     // Handle Buffer-like object from MySQL
@@ -634,7 +693,7 @@ class CalendarService {
       event.location ?? '',
       event.start_date.toISOString(),
       event.end_date.toISOString(),
-      event.all_day ? 'Yes' : 'No',
+      event.all_day === true ? 'Yes' : 'No',
       event.status ?? 'confirmed',
     ]);
 

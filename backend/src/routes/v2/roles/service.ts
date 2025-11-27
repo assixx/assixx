@@ -105,7 +105,12 @@ class RolesService {
         throw new ServiceError('NOT_FOUND', 'User not found');
       }
 
-      const userRole = rows[0].role as RoleName;
+      const userRow = rows[0];
+      if (userRow === undefined) {
+        throw new ServiceError('NOT_FOUND', 'User not found');
+      }
+
+      const userRole = userRow.role as RoleName;
       // ESLint disable needed: userRole is cast to RoleName type, not arbitrary string
       // eslint-disable-next-line security/detect-object-injection
       const userRoleLevel = RolesService.ROLES[userRole].level;

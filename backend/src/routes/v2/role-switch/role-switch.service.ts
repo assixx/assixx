@@ -9,7 +9,7 @@ import rootLog from '../../../models/rootLog.js';
 import userModel, { DbUser } from '../../../models/user/index.js';
 
 // Use same JWT_SECRET as auth middleware
-const JWT_SECRET = process.env.JWT_SECRET ?? '';
+const JWT_SECRET = process.env['JWT_SECRET'] ?? '';
 
 export interface RoleSwitchResult {
   token: string;
@@ -53,7 +53,7 @@ async function verifyUserTenant(userId: number, tenantId: number): Promise<DbUse
   }
 
   // DOUBLE CHECK: Ensure tenant_id matches
-  if (!user.tenant_id || user.tenant_id !== tenantId) {
+  if (user.tenant_id !== tenantId) {
     console.error(
       `SECURITY VIOLATION: User ${userId} tried to access tenant ${tenantId} but belongs to ${user.tenant_id ?? 'unknown'}`,
     );
@@ -149,7 +149,7 @@ async function switchToEmployee(userId: number, tenantId: number): Promise<RoleS
   }
 
   // Ensure employee data exists
-  if (!user.position) {
+  if (user.position === undefined || user.position === '') {
     await userModel.update(
       user.id,
       { position: 'Mitarbeiter' },

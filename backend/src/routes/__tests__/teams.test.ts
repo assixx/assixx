@@ -37,7 +37,7 @@ describe('Team Management API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-team-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-team-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'teamtest1', 'Team Test Company 1');
@@ -152,7 +152,7 @@ describe('Team Management API Endpoints', () => {
         },
       });
 
-      const teams = response.body.data.teams;
+      const teams = response.body.data['teams'];
       expect(teams.length).toBeGreaterThanOrEqual(3);
       expect(teams.every((t) => t.tenant_id === tenant1Id)).toBe(true);
     });
@@ -163,7 +163,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const teams = response.body.data.teams;
+      const teams = response.body.data['teams'];
       expect(teams[0]).toHaveProperty('member_count');
       expect(teams[0]).toHaveProperty('active_projects');
     });
@@ -174,7 +174,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const teams = response.body.data.teams;
+      const teams = response.body.data['teams'];
       expect(teams.every((t) => t.department_id === dept1Id)).toBe(true);
     });
 
@@ -184,7 +184,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const teams = response.body.data.teams;
+      const teams = response.body.data['teams'];
       expect(teams.some((t) => t.name.toLowerCase().includes('frontend'))).toBe(true);
     });
 
@@ -209,7 +209,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const teams = response.body.data.teams;
+      const teams = response.body.data['teams'];
       expect(teams.every((t) => t.status === 'active')).toBe(true);
     });
 
@@ -219,7 +219,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(200);
-      const teams = response.body.data.teams;
+      const teams = response.body.data['teams'];
       expect(teams.every((t) => t.tenant_id === tenant2Id)).toBe(true);
       expect(teams.some((t) => t.tenant_id === tenant1Id)).toBe(false);
     });
@@ -230,7 +230,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const teamWithLead = response.body.data.teams.find((t) => t.id === team1Id);
+      const teamWithLead = response.body.data['teams'].find((t) => t.id === team1Id);
       expect(teamWithLead.lead).toMatchObject({
         id: teamLeadUser.id,
         first_name: 'Team',
@@ -262,11 +262,11 @@ describe('Team Management API Endpoints', () => {
         success: true,
         message: expect.stringContaining('erfolgreich erstellt'),
       });
-      expect(response.body.data.teamId).toBeDefined();
+      expect(response.body.data['teamId']).toBeDefined();
 
       // Verify creation
       const [rows] = await testDb.execute('SELECT * FROM teams WHERE id = ?', [
-        response.body.data.teamId,
+        response.body.data['teamId'],
       ]);
       const teams = asTestRows<unknown>(rows);
       expect(teams[0]).toMatchObject({
@@ -291,7 +291,7 @@ describe('Team Management API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT department_id FROM teams WHERE id = ?', [
-        response.body.data.teamId,
+        response.body.data['teamId'],
       ]);
       const teams = asTestRows<unknown>(rows);
       expect(teams[0].department_id).toBeNull();
@@ -310,7 +310,7 @@ describe('Team Management API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT team_lead_id FROM teams WHERE id = ?', [
-        response.body.data.teamId,
+        response.body.data['teamId'],
       ]);
       const teams = asTestRows<unknown>(rows);
       expect(teams[0].team_lead_id).toBe(employeeUser1.id);
@@ -407,7 +407,7 @@ describe('Team Management API Endpoints', () => {
       expect(response.status).toBe(201);
 
       const [rows] = await testDb.execute('SELECT * FROM teams WHERE id = ?', [
-        response.body.data.teamId,
+        response.body.data['teamId'],
       ]);
       const teams = asTestRows<unknown>(rows);
       expect(teams[0]).toMatchObject({
@@ -442,8 +442,8 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.members).toBeDefined();
-      expect(response.body.data.members.length).toBeGreaterThanOrEqual(3); // 2 employees + lead
+      expect(response.body.data['members']).toBeDefined();
+      expect(response.body.data['members'].length).toBeGreaterThanOrEqual(3); // 2 employees + lead
     });
 
     it('should include department info if requested', async () => {
@@ -452,7 +452,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.department).toMatchObject({
+      expect(response.body.data['department']).toMatchObject({
         id: dept1Id,
         name: 'Engineering',
       });
@@ -464,7 +464,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.projects).toBeDefined();
+      expect(response.body.data['projects']).toBeDefined();
     });
 
     it('should return 404 for non-existent team', async () => {
@@ -801,8 +801,8 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.members).toBeDefined();
-      expect(response.body.data.members.some((m) => m.id === employeeUser1.id)).toBe(true);
+      expect(response.body.data['members']).toBeDefined();
+      expect(response.body.data['members'].some((m) => m.id === employeeUser1.id)).toBe(true);
     });
 
     it('should add members to team', async () => {
@@ -814,7 +814,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.added).toBe(1);
+      expect(response.body.data['added']).toBe(1);
 
       // Verify assignment
       const [rows] = await testDb.execute('SELECT team_id FROM users WHERE id = ?', [newMemberId]);
@@ -921,7 +921,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.transferred).toBe(2);
+      expect(response.body.data['transferred']).toBe(2);
     });
   });
 
@@ -946,8 +946,8 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.activities).toBeDefined();
-      expect(Array.isArray(response.body.data.activities)).toBe(true);
+      expect(response.body.data['activities']).toBeDefined();
+      expect(Array.isArray(response.body.data['activities'])).toBe(true);
     });
 
     it('should compare team performance', async () => {
@@ -957,7 +957,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.comparison).toBeDefined();
+      expect(response.body.data['comparison']).toBeDefined();
     });
   });
 
@@ -968,7 +968,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.permissions).toMatchObject({
+      expect(response.body.data['permissions']).toMatchObject({
         canView: true,
         canEdit: false,
         canDelete: false,
@@ -982,7 +982,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${teamLeadToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.permissions).toMatchObject({
+      expect(response.body.data['permissions']).toMatchObject({
         canView: true,
         canEdit: true,
         canDelete: false,
@@ -996,7 +996,7 @@ describe('Team Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.permissions).toMatchObject({
+      expect(response.body.data['permissions']).toMatchObject({
         canView: true,
         canEdit: true,
         canDelete: true,
@@ -1016,7 +1016,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.channelId).toBeDefined();
+      expect(response.body.data['channelId']).toBeDefined();
     });
 
     it('should create team project', async () => {
@@ -1030,7 +1030,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.projectId).toBeDefined();
+      expect(response.body.data['projectId']).toBeDefined();
     });
 
     it('should assign team tasks', async () => {
@@ -1045,7 +1045,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.data.taskId).toBeDefined();
+      expect(response.body.data['taskId']).toBeDefined();
     });
   });
 
@@ -1071,7 +1071,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(3);
+      expect(response.body.data['updated']).toBe(3);
 
       // Verify all updated
       const [rows] = await testDb.execute('SELECT status FROM teams WHERE id IN (?)', [teamIds]);
@@ -1100,7 +1100,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(2);
+      expect(response.body.data['updated']).toBe(2);
     });
 
     it('should enforce tenant isolation on bulk operations', async () => {
@@ -1113,7 +1113,7 @@ describe('Team Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(0); // No teams updated
+      expect(response.body.data['updated']).toBe(0); // No teams updated
     });
   });
 });

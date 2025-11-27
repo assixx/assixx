@@ -25,7 +25,7 @@ describe('Calendar v2 API - Simple Debug Test', () => {
     testDb = await createTestDatabase();
 
     console.info('2. Setting JWT secret...');
-    process.env.JWT_SECRET = 'test-secret-key-for-calendar-debug';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-calendar-debug';
 
     console.info('3. Creating test tenant...');
     tenantId = await createTestTenant(testDb, 'caldebugtest', 'Calendar Debug Test Company');

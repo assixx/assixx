@@ -47,7 +47,7 @@ export async function changeUserPassword(
     }
 
     // Aktuelles Passwort überprüfen
-    const isValidPassword = await bcrypt.compare(currentPassword, user.password || '');
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
     if (!isValidPassword) {
       return { success: false, message: 'Aktuelles Passwort ist incorrect' };
     }

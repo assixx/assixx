@@ -82,9 +82,9 @@ export class KvpUIHelpers {
     const dropdown = option.closest('.dropdown');
     if (!dropdown) return;
 
-    const value = option.dataset.value ?? '';
+    const value = option.dataset['value'] ?? '';
     const text = option.textContent.trim();
-    const action = option.dataset.action ?? '';
+    const action = option.dataset['action'] ?? '';
 
     // Update trigger text (Design System pattern)
     const trigger = dropdown.querySelector('.dropdown__trigger');
@@ -203,7 +203,7 @@ export class KvpUIHelpers {
       const removeBtn = target.closest('[data-action="remove-photo"]');
       if (removeBtn instanceof HTMLElement) {
         e.preventDefault();
-        const index = Number.parseInt(removeBtn.dataset.index ?? '0', 10);
+        const index = Number.parseInt(removeBtn.dataset['index'] ?? '0', 10);
         this.removePhoto(index);
       }
     });

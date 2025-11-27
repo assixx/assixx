@@ -1,140 +1,230 @@
 /**
- * Blackboard Types & Interfaces
- * All type definitions for the blackboard feature
+ * Blackboard Types
+ * Complete TypeScript interfaces matching backend model
+ * Based on backend/src/models/blackboard.ts
  */
 
-import type { User } from '../../types/api.types';
+// ============================================================================
+// Core Entry Types
+// ============================================================================
 
+export type OrgLevel = 'company' | 'department' | 'team' | 'area';
+export type EntryStatus = 'active' | 'archived';
+export type Priority = 'low' | 'medium' | 'high' | 'urgent';
+export type EntryColor = 'yellow' | 'blue' | 'green' | 'red' | 'orange' | 'pink';
+
+/**
+ * Blackboard Entry (API v2 format)
+ * CamelCase fields from API
+ */
 export interface BlackboardEntry {
   id: number;
+  uuid: string; // External UUIDv7 identifier for secure, SEO-friendly URLs
+  tenantId: number;
   title: string;
   content: string;
-  priority_level: 'low' | 'medium' | 'high' | 'critical';
-  org_level: 'all' | 'department' | 'team';
-  org_id?: number;
-  department_id?: number;
-  team_id?: number;
-  color: string;
-  created_by: number;
-  created_by_name?: string;
-  author_name?: string;
-  author_first_name?: string;
-  author_last_name?: string;
-  author_full_name?: string;
-  // API v2 fields (camelCase)
+  orgLevel: OrgLevel;
+  orgId: number | null;
+  authorId: number;
+  expiresAt?: string | null;
+  priority: Priority;
+  color: EntryColor;
+  status: EntryStatus;
+  createdAt: string;
+  updatedAt: string;
+  uuidCreatedAt?: string; // Track when UUID was generated
+
+  // Extended fields from joins
   authorName?: string;
   authorFirstName?: string;
   authorLastName?: string;
   authorFullName?: string;
-  created_at: string;
-  updated_at: string;
-  // API v2 date fields (camelCase)
-  createdAt?: string;
-  updatedAt?: string;
-  tags?: string[];
-  attachment_count?: number;
+  isConfirmed?: boolean;
+  attachmentCount?: number;
+  commentCount?: number; // Number of comments on this entry
   attachments?: BlackboardAttachment[];
 }
 
+// ============================================================================
+// Attachment Types
+// ============================================================================
+
+/**
+ * Blackboard Attachment (API v2 format)
+ * Updated 2025-11-24: Now uses documents system
+ */
 export interface BlackboardAttachment {
   id: number;
-  entry_id: number;
-  filename: string;
-  original_name: string;
-  file_size: number;
-  mime_type: string;
-  uploaded_by: number;
-  uploaded_at: string;
-  uploader_name?: string;
+  fileUuid?: string; // UUID for file reference
+  filename: string; // User-visible filename
+  storedFilename?: string; // UUID-based storage filename
+  originalName?: string; // Original uploaded filename (alias for filename)
+  fileSize: number;
+  mimeType: string;
+  previewUrl?: string; // For inline preview
+  downloadUrl?: string; // For download
+  uploadedBy?: number;
+  uploadedAt?: string;
+  uploaderName?: string;
+  // Legacy fields (backwards compatibility)
+  entryId?: number;
+  filePath?: string;
 }
 
+// ============================================================================
+// Confirmation Types
+// ============================================================================
+
+/**
+ * Confirmation User
+ */
+export interface ConfirmationUser {
+  id: number;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  confirmed: boolean;
+  confirmedAt?: string;
+}
+
+// ============================================================================
+// API Request/Response Types
+// ============================================================================
+
+/**
+ * Entry Query Options (for filtering/pagination)
+ */
+export interface EntryQueryOptions {
+  status?: EntryStatus | undefined;
+  filter?: 'all' | OrgLevel | undefined;
+  search?: string | undefined;
+  page?: number | undefined;
+  limit?: number | undefined;
+  sortBy?: string | undefined;
+  sortDir?: 'ASC' | 'DESC' | undefined;
+  priority?: Priority | undefined;
+}
+
+/**
+ * Create Entry Data
+ * Multi-organization support: Entry can belong to multiple departments/teams/areas
+ * If no organization arrays provided, entry is company-wide
+ */
+export interface CreateEntryData {
+  title: string;
+  content: string;
+  // Multi-organization support - arrays of IDs
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
+  // Legacy fields (optional for backwards compatibility)
+  orgLevel?: OrgLevel;
+  orgId?: number | null;
+  expiresAt?: string | null;
+  priority?: Priority;
+  color?: EntryColor;
+}
+
+/**
+ * Update Entry Data
+ * Multi-organization support: Entry can belong to multiple departments/teams/areas
+ */
+export interface UpdateEntryData {
+  title?: string;
+  content?: string;
+  // Multi-organization support - arrays of IDs
+  departmentIds?: number[];
+  teamIds?: number[];
+  areaIds?: number[];
+  // Legacy fields (optional for backwards compatibility)
+  orgLevel?: OrgLevel;
+  orgId?: number | null;
+  expiresAt?: string | null;
+  priority?: Priority;
+  color?: EntryColor;
+  status?: EntryStatus;
+}
+
+/**
+ * API Response with Pagination
+ */
+export interface PaginatedResponse<T> {
+  entries: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+// ============================================================================
+// Organization Types
+// ============================================================================
+
+/**
+ * Department
+ */
 export interface Department {
   id: number;
   name: string;
 }
 
+/**
+ * Team
+ */
 export interface Team {
   id: number;
   name: string;
-  department_id: number;
+  departmentId?: number;
 }
 
-export interface PaginationInfo {
+/**
+ * Area
+ */
+export interface Area {
+  id: number;
+  name: string;
+  type?: string;
+  description?: string;
+}
+
+// ============================================================================
+// UI State Types
+// ============================================================================
+
+/**
+ * Filter State
+ */
+export interface FilterState {
+  status: EntryStatus;
+  filter: 'all' | OrgLevel;
+  search: string;
+  sortBy: string;
+  sortDir: 'ASC' | 'DESC';
+  priority?: Priority | undefined;
+}
+
+/**
+ * Pagination State
+ */
+export interface PaginationState {
   currentPage: number;
   totalPages: number;
-  totalEntries: number;
-  entriesPerPage: number;
+  limit: number;
+  total: number;
 }
 
-export interface BlackboardResponse {
-  entries: BlackboardEntry[];
-  pagination?: PaginationInfo;
-}
+// ============================================================================
+// Form Types
+// ============================================================================
 
-export interface UserData extends User {
-  departmentId?: number;
-  department_id?: number;
-  teamId?: number;
-  team_id?: number;
+/**
+ * Entry Form State
+ */
+export interface EntryFormState {
+  mode: 'create' | 'edit';
+  editingEntryId: number | null;
+  selectedFiles: File[];
 }
-
-// Map v2 API response (camelCase) to UI format (snake_case) if needed
-export interface V2EntryResponse {
-  id: number;
-  title: string;
-  content: string;
-  priority?: string;
-  priority_level?: string;
-  orgLevel?: string;
-  org_level?: string;
-  orgId?: number;
-  org_id?: number;
-  createdBy?: number;
-  created_by?: number;
-  createdAt?: string;
-  created_at?: string;
-  updatedAt?: string;
-  updated_at?: string;
-  color?: string;
-  // Author fields from API v2
-  authorName?: string;
-  authorFirstName?: string;
-  authorLastName?: string;
-  authorFullName?: string;
-  [key: string]: unknown;
-}
-
-// V2 API detail response
-export interface V2EntryDetailResponse {
-  id: number;
-  title: string;
-  content: string;
-  priority?: string;
-  priority_level?: string;
-  orgLevel?: string;
-  org_level?: string;
-  orgId?: number;
-  org_id?: number;
-  color?: string;
-  // Author fields from API v2
-  authorName?: string;
-  authorFirstName?: string;
-  authorLastName?: string;
-  authorFullName?: string;
-  [key: string]: unknown;
-}
-
-// Direct attachment handler types
-export interface DirectAttachHandlers {
-  dropZoneClick?: () => void;
-  fileInputChange?: (e: Event) => void;
-  dragOver?: (e: DragEvent) => void;
-  dragLeave?: () => void;
-  drop?: (e: DragEvent) => void;
-}
-
-// Constants
-export const MIME_TYPE_PDF = 'application/pdf';
-export const FULLSCREEN_MODE_CLASS = 'fullscreen-mode';
-export const DISPLAY_INLINE_FLEX = 'inline-flex';
-export const DISPLAY_NONE = 'none';

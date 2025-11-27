@@ -36,7 +36,7 @@ export function loadPageRoutes(app: Application): void {
 
   // Rate limit page handler
   app.get('/rate-limit', (_req: Request, res: Response): void => {
-    if (process.env.NODE_ENV !== 'production') {
+    if (process.env['NODE_ENV'] !== 'production') {
       console.info('[DEBUG] GET /rate-limit - serving rate limit page');
     }
     const projectRoot = process.cwd();

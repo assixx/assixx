@@ -46,11 +46,25 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
   try {
     const { status, page = 1, limit = 20 } = req.query;
 
-    const filters = {
-      status: status as 'draft' | 'active' | 'closed' | undefined,
-      page: Number.parseInt(page as string, 10) || 1,
-      limit: Number.parseInt(limit as string, 10) || 20,
+    const statusValue = status as 'draft' | 'active' | 'closed' | undefined;
+    const parsedPage = Number.parseInt(page as string, 10);
+    const pageNum = Number.isNaN(parsedPage) ? 1 : parsedPage;
+    const parsedLimit = Number.parseInt(limit as string, 10);
+    const limitNum = Number.isNaN(parsedLimit) ? 20 : parsedLimit;
+
+    const filters: {
+      status?: 'draft' | 'active' | 'closed';
+      page?: number;
+      limit?: number;
+    } = {
+      page: pageNum,
+      limit: limitNum,
     };
+
+    // Only set status if it's defined - avoid exactOptionalPropertyTypes violation
+    if (statusValue !== undefined) {
+      filters.status = statusValue;
+    }
 
     const surveys = await surveysService.listSurveys(
       req.user.tenant_id,
@@ -61,10 +75,10 @@ export async function listSurveys(req: AuthenticatedRequest, res: Response): Pro
 
     res.json(
       paginatedResponse(surveys, {
-        currentPage: filters.page,
-        pageSize: filters.limit,
+        currentPage: pageNum,
+        pageSize: limitNum,
         totalItems: surveys.length,
-        totalPages: Math.ceil(surveys.length / filters.limit),
+        totalPages: Math.ceil(surveys.length / limitNum),
       }),
     );
   } catch (error: unknown) {
@@ -107,7 +121,13 @@ function isUUID(value: string): boolean {
  */
 export async function getSurveyById(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params['id'];
+
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
+      return;
+    }
+
     console.log('[DEBUG] getSurveyById called with idParam:', idParam, 'isUUID:', isUUID(idParam));
 
     // Check if it's a UUID (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
@@ -220,7 +240,13 @@ export async function createSurvey(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function updateSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params['id'];
+
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
+      return;
+    }
+
     let surveyId: number;
 
     // Check if it's a UUID - need to get numeric ID first
@@ -282,7 +308,13 @@ export async function updateSurvey(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function deleteSurvey(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params['id'];
+
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
+      return;
+    }
+
     let surveyId: number;
 
     // Check if it's a UUID - need to get numeric ID first
@@ -368,7 +400,14 @@ export async function getTemplates(req: AuthenticatedRequest, res: Response): Pr
  */
 export async function createFromTemplate(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const templateId = Number.parseInt(req.params.templateId, 10);
+    const templateIdParam = req.params['templateId'];
+
+    if (templateIdParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Template ID is required'));
+      return;
+    }
+
+    const templateId = Number.parseInt(templateIdParam, 10);
 
     if (Number.isNaN(templateId)) {
       res.status(400).json(errorResponse('INVALID_ID', 'Invalid template ID'));
@@ -414,7 +453,13 @@ export async function createFromTemplate(req: AuthenticatedRequest, res: Respons
  */
 export async function getStatistics(req: AuthenticatedRequest, res: Response): Promise<void> {
   try {
-    const idParam = req.params.id;
+    const idParam = req.params['id'];
+
+    if (idParam === undefined) {
+      res.status(400).json(errorResponse('MISSING_ID', 'Survey ID is required'));
+      return;
+    }
+
     let surveyId: number;
 
     // Check if it's a UUID - need to get numeric ID first

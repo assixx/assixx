@@ -111,7 +111,7 @@ export const fieldMapper = {
 
     if (direction === 'toApi') {
       // eslint-disable-next-line security/detect-object-injection -- field is a controlled parameter from internal code, not user input
-      return customMappings[field] || camelCase(field);
+      return customMappings[field] ?? camelCase(field);
     } else {
       // Reverse lookup for toDb
       const reverseMapping = Object.entries(customMappings).find(

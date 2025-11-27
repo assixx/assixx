@@ -41,8 +41,8 @@ export class KvpDataManager {
         this.categories.forEach((category) => {
           const option = document.createElement('div');
           option.className = 'dropdown__option';
-          option.dataset.action = 'select-category';
-          option.dataset.value = category.id.toString();
+          option.dataset['action'] = 'select-category';
+          option.dataset['value'] = category.id.toString();
           option.textContent = category.name;
           categoryDropdown.append(option);
         });
@@ -71,8 +71,8 @@ export class KvpDataManager {
         this.departments.forEach((dept) => {
           const option = document.createElement('div');
           option.className = 'dropdown__option';
-          option.dataset.action = 'select-department';
-          option.dataset.value = dept.id.toString();
+          option.dataset['action'] = 'select-department';
+          option.dataset['value'] = dept.id.toString();
           option.textContent = dept.name;
           departmentDropdown.append(option);
         });

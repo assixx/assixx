@@ -226,7 +226,11 @@ async function getCurrentShiftDate(
       [id, tenantId],
     );
     if (currentShift.length > 0) {
-      const formattedDate = formatDateOnlyForMysql(currentShift[0].date);
+      const row = currentShift[0];
+      if (row === undefined) {
+        return undefined;
+      }
+      const formattedDate = formatDateOnlyForMysql(row.date);
       return formattedDate ?? undefined;
     }
   }
@@ -378,7 +382,14 @@ export async function findById(id: number, tenantId: number): Promise<V2ShiftDat
     `;
 
     const [shifts] = await executeQuery<V2ShiftData[]>(query, [id, tenantId]);
-    return shifts.length > 0 ? shifts[0] : null;
+    if (shifts.length === 0) {
+      return null;
+    }
+    const shift = shifts[0];
+    if (shift === undefined) {
+      return null;
+    }
+    return shift;
   } catch (error: unknown) {
     console.error('Error in findById:', error);
     throw error;
@@ -497,7 +508,11 @@ export async function deleteShift(id: number, tenantId: number): Promise<void> {
       [id],
     );
 
-    if (assignments[0].count > 0) {
+    const assignment = assignments[0];
+    if (assignment === undefined) {
+      throw new Error('Failed to check assignments');
+    }
+    if (assignment.count > 0) {
       // Delete assignments first
       await executeQuery('DELETE FROM shift_assignments WHERE shift_id = ?', [id]);
     }
@@ -531,7 +546,14 @@ export async function getTemplateById(
     `;
 
     const [templates] = await executeQuery<DbShiftTemplate[]>(query, [id, tenantId]);
-    return templates.length > 0 ? templates[0] : null;
+    if (templates.length === 0) {
+      return null;
+    }
+    const template = templates[0];
+    if (template === undefined) {
+      return null;
+    }
+    return template;
   } catch (error: unknown) {
     console.error('Error in getTemplateById:', error);
     throw error;
@@ -679,7 +701,11 @@ export async function createSwapRequest(data: V2SwapRequestData): Promise<number
       throw new Error('No assignment found for this shift and user');
     }
 
-    const assignmentId = assignments[0].id;
+    const assignment = assignments[0];
+    if (assignment === undefined) {
+      throw new Error('Assignment not found in result set');
+    }
+    const assignmentId = assignment.id;
 
     const query = `
       INSERT INTO shift_swap_requests
@@ -717,7 +743,14 @@ export async function getSwapRequestById(
     `;
 
     const [requests] = await executeQuery<V2SwapRequestResult[]>(query, [id, tenantId]);
-    return requests.length > 0 ? requests[0] : null;
+    if (requests.length === 0) {
+      return null;
+    }
+    const request = requests[0];
+    if (request === undefined) {
+      return null;
+    }
+    return request;
   } catch (error: unknown) {
     console.error('Error in getSwapRequestById:', error);
     throw error;
@@ -749,15 +782,18 @@ export async function updateSwapRequestStatus(
         [id],
       );
 
-      if (
-        request.length > 0 &&
-        request[0].requested_with != null &&
-        request[0].requested_with !== 0
-      ) {
+      if (request.length === 0) {
+        throw new Error('Swap request not found after approval');
+      }
+      const swapRequest = request[0];
+      if (swapRequest === undefined) {
+        throw new Error('Swap request is undefined');
+      }
+      if (swapRequest.requested_with != null && swapRequest.requested_with !== 0) {
         // Update the shift assignment
         await executeQuery('UPDATE shifts SET user_id = ? WHERE id = ?', [
-          request[0].requested_with,
-          request[0].shift_id,
+          swapRequest.requested_with,
+          swapRequest.shift_id,
         ]);
       }
     }
@@ -892,13 +928,17 @@ export async function getOvertimeByUser(
     const result = await getOvertimeSummary(userId, startDate, endDate, tenantId);
     const shifts = await getOvertimeShiftDetails(userId, startDate, endDate, tenantId);
 
+    const summary = result[0];
+    if (summary === undefined) {
+      throw new Error('Failed to retrieve overtime summary');
+    }
     return {
       summary: {
-        totalShifts: result[0].totalShifts || 0,
-        totalHours: result[0].totalHours ?? 0,
-        overtimeHours: result[0].overtimeHours ?? 0,
-        breakHours: result[0].breakHours ?? 0,
-        netHours: (result[0].totalHours ?? 0) - (result[0].breakHours ?? 0),
+        totalShifts: summary.totalShifts,
+        totalHours: summary.totalHours ?? 0,
+        overtimeHours: summary.overtimeHours ?? 0,
+        breakHours: summary.breakHours ?? 0,
+        netHours: (summary.totalHours ?? 0) - (summary.breakHours ?? 0),
       },
       shifts,
     };

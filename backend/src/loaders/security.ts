@@ -22,11 +22,57 @@ const MIME_TYPE_JAVASCRIPT = 'application/javascript';
 const X_CONTENT_TYPE_OPTIONS = 'X-Content-Type-Options';
 
 /**
+ * Setup development-only TypeScript source map support
+ * @param app - Express application instance
+ * @param currentDirPath - Current directory path
+ */
+function setupDevSourceMaps(app: Application, currentDirPath: string): void {
+  app.use('/src', (_req: Request, res: Response, next: NextFunction): void => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    next();
+  });
+
+  const srcPath = path.join(currentDirPath, 'src');
+  app.use('/src', express.static(srcPath, { dotfiles: 'allow' }));
+
+  // Development-only route for TypeScript source files
+  app.use('/src', (req: Request, res: Response, next: NextFunction): void => {
+    // Only handle TypeScript file requests
+    if (!req.path.endsWith('.ts') && !req.path.endsWith('.js')) {
+      next();
+      return;
+    }
+
+    const requestedPath = req.path.replace(/^\//, '');
+
+    if (requestedPath === '' || requestedPath.includes('..')) {
+      res.status(400).send('Invalid path');
+      return;
+    }
+
+    const jsFileName = path.basename(req.path, '.js');
+    const possiblePaths = [
+      path.join(srcPath, requestedPath),
+      path.join(srcPath, requestedPath.replace('.js', '.ts')),
+      path.join(srcPath, path.dirname(requestedPath), `${jsFileName}.ts`),
+    ];
+
+    for (const filePath of possiblePaths) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Development-only TypeScript source serving, path is validated above
+      if (existsSync(filePath)) {
+        res.sendFile(filePath);
+        return;
+      }
+    }
+    next();
+  });
+}
+
+/**
  * Load security configuration
  * @param app - Express application instance
  */
 export function loadSecurity(app: Application): void {
-  // Get current directory
   const currentDirPath = getCurrentDirPath();
 
   // Apply security headers globally
@@ -54,75 +100,46 @@ export function loadSecurity(app: Application): void {
   });
 
   // TypeScript source map support in development
-  if (process.env.NODE_ENV !== 'production') {
-    app.use('/src', (_req: Request, res: Response, next: NextFunction): void => {
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      next();
-    });
-
-    const srcPath = path.join(currentDirPath, 'src');
-    app.use('/src', express.static(srcPath, { dotfiles: 'allow' }));
-
-    // Development-only route for TypeScript source files
-    app.use('/src', (req: Request, res: Response, next: NextFunction): void => {
-      // Only handle TypeScript file requests
-      if (!req.path.endsWith('.ts') && !req.path.endsWith('.js')) {
-        next();
-        return;
-      }
-
-      const requestedPath = req.path.replace(/^\//, '');
-
-      if (!requestedPath || requestedPath.includes('..')) {
-        res.status(400).send('Invalid path');
-        return;
-      }
-
-      const jsFileName = path.basename(req.path, '.js');
-      const possiblePaths = [
-        path.join(srcPath, requestedPath),
-        path.join(srcPath, requestedPath.replace('.js', '.ts')),
-        path.join(srcPath, path.dirname(requestedPath), `${jsFileName}.ts`),
-      ];
-
-      for (const filePath of possiblePaths) {
-        // eslint-disable-next-line security/detect-non-literal-fs-filename -- Development-only TypeScript source serving, path is validated above
-        if (existsSync(filePath)) {
-          res.sendFile(filePath);
-          return;
-        }
-      }
-      next();
-    });
+  if (process.env['NODE_ENV'] !== 'production') {
+    setupDevSourceMaps(app, currentDirPath);
   }
 
   // API security headers and validation
   app.use('/api', apiSecurityHeaders);
+  setupDocumentFrameOptions(app);
+  setupContentTypeValidation(app);
 
-  // Override X-Frame-Options for document preview/download endpoints
-  // Allow SAMEORIGIN so PDFs can be displayed in iframe modals
-  app.use(
-    '/api/v2/documents/:id/preview',
-    (_req: Request, res: Response, next: NextFunction): void => {
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      next();
-    },
-  );
-  app.use(
-    '/api/v2/documents/:id/download',
-    (_req: Request, res: Response, next: NextFunction): void => {
-      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-      next();
-    },
-  );
+  console.log('✅ Security middleware loaded');
+}
 
+/**
+ * Override X-Frame-Options for document preview/download endpoints
+ * Allows SAMEORIGIN so PDFs can be displayed in iframe modals
+ */
+function setupDocumentFrameOptions(app: Application): void {
+  const frameHandler = (_req: Request, res: Response, next: NextFunction): void => {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    next();
+  };
+
+  app.use('/api/v2/documents/:id/preview', frameHandler);
+  app.use('/api/v2/documents/:id/download', frameHandler);
+
+  // Blackboard attachments (same pattern - allows PDF preview in modal)
+  app.use('/api/v2/blackboard/attachments/:attachmentId/preview', frameHandler);
+  app.use('/api/v2/blackboard/attachments/:fileUuid/download', frameHandler);
+}
+
+/**
+ * Validate Content-Type for POST/PUT/PATCH requests
+ */
+function setupContentTypeValidation(app: Application): void {
   app.use('/api', (req: Request, res: Response, next: NextFunction): void => {
-    // Validate Content-Type for POST/PUT requests
     if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
       const contentType = req.get(CONTENT_TYPE_HEADER);
       if (
-        !contentType?.includes('application/json') &&
-        !contentType?.includes('multipart/form-data')
+        contentType?.includes('application/json') !== true &&
+        contentType?.includes('multipart/form-data') !== true
       ) {
         res.status(415).json({
           error: 'Unsupported Media Type',
@@ -133,6 +150,4 @@ export function loadSecurity(app: Application): void {
     }
     next();
   });
-
-  console.log('✅ Security middleware loaded');
 }

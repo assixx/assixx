@@ -23,7 +23,7 @@ function serveStatic(
   } = {},
 ): void {
   // Skip if devOnly and in production
-  if (options.devOnly && process.env.NODE_ENV === 'production') {
+  if (options.devOnly === true && process.env['NODE_ENV'] === 'production') {
     return;
   }
 
@@ -37,7 +37,7 @@ function serveStatic(
       res.setHeader('X-Frame-Options', 'SAMEORIGIN');
 
       // Cache control for images (7 days)
-      if (options.cacheImages) {
+      if (options.cacheImages === true) {
         const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico', '.webp'];
         if (imageExtensions.some((ext: string) => filePath.toLowerCase().endsWith(ext))) {
           res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
@@ -47,7 +47,7 @@ function serveStatic(
       }
 
       // Cache control for built assets (1 day)
-      if (options.cacheBuild) {
+      if (options.cacheBuild === true) {
         const buildExtensions = ['.js', '.css'];
         if (buildExtensions.some((ext: string) => filePath.endsWith(ext))) {
           res.setHeader('Cache-Control', 'public, max-age=86400');
@@ -55,7 +55,11 @@ function serveStatic(
       }
 
       // No cache for development
-      if (process.env.NODE_ENV !== 'production' && !options.cacheImages && !options.cacheBuild) {
+      if (
+        process.env['NODE_ENV'] !== 'production' &&
+        options.cacheImages !== true &&
+        options.cacheBuild !== true
+      ) {
         res.setHeader('Cache-Control', 'no-store');
       }
 
@@ -67,13 +71,13 @@ function serveStatic(
       etag: true, // Enable ETags for caching
       lastModified: true, // Send Last-Modified header
       maxAge:
-        options.cacheImages ? '7d'
-        : options.cacheBuild ? '1d'
+        options.cacheImages === true ? '7d'
+        : options.cacheBuild === true ? '1d'
         : 0,
     }),
   );
 
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env['NODE_ENV'] !== 'production') {
     console.info(`[DEBUG] Static files mounted: ${route} -> ${directory}`);
   }
 }
@@ -110,7 +114,7 @@ export function loadStaticFiles(app: Application): void {
   });
 
   // Development-only: Storybook
-  if (process.env.NODE_ENV !== 'production') {
+  if (process.env['NODE_ENV'] !== 'production') {
     const storybookPath = path.join(projectRoot, 'storybook-static');
     serveStatic(app, '/storybook', storybookPath, { devOnly: true });
   }

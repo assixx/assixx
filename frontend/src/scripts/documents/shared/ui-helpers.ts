@@ -33,7 +33,7 @@ export function formatFileSize(bytes: number | undefined): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
   // eslint-disable-next-line security/detect-object-injection -- i is mathematically bounded by log calculation
-  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i] ?? 'Bytes'}`;
 }
 
 /**

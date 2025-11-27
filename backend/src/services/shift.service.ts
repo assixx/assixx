@@ -251,7 +251,7 @@ class ShiftService {
       // Map duration_hours to durationHours for interface compatibility
       return {
         ...template,
-        durationHours: template.duration_hours || 0,
+        durationHours: template.duration_hours,
       };
     } catch (error: unknown) {
       console.error('Error in ShiftService.createShiftTemplate:', error);
@@ -321,20 +321,28 @@ class ShiftService {
     try {
       const shifts = await getShiftsByPlan(planId, tenantId, userId);
       // Map DbShift to ShiftEntry
-      return shifts.map((shift: DbShift) => ({
-        id: shift.id,
-        tenant_id: shift.tenant_id,
-        shift_plan_id: shift.plan_id, // Map plan_id to shift_plan_id
-        template_id: shift.template_id,
-        date: shift.date,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        position: null as string | null,
-        required_employees: shift.required_employees,
-        assigned_employees: shift.assignedEmployees,
-        created_at: shift.created_at,
-        updated_at: shift.updated_at,
-      }));
+      return shifts.map((shift: DbShift) => {
+        const entry: ShiftEntry = {
+          id: shift.id,
+          tenant_id: shift.tenant_id,
+          shift_plan_id: shift.plan_id, // Map plan_id to shift_plan_id
+          date: shift.date,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          position: null as string | null,
+          required_employees: shift.required_employees,
+          created_at: shift.created_at,
+          updated_at: shift.updated_at,
+        };
+        // Only add optional properties if they have values
+        if (shift.template_id !== undefined) {
+          entry.template_id = shift.template_id ?? null;
+        }
+        if (shift.assignedEmployees !== undefined) {
+          entry.assigned_employees = shift.assignedEmployees;
+        }
+        return entry;
+      });
     } catch (error: unknown) {
       console.error('Error in ShiftService.getShiftsByPlan:', error);
       throw error;
@@ -349,32 +357,53 @@ class ShiftService {
   async createShift(shiftData: ShiftCreateData & { created_by: number }): Promise<ShiftEntry> {
     try {
       // Map ShiftCreateData to ShiftData expected by model
-      const modelData = {
+      // Build modelData conditionally to avoid undefined properties
+      const modelData: {
+        tenant_id: number;
+        plan_id: number;
+        template_id?: number | null;
+        date: string | Date;
+        start_time: string;
+        end_time: string;
+        required_employees?: number;
+        created_by: number;
+      } = {
         tenant_id: shiftData.tenant_id,
         plan_id: shiftData.shift_plan_id, // Map shift_plan_id to plan_id
-        template_id: shiftData.template_id,
         date: shiftData.date,
         start_time: shiftData.start_time,
         end_time: shiftData.end_time,
-        required_employees: shiftData.required_employees,
         created_by: shiftData.created_by,
       };
+      // Only add optional properties if they exist
+      if (shiftData.template_id !== undefined) {
+        modelData.template_id = shiftData.template_id ?? null;
+      }
+      if (shiftData.required_employees !== undefined) {
+        modelData.required_employees = shiftData.required_employees;
+      }
       const shift = await createShift(modelData);
       // Map DbShift back to ShiftEntry
-      return {
+      const entry: ShiftEntry = {
         id: shift.id,
         tenant_id: shift.tenant_id,
         shift_plan_id: shift.plan_id, // Map plan_id back to shift_plan_id
-        template_id: shift.template_id,
         date: shift.date,
         start_time: shift.start_time,
         end_time: shift.end_time,
-        position: shiftData.position ?? null,
         required_employees: shift.required_employees,
         assigned_employees: [],
         created_at: shift.created_at,
         updated_at: shift.updated_at,
       };
+      // Only add optional properties if they have values
+      if (shift.template_id !== undefined) {
+        entry.template_id = shift.template_id ?? null;
+      }
+      if (shiftData.position !== undefined) {
+        entry.position = shiftData.position ?? null;
+      }
+      return entry;
     } catch (error: unknown) {
       console.error('Error in ShiftService.createShift:', error);
       throw error;

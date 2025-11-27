@@ -31,11 +31,13 @@ interface StatusChangeDetail {
  * Main page controller for KVP detail view
  */
 class KvpDetailPage {
-  private renderer: KvpDetailRenderer;
-  private permissions: KvpDetailPermissions;
-  private dataLoader: KvpDetailDataLoader;
-  private actions: KvpDetailActions;
-  private shareModal: KvpDetailShareModal;
+  // Using definite assignment (!) because these are initialized after early return check
+  // If early return happens, page redirects so these are never accessed uninitialized
+  private renderer!: KvpDetailRenderer;
+  private permissions!: KvpDetailPermissions;
+  private dataLoader!: KvpDetailDataLoader;
+  private actions!: KvpDetailActions;
+  private shareModal!: KvpDetailShareModal;
 
   private currentUser: User | null = null;
   private suggestionId: string | number = 0; // NEW: Support both UUID and numeric ID
@@ -218,7 +220,7 @@ class KvpDetailPage {
       const thumbnail = target.closest('[data-action="open-lightbox"]');
 
       if (thumbnail instanceof HTMLElement) {
-        const url = thumbnail.dataset.url;
+        const url = thumbnail.dataset['url'];
         if (url !== undefined && url !== '') {
           openLightbox(url);
         }

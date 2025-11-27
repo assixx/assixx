@@ -124,38 +124,7 @@
    Minimal custom styles
    ============================================================ */
 
-.detail-section {
-  margin-bottom: 24px;
-}
-
-.detail-section h4 {
-  margin: 0 0 12px;
-
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
 /* Department Item in Details */
-.department-item {
-  display: flex;
-  align-items: center;
-
-  margin: 4px 0;
-  padding: 8px;
-  border: 1px solid rgb(255 255 255 / 5%);
-  border-radius: 8px;
-
-  background: rgb(255 255 255 / 2%);
-
-  transition: background 0.2s ease;
-}
-
-.department-item:hover {
-  background: rgb(255 255 255 / 4%);
-}
 
 /* Action Buttons Group */
 .action-buttons {

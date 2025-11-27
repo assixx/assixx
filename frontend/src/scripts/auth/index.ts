@@ -420,16 +420,6 @@ function initializeSessionManager(): void {
   console.info('[AUTH] Session manager initialized');
 }
 
-// Helper: Enforce page access
-function enforcePageAccess(): void {
-  if (window.unifiedNav && typeof window.unifiedNav.enforcePageAccess === 'function') {
-    window.unifiedNav.enforcePageAccess();
-    console.info('[AUTH] Page access enforced via UnifiedNavigation');
-  } else {
-    console.info('[AUTH] Page access will be enforced by UnifiedNavigation');
-  }
-}
-
 // Helper: Initialize authenticated user
 async function initializeAuthenticatedUser(): Promise<void> {
   console.info('[AUTH] Loading user info...');
@@ -440,7 +430,8 @@ async function initializeAuthenticatedUser(): Promise<void> {
   }
 
   initializeSessionManager();
-  enforcePageAccess();
+  // NOTE: enforcePageAccess() is already called by UnifiedNavigation.setupInitialState()
+  // Removed duplicate call here to avoid redundant access checks
 }
 
 // Initialize authentication on page load

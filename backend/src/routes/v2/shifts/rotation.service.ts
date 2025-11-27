@@ -98,6 +98,10 @@ export async function getRotationPattern(
   }
 
   const row = rows[0];
+  if (row === undefined) {
+    throw new ServiceError('NOT_FOUND', 'Rotation pattern not found', 404);
+  }
+
   const apiRow = dbToApi(row);
   return {
     ...apiRow,
@@ -226,6 +230,94 @@ export async function deleteRotationPattern(patternId: number, tenantId: number)
   await executeQuery(query, [patternId, tenantId]);
 }
 
+/** Update existing rotation assignment */
+async function updateRotationAssignment(
+  assignmentId: number,
+  shiftGroup: string,
+  startsAt: string,
+  endsAt: string | null | undefined,
+): Promise<void> {
+  await executeQuery(
+    `UPDATE shift_rotation_assignments SET shift_group = ?, starts_at = ?, ends_at = ?, updated_at = NOW() WHERE id = ?`,
+    [shiftGroup, startsAt, endsAt ?? null, assignmentId],
+  );
+}
+
+/** Create new rotation assignment */
+async function createRotationAssignment(
+  tenantId: number,
+  patternId: number,
+  userId: number,
+  teamId: number | null | undefined,
+  shiftGroup: string,
+  startsAt: string,
+  endsAt: string | null | undefined,
+  assignedBy: number,
+): Promise<void> {
+  await executeQuery<ResultSetHeader>(
+    `INSERT INTO shift_rotation_assignments (tenant_id, pattern_id, user_id, team_id, shift_group,
+     rotation_order, can_override, starts_at, ends_at, is_active, assigned_by)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      tenantId,
+      patternId,
+      userId,
+      teamId ?? null,
+      shiftGroup,
+      0,
+      true,
+      startsAt,
+      endsAt ?? null,
+      true,
+      assignedBy,
+    ],
+  );
+}
+
+/** Assignment row type for rotation */
+type AssignmentRow = RowDataPacket & {
+  user_id: number;
+  shift_group: 'F' | 'S' | 'N';
+  id: number;
+  team_id: number | null;
+};
+
+/** Get active assignments for a pattern within date range */
+async function getActiveAssignmentsForPattern(
+  patternId: number,
+  tenantId: number,
+  startDate: string,
+  endDate: string,
+): Promise<AssignmentRow[]> {
+  const assignmentsQuery = `
+    SELECT * FROM shift_rotation_assignments
+    WHERE pattern_id = ? AND tenant_id = ?
+    AND is_active = TRUE
+    AND starts_at <= ?
+    AND (ends_at IS NULL OR ends_at >= ?)
+  `;
+  const [assignments] = await executeQuery<AssignmentRow[]>(assignmentsQuery, [
+    patternId,
+    tenantId,
+    endDate,
+    startDate,
+  ]);
+  return assignments;
+}
+
+/** Get active assignments for pattern */
+async function getPatternAssignments(
+  patternId: number,
+  tenantId: number,
+): Promise<ShiftRotationAssignment[]> {
+  const [rows] = await executeQuery<RowDataPacket[]>(
+    `SELECT a.*, u.username, u.first_name, u.last_name FROM shift_rotation_assignments a
+     JOIN users u ON a.user_id = u.id WHERE a.pattern_id = ? AND a.tenant_id = ? AND a.is_active = TRUE`,
+    [patternId, tenantId],
+  );
+  return rows.map((row: RowDataPacket) => dbToApi(row) as unknown as ShiftRotationAssignment);
+}
+
 /**
  * Assign users to a rotation pattern
  */
@@ -234,87 +326,96 @@ export async function assignUsersToPattern(
   tenantId: number,
   assignedBy: number,
 ): Promise<ShiftRotationAssignment[]> {
-  // Verify pattern exists and belongs to tenant
   await getRotationPattern(data.pattern_id, tenantId);
 
   for (const userId of data.user_ids) {
-    // Safe object access with validation - userId comes from controlled array
-    // Convert to string key to satisfy ESLint security rule
     const userKey = String(userId);
     const shiftGroupsMap = data.shift_groups as Record<string, 'F' | 'S' | 'N'>;
 
-    if (!Object.prototype.hasOwnProperty.call(shiftGroupsMap, userKey)) {
+    // eslint-disable-next-line security/detect-object-injection -- userKey is from controlled array
+    const shiftGroup = shiftGroupsMap[userKey];
+
+    if (shiftGroup === undefined) {
       throw new ServiceError('BAD_REQUEST', `Shift group not specified for user ${userId}`, 400);
     }
 
-    // eslint-disable-next-line security/detect-object-injection -- userKey is from controlled array, validated above
-    const shiftGroup = shiftGroupsMap[userKey];
-
-    // Check if assignment already exists
-    const checkQuery = `
-      SELECT id FROM shift_rotation_assignments
-      WHERE tenant_id = ? AND pattern_id = ? AND user_id = ?
-      AND (ends_at IS NULL OR ends_at > NOW())
-    `;
-
-    const [existing] = await executeQuery<AssignmentIdResult[]>(checkQuery, [
-      tenantId,
-      data.pattern_id,
-      userId,
-    ]);
+    const [existing] = await executeQuery<AssignmentIdResult[]>(
+      `SELECT id FROM shift_rotation_assignments WHERE tenant_id = ? AND pattern_id = ? AND user_id = ?
+       AND (ends_at IS NULL OR ends_at > NOW())`,
+      [tenantId, data.pattern_id, userId],
+    );
 
     if (existing.length > 0) {
-      // Update existing assignment
-      const updateQuery = `
-        UPDATE shift_rotation_assignments
-        SET shift_group = ?, starts_at = ?, ends_at = ?, updated_at = NOW()
-        WHERE id = ?
-      `;
-
-      await executeQuery(updateQuery, [
-        shiftGroup,
-        data.starts_at,
-        data.ends_at ?? null,
-        existing[0].id,
-      ]);
+      const existingRow = existing[0];
+      if (existingRow === undefined) {
+        throw new ServiceError('INTERNAL_ERROR', 'Failed to retrieve existing assignment', 500);
+      }
+      await updateRotationAssignment(existingRow.id, shiftGroup, data.starts_at, data.ends_at);
     } else {
-      // Create new assignment
-      const insertQuery = `
-        INSERT INTO shift_rotation_assignments (
-          tenant_id, pattern_id, user_id, team_id, shift_group,
-          rotation_order, can_override, starts_at, ends_at,
-          is_active, assigned_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-
-      await executeQuery<ResultSetHeader>(insertQuery, [
+      await createRotationAssignment(
         tenantId,
         data.pattern_id,
         userId,
-        data.team_id ?? null,
+        data.team_id,
         shiftGroup,
-        0, // rotation_order
-        true, // can_override
         data.starts_at,
-        data.ends_at ?? null,
-        true, // is_active
+        data.ends_at,
         assignedBy,
-      ]);
+      );
     }
   }
 
-  // Return all assignments for this pattern
-  const query = `
-    SELECT a.*, u.username, u.first_name, u.last_name
-    FROM shift_rotation_assignments a
-    JOIN users u ON a.user_id = u.id
-    WHERE a.pattern_id = ? AND a.tenant_id = ?
-    AND a.is_active = TRUE
-  `;
+  return await getPatternAssignments(data.pattern_id, tenantId);
+}
 
-  const [rows] = await executeQuery<RowDataPacket[]>(query, [data.pattern_id, tenantId]);
+/** Generated shift data interface */
+interface GeneratedShift {
+  user_id: number;
+  date: string;
+  shift_type: 'F' | 'S' | 'N';
+}
 
-  return rows.map((row: RowDataPacket) => dbToApi(row) as unknown as ShiftRotationAssignment);
+/** Save all generated shifts in a transaction */
+async function saveShiftsInTransaction(
+  assignments: AssignmentRow[],
+  pattern: ShiftRotationPattern,
+  data: GenerateRotationRequest,
+  tenantId: number,
+  generatedBy: number,
+): Promise<void> {
+  const connection = await getConnection();
+  try {
+    await connection.beginTransaction();
+
+    for (const assignment of assignments) {
+      const shifts = generateShiftsForAssignment(
+        assignment,
+        pattern,
+        data.start_date,
+        data.end_date,
+      );
+      for (const shift of shifts) {
+        await saveGeneratedShiftInTransaction(
+          connection,
+          shift,
+          pattern.id ?? data.pattern_id,
+          assignment.id,
+          tenantId,
+          assignment.team_id,
+          generatedBy,
+        );
+      }
+    }
+
+    await connection.commit();
+    console.info('[ROTATION GENERATE] Transaction committed successfully');
+  } catch (error) {
+    await connection.rollback();
+    console.error('[GENERATE ERROR] Transaction rolled back due to error:', error);
+    throw error;
+  } finally {
+    connection.release();
+  }
 }
 
 /**
@@ -323,80 +424,25 @@ export async function assignUsersToPattern(
 export async function generateRotationShifts(
   data: GenerateRotationRequest,
   tenantId: number,
-  _generatedBy: number,
-): Promise<{ user_id: number; date: string; shift_type: 'F' | 'S' | 'N' }[]> {
-  // Get pattern and verify it belongs to tenant
+  generatedBy: number,
+): Promise<GeneratedShift[]> {
   const pattern = await getRotationPattern(data.pattern_id, tenantId);
-
-  // Get all active assignments for this pattern
-  const assignmentsQuery = `
-    SELECT * FROM shift_rotation_assignments
-    WHERE pattern_id = ? AND tenant_id = ?
-    AND is_active = TRUE
-    AND starts_at <= ?
-    AND (ends_at IS NULL OR ends_at >= ?)
-  `;
-
-  type AssignmentRow = RowDataPacket & {
-    user_id: number;
-    shift_group: 'F' | 'S' | 'N';
-    id: number;
-    team_id: number | null;
-  };
-  const [assignments] = await executeQuery<AssignmentRow[]>(assignmentsQuery, [
+  const assignments = await getActiveAssignmentsForPattern(
     data.pattern_id,
     tenantId,
-    data.end_date,
     data.start_date,
-  ]);
+    data.end_date,
+  );
 
-  const generatedShifts: { user_id: number; date: string; shift_type: 'F' | 'S' | 'N' }[] = [];
-
-  // Generate shifts for each assignment
+  const generatedShifts: GeneratedShift[] = [];
   for (const assignment of assignments) {
     const shifts = generateShiftsForAssignment(assignment, pattern, data.start_date, data.end_date);
     generatedShifts.push(...shifts);
   }
 
   // If not preview mode, save ALL shifts in a transaction
-  // This ensures if ONE shift has overlap, ALL shifts are rejected
-  if (!data.preview && generatedShifts.length > 0) {
-    const connection = await getConnection();
-    try {
-      await connection.beginTransaction();
-
-      // Save all shifts in the transaction
-      for (const assignment of assignments) {
-        const shifts = generateShiftsForAssignment(
-          assignment,
-          pattern,
-          data.start_date,
-          data.end_date,
-        );
-        for (const shift of shifts) {
-          await saveGeneratedShiftInTransaction(
-            connection,
-            shift,
-            pattern.id ?? data.pattern_id,
-            assignment.id,
-            tenantId,
-            assignment.team_id,
-            _generatedBy,
-          );
-        }
-      }
-
-      // If we get here, all shifts were saved successfully
-      await connection.commit();
-      console.info('[ROTATION GENERATE] Transaction committed successfully');
-    } catch (error) {
-      // Rollback on ANY error (including overlap trigger errors)
-      await connection.rollback();
-      console.error('[GENERATE ERROR] Transaction rolled back due to error:', error);
-      throw error; // Re-throw to propagate error to caller
-    } finally {
-      connection.release();
-    }
+  if (data.preview !== true && generatedShifts.length > 0) {
+    await saveShiftsInTransaction(assignments, pattern, data, tenantId, generatedBy);
   }
 
   return generatedShifts;
@@ -460,8 +506,9 @@ function determineShiftType(
     const cycleWeek = weeksSinceStart % 2; // Only 2-week cycle for F/S alternation
 
     // Debug logging
+    const dateStr = date.toISOString().split('T')[0] ?? 'unknown';
     console.info(
-      `[ROTATION DEBUG] Date: ${date.toISOString().split('T')[0]}, User: ${assignment.user_id}, Shift Group: ${assignment.shift_group}, Weeks Since Start: ${weeksSinceStart}, Cycle Week: ${cycleWeek}`,
+      `[ROTATION DEBUG] Date: ${dateStr}, User: ${assignment.user_id}, Shift Group: ${assignment.shift_group}, Weeks Since Start: ${weeksSinceStart}, Cycle Week: ${cycleWeek}`,
     );
 
     return determineAlternatingShiftType(assignment.shift_group, cycleWeek);
@@ -505,9 +552,14 @@ function generateShiftsForAssignment(
     const weeksSinceStart = Math.floor((date.getTime() - patternStart.getTime()) / msPerWeek);
     const shiftType = determineShiftType(assignment, pattern, weeksSinceStart, date);
 
+    const dateString = date.toISOString().split('T')[0];
+    if (dateString === undefined) {
+      throw new ServiceError('INTERNAL_ERROR', 'Failed to format date', 500);
+    }
+
     shifts.push({
       user_id: assignment.user_id,
-      date: date.toISOString().split('T')[0],
+      date: dateString,
       shift_type: shiftType,
     });
   }
@@ -600,27 +652,27 @@ export async function getRotationHistory(
 
   const params: (string | number)[] = [tenantId];
 
-  if (filters.patternId) {
+  if (filters.patternId !== undefined) {
     query += ' AND h.pattern_id = ?';
     params.push(filters.patternId);
   }
 
-  if (filters.userId) {
+  if (filters.userId !== undefined) {
     query += ' AND h.user_id = ?';
     params.push(filters.userId);
   }
 
-  if (filters.startDate) {
+  if (filters.startDate !== undefined && filters.startDate !== '') {
     query += ' AND h.shift_date >= ?';
     params.push(filters.startDate);
   }
 
-  if (filters.endDate) {
+  if (filters.endDate !== undefined && filters.endDate !== '') {
     query += ' AND h.shift_date <= ?';
     params.push(filters.endDate);
   }
 
-  if (filters.status) {
+  if (filters.status !== undefined && filters.status !== '') {
     query += ' AND h.status = ?';
     params.push(filters.status);
   }

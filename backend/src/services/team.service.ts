@@ -54,12 +54,17 @@ class TeamService {
     try {
       // Get tenant_id from filters or extract from tenantDb
       const teams = await Team.findAll();
-      return teams.map((team: DbTeam) => ({
-        ...team,
-        team_lead_id: team.team_lead_id,
-        team_lead_name: null as string | null,
-        member_count: 0,
-      }));
+      return teams.map((team: DbTeam) => {
+        const result: TeamData = {
+          ...team,
+          team_lead_name: null as string | null,
+          member_count: 0,
+        };
+        if (team.team_lead_id !== undefined) {
+          result.team_lead_id = team.team_lead_id;
+        }
+        return result;
+      });
     } catch (error: unknown) {
       console.error('Error in TeamService.getAll:', error);
       throw error;
@@ -77,12 +82,15 @@ class TeamService {
       const team = await Team.findById(id, tenantId);
       if (!team) return null;
 
-      return {
+      const result: TeamData = {
         ...team,
-        team_lead_id: team.team_lead_id,
         team_lead_name: null,
         member_count: 0,
       };
+      if (team.team_lead_id !== undefined) {
+        result.team_lead_id = team.team_lead_id;
+      }
+      return result;
     } catch (error: unknown) {
       console.error('Error in TeamService.getById:', error);
       throw error;
@@ -97,20 +105,32 @@ class TeamService {
   async create(_tenantDb: Pool, data: TeamCreateData): Promise<TeamData> {
     try {
       const modelData: ModelTeamCreateData = {
-        ...data,
-        team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
+        tenant_id: data.tenant_id,
+        name: data.name,
       };
+      if (data.description !== undefined) {
+        modelData.description = data.description;
+      }
+      if (data.department_id !== undefined) {
+        modelData.department_id = data.department_id;
+      }
+      if (data.team_lead_id !== null && data.team_lead_id !== undefined) {
+        modelData.team_lead_id = data.team_lead_id;
+      }
       const id = await Team.create(modelData);
       const created = await Team.findById(id, data.tenant_id);
       if (!created) {
         throw new Error('Failed to retrieve created team');
       }
-      return {
+      const result: TeamData = {
         ...created,
-        team_lead_id: created.team_lead_id,
         team_lead_name: null,
         member_count: 0,
       };
+      if (created.team_lead_id !== undefined) {
+        result.team_lead_id = created.team_lead_id;
+      }
+      return result;
     } catch (error: unknown) {
       console.error('Error in TeamService.create:', error);
       throw error;
@@ -131,10 +151,22 @@ class TeamService {
     data: TeamUpdateData,
   ): Promise<TeamData | null> {
     try {
-      const modelData: ModelTeamUpdateData = {
-        ...data,
-        team_lead_id: data.team_lead_id !== null ? data.team_lead_id : undefined,
-      };
+      const modelData: ModelTeamUpdateData = {};
+      if (data.name !== undefined) {
+        modelData.name = data.name;
+      }
+      if (data.description !== undefined) {
+        modelData.description = data.description;
+      }
+      if (data.department_id !== undefined) {
+        modelData.department_id = data.department_id;
+      }
+      if (data.team_lead_id !== undefined) {
+        modelData.team_lead_id = data.team_lead_id;
+      }
+      if (data.is_active !== undefined) {
+        modelData.is_active = data.is_active;
+      }
       const success = await Team.update(id, modelData, tenantId);
       if (success) {
         return await this.getById(tenantDb, id, tenantId);

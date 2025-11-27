@@ -31,23 +31,23 @@ function extractDepartmentId(req: DepartmentAccessRequest): number | undefined {
   }
 
   // Check snake_case variant in query
-  if (req.query.department_id != null) {
-    return Number.parseInt(req.query.department_id as string);
+  if (req.query['department_id'] != null) {
+    return Number.parseInt(req.query['department_id'] as string);
   }
 
   // Check camelCase variant in query
-  if (req.query.departmentId != null) {
-    return Number.parseInt(req.query.departmentId as string);
+  if (req.query['departmentId'] != null) {
+    return Number.parseInt(req.query['departmentId'] as string);
   }
 
   // Check snake_case variant in params
-  if ('department_id' in req.params && req.params.department_id) {
-    return Number.parseInt(req.params.department_id);
+  if ('department_id' in req.params && req.params['department_id'] !== '') {
+    return Number.parseInt(req.params['department_id']);
   }
 
   // Check camelCase variant in params
-  if ('departmentId' in req.params && req.params.departmentId) {
-    return Number.parseInt(req.params.departmentId);
+  if ('departmentId' in req.params && req.params['departmentId'] !== '') {
+    return Number.parseInt(req.params['departmentId']);
   }
 
   return undefined;
@@ -158,7 +158,7 @@ export const filterDepartmentResults = async (
   }
 
   // Type assertion for user with proper check
-  if (!user.id || typeof user.tenant_id !== 'number') {
+  if (typeof user.id !== 'number' || user.id === 0 || typeof user.tenant_id !== 'number') {
     next();
     return;
   }
@@ -180,11 +180,12 @@ export const filterDepartmentResults = async (
       const filteredData = data.filter((item: unknown) => {
         if (typeof item === 'object' && item !== null) {
           const deptItem = item as Record<string, unknown>;
-          if ('department_id' in deptItem && typeof deptItem.department_id === 'number') {
-            return allowedDeptIds.has(deptItem.department_id);
+          // Use bracket notation for index signature access
+          if ('department_id' in deptItem && typeof deptItem['department_id'] === 'number') {
+            return allowedDeptIds.has(deptItem['department_id']);
           }
-          if ('departmentId' in deptItem && typeof deptItem.departmentId === 'number') {
-            return allowedDeptIds.has(deptItem.departmentId);
+          if ('departmentId' in deptItem && typeof deptItem['departmentId'] === 'number') {
+            return allowedDeptIds.has(deptItem['departmentId']);
           }
         }
         // If no department field, include the item

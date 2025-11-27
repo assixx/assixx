@@ -113,7 +113,14 @@ function serializeBooleanValue(value: string | number | boolean | Record<string,
     const isFalsy = value.toLowerCase() === 'false' || value === '0' || value === '';
     return isFalsy ? 'false' : 'true';
   }
-  return value ? 'true' : 'false';
+  if (typeof value === 'boolean') {
+    return value ? 'true' : 'false';
+  }
+  if (typeof value === 'number') {
+    return value !== 0 && !Number.isNaN(value) ? 'true' : 'false';
+  }
+  // Record type - objects are truthy
+  return 'true';
 }
 
 /**
@@ -192,7 +199,7 @@ export async function getSystemSettings(
   const params: (string | number | boolean)[] = [];
 
   // Apply filters
-  if (filters.category) {
+  if (filters.category !== undefined && filters.category !== '') {
     query += ` AND category = ?`;
     params.push(filters.category);
   }
@@ -202,7 +209,7 @@ export async function getSystemSettings(
     params.push(filters.is_public ? 1 : 0);
   }
 
-  if (filters.search) {
+  if (filters.search !== undefined && filters.search !== '') {
     query += ` AND (setting_key LIKE ? OR description LIKE ?)`;
     params.push(`%${filters.search}%`, `%${filters.search}%`);
   }
@@ -244,9 +251,13 @@ export async function getSystemSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
   const setting = rows[0];
+  if (setting === undefined) {
+    throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
+  }
 
   // Non-admin users can only access public settings
-  if (userRole !== 'root' && userRole !== 'admin' && !setting.is_public) {
+  const isPublic = setting.is_public === 1 || setting.is_public === true;
+  if (userRole !== 'root' && userRole !== 'admin' && !isPublic) {
     throw new ServiceError('FORBIDDEN', 'Access denied', 403);
   }
 
@@ -298,7 +309,7 @@ export async function upsertSystemSetting(
         data.value_type ?? 'string',
         data.category ?? DEFAULT_CATEGORY,
         data.description ?? null,
-        data.is_public ? 1 : 0,
+        data.is_public === true ? 1 : 0,
         data.setting_key,
       ],
     );
@@ -314,7 +325,7 @@ export async function upsertSystemSetting(
         data.value_type ?? 'string',
         data.category ?? DEFAULT_CATEGORY,
         data.description ?? null,
-        data.is_public ? 1 : 0,
+        data.is_public === true ? 1 : 0,
       ],
     );
   }
@@ -400,12 +411,12 @@ export async function getTenantSettings(
   let query = `SELECT * FROM tenant_settings WHERE tenant_id = ?`;
   const params: (string | number | boolean)[] = [tenantId];
 
-  if (filters.category) {
+  if (filters.category !== undefined && filters.category !== '') {
     query += ` AND category = ?`;
     params.push(filters.category);
   }
 
-  if (filters.search) {
+  if (filters.search !== undefined && filters.search !== '') {
     query += ` AND setting_key LIKE ?`;
     params.push(`%${filters.search}%`);
   }
@@ -444,6 +455,9 @@ export async function getTenantSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
   const setting = rows[0];
+  if (setting === undefined) {
+    throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
+  }
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {
@@ -615,12 +629,12 @@ export async function getUserSettings(
     }
   }
 
-  if (filters.category) {
+  if (filters.category !== undefined && filters.category !== '') {
     query += ` AND category = ?`;
     params.push(filters.category);
   }
 
-  if (filters.search) {
+  if (filters.search !== undefined && filters.search !== '') {
     query += ` AND setting_key LIKE ?`;
     params.push(`%${filters.search}%`);
   }
@@ -659,6 +673,9 @@ export async function getUserSetting(
     throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
   }
   const setting = rows[0];
+  if (setting === undefined) {
+    throw new ServiceError('NOT_FOUND', SETTING_NOT_FOUND_MSG, 404);
+  }
 
   const apiData = dbToApi(setting);
   return Object.assign({}, apiData, {

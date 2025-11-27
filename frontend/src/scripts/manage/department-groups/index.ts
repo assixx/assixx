@@ -199,7 +199,7 @@ class DepartmentGroupsManager {
    * Extract group ID from element dataset
    */
   private getGroupIdFromElement(element: HTMLElement): number | null {
-    const idStr = element.dataset.groupId;
+    const idStr = element.dataset['groupId'];
     return idStr !== undefined && idStr !== '' ? Number.parseInt(idStr, 10) : null;
   }
 
@@ -219,7 +219,7 @@ class DepartmentGroupsManager {
       const button = (e.target as HTMLElement).closest<HTMLElement>('.toggle-group__btn');
       if (button === null) return;
 
-      const status = button.dataset.status as GroupStatusFilter | undefined;
+      const status = button.dataset['status'] as GroupStatusFilter | undefined;
       if (status === undefined) return;
 
       // Update active button
@@ -377,7 +377,7 @@ class DepartmentGroupsManager {
     // Handle result click
     resultsContainer.querySelectorAll('.search-input__result-item').forEach((item) => {
       item.addEventListener('click', () => {
-        const groupId = (item as HTMLElement).dataset.groupId;
+        const groupId = (item as HTMLElement).dataset['groupId'];
         if (groupId !== undefined && groupId !== '') {
           this.selectGroup(Number.parseInt(groupId, 10));
           this.closeSearchResults();
@@ -636,7 +636,7 @@ function extractFormData(formData: FormData): Record<string, unknown> {
 
     // Special case: parentGroupId (omit if empty)
     if (key === 'parentGroupId' && value !== '') {
-      data.parentGroupId = Number.parseInt(value, 10);
+      data['parentGroupId'] = Number.parseInt(value, 10);
       return;
     }
 
@@ -662,16 +662,16 @@ async function handleSaveGroup(): Promise<void> {
 
   const formData = new FormData(form);
   const data = extractFormData(formData);
-  data.departmentIds = extractSelectedDepartments(formData);
+  data['departmentIds'] = extractSelectedDepartments(formData);
 
   // Ensure required fields
-  if (typeof data.name !== 'string' || data.name.length === 0) {
+  if (typeof data['name'] !== 'string' || data['name'].length === 0) {
     showErrorAlert('Bitte füllen Sie alle Pflichtfelder aus');
     return;
   }
 
   // Validate minimum department count
-  if (!Array.isArray(data.departmentIds) || data.departmentIds.length < 2) {
+  if (!Array.isArray(data['departmentIds']) || data['departmentIds'].length < 2) {
     showErrorAlert('Mindestens 2 Abteilungen erforderlich');
     return;
   }

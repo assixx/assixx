@@ -126,11 +126,11 @@ export class DropdownController {
    * Select option
    */
   private selectOption(option: HTMLElement): void {
-    const value = option.dataset.value;
+    const value = option.dataset['value'];
     // TypeScript guarantees textContent is string (not null) in this context
-    const name = option.dataset.name ?? option.textContent.trim();
-    const icon = option.dataset.icon ?? option.dataset.flag;
-    const code = option.dataset.code;
+    const name = option.dataset['name'] ?? option.textContent.trim();
+    const icon = option.dataset['icon'] ?? option.dataset['flag'];
+    const code = option.dataset['code'];
 
     // Update hidden input
     if (value !== undefined && value !== '') {
@@ -168,7 +168,7 @@ export class DropdownController {
    * Set value programmatically
    */
   public setValue(value: string): void {
-    const option = Array.from(this.options).find((opt) => opt.dataset.value === value);
+    const option = Array.from(this.options).find((opt) => opt.dataset['value'] === value);
 
     if (option !== undefined) {
       this.selectOption(option);

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable security/detect-object-injection */
 
 const StyleDictionary = require('style-dictionary');
 const config = require('../config/style-dictionary.config.js');

@@ -77,14 +77,15 @@ export async function findUserByUsername(username: string): Promise<DbUser | und
     ]);
     console.info('[DEBUG] Query completed, rows found:', rows.length);
 
-    if (rows.length > 0) {
-      // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-      rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
-      rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
-      return rows[0];
+    const row = rows[0];
+    if (row === undefined) {
+      return undefined;
     }
 
-    return undefined;
+    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+    row.is_active = normalizeMySQLBoolean(row.is_active);
+    row.is_archived = normalizeMySQLBoolean(row.is_archived);
+    return row;
   } catch (error: unknown) {
     console.error('[DEBUG] findByUsername error:', error);
     logger.error(`Error finding user by username: ${(error as Error).message}`);
@@ -102,7 +103,7 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
       `[DEBUG] User.findById called with: id=${id} (type: ${typeof id}), tenant_id=${tenantId} (type: ${typeof tenantId})`,
     );
 
-    if (!id || !tenantId || Number.isNaN(id) || Number.isNaN(tenantId)) {
+    if (id === 0 || tenantId === 0 || Number.isNaN(id) || Number.isNaN(tenantId)) {
       logger.error(
         `Invalid parameters for User.findById: id=${id}, tenant_id=${tenantId}, idType=${typeof id}, tenantType=${typeof tenantId}`,
       );
@@ -110,7 +111,7 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
     }
 
     const [rows] = await executeQuery<DbUser[]>(
-      process.env.NODE_ENV === 'test' ?
+      process.env['NODE_ENV'] === 'test' ?
         `SELECT u.*, d.name as department_name, t.company_name as company_name, t.subdomain,
              ut.team_id, tm.name as team_name
              FROM users u
@@ -131,14 +132,15 @@ export async function findUserById(id: number, tenantId: number): Promise<DbUser
       [id, tenantId],
     );
 
-    if (rows.length > 0) {
-      // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-      rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
-      rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
-      return rows[0];
+    const row = rows[0];
+    if (row === undefined) {
+      return undefined;
     }
 
-    return undefined;
+    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+    row.is_active = normalizeMySQLBoolean(row.is_active);
+    row.is_archived = normalizeMySQLBoolean(row.is_archived);
+    return row;
   } catch (error: unknown) {
     logger.error(`Error finding user by ID: ${(error as Error).message}`);
     throw error;
@@ -216,14 +218,15 @@ export async function findUserByEmail(
 
     const [rows] = await executeQuery<DbUser[]>(query, params);
 
-    if (rows.length > 0) {
-      // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
-      rows[0].is_active = normalizeMySQLBoolean(rows[0].is_active);
-      rows[0].is_archived = normalizeMySQLBoolean(rows[0].is_archived);
-      return rows[0];
+    const row = rows[0];
+    if (row === undefined) {
+      return undefined;
     }
 
-    return undefined;
+    // Normalize boolean fields from MySQL 0/1 to JavaScript true/false
+    row.is_active = normalizeMySQLBoolean(row.is_active);
+    row.is_archived = normalizeMySQLBoolean(row.is_archived);
+    return row;
   } catch (error: unknown) {
     logger.error(`Error finding user by email: ${(error as Error).message}`);
     throw error;
@@ -323,7 +326,7 @@ export async function updateUser(
 export async function searchUsers(filters: UserFilter): Promise<DbUser[]> {
   try {
     // Auto-reset expired availability before fetching
-    if (filters.tenant_id) {
+    if (typeof filters.tenant_id === 'number' && filters.tenant_id > 0) {
       await autoResetExpiredAvailability(filters.tenant_id);
     }
 

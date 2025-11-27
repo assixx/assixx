@@ -387,7 +387,7 @@ function validateForm(values: FormValues, isEdit: boolean): boolean {
  */
 function generateUsernameFromEmail(email: string): string {
   // Take the part before @ (local part of email)
-  const localPart = email.split('@')[0];
+  const localPart = email.split('@')[0] ?? email;
 
   // Replace any character that's not a letter, number, underscore, or hyphen with underscore
   // This ensures the username matches the backend regex: /^[\w-]+$/
@@ -408,22 +408,22 @@ function buildUserData(values: FormValues, isEdit: boolean): Record<string, unkn
   };
 
   if (values.employeeNumber !== '') {
-    userData.employeeNumber = values.employeeNumber;
+    userData['employeeNumber'] = values.employeeNumber;
   }
 
   if (values.departmentId !== '') {
-    userData.departmentId = Number.parseInt(values.departmentId, 10);
+    userData['departmentId'] = Number.parseInt(values.departmentId, 10);
   }
 
   // Password handling
   if (!isEdit) {
     // Create mode: password is required
-    userData.password = values.password;
-    userData.username = generateUsernameFromEmail(values.email);
+    userData['password'] = values.password;
+    userData['username'] = generateUsernameFromEmail(values.email);
   } else {
     // Edit mode: password is optional (only send if provided)
     if (values.password !== '' && values.password.length >= 8) {
-      userData.password = values.password;
+      userData['password'] = values.password;
     }
   }
 

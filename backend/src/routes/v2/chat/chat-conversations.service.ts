@@ -37,7 +37,7 @@ function buildConversationWhereClause(
   `;
   const params: unknown[] = [tenantId, userId];
 
-  if (filters.search) {
+  if (filters.search !== undefined && filters.search !== '') {
     whereClause += ` AND (c.name LIKE ? OR m.content LIKE ?)`;
     params.push(`%${filters.search}%`, `%${filters.search}%`);
   }
@@ -140,7 +140,7 @@ function transformConversation(
     }));
 
   let lastMessage: { content: string; created_at: Date } | null = null;
-  if (conv.last_message_content && conv.last_message_time) {
+  if (conv.last_message_content !== null && conv.last_message_time !== null) {
     lastMessage = {
       content: conv.last_message_content,
       created_at: new Date(conv.last_message_time),
@@ -190,7 +190,8 @@ async function findExisting1to1Conversation(
      ) = 2`,
     [tenantId, user1Id, user2Id],
   );
-  return existing.length > 0 ? existing[0].id : null;
+  const firstRow = existing[0];
+  return existing.length > 0 && firstRow !== undefined ? firstRow.id : null;
 }
 
 /**
@@ -255,12 +256,53 @@ async function retrieveConversationById(
 }
 
 /**
+ * Calculate pagination values from filters
+ */
+function calculatePagination(filters: ConversationFilters): {
+  page: number;
+  limit: number;
+  offset: number;
+} {
+  const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
+  const limit = Math.min(
+    100,
+    Math.max(1, Number.isNaN(filters.limit) ? 20 : (filters.limit ?? 20)),
+  );
+  return { page, limit, offset: (page - 1) * limit };
+}
+
+/**
+ * Get total conversation count
+ */
+async function getConversationCount(whereClause: string, params: unknown[]): Promise<number> {
+  const countQuery = `
+    SELECT COUNT(DISTINCT c.id) as count
+    FROM conversations c
+    INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
+    LEFT JOIN messages m ON c.id = m.conversation_id
+    ${whereClause}
+  `;
+  const [countResult] = await execute<CountResult[]>(countQuery, params);
+  return countResult[0]?.count ?? 0;
+}
+
+/**
+ * Build pagination meta object
+ */
+function buildPaginationMeta(page: number, limit: number, totalItems: number): PaginationMeta {
+  const totalPages = Math.ceil(totalItems / limit);
+  return {
+    currentPage: page,
+    totalPages,
+    pageSize: limit,
+    totalItems,
+    hasNext: page < totalPages,
+    hasPrev: page > 1,
+  };
+}
+
+/**
  * Get user's conversations with pagination and filters
- * @param tenantId - The tenant ID for multi-tenant isolation
- * @param userId - The user ID requesting conversations
- * @param filters - Optional filter criteria (search, isGroup, pagination)
- * @returns Paginated list of conversations with participants and unread counts
- * @throws ServiceError if database error occurs
  */
 export async function getConversations(
   tenantId: number,
@@ -270,75 +312,33 @@ export async function getConversations(
   try {
     log('[Chat Service] getConversations called with:', { tenantId, userId, filters });
 
-    // Calculate pagination
-    const page = Math.max(1, Number.isNaN(filters.page) ? 1 : (filters.page ?? 1));
-    const limit = Math.min(
-      100,
-      Math.max(1, Number.isNaN(filters.limit) ? 20 : (filters.limit ?? 20)),
-    );
-    const offset = (page - 1) * limit;
-
-    // Build WHERE clause
+    const { page, limit, offset } = calculatePagination(filters);
     const { whereClause, params } = buildConversationWhereClause(filters, tenantId, userId);
+    const totalItems = await getConversationCount(whereClause, params);
 
-    // Get total count
-    const countQuery = `
-      SELECT COUNT(DISTINCT c.id) as count
-      FROM conversations c
-      INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
-      LEFT JOIN messages m ON c.id = m.conversation_id
-      ${whereClause}
-    `;
-    const [countResult] = await execute<CountResult[]>(countQuery, params);
-    const totalItems = countResult[0]?.count ?? 0;
-
-    // Get conversations
     const query = `
-      SELECT DISTINCT
-        c.id,
-        c.name,
-        c.is_group,
-        c.created_at,
-        c.updated_at,
+      SELECT DISTINCT c.id, c.name, c.is_group, c.created_at, c.updated_at,
         (SELECT m.content FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_content,
         (SELECT m.created_at FROM messages m WHERE m.conversation_id = c.id ORDER BY m.created_at DESC LIMIT 1) as last_message_time
       FROM conversations c
       INNER JOIN conversation_participants cp ON c.id = cp.conversation_id
       WHERE c.tenant_id = ${tenantId} AND cp.user_id = ${userId}
-      ORDER BY c.updated_at DESC
-      LIMIT ${limit} OFFSET ${offset}
+      ORDER BY c.updated_at DESC LIMIT ${limit} OFFSET ${offset}
     `;
 
-    log('[Chat Service] Full query:', query);
     const [conversations] = await execute<ConversationRow[]>(query);
     const conversationIds = conversations.map((c: ConversationRow) => c.id);
 
-    // Get participants and unread counts in parallel
     const [participants, unreadCounts] = await Promise.all([
       getConversationParticipants(conversationIds),
       getUnreadCounts(conversationIds, userId),
     ]);
 
-    // Transform conversations
-    const transformedConversations = conversations.map((conv: ConversationRow) => {
-      const unreadCount = unreadCounts.get(conv.id) ?? 0;
-      return transformConversation(conv, participants, unreadCount);
+    const data = conversations.map((conv: ConversationRow) => {
+      return transformConversation(conv, participants, unreadCounts.get(conv.id) ?? 0);
     });
 
-    // Calculate pagination
-    const totalPages = Math.ceil(totalItems / limit);
-
-    return {
-      data: transformedConversations,
-      pagination: {
-        currentPage: page,
-        totalPages,
-        pageSize: limit,
-        totalItems,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
-      },
-    };
+    return { data, pagination: buildPaginationMeta(page, limit, totalItems) };
   } catch (error: unknown) {
     logError('[Chat Service] getConversations error:', error);
     throw new ServiceError('CONVERSATIONS_ERROR', 'Failed to fetch conversations', 500);
@@ -366,10 +366,15 @@ export async function createConversation(
 
     // Check for existing 1:1 conversation
     if (!isGroup && data.participantIds.length === 1) {
+      const firstParticipantId = data.participantIds[0];
+      if (firstParticipantId === undefined) {
+        throw new ServiceError('INVALID_PARTICIPANTS', 'Participant ID is required', 400);
+      }
+
       const existingId = await findExisting1to1Conversation(
         tenantId,
         creatorId,
-        data.participantIds[0],
+        firstParticipantId,
       );
 
       if (existingId !== null) {
@@ -396,13 +401,41 @@ export async function createConversation(
   }
 }
 
+interface ConvParticipantRow extends RowDataPacket {
+  user_id: number;
+  is_admin: number;
+  joined_at: string | Date;
+  username: string;
+  first_name: string | null;
+  last_name: string | null;
+  profile_picture: string | null;
+}
+
+/**
+ * Fetch participants for a single conversation
+ */
+async function fetchConversationParticipants(
+  conversationId: number,
+): Promise<ConversationParticipant[]> {
+  const [participants] = await execute<ConvParticipantRow[]>(
+    `SELECT cp.user_id, cp.is_admin, cp.joined_at, u.username, u.first_name, u.last_name, u.profile_picture
+     FROM conversation_participants cp INNER JOIN users u ON cp.user_id = u.id
+     WHERE cp.conversation_id = ${conversationId}`,
+  );
+  return participants.map((p: ConvParticipantRow) => ({
+    id: p.user_id,
+    userId: p.user_id,
+    username: p.username,
+    first_name: p.first_name ?? '',
+    last_name: p.last_name ?? '',
+    profile_picture_url: p.profile_picture,
+    joinedAt: new Date(p.joined_at),
+    isActive: true,
+  }));
+}
+
 /**
  * Get single conversation details
- * @param tenantId - The tenant ID for multi-tenant isolation
- * @param conversationId - The conversation ID to retrieve
- * @param userId - The user ID requesting the conversation
- * @returns Conversation details or null if not found or access denied
- * @throws ServiceError if database error occurs
  */
 export async function getConversation(
   tenantId: number,
@@ -410,70 +443,21 @@ export async function getConversation(
   userId: number,
 ): Promise<Conversation | null> {
   try {
-    // Check if user is participant
     const [participant] = await execute<RowDataPacket[]>(
-      `SELECT 1 FROM conversation_participants
-       WHERE conversation_id = ${conversationId} AND user_id = ${userId}`,
+      `SELECT 1 FROM conversation_participants WHERE conversation_id = ${conversationId} AND user_id = ${userId}`,
     );
+    if (participant.length === 0) return null;
 
-    if (!participant.length) {
-      return null;
-    }
-
-    // Get conversation details
     const [conversations] = await execute<ConversationRow[]>(
-      `SELECT
-        c.id,
-        c.name,
-        c.is_group,
-        c.created_at,
-        c.updated_at
-      FROM conversations c
-      WHERE c.id = ${conversationId} AND c.tenant_id = ${tenantId}`,
+      `SELECT c.id, c.name, c.is_group, c.created_at, c.updated_at
+       FROM conversations c WHERE c.id = ${conversationId} AND c.tenant_id = ${tenantId}`,
     );
-
-    if (!conversations.length) {
-      return null;
-    }
+    if (conversations.length === 0) return null;
 
     const conv = conversations[0];
+    if (conv === undefined) return null;
 
-    // Get participants
-    interface ConvParticipantRow extends RowDataPacket {
-      user_id: number;
-      is_admin: number;
-      joined_at: string | Date;
-      username: string;
-      first_name: string | null;
-      last_name: string | null;
-      profile_picture: string | null;
-    }
-    const [participants] = await execute<ConvParticipantRow[]>(
-      `SELECT
-        cp.user_id,
-        cp.is_admin,
-        cp.joined_at,
-        u.username,
-        u.first_name,
-        u.last_name,
-        u.profile_picture
-      FROM conversation_participants cp
-      INNER JOIN users u ON cp.user_id = u.id
-      WHERE cp.conversation_id = ${conversationId}`,
-    );
-
-    const convParticipants: ConversationParticipant[] = participants.map(
-      (p: ConvParticipantRow) => ({
-        id: p.user_id,
-        userId: p.user_id,
-        username: p.username,
-        first_name: p.first_name ?? '',
-        last_name: p.last_name ?? '',
-        profile_picture_url: p.profile_picture,
-        joinedAt: new Date(p.joined_at),
-        isActive: true,
-      }),
-    );
+    const participants = await fetchConversationParticipants(conversationId);
 
     return {
       id: conv.id,
@@ -483,7 +467,7 @@ export async function getConversation(
       updatedAt: new Date(conv.updated_at),
       lastMessage: null,
       unreadCount: 0,
-      participants: convParticipants,
+      participants,
     };
   } catch (error: unknown) {
     logError('[Chat Service] getConversation error:', error);
@@ -511,7 +495,7 @@ export async function deleteConversation(
       [conversationId, userId],
     );
 
-    if (!participant.length) {
+    if (participant.length === 0) {
       throw new ServiceError(
         'CONVERSATION_ACCESS_DENIED',
         'You are not a participant of this conversation',
@@ -526,11 +510,17 @@ export async function deleteConversation(
       [conversationId],
     );
 
+    const firstParticipant = participant[0];
+    const firstCount = participantCount[0];
+    if (firstParticipant === undefined || firstCount === undefined) {
+      throw new ServiceError('CONVERSATION_ERROR', 'Failed to retrieve conversation details', 500);
+    }
+
     const canDelete =
       userRole === 'root' ||
       userRole === 'admin' ||
-      participant[0].is_admin === 1 ||
-      participantCount[0].count === 1;
+      firstParticipant.is_admin === 1 ||
+      firstCount.count === 1;
 
     if (!canDelete) {
       throw new ServiceError(

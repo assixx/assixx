@@ -33,7 +33,7 @@ describe('Authentication API Endpoints', () => {
     await cleanupTestData();
 
     // JWT_SECRET is already set in test-env-setup.ts
-    process.env.SESSION_SECRET = 'test-session-secret';
+    process.env['SESSION_SECRET'] = 'test-session-secret';
 
     // Test database connection
     try {
@@ -193,7 +193,7 @@ describe('Authentication API Endpoints', () => {
       });
 
       // Token should be set in response
-      expect(response.body.data.token).toBeDefined();
+      expect(response.body.data['token']).toBeDefined();
 
       // Cookie should be set
       const cookies = response.headers['set-cookie'];
@@ -210,8 +210,8 @@ describe('Authentication API Endpoints', () => {
         fingerprint: 'test-fingerprint-jwt-verify',
       });
 
-      const token = response.body.data.token;
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      const token = response.body.data['token'];
+      const decoded = jwt.verify(token, process.env['JWT_SECRET']!) as any;
 
       expect(decoded).toMatchObject({
         id: testUser1.id,
@@ -353,7 +353,7 @@ describe('Authentication API Endpoints', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.user.email).toBe(testUser1.email);
+      expect(response.body.data['user'].email).toBe(testUser1.email);
     });
   });
 
@@ -367,7 +367,7 @@ describe('Authentication API Endpoints', () => {
         password: 'TestPass123!',
         fingerprint: 'test-fingerprint-logout',
       });
-      authToken = loginResponse.body.data.token;
+      authToken = loginResponse.body.data['token'];
     });
 
     it('should successfully logout authenticated user', async () => {
@@ -396,7 +396,7 @@ describe('Authentication API Endpoints', () => {
 
     it.skip('should invalidate session in database', async () => {
       // Session is already created during login in beforeEach
-      const decoded = jwt.verify(authToken, process.env.JWT_SECRET!) as any;
+      const decoded = jwt.verify(authToken, process.env['JWT_SECRET']!) as any;
 
       // Verify session exists before logout
       const [rowsBefore] = await testDb.execute(
@@ -440,14 +440,14 @@ describe('Authentication API Endpoints', () => {
         password: 'TestPass123!',
         fingerprint: 'test-fingerprint-me-1',
       });
-      authToken1 = login1.body.data.token;
+      authToken1 = login1.body.data['token'];
 
       const login2 = await request(app).post('/api/auth/login').send({
         username: testUser2.username,
         password: 'TestPass456!',
         fingerprint: 'test-fingerprint-me-2',
       });
-      authToken2 = login2.body.data.token;
+      authToken2 = login2.body.data['token'];
     });
 
     it('should return current user info', async () => {
@@ -480,8 +480,8 @@ describe('Authentication API Endpoints', () => {
         .get('/api/auth/me')
         .set('Authorization', `Bearer ${authToken1}`);
 
-      expect(response.body.data.tenantName).toBe('__AUTOTEST__Auth Test Company 1');
-      expect(response.body.data.tenant_id).toBe(tenant1Id);
+      expect(response.body.data['tenantName']).toBe('__AUTOTEST__Auth Test Company 1');
+      expect(response.body.data['tenant_id']).toBe(tenant1Id);
     });
 
     it('should return 401 without authentication', async () => {
@@ -507,9 +507,9 @@ describe('Authentication API Endpoints', () => {
         .get('/api/auth/me')
         .set('Authorization', `Bearer ${authToken2}`);
 
-      expect(response1.body.data.tenant_id).toBe(tenant1Id);
-      expect(response2.body.data.tenant_id).toBe(tenant2Id);
-      expect(response1.body.data.tenant_id).not.toBe(response2.body.data.tenant_id);
+      expect(response1.body.data['tenant_id']).toBe(tenant1Id);
+      expect(response2.body.data['tenant_id']).toBe(tenant2Id);
+      expect(response1.body.data['tenant_id']).not.toBe(response2.body.data['tenant_id']);
     });
   });
 
@@ -523,9 +523,9 @@ describe('Authentication API Endpoints', () => {
         password: 'TestPass123!',
         fingerprint: 'test-fingerprint-refresh',
       });
-      authToken = loginResponse.body.data.token;
+      authToken = loginResponse.body.data['token'];
       // Get the actual refresh token from login
-      refreshToken = loginResponse.body.data.refreshToken;
+      refreshToken = loginResponse.body.data['refreshToken'];
     });
 
     it('should refresh JWT token', async () => {
@@ -544,14 +544,14 @@ describe('Authentication API Endpoints', () => {
       });
 
       // New token should be different
-      expect(response.body.data.token).not.toBe(authToken);
+      expect(response.body.data['token']).not.toBe(authToken);
     });
 
     it('should maintain user claims in new token', async () => {
       const response = await request(app).post('/api/auth/refresh').send({ refreshToken });
 
-      const newToken = response.body.data.token;
-      const decoded = jwt.verify(newToken, process.env.JWT_SECRET!) as any;
+      const newToken = response.body.data['token'];
+      const decoded = jwt.verify(newToken, process.env['JWT_SECRET']!) as any;
 
       expect(decoded).toMatchObject({
         id: testUser1.id,
@@ -572,7 +572,7 @@ describe('Authentication API Endpoints', () => {
       // Create expired token
       const expiredToken = jwt.sign(
         { id: testUser1.id, type: 'refresh' },
-        process.env.JWT_SECRET!,
+        process.env['JWT_SECRET']!,
         { expiresIn: '-1h' },
       );
 
@@ -606,7 +606,7 @@ describe('Authentication API Endpoints', () => {
         password: 'TestPass123!',
         fingerprint: 'test-fingerprint-multi-tenant',
       });
-      const token1 = login1.body.data.token;
+      const token1 = login1.body.data['token'];
 
       // Try to use token1 to access tenant2 resources
       const response = await request(app)
@@ -678,7 +678,7 @@ describe('Authentication API Endpoints', () => {
     });
 
     it('should set secure cookie flags', async () => {
-      process.env.NODE_ENV = 'production';
+      process.env['NODE_ENV'] = 'production';
 
       const response = await request(app).post('/api/auth/login').send({
         username: testUser1.username,
@@ -695,7 +695,7 @@ describe('Authentication API Endpoints', () => {
       expect(tokenCookie).toContain('HttpOnly');
       expect(tokenCookie).toContain('SameSite=Strict');
 
-      process.env.NODE_ENV = 'test';
+      process.env['NODE_ENV'] = 'test';
     });
   });
 });

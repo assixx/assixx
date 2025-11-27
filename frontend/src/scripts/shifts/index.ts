@@ -31,17 +31,17 @@ interface RotationPattern {
 interface Team {
   id: number;
   name: string;
-  description?: string;
-  leaderId?: number;
-  leaderName?: string;
-  departmentId?: number;
-  departmentName?: string;
-  memberCount?: number;
-  status?: string;
+  description?: string | undefined;
+  leaderId?: number | undefined;
+  leaderName?: string | undefined;
+  departmentId?: number | undefined;
+  departmentName?: string | undefined;
+  memberCount?: number | undefined;
+  status?: string | undefined;
   createdAt: string;
   updatedAt: string;
-  members?: TeamMember[];
-  teamLeadId?: number; // Alternative field name for leaderId
+  members?: TeamMember[] | undefined;
+  teamLeadId?: number | undefined; // Alternative field name for leaderId
 }
 
 interface ShiftDetailData {
@@ -696,23 +696,23 @@ class ShiftPlanningSystem {
   }
 
   private handleRemoveShiftAction(e: Event, target: HTMLElement): void {
-    if (target.dataset.action !== 'remove-shift' && target.parentElement?.dataset.action !== 'remove-shift') {
+    if (target.dataset['action'] !== 'remove-shift' && target.parentElement?.dataset['action'] !== 'remove-shift') {
       return;
     }
 
     console.info('[REMOVE DEBUG] Remove button clicked!', {
       target: target.tagName,
-      action: target.dataset.action,
-      parentAction: target.parentElement?.dataset.action,
+      action: target.dataset['action'],
+      parentAction: target.parentElement?.dataset['action'],
       classList: target.classList.toString(),
     });
     e.stopPropagation();
     e.preventDefault();
 
-    const btn = target.dataset.action === 'remove-shift' ? target : target.parentElement;
+    const btn = target.dataset['action'] === 'remove-shift' ? target : target.parentElement;
     if (!btn) return;
 
-    const employeeId = btn.dataset.employeeId;
+    const employeeId = btn.dataset['employeeId'];
     const card = btn.closest('.employee-card');
     const cell = card?.closest(CSS_SELECTORS.SHIFT_CELL);
 
@@ -733,7 +733,7 @@ class ShiftPlanningSystem {
   }
 
   private handleCloseModalAction(target: HTMLElement): void {
-    if (target.dataset.action !== 'close-modal') return;
+    if (target.dataset['action'] !== 'close-modal') return;
 
     // Close the modal by removing it from DOM
     const modal = target.closest('.modal-overlay');
@@ -746,7 +746,7 @@ class ShiftPlanningSystem {
   }
 
   private handleAddToFavoritesAction(target: HTMLElement): void {
-    if (target.dataset.action === 'add-to-favorites') {
+    if (target.dataset['action'] === 'add-to-favorites') {
       void this.addToFavorites();
     }
   }
@@ -755,9 +755,9 @@ class ShiftPlanningSystem {
     const option = target.closest<HTMLElement>('.dropdown-option');
     if (!option) return;
 
-    const type = option.dataset.type;
-    const value = option.dataset.value;
-    const text = option.dataset.text;
+    const type = option.dataset['type'];
+    const value = option.dataset['value'];
+    const text = option.dataset['text'];
 
     if (type !== undefined && type !== '' && value !== undefined && value !== '' && text !== undefined && text !== '') {
       this.selectOption(type, value, text);
@@ -903,7 +903,7 @@ class ShiftPlanningSystem {
       const employeeItem = target.closest(CSS_SELECTORS.EMPLOYEE_ITEM);
 
       if (employeeItem) {
-        console.info('[SHIFTS DEBUG] Drag start on employee:', (employeeItem as HTMLElement).dataset.employeeId);
+        console.info('[SHIFTS DEBUG] Drag start on employee:', (employeeItem as HTMLElement).dataset['employeeId']);
 
         if (employeeItem.getAttribute('draggable') === 'false') {
           console.info('[SHIFTS DEBUG] Employee not draggable, preventing drag');
@@ -918,7 +918,7 @@ class ShiftPlanningSystem {
         this.isDragging = true;
         employeeItem.classList.add('dragging');
 
-        const employeeId = (employeeItem as HTMLElement).dataset.employeeId;
+        const employeeId = (employeeItem as HTMLElement).dataset['employeeId'];
         if (employeeId !== undefined && employeeId !== '' && e.dataTransfer) {
           console.info('[SHIFTS DEBUG] Setting drag data:', employeeId);
           e.dataTransfer.effectAllowed = 'copy';
@@ -1316,9 +1316,9 @@ class ShiftPlanningSystem {
     this.areas.forEach((area) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
-      option.dataset.value = String(area.id);
-      option.dataset.type = 'area';
-      option.dataset.text = area.name;
+      option.dataset['value'] = String(area.id);
+      option.dataset['type'] = 'area';
+      option.dataset['text'] = area.name;
       option.textContent = area.name;
       dropdown.append(option);
     });
@@ -1349,9 +1349,9 @@ class ShiftPlanningSystem {
     this.departments.forEach((dept) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
-      option.dataset.value = dept.id.toString();
-      option.dataset.type = 'department';
-      option.dataset.text = dept.name;
+      option.dataset['value'] = dept.id.toString();
+      option.dataset['type'] = 'department';
+      option.dataset['text'] = dept.name;
       option.textContent = dept.name;
       dropdown.append(option);
     });
@@ -1396,9 +1396,9 @@ class ShiftPlanningSystem {
     filteredMachines.forEach((machine) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
-      option.dataset.value = machine.id.toString();
-      option.dataset.type = 'machine';
-      option.dataset.text = machine.name;
+      option.dataset['value'] = machine.id.toString();
+      option.dataset['type'] = 'machine';
+      option.dataset['text'] = machine.name;
       option.textContent = machine.name;
       dropdown.append(option);
     });
@@ -1437,9 +1437,9 @@ class ShiftPlanningSystem {
     this.teams.forEach((team) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
-      option.dataset.value = team.id.toString();
-      option.dataset.type = 'team';
-      option.dataset.text = team.name;
+      option.dataset['value'] = team.id.toString();
+      option.dataset['type'] = 'team';
+      option.dataset['text'] = team.name;
       option.textContent = team.name;
       dropdown.append(option);
     });
@@ -1454,9 +1454,9 @@ class ShiftPlanningSystem {
     this.teamLeaders.forEach((leader) => {
       const option = document.createElement('div');
       option.className = CSS_CLASSES.DROPDOWN_OPTION;
-      option.dataset.value = leader.id.toString();
-      option.dataset.type = 'teamLeader';
-      option.dataset.text = leader.name !== '' ? leader.name : leader.username;
+      option.dataset['value'] = leader.id.toString();
+      option.dataset['type'] = 'teamLeader';
+      option.dataset['text'] = leader.name !== '' ? leader.name : leader.username;
       option.textContent = leader.name !== '' ? leader.name : leader.username;
       dropdown.append(option);
     });
@@ -1521,7 +1521,7 @@ class ShiftPlanningSystem {
     // Clear team dropdown display and value
     const teamDisplay = $$id('teamDisplay');
     if (teamDisplay !== null) {
-      delete teamDisplay.dataset.value;
+      delete teamDisplay.dataset['value'];
       const span = teamDisplay.querySelector('span');
       if (span !== null) {
         span.textContent = 'Team wählen...';
@@ -1692,7 +1692,7 @@ class ShiftPlanningSystem {
         className: 'member-card',
         draggable: true,
       });
-      card.dataset.userId = String(member.id);
+      card.dataset['userId'] = String(member.id);
 
       const nameDiv = createElement('div', { className: 'member-name' }, `${member.firstName} ${member.lastName}`);
 
@@ -1720,7 +1720,7 @@ class ShiftPlanningSystem {
       card.addEventListener('dragstart', (e) => {
         const dragEvent = e as DragEvent;
         if (dragEvent.dataTransfer) {
-          const userId = (card as HTMLElement).dataset.userId ?? '';
+          const userId = (card as HTMLElement).dataset['userId'] ?? '';
           dragEvent.dataTransfer.setData('userId', userId);
           dragEvent.dataTransfer.effectAllowed = 'copy';
           card.classList.add('dragging');
@@ -1798,8 +1798,8 @@ class ShiftPlanningSystem {
 
   private handleShiftAssignment(dragEvent: DragEvent, cellElement: HTMLElement): void {
     const userId = dragEvent.dataTransfer?.getData('userId') ?? '';
-    const date = cellElement.dataset.date;
-    const shiftType = cellElement.dataset.shiftType;
+    const date = cellElement.dataset['date'];
+    const shiftType = cellElement.dataset['shiftType'];
 
     if (userId === '' || date === undefined || date === '' || shiftType === undefined || shiftType === '') {
       return;
@@ -1944,7 +1944,7 @@ class ShiftPlanningSystem {
   private handleShiftAssignmentSuccess(cellElement: HTMLElement, userId: number, shiftType: string): void {
     this.updateShiftCell(cellElement, userId, shiftType);
 
-    const day = cellElement.dataset.day;
+    const day = cellElement.dataset['day'];
     if (this.autofillConfig.enabled && day !== undefined && day !== '') {
       this.performAutofill(userId, day, shiftType);
     }
@@ -2414,7 +2414,7 @@ class ShiftPlanningSystem {
 
     const item = document.createElement('div');
     item.className = 'employee-item';
-    item.dataset.employeeId = employee.id.toString();
+    item.dataset['employeeId'] = employee.id.toString();
 
     // Get the week-specific availability status
     const availabilityStatus = this.getWeekAvailabilityStatus(employee);
@@ -2679,9 +2679,9 @@ class ShiftPlanningSystem {
 
     const parts = baseStatus.trim().split(/\s+/);
     if (parts.length > 1) {
-      return parts[1]; // e.g., "available vacation" -> "vacation"
+      return parts[1] ?? 'available'; // e.g., "available vacation" -> "vacation"
     }
-    return parts[0] !== '' ? parts[0] : 'available';
+    return (parts[0] ?? '') !== '' ? (parts[0] ?? 'available') : 'available';
   }
 
   private getEmployeeName(employee: Employee): string {
@@ -2839,9 +2839,9 @@ class ShiftPlanningSystem {
       // Otherwise parse combined format
       const parts = status.trim().split(/\s+/);
       if (parts.length > 1) {
-        resolvedStatus = parts[1];
+        resolvedStatus = parts[1] ?? 'available';
       } else {
-        resolvedStatus = parts[0] !== '' ? parts[0] : 'available';
+        resolvedStatus = (parts[0] ?? '') !== '' ? (parts[0] ?? 'available') : 'available';
       }
     }
 
@@ -2915,7 +2915,7 @@ class ShiftPlanningSystem {
     // Add selection to clicked item
     employeeItem.classList.add('selected');
 
-    const employeeId = Number.parseInt(employeeItem.dataset.employeeId ?? '0', 10);
+    const employeeId = Number.parseInt(employeeItem.dataset['employeeId'] ?? '0', 10);
     this.selectedEmployee = this.employees.find((e) => e.id === employeeId) ?? null;
   }
 
@@ -2933,8 +2933,8 @@ class ShiftPlanningSystem {
   }
 
   removeEmployeeFromShift(shiftCell: HTMLElement, employeeId: number): void {
-    const date = shiftCell.dataset.date;
-    const shift = shiftCell.dataset.shift;
+    const date = shiftCell.dataset['date'];
+    const shift = shiftCell.dataset['shift'];
 
     if (date === undefined || date === '' || shift === undefined || shift === '') {
       console.error('[SHIFTS ERROR] Missing date or shift data on cell');
@@ -2970,14 +2970,14 @@ class ShiftPlanningSystem {
   }
 
   private getShiftDate(shiftCell: HTMLElement): string | undefined {
-    let date = shiftCell.dataset.date;
-    const day = shiftCell.dataset.day;
+    let date = shiftCell.dataset['date'];
+    const day = shiftCell.dataset['day'];
 
     if ((date === undefined || date === '') && day !== undefined && day !== '') {
       const calculatedDate = this.calculateDateFromDay(day);
       if (calculatedDate !== null) {
         date = calculatedDate;
-        shiftCell.dataset.date = date;
+        shiftCell.dataset['date'] = date;
       }
     }
 
@@ -3101,8 +3101,8 @@ class ShiftPlanningSystem {
 
   assignShift(shiftCell: HTMLElement, employeeId: number): void {
     const date = this.getShiftDate(shiftCell);
-    const day = shiftCell.dataset.day;
-    const shift = shiftCell.dataset.shift;
+    const day = shiftCell.dataset['day'];
+    const shift = shiftCell.dataset['shift'];
 
     console.info('[SHIFTS DEBUG] Assigning shift:', { date, day, shift, employeeId });
 
@@ -3568,7 +3568,7 @@ class ShiftPlanningSystem {
     lastName: string;
     username: string;
   }): void {
-    const date = shift.date.split('T')[0];
+    const date = shift.date.split('T')[0] ?? shift.date;
     const shiftType = this.normalizeShiftType(shift.shift_type);
 
     if (shiftType === 'custom') {
@@ -4208,8 +4208,8 @@ class ShiftPlanningSystem {
   ): HTMLDivElement {
     const employeeDiv = document.createElement('div');
     employeeDiv.className = 'employee-item';
-    employeeDiv.dataset.employeeId = employeeData.id;
-    employeeDiv.dataset.shiftType = dropZone.dataset.shift ?? '';
+    employeeDiv.dataset['employeeId'] = employeeData.id;
+    employeeDiv.dataset['shiftType'] = dropZone.dataset['shift'] ?? '';
     employeeDiv.textContent = employeeData.name;
     employeeDiv.draggable = true;
     return employeeDiv;
@@ -4408,15 +4408,20 @@ class ShiftPlanningSystem {
 
   // Helper function to create employee element
   private createEmployeeElement(
-    employee: { id: number; firstName?: string; lastName?: string; isActive?: boolean },
+    employee: {
+      id: number;
+      firstName?: string | undefined;
+      lastName?: string | undefined;
+      isActive?: boolean | undefined;
+    },
     draggable: boolean = true,
   ): HTMLDivElement {
     const employeeDiv = document.createElement('div');
     employeeDiv.className = 'employee-item';
     employeeDiv.draggable = draggable;
-    employeeDiv.dataset.employeeId = String(employee.id);
+    employeeDiv.dataset['employeeId'] = String(employee.id);
     const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
-    employeeDiv.dataset.employeeName = fullName;
+    employeeDiv.dataset['employeeName'] = fullName;
     employeeDiv.textContent = fullName;
 
     if (draggable) {
@@ -4500,7 +4505,7 @@ class ShiftPlanningSystem {
     startInput.addEventListener('change', () => {
       const newStartDate = new Date(startInput.value);
       const newEndDate = this.getSecondFridayAfter(newStartDate);
-      endInput.value = newEndDate.toISOString().split('T')[0];
+      endInput.value = newEndDate.toISOString().split('T')[0] ?? '';
     });
   }
 
@@ -4508,7 +4513,7 @@ class ShiftPlanningSystem {
     const startDateInput = $$id('rotation-start-date') as HTMLInputElement | null;
     const endDateInput = $$id('rotation-end-date') as HTMLInputElement | null;
     const today = new Date();
-    const todayString = today.toISOString().split('T')[0];
+    const todayString = today.toISOString().split('T')[0] ?? '';
     const maxDate = `${today.getFullYear()}-12-31`;
 
     if (editMode) {
@@ -4521,9 +4526,9 @@ class ShiftPlanningSystem {
     const nextMonday = this.getNextMonday(today);
     const secondFriday = this.getSecondFridayAfter(nextMonday);
 
-    this.setDateInputConstraints(startDateInput, todayString, undefined, nextMonday.toISOString().split('T')[0]);
+    this.setDateInputConstraints(startDateInput, todayString, undefined, nextMonday.toISOString().split('T')[0] ?? '');
 
-    this.setDateInputConstraints(endDateInput, todayString, maxDate, secondFriday.toISOString().split('T')[0]);
+    this.setDateInputConstraints(endDateInput, todayString, maxDate, secondFriday.toISOString().split('T')[0] ?? '');
 
     // Auto-adjust end date when start date changes
     if (startDateInput !== null && endDateInput !== null) {
@@ -4579,25 +4584,25 @@ class ShiftPlanningSystem {
     }
 
     if (rotationStartInput) {
-      rotationStartInput.value = existingPattern.startsAt.split('T')[0];
+      rotationStartInput.value = existingPattern.startsAt.split('T')[0] ?? '';
     }
 
     if (rotationEndInput && existingPattern.endsAt !== null && existingPattern.endsAt !== undefined) {
-      rotationEndInput.value = existingPattern.endsAt.split('T')[0];
+      rotationEndInput.value = existingPattern.endsAt.split('T')[0] ?? '';
     }
 
     // Load checkbox values from patternConfig
     if (skipWeekendsInput && 'skipWeekends' in existingPattern.patternConfig) {
-      skipWeekendsInput.checked = existingPattern.patternConfig.skipWeekends as boolean;
+      skipWeekendsInput.checked = existingPattern.patternConfig['skipWeekends'] as boolean;
     }
 
     if (ignoreNightInput && 'ignoreNightShift' in existingPattern.patternConfig) {
-      ignoreNightInput.checked = existingPattern.patternConfig.ignoreNightShift as boolean;
+      ignoreNightInput.checked = existingPattern.patternConfig['ignoreNightShift'] as boolean;
     }
 
     // Load employee shift assignments if they exist
     if ('shiftGroups' in existingPattern.patternConfig) {
-      this.loadShiftAssignments(existingPattern.patternConfig.shiftGroups as Record<string, string>);
+      this.loadShiftAssignments(existingPattern.patternConfig['shiftGroups'] as Record<string, string>);
     }
   }
 
@@ -4614,7 +4619,7 @@ class ShiftPlanningSystem {
       selectValue = 'biweekly';
     } else if (existingPattern.patternType === 'custom') {
       // Check if it's actually a weekly rotation disguised as custom
-      if ('cycleWeeks' in existingPattern.patternConfig && existingPattern.patternConfig.cycleWeeks === 1) {
+      if ('cycleWeeks' in existingPattern.patternConfig && existingPattern.patternConfig['cycleWeeks'] === 1) {
         selectValue = 'weekly';
       } else {
         selectValue = 'custom';
@@ -4652,7 +4657,7 @@ class ShiftPlanningSystem {
 
       if (targetZone === null) return;
 
-      this.addEmployeeToDropZone(targetZone, employeeId, shiftType, availableEmployee.dataset.employeeName ?? '');
+      this.addEmployeeToDropZone(targetZone, employeeId, shiftType, availableEmployee.dataset['employeeName'] ?? '');
     });
   }
 
@@ -4672,8 +4677,8 @@ class ShiftPlanningSystem {
   ): void {
     const employeeDiv = document.createElement('div');
     employeeDiv.className = 'employee-item';
-    employeeDiv.dataset.employeeId = employeeId;
-    employeeDiv.dataset.shiftType = shiftType;
+    employeeDiv.dataset['employeeId'] = employeeId;
+    employeeDiv.dataset['shiftType'] = shiftType;
     employeeDiv.textContent = employeeName;
     employeeDiv.draggable = true;
 
@@ -4958,7 +4963,7 @@ class ShiftPlanningSystem {
 
       const items = zone.querySelectorAll<HTMLDivElement>('.employee-item');
       items.forEach((emp) => {
-        const empId = Number(emp.dataset.employeeId);
+        const empId = Number(emp.dataset['employeeId']);
         if (empId !== 0 && !Number.isNaN(empId)) {
           employees.push(empId);
           Reflect.set(shiftGroups, empId, shift);
@@ -5398,7 +5403,7 @@ class ShiftPlanningSystem {
   createEmployeeCard(employee: Employee): HTMLElement {
     const card = document.createElement('div');
     card.className = 'employee-card';
-    card.dataset.employeeId = employee.id.toString();
+    card.dataset['employeeId'] = employee.id.toString();
 
     const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     const name = fullName !== '' ? fullName : employee.username;
@@ -5411,8 +5416,8 @@ class ShiftPlanningSystem {
     if (this.isAdmin) {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-btn';
-      removeBtn.dataset.action = 'remove-shift';
-      removeBtn.dataset.employeeId = String(employee.id);
+      removeBtn.dataset['action'] = 'remove-shift';
+      removeBtn.dataset['employeeId'] = String(employee.id);
       const removeIcon = createElement('i', { className: 'fas fa-times' });
       removeBtn.append(removeIcon);
       // Hide button if not in edit mode
@@ -5480,15 +5485,29 @@ class ShiftPlanningSystem {
     this.weeklyShifts.forEach((shifts, date) => {
       shifts.forEach((employeeIds, shiftType) => {
         employeeIds.forEach((employeeId) => {
-          assignments.push({
+          const entry: {
+            employeeId: number;
+            shiftDate: string;
+            shiftType: string;
+            weekStart: string;
+            weekEnd: string;
+            departmentId?: number;
+            machineId?: number;
+            teamLeaderId?: number;
+          } = {
             employeeId: employeeId,
             shiftDate: date,
             shiftType: shiftType,
             weekStart: weekStart,
             weekEnd: weekEnd,
-            departmentId: this.selectedContext.departmentId ?? undefined,
-            machineId: this.selectedContext.machineId ?? undefined,
-          });
+          };
+          if (this.selectedContext.departmentId !== null) {
+            entry.departmentId = this.selectedContext.departmentId;
+          }
+          if (this.selectedContext.machineId !== null) {
+            entry.machineId = this.selectedContext.machineId;
+          }
+          assignments.push(entry);
         });
       });
     });
@@ -5557,7 +5576,12 @@ class ShiftPlanningSystem {
   }
 
   // Helper: Get Kontischicht info if active
-  private getKontischichtInfo(): { planName: string; pattern?: string; startDate?: string; endDate?: string } | null {
+  private getKontischichtInfo(): {
+    planName: string;
+    pattern?: string | undefined;
+    startDate?: string | undefined;
+    endDate?: string | undefined;
+  } | null {
     const windowWithKontischicht = window as typeof window & {
       kontischichtManager: {
         isKontischichtActive: () => boolean;
@@ -6194,8 +6218,8 @@ class ShiftPlanningSystem {
   ]);
 
   private showShiftDetailsModal(shiftCell: HTMLElement): void {
-    const date = shiftCell.dataset.date;
-    const shift = shiftCell.dataset.shift;
+    const date = shiftCell.dataset['date'];
+    const shift = shiftCell.dataset['shift'];
 
     if (date === undefined || date === '' || shift === undefined || shift === '') return;
 
@@ -6537,7 +6561,7 @@ class ShiftPlanningSystem {
       return;
     }
 
-    display.dataset.value = String(value);
+    display.dataset['value'] = String(value);
     const span = display.querySelector('span');
     if (span !== null) {
       span.textContent = text;
@@ -6689,7 +6713,7 @@ class ShiftPlanningSystem {
   private createFavoriteButton(fav: ShiftFavorite): HTMLButtonElement {
     const button = document.createElement('button');
     button.className = 'favorite-btn';
-    button.dataset.favoriteId = String(fav.id);
+    button.dataset['favoriteId'] = String(fav.id);
     button.title = `${fav.areaName} → ${fav.departmentName} → ${fav.machineName} → ${fav.teamName}`;
 
     // Add team name text
@@ -6698,7 +6722,7 @@ class ShiftPlanningSystem {
     // Add remove button
     const removeBtn = document.createElement('span');
     removeBtn.className = 'remove-favorite';
-    removeBtn.dataset.favoriteId = String(fav.id);
+    removeBtn.dataset['favoriteId'] = String(fav.id);
     removeBtn.textContent = '×';
     button.append(removeBtn);
 
@@ -6715,13 +6739,13 @@ class ShiftPlanningSystem {
     const target = e.target as HTMLElement;
 
     if (target.classList.contains('remove-favorite')) {
-      console.info('[FAVORITE DEBUG] Remove button clicked, favId:', target.dataset.favoriteId);
+      console.info('[FAVORITE DEBUG] Remove button clicked, favId:', target.dataset['favoriteId']);
       e.stopPropagation();
-      const favId = target.dataset.favoriteId;
+      const favId = target.dataset['favoriteId'];
       if (favId !== undefined && favId !== '') void this.removeFavorite(favId);
     } else {
       // Load the favorite
-      const favId = button.dataset.favoriteId;
+      const favId = button.dataset['favoriteId'];
       console.info('[FAVORITE DEBUG] Loading favorite with ID:', favId, 'Type:', typeof favId);
       console.info('[FAVORITE DEBUG] All favorites:', this.favorites);
       console.info(
@@ -6808,7 +6832,7 @@ class ShiftPlanningSystem {
         const btn = document.createElement('button');
         btn.id = 'addToFavoritesBtn';
         btn.className = 'btn btn-success add-favorite-btn';
-        btn.dataset.action = 'add-to-favorites';
+        btn.dataset['action'] = 'add-to-favorites';
         btn.innerHTML = '⭐ Zu Favoriten hinzufügen';
 
         // Insert after the filter row

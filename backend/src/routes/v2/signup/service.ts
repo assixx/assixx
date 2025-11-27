@@ -61,15 +61,13 @@ class SignupService {
     }
   }
 
-  /**
-   * Helper: Build tenant data for creation
-   */
+  /** Tenant creation data shape */
   private buildTenantData(data: SignupRequest): {
     company_name: string;
     subdomain: string;
     email: string;
-    phone?: string;
-    address?: string;
+    phone?: string | undefined;
+    address?: string | undefined;
     admin_email: string;
     admin_password: string;
     admin_first_name: string;
@@ -180,11 +178,19 @@ class SignupService {
       // Validate subdomain format
       const validation: SubdomainValidation = Tenant.validateSubdomain(subdomain);
       if (!validation.valid) {
-        return {
+        const result: {
+          available: boolean;
+          subdomain: string;
+          error?: string;
+        } = {
           available: false,
           subdomain,
-          error: validation.error,
         };
+        // Only add error if it exists
+        if (validation.error !== undefined) {
+          result.error = validation.error;
+        }
+        return result;
       }
 
       // Check availability

@@ -6,6 +6,8 @@
 
 import { SessionManager } from '../../utils/session-manager';
 import { initBreadcrumb } from '../../components/breadcrumb';
+// Import BlackboardWidget to ensure widget.ts is loaded
+import '../../blackboard/widget';
 
 // Use global apiClient from common.js
 declare const apiClient: {
@@ -55,7 +57,9 @@ export function initEmployeeDashboard(): void {
  */
 function parseToken(token: string): UserPayload | null {
   try {
-    return JSON.parse(atob(token.split('.')[1])) as UserPayload;
+    const tokenPart = token.split('.')[1];
+    if (tokenPart === undefined) return null;
+    return JSON.parse(atob(tokenPart)) as UserPayload;
   } catch {
     return null;
   }
@@ -153,10 +157,10 @@ function isUserApiResponse(data: unknown): data is UserApiResponse {
 
   const user = data as Record<string, unknown>;
   return (
-    typeof user.id === 'number' &&
-    typeof user.username === 'string' &&
-    typeof user.role === 'string' &&
-    typeof user.tenantId === 'number'
+    typeof user['id'] === 'number' &&
+    typeof user['username'] === 'string' &&
+    typeof user['role'] === 'string' &&
+    typeof user['tenantId'] === 'number'
   );
 }
 
@@ -237,7 +241,7 @@ function initCardNavigation(): void {
 
   cards.forEach((card) => {
     card.addEventListener('click', () => {
-      const href = card.dataset.href;
+      const href = card.dataset['href'];
       if (href !== undefined && href !== '') {
         window.location.href = href;
       }

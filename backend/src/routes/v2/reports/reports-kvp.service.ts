@@ -8,6 +8,18 @@ import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
 import { getDefaultDateFrom, getDefaultDateTo } from './reports-metrics.service.js';
 
+/** Safely parse int, returns 0 for NaN */
+function safeParseInt(value: unknown): number {
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+/** Safely parse float, returns 0 for NaN */
+function safeParseFloat(value: unknown): number {
+  const parsed = Number.parseFloat(String(value));
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 /**
  * Build KVP query conditions from filters
  */
@@ -23,7 +35,7 @@ function buildKvpQueryConditions(
   conditions.push(`k.created_at BETWEEN ? AND ?`);
   params.push(dateFrom, dateTo);
 
-  if (categoryId) {
+  if (categoryId !== undefined && categoryId > 0) {
     conditions.push(`k.category_id = ?`);
     params.push(categoryId);
   }
@@ -115,8 +127,8 @@ async function getKvpTopPerformers(
  * ROI = (Savings - Cost) / Cost
  */
 function calculateRoi(summary: Record<string, unknown>): number {
-  const totalCost = Number(summary.total_cost);
-  const totalSavings = Number(summary.total_savings);
+  const totalCost = Number(summary['total_cost']);
+  const totalSavings = Number(summary['total_savings']);
   return totalCost > 0 ? (totalSavings - totalCost) / totalCost : 0;
 }
 
@@ -154,10 +166,10 @@ export async function getKvpReport(filters: {
     return {
       period: { from: dateFrom, to: dateTo },
       summary: {
-        totalSuggestions: Number.parseInt(String(summary.total_suggestions)) || 0,
-        implemented: Number.parseInt(String(summary.implemented)) || 0,
-        totalCost: Number.parseFloat(String(summary.total_cost)) || 0,
-        totalSavings: Number.parseFloat(String(summary.total_savings)) || 0,
+        totalSuggestions: safeParseInt(summary['total_suggestions']),
+        implemented: safeParseInt(summary['implemented']),
+        totalCost: safeParseFloat(summary['total_cost']),
+        totalSavings: safeParseFloat(summary['total_savings']),
         roi: calculateRoi(summary),
       },
       byCategory: byCategory.map((row: Record<string, unknown>) => dbToApi(row)),

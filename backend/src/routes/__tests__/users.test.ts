@@ -34,7 +34,7 @@ describe('User Management API Endpoints', () => {
 
   beforeAll(async () => {
     testDb = await createTestDatabase();
-    process.env.JWT_SECRET = 'test-secret-key-for-user-tests';
+    process.env['JWT_SECRET'] = 'test-secret-key-for-user-tests';
 
     // Create test tenants
     tenant1Id = await createTestTenant(testDb, 'usertest1', 'User Test Company 1');
@@ -106,10 +106,10 @@ describe('User Management API Endpoints', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data.users).toBeDefined();
+      expect(response.body.data['users']).toBeDefined();
 
       // Should only see users from tenant1
-      const users = response.body.data.users;
+      const users = response.body.data['users'];
       expect(users.length).toBeGreaterThanOrEqual(2); // admin1 and employee1
       expect(users.every((u) => u.tenant_id === tenant1Id)).toBe(true);
 
@@ -132,7 +132,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const users = response.body.data.users;
+      const users = response.body.data['users'];
       expect(users.every((u) => u.department_id === dept1Id)).toBe(true);
     });
 
@@ -142,7 +142,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const users = response.body.data.users;
+      const users = response.body.data['users'];
       expect(users.every((u) => u.role === 'employee')).toBe(true);
     });
 
@@ -164,8 +164,8 @@ describe('User Management API Endpoints', () => {
         .get('/api/users?page=1&limit=10')
         .set('Authorization', `Bearer ${adminToken1}`);
 
-      expect(response1.body.data.users.length).toBe(10);
-      expect(response1.body.data.pagination).toMatchObject({
+      expect(response1.body.data['users'].length).toBe(10);
+      expect(response1.body.data['pagination']).toMatchObject({
         page: 1,
         limit: 10,
         total: expect.any(Number),
@@ -176,9 +176,9 @@ describe('User Management API Endpoints', () => {
         .get('/api/users?page=2&limit=10')
         .set('Authorization', `Bearer ${adminToken1}`);
 
-      expect(response2.body.data.users.length).toBeGreaterThan(0);
+      expect(response2.body.data['users'].length).toBeGreaterThan(0);
       // Users should be different
-      expect(response1.body.data.users[0].id).not.toBe(response2.body.data.users[0].id);
+      expect(response1.body.data['users'][0].id).not.toBe(response2.body.data['users'][0].id);
     });
 
     it('should enforce multi-tenant isolation', async () => {
@@ -187,7 +187,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken2}`);
 
       expect(response.status).toBe(200);
-      const users = response.body.data.users;
+      const users = response.body.data['users'];
 
       // Admin2 should only see users from tenant2
       expect(users.every((u) => u.tenant_id === tenant2Id)).toBe(true);
@@ -200,7 +200,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${rootToken}`);
 
       expect(response.status).toBe(200);
-      const users = response.body.data.users;
+      const users = response.body.data['users'];
       expect(users.every((u) => u.tenant_id === tenant1Id)).toBe(true);
     });
   });
@@ -230,11 +230,11 @@ describe('User Management API Endpoints', () => {
         success: true,
         message: expect.stringContaining('erfolgreich erstellt'),
       });
-      expect(response.body.data.userId).toBeDefined();
+      expect(response.body.data['userId']).toBeDefined();
 
       // Verify user was created
       const [rows] = await testDb.execute('SELECT * FROM users WHERE id = ?', [
-        response.body.data.userId,
+        response.body.data['userId'],
       ]);
       const users = asTestRows<unknown>(rows);
       expect(users[0]).toMatchObject({
@@ -418,7 +418,7 @@ describe('User Management API Endpoints', () => {
       });
 
       // Should not include password
-      expect(response.body.data.password).toBeUndefined();
+      expect(response.body.data['password']).toBeUndefined();
     });
 
     it('should include department info if requested', async () => {
@@ -427,7 +427,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.department).toMatchObject({
+      expect(response.body.data['department']).toMatchObject({
         id: dept1Id,
         name: 'Engineering',
       });
@@ -439,7 +439,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${employeeToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.id).toBe(employeeUser1.id);
+      expect(response.body.data['id']).toBe(employeeUser1.id);
     });
 
     it('should deny employees from viewing other users', async () => {
@@ -599,7 +599,7 @@ describe('User Management API Endpoints', () => {
         first_name: 'Delete',
         last_name: 'Me',
       });
-      deleteUserId = user.id;
+      deleteUserId = user['id'];
     });
 
     it('should soft delete user for admin', async () => {
@@ -681,7 +681,7 @@ describe('User Management API Endpoints', () => {
           first_name: 'Bulk',
           last_name: `User${i}`,
         });
-        userIds.push(user.id);
+        userIds.push(user['id']);
       }
 
       const response = await request(app)
@@ -690,7 +690,7 @@ describe('User Management API Endpoints', () => {
         .send({ userIds });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(3);
+      expect(response.body.data['updated']).toBe(3);
 
       // Verify all activated
       const [rows] = await testDb.execute('SELECT status FROM users WHERE id IN (?)', [userIds]);
@@ -710,7 +710,7 @@ describe('User Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(1);
+      expect(response.body.data['updated']).toBe(1);
     });
 
     it('should enforce tenant isolation on bulk operations', async () => {
@@ -722,7 +722,7 @@ describe('User Management API Endpoints', () => {
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.data.updated).toBe(0); // No users updated
+      expect(response.body.data['updated']).toBe(0); // No users updated
     });
   });
 
@@ -733,9 +733,9 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data.results).toBeDefined();
+      expect(response.body.data['results']).toBeDefined();
       expect(
-        response.body.data.results.some(
+        response.body.data['results'].some(
           (u) =>
             u.first_name.toLowerCase().includes('employee') ||
             u.last_name.toLowerCase().includes('employee') ||
@@ -750,7 +750,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken1}`);
 
       expect(response.status).toBe(200);
-      const results = response.body.data.results;
+      const results = response.body.data['results'];
       expect(results.every((u) => u.tenant_id === tenant1Id)).toBe(true);
     });
   });
@@ -784,7 +784,7 @@ describe('User Management API Endpoints', () => {
         .set('Authorization', `Bearer ${adminToken2}`);
 
       // Different tenants should have different stats
-      expect(response1.body.data.total).not.toBe(response2.body.data.total);
+      expect(response1.body.data['total']).not.toBe(response2.body.data['total']);
     });
   });
 
@@ -796,7 +796,7 @@ describe('User Management API Endpoints', () => {
         .attach('avatar', Buffer.from('fake-image-data'), 'avatar.jpg');
 
       expect(response.status).toBe(200);
-      expect(response.body.data.avatarUrl).toBeDefined();
+      expect(response.body.data['avatarUrl']).toBeDefined();
     });
 
     it('should validate file type', async () => {

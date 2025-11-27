@@ -336,22 +336,22 @@ export function processTeamFormData(formData: FormData): ProcessedFormData {
       // Whitelist of allowed form field keys to prevent object injection
       switch (key) {
         case 'teamLeadId':
-          teamData.leaderId = Number.parseInt(value, 10);
+          teamData['leaderId'] = Number.parseInt(value, 10);
           break;
         case 'id':
-          teamData.id = Number.parseInt(value, 10);
+          teamData['id'] = Number.parseInt(value, 10);
           break;
         case 'name':
-          teamData.name = value;
+          teamData['name'] = value;
           break;
         case 'description':
-          teamData.description = value;
+          teamData['description'] = value;
           break;
         case 'departmentId':
-          teamData.departmentId = Number.parseInt(value, 10);
+          teamData['departmentId'] = Number.parseInt(value, 10);
           break;
         case 'status':
-          teamData.status = value;
+          teamData['status'] = value;
           break;
         // Ignore unknown keys for security
         default:
@@ -386,7 +386,7 @@ export async function loadDepartmentsForDropdown(apiClient: ApiClient, selectedI
     departments.forEach((dept: Department) => {
       const option = document.createElement('div');
       option.className = 'dropdown__option';
-      option.dataset.value = dept.id.toString();
+      option.dataset['value'] = dept.id.toString();
       setSafeHTML(option, `<i class="fas fa-building"></i> ${dept.name}`);
       menu.append(option);
     });
@@ -408,10 +408,10 @@ export async function loadDepartmentsForDropdown(apiClient: ApiClient, selectedI
  * Get admin display name
  */
 function getAdminDisplayName(admin: {
-  firstName?: string;
-  lastName?: string;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
   username: string;
-  employeeNumber?: string;
+  employeeNumber?: string | undefined;
 }): string {
   const firstName = admin.firstName ?? '';
   const lastName = admin.lastName ?? '';
@@ -457,7 +457,7 @@ export async function loadAdminsForDropdown(apiClient: ApiClient, selectedId?: n
 
       const option = document.createElement('div');
       option.className = 'dropdown__option';
-      option.dataset.value = admin.id.toString();
+      option.dataset['value'] = admin.id.toString();
       setSafeHTML(option, `<i class="fas fa-user-tie"></i> ${displayName}`);
       menu.append(option);
     });
@@ -570,7 +570,7 @@ export function setupDropdownListeners(): void {
   // Department dropdown
   document.querySelectorAll('#department-menu .dropdown__option').forEach((option) => {
     option.addEventListener('click', () => {
-      const value = (option as HTMLElement).dataset.value ?? '';
+      const value = (option as HTMLElement).dataset['value'] ?? '';
       const text = option.textContent.trim();
       const input = document.querySelector<HTMLInputElement>('#team-department');
       const trigger = document.querySelector('#department-trigger span');
@@ -586,7 +586,7 @@ export function setupDropdownListeners(): void {
   // Team lead dropdown
   document.querySelectorAll('#team-lead-menu .dropdown__option').forEach((option) => {
     option.addEventListener('click', () => {
-      const value = (option as HTMLElement).dataset.value ?? '';
+      const value = (option as HTMLElement).dataset['value'] ?? '';
       const text = option.textContent.trim();
       const input = document.querySelector<HTMLInputElement>('#team-lead');
       const trigger = document.querySelector('#team-lead-trigger span');
@@ -602,7 +602,7 @@ export function setupDropdownListeners(): void {
   // Status dropdown
   document.querySelectorAll('#status-menu .dropdown__option').forEach((option) => {
     option.addEventListener('click', () => {
-      const value = (option as HTMLElement).dataset.value ?? '';
+      const value = (option as HTMLElement).dataset['value'] ?? '';
       const badgeHTML = option.innerHTML;
       const input = document.querySelector<HTMLInputElement>('#team-status');
       const trigger = document.querySelector<HTMLElement>('#status-trigger span');
@@ -648,8 +648,9 @@ function updateMemberSelection(): void {
     const cb = checkbox as HTMLInputElement;
     selectedIds.push(cb.value);
     const label = cb.parentElement?.querySelector('span');
-    if (label && label.textContent !== '') {
-      selectedNames.push(label.textContent.split(' (')[0].trim());
+    const labelText = label?.textContent ?? '';
+    if (labelText !== '') {
+      selectedNames.push(labelText.split(' (')[0]?.trim() ?? '');
     }
   });
 
@@ -682,8 +683,9 @@ function updateMachineSelection(): void {
     const cb = checkbox as HTMLInputElement;
     selectedIds.push(cb.value);
     const label = cb.parentElement?.querySelector('span');
-    if (label && label.textContent !== '') {
-      selectedNames.push(label.textContent.split(' (')[0].trim());
+    const labelText = label?.textContent ?? '';
+    if (labelText !== '') {
+      selectedNames.push(labelText.split(' (')[0]?.trim() ?? '');
     }
   });
 

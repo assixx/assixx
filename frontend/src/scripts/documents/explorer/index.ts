@@ -239,8 +239,8 @@ function setupGlobalErrorHandler(): void {
 function logPerformanceMetrics(): void {
   // Use modern PerformanceNavigationTiming instead of deprecated timing API
   const perfEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-  if (perfEntries.length > 0) {
-    const navTiming = perfEntries[0];
+  const navTiming = perfEntries[0];
+  if (navTiming !== undefined) {
     const loadTime = navTiming.loadEventEnd - navTiming.fetchStart;
     const domReady = navTiming.domContentLoadedEventEnd - navTiming.fetchStart;
 

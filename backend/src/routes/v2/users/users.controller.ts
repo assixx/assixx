@@ -28,6 +28,7 @@ import {
 // Constants
 const TENANT_ID_MISSING = 'Tenant ID missing';
 const USER_OR_TENANT_ID_MISSING = 'User ID or Tenant ID missing';
+const USER_ID_REQUIRED = 'User ID is required';
 
 interface User {
   id: number;
@@ -93,7 +94,12 @@ export const usersController = {
     try {
       // Validation is now handled by Zod middleware in routes
 
-      const userId = Number.parseInt(req.params.id, 10);
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', USER_ID_REQUIRED));
+        return;
+      }
+      const userId = Number.parseInt(idParam, 10);
       if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
@@ -159,7 +165,12 @@ export const usersController = {
     try {
       // Validation is now handled by Zod middleware in routes
 
-      const userId = Number.parseInt(req.params.id, 10);
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', USER_ID_REQUIRED));
+        return;
+      }
+      const userId = Number.parseInt(idParam, 10);
       const body = req.body as UpdateUserBody;
       if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
@@ -263,7 +274,12 @@ export const usersController = {
     try {
       // Validation is now handled by Zod middleware in routes
 
-      const userId = Number.parseInt(req.params.id, 10);
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', USER_ID_REQUIRED));
+        return;
+      }
+      const userId = Number.parseInt(idParam, 10);
       if (req.userId === undefined || req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', USER_OR_TENANT_ID_MISSING));
         return;
@@ -332,7 +348,12 @@ export const usersController = {
       }
       */
 
-      const userId = Number.parseInt(req.params.id, 10);
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', USER_ID_REQUIRED));
+        return;
+      }
+      const userId = Number.parseInt(idParam, 10);
       if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
@@ -355,7 +376,12 @@ export const usersController = {
     try {
       // Validation is now handled by Zod middleware in routes
 
-      const userId = Number.parseInt(req.params.id, 10);
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', USER_ID_REQUIRED));
+        return;
+      }
+      const userId = Number.parseInt(idParam, 10);
       if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));
         return;
@@ -468,7 +494,12 @@ export const usersController = {
     try {
       // Validation is now handled by Zod middleware in routes
 
-      const userId = Number.parseInt(req.params.id, 10);
+      const idParam = req.params['id'];
+      if (idParam === undefined) {
+        res.status(400).json(errorResponse('BAD_REQUEST', USER_ID_REQUIRED));
+        return;
+      }
+      const userId = Number.parseInt(idParam, 10);
       const body = req.body as UpdateAvailabilityBody;
       if (req.tenantId === undefined) {
         res.status(401).json(errorResponse('UNAUTHORIZED', TENANT_ID_MISSING));

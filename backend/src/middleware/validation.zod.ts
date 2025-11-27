@@ -21,10 +21,13 @@ import { errorResponse } from '../utils/apiResponse.js';
  */
 function formatZodError(error: ZodError): { field: string; message: string }[] {
   // eslint-disable-next-line @typescript-eslint/typedef -- z.ZodIssue is deprecated, type is auto-inferred from error.issues
-  return error.issues.map((issue) => ({
-    field: issue.path.join('.') || 'root',
-    message: issue.message,
-  }));
+  return error.issues.map((issue) => {
+    const fieldPath = issue.path.join('.');
+    return {
+      field: fieldPath !== '' ? fieldPath : 'root',
+      message: issue.message,
+    };
+  });
 }
 
 /**
