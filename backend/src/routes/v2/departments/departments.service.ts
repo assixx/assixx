@@ -1,10 +1,10 @@
 import type { RowDataPacket } from 'mysql2';
 
-// Model classes are exported as PascalCase objects for backward compatibility
-// eslint-disable-next-line @typescript-eslint/naming-convention
-import Department, { DbDepartment } from '../../../models/department.js';
 import { execute } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
+// Model classes are exported as PascalCase objects for backward compatibility
+// eslint-disable-next-line @typescript-eslint/naming-convention
+import Department, { DbDepartment } from './department.model.js';
 
 // API v2 Types
 export interface DepartmentV2 {
@@ -263,7 +263,7 @@ class DepartmentService {
   ): Promise<void> {
     if (departmentLeadId === undefined) return;
 
-    const User = (await import('../../../models/user/index.js')).default;
+    const User = (await import('../users/model/index.js')).default;
     const lead = await User.findById(departmentLeadId, tenantId);
     if (!lead) {
       throw new ServiceError(400, 'Department lead not found');

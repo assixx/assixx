@@ -5,8 +5,8 @@
  */
 import bcrypt from 'bcryptjs';
 
-import User from '../models/user/index.js';
-import type { DbUser } from '../models/user/index.js';
+import User from '../routes/v2/users/model/index.js';
+import type { DbUser } from '../routes/v2/users/model/index.js';
 import { logger } from '../utils/logger.js';
 
 // Import types from User model
@@ -230,11 +230,13 @@ class UserService {
 
   /**
    * Delete user (soft delete)
+   * SECURITY: tenant_id is MANDATORY to prevent cross-tenant user deletion
    * @param userId - The user ID
+   * @param tenantId - The tenant ID for multi-tenant isolation
    */
-  async deleteUser(userId: number): Promise<boolean> {
+  async deleteUser(userId: number, tenantId: number): Promise<boolean> {
     try {
-      await User.delete(userId);
+      await User.delete(userId, tenantId);
       return true;
     } catch (error: unknown) {
       logger.error('Error deleting user:', error);

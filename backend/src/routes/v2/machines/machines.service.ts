@@ -1,6 +1,6 @@
-import machineModel, { Machine, MachineMaintenanceHistory } from '../../../models/machine.js';
-import rootLog from '../../../models/rootLog.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
+import rootLog from '../logs/logs.service.js';
+import machineModel, { Machine, MachineMaintenanceHistory } from './machine.model.js';
 import {
   MachineCategory,
   MachineCreateRequest,

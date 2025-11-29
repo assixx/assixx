@@ -25,6 +25,7 @@ export interface SingleRoleResponse {
 
 export interface RoleCheckRequest {
   userId: number;
+  tenantId: number;
   requiredRole: RoleName;
 }
 

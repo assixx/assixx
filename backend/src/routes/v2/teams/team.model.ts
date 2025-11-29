@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/naming-convention */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
-import { logger } from '../utils/logger.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
 
 // Database interfaces
 interface DbTeam extends RowDataPacket {

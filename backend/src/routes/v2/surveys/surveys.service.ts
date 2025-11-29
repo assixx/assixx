@@ -2,11 +2,11 @@
  * surveys API v2 Service Layer
  * Business logic for survey management
  */
-import rootLog from '../../../models/rootLog.js';
-import survey, { SurveyStatistics } from '../../../models/survey.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { eventBus } from '../../../utils/eventBus.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
+import rootLog from '../logs/logs.service.js';
+import survey, { SurveyStatistics } from './survey.model.js';
 
 export interface SurveyFilters {
   status?: 'draft' | 'active' | 'closed';

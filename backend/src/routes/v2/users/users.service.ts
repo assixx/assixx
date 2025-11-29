@@ -6,16 +6,16 @@ import bcrypt from 'bcryptjs';
 import fs from 'fs/promises';
 import path from 'path';
 
-import userModel from '../../../models/user/index.js';
+import { apiToDb, dbToApi } from '../../../utils/fieldMapping.js';
+import userModel from './model/index.js';
 // N:M REFACTORING: Import department assignment functions
 import {
   type UserDepartmentRow,
   bulkAssignUserDepartments,
   getUserDepartments,
   removeAllUserDepartments,
-} from '../../../models/user/user.departments.js';
-import type { AvailabilityData, UserFilter } from '../../../models/user/user.types.js';
-import { apiToDb, dbToApi } from '../../../utils/fieldMapping.js';
+} from './model/user.departments.js';
+import type { AvailabilityData, UserFilter } from './model/user.types.js';
 import {
   CreateUserBody,
   ListUsersQuery,
@@ -510,8 +510,8 @@ export class UsersService {
       throw new ServiceError('BAD_REQUEST', 'Cannot delete your own account', 400);
     }
 
-    // Delete user
-    await userModel.delete(userId);
+    // Delete user - SECURITY: tenant_id required for multi-tenant isolation
+    await userModel.delete(userId, tenantId);
     return { message: 'User deleted successfully' };
   }
 

@@ -2,8 +2,8 @@
  * Calendar Attendee Operations
  * Handles attendee management for calendar events
  */
-import { ResultSetHeader, query as executeQuery } from '../../utils/db.js';
-import { logger } from '../../utils/logger.js';
+import { ResultSetHeader, query as executeQuery } from '../../../../utils/db.js';
+import { logger } from '../../../../utils/logger.js';
 import { DbCalendarEvent, DbEventAttendee } from './calendar.types.js';
 
 /**

@@ -7,10 +7,10 @@ import { NextFunction, Response } from 'express';
 import { promises as fs } from 'fs';
 import path from 'path';
 
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { errorResponse, successResponse } from '../../../utils/apiResponse.js';
 import { getUploadDirectory, validatePath } from '../../../utils/pathSecurity.js';
+import rootLog from '../logs/logs.service.js';
 import {
   createConversation,
   deleteConversation,

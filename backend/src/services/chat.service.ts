@@ -918,13 +918,13 @@ class ChatService {
    * @param conversationId - The conversationId parameter
    * @param userId - The user ID
    * @param addedBy - The addedBy parameter
-   * @param _tenantId - The _tenantId parameter
+   * @param tenantId - The tenant ID for multi-tenant isolation
    */
   async addParticipant(
     conversationId: number,
     userId: number,
     addedBy: number,
-    _tenantId: number,
+    tenantId: number,
   ): Promise<void> {
     // Check if user is already in conversation
     const [existing] = await db
@@ -948,7 +948,7 @@ class ChatService {
     // Add system message about new participant
     const [userInfo] = await db
       .promise()
-      .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ?', [userId]);
+      .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ? AND tenant_id = ?', [userId, tenantId]);
 
     const firstUser = userInfo[0];
     if (userInfo.length > 0 && firstUser != null) {
@@ -967,13 +967,13 @@ class ChatService {
    * @param conversationId - The conversationId parameter
    * @param userId - The user ID
    * @param removedBy - The removedBy parameter
-   * @param _tenantId - The _tenantId parameter
+   * @param tenantId - The tenant ID for multi-tenant isolation
    */
   async removeParticipant(
     conversationId: number,
     userId: number,
     removedBy: number,
-    _tenantId: number,
+    tenantId: number,
   ): Promise<void> {
     // Check if user is in conversation
     const [existing] = await db
@@ -997,7 +997,7 @@ class ChatService {
     // Add system message about removed participant
     const [userInfo] = await db
       .promise()
-      .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ?', [userId]);
+      .execute<UserUsernameResult[]>('SELECT username FROM users WHERE id = ? AND tenant_id = ?', [userId, tenantId]);
 
     const firstUser = userInfo[0];
     if (userInfo.length > 0 && firstUser != null) {

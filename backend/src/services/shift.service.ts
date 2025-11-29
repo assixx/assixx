@@ -9,22 +9,17 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import type { DbShift, DbShiftTemplate } from '../models/shift-types.js';
+import type { DbShift, DbShiftTemplate } from '../routes/v2/shifts/shift-types.js';
 import {
   assignEmployeeToShift,
   createShift,
   createShiftPlan,
   createShiftTemplate,
-  // getEmployeeAvailability, // Unused
-  // setEmployeeAvailability, // Unused
-  // getShiftExchangeRequests, // Unused
-  // createShiftExchangeRequest, // Unused
-  // canAccessShiftPlan, // Unused
   getEmployeeShifts,
   getShiftPlans,
   getShiftTemplates,
   getShiftsByPlan,
-} from '../models/shift.js';
+} from '../routes/v2/shifts/shift.js';
 
 // Interfaces - these would typically match the Shift model interfaces
 interface ShiftEntry {

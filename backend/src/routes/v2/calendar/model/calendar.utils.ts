@@ -2,8 +2,8 @@
  * Calendar Utility Functions
  * Pure functions for data formatting, filtering, and processing
  */
-import { RowDataPacket, query as executeQuery } from '../../utils/db.js';
-import user from '../user/index.js';
+import { RowDataPacket, query as executeQuery } from '../../../../utils/db.js';
+import user from '../../users/model/index.js';
 import { CountResult, DbCalendarEvent } from './calendar.types.js';
 
 /**

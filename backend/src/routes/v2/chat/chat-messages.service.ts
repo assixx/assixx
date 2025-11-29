@@ -174,10 +174,10 @@ async function insertMessage(
 /**
  * Fetch sender info from database
  */
-async function getSenderInfo(senderId: number): Promise<SenderRow> {
+async function getSenderInfo(senderId: number, tenantId: number): Promise<SenderRow> {
   const [rows] = await execute<SenderRow[]>(
-    `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = ?`,
-    [senderId],
+    `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = ? AND tenant_id = ?`,
+    [senderId, tenantId],
   );
   const sender = rows[0];
   if (sender === undefined) {
@@ -314,7 +314,7 @@ export async function sendMessage(
     await execute(`UPDATE conversations SET updated_at = NOW() WHERE id = ?`, [conversationId]);
 
     // Build response with sender info
-    const sender = await getSenderInfo(senderId);
+    const sender = await getSenderInfo(senderId, tenantId);
     const message = buildMessageResponse(messageId, conversationId, senderId, sender, data);
 
     return { message };

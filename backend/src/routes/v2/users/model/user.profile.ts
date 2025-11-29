@@ -4,8 +4,8 @@
  */
 import bcrypt from 'bcryptjs';
 
-import { ResultSetHeader, query as executeQuery } from '../../utils/db.js';
-import { logger } from '../../utils/logger.js';
+import { ResultSetHeader, query as executeQuery } from '../../../../utils/db.js';
+import { logger } from '../../../../utils/logger.js';
 import { findUserById } from './user.crud.js';
 import { PasswordChangeResult, ProfileUpdateResult, UserCreateData } from './user.types.js';
 

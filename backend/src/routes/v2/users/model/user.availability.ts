@@ -2,8 +2,8 @@
  * User Availability Management
  * Handles user availability status and auto-reset of expired availabilities
  */
-import { ResultSetHeader, query as executeQuery } from '../../utils/db.js';
-import { logger } from '../../utils/logger.js';
+import { ResultSetHeader, query as executeQuery } from '../../../../utils/db.js';
+import { logger } from '../../../../utils/logger.js';
 import { AvailabilityData } from './user.types.js';
 
 /**

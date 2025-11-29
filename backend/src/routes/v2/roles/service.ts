@@ -97,9 +97,10 @@ class RolesService {
   }> {
     try {
       // Get user's current role from database
-      const [rows] = await execute<UserRoleResult[]>('SELECT role FROM users WHERE id = ?', [
-        request.userId,
-      ]);
+      const [rows] = await execute<UserRoleResult[]>(
+        'SELECT role FROM users WHERE id = ? AND tenant_id = ?',
+        [request.userId, request.tenantId],
+      );
 
       if (rows.length === 0) {
         throw new ServiceError('NOT_FOUND', 'User not found');

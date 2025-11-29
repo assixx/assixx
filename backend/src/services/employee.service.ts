@@ -13,7 +13,7 @@
  */
 import { Pool } from 'mysql2/promise';
 
-import User, { DbUser, UserCreateData, UserFilter } from '../models/user/index.js';
+import User, { DbUser, UserCreateData, UserFilter } from '../routes/v2/users/model/index.js';
 
 // Type aliases: Map employee-specific types to User model types
 // This provides semantic clarity (Employee vs User terminology)
@@ -109,12 +109,14 @@ class UserService {
 
   /**
    * Löscht einen User Eintrag
-   * @param _tenantDb - The _tenantDb parameter
+   * SECURITY: tenant_id is MANDATORY to prevent cross-tenant user deletion
+   * @param _tenantDb - The _tenantDb parameter (unused, kept for backward compatibility)
    * @param id - The resource ID
+   * @param tenantId - The tenant ID for multi-tenant isolation
    */
-  async delete(_tenantDb: Pool, id: number): Promise<boolean> {
+  async delete(_tenantDb: Pool, id: number, tenantId: number): Promise<boolean> {
     try {
-      return await User.delete(id);
+      return await User.delete(id, tenantId);
     } catch (error: unknown) {
       console.error('Error in UserService.delete:', error);
       throw error;

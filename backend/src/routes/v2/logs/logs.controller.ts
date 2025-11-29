@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Response } from "express";
-import user from "../../../models/user/index.js";
+import user from "../users/model/index.js";
 import type { AuthenticatedRequest } from "../../../types/request.types.js";
 import { successResponse, errorResponse } from "../../../utils/apiResponse.js";
 import { logger } from "../../../utils/logger.js";

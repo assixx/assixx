@@ -2,7 +2,7 @@
  * Shift Types and Interfaces
  * Shared type definitions for shift system
  */
-import type { RowDataPacket } from '../utils/db.js';
+import type { RowDataPacket } from '../../../utils/db.js';
 
 // Error Messages
 export const ERROR_MESSAGES = {

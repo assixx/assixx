@@ -2,8 +2,8 @@
  * User Statistics & Counting
  * Provides counting and statistics functions for users
  */
-import { RowDataPacket, query as executeQuery } from '../../utils/db.js';
-import { logger } from '../../utils/logger.js';
+import { RowDataPacket, query as executeQuery } from '../../../../utils/db.js';
+import { logger } from '../../../../utils/logger.js';
 import { CountResult, DocumentCountResult, UserDepartmentTeam, UserFilter } from './user.types.js';
 import { buildCountQuery } from './user.utils.js';
 

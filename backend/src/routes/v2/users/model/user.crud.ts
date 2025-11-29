@@ -2,9 +2,9 @@
  * User CRUD Operations
  * Main business logic for user management
  */
-import { ResultSetHeader, query as executeQuery } from '../../utils/db.js';
-import { logger } from '../../utils/logger.js';
-import { normalizeMySQLBoolean } from '../../utils/typeHelpers.js';
+import { ResultSetHeader, query as executeQuery } from '../../../../utils/db.js';
+import { logger } from '../../../../utils/logger.js';
+import { normalizeMySQLBoolean } from '../../../../utils/typeHelpers.js';
 import { autoResetExpiredAvailability } from './user.availability.js';
 import { DbUser, UserCreateData, UserFilter } from './user.types.js';
 import {
@@ -264,10 +264,14 @@ export async function findUserByEmail(
 
 /**
  * Delete a user
+ * SECURITY: tenant_id is MANDATORY to prevent cross-tenant user deletion
  */
-export async function deleteUser(id: number): Promise<boolean> {
+export async function deleteUser(id: number, tenantId: number): Promise<boolean> {
   try {
-    const [result] = await executeQuery<ResultSetHeader>('DELETE FROM users WHERE id = ?', [id]);
+    const [result] = await executeQuery<ResultSetHeader>(
+      'DELETE FROM users WHERE id = ? AND tenant_id = ?',
+      [id, tenantId],
+    );
     return result.affectedRows > 0;
   } catch (error: unknown) {
     logger.error(`Error deleting user with ID ${id}: ${(error as Error).message}`);

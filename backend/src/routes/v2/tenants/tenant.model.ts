@@ -4,16 +4,16 @@ import { randomBytes } from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { DatabaseTenant } from '../types/models.js';
-import { TenantTrialStatus } from '../types/tenant.types.js';
+import { DatabaseTenant } from '../../../types/models.js';
+import { TenantTrialStatus } from '../../../types/tenant.types.js';
 import {
   PoolConnection,
   ResultSetHeader,
   RowDataPacket,
   query as executeQuery,
   getConnection,
-} from '../utils/db.js';
-import { logger } from '../utils/logger.js';
+} from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
 
 // Extended interface for internal use
 interface TenantTrialStatusComplete extends TenantTrialStatus {
@@ -109,7 +109,7 @@ async function createRootUser(
   const userId = userResult.insertId;
 
   // Generate employee_id
-  const { generateEmployeeId } = await import('../utils/employeeIdGenerator.js');
+  const { generateEmployeeId } = await import('../../../utils/employeeIdGenerator.js');
   const employeeId = generateEmployeeId(tenantData.subdomain, 'root', userId);
 
   await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, userId]);

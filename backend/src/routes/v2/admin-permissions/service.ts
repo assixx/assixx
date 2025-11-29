@@ -4,11 +4,11 @@
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import { createRootLog } from '../../../models/rootLog.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute } from '../../../utils/db.js';
 import { getErrorMessage } from '../../../utils/errorHandler.js';
 import { logger } from '../../../utils/logger.js';
+import { createRootLog } from '../logs/logs.service.js';
 import {
   AdminArea,
   AdminDepartment,

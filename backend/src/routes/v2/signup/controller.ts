@@ -4,11 +4,11 @@
  */
 import { Request, Response } from 'express';
 
-// Removed express-validator - using Zod validation in routes
-
-import rootLog from '../../../models/rootLog.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { logger, sanitizeForLog } from '../../../utils/logger.js';
+// Removed express-validator - using Zod validation in routes
+
+import rootLog from '../logs/logs.service.js';
 import { signupService } from './service.js';
 import type { SignupRequest } from './types.js';
 

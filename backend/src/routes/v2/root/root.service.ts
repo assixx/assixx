@@ -6,9 +6,6 @@
 import bcrypt from 'bcryptjs';
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
-import rootLog, { type DbRootLog } from '../../../models/rootLog.js';
-import tenantModel from '../../../models/tenant.js';
-import userModel, { type DbUser, type UserCreateData } from '../../../models/user/index.js';
 import { tenantDeletionService } from '../../../services/tenantDeletion.service.js';
 import { UsersRow } from '../../../types/database-rows.types.js';
 import type { DatabaseTenant } from '../../../types/models.js';
@@ -17,6 +14,10 @@ import { ServiceError } from '../../../utils/ServiceError.js';
 import { execute } from '../../../utils/db.js';
 import { generateEmployeeId } from '../../../utils/employeeIdGenerator.js';
 import { logger } from '../../../utils/logger.js';
+import rootLog from '../logs/logs.service.js';
+import type { DbRootLog } from '../logs/types.js';
+import tenantModel from '../tenants/tenant.model.js';
+import userModel, { type DbUser, type UserCreateData } from '../users/model/index.js';
 import {
   AdminLog,
   AdminUser,
@@ -437,7 +438,8 @@ class RootService {
         throw new ServiceError('NOT_FOUND', 'Admin not found', 404);
       }
 
-      const success = await userModel.delete(id);
+      // SECURITY: tenant_id required for multi-tenant isolation
+      const success = await userModel.delete(id, tenantId);
       if (!success) {
         throw new ServiceError('DELETE_FAILED', 'Failed to delete admin', 500);
       }
@@ -893,12 +895,13 @@ class RootService {
       }
 
       // Delete user's related data first (to avoid foreign key constraints)
-      await execute('DELETE FROM oauth_tokens WHERE user_id = ?', [id]);
-      await execute('DELETE FROM user_teams WHERE user_id = ?', [id]);
-      await execute('DELETE FROM user_departments WHERE user_id = ?', [id]);
+      // SECURITY: tenant_id required for multi-tenant isolation
+      await execute('DELETE FROM oauth_tokens WHERE user_id = ? AND tenant_id = ?', [id, tenantId]);
+      await execute('DELETE FROM user_teams WHERE user_id = ? AND tenant_id = ?', [id, tenantId]);
+      await execute('DELETE FROM user_departments WHERE user_id = ? AND tenant_id = ?', [id, tenantId]);
 
-      // Now delete the user
-      await execute('DELETE FROM users WHERE id = ?', [id]);
+      // Now delete the user - SECURITY: tenant_id required for multi-tenant isolation
+      await execute('DELETE FROM users WHERE id = ? AND tenant_id = ?', [id, tenantId]);
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to delete root user', error);

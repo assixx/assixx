@@ -11,7 +11,7 @@ import {
   RowDataPacket,
   getConnection,
   query as typedQuery,
-} from '../utils/db.js';
+} from '../../../utils/db.js';
 
 // Database interfaces
 interface DbSurvey extends RowDataPacket {

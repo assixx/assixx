@@ -4,7 +4,6 @@
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
-import rootLog from '../../../models/rootLog.js';
 import {
   NotificationPreferencesRow,
   NotificationsRow,
@@ -21,6 +20,7 @@ import {
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
+import rootLog from '../logs/logs.service.js';
 import { NotificationData, NotificationFilters, NotificationPreferences } from './types.js';
 
 /**
@@ -35,9 +35,9 @@ function buildNotificationConditions(
   const params: (string | number | boolean)[] = [tenantId];
 
   conditions.push(`(n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-    OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
-    OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`);
-  params.push(userId, userId, userId);
+    OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
+    OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))`);
+  params.push(userId, userId, tenantId, userId, tenantId);
 
   if (filters.type !== undefined && filters.type !== '') {
     conditions.push(`n.type = ?`);
@@ -210,9 +210,9 @@ export async function markAsRead(
     `SELECT * FROM notifications
      WHERE id = ? AND tenant_id = ?
      AND (recipient_type = 'all' OR (recipient_type = 'user' AND recipient_id = ?)
-          OR (recipient_type = 'department' AND recipient_id IN (SELECT department_id FROM users WHERE id = ?))
-          OR (recipient_type = 'team' AND recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`,
-    [notificationId, tenantId, userId, userId, userId],
+          OR (recipient_type = 'department' AND recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
+          OR (recipient_type = 'team' AND recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))`,
+    [notificationId, tenantId, userId, userId, tenantId, userId, tenantId],
   );
   const notification = rows[0];
 
@@ -243,10 +243,10 @@ export async function markAllAsRead(
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
      WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))
      AND nrs.id IS NULL`,
-    [userId, tenantId, userId, userId, userId],
+    [userId, tenantId, userId, userId, tenantId, userId, tenantId],
   );
 
   let markedCount = 0;
@@ -536,9 +536,9 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
     `SELECT COUNT(*) as total FROM notifications n
      WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))`,
-    [tenantId, userId, userId, userId],
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))`,
+    [tenantId, userId, userId, tenantId, userId, tenantId],
   );
 
   // Unread count
@@ -547,10 +547,10 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
      LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = ?
      WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))
      AND nrs.id IS NULL`,
-    [userId, tenantId, userId, userId, userId],
+    [userId, tenantId, userId, userId, tenantId, userId, tenantId],
   );
 
   // By type
@@ -558,10 +558,10 @@ export async function getPersonalStats(userId: number, tenantId: number): Promis
     `SELECT n.type, COUNT(*) as count FROM notifications n
      WHERE n.tenant_id = ?
      AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = ?)
-          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ?))
-          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ?)))
+          OR (n.recipient_type = 'department' AND n.recipient_id IN (SELECT department_id FROM users WHERE id = ? AND tenant_id = ?))
+          OR (n.recipient_type = 'team' AND n.recipient_id IN (SELECT team_id FROM user_teams WHERE user_id = ? AND tenant_id = ?)))
      GROUP BY n.type`,
-    [tenantId, userId, userId, userId],
+    [tenantId, userId, userId, tenantId, userId, tenantId],
   );
 
   const byType: Record<string, number> = {};

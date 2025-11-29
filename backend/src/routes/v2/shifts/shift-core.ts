@@ -3,7 +3,8 @@
  * Shift Core Operations
  * Core shift management operations (v1 API)
  */
-import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../utils/db.js';
+import { ResultSetHeader, RowDataPacket, query as executeQuery } from '../../../utils/db.js';
+import User from '../users/model/index.js';
 import {
   type CountResult,
   type DbEmployeeAvailability,
@@ -26,7 +27,6 @@ import {
   type ShiftTemplateData,
   formatDateOnlyForMysql,
 } from './shift-types.js';
-import User from './user/index.js';
 
 /** Validates that all numbers are valid (not 0 and not NaN) */
 function hasInvalidNumber(...nums: number[]): boolean {

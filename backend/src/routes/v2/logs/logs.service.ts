@@ -3,11 +3,16 @@ import { ResultSetHeader, RowDataPacket } from 'mysql2';
 import { query as executeQuery } from '../../../utils/db.js';
 import { logger } from '../../../utils/logger.js';
 import type {
+  DbRootLog,
   LogsFilterParams,
   LogsListResponse,
   LogsResponse,
   LogsStatsResponse,
+  RootLogCreateData,
 } from './types.js';
+
+// Extend RowDataPacket for DB queries
+interface DbRootLogRow extends RowDataPacket, DbRootLog {}
 
 interface DbLogRow extends RowDataPacket {
   id: number;
@@ -383,6 +388,180 @@ class LogsService {
 
     return response;
   }
+
+  // ===== CREATE LOG METHODS (migrated from models/rootLog.ts) =====
+
+  /**
+   * Create a new root log entry
+   * @param logData - The log data to insert
+   * @returns The ID of the created log entry
+   */
+  async createLog(logData: RootLogCreateData): Promise<number> {
+    const {
+      user_id: userId,
+      action,
+      ip_address: ipAddress,
+      tenant_id: tenantId,
+      entity_type: entityType,
+      entity_id: entityId,
+      details,
+      old_values: oldValues,
+      new_values: newValues,
+      user_agent: userAgent,
+      was_role_switched: wasRoleSwitched,
+    } = logData;
+
+    const sql = `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, details, old_values, new_values, ip_address, user_agent, was_role_switched)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    try {
+      const [result] = await executeQuery<ResultSetHeader>(sql, [
+        tenantId,
+        userId,
+        action,
+        entityType ?? null,
+        entityId ?? null,
+        details ?? null,
+        oldValues !== undefined ? JSON.stringify(oldValues) : null,
+        newValues !== undefined ? JSON.stringify(newValues) : null,
+        ipAddress ?? null,
+        userAgent ?? null,
+        wasRoleSwitched ?? false,
+      ]);
+      return result.insertId;
+    } catch (error: unknown) {
+      logger.error(`[Logs Service] Error creating root log: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Convenience method for simple logging
+   * @param action - The action being logged
+   * @param userId - The user performing the action
+   * @param tenantId - The tenant ID
+   * @param details - Optional details about the action
+   * @returns The ID of the created log entry
+   */
+  async logAction(
+    action: string,
+    userId: number,
+    tenantId: number,
+    details?: string | Record<string, unknown>,
+  ): Promise<number> {
+    const logData: RootLogCreateData = {
+      user_id: userId,
+      tenant_id: tenantId,
+      action,
+      new_values: typeof details === 'string' ? { details } : details,
+    };
+    return await this.createLog(logData);
+  }
+
+  /**
+   * Get logs by user ID
+   * @param userId - The user ID
+   * @param days - Optional: Only get logs from the last X days (0 = all)
+   * @returns Array of log entries
+   */
+  async getLogsByUserId(userId: number, days?: number): Promise<DbRootLog[]> {
+    const effectiveDays: number = days ?? 0;
+    let sql = `SELECT * FROM root_logs WHERE user_id = ?`;
+    const params: unknown[] = [userId];
+
+    if (effectiveDays > 0) {
+      sql += ` AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
+      params.push(effectiveDays);
+    }
+
+    sql += ` ORDER BY created_at DESC`;
+
+    try {
+      const [rows] = await executeQuery<DbRootLogRow[]>(sql, params);
+      return rows;
+    } catch (error: unknown) {
+      logger.error(`[Logs Service] Error fetching logs for user ${userId}: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the last login record for a user
+   * @param userId - The user ID
+   * @returns The last login record or null if not found
+   */
+  async getLastLogin(userId: number): Promise<DbRootLog | null> {
+    const sql = `SELECT * FROM root_logs
+                 WHERE user_id = ? AND action = 'login'
+                 ORDER BY created_at DESC LIMIT 1`;
+
+    try {
+      const [rows] = await executeQuery<DbRootLogRow[]>(sql, [userId]);
+      const row = rows[0];
+      return row !== undefined ? row : null;
+    } catch (error: unknown) {
+      logger.error(`[Logs Service] Error fetching last login for user ${userId}: ${(error as Error).message}`);
+      throw error;
+    }
+  }
 }
 
 export const logsService = new LogsService();
+
+// ===== NAMED EXPORTS for easy import =====
+// These wrap the service methods for backward compatibility
+
+/**
+ * Create a root log entry
+ * @param logData - The log data
+ * @returns The created log ID
+ */
+export async function createRootLog(logData: RootLogCreateData): Promise<number> {
+  return await logsService.createLog(logData);
+}
+
+/**
+ * Convenience function for simple logging
+ * @param action - The action
+ * @param userId - The user ID
+ * @param tenantId - The tenant ID
+ * @param details - Optional details
+ * @returns The created log ID
+ */
+export async function logRootAction(
+  action: string,
+  userId: number,
+  tenantId: number,
+  details?: string | Record<string, unknown>,
+): Promise<number> {
+  return await logsService.logAction(action, userId, tenantId, details);
+}
+
+/**
+ * Get logs by user ID
+ * @param userId - The user ID
+ * @param days - Optional days filter
+ * @returns Array of logs
+ */
+export async function getRootLogsByUserId(userId: number, days?: number): Promise<DbRootLog[]> {
+  return await logsService.getLogsByUserId(userId, days);
+}
+
+/**
+ * Get last login for a user
+ * @param userId - The user ID
+ * @returns Last login record or null
+ */
+export async function getLastRootLogin(userId: number): Promise<DbRootLog | null> {
+  return await logsService.getLastLogin(userId);
+}
+
+// Backward compatibility object (for `import rootLog from ...` pattern)
+const rootLog = {
+  log: logRootAction,
+  create: createRootLog,
+  getByUserId: getRootLogsByUserId,
+  getLastLogin: getLastRootLogin,
+};
+
+export default rootLog;

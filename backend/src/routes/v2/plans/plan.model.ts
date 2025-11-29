@@ -1,5 +1,5 @@
-import { ResultSetHeader, RowDataPacket, execute as executeQuery } from '../utils/db.js';
-import { logger } from '../utils/logger.js';
+import { ResultSetHeader, RowDataPacket, execute as executeQuery } from '../../../utils/db.js';
+import { logger } from '../../../utils/logger.js';
 
 // Query result interfaces
 interface TenantCostResult extends RowDataPacket {

@@ -8,12 +8,12 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
-import rootLog from '../../../models/rootLog.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { errorResponse, paginatedResponse, successResponse } from '../../../utils/apiResponse.js';
 import { logger } from '../../../utils/logger.js';
 import { getUploadDirectory } from '../../../utils/pathSecurity.js';
+import rootLog from '../logs/logs.service.js';
 import { kvpService } from './kvp.service.js';
 import type {
   CommentData,
