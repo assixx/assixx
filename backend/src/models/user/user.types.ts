@@ -6,6 +6,7 @@ import { RowDataPacket } from '../../utils/db.js';
 
 /**
  * Database representation of a user (snake_case to match DB schema)
+ * N:M REFACTORING: department_id replaced with primary_department_id from user_departments table
  */
 export interface DbUser extends RowDataPacket {
   id: number;
@@ -13,25 +14,25 @@ export interface DbUser extends RowDataPacket {
   email: string;
   password: string;
   role: string;
-  company?: string;
+  has_full_access: boolean; // Full tenant access without individual assignments
+  // REMOVED: company and iban columns dropped (2025-11-27)
   notes?: string;
   first_name: string;
   last_name: string;
   age?: number;
   employee_id?: string;
-  iban?: string;
-  department_id?: number;
-  department_name?: string;
+  // N:M REFACTORING: Removed department_id - now comes from user_departments JOIN
+  primary_department_id?: number | null; // From user_departments WHERE is_primary = 1
+  department_name?: string; // Primary department name from JOIN
   position?: string;
   phone?: string;
   landline?: string;
   employee_number?: string;
   address?: string;
-  birthday?: Date;
+  date_of_birth?: Date;
   hire_date?: Date;
   emergency_contact?: string;
   profile_picture?: string;
-  status: string;
   is_archived: boolean;
   is_active?: boolean;
   tenant_id?: number;
@@ -49,34 +50,39 @@ export interface DbUser extends RowDataPacket {
   availability_notes?: string | null;
   team_id?: number | null;
   team_name?: string | null;
+  // INHERITANCE-FIX: Full inheritance chain from Team → Department → Area
+  team_department_id?: number | null;
+  team_department_name?: string | null;
+  team_area_id?: number | null;
+  team_area_name?: string | null;
 }
 
 /**
  * Data required to create a new user
+ * N:M REFACTORING: department_id removed - use UserDepartmentAssignment instead
  */
 export interface UserCreateData {
   username: string;
   email: string;
   password: string;
   role: string;
-  company?: string;
+  has_full_access?: boolean; // Full tenant access without individual assignments
+  // REMOVED: company and iban columns dropped (2025-11-27)
   notes?: string;
   first_name: string;
   last_name: string;
   age?: number;
   employee_id?: string;
-  iban?: string;
-  department_id?: number;
+  // N:M REFACTORING: department_id removed - departments assigned via user_departments table
   position?: string;
   phone?: string;
   landline?: string;
   employee_number?: string;
   address?: string;
-  birthday?: Date;
+  date_of_birth?: Date;
   hire_date?: Date;
   emergency_contact?: string;
   profile_picture?: string;
-  status?: string;
   is_archived?: boolean;
   is_active?: boolean;
   tenant_id?: number;
@@ -88,13 +94,22 @@ export interface UserCreateData {
 }
 
 /**
+ * Department assignment data for N:M user_departments table
+ */
+export interface UserDepartmentAssignment {
+  department_id: number;
+  is_primary: boolean;
+}
+
+/**
  * Filter options for user search queries
+ * N:M REFACTORING: department_id now filters via user_departments table
  */
 export interface UserFilter {
   tenant_id: number; // PFLICHT für multi-tenant isolation!
   role?: string;
   is_archived?: boolean;
-  department_id?: number;
+  department_id?: number; // Filters users who belong to this department (via user_departments)
   status?: string;
   search?: string;
   sort_by?: string;
@@ -120,13 +135,15 @@ export interface DocumentCountResult extends RowDataPacket {
 
 /**
  * User department and team information
+ * N:M REFACTORING: department_id now from user_departments table
  */
 export interface UserDepartmentTeam extends RowDataPacket {
   role: string | null;
-  department_id: number | null;
+  primary_department_id: number | null; // From user_departments WHERE is_primary = 1
   team_id: number | null;
   department_name: string | null;
   team_name: string | null;
+  has_full_access: number | null; // VISIBILITY-FIX: For blackboard admin filtering
 }
 
 /**

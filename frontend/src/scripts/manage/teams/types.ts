@@ -45,6 +45,7 @@ export interface Team {
   maxMembers?: number;
   teamType?: 'production' | 'quality' | 'maintenance' | 'logistics' | 'administration' | 'other';
   status: 'active' | 'inactive' | 'restructuring';
+  isArchived?: boolean;
   foundedDate?: string;
   costCenter?: string;
   budget?: number;
@@ -81,7 +82,7 @@ export interface WindowWithTeamHandlers extends Window {
 }
 
 export interface ProcessedFormData {
-  teamData: Record<string, string | number>;
+  teamData: Record<string, string | number | null>;
   machineIds: number[];
   userIds: number[];
 }

@@ -1,5 +1,6 @@
-import { NextFunction, Response, Router } from 'express';
+import { NextFunction, RequestHandler, Response, Router } from 'express';
 
+import { filterDepartmentsByAccess } from '../../../middleware/departmentAccess.js';
 import { authenticateV2 as authenticateToken } from '../../../middleware/v2/auth.middleware.js';
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
@@ -41,6 +42,7 @@ router.use(authenticateToken);
  */
 router.get(
   '/',
+  filterDepartmentsByAccess as RequestHandler, // Filter by user's accessible departments
   departmentsValidationZod.list,
   typed.auth(async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     await departmentController.getDepartments(req, res, next);

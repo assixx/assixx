@@ -6,22 +6,22 @@ import { setSafeHTML, $$id } from '../../../utils/dom-utils';
 import type { Department, DepartmentStatusFilter } from './types';
 
 /**
- * Helper: Create count badge with tooltip (like manage-admins)
+ * Helper: Create count badge with native title tooltip
  */
 function createCountBadge(count: number, names: string, singular: string, plural?: string): string {
   if (count === 0) {
-    return '0';
+    return '<span class="badge badge--secondary" title="Keine zugewiesen">0</span>';
   }
 
   const label = count === 1 ? singular : (plural ?? `${singular}s`);
 
-  // If no names available, just show count
+  // If no names available, just show count without tooltip
   if (names === '' || names.trim() === '') {
-    return `<span class="badge badge-info">${String(count)} ${label}</span>`;
+    return `<span class="badge badge--info">${String(count)} ${label}</span>`;
   }
 
-  // Return badge with data-tooltip attribute for auto-initialization
-  return `<span class="badge badge-info" data-tooltip="${escapeHtml(names)}">${String(count)} ${label}</span>`;
+  // Return badge with native title tooltip
+  return `<span class="badge badge--info" title="${escapeHtml(names)}">${String(count)} ${label}</span>`;
 }
 
 /**
@@ -32,16 +32,30 @@ function getStatusBadge(isActive: boolean): { class: string; text: string } {
 }
 
 /**
+ * Helper: Create area badge following AssignmentBadges pattern
+ */
+function createAreaBadge(areaName: string | null | undefined): string {
+  if (areaName === undefined || areaName === null || areaName.trim() === '') {
+    return '<span class="badge badge--secondary" title="Kein Bereich zugewiesen">Kein Bereich</span>';
+  }
+  return `<span class="badge badge--info" title="${escapeHtml(areaName)}">${escapeHtml(areaName)}</span>`;
+}
+
+/**
+ * Helper: Create department lead display
+ */
+function createDepartmentLeadCell(leadName: string | null | undefined): string {
+  if (leadName === undefined || leadName === null || leadName.trim() === '') {
+    return '<span class="text-[var(--color-text-muted)]">-</span>';
+  }
+  return `<span class="text-[var(--color-text-primary)]">${escapeHtml(leadName)}</span>`;
+}
+
+/**
  * Helper: Create a single department table row
  */
 function createDepartmentRow(dept: Department): string {
   const statusBadge = getStatusBadge(dept.isActive);
-
-  // Extract counts and names for badges
-
-  const employeeCount: number = dept.employeeCount ?? 0;
-
-  const employeeNames: string = dept.employeeNames ?? '';
 
   const teamCount: number = dept.teamCount ?? 0;
 
@@ -60,15 +74,13 @@ function createDepartmentRow(dept: Department): string {
         </div>
       </td>
       <td>
-        ${dept.areaName !== undefined ? escapeHtml(dept.areaName) : '-'}
-      </td>
-      <td>
         <span class="badge ${statusBadge.class}">${statusBadge.text}</span>
       </td>
       <td>
-        <div style="text-align: center;">
-          ${createCountBadge(employeeCount, employeeNames, 'Mitarbeiter', 'Mitarbeiter')}
-        </div>
+        ${createAreaBadge(dept.areaName)}
+      </td>
+      <td>
+        ${createDepartmentLeadCell(dept.departmentLeadName)}
       </td>
       <td>
         <div style="text-align: center;">
@@ -135,9 +147,9 @@ export function renderDepartmentsTable(
           <tr>
             <th>Name</th>
             <th>Beschreibung</th>
-            <th>Bereich</th>
             <th>Status</th>
-            <th>Mitarbeiter</th>
+            <th>Bereich</th>
+            <th>Abteilungsleiter</th>
             <th>Teams</th>
             <th>Aktionen</th>
           </tr>

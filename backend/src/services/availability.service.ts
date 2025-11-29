@@ -82,6 +82,7 @@ class AvailabilityService {
    */
   async getCurrentStatus(tenantId: number): Promise<RowDataPacket[]> {
     try {
+      // N:M REFACTORING: department_id now from user_departments table
       const query = `
         SELECT
           u.id as employee_id,
@@ -89,32 +90,33 @@ class AvailabilityService {
           u.first_name,
           u.last_name,
           u.email,
-          u.department_id,
+          ud.department_id,
           COALESCE(
-            (SELECT ea.status 
-             FROM employee_availability ea 
-             WHERE ea.employee_id = u.id 
+            (SELECT ea.status
+             FROM employee_availability ea
+             WHERE ea.employee_id = u.id
              AND ea.tenant_id = u.tenant_id
-             AND CURDATE() BETWEEN ea.start_date AND ea.end_date 
-             ORDER BY ea.created_at DESC 
+             AND CURDATE() BETWEEN ea.start_date AND ea.end_date
+             ORDER BY ea.created_at DESC
              LIMIT 1),
             'available'
           ) as availability_status,
-          (SELECT ea.reason 
-           FROM employee_availability ea 
-           WHERE ea.employee_id = u.id 
+          (SELECT ea.reason
+           FROM employee_availability ea
+           WHERE ea.employee_id = u.id
            AND ea.tenant_id = u.tenant_id
-           AND CURDATE() BETWEEN ea.start_date AND ea.end_date 
-           ORDER BY ea.created_at DESC 
+           AND CURDATE() BETWEEN ea.start_date AND ea.end_date
+           ORDER BY ea.created_at DESC
            LIMIT 1) as reason,
           (SELECT DATE_ADD(ea.end_date, INTERVAL 1 DAY)
-           FROM employee_availability ea 
-           WHERE ea.employee_id = u.id 
+           FROM employee_availability ea
+           WHERE ea.employee_id = u.id
            AND ea.tenant_id = u.tenant_id
-           AND CURDATE() BETWEEN ea.start_date AND ea.end_date 
-           ORDER BY ea.created_at DESC 
+           AND CURDATE() BETWEEN ea.start_date AND ea.end_date
+           ORDER BY ea.created_at DESC
            LIMIT 1) as available_from
         FROM users u
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
         WHERE u.tenant_id = ? AND u.role = 'employee' AND u.is_active = 1
         ORDER BY u.first_name, u.last_name
       `;

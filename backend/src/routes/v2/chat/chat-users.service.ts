@@ -20,12 +20,14 @@ interface CurrentUserPermissions extends RowDataPacket {
  * Build chat users query based on user role and permissions
  * Admins/Root can see all users in tenant
  * Employees can see users in their department + all admins/root
+ * N:M REFACTORING: Uses user_departments table instead of users.department_id
  */
 function buildChatUsersQuery(
   currentUser: CurrentUserPermissions,
   tenantId: number,
   currentUserId: number,
 ): { query: string; params: unknown[] } {
+  // N:M REFACTORING: JOIN via user_departments table
   const baseQuery = `
     SELECT
       u.id,
@@ -34,11 +36,12 @@ function buildChatUsersQuery(
       u.first_name,
       u.last_name,
       u.profile_picture,
-      u.department_id,
+      ud.department_id,
       d.name as department_name,
       u.role
     FROM users u
-    LEFT JOIN departments d ON u.department_id = d.id
+    LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+    LEFT JOIN departments d ON ud.department_id = d.id
   `;
 
   if (currentUser.role === 'admin' || currentUser.role === 'root') {
@@ -49,7 +52,7 @@ function buildChatUsersQuery(
   }
 
   return {
-    query: `${baseQuery} WHERE u.tenant_id = ? AND u.id != ? AND (u.department_id = ? OR u.role IN ('admin', 'root'))`,
+    query: `${baseQuery} WHERE u.tenant_id = ? AND u.id != ? AND (ud.department_id = ? OR u.role IN ('admin', 'root'))`,
     params: [tenantId, currentUserId, currentUser.department_id],
   };
 }

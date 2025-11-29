@@ -4,6 +4,7 @@
  */
 
 import { submitLogin, type LoginData } from './login-api.js';
+import { createElement } from '../../utils/dom-utils.js';
 
 /**
  * Login Form Controller Class
@@ -135,93 +136,133 @@ export class LoginFormController {
 
   /**
    * Show error message
+   * Uses Design System toast component with data-temp-toast for JS identification
+   * XSS-safe: Uses programmatic DOM creation instead of innerHTML
    */
   private showError(message: string): void {
-    // Remove existing error messages
-    const existingErrors = document.querySelectorAll('.alert-error, .temp-alert-error');
+    // Remove existing error toasts
+    const existingErrors = document.querySelectorAll('[data-temp-toast="error"]');
     existingErrors.forEach((error) => {
       error.remove();
     });
 
-    const errorDiv = document.createElement('div');
     const isTimeout = message.includes('Sitzung');
-    errorDiv.className = `alert ${isTimeout ? 'alert--warning' : 'alert--error'} temp-alert-error`;
 
-    // Create alert structure
-    const icon = document.createElement('span');
-    icon.className = 'alert__icon';
-    icon.textContent = isTimeout ? '⚠️' : ''; //Login symblole für Erros
+    // CRITICAL: Single source of truth for timing - progress bar and setTimeout must match!
+    const TOAST_DURATION_SECONDS = 3;
 
-    const content = document.createElement('div');
-    content.className = 'alert__content';
+    // Build toast structure programmatically (XSS-safe - no innerHTML)
+    const toast = createElement('div', { className: `toast ${isTimeout ? 'toast--warning' : 'toast--error'}` });
+    toast.dataset['tempToast'] = 'error';
 
-    const title = document.createElement('div');
-    title.className = 'alert__title';
-    title.textContent = isTimeout ? 'Sitzung abgelaufen' : 'Fehler';
+    // Icon
+    const iconDiv = createElement('div', { className: 'toast__icon' });
+    const icon = createElement('i', { className: `fas ${isTimeout ? 'fa-exclamation-triangle' : 'fa-times-circle'}` });
+    iconDiv.appendChild(icon);
 
-    const messageEl = document.createElement('div');
-    messageEl.className = 'alert__message';
-    messageEl.textContent = message;
+    // Content
+    const contentDiv = createElement('div', { className: 'toast__content' });
+    const titleDiv = createElement('div', { className: 'toast__title' }, isTimeout ? 'Sitzung abgelaufen' : 'Fehler');
+    const messageDiv = createElement('div', { className: 'toast__message' }, message); // Safe: textContent is used
+    contentDiv.appendChild(titleDiv);
+    contentDiv.appendChild(messageDiv);
 
-    content.appendChild(title);
-    content.appendChild(messageEl);
-    errorDiv.appendChild(icon);
-    errorDiv.appendChild(content);
+    // Close button
+    const closeBtn = createElement('button', { className: 'toast__close', type: 'button' });
+    const closeIcon = createElement('i', { className: 'fas fa-times' });
+    closeBtn.appendChild(closeIcon);
+    closeBtn.addEventListener('click', () => {
+      toast.remove();
+    });
+
+    // Progress bar
+    const progressDiv = createElement('div', { className: 'toast__progress' });
+    const progressBar = createElement('div', { className: 'toast__progress-bar' });
+    progressBar.style.animationDuration = `${String(TOAST_DURATION_SECONDS)}s`;
+    progressDiv.appendChild(progressBar);
+
+    // Assemble toast
+    toast.appendChild(iconDiv);
+    toast.appendChild(contentDiv);
+    toast.appendChild(closeBtn);
+    toast.appendChild(progressDiv);
 
     const loginCard = document.querySelector('.login-card');
     const loginForm = document.querySelector('#loginForm');
 
     if (loginCard !== null && loginForm !== null) {
-      loginForm.before(errorDiv);
+      loginForm.before(toast);
     }
 
-    // Remove after 10 seconds
+    // Auto-remove after duration (synced with progress bar animation)
     setTimeout(() => {
-      errorDiv.remove();
-    }, 10000);
+      toast.remove();
+    }, TOAST_DURATION_SECONDS * 1000);
   }
 
   /**
    * Show info message
+   * Uses Design System toast component with data-temp-toast for JS identification
+   * XSS-safe: Uses programmatic DOM creation instead of innerHTML
    */
   private showInfo(message: string, persistent: boolean = false): void {
-    // Remove existing messages
-    const existingInfo = document.querySelectorAll('.alert-info, .temp-alert-info');
+    // Remove existing info toasts
+    const existingInfo = document.querySelectorAll('[data-temp-toast="info"]');
     existingInfo.forEach((info) => {
       info.remove();
     });
 
-    const infoDiv = document.createElement('div');
-    infoDiv.className = 'alert alert--success temp-alert-info';
+    // CRITICAL: Single source of truth for timing - progress bar and setTimeout must match!
+    const TOAST_DURATION_SECONDS = 5;
 
-    // Create alert structure
-    const icon = document.createElement('span');
-    icon.className = 'alert__icon';
-    icon.textContent = 'ℹ️';
+    // Build toast structure programmatically (XSS-safe - no innerHTML)
+    const toast = createElement('div', { className: 'toast toast--success' });
+    toast.dataset['tempToast'] = 'info';
 
-    const content = document.createElement('div');
-    content.className = 'alert__content';
+    // Icon
+    const iconDiv = createElement('div', { className: 'toast__icon' });
+    const icon = createElement('i', { className: 'fas fa-check-circle' });
+    iconDiv.appendChild(icon);
 
-    const messageEl = document.createElement('div');
-    messageEl.className = 'alert__message';
-    messageEl.textContent = message;
+    // Content
+    const contentDiv = createElement('div', { className: 'toast__content' });
+    const messageDiv = createElement('div', { className: 'toast__message' }, message); // Safe: textContent is used
+    contentDiv.appendChild(messageDiv);
 
-    content.appendChild(messageEl);
-    infoDiv.appendChild(icon);
-    infoDiv.appendChild(content);
+    // Close button
+    const closeBtn = createElement('button', { className: 'toast__close', type: 'button' });
+    const closeIcon = createElement('i', { className: 'fas fa-times' });
+    closeBtn.appendChild(closeIcon);
+    closeBtn.addEventListener('click', () => {
+      toast.remove();
+    });
+
+    // Assemble toast
+    toast.appendChild(iconDiv);
+    toast.appendChild(contentDiv);
+    toast.appendChild(closeBtn);
+
+    // Progress bar (only if not persistent)
+    if (!persistent) {
+      const progressDiv = createElement('div', { className: 'toast__progress' });
+      const progressBar = createElement('div', { className: 'toast__progress-bar' });
+      progressBar.style.animationDuration = `${String(TOAST_DURATION_SECONDS)}s`;
+      progressDiv.appendChild(progressBar);
+      toast.appendChild(progressDiv);
+    }
 
     const loginCard = document.querySelector('.login-card');
     const loginForm = document.querySelector('#loginForm');
 
     if (loginCard !== null && loginForm !== null) {
-      loginForm.before(infoDiv);
+      loginForm.before(toast);
     }
 
-    // Only auto-remove if not persistent
+    // Auto-remove after duration (synced with progress bar animation) - unless persistent
     if (!persistent) {
       setTimeout(() => {
-        infoDiv.remove();
-      }, 5000);
+        toast.remove();
+      }, TOAST_DURATION_SECONDS * 1000);
     }
   }
 }

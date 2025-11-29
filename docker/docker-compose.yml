@@ -1,3 +1,11 @@
+# =============================================================================
+# Assixx Docker Compose - Development Environment
+# =============================================================================
+# SECURITY NOTE: Default passwords are provided for development convenience.
+# For production, ALWAYS use strong passwords via .env file without defaults!
+# See docker/.env.example for required environment variables.
+# =============================================================================
+
 services:
   # MySQL Database
   mysql:
@@ -5,6 +13,15 @@ services:
     container_name: assixx-mysql
     restart: unless-stopped
     command: --sql-mode="" --default-time-zone='+02:00' --host-cache-size=0
+    # Resource limits for database stability (generous for dev)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-StrongP@ssw0rd!123}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-main}
@@ -40,8 +57,18 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.dev
+    image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
+    # Resource limits prevent runaway processes (generous for dev with TypeScript)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       DB_HOST: mysql
@@ -93,6 +120,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - assixx-network
     healthcheck:
@@ -109,12 +138,21 @@ services:
     # Development command mit auto-install - run as root but create files with user permissions
     command: sh -c "pnpm install --frozen-lockfile && pnpm run dev"
 
-  # Optional: Redis für Sessions/Cache
+  # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
     image: redis:7-alpine
     container_name: assixx-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
+    # Resource limits for cache service (generous for dev)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     volumes:
       - redis_data:/data
     networks:
@@ -126,12 +164,20 @@ services:
       retries: 5
 
   # Tenant Deletion Worker
+  # Uses Redis via tenantDeletionService.clearRedisCache() during tenant deletion
   deletion-worker:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.dev
+    image: assixx-backend:dev
     container_name: assixx-deletion-worker
     restart: unless-stopped
+    # Resource limits for worker process (generous for dev)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     environment:
       NODE_ENV: ${NODE_ENV:-development}
       DB_HOST: mysql
@@ -169,6 +215,8 @@ services:
       # Worker specific logs
       - ../backend/logs/deletion-worker:/app/backend/logs/deletion-worker
     depends_on:
+      backend:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
@@ -191,16 +239,25 @@ services:
 
   # phpMyAdmin für Datenbank-Verwaltung (NUR für Development!)
   phpmyadmin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5.2.2
     container_name: assixx-phpmyadmin
     restart: unless-stopped
+    # Resource limits for dev tool (generous for large DB operations)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     ports:
       - "8080:80"
     environment:
       PMA_HOST: mysql
       PMA_PORT: 3306
-      PMA_USER: assixx_user
-      PMA_PASSWORD: ${MYSQL_PASSWORD:-AssixxP@ss2025!}
+      # PMA_USER and PMA_PASSWORD intentionally NOT set - login via form for security
+      # This prevents hardcoded credentials and allows multi-user access
       UPLOAD_LIMIT: 50M
     networks:
       - assixx-network

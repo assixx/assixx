@@ -1,6 +1,7 @@
 /**
  * Areas Service v2
  * Business logic for area/location management
+ * NOTE: parent_id/hierarchy removed (2025-11-29) - areas are now flat (non-hierarchical)
  */
 import { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 
@@ -13,16 +14,20 @@ interface AreaRow extends RowDataPacket {
   tenant_id: number;
   name: string;
   description?: string;
+  area_lead_id?: number | null;
   type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity?: number;
-  parent_id?: number;
   address?: string;
   is_active: boolean;
+  is_archived: boolean;
   created_by: number;
   created_at: Date;
   updated_at: Date;
-  parent_name?: string;
+  // Virtual fields from joins
+  area_lead_name?: string | null;
   employee_count?: number;
+  department_count?: number;
+  department_names?: string | null;
 }
 
 // Stats query result interfaces
@@ -53,24 +58,6 @@ function applyTypeFilter(
 }
 
 /**
- * Apply parent ID filter to query
- */
-function applyParentFilter(
-  query: string,
-  params: (string | number | boolean)[],
-  parentId: number | null | undefined,
-): string {
-  if (parentId === undefined) return query;
-
-  if (parentId === null) {
-    return query + ' AND a.parent_id IS NULL';
-  }
-
-  params.push(parentId);
-  return query + ' AND a.parent_id = ?';
-}
-
-/**
  * Apply search filter to query
  */
 function applySearchFilter(
@@ -87,6 +74,7 @@ function applySearchFilter(
 
 /**
  * Build SQL query and params for area filters
+ * NOTE: Returns ALL areas (active, inactive, archived) - filtering done in frontend
  */
 function buildAreaQuery(
   tenantId: number,
@@ -95,12 +83,15 @@ function buildAreaQuery(
   const baseQuery = `
     SELECT
       a.*,
-      p.name as parent_name,
-      COUNT(DISTINCT e.id) as employee_count
+      NULLIF(TRIM(CONCAT(COALESCE(area_lead.first_name, ''), ' ', COALESCE(area_lead.last_name, ''))), '') as area_lead_name,
+      COUNT(DISTINCT e.id) as employee_count,
+      COUNT(DISTINCT d.id) as department_count,
+      GROUP_CONCAT(DISTINCT d.name ORDER BY d.name SEPARATOR ', ') as department_names
     FROM areas a
-    LEFT JOIN areas p ON a.parent_id = p.id
+    LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
-    WHERE a.tenant_id = ? AND a.is_active = 1
+    LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
+    WHERE a.tenant_id = ?
   `;
 
   const params: (string | number | boolean)[] = [tenantId];
@@ -113,10 +104,6 @@ function buildAreaQuery(
 
   // Apply each filter
   query = applyTypeFilter(query, params, filters.type);
-
-  // NOTE: is_active = 1 is already in baseQuery, no need to apply again
-
-  query = applyParentFilter(query, params, filters.parentId);
   query = applySearchFilter(query, params, filters.search);
 
   return { query: query + ' GROUP BY a.id ORDER BY a.name', params };
@@ -139,6 +126,7 @@ export async function getAreas(tenantId: number, filters?: AreaFilters): Promise
       name: row.name,
       type: row.type,
       is_active: row.is_active,
+      is_archived: row.is_archived,
       created_by: row.created_by,
       created_at: row.created_at,
       updated_at: row.updated_at,
@@ -146,10 +134,13 @@ export async function getAreas(tenantId: number, filters?: AreaFilters): Promise
 
     // Conditionally add optional properties only when defined
     if (row.description !== undefined) area.description = row.description;
+    if (row.area_lead_id !== undefined) area.area_lead_id = row.area_lead_id;
+    if (row.area_lead_name !== undefined) area.area_lead_name = row.area_lead_name;
     if (row.capacity !== undefined) area.capacity = row.capacity;
-    if (row.parent_id !== undefined) area.parent_id = row.parent_id;
     if (row.address !== undefined) area.address = row.address;
     if (row.employee_count !== undefined) area.employee_count = row.employee_count;
+    if (row.department_count !== undefined) area.department_count = row.department_count;
+    if (row.department_names !== undefined) area.department_names = row.department_names;
 
     return area;
   });
@@ -164,11 +155,14 @@ export async function getAreaById(id: number, tenantId: number): Promise<Area | 
   const query = `
     SELECT
       a.*,
-      p.name as parent_name,
-      COUNT(DISTINCT e.id) as employee_count
+      NULLIF(TRIM(CONCAT(COALESCE(area_lead.first_name, ''), ' ', COALESCE(area_lead.last_name, ''))), '') as area_lead_name,
+      COUNT(DISTINCT e.id) as employee_count,
+      COUNT(DISTINCT d.id) as department_count,
+      GROUP_CONCAT(DISTINCT d.name ORDER BY d.name SEPARATOR ', ') as department_names
     FROM areas a
-    LEFT JOIN areas p ON a.parent_id = p.id
+    LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
+    LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
     WHERE a.id = ? AND a.tenant_id = ?
     GROUP BY a.id
   `;
@@ -190,6 +184,7 @@ export async function getAreaById(id: number, tenantId: number): Promise<Area | 
     name: row.name,
     type: row.type,
     is_active: row.is_active,
+    is_archived: row.is_archived,
     created_by: row.created_by,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -197,70 +192,15 @@ export async function getAreaById(id: number, tenantId: number): Promise<Area | 
 
   // Conditionally add optional properties only when defined
   if (row.description !== undefined) area.description = row.description;
+  if (row.area_lead_id !== undefined) area.area_lead_id = row.area_lead_id;
+  if (row.area_lead_name !== undefined) area.area_lead_name = row.area_lead_name;
   if (row.capacity !== undefined) area.capacity = row.capacity;
-  if (row.parent_id !== undefined) area.parent_id = row.parent_id;
   if (row.address !== undefined) area.address = row.address;
   if (row.employee_count !== undefined) area.employee_count = row.employee_count;
+  if (row.department_count !== undefined) area.department_count = row.department_count;
+  if (row.department_names !== undefined) area.department_names = row.department_names;
 
   return area;
-}
-
-/**
- * Get area hierarchy (tree structure)
- * @param tenantId - The tenant ID
- */
-export async function getAreaHierarchy(tenantId: number): Promise<Area[]> {
-  const query = `
-    SELECT * FROM areas
-    WHERE tenant_id = ? AND is_active = 1
-    ORDER BY parent_id IS NULL DESC, name
-  `;
-
-  const [rows] = await execute<AreaRow[]>(query, [tenantId]);
-
-  // Build tree structure
-  const areasMap = new Map<number, Area & { children: Area[] }>();
-  const rootAreas: Area[] = [];
-
-  // First pass: create all areas
-  rows.forEach((row: AreaRow) => {
-    const area: Area & { children: Area[] } = {
-      id: row.id,
-      tenant_id: row.tenant_id,
-      name: row.name,
-      type: row.type,
-      is_active: row.is_active,
-      created_by: row.created_by,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      children: [],
-    };
-
-    // Conditionally add optional properties only when defined
-    if (row.description !== undefined) area.description = row.description;
-    if (row.capacity !== undefined) area.capacity = row.capacity;
-    if (row.parent_id !== undefined) area.parent_id = row.parent_id;
-    if (row.address !== undefined) area.address = row.address;
-
-    areasMap.set(area.id, area);
-  });
-
-  // Second pass: build hierarchy
-  rows.forEach((row: AreaRow) => {
-    const area = areasMap.get(row.id);
-    if (!area) return; // Skip if area not found
-
-    if (row.parent_id !== undefined && row.parent_id !== 0) {
-      const parent = areasMap.get(row.parent_id);
-      if (parent) {
-        parent.children.push(area);
-      }
-    } else {
-      rootAreas.push(area);
-    }
-  });
-
-  return rootAreas;
 }
 
 /**
@@ -274,31 +214,24 @@ export async function createArea(
   tenantId: number,
   userId: number,
 ): Promise<Area> {
-  // Validate parent area if provided
-  if (data.parentId !== undefined && data.parentId !== 0) {
-    const parentExists = await getAreaById(data.parentId, tenantId);
-    if (!parentExists) {
-      throw new ServiceError('PARENT_NOT_FOUND', 'Parent area not found', 404);
-    }
-  }
-
   const query = `
     INSERT INTO areas (
-      tenant_id, name, description, type, capacity,
-      parent_id, address, created_by, is_active
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      tenant_id, name, description, area_lead_id, type, capacity,
+      address, created_by, is_active, is_archived
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   const [result] = await execute<ResultSetHeader>(query, [
     tenantId,
     data.name,
     data.description ?? null,
+    data.areaLeadId ?? null,
     data.type ?? 'other',
     data.capacity ?? null,
-    data.parentId ?? null,
     data.address ?? null,
     userId,
-    1,
+    1, // is_active = true for new areas
+    0, // is_archived = false for new areas
   ]);
 
   const newArea = await getAreaById(result.insertId, tenantId);
@@ -310,30 +243,9 @@ export async function createArea(
 }
 
 /**
- * Validate parent area relationship
- */
-async function validateParentArea(
-  areaId: number,
-  parentId: number | null | undefined,
-  tenantId: number,
-): Promise<void> {
-  if (parentId === undefined || parentId === null) {
-    return;
-  }
-
-  if (parentId === areaId) {
-    throw new ServiceError('INVALID_PARENT', 'Area cannot be its own parent', 400);
-  }
-
-  const parentExists = await getAreaById(parentId, tenantId);
-  if (!parentExists) {
-    throw new ServiceError('PARENT_NOT_FOUND', 'Parent area not found', 404);
-  }
-}
-
-/**
  * Build update query from data
  */
+// eslint-disable-next-line sonarjs/cognitive-complexity
 function buildUpdateQuery(data: UpdateAreaRequest): {
   updates: string[];
   values: (string | number | boolean | null)[];
@@ -349,6 +261,10 @@ function buildUpdateQuery(data: UpdateAreaRequest): {
     updates.push('description = ?');
     values.push(data.description);
   }
+  if (data.areaLeadId !== undefined) {
+    updates.push('area_lead_id = ?');
+    values.push(data.areaLeadId);
+  }
   if (data.type !== undefined) {
     updates.push('type = ?');
     values.push(data.type);
@@ -357,10 +273,6 @@ function buildUpdateQuery(data: UpdateAreaRequest): {
     updates.push('capacity = ?');
     values.push(data.capacity);
   }
-  if (data.parentId !== undefined) {
-    updates.push('parent_id = ?');
-    values.push(data.parentId);
-  }
   if (data.address !== undefined) {
     updates.push('address = ?');
     values.push(data.address);
@@ -368,6 +280,10 @@ function buildUpdateQuery(data: UpdateAreaRequest): {
   if (data.isActive !== undefined) {
     updates.push('is_active = ?');
     values.push(data.isActive ? 1 : 0);
+  }
+  if (data.isArchived !== undefined) {
+    updates.push('is_archived = ?');
+    values.push(data.isArchived ? 1 : 0);
   }
 
   return { updates, values };
@@ -389,9 +305,6 @@ export async function updateArea(
   if (!existing) {
     throw new ServiceError('NOT_FOUND', 'Area not found', 404);
   }
-
-  // Validate parent area if provided
-  await validateParentArea(id, data.parentId, tenantId);
 
   // Build update query
   const { updates, values } = buildUpdateQuery(data);
@@ -420,11 +333,6 @@ export async function updateArea(
 }
 
 /**
- * Delete area (hard delete)
- * @param id - The resource ID
- * @param tenantId - The tenant ID
- */
-/**
  * Check for area dependencies
  * @param id - The area ID
  * @param tenantId - The tenant ID
@@ -434,7 +342,6 @@ async function checkAreaDependencies(
   id: number,
   tenantId: number,
 ): Promise<{
-  children: number;
   departments: number;
   machines: number;
   shifts: number;
@@ -442,11 +349,6 @@ async function checkAreaDependencies(
   shiftFavorites: number;
   total: number;
 }> {
-  const [children] = await execute<RowDataPacket[]>(
-    'SELECT id FROM areas WHERE parent_id = ? AND tenant_id = ? AND is_active = 1',
-    [id, tenantId],
-  );
-
   const [departments] = await execute<RowDataPacket[]>(
     'SELECT id FROM departments WHERE area_id = ? AND tenant_id = ? AND is_active = 1',
     [id, tenantId],
@@ -473,14 +375,12 @@ async function checkAreaDependencies(
   );
 
   return {
-    children: children.length,
     departments: departments.length,
     machines: machines.length,
     shifts: shifts.length,
     shiftPlans: shiftPlans.length,
     shiftFavorites: shiftFavorites.length,
     total:
-      children.length +
       departments.length +
       machines.length +
       shifts.length +
@@ -500,13 +400,6 @@ async function removeAreaDependencies(
   tenantId: number,
   deps: Awaited<ReturnType<typeof checkAreaDependencies>>,
 ): Promise<void> {
-  if (deps.children > 0) {
-    await execute('UPDATE areas SET parent_id = NULL WHERE parent_id = ? AND tenant_id = ?', [
-      id,
-      tenantId,
-    ]);
-  }
-
   if (deps.departments > 0) {
     await execute('UPDATE departments SET area_id = NULL WHERE area_id = ? AND tenant_id = ?', [
       id,
@@ -554,7 +447,6 @@ function buildDependencyDetails(
   const details: Record<string, number> = { totalDependencies: deps.total };
 
   // Build details object with explicit property assignment (safe from injection)
-  if (deps.children > 0) details['childAreas'] = deps.children;
   if (deps.departments > 0) details['departments'] = deps.departments;
   if (deps.machines > 0) details['machines'] = deps.machines;
   if (deps.shifts > 0) details['shifts'] = deps.shifts;
@@ -675,4 +567,48 @@ export async function getAreaStats(tenantId: number): Promise<{
     totalCapacity,
     byType,
   };
+}
+
+/**
+ * Assign departments to an area (bulk update)
+ * Sets area_id for selected departments, clears area_id for departments
+ * that were previously assigned to this area but are no longer selected
+ * @param areaId - The area ID to assign departments to
+ * @param departmentIds - Array of department IDs to assign
+ * @param tenantId - The tenant ID for security
+ */
+export async function assignDepartmentsToArea(
+  areaId: number,
+  departmentIds: number[],
+  tenantId: number,
+): Promise<void> {
+  // First, verify the area exists and belongs to this tenant
+  const area = await getAreaById(areaId, tenantId);
+  if (!area) {
+    throw new ServiceError('NOT_FOUND', 'Area not found', 404);
+  }
+
+  // Step 1: Clear area_id from all departments that were previously assigned to this area
+  // but are NOT in the new selection
+  await execute(
+    `UPDATE departments
+     SET area_id = NULL
+     WHERE tenant_id = ?
+     AND area_id = ?`,
+    [tenantId, areaId],
+  );
+
+  // Step 2: Set area_id for all selected departments (if any)
+  if (departmentIds.length > 0) {
+    // Build placeholders for IN clause
+    const placeholders = departmentIds.map(() => '?').join(', ');
+
+    await execute(
+      `UPDATE departments
+       SET area_id = ?
+       WHERE tenant_id = ?
+       AND id IN (${placeholders})`,
+      [areaId, tenantId, ...departmentIds],
+    );
+  }
 }

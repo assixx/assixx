@@ -242,11 +242,13 @@ async function getUserOrgInfo(
   userId: number,
   tenantId: number,
 ): Promise<{ teamId: number | null; departmentId: number | null; areaId: number | null }> {
+  // N:M REFACTORING: department_id from user_departments table
   const [userInfo] = await connection.execute<UserOrgInfoResult[]>(
-    `SELECT ut.team_id, u.department_id, d.area_id
+    `SELECT ut.team_id, ud.department_id, d.area_id
      FROM users u
      LEFT JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
-     LEFT JOIN departments d ON u.department_id = d.id AND d.tenant_id = u.tenant_id
+     LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+     LEFT JOIN departments d ON ud.department_id = d.id AND d.tenant_id = u.tenant_id
      WHERE u.id = ? AND u.tenant_id = ?`,
     [userId, tenantId],
   );

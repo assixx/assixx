@@ -239,11 +239,15 @@ export class BlackboardDetailRenderer {
       setHTML(
         statusContainer as HTMLElement,
         `
-        <div class="confirmation-done">
+        <div class="confirmation-done mb-3">
           <i class="fas fa-check-circle text-success"></i>
           <span>Bereits als gelesen markiert</span>
           ${dateText !== '' ? `<span class="text-muted text-sm">${dateText}</span>` : ''}
         </div>
+        <button class="btn btn-light w-full text-sm" id="unconfirmBtn" data-action="unconfirm-entry">
+          <i class="fas fa-undo"></i>
+          Als ungelesen markieren
+        </button>
       `,
       );
     } else {

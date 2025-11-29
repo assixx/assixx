@@ -199,6 +199,10 @@ function handleDuplicateEntryError(error: unknown): never {
   throw new ServiceError('DUPLICATE_ENTRY', 'Username or email already exists', error);
 }
 
+/**
+ * Map DbUser to AdminUser
+ * REMOVED: company column dropped (2025-11-27)
+ */
 function mapDbUserToAdminUser(admin: DbUser, tenantName?: string, lastLogin?: Date): AdminUser {
   const result: AdminUser = {
     id: admin.id,
@@ -214,7 +218,7 @@ function mapDbUserToAdminUser(admin: DbUser, tenantName?: string, lastLogin?: Da
   };
 
   // Add optional properties only if defined
-  if (admin.company !== undefined) result.company = admin.company;
+  // REMOVED: company column dropped (2025-11-27)
   if (admin.notes !== undefined) result.notes = admin.notes;
   if (admin.position !== undefined) result.position = admin.position;
   if (admin.employee_number !== undefined) result.employeeNumber = admin.employee_number;
@@ -289,18 +293,24 @@ class RootService {
 
   /**
    * Create new admin user
+   * IMPORTANT: username is ALWAYS set to email (lowercase) for consistency
    * @param data - The data object
    * @param tenantId - The tenant ID
    */
   async createAdmin(data: CreateAdminRequest, tenantId: number): Promise<number> {
     try {
+      // CRITICAL: username = email (lowercase, trimmed) - same pattern as createRootUser
+      const normalizedEmail = data.email.toLowerCase().trim();
+
       // Hash password before passing to model
       const hashedPassword = await bcrypt.hash(data.password, 10);
 
       // Build base data (exactOptionalPropertyTypes compliant) using UserCreateData interface
+      // REMOVED: company column dropped (2025-11-27)
+      // CRITICAL: username = email (always lowercase) for login consistency
       const adminData: UserCreateData = {
-        username: data.username,
-        email: data.email,
+        username: normalizedEmail, // username = email (lowercase)
+        email: normalizedEmail, // email (lowercase)
         password: hashedPassword,
         first_name: data.firstName ?? '',
         last_name: data.lastName ?? '',
@@ -311,9 +321,7 @@ class RootService {
       };
 
       // Add optional properties only if defined
-      if (data.company !== undefined) {
-        adminData.company = data.company;
-      }
+      // REMOVED: company column dropped (2025-11-27)
       if (data.notes !== undefined) {
         adminData.notes = data.notes;
       }
@@ -321,20 +329,9 @@ class RootService {
         adminData.position = data.position;
       }
 
-      const adminId = await userModel.create(adminData);
+      // NOTE: tenant_admins table removed (redundant) - users.tenant_id + users.role is the source of truth
 
-      // Add admin to tenant_admins table
-      try {
-        await execute(
-          'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, FALSE)',
-          [tenantId, adminId],
-        );
-      } catch (error: unknown) {
-        // Log but don't fail - admin was created successfully
-        console.warn('Could not add admin to tenant_admins:', error);
-      }
-
-      return adminId;
+      return await userModel.create(adminData);
     } catch (error: unknown) {
       const dbError = error as { code?: string };
       if (dbError.code === 'ER_DUP_ENTRY') {
@@ -346,26 +343,29 @@ class RootService {
 
   /**
    * Helper: Build update data from request
+   * REMOVED: company column dropped (2025-11-27)
+   * CRITICAL: When email changes, username must also change (username = email, lowercase)
    */
   private buildUpdateData(data: UpdateAdminRequest): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
 
-    // Explicit property assignments using bracket notation for index signature
-    if (data.username !== undefined) {
-      updateData['username'] = data.username;
-    }
+    // CRITICAL: When email changes, also update username (username = email, lowercase)
+    // This ensures login consistency (users log in with email)
     if (data.email !== undefined) {
-      updateData['email'] = data.email;
+      const normalizedEmail = data.email.toLowerCase().trim();
+      updateData['email'] = normalizedEmail;
+      updateData['username'] = normalizedEmail; // username = email
     }
+    // NOTE: Separate username update is ignored - username is always synced with email
+    // if (data.username !== undefined) { ... } - REMOVED for consistency
+
     if (data.firstName !== undefined) {
       updateData['first_name'] = data.firstName;
     }
     if (data.lastName !== undefined) {
       updateData['last_name'] = data.lastName;
     }
-    if (data.company !== undefined) {
-      updateData['company'] = data.company;
-    }
+    // REMOVED: company column dropped (2025-11-27)
     if (data.notes !== undefined) {
       updateData['notes'] = data.notes;
     }
@@ -571,13 +571,15 @@ class RootService {
    */
   async getRootUsers(tenantId: number): Promise<RootUser[]> {
     try {
+      // N:M REFACTORING: department_id from user_departments table
       const [users] = await execute<UsersRow[]>(
         `SELECT
-          id, username, email, first_name, last_name,
-          position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
-        FROM users
-        WHERE role = 'root' AND tenant_id = ?
-        ORDER BY created_at DESC`,
+          u.id, u.username, u.email, u.first_name, u.last_name,
+          u.position, u.notes, u.employee_number, ud.department_id, u.is_active, u.employee_id, u.created_at, u.updated_at
+        FROM users u
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        WHERE u.role = 'root' AND u.tenant_id = ?
+        ORDER BY u.created_at DESC`,
         [tenantId],
       );
 
@@ -601,7 +603,9 @@ class RootService {
         if (user.notes !== null) result.notes = user.notes;
         // employee_number is non-nullable in UsersRow
         result.employeeNumber = user.employee_number;
-        if (user.department_id !== null) result.departmentId = user.department_id;
+        // N:M REFACTORING: department_id comes from JOIN, access via bracket notation
+        const deptId = user['department_id'] as number | null;
+        if (deptId !== null) result.departmentId = deptId;
         if (user.employee_id !== null) result.employeeId = user.employee_id;
 
         return result;
@@ -618,12 +622,14 @@ class RootService {
    */
   async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     try {
+      // N:M REFACTORING: department_id from user_departments table
       const [users] = await execute<UsersRow[]>(
         `SELECT
-          id, username, email, first_name, last_name,
-          position, notes, employee_number, department_id, is_active, employee_id, created_at, updated_at
-        FROM users
-        WHERE id = ? AND role = 'root' AND tenant_id = ?`,
+          u.id, u.username, u.email, u.first_name, u.last_name,
+          u.position, u.notes, u.employee_number, ud.department_id, u.is_active, u.employee_id, u.created_at, u.updated_at
+        FROM users u
+        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+        WHERE u.id = ? AND u.role = 'root' AND u.tenant_id = ?`,
         [id, tenantId],
       );
 
@@ -655,8 +661,10 @@ class RootService {
       if (user.notes !== null) {
         result.notes = user.notes;
       }
-      if (user.department_id !== null) {
-        result.departmentId = user.department_id;
+      // N:M REFACTORING: department_id comes from JOIN, access via bracket notation
+      const deptId = user['department_id'] as number | null;
+      if (deptId !== null) {
+        result.departmentId = deptId;
       }
 
       return result;
@@ -715,13 +723,16 @@ class RootService {
 
   /**
    * Create root user
+   * IMPORTANT: username is ALWAYS set to email (lowercase)
    */
   async createRootUser(data: CreateRootUserRequest, tenantId: number): Promise<number> {
     try {
-      logger.info('[RootService.createRootUser] Starting', { email: data.email, tenantId });
+      // CRITICAL: username = email (lowercase) - Zod already transforms email to lowercase
+      const normalizedEmail = data.email.toLowerCase().trim();
+      logger.info('[RootService.createRootUser] Starting', { email: normalizedEmail, tenantId });
 
       // Validate email
-      await this.checkEmailExists(data.email, tenantId);
+      await this.checkEmailExists(normalizedEmail, tenantId);
 
       // Get tenant info
       const subdomain = await this.getTenantSubdomain(tenantId);
@@ -729,22 +740,22 @@ class RootService {
       // Hash password
       const hashedPassword = await bcrypt.hash(data.password, 10);
 
-      // Create root user
+      // Create root user (N:M REFACTORING: department_id removed, has_full_access = 1 for root)
+      // CRITICAL: username = email (always lowercase)
       const [result] = await execute<ResultSetHeader>(
         `INSERT INTO users (
           username, email, password, first_name, last_name,
-          role, position, notes, employee_number, department_id, is_active, tenant_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+          role, position, notes, employee_number, is_active, has_full_access, tenant_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, 'root', ?, ?, ?, ?, 1, ?, NOW(), NOW())`,
         [
-          data.username !== '' ? data.username : data.email,
-          data.email,
+          normalizedEmail, // username = email (lowercase)
+          normalizedEmail, // email (lowercase)
           hashedPassword,
           data.firstName,
           data.lastName,
           data.position,
           data.notes,
           data.employeeNumber ?? null,
-          data.departmentId ?? null,
           data.isActive ?? true,
           tenantId,
         ],
@@ -753,6 +764,8 @@ class RootService {
       // Generate and update employee_id
       const employeeId = generateEmployeeId(subdomain, 'root', result.insertId);
       await execute('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, result.insertId]);
+
+      // N:M REFACTORING: Root users have has_full_access=1, no individual department assignments needed
 
       logger.info('[RootService.createRootUser] Created with ID:', result.insertId);
       return result.insertId;
@@ -765,6 +778,8 @@ class RootService {
 
   /**
    * Helper: Build SQL update fields and values
+   * N:M REFACTORING: department_id removed - handled separately via user_departments
+   * CRITICAL: When email changes, username must also change (username = email)
    */
   private buildRootUserUpdateFields(data: UpdateRootUserRequest): {
     fields: string[];
@@ -774,14 +789,13 @@ class RootService {
     const values: unknown[] = [];
 
     // Map of request properties to database columns
+    // N:M REFACTORING: department_id removed - now managed via user_departments table
     const fieldMappings: { field: keyof UpdateRootUserRequest; column: string }[] = [
       { field: 'firstName', column: 'first_name' },
       { field: 'lastName', column: 'last_name' },
-      { field: 'email', column: 'email' },
       { field: 'position', column: 'position' },
       { field: 'notes', column: 'notes' },
       { field: 'employeeNumber', column: 'employee_number' },
-      { field: 'departmentId', column: 'department_id' },
       { field: 'isActive', column: 'is_active' },
     ];
 
@@ -792,6 +806,15 @@ class RootService {
         fields.push(`${mapping.column} = ?`);
         values.push(value);
       }
+    }
+
+    // CRITICAL: When email changes, also update username (username = email, lowercase)
+    if (data.email !== undefined) {
+      const normalizedEmail = data.email.toLowerCase().trim();
+      fields.push('email = ?');
+      values.push(normalizedEmail);
+      fields.push('username = ?'); // username = email
+      values.push(normalizedEmail);
     }
 
     return { fields, values };
@@ -820,15 +843,15 @@ class RootService {
         values.push(hashedPassword);
       }
 
-      if (fields.length === 0) {
-        return; // Nothing to update
+      // Update user fields if any
+      if (fields.length > 0) {
+        fields.push('updated_at = NOW()');
+        values.push(id);
+        await execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
       }
 
-      // Add timestamp and ID for WHERE clause
-      fields.push('updated_at = NOW()');
-      values.push(id);
-
-      await execute(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+      // N:M REFACTORING: Root users have has_full_access=1, no individual department assignments needed
+      // Department assignments for root users are managed via has_full_access flag, not user_departments
     } catch (error: unknown) {
       if (error instanceof ServiceError) throw error;
       throw new ServiceError('SERVER_ERROR', 'Failed to update root user', error);

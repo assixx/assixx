@@ -108,6 +108,7 @@ function verifyAccessToken(token: string): JWTPayload | null {
  */
 async function getUserDetails(userId: number, tenantId: number): Promise<UserDetails | null> {
   try {
+    // N:M REFACTORING: JOIN via user_departments table instead of users.department_id
     const [users] = await executeQuery<RowDataPacket[]>(
       `SELECT
         u.id,
@@ -118,7 +119,7 @@ async function getUserDetails(userId: number, tenantId: number): Promise<UserDet
         u.first_name,
         u.last_name,
         u.employee_number,
-        u.department_id,
+        ud.department_id,
         u.profile_picture,
         u.is_active,
         u.created_at,
@@ -127,7 +128,8 @@ async function getUserDetails(userId: number, tenantId: number): Promise<UserDet
         d.name as department_name
       FROM users u
       LEFT JOIN tenants t ON u.tenant_id = t.id
-      LEFT JOIN departments d ON u.department_id = d.id
+      LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+      LEFT JOIN departments d ON ud.department_id = d.id
       WHERE u.id = ? AND u.tenant_id = ? AND u.is_active = 1`,
       [userId, tenantId],
     );

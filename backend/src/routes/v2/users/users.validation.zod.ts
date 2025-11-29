@@ -100,6 +100,7 @@ export const UserIdParamSchema = z.object({
 
 /**
  * Create user request body
+ * N:M REFACTORING: Added departmentIds, teamIds, hasFullAccess
  */
 export const CreateUserBodySchema = z.object({
   email: EmailSchema,
@@ -107,7 +108,12 @@ export const CreateUserBodySchema = z.object({
   lastName: z.string().trim().min(1, 'Last name required'),
   password: PasswordSchema,
   role: z.enum(['employee', 'admin']).default('employee'),
+  // N:M REFACTORING: Legacy field (deprecated)
   departmentId: z.number().int().positive().nullable().optional(),
+  // N:M REFACTORING: New array fields for multiple assignments
+  departmentIds: z.array(z.number().int().positive()).optional(),
+  teamIds: z.array(z.number().int().positive()).optional(),
+  hasFullAccess: z.boolean().optional(),
   position: z.string().trim().optional(),
   phone: PhoneSchema,
   address: z.string().trim().optional(),
@@ -116,6 +122,7 @@ export const CreateUserBodySchema = z.object({
 
 /**
  * Update user request body (all fields optional)
+ * N:M REFACTORING: Added departmentIds, teamIds, hasFullAccess
  */
 export const UpdateUserBodySchema = z.object({
   email: EmailSchema.optional(),
@@ -123,7 +130,12 @@ export const UpdateUserBodySchema = z.object({
   lastName: z.string().trim().min(1, 'Last name cannot be empty').optional(),
   password: PasswordSchema.optional(), // Allow password updates
   role: z.enum(['employee', 'admin']).optional(),
+  // N:M REFACTORING: Legacy field (deprecated)
   departmentId: z.number().int().positive().nullable().optional(),
+  // N:M REFACTORING: New array fields for multiple assignments
+  departmentIds: z.array(z.number().int().positive()).optional(),
+  teamIds: z.array(z.number().int().positive()).optional(),
+  hasFullAccess: z.boolean().optional(),
   position: z.string().trim().optional(),
   phone: PhoneSchema,
   address: z.string().trim().optional(),

@@ -65,6 +65,7 @@ interface DbBlackboardComment extends RowDataPacket {
   user_last_name?: string;
   user_full_name?: string;
   user_role?: string;
+  user_profile_picture?: string | null;
 }
 
 export interface EntryQueryOptions {
@@ -84,6 +85,7 @@ export interface EntryCreateData {
   content: string;
   org_level: 'company' | 'department' | 'team' | 'area';
   org_id: number | null;
+  area_id?: number | null;
   author_id: number;
   expires_at?: Date | null;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
@@ -94,7 +96,8 @@ export interface EntryUpdateData {
   title?: string;
   content?: string;
   org_level?: 'company' | 'department' | 'team' | 'area';
-  org_id?: number;
+  org_id?: number | null;
+  area_id?: number | null;
   expires_at?: Date | null;
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   color?: string;
@@ -107,7 +110,8 @@ interface CountResult extends RowDataPacket {
 }
 
 /**
- * Apply access control filters for non-admin users
+ * Apply access control filters based on user role and permissions
+ * VISIBILITY-FIX: Now also filters for admins based on their area/department permissions
  */
 function applyAccessControl(
   query: string,
@@ -115,23 +119,66 @@ function applyAccessControl(
   role: string | null | undefined,
   departmentId: number | null | undefined,
   teamId: number | null | undefined,
+  userId?: number,
+  hasFullAccess?: boolean,
 ): { query: string; params: unknown[] } {
-  const isAdminOrRoot = role === 'admin' || role === 'root';
-
-  if (!isAdminOrRoot) {
-    query += ` AND (
-          e.org_level = 'company' OR
-          (e.org_level = 'department' AND e.org_id = ?) OR
-          (e.org_level = 'team' AND e.org_id = ?)
-        )`;
-    params.push(departmentId ?? 0, teamId ?? 0);
+  // Root users or users with full access see everything
+  if (role === 'root' || hasFullAccess === true) {
+    return { query, params };
   }
+
+  // Admin users: Filter by their area/department permissions
+  if (role === 'admin' && userId !== undefined) {
+    query += ` AND (
+      -- Company-wide entries without specific org assignments
+      (e.org_level = 'company' AND NOT EXISTS (
+        SELECT 1 FROM blackboard_entry_organizations beo WHERE beo.entry_id = e.id
+      ))
+      OR
+      -- Entries assigned to areas the admin has access to
+      EXISTS (
+        SELECT 1 FROM blackboard_entry_organizations beo
+        JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
+        WHERE beo.entry_id = e.id AND aap.admin_user_id = ?
+      )
+      OR
+      -- Entries assigned to departments the admin has access to (direct or via area)
+      EXISTS (
+        SELECT 1 FROM blackboard_entry_organizations beo
+        JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
+        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
+        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+        WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
+      )
+      OR
+      -- Entries assigned to teams in departments the admin has access to
+      EXISTS (
+        SELECT 1 FROM blackboard_entry_organizations beo
+        JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
+        JOIN departments d ON t.department_id = d.id
+        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
+        LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+        WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
+      )
+    )`;
+    params.push(userId, userId, userId, userId, userId);
+    return { query, params };
+  }
+
+  // Employee users: Filter by their department/team
+  query += ` AND (
+    e.org_level = 'company' OR
+    (e.org_level = 'department' AND e.org_id = ?) OR
+    (e.org_level = 'team' AND e.org_id = ?)
+  )`;
+  params.push(departmentId ?? 0, teamId ?? 0);
 
   return { query, params };
 }
 
 /**
  * Build query filters for blackboard entries
+ * VISIBILITY-FIX: Added userId and hasFullAccess for admin filtering
  */
 function buildQueryFilters(
   query: string,
@@ -143,6 +190,8 @@ function buildQueryFilters(
     role?: string | null;
     departmentId?: number | null;
     teamId?: number | null;
+    userId?: number;
+    hasFullAccess?: boolean;
   },
 ): { query: string; params: unknown[] } {
   let updatedQuery = query;
@@ -154,13 +203,15 @@ function buildQueryFilters(
     updatedParams.push(options.filter);
   }
 
-  // Apply access control for non-admin users
+  // Apply access control based on role and permissions
   const accessResult = applyAccessControl(
     updatedQuery,
     updatedParams,
     options.role,
     options.departmentId,
     options.teamId,
+    options.userId,
+    options.hasFullAccess,
   );
   updatedQuery = accessResult.query;
 
@@ -184,17 +235,25 @@ function buildQueryFilters(
  * Process entries to convert content
  * Note: Attachments are fetched separately via documents API
  */
+/**
+ * Convert Buffer content to UTF-8 string for a single entry
+ * Handles both Buffer and serialized Buffer object formats
+ */
+function processEntryContent(entry: DbBlackboardEntry): void {
+  if (Buffer.isBuffer(entry.content)) {
+    entry.content = entry.content.toString('utf8');
+    return;
+  }
+
+  const content = entry.content;
+  if (typeof content === 'object' && 'type' in content && Array.isArray(content.data)) {
+    entry.content = Buffer.from(content.data).toString('utf8');
+  }
+}
+
 function processEntries(entries: DbBlackboardEntry[]): void {
   for (const entry of entries) {
-    if (Buffer.isBuffer(entry.content)) {
-      entry.content = entry.content.toString('utf8');
-    } else if (
-      typeof entry.content === 'object' &&
-      'type' in entry.content &&
-      Array.isArray(entry.content.data)
-    ) {
-      entry.content = Buffer.from(entry.content.data).toString('utf8');
-    }
+    processEntryContent(entry);
     // Attachments are now fetched separately via /api/v2/blackboard/entries/:id/attachments
     // which uses the documents table with blackboard_entry_id
   }
@@ -202,6 +261,7 @@ function processEntries(entries: DbBlackboardEntry[]): void {
 
 /**
  * Get total count of entries for pagination
+ * VISIBILITY-FIX: Added userId and hasFullAccess for admin filtering
  */
 async function getTotalEntriesCount(
   tenant_id: number,
@@ -211,6 +271,8 @@ async function getTotalEntriesCount(
   role: string | null,
   departmentId: number | null,
   teamId: number | null,
+  userId?: number,
+  hasFullAccess?: boolean,
 ): Promise<number> {
   const countQuery = `
     SELECT COUNT(*) as total
@@ -220,6 +282,7 @@ async function getTotalEntriesCount(
   const countBaseParams: unknown[] = [tenant_id, status];
 
   // Build filters without undefined properties (exactOptionalPropertyTypes)
+  // VISIBILITY-FIX: Include userId and hasFullAccess for admin filtering
   const countFilters: {
     filter?: string;
     search?: string;
@@ -227,7 +290,17 @@ async function getTotalEntriesCount(
     role?: string | null;
     departmentId?: number | null;
     teamId?: number | null;
+    userId?: number;
+    hasFullAccess?: boolean;
   } = { filter, search, role, departmentId, teamId };
+
+  // Only add userId and hasFullAccess if defined
+  if (userId !== undefined) {
+    countFilters.userId = userId;
+  }
+  if (hasFullAccess !== undefined) {
+    countFilters.hasFullAccess = hasFullAccess;
+  }
 
   const { query: filteredCountQuery, params: countParams } = buildQueryFilters(
     countQuery,
@@ -242,6 +315,7 @@ async function getTotalEntriesCount(
 
 /**
  * Fetch entries with filters and pagination
+ * VISIBILITY-FIX: Added hasFullAccess for admin filtering
  */
 async function fetchEntries(
   tenant_id: number,
@@ -257,6 +331,7 @@ async function fetchEntries(
   sortDir: 'ASC' | 'DESC',
   page: number,
   limit: number,
+  hasFullAccess: boolean,
 ): Promise<DbBlackboardEntry[]> {
   const baseQuery = `
     SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
@@ -279,6 +354,7 @@ async function fetchEntries(
   const baseParams: unknown[] = [userId, tenant_id, status];
 
   // Build filters without undefined properties (exactOptionalPropertyTypes)
+  // VISIBILITY-FIX: Include userId and hasFullAccess for admin filtering
   const entryFilters: {
     filter?: string;
     search?: string;
@@ -286,7 +362,9 @@ async function fetchEntries(
     role?: string | null;
     departmentId?: number | null;
     teamId?: number | null;
-  } = { filter, search, role, departmentId, teamId };
+    userId?: number;
+    hasFullAccess?: boolean;
+  } = { filter, search, role, departmentId, teamId, userId, hasFullAccess };
 
   // Only add priority if defined
   if (priority !== undefined) {
@@ -298,14 +376,8 @@ async function fetchEntries(
     baseParams,
     entryFilters,
   );
-
-  const finalQuery =
-    filteredQuery +
-    ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir}` +
-    ' LIMIT ? OFFSET ?';
-  const offset = (page - 1) * limit;
-  queryParams.push(Number.parseInt(limit.toString(), 10), offset);
-
+  const finalQuery = `${filteredQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${sortBy} ${sortDir} LIMIT ? OFFSET ?`;
+  queryParams.push(Number.parseInt(limit.toString(), 10), (page - 1) * limit);
   const [entries] = await executeQuery<DbBlackboardEntry[]>(finalQuery, queryParams);
   return entries;
 }
@@ -329,8 +401,30 @@ function logNoEntriesFound(
   logger.debug(`User access: departmentId=${String(departmentId)}, teamId=${String(teamId)}`);
 }
 
+/** Build pagination response object */
+function buildPaginationResponse(
+  entries: DbBlackboardEntry[],
+  total: number,
+  page: number,
+  limit: number,
+): {
+  entries: DbBlackboardEntry[];
+  pagination: { total: number; page: number; limit: number; totalPages: number };
+} {
+  return {
+    entries,
+    pagination: {
+      total,
+      page: Number.parseInt(page.toString(), 10),
+      limit: Number.parseInt(limit.toString(), 10),
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+
 /**
  * Get all blackboard entries visible to the user
+ * VISIBILITY-FIX: Now uses hasFullAccess for admin filtering
  */
 export async function getAllEntries(
   tenant_id: number,
@@ -348,11 +442,9 @@ export async function getAllEntries(
       sortDir = 'DESC',
       priority,
     } = options;
+    const { role, departmentId, teamId, hasFullAccess } =
+      await User.getUserDepartmentAndTeam(userId);
 
-    // Determine user's department and team for access control
-    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
-
-    // Fetch entries
     const entries = await fetchEntries(
       tenant_id,
       userId,
@@ -367,17 +459,14 @@ export async function getAllEntries(
       sortDir,
       page,
       limit,
+      hasFullAccess,
     );
 
-    // Debug log when no entries found
     if (entries.length === 0 && status === 'active') {
       logNoEntriesFound(userId, role, tenant_id, status, filter, departmentId, teamId);
     }
-
-    // Process entries
     processEntries(entries);
 
-    // Get total count for pagination
     const totalEntries = await getTotalEntriesCount(
       tenant_id,
       status,
@@ -386,17 +475,10 @@ export async function getAllEntries(
       role,
       departmentId,
       teamId,
+      userId,
+      hasFullAccess,
     );
-
-    return {
-      entries,
-      pagination: {
-        total: totalEntries,
-        page: Number.parseInt(page.toString(), 10),
-        limit: Number.parseInt(limit.toString(), 10),
-        totalPages: Math.ceil(totalEntries / limit),
-      },
-    };
+    return buildPaginationResponse(entries, totalEntries, page, limit);
   } catch (error: unknown) {
     logger.error('Error in getAllEntries:', error);
     throw error;
@@ -404,18 +486,13 @@ export async function getAllEntries(
 }
 
 /**
- * Check if user has access to entry
+ * Check if user has access to entry (for employees)
  */
-function checkEntryAccess(
+function checkEmployeeEntryAccess(
   entry: DbBlackboardEntry,
-  role: string | null,
   departmentId: number | null,
   teamId: number | null,
 ): boolean {
-  if (role === 'admin' || role === 'root') {
-    return true;
-  }
-
   return (
     entry.org_level === 'company' ||
     (entry.org_level === 'department' && entry.org_id === departmentId) ||
@@ -424,7 +501,98 @@ function checkEntryAccess(
 }
 
 /**
+ * Check if admin has access to entry based on area/department permissions
+ * VISIBILITY-FIX: New function to check admin permissions against database
+ */
+async function checkAdminEntryAccess(
+  entryId: number,
+  userId: number,
+  tenantId: number,
+): Promise<boolean> {
+  // Check if entry has no org assignments (company-wide)
+  const [noAssignments] = await executeQuery<RowDataPacket[]>(
+    `SELECT 1 FROM blackboard_entries e
+     WHERE e.id = ? AND e.tenant_id = ?
+     AND NOT EXISTS (SELECT 1 FROM blackboard_entry_organizations WHERE entry_id = e.id)`,
+    [entryId, tenantId],
+  );
+  if (noAssignments.length > 0) {
+    return true;
+  }
+
+  // Check if entry is assigned to areas the admin has access to
+  const [areaAccess] = await executeQuery<RowDataPacket[]>(
+    `SELECT 1 FROM blackboard_entry_organizations beo
+     JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
+     WHERE beo.entry_id = ? AND aap.admin_user_id = ?`,
+    [entryId, userId],
+  );
+  if (areaAccess.length > 0) {
+    return true;
+  }
+
+  // Check if entry is assigned to departments the admin has access to (direct or via area)
+  const [deptAccess] = await executeQuery<RowDataPacket[]>(
+    `SELECT 1 FROM blackboard_entry_organizations beo
+     JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
+     LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
+     LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+     WHERE beo.entry_id = ? AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)`,
+    [userId, userId, entryId],
+  );
+  if (deptAccess.length > 0) {
+    return true;
+  }
+
+  // Check if entry is assigned to teams the admin has access to
+  const [teamAccess] = await executeQuery<RowDataPacket[]>(
+    `SELECT 1 FROM blackboard_entry_organizations beo
+     JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
+     JOIN departments d ON t.department_id = d.id
+     LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
+     LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+     WHERE beo.entry_id = ? AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)`,
+    [userId, userId, entryId],
+  );
+  if (teamAccess.length > 0) {
+    return true;
+  }
+
+  return false;
+}
+
+/** User access info for entry visibility checks */
+interface EntryAccessContext {
+  role: string | null;
+  hasFullAccess: boolean;
+  userId: number;
+  tenantId: number;
+  departmentId: number | null;
+  teamId: number | null;
+}
+
+/**
+ * Check if user has access to a blackboard entry based on role and permissions
+ * Centralizes all visibility logic for getEntryById and getEntryByUuid
+ */
+async function hasEntryAccess(entry: DbBlackboardEntry, ctx: EntryAccessContext): Promise<boolean> {
+  // Root users and users with full access can see everything
+  if (ctx.role === 'root' || ctx.hasFullAccess) {
+    return true;
+  }
+
+  // Admin users: Check permissions against assigned areas/departments
+  if (ctx.role === 'admin') {
+    return await checkAdminEntryAccess(entry.id, ctx.userId, ctx.tenantId);
+  }
+
+  // Employee users: Check based on department/team
+  return checkEmployeeEntryAccess(entry, ctx.departmentId, ctx.teamId);
+}
+
+/**
  * Get a specific blackboard entry by ID
+ * VISIBILITY-FIX: Now uses hasFullAccess and proper admin permission checks
  */
 export async function getEntryById(
   id: number,
@@ -433,7 +601,9 @@ export async function getEntryById(
 ): Promise<DbBlackboardEntry | null> {
   try {
     // Determine user's department and team for access control
-    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
+    // VISIBILITY-FIX: Also get hasFullAccess for admin filtering
+    const { role, departmentId, teamId, hasFullAccess } =
+      await User.getUserDepartmentAndTeam(userId);
 
     // Query the entry with confirmation status
     const query = `
@@ -461,19 +631,19 @@ export async function getEntryById(
       return null;
     }
 
-    // Konvertiere Buffer-Inhalte zu Strings
-    if (Buffer.isBuffer(entry.content)) {
-      entry.content = entry.content.toString('utf8');
-    } else if (
-      typeof entry.content === 'object' &&
-      'type' in entry.content &&
-      Array.isArray(entry.content.data)
-    ) {
-      entry.content = Buffer.from(entry.content.data).toString('utf8');
-    }
+    processEntryContent(entry);
 
-    // Check access control
-    if (!checkEntryAccess(entry, role, departmentId, teamId)) {
+    // VISIBILITY-FIX: Check access control based on role and permissions
+    const accessCtx: EntryAccessContext = {
+      role,
+      hasFullAccess,
+      userId,
+      tenantId: tenant_id,
+      departmentId,
+      teamId,
+    };
+
+    if (!(await hasEntryAccess(entry, accessCtx))) {
       return null;
     }
 
@@ -488,6 +658,7 @@ export async function getEntryById(
 
 /**
  * Get a specific blackboard entry by UUID
+ * VISIBILITY-FIX: Now uses hasFullAccess and proper admin permission checks
  */
 export async function getEntryByUuid(
   uuid: string,
@@ -496,7 +667,9 @@ export async function getEntryByUuid(
 ): Promise<DbBlackboardEntry | null> {
   try {
     // Determine user's department and team for access control
-    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
+    // VISIBILITY-FIX: Also get hasFullAccess for admin filtering
+    const { role, departmentId, teamId, hasFullAccess } =
+      await User.getUserDepartmentAndTeam(userId);
 
     // Query the entry with confirmation status
     const query = `
@@ -524,19 +697,19 @@ export async function getEntryByUuid(
       return null;
     }
 
-    // Convert Buffer content to strings
-    if (Buffer.isBuffer(entry.content)) {
-      entry.content = entry.content.toString('utf8');
-    } else if (
-      typeof entry.content === 'object' &&
-      'type' in entry.content &&
-      Array.isArray(entry.content.data)
-    ) {
-      entry.content = Buffer.from(entry.content.data).toString('utf8');
-    }
+    processEntryContent(entry);
 
-    // Check access control
-    if (!checkEntryAccess(entry, role, departmentId, teamId)) {
+    // VISIBILITY-FIX: Check access control based on role and permissions
+    const accessCtx: EntryAccessContext = {
+      role,
+      hasFullAccess,
+      userId,
+      tenantId: tenant_id,
+      departmentId,
+      teamId,
+    };
+
+    if (!(await hasEntryAccess(entry, accessCtx))) {
       return null;
     }
 
@@ -560,6 +733,7 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
       content,
       org_level,
       org_id,
+      area_id = null,
       author_id,
       expires_at = null,
       priority = 'medium',
@@ -571,19 +745,19 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
       throw new Error('Missing required fields');
     }
 
-    // Validate org_id based on org_level
-    if (org_level !== 'company' && org_id == null) {
+    // Validate org_id based on org_level (not required for area level with area_id)
+    if (org_level !== 'company' && org_level !== 'area' && org_id == null) {
       throw new Error('org_id is required for department or team level entries');
     }
 
     // Generate UUIDv7 for external identifier (secure, time-sortable)
     const uuid = uuidv7();
 
-    // Insert new entry
+    // Insert new entry with area_id support
     const query = `
         INSERT INTO blackboard_entries
-        (uuid, tenant_id, title, content, org_level, org_id, author_id, expires_at, priority, color)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (uuid, tenant_id, title, content, org_level, org_id, area_id, author_id, expires_at, priority, color)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
     const [result] = await executeQuery<ResultSetHeader>(query, [
@@ -593,6 +767,7 @@ export async function createEntry(entryData: EntryCreateData): Promise<DbBlackbo
       content,
       org_level,
       org_id,
+      area_id,
       author_id,
       expires_at,
       priority,
@@ -621,6 +796,7 @@ function buildUpdateQuery(entryData: EntryUpdateData): { query: string; params: 
     ['content', 'content', (v: EntryValue) => v],
     ['org_level', 'org_level', (v: EntryValue) => v],
     ['org_id', 'org_id', (v: EntryValue) => v],
+    ['area_id', 'area_id', (v: EntryValue) => v],
     ['expires_at', 'expires_at', (v: EntryValue) => v],
     ['priority', 'priority', (v: EntryValue) => v],
     ['color', 'color', (v: EntryValue) => v],
@@ -760,6 +936,53 @@ export async function confirmEntry(entryId: number | string, userId: number): Pr
 }
 
 /**
+ * Remove confirmation (mark as unread)
+ */
+export async function unconfirmEntry(entryId: number | string, userId: number): Promise<boolean> {
+  try {
+    // Get user's tenant_id
+    interface UserRow extends RowDataPacket {
+      tenant_id: number;
+    }
+    const [users] = await executeQuery<UserRow[]>('SELECT tenant_id FROM users WHERE id = ?', [
+      userId,
+    ]);
+    const userRow = users[0];
+    if (userRow === undefined) {
+      return false;
+    }
+    const userTenantId = userRow.tenant_id;
+
+    // Dual-ID support: Use uuid column for string IDs, id column for numeric IDs
+    const idColumn = typeof entryId === 'string' ? 'uuid' : 'id';
+
+    // Get numeric entry ID
+    const [entries] = await executeQuery<DbBlackboardEntry[]>(
+      `SELECT id FROM blackboard_entries WHERE ${idColumn} = ? AND tenant_id = ?`,
+      [entryId, userTenantId],
+    );
+
+    const entryRow = entries[0];
+    if (entryRow === undefined) {
+      return false;
+    }
+
+    const numericId = entryRow.id;
+
+    // Delete confirmation
+    const [result] = await executeQuery<ResultSetHeader>(
+      'DELETE FROM blackboard_confirmations WHERE entry_id = ? AND user_id = ?',
+      [numericId, userId],
+    );
+
+    return result.affectedRows > 0;
+  } catch (error: unknown) {
+    logger.error('Error in unconfirmEntry:', error);
+    throw error;
+  }
+}
+
+/**
  * Get confirmation status for an entry
  */
 export async function getConfirmationStatus(
@@ -796,11 +1019,14 @@ export async function getConfirmationStatus(
     const queryParams: unknown[] = [numericId, tenant_id];
 
     // Filter by org level
+    // N:M REFACTORING: department filter now uses user_departments table
     if (entry.org_level === 'department') {
-      usersQuery += ' AND u.department_id = ?';
+      usersQuery +=
+        ' AND u.id IN (SELECT ud.user_id FROM user_departments ud WHERE ud.department_id = ? AND ud.tenant_id = u.tenant_id)';
       queryParams.push(entry.org_id);
     } else if (entry.org_level === 'team') {
-      usersQuery += ' AND u.team_id = ?';
+      usersQuery +=
+        ' AND u.id IN (SELECT ut.user_id FROM user_teams ut WHERE ut.team_id = ? AND ut.tenant_id = u.tenant_id)';
       queryParams.push(entry.org_id);
     }
 
@@ -813,8 +1039,100 @@ export async function getConfirmationStatus(
   }
 }
 
+// ============================================================================
+// Dashboard Query Builder Helpers
+// ============================================================================
+
+/**
+ * Base SELECT query for dashboard entries
+ * Placeholders: userId (for confirmations), tenant_id (for filtering)
+ */
+const DASHBOARD_BASE_QUERY = `
+  SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
+         e.expires_at, e.priority, e.color, e.status,
+         e.created_at, e.updated_at, e.uuid_created_at,
+         u.username as author_name,
+         u.first_name as author_first_name,
+         u.last_name as author_last_name,
+         CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
+         CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
+         c.confirmed_at as confirmed_at,
+         (SELECT COUNT(*) FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
+         (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
+  FROM blackboard_entries e
+  LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
+  LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
+  WHERE e.tenant_id = ? AND e.status = 'active'
+`;
+
+/**
+ * Admin visibility filter SQL fragment
+ * Checks area, department, and team permissions for admin users
+ */
+const ADMIN_VISIBILITY_FILTER = ` AND (
+  (e.org_level = 'company' AND NOT EXISTS (
+    SELECT 1 FROM blackboard_entry_organizations beo WHERE beo.entry_id = e.id
+  ))
+  OR EXISTS (
+    SELECT 1 FROM blackboard_entry_organizations beo
+    JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
+    WHERE beo.entry_id = e.id AND aap.admin_user_id = ?
+  )
+  OR EXISTS (
+    SELECT 1 FROM blackboard_entry_organizations beo
+    JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
+    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
+    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+    WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
+  )
+  OR EXISTS (
+    SELECT 1 FROM blackboard_entry_organizations beo
+    JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
+    JOIN departments d ON t.department_id = d.id
+    LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = ?
+    LEFT JOIN admin_department_permissions adp ON d.id = adp.department_id AND adp.admin_user_id = ?
+    WHERE beo.entry_id = e.id AND (aap.id IS NOT NULL OR adp.id IS NOT NULL)
+  )
+)`;
+
+/**
+ * Build visibility filter based on user role
+ * @returns SQL fragment and parameters for the visibility filter
+ */
+function buildVisibilityFilter(
+  role: string | null,
+  userId: number,
+  departmentId: number | null,
+  teamId: number | null,
+  hasFullAccess: boolean,
+): { sql: string; params: unknown[] } {
+  // Root users or users with full access see everything
+  if (role === 'root' || hasFullAccess) {
+    return { sql: '', params: [] };
+  }
+
+  // Admin users: complex permission-based filter
+  if (role === 'admin') {
+    return {
+      sql: ADMIN_VISIBILITY_FILTER,
+      params: [userId, userId, userId, userId, userId],
+    };
+  }
+
+  // Employee users: simple department/team filter
+  return {
+    sql: ` AND (
+      e.org_level = 'company' OR
+      (e.org_level = 'department' AND e.org_id = ?) OR
+      (e.org_level = 'team' AND e.org_id = ?)
+    )`,
+    params: [departmentId ?? 0, teamId ?? 0],
+  };
+}
+
 /**
  * Build dashboard query based on user role
+ * VISIBILITY-FIX: Added hasFullAccess for admin filtering
  */
 function buildDashboardQuery(
   userId: number,
@@ -823,52 +1141,25 @@ function buildDashboardQuery(
   departmentId: number | null,
   teamId: number | null,
   limit: number,
+  hasFullAccess: boolean,
 ): { query: string; params: unknown[] } {
-  let query = `
-    SELECT e.id, e.uuid, e.tenant_id, e.title, e.content, e.org_level, e.org_id, e.author_id,
-           e.expires_at, e.priority, e.color, e.status,
-           e.created_at, e.updated_at, e.uuid_created_at,
-           u.username as author_name,
-           u.first_name as author_first_name,
-           u.last_name as author_last_name,
-           CONCAT(u.first_name, ' ', u.last_name) as author_full_name,
-           CASE WHEN c.id IS NOT NULL THEN 1 ELSE 0 END as is_confirmed,
-           c.confirmed_at as confirmed_at,
-           (SELECT COUNT(*) FROM documents WHERE blackboard_entry_id = e.id) as attachment_count,
-           (SELECT COUNT(*) FROM blackboard_comments WHERE entry_id = e.id) as comment_count
-    FROM blackboard_entries e
-    LEFT JOIN users u ON e.author_id = u.id AND u.tenant_id = e.tenant_id
-    LEFT JOIN blackboard_confirmations c ON e.id = c.entry_id AND c.user_id = ?
-    WHERE e.tenant_id = ? AND e.status = 'active'
-  `;
+  const baseParams: unknown[] = [userId, tenant_id];
+  const visibility = buildVisibilityFilter(role, userId, departmentId, teamId, hasFullAccess);
 
-  const queryParams: unknown[] = [userId, tenant_id];
-
-  // Apply access control for non-admin users
-  if (role !== 'admin' && role !== 'root') {
-    query += ` AND (
-        e.org_level = 'company' OR
-        (e.org_level = 'department' AND e.org_id = ?) OR
-        (e.org_level = 'team' AND e.org_id = ?)
-      )`;
-    queryParams.push(departmentId ?? 0, teamId ?? 0);
-  }
-
-  // Prioritize by priority and recency
-  query += `
-    ORDER BY
-      e.priority = 'urgent' DESC,
-      e.priority = 'high' DESC,
-      e.created_at DESC
+  const orderClause = `
+    ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.created_at DESC
     LIMIT ?
   `;
-  queryParams.push(Number.parseInt(limit.toString(), 10));
 
-  return { query, params: queryParams };
+  return {
+    query: DASHBOARD_BASE_QUERY + visibility.sql + orderClause,
+    params: [...baseParams, ...visibility.params, Number.parseInt(limit.toString(), 10)],
+  };
 }
 
 /**
  * Get dashboard entries for a user
+ * VISIBILITY-FIX: Now uses hasFullAccess for admin filtering
  */
 export async function getDashboardEntries(
   tenant_id: number,
@@ -878,9 +1169,11 @@ export async function getDashboardEntries(
 ): Promise<DbBlackboardEntry[]> {
   try {
     // Get user info for access control
-    const { role, departmentId, teamId } = await User.getUserDepartmentAndTeam(userId);
+    // VISIBILITY-FIX: Also get hasFullAccess for admin filtering
+    const { role, departmentId, teamId, hasFullAccess } =
+      await User.getUserDepartmentAndTeam(userId);
 
-    // Build and execute query
+    // Build and execute query with visibility filtering
     const { query, params } = buildDashboardQuery(
       userId,
       tenant_id,
@@ -888,6 +1181,7 @@ export async function getDashboardEntries(
       departmentId,
       teamId,
       limit,
+      hasFullAccess,
     );
     const [entries] = await executeQuery<DbBlackboardEntry[]>(query, params);
 
@@ -940,7 +1234,8 @@ export async function getComments(
               u.first_name as user_first_name,
               u.last_name as user_last_name,
               CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
-              u.role as user_role
+              u.role as user_role,
+              u.profile_picture as user_profile_picture
        FROM blackboard_comments c
        LEFT JOIN users u ON c.user_id = u.id AND u.tenant_id = c.tenant_id
        WHERE c.entry_id = ? AND c.tenant_id = ?
@@ -1042,7 +1337,8 @@ export async function getCommentById(
               u.first_name as user_first_name,
               u.last_name as user_last_name,
               CONCAT(u.first_name, ' ', u.last_name) as user_full_name,
-              u.role as user_role
+              u.role as user_role,
+              u.profile_picture as user_profile_picture
        FROM blackboard_comments c
        LEFT JOIN users u ON c.user_id = u.id AND u.tenant_id = c.tenant_id
        WHERE c.id = ? AND c.tenant_id = ?`,
@@ -1065,6 +1361,7 @@ const Blackboard = {
   updateEntry,
   deleteEntry,
   confirmEntry,
+  unconfirmEntry,
   getConfirmationStatus,
   getDashboardEntries,
   // DEPRECATED: Attachment functions removed - use documents API

@@ -104,7 +104,7 @@ export async function updateTeamMachines(
  */
 export async function updateTeamRelations(
   savedTeam: Team,
-  teamData: Record<string, string | number>,
+  teamData: Record<string, string | number | null>,
   userIds: number[],
   machineIds: number[],
 ): Promise<void> {

@@ -52,3 +52,32 @@ infrastructure/
 *.tmp
 *.temp
 .cache/
+
+# Docker files (not needed in image)
+docker-compose*.yml
+Dockerfile*
+
+# Secrets and certificates
+.npmrc
+*.pem
+*.key
+*.crt
+
+# Database and backups
+*.sql
+backups/
+exports/
+
+# Archives
+*.tar.gz
+*.zip
+*.rar
+
+# Storybook
+storybook-static/
+.storybook/
+stories/
+
+# Example files
+.env.example
+*.example

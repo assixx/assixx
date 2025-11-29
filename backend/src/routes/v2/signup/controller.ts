@@ -8,7 +8,7 @@ import { Request, Response } from 'express';
 
 import rootLog from '../../../models/rootLog.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { logger } from '../../../utils/logger.js';
+import { logger, sanitizeForLog } from '../../../utils/logger.js';
 import { signupService } from './service.js';
 import type { SignupRequest } from './types.js';
 
@@ -24,11 +24,13 @@ interface SignupResult {
 class SignupController {
   /**
    * Helper: Log signup request details
+   * SECURITY: Uses sanitizeForLog to prevent password exposure
    */
   private logSignupRequest(req: Request): void {
     console.info('[SignupController] METHOD START');
+    // SECURITY: Sanitize request body before logging to prevent password exposure
     logger.info('[SignupController] Received signup request:', {
-      body: req.body as unknown,
+      body: sanitizeForLog(req.body as unknown),
       headers: {
         contentType: req.get('Content-Type'),
         origin: req.get('Origin'),
@@ -154,7 +156,8 @@ class SignupController {
     try {
       console.info('[SignupController] Entering try block');
       const signupData = req.body as SignupRequest;
-      console.info('[SignupController] SignupData prepared:', signupData);
+      // SECURITY: Sanitize before logging to prevent password exposure
+      console.info('[SignupController] SignupData prepared:', sanitizeForLog(signupData));
 
       logger.info('[SignupController] Calling signupService.registerTenant');
       console.info('[SignupController] About to call service');

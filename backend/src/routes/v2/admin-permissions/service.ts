@@ -10,6 +10,7 @@ import { execute } from '../../../utils/db.js';
 import { getErrorMessage } from '../../../utils/errorHandler.js';
 import { logger } from '../../../utils/logger.js';
 import {
+  AdminArea,
   AdminDepartment,
   AdminGroup,
   AdminPermissionsResponse,
@@ -28,7 +29,15 @@ interface DepartmentPermissionRow extends RowDataPacket {
   can_delete: number;
 }
 
-interface GroupPermissionRow extends RowDataPacket {
+// NOTE: GroupPermissionRow removed - department_groups system was removed (2025-11-27)
+
+interface PermissionResult extends RowDataPacket {
+  can_read: number;
+  can_write: number;
+  can_delete: number;
+}
+
+interface AreaPermissionRow extends RowDataPacket {
   id: number;
   name: string;
   description?: string;
@@ -38,14 +47,9 @@ interface GroupPermissionRow extends RowDataPacket {
   can_delete: number;
 }
 
-interface PermissionResult extends RowDataPacket {
-  can_read: number;
-  can_write: number;
-  can_delete: number;
-}
-
 interface RoleResult extends RowDataPacket {
   role: string;
+  has_full_access: number;
 }
 
 /**
@@ -59,16 +63,7 @@ function toPermissionSet(perm: PermissionResult): PermissionSet {
   };
 }
 
-/**
- * Build permission set from multiple permission results (highest permissions)
- */
-function buildPermissionSet(perms: PermissionResult[]): PermissionSet {
-  return {
-    canRead: perms.some((p: PermissionResult) => p.can_read === 1),
-    canWrite: perms.some((p: PermissionResult) => p.can_write === 1),
-    canDelete: perms.some((p: PermissionResult) => p.can_delete === 1),
-  };
-}
+// NOTE: buildPermissionSet removed - was only used by group permissions (2025-11-27)
 
 /**
  *
@@ -106,33 +101,9 @@ class AdminPermissionsService {
         return { hasAccess, source: 'direct', permissions: toPermissionSet(perm) };
       }
 
-      // Check group permissions
-      const groupQuery = `
-        SELECT agp.can_read, agp.can_write, agp.can_delete
-        FROM admin_group_permissions agp
-        JOIN department_group_members dgm ON agp.group_id = dgm.group_id
-        WHERE agp.admin_user_id = ?
-        AND dgm.department_id = ?
-        AND agp.tenant_id = ?
-      `;
-      const [groupPermissions] = await execute<PermissionResult[]>(groupQuery, [
-        adminId,
-        departmentId,
-        tenantId,
-      ]);
-
-      if (groupPermissions.length > 0) {
-        const hasAccess = groupPermissions.some((perm: PermissionResult) =>
-          this.checkPermissionLevel(perm, requiredPermission),
-        );
-        if (hasAccess) {
-          return {
-            hasAccess: true,
-            source: 'group',
-            permissions: buildPermissionSet(groupPermissions),
-          };
-        }
-      }
+      // NOTE: Group permissions removed (2025-11-27)
+      // admin_group_permissions, department_groups, department_group_members tables were dropped
+      // Use Area permissions (admin_area_permissions) for logical groupings instead
 
       return { hasAccess: false };
     } catch (error: unknown) {
@@ -142,29 +113,83 @@ class AdminPermissionsService {
   }
 
   /**
-   * Get all permissions for an admin
-   * @param adminId - The adminId parameter
+   * Get user role and has_full_access status
+   * @param userId - The user ID
    * @param tenantId - The tenant ID
    */
-  private async getAdminRole(adminId: number, tenantId: number): Promise<boolean> {
-    const [adminRows] = await execute<RoleResult[]>(
-      'SELECT role FROM users WHERE id = ? AND tenant_id = ?',
-      [adminId, tenantId],
+  private async getUserRoleInfo(
+    userId: number,
+    tenantId: number,
+  ): Promise<{ isRoot: boolean; hasFullAccess: boolean }> {
+    const [userRows] = await execute<RoleResult[]>(
+      'SELECT role, has_full_access FROM users WHERE id = ? AND tenant_id = ?',
+      [userId, tenantId],
     );
 
-    logger.info(`[getAdminRole] Admin query result:`, adminRows);
-
-    if (adminRows.length === 0) {
-      logger.error(`[getAdminRole] Admin not found - adminId: ${adminId}, tenantId: ${tenantId}`);
-      throw new ServiceError('NOT_FOUND', 'Admin not found');
+    if (userRows.length === 0) {
+      logger.error(`[getUserRoleInfo] User not found - userId: ${userId}, tenantId: ${tenantId}`);
+      throw new ServiceError('NOT_FOUND', 'User not found');
     }
 
-    const adminRow = adminRows[0];
-    if (adminRow === undefined) {
-      throw new ServiceError('NOT_FOUND', 'Admin not found');
+    const userRow = userRows[0];
+    if (userRow === undefined) {
+      throw new ServiceError('NOT_FOUND', 'User not found');
     }
 
-    return adminRow.role === 'root';
+    return {
+      isRoot: userRow.role === 'root',
+      hasFullAccess: userRow.has_full_access === 1,
+    };
+  }
+
+  /**
+   * Get Area permissions for a user
+   */
+  private async getAreaPermissions(userId: number, tenantId: number): Promise<AdminArea[]> {
+    const query = `
+      SELECT
+        a.id,
+        a.name,
+        a.description,
+        COUNT(DISTINCT d.id) as department_count,
+        aap.can_read,
+        aap.can_write,
+        aap.can_delete
+      FROM admin_area_permissions aap
+      JOIN areas a ON aap.area_id = a.id
+      LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
+      WHERE aap.admin_user_id = ?
+      AND aap.tenant_id = ?
+      GROUP BY a.id, a.name, a.description, aap.can_read, aap.can_write, aap.can_delete
+      ORDER BY a.name
+    `;
+    const [rows] = await execute<AreaPermissionRow[]>(query, [userId, tenantId]);
+
+    return rows.map((row: AreaPermissionRow) => {
+      const result: AdminArea = {
+        id: row.id,
+        name: row.name,
+        departmentCount: row.department_count,
+        canRead: row.can_read === 1,
+        canWrite: row.can_write === 1,
+        canDelete: row.can_delete === 1,
+      };
+      if (row.description !== undefined) {
+        result.description = row.description;
+      }
+      return result;
+    });
+  }
+
+  /**
+   * Get total areas count
+   */
+  private async getTotalAreas(tenantId: number): Promise<number> {
+    const [countResult] = await execute<RowDataPacket[]>(
+      'SELECT COUNT(*) as total FROM areas WHERE tenant_id = ?',
+      [tenantId],
+    );
+    return (countResult[0] as { total: number }).total;
   }
 
   private async getDepartmentPermissions(
@@ -203,40 +228,15 @@ class AdminPermissionsService {
     });
   }
 
-  private async getGroupPermissions(adminId: number, tenantId: number): Promise<AdminGroup[]> {
-    const query = `
-      SELECT
-        dg.id,
-        dg.name,
-        dg.description,
-        COUNT(DISTINCT dgm.department_id) as department_count,
-        agp.can_read,
-        agp.can_write,
-        agp.can_delete
-      FROM admin_group_permissions agp
-      JOIN department_groups dg ON agp.group_id = dg.id
-      LEFT JOIN department_group_members dgm ON dg.id = dgm.group_id
-      WHERE agp.admin_user_id = ?
-      AND agp.tenant_id = ?
-      GROUP BY dg.id, dg.name, dg.description, agp.can_read, agp.can_write, agp.can_delete
-      ORDER BY dg.name
-    `;
-    const [rows] = await execute<GroupPermissionRow[]>(query, [adminId, tenantId]);
-
-    return rows.map((row: GroupPermissionRow) => {
-      const result: AdminGroup = {
-        id: row.id,
-        name: row.name,
-        departmentCount: row.department_count,
-        canRead: row.can_read === 1,
-        canWrite: row.can_write === 1,
-        canDelete: row.can_delete === 1,
-      };
-      if (row.description !== undefined) {
-        result.description = row.description;
-      }
-      return result;
-    });
+  /**
+   * Get Group permissions - DEPRECATED
+   * Department groups were removed in the permission system refactoring (2025-11-27).
+   * Areas now serve as logical groupings. This method returns empty for backwards compatibility.
+   */
+  private getGroupPermissions(_adminId: number, _tenantId: number): Promise<AdminGroup[]> {
+    // DEPRECATED: admin_group_permissions, department_groups, department_group_members tables were dropped
+    // Areas now serve as the logical grouping mechanism
+    return Promise.resolve([]);
   }
 
   private async getTotalDepartments(tenantId: number): Promise<number> {
@@ -247,20 +247,27 @@ class AdminPermissionsService {
     return (countResult[0] as { total: number }).total;
   }
 
-  async getAdminPermissions(adminId: number, tenantId: number): Promise<AdminPermissionsResponse> {
+  async getAdminPermissions(userId: number, tenantId: number): Promise<AdminPermissionsResponse> {
     try {
-      logger.info(`[getAdminPermissions] Starting for adminId: ${adminId}, tenantId: ${tenantId}`);
+      logger.info(`[getAdminPermissions] Starting for userId: ${userId}, tenantId: ${tenantId}`);
 
-      const isRoot = await this.getAdminRole(adminId, tenantId);
-      const departments = await this.getDepartmentPermissions(adminId, tenantId);
-      const groups = await this.getGroupPermissions(adminId, tenantId);
+      const { hasFullAccess } = await this.getUserRoleInfo(userId, tenantId);
+      const areas = await this.getAreaPermissions(userId, tenantId);
+      const departments = await this.getDepartmentPermissions(userId, tenantId);
+      const groups = await this.getGroupPermissions(userId, tenantId);
+      const totalAreas = await this.getTotalAreas(tenantId);
       const totalDepartments = await this.getTotalDepartments(tenantId);
 
+      // hasFullAccess from DB (has_full_access) is the single source of truth
+      // Root users always have has_full_access = 1 in DB
       return {
+        areas,
         departments,
         groups,
-        hasAllAccess: isRoot,
+        hasFullAccess,
+        totalAreas,
         totalDepartments,
+        assignedAreas: areas.length,
         assignedDepartments: departments.length,
       };
     } catch (error: unknown) {
@@ -322,6 +329,124 @@ class AdminPermissionsService {
   }
 
   /**
+   * Set Area permissions for a user
+   */
+  async setAreaPermissions(
+    userId: number,
+    areaIds: number[],
+    permissions: PermissionSet,
+    modifiedBy: number,
+    tenantId: number,
+  ): Promise<void> {
+    logger.info('setAreaPermissions:', { userId, areaIds, permissions, tenantId });
+
+    try {
+      // Remove existing area permissions
+      await execute(
+        'DELETE FROM admin_area_permissions WHERE admin_user_id = ? AND tenant_id = ?',
+        [userId, tenantId],
+      );
+
+      // Add new permissions
+      if (areaIds.length > 0) {
+        const values = areaIds.map((areaId: number) => [
+          tenantId,
+          userId,
+          areaId,
+          permissions.canRead ? 1 : 0,
+          permissions.canWrite ? 1 : 0,
+          permissions.canDelete ? 1 : 0,
+          modifiedBy,
+        ]);
+        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+
+        await execute(
+          `INSERT INTO admin_area_permissions
+           (tenant_id, admin_user_id, area_id, can_read, can_write, can_delete, assigned_by)
+           VALUES ${placeholders}`,
+          values.flat(),
+        );
+      }
+
+      // Audit log
+      await createRootLog({
+        action: 'update_admin_area_permissions',
+        user_id: modifiedBy,
+        tenant_id: tenantId,
+        details: `Updated area permissions for user ${userId}: ${areaIds.length} areas`,
+      });
+    } catch (error: unknown) {
+      logger.error('Error setting area permissions:', { userId, tenantId, error });
+      throw new ServiceError('SERVER_ERROR', 'Failed to set area permissions');
+    }
+  }
+
+  /**
+   * Remove specific Area permission
+   */
+  async removeAreaPermission(
+    userId: number,
+    areaId: number,
+    modifiedBy: number,
+    tenantId: number,
+  ): Promise<void> {
+    try {
+      const [result] = await execute<ResultSetHeader>(
+        `DELETE FROM admin_area_permissions
+         WHERE admin_user_id = ? AND area_id = ? AND tenant_id = ?`,
+        [userId, areaId, tenantId],
+      );
+
+      if (result.affectedRows === 0) {
+        throw new ServiceError('NOT_FOUND', 'Area permission not found');
+      }
+
+      await createRootLog({
+        action: 'revoke_admin_area_permission',
+        user_id: modifiedBy,
+        tenant_id: tenantId,
+        details: `Revoked area permission for user ${userId} on area ${areaId}`,
+      });
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) throw error;
+      logger.error('Error removing area permission:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to remove area permission');
+    }
+  }
+
+  /**
+   * Set has_full_access flag for a user
+   */
+  async setHasFullAccess(
+    userId: number,
+    hasFullAccess: boolean,
+    modifiedBy: number,
+    tenantId: number,
+  ): Promise<void> {
+    try {
+      const [result] = await execute<ResultSetHeader>(
+        'UPDATE users SET has_full_access = ? WHERE id = ? AND tenant_id = ?',
+        [hasFullAccess ? 1 : 0, userId, tenantId],
+      );
+
+      if (result.affectedRows === 0) {
+        throw new ServiceError('NOT_FOUND', 'User not found');
+      }
+
+      await createRootLog({
+        action: hasFullAccess ? 'grant_full_access' : 'revoke_full_access',
+        user_id: modifiedBy,
+        tenant_id: tenantId,
+        details: `${hasFullAccess ? 'Granted' : 'Revoked'} full access for user ${userId}`,
+      });
+    } catch (error: unknown) {
+      if (error instanceof ServiceError) throw error;
+      logger.error('Error setting has_full_access:', error);
+      throw new ServiceError('SERVER_ERROR', 'Failed to update full access flag');
+    }
+  }
+
+  /**
    * Insert department permissions into database
    */
   private async insertDepartmentPermissions(
@@ -351,67 +476,27 @@ class AdminPermissionsService {
   }
 
   /**
-   * Set group permissions for an admin
-   * @param adminId - The adminId parameter
-   * @param groupIds - The groupIds parameter
-   * @param permissions - The permissions parameter
-   * @param modifiedBy - The modifiedBy parameter
-   * @param tenantId - The tenant ID
+   * Set group permissions for an admin - DEPRECATED
+   * Department groups were removed in the permission system refactoring (2025-11-27).
+   * Use Area permissions (setAreaPermissions) for logical groupings instead.
+   * This method is a no-op for backwards compatibility.
    */
-  async setGroupPermissions(
-    adminId: number,
+  setGroupPermissions(
+    _adminId: number,
     groupIds: number[],
-    permissions: PermissionSet,
-    modifiedBy: number,
-    tenantId: number,
+    _permissions: PermissionSet,
+    _modifiedBy: number,
+    _tenantId: number,
   ): Promise<void> {
-    try {
-      // Remove existing group permissions
-      await execute(
-        'DELETE FROM admin_group_permissions WHERE admin_user_id = ? AND tenant_id = ?',
-        [adminId, tenantId],
+    // DEPRECATED: admin_group_permissions table was dropped (2025-11-27)
+    // Use setAreaPermissions instead
+    if (groupIds.length > 0) {
+      logger.warn(
+        '[DEPRECATED] setGroupPermissions called but department_groups system was removed. Use setAreaPermissions instead.',
       );
-
-      // Add new permissions
-      if (groupIds.length > 0) {
-        const values = groupIds.map((groupId: number) => [
-          adminId,
-          groupId,
-          tenantId,
-          permissions.canRead ? 1 : 0,
-          permissions.canWrite ? 1 : 0,
-          permissions.canDelete ? 1 : 0,
-          modifiedBy, // assigned_by
-        ]);
-
-        const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
-        const flatValues = values.flat();
-
-        await execute(
-          `INSERT INTO admin_group_permissions
-          (admin_user_id, group_id, tenant_id, can_read, can_write, can_delete, assigned_by)
-          VALUES ${placeholders}`,
-          flatValues,
-        );
-      }
-
-      // Log the action
-      await createRootLog({
-        action: 'update_admin_group_permissions',
-        user_id: modifiedBy,
-        tenant_id: tenantId,
-        details: `Updated group permissions for admin ${adminId}: ${groupIds.length} groups - ${JSON.stringify(
-          {
-            adminId,
-            groupCount: groupIds.length,
-            permissions,
-          },
-        )}`,
-      });
-    } catch (error: unknown) {
-      logger.error('Error setting group permissions:', error);
-      throw new ServiceError('SERVER_ERROR', 'Failed to set group permissions');
     }
+    // No-op for backwards compatibility
+    return Promise.resolve();
   }
 
   /**
@@ -453,41 +538,28 @@ class AdminPermissionsService {
   }
 
   /**
-   * Remove specific group permission
-   * @param adminId - The adminId parameter
-   * @param groupId - The groupId parameter
-   * @param modifiedBy - The modifiedBy parameter
-   * @param tenantId - The tenant ID
+   * Remove specific group permission - DEPRECATED
+   * Department groups were removed in the permission system refactoring (2025-11-27).
+   * Use Area permissions (removeAreaPermission) for logical groupings instead.
+   * Always returns NOT_FOUND since groups no longer exist.
    */
-  async removeGroupPermission(
-    adminId: number,
-    groupId: number,
-    modifiedBy: number,
-    tenantId: number,
+  removeGroupPermission(
+    _adminId: number,
+    _groupId: number,
+    _modifiedBy: number,
+    _tenantId: number,
   ): Promise<void> {
-    try {
-      const [result] = await execute<ResultSetHeader>(
-        `DELETE FROM admin_group_permissions
-        WHERE admin_user_id = ? AND group_id = ? AND tenant_id = ?`,
-        [adminId, groupId, tenantId],
-      );
-
-      if (result.affectedRows === 0) {
-        throw new ServiceError('NOT_FOUND', 'Group permission not found');
-      }
-
-      // Log the action
-      await createRootLog({
-        action: 'revoke_admin_group_permission',
-        user_id: modifiedBy,
-        tenant_id: tenantId,
-        details: `Revoked group permission for admin ${adminId} on group ${groupId}`,
-      });
-    } catch (error: unknown) {
-      if (error instanceof ServiceError) throw error;
-      logger.error('Error removing group permission:', error);
-      throw new ServiceError('SERVER_ERROR', 'Failed to remove group permission');
-    }
+    // DEPRECATED: admin_group_permissions table was dropped (2025-11-27)
+    // Use removeAreaPermission instead
+    logger.warn(
+      '[DEPRECATED] removeGroupPermission called but department_groups system was removed. Use removeAreaPermission instead.',
+    );
+    return Promise.reject(
+      new ServiceError(
+        'NOT_FOUND',
+        'Group permissions system has been removed. Use Area permissions instead.',
+      ),
+    );
   }
 
   /**

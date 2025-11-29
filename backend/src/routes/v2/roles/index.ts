@@ -9,7 +9,7 @@ import { validateBody, validateParams } from '../../../middleware/validation.zod
 import type { AuthenticatedRequest } from '../../../types/request.types.js';
 import { typed } from '../../../utils/routeHandlers.js';
 import { rolesController } from './controller.js';
-import { CheckUserRoleSchema, RoleIdParamSchema } from './validation.zod.js';
+import { CheckUserRoleSchema, RoleIdParamSchema } from './roles.validation.zod.js';
 
 const router = Router();
 

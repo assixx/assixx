@@ -4,13 +4,13 @@
  */
 
 // Admin User Types
+// REMOVED: company column dropped (2025-11-27)
 export interface AdminUser {
   id: number;
   username: string;
   email: string;
   firstName: string;
   lastName: string;
-  company?: string;
   notes?: string;
   position?: string;
   employeeNumber?: string;
@@ -23,25 +23,33 @@ export interface AdminUser {
   lastLogin?: Date;
 }
 
+/**
+ * Create Admin Request
+ * IMPORTANT: username is optional and IGNORED - will be set to email (lowercase) in service
+ * REMOVED: company column dropped (2025-11-27)
+ */
 export interface CreateAdminRequest {
-  username: string;
+  username?: string; // Optional and IGNORED - will be set to email (lowercase) in service
   email: string;
   password: string;
   firstName?: string;
   lastName?: string;
-  company?: string;
   notes?: string;
   employeeNumber?: string;
   position?: string;
 }
 
+/**
+ * Update Admin Request
+ * IMPORTANT: username is optional and IGNORED - when email changes, username is auto-synced
+ * REMOVED: company column dropped (2025-11-27)
+ */
 export interface UpdateAdminRequest {
-  username?: string;
+  username?: string; // Optional and IGNORED - will be synced from email in service
   email?: string;
   password?: string;
   firstName?: string;
   lastName?: string;
-  company?: string;
   notes?: string;
   isActive?: boolean;
   isArchived?: boolean;
@@ -66,8 +74,13 @@ export interface RootUser {
   updatedAt: Date;
 }
 
+/**
+ * Create Root User Request
+ * IMPORTANT: username is optional and will be set to email (lowercase) in service
+ * N:M REFACTORING: departmentId removed - root users have has_full_access=1
+ */
 export interface CreateRootUserRequest {
-  username: string;
+  username?: string; // Optional - will be set to email (lowercase) in service
   email: string;
   password: string;
   firstName: string;
@@ -75,10 +88,14 @@ export interface CreateRootUserRequest {
   position?: string;
   notes?: string;
   employeeNumber?: string;
-  departmentId?: number;
   isActive?: boolean;
 }
 
+/**
+ * Update Root User Request
+ * IMPORTANT: When email changes, username is also updated (username = email, lowercase)
+ * N:M REFACTORING: departmentId removed - root users have has_full_access=1
+ */
 export interface UpdateRootUserRequest {
   firstName?: string;
   lastName?: string;
@@ -87,7 +104,6 @@ export interface UpdateRootUserRequest {
   position?: string;
   notes?: string;
   employeeNumber?: string;
-  departmentId?: number;
   isActive?: boolean;
 }
 

@@ -8,9 +8,10 @@ import { ApiClient } from '../../../utils/api-client';
 import type { User } from '../../../types/api.types';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 import { $$id, setSafeHTML } from '../../../utils/dom-utils';
-import type { Employee, Department, Team, WindowWithEmployeeHandlers } from './types';
+import type { Employee, Area, Department, Team, WindowWithEmployeeHandlers } from './types';
 import { renderEmployeesTable, setupFormSubmitHandler } from './ui';
 import { setEmployeesManager } from './data';
+// NOTE: setupAreaDepartmentFilter, setupDepartmentTeamFilter removed - Employees only get teams
 import {
   showAddEmployeeModal,
   closeEmployeeModal,
@@ -29,7 +30,7 @@ import {
 class EmployeesManager {
   public apiClient: ApiClient;
   public employees: Employee[] = []; // Public for window handler access
-  private currentFilter: 'all' | 'active' | 'inactive' = 'all';
+  private currentFilter: 'all' | 'active' | 'inactive' | 'archived' = 'all';
   private searchTerm = '';
   public currentEmployeeId: number | null = null; // Track current employee being edited
 
@@ -198,7 +199,7 @@ class EmployeesManager {
       closeEmployeeModal();
     });
 
-    // Delete modal close buttons
+    // Delete Modal Step 1: Close buttons
     document.querySelector('#close-delete-modal')?.addEventListener('click', () => {
       closeDeleteModal();
     });
@@ -207,10 +208,27 @@ class EmployeesManager {
       closeDeleteModal();
     });
 
-    // Delete confirmation button
-    document.querySelector('#confirm-delete-employee')?.addEventListener('click', () => {
+    // Delete Modal Step 1: Proceed to second confirmation (double-check pattern)
+    document.querySelector('#proceed-delete-employee')?.addEventListener('click', () => {
+      // Close first modal, show second modal
+      closeDeleteModal();
+      const confirmModal = document.querySelector('#delete-employee-confirm-modal');
+      confirmModal?.classList.add('modal-overlay--active');
+    });
+
+    // Delete Modal Step 2: Cancel button
+    document.querySelector('#cancel-delete-confirm')?.addEventListener('click', () => {
+      const confirmModal = document.querySelector('#delete-employee-confirm-modal');
+      confirmModal?.classList.remove('modal-overlay--active');
+    });
+
+    // Delete Modal Step 2: Final confirmation - actually delete
+    document.querySelector('#confirm-delete-employee-final')?.addEventListener('click', () => {
       const deleteInput = document.querySelector<HTMLInputElement>('#delete-employee-id');
       if (deleteInput !== null && deleteInput.value !== '') {
+        // Close second modal first
+        const confirmModal = document.querySelector('#delete-employee-confirm-modal');
+        confirmModal?.classList.remove('modal-overlay--active');
         void this.confirmDelete(Number.parseInt(deleteInput.value, 10));
       }
     });
@@ -273,7 +291,8 @@ class EmployeesManager {
   private initCustomDropdowns(): void {
     // Initialize all dropdowns (position, status, availability status, department, team)
     this.initDropdown('position-dropdown', 'position-trigger', 'position-menu', 'employee-position');
-    this.initDropdown('status-dropdown', 'status-trigger', 'status-menu', 'employee-status');
+    // Status dropdown uses special mapping (isActive + isArchived)
+    this.initStatusDropdown();
     this.initDropdown(
       'availability-status-dropdown',
       'availability-status-trigger',
@@ -351,13 +370,97 @@ class EmployeesManager {
     });
   }
 
-  private filterByStatus(employees: Employee[]): Employee[] {
-    if (this.currentFilter === 'active') {
-      return employees.filter((emp) => emp.isActive);
-    } else if (this.currentFilter === 'inactive') {
-      return employees.filter((emp) => !emp.isActive);
+  /**
+   * Initialize status dropdown with isActive/isArchived mapping
+   */
+  private initStatusDropdown(): void {
+    const trigger = $$id('status-trigger');
+    const menu = $$id('status-menu');
+    const dropdown = $$id('status-dropdown');
+    const isActiveInput = $$id('employee-is-active') as HTMLInputElement | null;
+    const isArchivedInput = $$id('employee-is-archived') as HTMLInputElement | null;
+
+    if (trigger === null || menu === null || dropdown === null) {
+      console.warn('[initStatusDropdown] Status dropdown elements not found');
+      return;
     }
-    return employees;
+
+    if (isActiveInput === null || isArchivedInput === null) {
+      console.warn('[initStatusDropdown] Status hidden inputs not found');
+      return;
+    }
+
+    // Toggle menu on trigger click
+    trigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      trigger.classList.toggle('active');
+      menu.classList.toggle('active');
+    });
+
+    // Handle option selection
+    menu.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const option = target.closest('.dropdown__option');
+
+      if (option === null || !(option instanceof HTMLElement)) {
+        return;
+      }
+
+      const value = option.dataset['value'] ?? '';
+      const badge = option.querySelector('.badge');
+
+      // Map UI value to DB fields (isActive + isArchived)
+      switch (value) {
+        case 'active':
+          isActiveInput.value = '1';
+          isArchivedInput.value = '0';
+          break;
+        case 'inactive':
+          isActiveInput.value = '0';
+          isArchivedInput.value = '0';
+          break;
+        case 'archived':
+          isActiveInput.value = '0';
+          isArchivedInput.value = '1';
+          break;
+      }
+
+      // Update trigger with badge
+      const triggerSpan = trigger.querySelector('span');
+      if (triggerSpan !== null && badge !== null) {
+        setSafeHTML(triggerSpan, badge.outerHTML);
+      }
+
+      // Close menu
+      menu.classList.remove('active');
+      trigger.classList.remove('active');
+    });
+
+    // Close menu on outside click
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (!dropdown.contains(target)) {
+        menu.classList.remove('active');
+        trigger.classList.remove('active');
+      }
+    });
+  }
+
+  private filterByStatus(employees: Employee[]): Employee[] {
+    switch (this.currentFilter) {
+      case 'active':
+        // Show only active AND not archived
+        return employees.filter((emp) => emp.isActive && !emp.isArchived);
+      case 'inactive':
+        // Show only inactive AND not archived
+        return employees.filter((emp) => !emp.isActive && !emp.isArchived);
+      case 'archived':
+        // Show only archived (regardless of isActive)
+        return employees.filter((emp) => emp.isArchived);
+      case 'all':
+      default:
+        return employees;
+    }
   }
 
   private filterBySearch(employees: Employee[]): Employee[] {
@@ -388,19 +491,21 @@ class EmployeesManager {
 
       // ApiClient adds /api/v2 or /api prefix automatically based on feature flag
       // Backend already returns camelCase via fieldMapping
-      const response = await this.apiClient.request<User[]>('/users', {
+      // NOTE: Filter by role=employee for performance (also filtered client-side in mapUsersToEmployees)
+      // NOTE: ApiClient.handleV2Response() already unwraps { success, data, meta } → returns data directly
+      const users = await this.apiClient.request<User[]>('/users?role=employee', {
         method: 'GET',
       });
 
-      // Handle empty response
-      if (!Array.isArray(response)) {
+      // Handle empty response (ApiClient already unwraps data from { success, data, meta })
+      if (!Array.isArray(users)) {
         this.employees = [];
-        renderEmployeesTable(this.employees);
+        renderEmployeesTable(this.employees, this.currentFilter);
         return;
       }
 
       // Map users to employees and apply security filter
-      this.employees = this.mapUsersToEmployees(response);
+      this.employees = this.mapUsersToEmployees(users);
 
       // Apply filters
       this.employees = this.filterByStatus(this.employees);
@@ -410,7 +515,7 @@ class EmployeesManager {
       // The availabilityStatus field is now included directly in the user response
       console.info('[EmployeesManager] Using availability data from v2 API');
 
-      renderEmployeesTable(this.employees);
+      renderEmployeesTable(this.employees, this.currentFilter);
     } catch (error) {
       console.error('Error loading employees:', error);
       // Check if it's a 404 (no data) - in that case just show empty state
@@ -418,7 +523,7 @@ class EmployeesManager {
       if (errorObj.status === 404) {
         // No employees found - this is OK, just show empty state
         this.employees = [];
-        renderEmployeesTable(this.employees);
+        renderEmployeesTable(this.employees, this.currentFilter);
       } else {
         // Real error - show error message
         showErrorAlert('Fehler beim Laden der Mitarbeiter');
@@ -471,6 +576,12 @@ class EmployeesManager {
           departmentName: user.departmentName,
           teamId: user.teamId ?? undefined,
           teamName: user.teamName,
+          // INHERITANCE-FIX: Map inheritance chain fields
+          teamDepartmentId: user.teamDepartmentId,
+          teamDepartmentName: user.teamDepartmentName,
+          teamAreaId: user.teamAreaId,
+          teamAreaName: user.teamAreaName,
+          hasFullAccess: user.hasFullAccess ?? false,
           position: user.position,
           employeeNumber: user.employeeNumber,
 
@@ -490,17 +601,20 @@ class EmployeesManager {
     // Clean optional fields - send undefined instead of empty strings
     const cleanedData = { ...data };
 
-    // Store teamId separately for later assignment
-    const teamId = cleanedData.teamId;
-    delete cleanedData.teamId; // Remove from user creation data
+    // Store teamIds separately for later assignment
+    // Form sends teamIds (array) - use first element for single team assignment
+    const teamIds = cleanedData.teamIds;
+    const teamId = teamIds !== undefined && teamIds.length > 0 ? teamIds[0] : undefined;
+    delete cleanedData.teamIds; // Remove from user creation data
+    delete cleanedData.teamId; // Also remove deprecated teamId if present
 
     // Handle optional fields - delete empty strings
     if (cleanedData.phone === '') {
       delete cleanedData.phone;
     }
-    // Handle birthday field - keep as is, DB column is 'birthday'
-    if (cleanedData.birthday === '') {
-      delete cleanedData.birthday;
+    // Handle date_of_birth field - DB column is 'date_of_birth'
+    if (cleanedData.dateOfBirth === '') {
+      delete cleanedData.dateOfBirth;
     }
     if (cleanedData.position === '') {
       delete cleanedData.position;
@@ -612,10 +726,15 @@ class EmployeesManager {
       throw new Error('Security violation');
     }
 
-    // Store teamId separately for later assignment
-    const newTeamIdRaw = data.teamId;
-    const currentTeamId = user.teamId;
-    delete data.teamId; // Remove from user update data
+    // Store teamIds separately for later assignment
+    // Form sends teamIds (array) - use first element for single team assignment
+    const teamIds = data.teamIds;
+    const newTeamIdRaw = teamIds !== undefined && teamIds.length > 0 ? teamIds[0] : undefined;
+    // Get current team from user (user.teamId is deprecated, check user.teams first)
+    const userTeams = user.teams;
+    const currentTeamId = userTeams !== undefined && userTeams.length > 0 ? userTeams[0]?.id : user.teamId;
+    delete data.teamIds; // Remove from user update data
+    delete data.teamId; // Also remove deprecated teamId if present
 
     try {
       const response = await this.apiClient.request<User>(`/users/${id}`, {
@@ -679,6 +798,24 @@ class EmployeesManager {
       console.error('Error getting employee details:', error);
       showErrorAlert('Fehler beim Laden der Mitarbeiterdetails');
       return null;
+    }
+  }
+
+  async loadAreas(): Promise<Area[]> {
+    try {
+      const response = await this.apiClient.request<Area[] | { success: boolean; data: Area[] }>('/areas', {
+        method: 'GET',
+      });
+
+      if (Array.isArray(response)) {
+        return response;
+      } else if ('data' in response && Array.isArray(response.data)) {
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error loading areas:', error);
+      return [];
     }
   }
 
@@ -883,6 +1020,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup live email/password validation
     setupValidationListeners();
+
+    // NOTE: Area/Department filter setup removed - Employees only get team assignments
 
     // Setup form submit handler and URL change handlers
     setupFormSubmitHandler();

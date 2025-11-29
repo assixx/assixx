@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Area Management - Main Controller
  * Handles area CRUD operations for admin dashboard
@@ -11,22 +12,29 @@
 import { ApiClient } from '../../../utils/api-client';
 import { showErrorAlert, showSuccessAlert } from '../../utils/alerts';
 import { isAdmin } from '../../../utils/auth-helpers';
-import type { Area } from './types';
+import type { Area, Department } from './types';
+import { renderAreasTable, toggleTableVisibility, showLoading, renderSearchResults, closeSearchResults } from './ui';
 import {
-  renderAreasTable,
-  toggleTableVisibility,
-  showLoading,
-  loadParentAreas,
-  renderSearchResults,
-  closeSearchResults,
-} from './ui';
-import { showAddAreaModal, showEditAreaModal, closeAreaModal, showDeleteModal, closeDeleteModal } from './forms';
+  showAddAreaModal,
+  showEditAreaModal,
+  closeAreaModal,
+  showDeleteModal,
+  closeDeleteModal,
+  setAreaLeadDropdown,
+} from './forms';
 import { AreaAPI } from './api';
+
+/** Selector for delete confirmation modal (double-check pattern step 2) */
+const DELETE_CONFIRM_MODAL_SELECTOR = '#delete-area-confirm-modal';
+
+/** CSS class for active modal overlay */
+const MODAL_ACTIVE_CLASS = 'modal-overlay--active';
 
 class AreasManager {
   private readonly api: AreaAPI;
   public areas: Area[] = [];
   public currentAreaId: number | null = null;
+  private allDepartments: Department[] = [];
 
   constructor() {
     // Check authentication
@@ -67,14 +75,24 @@ class AreasManager {
     document.querySelector('#add-area-btn')?.addEventListener('click', () => {
       this.currentAreaId = null;
       showAddAreaModal();
-      loadParentAreas(this.areas);
+      // Load area leads and departments for selection
+      void this.api.loadAreaLeads();
+      void this.loadDepartmentsForSelect().then(() => {
+        this.clearDepartmentSelection();
+        return undefined;
+      });
     });
 
     // Empty state button
     document.querySelector('#empty-state-add-btn')?.addEventListener('click', () => {
       this.currentAreaId = null;
       showAddAreaModal();
-      loadParentAreas(this.areas);
+      // Load area leads and departments for selection
+      void this.api.loadAreaLeads();
+      void this.loadDepartmentsForSelect().then(() => {
+        this.clearDepartmentSelection();
+        return undefined;
+      });
     });
   }
 
@@ -174,12 +192,30 @@ class AreasManager {
   }
 
   /**
-   * Initialize delete confirmation button
+   * Initialize delete confirmation buttons (double-check pattern)
    */
   private initDeleteConfirmation(): void {
-    document.querySelector('#confirm-delete-area')?.addEventListener('click', () => {
+    // Step 1: Proceed to second confirmation
+    document.querySelector('#proceed-delete-area')?.addEventListener('click', () => {
+      // Close first modal, show second modal
+      closeDeleteModal();
+      const confirmModal = document.querySelector(DELETE_CONFIRM_MODAL_SELECTOR);
+      confirmModal?.classList.add(MODAL_ACTIVE_CLASS);
+    });
+
+    // Step 2: Cancel on second modal
+    document.querySelector('#cancel-delete-confirm')?.addEventListener('click', () => {
+      const confirmModal = document.querySelector(DELETE_CONFIRM_MODAL_SELECTOR);
+      confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
+    });
+
+    // Step 2: Final confirmation - actually delete
+    document.querySelector('#confirm-delete-area-final')?.addEventListener('click', () => {
       const deleteIdInput = document.querySelector<HTMLInputElement>('#delete-area-id');
       if (deleteIdInput !== null && deleteIdInput.value !== '') {
+        // Close second modal first
+        const confirmModal = document.querySelector(DELETE_CONFIRM_MODAL_SELECTOR);
+        confirmModal?.classList.remove(MODAL_ACTIVE_CLASS);
         void this.deleteArea(Number.parseInt(deleteIdInput.value, 10));
       }
     });
@@ -224,7 +260,76 @@ class AreasManager {
   }
 
   /**
+   * Load all departments for the multi-select dropdown
+   */
+  private async loadDepartmentsForSelect(): Promise<void> {
+    this.allDepartments = await this.api.fetchAllDepartments();
+    this.populateDepartmentSelect();
+  }
+
+  /**
+   * Populate the department multi-select with options
+   */
+  private populateDepartmentSelect(): void {
+    const select = document.querySelector<HTMLSelectElement>('#area-departments');
+    if (select === null) return;
+
+    // Clear existing options
+    select.innerHTML = '';
+
+    // Add options for each department
+    this.allDepartments.forEach((dept) => {
+      const option = document.createElement('option');
+      option.value = String(dept.id);
+      option.textContent = dept.name;
+      // Store current area_id for reference
+      if (dept.area_id !== null && dept.area_id !== undefined) {
+        option.dataset['currentAreaId'] = String(dept.area_id);
+      }
+      select.appendChild(option);
+    });
+  }
+
+  /**
+   * Set selected departments in multi-select
+   * @param areaId - The area ID to select departments for
+   */
+  private selectDepartmentsForArea(areaId: number): void {
+    const select = document.querySelector<HTMLSelectElement>('#area-departments');
+    if (select === null) return;
+
+    // Select departments that belong to this area
+    Array.from(select.options).forEach((option) => {
+      const currentAreaId = option.dataset['currentAreaId'];
+      option.selected = currentAreaId === String(areaId);
+    });
+  }
+
+  /**
+   * Get selected department IDs from multi-select
+   */
+  private getSelectedDepartmentIds(): number[] {
+    const select = document.querySelector<HTMLSelectElement>('#area-departments');
+    if (select === null) return [];
+
+    return Array.from(select.selectedOptions).map((opt) => Number.parseInt(opt.value, 10));
+  }
+
+  /**
+   * Clear department selection in multi-select
+   */
+  private clearDepartmentSelection(): void {
+    const select = document.querySelector<HTMLSelectElement>('#area-departments');
+    if (select === null) return;
+
+    Array.from(select.options).forEach((option) => {
+      option.selected = false;
+    });
+  }
+
+  /**
    * Edit area - open modal with pre-populated data
+   * NOTE: parent_id/hierarchy removed (2025-11-29) - areas are now flat
    */
   editArea(id: number): void {
     const area = this.areas.find((a) => a.id === id);
@@ -235,11 +340,23 @@ class AreasManager {
 
     this.currentAreaId = id;
     showEditAreaModal(area);
-    loadParentAreas(this.areas, id, area.parent_id ?? undefined);
+
+    // Load area leads and set current value
+    void this.api.loadAreaLeads().then(() => {
+      setAreaLeadDropdown(area);
+      return undefined;
+    });
+
+    // Load departments and pre-select those assigned to this area
+    void this.loadDepartmentsForSelect().then(() => {
+      this.selectDepartmentsForArea(id);
+      return undefined;
+    });
   }
 
   /**
    * Save area (Create or Update)
+   * NOTE: parent_id removed (2025-11-29) - areas are now flat (non-hierarchical)
    */
   async saveArea(): Promise<void> {
     const form = document.querySelector<HTMLFormElement>('#area-form');
@@ -251,26 +368,39 @@ class AreasManager {
       const descriptionValue = formData.get('description') as string;
       const addressValue = formData.get('address') as string;
       const capacityValue = formData.get('capacity') as string;
-      const parentIdValue = formData.get('parent_id') as string;
+      const areaLeadIdValue = formData.get('areaLeadId') as string;
+
+      // Read isActive and isArchived from hidden inputs (set by status dropdown)
+      const isActiveValue = formData.get('isActive') as string;
+      const isArchivedValue = formData.get('isArchived') as string;
 
       // Build area data for API (uses camelCase isActive as expected by backend)
       const areaData = {
         name: formData.get('name') as string,
         description: descriptionValue !== '' ? descriptionValue : undefined,
+        areaLeadId: areaLeadIdValue !== '' ? Number.parseInt(areaLeadIdValue, 10) : null,
         type: formData.get('type') as Area['type'],
         capacity: capacityValue !== '' ? Number.parseInt(capacityValue, 10) : undefined,
         address: addressValue !== '' ? addressValue : undefined,
-        parent_id: parentIdValue !== '' ? Number.parseInt(parentIdValue, 10) : undefined,
-        isActive: (formData.get('status') as string) === 'active',
-      } as Partial<Area> & { isActive?: boolean };
+        isActive: isActiveValue === '1',
+        isArchived: isArchivedValue === '1',
+      } as Partial<Area> & { isActive?: boolean; isArchived?: boolean; areaLeadId?: number | null };
+
+      let savedAreaId: number;
 
       if (this.currentAreaId !== null) {
         // Update existing area
         await this.api.update(this.currentAreaId, areaData);
+        savedAreaId = this.currentAreaId;
       } else {
         // Create new area
-        await this.api.create(areaData);
+        const newArea = await this.api.create(areaData);
+        savedAreaId = newArea.id;
       }
+
+      // Assign selected departments to this area
+      const selectedDepartmentIds = this.getSelectedDepartmentIds();
+      await this.api.assignDepartments(savedAreaId, selectedDepartmentIds);
 
       closeAreaModal();
       await this.loadAreas();
@@ -343,30 +473,28 @@ class AreasManager {
   /**
    * Filter areas by status
    */
-  private filterByStatus(status: 'active' | 'inactive' | 'all'): void {
+  private filterByStatus(status: 'active' | 'inactive' | 'archived' | 'all'): void {
     console.log('[AREAS] filterByStatus called with status:', status);
     console.log('[AREAS] Total areas to filter:', this.areas.length);
 
     let filtered: Area[];
 
-    if (status === 'all') {
-      filtered = this.areas;
-    } else {
-      const isActive = status === 'active' ? 1 : 0;
-      console.log('[AREAS] Looking for is_active =', isActive);
-      filtered = this.areas.filter((area) => {
-        console.log(
-          '[AREAS] Area',
-          area.name,
-          '- is_active:',
-          area.is_active,
-          'type:',
-          typeof area.is_active,
-          'match:',
-          area.is_active === isActive,
-        );
-        return area.is_active === isActive;
-      });
+    switch (status) {
+      case 'active':
+        // Show only active AND not archived
+        filtered = this.areas.filter((area) => area.is_active === 1 && area.is_archived !== 1);
+        break;
+      case 'inactive':
+        // Show only inactive AND not archived
+        filtered = this.areas.filter((area) => area.is_active === 0 && area.is_archived !== 1);
+        break;
+      case 'archived':
+        // Show only archived (regardless of is_active)
+        filtered = this.areas.filter((area) => area.is_archived === 1);
+        break;
+      case 'all':
+      default:
+        filtered = this.areas;
     }
 
     console.log('[AREAS] Filtered areas count:', filtered.length);
@@ -382,7 +510,11 @@ class AreasManager {
       closeSearchResults();
       // Get current status filter
       const activeButton = document.querySelector('#area-status-toggle .toggle-group__btn.active');
-      const status = (activeButton?.getAttribute('data-status') ?? 'active') as 'active' | 'inactive' | 'all';
+      const status = (activeButton?.getAttribute('data-status') ?? 'active') as
+        | 'active'
+        | 'inactive'
+        | 'archived'
+        | 'all';
       this.filterByStatus(status);
       return;
     }
@@ -469,11 +601,11 @@ class AreasManager {
 
   /**
    * Build dependency message from details object
+   * NOTE: childAreas removed (2025-11-29) - areas are now flat (non-hierarchical)
    */
   private buildDependencyMessage(details: Record<string, unknown>): string {
     // Static list of dependencies (safe from injection - keys are constants)
     const dependencies = [
-      { key: 'childAreas' as const, label: 'Unterbereiche' },
       { key: 'departments' as const, label: 'Abteilungen' },
       { key: 'machines' as const, label: 'Maschinen' },
       { key: 'shifts' as const, label: 'Schichten' },
@@ -514,7 +646,7 @@ class AreasManager {
 
     // Close the first delete modal and show warning modal
     closeDeleteModal();
-    modal.classList.add('modal-overlay--active');
+    modal.classList.add(MODAL_ACTIVE_CLASS);
   }
 
   /**
@@ -523,7 +655,7 @@ class AreasManager {
   private closeForceDeleteModal(): void {
     const modal = document.querySelector('#force-delete-warning-modal');
     if (modal) {
-      modal.classList.remove('modal-overlay--active');
+      modal.classList.remove(MODAL_ACTIVE_CLASS);
     }
   }
 

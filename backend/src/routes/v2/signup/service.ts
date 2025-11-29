@@ -7,7 +7,7 @@
 // eslint-disable-next-line @typescript-eslint/naming-convention
 import Tenant from '../../../models/tenant.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
-import { logger } from '../../../utils/logger.js';
+import { logger, sanitizeForLog } from '../../../utils/logger.js';
 import type { SignupRequest, SubdomainValidation } from './types.js';
 
 /**
@@ -16,10 +16,12 @@ import type { SignupRequest, SubdomainValidation } from './types.js';
 class SignupService {
   /**
    * Helper: Log registration start
+   * SECURITY: Uses sanitizeForLog to prevent password exposure
    */
   private logRegistrationStart(data: SignupRequest): void {
     console.info('[SignupService] METHOD CALLED');
-    console.info('[SignupService] Input data:', data);
+    // SECURITY: Sanitize before logging to prevent password exposure
+    console.info('[SignupService] Input data:', sanitizeForLog(data));
     logger.info('[SignupService] Starting registerTenant with data:', {
       companyName: data.companyName,
       subdomain: data.subdomain,
@@ -113,10 +115,11 @@ class SignupService {
 
     console.info('[SignupService] Not a ServiceError, logging and throwing REGISTRATION_FAILED');
     logger.error('Error registering tenant:', error);
+    // SECURITY: Sanitize data before logging to prevent password exposure
     logger.error('Error details:', {
       message: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : undefined,
-      data: data,
+      data: sanitizeForLog(data),
     });
     throw new ServiceError('REGISTRATION_FAILED', 'Failed to complete registration');
   }

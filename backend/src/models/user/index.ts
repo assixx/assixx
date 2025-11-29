@@ -15,6 +15,17 @@ import {
   unarchiveUser,
   updateUser,
 } from './user.crud.js';
+import {
+  assignUserToDepartment,
+  bulkAssignUserDepartments,
+  getDepartmentUsers,
+  getUserDepartments,
+  getUserPrimaryDepartment,
+  isUserInDepartment,
+  removeAllUserDepartments,
+  removeUserFromDepartment,
+  setPrimaryDepartment,
+} from './user.departments.js';
 import { changeUserPassword, updateOwnProfile, updateUserProfilePicture } from './user.profile.js';
 import {
   countActiveUsersByTenant,
@@ -42,6 +53,7 @@ export type {
   AvailabilityData,
   PasswordChangeResult,
   ProfileUpdateResult,
+  UserDepartmentAssignment,
 } from './user.types.js';
 
 // Export CRUD operations
@@ -89,6 +101,20 @@ export {
   buildCountQuery,
 } from './user.utils.js';
 
+// Export user departments operations (N:M relationship)
+export type { UserDepartmentRow, UserDepartmentAssignInput } from './user.departments.js';
+export {
+  assignUserToDepartment,
+  removeUserFromDepartment,
+  removeAllUserDepartments,
+  setPrimaryDepartment,
+  getUserDepartments,
+  getUserPrimaryDepartment,
+  getDepartmentUsers,
+  isUserInDepartment,
+  bulkAssignUserDepartments,
+} from './user.departments.js';
+
 /**
  * Default export for backward compatibility
  * Allows: import user from './models/user'
@@ -119,6 +145,16 @@ const User = {
   count: countUsers,
   countActiveByTenant: countActiveUsersByTenant,
   updateAvailability: updateUserAvailability,
+  // N:M Department operations
+  assignToDepartment: assignUserToDepartment,
+  removeFromDepartment: removeUserFromDepartment,
+  removeAllDepartments: removeAllUserDepartments,
+  setPrimaryDepartment,
+  getDepartments: getUserDepartments,
+  getPrimaryDepartment: getUserPrimaryDepartment,
+  getDepartmentUsers,
+  isInDepartment: isUserInDepartment,
+  bulkAssignDepartments: bulkAssignUserDepartments,
 };
 
 export default User;

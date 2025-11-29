@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * UI and Rendering Functions for Employee Management
  * Contains all UI rendering, availability display, and form handling helpers
@@ -8,8 +9,21 @@ import { $, $$, $$id, setHTML } from '../../../utils/dom-utils';
 
 /**
  * Render empty state when no employees found
+ * @param container - The container element to render into
+ * @param currentFilter - Current filter state ('all', 'active', 'inactive')
  */
-export function renderEmptyState(container: HTMLElement): void {
+export function renderEmptyState(
+  container: HTMLElement,
+  currentFilter: 'all' | 'active' | 'inactive' | 'archived' = 'all',
+): void {
+  // Get appropriate message based on filter
+  const emptyMessage =
+    currentFilter === 'inactive'
+      ? 'Keine inaktiven Mitarbeiter vorhanden'
+      : currentFilter === 'archived'
+        ? 'Keine archivierten Mitarbeiter vorhanden'
+        : 'Erstellen Sie Ihren ersten Mitarbeiter';
+
   setHTML(
     container,
     `
@@ -18,10 +32,18 @@ export function renderEmptyState(container: HTMLElement): void {
           <i class="fas fa-users"></i>
         </div>
         <h3 class="empty-state__title">Keine Mitarbeiter gefunden</h3>
-        <p class="empty-state__description">Erstellen Sie Ihren ersten Mitarbeiter</p>
+        <p class="empty-state__description">${emptyMessage}</p>
+        <button class="btn btn-primary" id="empty-state-add-btn"><i class="fa-plus fas"></i> Mitarbeiter hinzufügen</button>
       </div>
     `,
   );
+
+  // Add event listener for the button
+  const addBtn = container.querySelector('#empty-state-add-btn');
+  addBtn?.addEventListener('click', () => {
+    const w = window as WindowWithEmployeeHandlers;
+    w.showEmployeeModal?.();
+  });
 }
 
 /**
@@ -225,6 +247,150 @@ export function getAvailabilityBadge(employee: Employee): string {
   return `<span class="${badgeClass}">${badgeText}</span>`;
 }
 
+// ===== BADGE HELPER FUNCTIONS (Complexity Reduction) =====
+
+/** Check if employee has full tenant access */
+function checkEmployeeFullAccess(employee: Employee): boolean {
+  return employee.hasFullAccess === true || employee.hasFullAccess === 1;
+}
+
+/** Check if employee has team assignments (array or legacy single) */
+function hasTeamAssignments(employee: Employee): { hasTeams: boolean; hasArray: boolean } {
+  const hasArray = (employee.teams?.length ?? 0) > 0;
+  const hasLegacy = employee.teamId != null && employee.teamId > 0;
+  return { hasTeams: hasArray || hasLegacy, hasArray };
+}
+
+/** Get team names string for tooltip (from array or legacy field) */
+function getTeamNamesString(employee: Employee, hasArray: boolean): string {
+  if (hasArray) {
+    return employee.teams?.map((team) => team.name).join(', ') ?? '';
+  }
+  return employee.teamName ?? '';
+}
+
+/** Build inherited badge with sitemap icon */
+function buildInheritedBadge(displayText: string, tooltip: string): string {
+  return `<span class="badge badge--info" title="${tooltip}"><i class="fas fa-sitemap mr-1"></i>${displayText}</span>`;
+}
+
+/**
+ * Get areas badge HTML for employee table
+ * Shows count with tooltip listing area names
+ * BADGE-INHERITANCE-DISPLAY: Areas are inherited from teams→departments→areas for employees
+ */
+export function getAreasBadge(employee: Employee): string {
+  if (checkEmployeeFullAccess(employee)) {
+    return '<span class="badge badge--primary" title="Voller Zugriff auf alle Bereiche"><i class="fas fa-globe mr-1"></i>Alle</span>';
+  }
+
+  // Direct area assignments (rare for employees)
+  if ((employee.areas?.length ?? 0) > 0) {
+    const count = employee.areas?.length ?? 0;
+    const label = count === 1 ? 'Bereich' : 'Bereiche';
+    const areaNames = employee.areas?.map((area) => area.name).join(', ') ?? '';
+    return `<span class="badge badge--info" title="${areaNames}">${String(count)} ${label}</span>`;
+  }
+
+  // Inherited via teams→departments→areas
+  const { hasTeams, hasArray } = hasTeamAssignments(employee);
+  if (hasTeams) {
+    return buildAreaInheritedBadge(employee, hasArray);
+  }
+
+  return '<span class="badge badge--secondary" title="Kein Bereich zugewiesen">Keine</span>';
+}
+
+/** Build area badge showing inherited area name from team chain */
+function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): string {
+  const { teamAreaName, teamDepartmentName, teamName } = employee;
+
+  if (teamAreaName != null && teamAreaName !== '') {
+    const tooltip = `${teamAreaName} (vererbt von: ${teamName ?? 'Team'} → ${teamDepartmentName ?? 'Abteilung'} → ${teamAreaName})`;
+    return buildInheritedBadge(teamAreaName, tooltip);
+  }
+
+  // Fallback: generic "Vererbt"
+  const teamNames = getTeamNamesString(employee, hasArray);
+  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNames}`);
+}
+
+/**
+ * Get departments badge HTML for employee table
+ * Shows count with tooltip listing department names
+ * BADGE-INHERITANCE-DISPLAY: Departments are inherited from teams for employees
+ */
+export function getDepartmentsBadge(employee: Employee): string {
+  if (checkEmployeeFullAccess(employee)) {
+    return '<span class="badge badge--primary" title="Voller Zugriff auf alle Abteilungen"><i class="fas fa-globe mr-1"></i>Alle</span>';
+  }
+
+  // Direct department assignments (user_departments table)
+  if ((employee.departments?.length ?? 0) > 0) {
+    const count = employee.departments?.length ?? 0;
+    const label = count === 1 ? 'Abteilung' : 'Abteilungen';
+    const deptNames = employee.departments?.map((dept) => dept.name).join(', ') ?? '';
+    return `<span class="badge badge--info" title="${deptNames}">${String(count)} ${label}</span>`;
+  }
+
+  // Inherited via teams→departments
+  const { hasTeams, hasArray } = hasTeamAssignments(employee);
+  if (hasTeams) {
+    return buildDeptInheritedBadge(employee, hasArray);
+  }
+
+  // Legacy departmentName fallback
+  if (employee.departmentName != null && employee.departmentName !== '') {
+    return `<span class="badge badge--info" title="${employee.departmentName}">${employee.departmentName}</span>`;
+  }
+
+  return '<span class="badge badge--secondary" title="Keine Abteilung zugewiesen">Keine</span>';
+}
+
+/** Build department badge showing inherited dept name from team */
+function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): string {
+  const { teamDepartmentName, teamName } = employee;
+
+  if (teamDepartmentName != null && teamDepartmentName !== '') {
+    const tooltip = `${teamDepartmentName} (vererbt von Team: ${teamName ?? 'Team'})`;
+    return buildInheritedBadge(teamDepartmentName, tooltip);
+  }
+
+  // Fallback: generic "Vererbt"
+  const teamNames = getTeamNamesString(employee, hasArray);
+  return buildInheritedBadge('Vererbt', `Vererbt von Team: ${teamNames}`);
+}
+
+/**
+ * Get teams badge HTML for employee table
+ * Shows count with tooltip listing team names
+ */
+export function getTeamsBadge(employee: Employee): string {
+  const hasFullAccess = employee.hasFullAccess === true || employee.hasFullAccess === 1;
+
+  // Full access = "Alle" badge
+  if (hasFullAccess) {
+    return '<span class="badge badge--primary" title="Voller Zugriff auf alle Teams"><i class="fas fa-globe mr-1"></i>Alle</span>';
+  }
+
+  // No teams assigned
+  if (employee.teams === undefined || employee.teams.length === 0) {
+    // Fallback to legacy teamName if available
+    // Note: Check for null explicitly - API may return null which becomes string "null" in template
+    if (employee.teamName != null && employee.teamName !== '') {
+      return `<span class="badge badge--info" title="${employee.teamName}">${employee.teamName}</span>`;
+    }
+    return '<span class="badge badge--secondary" title="Kein Team zugewiesen">Keine</span>';
+  }
+
+  // Show team count with tooltip
+  const count = employee.teams.length;
+  const label = count === 1 ? 'Team' : 'Teams';
+  const teamNames = employee.teams.map((team) => team.name).join(', ');
+
+  return `<span class="badge badge--info" title="${teamNames}">${String(count)} ${label}</span>`;
+}
+
 /**
  * Get avatar HTML for employee
  */
@@ -260,13 +426,14 @@ export function renderEmployeeRow(employee: Employee): string {
       <td>${employee.email}</td>
       <td>${employee.position ?? '-'}</td>
       <td>${employee.employeeNumber ?? employee.employeeNumber ?? employee.employeeId ?? employee.employeeId ?? '-'}</td>
-      <td>${employee.departmentName ?? employee.departmentName ?? '-'}</td>
-      <td>${employee.teamName ?? employee.teamName ?? '-'}</td>
       <td>
         <span class="${isActive ? 'badge badge--success' : 'badge badge--error'}">
           ${isActive ? 'Aktiv' : 'Inaktiv'}
         </span>
       </td>
+      <td>${getAreasBadge(employee)}</td>
+      <td>${getDepartmentsBadge(employee)}</td>
+      <td>${getTeamsBadge(employee)}</td>
       <td>
         ${getAvailabilityBadge(employee)}
       </td>
@@ -304,8 +471,13 @@ export function renderEmployeeRow(employee: Employee): string {
 
 /**
  * Render the employees table
+ * @param employees - Array of employees to render
+ * @param currentFilter - Current filter state for empty state display
  */
-export function renderEmployeesTable(employees: Employee[]): void {
+export function renderEmployeesTable(
+  employees: Employee[],
+  currentFilter: 'all' | 'active' | 'inactive' | 'archived' = 'all',
+): void {
   const container = $$id('employeeTableContent');
   if (container === null) {
     console.error('[renderEmployeesTable] Container #employeeTableContent not found!');
@@ -314,7 +486,7 @@ export function renderEmployeesTable(employees: Employee[]): void {
   console.info('[renderEmployeesTable] Rendering table with', employees.length, 'employees');
 
   if (employees.length === 0) {
-    renderEmptyState(container);
+    renderEmptyState(container, currentFilter);
     return;
   }
 
@@ -327,9 +499,10 @@ export function renderEmployeesTable(employees: Employee[]): void {
             <th>E-Mail</th>
             <th>Position</th>
             <th>Personalnummer</th>
-            <th>Abteilung</th>
-            <th>Team</th>
             <th>Status</th>
+            <th>Bereiche</th>
+            <th>Abteilungen</th>
+            <th>Teams</th>
             <th>Verfügbarkeit</th>
             <th>Geplant</th>
             <th>Notizen</th>
@@ -374,10 +547,10 @@ export function fillOptionalFormFields(employee: Employee): void {
     employeeNumber.value = employee.employeeNumber ?? '';
   }
 
-  const birthday = $$('input[name="birthday"]') as HTMLInputElement | null;
-  if (birthday && employee.birthdate !== undefined && employee.birthdate !== '') {
-    const date = new Date(employee.birthdate);
-    birthday.value = date.toISOString().split('T')[0] ?? '';
+  const dateOfBirth = $$('input[name="dateOfBirth"]') as HTMLInputElement | null;
+  if (dateOfBirth && employee.dateOfBirth !== undefined && employee.dateOfBirth !== '') {
+    const date = new Date(employee.dateOfBirth);
+    dateOfBirth.value = date.toISOString().split('T')[0] ?? '';
   }
 }
 
@@ -446,13 +619,23 @@ export function setStatusAndClearPasswords(employee: Employee): void {
 
 /**
  * Process form field
+ * N:M REFACTORING: Added support for departmentIds, teamIds arrays and hasFullAccess
  */
 export function processFormField(data: Record<string, unknown>, key: string, value: string, isUpdate: boolean): void {
   switch (key) {
+    // N:M REFACTORING: Legacy single IDs no longer used
     case 'departmentId':
     case 'teamId':
-      // eslint-disable-next-line security/detect-object-injection
-      data[key] = value.length > 0 ? Number.parseInt(value, 10) : null;
+      // Skip - replaced by departmentIds/teamIds arrays
+      break;
+    // N:M REFACTORING: Array fields handled separately in extractFormDataWithMultiSelect
+    case 'departmentIds':
+    case 'teamIds':
+      // Skip - these are handled as arrays from multi-select
+      break;
+    case 'hasFullAccess':
+      // Checkbox value - only present if checked
+      data['hasFullAccess'] = value === 'on' || value === 'true' || value === '1';
       break;
     case 'email':
     case 'firstName':
@@ -460,7 +643,7 @@ export function processFormField(data: Record<string, unknown>, key: string, val
     case 'position':
     case 'employeeNumber':
     case 'phone':
-    case 'birthday':
+    case 'dateOfBirth':
     case 'isActive':
     case 'availabilityStatus':
       if (value.length > 0) {
@@ -491,6 +674,30 @@ export function processFormField(data: Record<string, unknown>, key: string, val
       console.warn(`[SECURITY] Unexpected form field detected: ${key}`);
       break;
   }
+}
+
+/**
+ * Extract multi-select values as arrays
+ * N:M REFACTORING: Helper to get selected values from multi-select elements
+ */
+export function getMultiSelectValues(selectId: string): number[] {
+  const select = document.getElementById(selectId) as HTMLSelectElement | null;
+  if (select === null) return [];
+
+  return Array.from(select.selectedOptions).map((opt) => Number.parseInt(opt.value, 10));
+}
+
+/**
+ * Set multi-select values from array
+ * N:M REFACTORING: Helper to restore selected values in multi-select
+ */
+export function setMultiSelectValues(selectId: string, values: number[]): void {
+  const select = document.getElementById(selectId) as HTMLSelectElement | null;
+  if (select === null) return;
+
+  Array.from(select.options).forEach((opt) => {
+    opt.selected = values.includes(Number.parseInt(opt.value, 10));
+  });
 }
 
 /**

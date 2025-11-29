@@ -67,8 +67,9 @@ router.use(authenticateToken);
  *                             type: boolean
  *                           canDelete:
  *                             type: boolean
- *                     hasAllAccess:
+ *                     hasFullAccess:
  *                       type: boolean
+ *                       description: Single source of truth for full tenant access (from users.has_full_access)
  *                     totalDepartments:
  *                       type: integer
  *                     assignedDepartments:
@@ -438,6 +439,44 @@ router.get(
   '/:adminId/check/:departmentId',
   typed.auth(async (req: AuthenticatedRequest, res: Response) => {
     await adminPermissionsController.checkAccess(req, res);
+  }),
+);
+
+// ============================================================================
+// AREA PERMISSION ROUTES (New - Assignment System Refactoring 2025-11-27)
+// ============================================================================
+
+/**
+ * POST /api/v2/admin-permissions/:userId/areas
+ * Set Area permissions for a user (root only)
+ */
+router.post(
+  '/:userId/areas',
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
+    await adminPermissionsController.setAreaPermissions(req, res);
+  }),
+);
+
+/**
+ * DELETE /api/v2/admin-permissions/:userId/areas/:areaId
+ * Remove specific Area permission (root only)
+ */
+router.delete(
+  '/:userId/areas/:areaId',
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
+    await adminPermissionsController.removeAreaPermission(req, res);
+  }),
+);
+
+/**
+ * PATCH /api/v2/admin-permissions/:userId/full-access
+ * Set has_full_access flag for a user (root only)
+ * Body: \{ hasFullAccess: boolean \}
+ */
+router.patch(
+  '/:userId/full-access',
+  typed.auth(async (req: AuthenticatedRequest, res: Response) => {
+    await adminPermissionsController.setFullAccess(req, res);
   }),
 );
 

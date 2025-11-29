@@ -13,7 +13,6 @@
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
     <link rel="stylesheet" href="/styles/unified-navigation.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
     <!-- Dashboard Theme already loaded via main.css - removed duplicate import -->
     <link rel="stylesheet" href="/styles/user-info-update.css" />
 
@@ -51,6 +50,10 @@
                   <button class="toggle-group__btn" data-status="inactive" title="Inaktive Abteilungen">
                     <i class="fas fa-times"></i>
                     Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Abteilungen">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
                   </button>
                   <button class="toggle-group__btn" data-status="all" title="Alle Abteilungen">
                     <i class="fas fa-building"></i>
@@ -99,7 +102,11 @@
                   <i class="fas fa-building"></i>
                 </div>
                 <h3 class="empty-state__title">Keine Abteilungen gefunden</h3>
-                <p class="empty-state__description">Erstellen Sie Ihre erste Abteilung mit dem + Button oben rechts</p>
+                <p class="empty-state__description">Erstellen Sie Ihre erste Abteilung</p>
+                <button class="btn btn-primary" id="empty-state-add-btn">
+                  <i class="fas fa-plus"></i>
+                  Abteilung hinzufügen
+                </button>
               </div>
             </div>
           </div>
@@ -151,28 +158,61 @@
             </div>
           </div>
 
+          <!-- Department Lead Dropdown (Custom) -->
           <div class="form-field">
+            <label class="form-field__label">
+              <i class="fas fa-user-tie mr-1"></i>
+              Abteilungsleiter
+            </label>
+            <!-- Hidden input to store the selected value -->
+            <input type="hidden" id="department-lead" name="departmentLeadId" />
+            <!-- Custom Dropdown -->
+            <div class="dropdown" id="department-lead-dropdown">
+              <div class="dropdown__trigger" id="department-lead-trigger">
+                <span>Kein Abteilungsleiter</span>
+                <i class="fas fa-chevron-down"></i>
+              </div>
+              <div class="dropdown__menu" id="department-lead-menu">
+                <div class="dropdown__option" data-value="">Kein Abteilungsleiter</div>
+                <!-- Will be populated dynamically with root/admin users -->
+              </div>
+            </div>
+            <span class="form-field__message text-[var(--color-text-secondary)]">
+              <i class="fas fa-info-circle mr-1"></i>
+              Nur Administratoren können als Abteilungsleiter zugewiesen werden.
+            </span>
+          </div>
+
+          <!-- Status Field: Hidden for CREATE, Visible for EDIT -->
+          <div class="form-field u-hidden" id="status-field-group">
             <label class="form-field__label" for="department-status">
               Status
               <span class="text-red-500">*</span>
             </label>
-            <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="department-status" name="isActive" value="1" />
-            <!-- Custom Dropdown -->
+            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <input type="hidden" id="department-is-active" name="isActive" value="1" />
+            <input type="hidden" id="department-is-archived" name="isArchived" value="0" />
+            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
             <div class="dropdown" id="status-dropdown">
               <div class="dropdown__trigger" id="status-trigger">
                 <span>Aktiv</span>
                 <i class="fas fa-chevron-down"></i>
               </div>
               <div class="dropdown__menu" id="status-menu">
-                <div class="dropdown__option" data-value="1">
+                <div class="dropdown__option" data-value="active">
                   <span class="badge badge--success">Aktiv</span>
                 </div>
-                <div class="dropdown__option" data-value="0">
+                <div class="dropdown__option" data-value="inactive">
                   <span class="badge badge--warning">Inaktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
                 </div>
               </div>
             </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Abteilungen werden nicht angezeigt
+            </span>
           </div>
         </div>
 
@@ -183,25 +223,48 @@
       </form>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
     <div id="delete-department-modal" class="modal-overlay">
       <div class="ds-modal ds-modal--sm">
         <div class="ds-modal__header">
-          <h3 class="ds-modal__title">Abteilung löschen</h3>
-          <button class="ds-modal__close" id="close-delete-modal">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Abteilung löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body">
-          <p class="mb-3">Möchten Sie diese Abteilung wirklich löschen?</p>
-          <p class="text-[var(--color-text-secondary)]">
-            Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.
-          </p>
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie diese Abteilung wirklich löschen?</p>
           <input type="hidden" id="delete-department-id" />
         </div>
         <div class="ds-modal__footer">
           <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirm-delete-department">Löschen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-department">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-department-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Die Abteilung wird unwiderruflich entfernt. Alle zugehörigen Teams und Mitarbeiter werden neu zugeordnet.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-department-final">
+            Endgültig löschen
+          </button>
         </div>
       </div>
     </div>

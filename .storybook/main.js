@@ -11,9 +11,8 @@ export default {
   stories: ['../stories/**/*.stories.@(js|jsx|ts|tsx|mdx)'],
 
   // Addons (essentials are now built into Storybook 9 core)
-  addons: [
-    '@storybook/addon-links', // Navigate between stories
-  ],
+  addons: [// Navigate between stories
+  '@storybook/addon-links', '@storybook/addon-docs'],
 
   // Framework (Storybook 9 - HTML for Vanilla JS/Plain HTML)
   framework: {

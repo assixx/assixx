@@ -159,13 +159,6 @@ export function getEmptyStateDescription(statusFilter: MachineStatusFilter): str
 }
 
 /**
- * Check if add button should be hidden for current filter
- */
-export function shouldHideAddButton(statusFilter: MachineStatusFilter): boolean {
-  return statusFilter !== 'all';
-}
-
-/**
  * Update empty state content based on current filter
  */
 export function updateEmptyStateContent(statusFilter: MachineStatusFilter): void {
@@ -174,7 +167,6 @@ export function updateEmptyStateContent(statusFilter: MachineStatusFilter): void
 
   const emptyStateTitle = emptyDiv.querySelector<HTMLElement>('.empty-state__title');
   const emptyStateDesc = emptyDiv.querySelector<HTMLElement>('.empty-state__description');
-  const emptyStateAddBtn = emptyDiv.querySelector<HTMLButtonElement>('#empty-state-add-btn');
 
   if (emptyStateTitle !== null) {
     emptyStateTitle.textContent = getEmptyStateTitle(statusFilter);
@@ -182,14 +174,6 @@ export function updateEmptyStateContent(statusFilter: MachineStatusFilter): void
 
   if (emptyStateDesc !== null) {
     emptyStateDesc.textContent = getEmptyStateDescription(statusFilter);
-  }
-
-  if (emptyStateAddBtn !== null) {
-    if (shouldHideAddButton(statusFilter)) {
-      emptyStateAddBtn.classList.add('u-hidden');
-    } else {
-      emptyStateAddBtn.classList.remove('u-hidden');
-    }
   }
 }
 
@@ -365,30 +349,54 @@ export async function showDeleteConfirmationModal(machine: Machine): Promise<boo
     // Show modal
     modal.classList.add('modal-overlay--active');
 
-    // Setup one-time listeners
-    const confirmBtn = $$('#confirm-delete-machine');
+    // Setup one-time listeners for Step 1 modal
+    const proceedBtn = $$('#proceed-delete-machine');
     const cancelBtn = $$('#cancel-delete-modal');
     const closeBtn = $$('#close-delete-modal');
 
-    const cleanup = () => {
+    // Step 2 modal elements
+    const confirmModal = $$('#delete-machine-confirm-modal');
+    const confirmFinalBtn = $$('#confirm-delete-machine-final');
+    const cancelConfirmBtn = $$('#cancel-delete-confirm');
+
+    const cleanupStep1 = () => {
       modal.classList.remove('modal-overlay--active');
-      confirmBtn?.removeEventListener('click', handleConfirm);
+      proceedBtn?.removeEventListener('click', handleProceed);
       cancelBtn?.removeEventListener('click', handleCancel);
       closeBtn?.removeEventListener('click', handleCancel);
     };
 
-    const handleConfirm = () => {
-      cleanup();
+    const cleanupStep2 = () => {
+      confirmModal?.classList.remove('modal-overlay--active');
+      confirmFinalBtn?.removeEventListener('click', handleFinalConfirm);
+      cancelConfirmBtn?.removeEventListener('click', handleCancelConfirm);
+    };
+
+    const handleProceed = () => {
+      // Close first modal, show second modal (double-check pattern)
+      cleanupStep1();
+      confirmModal?.classList.add('modal-overlay--active');
+    };
+
+    const handleFinalConfirm = () => {
+      cleanupStep2();
       resolve(true);
     };
 
     const handleCancel = () => {
-      cleanup();
+      cleanupStep1();
       resolve(false);
     };
 
-    confirmBtn?.addEventListener('click', handleConfirm);
+    const handleCancelConfirm = () => {
+      cleanupStep2();
+      resolve(false);
+    };
+
+    proceedBtn?.addEventListener('click', handleProceed);
     cancelBtn?.addEventListener('click', handleCancel);
     closeBtn?.addEventListener('click', handleCancel);
+    confirmFinalBtn?.addEventListener('click', handleFinalConfirm);
+    cancelConfirmBtn?.addEventListener('click', handleCancelConfirm);
   });
 }

@@ -71,19 +71,8 @@ interface SurveyStatisticsResponse {
   }[];
 }
 
-export interface SurveyCreateData {
-  title: string;
-  description?: string;
-  status?: 'draft' | 'active' | 'closed';
-  isAnonymous?: boolean;
-  isMandatory?: boolean;
-  startDate?: string | null;
-  endDate?: string | null;
-  questions?: QuestionCreateData[];
-  assignments?: AssignmentCreateData[];
-}
-
-export interface SurveyUpdateData {
+/** Base survey data with all optional fields (used for updates) */
+interface SurveyBaseData {
   title?: string;
   description?: string;
   status?: 'draft' | 'active' | 'closed';
@@ -94,6 +83,14 @@ export interface SurveyUpdateData {
   questions?: QuestionCreateData[];
   assignments?: AssignmentCreateData[];
 }
+
+/** Survey creation data - title is required */
+export interface SurveyCreateData extends SurveyBaseData {
+  title: string;
+}
+
+/** Survey update data - all fields optional */
+export type SurveyUpdateData = SurveyBaseData;
 
 // Internal types for DB payloads
 interface QuestionDbPayload {
@@ -386,29 +383,31 @@ class SurveysService {
 
   /**
    * Build survey payload for DB from API data
+   * @param data - Survey data (create or update)
+   * @param isCreateOperation - Whether this is a create operation (to apply defaults)
    */
-  private buildSurveyPayload(data: SurveyCreateData | SurveyUpdateData): Record<string, unknown> {
-    const isCreate = 'title' in data && typeof data.title === 'string';
+  private buildSurveyPayload(
+    data: SurveyBaseData,
+    isCreateOperation: boolean,
+  ): Record<string, unknown> {
     const payload: Record<string, unknown> = {};
 
     // For create: set required fields with defaults
     // For update: only set fields that are provided
-    this.setPayloadField(
-      payload,
-      'title',
-      isCreate ? (data as SurveyCreateData).title : data.title,
-    );
-    this.setPayloadField(payload, 'status', isCreate ? (data.status ?? 'draft') : data.status);
-    this.setPayloadField(
-      payload,
-      'is_anonymous',
-      isCreate ? (data.isAnonymous ?? false) : data.isAnonymous,
-    );
-    this.setPayloadField(
-      payload,
-      'is_mandatory',
-      isCreate ? (data.isMandatory ?? false) : data.isMandatory,
-    );
+    if (isCreateOperation) {
+      // Create operation: title is required, apply defaults for optional fields
+      this.setPayloadField(payload, 'title', data.title);
+      this.setPayloadField(payload, 'status', data.status ?? 'draft');
+      this.setPayloadField(payload, 'is_anonymous', data.isAnonymous ?? false);
+      this.setPayloadField(payload, 'is_mandatory', data.isMandatory ?? false);
+    } else {
+      // Update operation: only set fields that are provided
+      this.setPayloadField(payload, 'title', data.title);
+      this.setPayloadField(payload, 'status', data.status);
+      this.setPayloadField(payload, 'is_anonymous', data.isAnonymous);
+      this.setPayloadField(payload, 'is_mandatory', data.isMandatory);
+    }
+
     this.setPayloadField(payload, 'description', data.description);
     this.setPayloadField(payload, 'start_date', data.startDate);
     this.setPayloadField(payload, 'end_date', data.endDate);
@@ -439,7 +438,7 @@ class SurveysService {
     userAgent?: string,
   ): Promise<unknown> {
     try {
-      const surveyData = this.buildSurveyPayload(data);
+      const surveyData = this.buildSurveyPayload(data, true);
       // Type assertion: buildSurveyPayload guarantees title is set for create operations
       const surveyId = await survey.create(
         surveyData as unknown as Parameters<typeof survey.create>[0],
@@ -521,7 +520,7 @@ class SurveysService {
         throw new ServiceError('CONFLICT', 'Cannot update survey with existing responses');
       }
 
-      const updateData = this.buildSurveyPayload(data);
+      const updateData = this.buildSurveyPayload(data, false);
       // Type assertion: buildSurveyPayload returns correct structure for update
       await survey.update(
         surveyId,

@@ -277,8 +277,13 @@ async function fetchUserProfile(): Promise<User> {
 
 // Legacy v1 code removed - always using v2 API
 
-export async function loadUserInfo(): Promise<User> {
+export async function loadUserInfo(forceRefresh: boolean = false): Promise<User> {
   try {
+    // Invalidate cache if force refresh requested
+    if (forceRefresh) {
+      userProfileCache = { data: null, timestamp: 0 };
+    }
+
     if (isCacheValid() && userProfileCache.data) {
       console.info('loadUserInfo: Returning cached profile data');
       return userProfileCache.data;

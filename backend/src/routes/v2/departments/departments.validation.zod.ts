@@ -71,14 +71,15 @@ export const CreateDepartmentBodySchema = z.object({
     .min(2, 'Department name must be at least 2 characters')
     .max(100, 'Department name must not exceed 100 characters'),
   description: z.string().trim().max(500, 'Description must not exceed 500 characters').optional(),
-  managerId: z
+  departmentLeadId: z
     .number()
     .int()
-    .positive('Manager ID must be a positive integer')
+    .positive('Department lead ID must be a positive integer')
     .nullable()
     .optional(),
   areaId: z.number().int().positive('Area ID must be a positive integer').nullable().optional(),
   isActive: BooleanCoercion.optional(),
+  isArchived: BooleanCoercion.optional(),
 });
 
 /**
@@ -92,14 +93,15 @@ export const UpdateDepartmentBodySchema = z.object({
     .max(100, 'Department name must not exceed 100 characters')
     .optional(),
   description: z.string().trim().max(500, 'Description must not exceed 500 characters').optional(),
-  managerId: z
+  departmentLeadId: z
     .number()
     .int()
-    .positive('Manager ID must be a positive integer')
+    .positive('Department lead ID must be a positive integer')
     .nullable()
     .optional(),
   areaId: z.number().int().positive('Area ID must be a positive integer').nullable().optional(),
   isActive: BooleanCoercion.optional(),
+  isArchived: BooleanCoercion.optional(),
 });
 
 // ============================================================

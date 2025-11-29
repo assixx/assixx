@@ -401,9 +401,11 @@ async function getEmployeeDeptInfo(
   employeeUserId: number,
   tenantId: number,
 ): Promise<UserDepartmentResult | null> {
+  // N:M REFACTORING: department_id from user_departments table
   const [userInfo] = await typedQuery<UserDepartmentResult[]>(
-    `SELECT u.department_id, d.area_id FROM users u
-     LEFT JOIN departments d ON u.department_id = d.id
+    `SELECT ud.department_id, d.area_id FROM users u
+     LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = 1
+     LEFT JOIN departments d ON ud.department_id = d.id
      WHERE u.id = ? AND u.tenant_id = ?`,
     [employeeUserId, tenantId],
   );

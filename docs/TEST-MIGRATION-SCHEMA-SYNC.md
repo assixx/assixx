@@ -116,7 +116,7 @@ f536003: "Revert fix: Support different DB schemas"
   env:
     DB_HOST: localhost
     DB_USER: root
-    DB_PASSWORD: StrongP@ssw0rd!123
+    DB_PASSWORD: YOUR_ROOT_PASSWORD
     DB_NAME: main_test
   run: |
     # Drop and recreate database

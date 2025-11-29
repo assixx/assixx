@@ -8,7 +8,6 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="/styles/main.css" />
     <!-- TAILWIND + GLOBAL STYLES -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
 
     <!-- Critical Layout State - Prevents Layout Shift -->
     <script src="/scripts/critical/sidebar-init.js"></script>
@@ -55,6 +54,10 @@
                   <button class="toggle-group__btn" data-status="inactive" title="Inaktive Mitarbeiter">
                     <i class="fas fa-user-times"></i>
                     Inaktive
+                  </button>
+                  <button class="toggle-group__btn" data-status="archived" title="Archivierte Mitarbeiter">
+                    <i class="fas fa-archive"></i>
+                    Archiviert
                   </button>
                   <button class="toggle-group__btn" data-status="all" title="Alle Mitarbeiter">
                     <i class="fas fa-users"></i>
@@ -268,42 +271,46 @@
           </div>
 
           <div class="form-field">
-            <label class="form-field__label" for="employee-birthday">Geburtsdatum</label>
+            <label class="form-field__label" for="employee-dateOfBirth">Geburtsdatum</label>
             <div class="date-picker">
               <i class="date-picker__icon fas fa-calendar"></i>
-              <input type="date" id="employee-birthday" name="birthday" class="date-picker__input" />
+              <input type="date" id="employee-dateOfBirth" name="dateOfBirth" class="date-picker__input" />
             </div>
           </div>
 
-          <div class="form-field">
-            <label class="form-field__label" for="employee-department">Abteilung</label>
-            <input type="hidden" id="employee-department" name="departmentId" />
-            <!-- Custom Dropdown -->
-            <div class="dropdown" id="department-dropdown">
-              <div class="dropdown__trigger" id="department-trigger">
-                <span>Keine Abteilung</span>
-                <i class="fas fa-chevron-down"></i>
+          <!-- Team Assignment Section (EMPLOYEES ONLY get Teams - Area/Dept inherited) -->
+          <div class="mt-6 pt-6 border-t border-[var(--color-border)]">
+            <h4 class="text-[var(--color-text-primary)] mb-4">
+              <i class="fas fa-users mr-2"></i>
+              Team-Zuweisung
+            </h4>
+
+            <!-- Info Box: Employee Assignment Logic -->
+            <div class="alert alert--info mb-4">
+              <div class="alert__icon">
+                <i class="fas fa-info-circle"></i>
               </div>
-              <div class="dropdown__menu" id="department-menu">
-                <div class="dropdown__option" data-value="">Keine Abteilung</div>
-                <!-- Will be populated dynamically -->
+              <div class="alert__content">
+                <div class="alert__message">
+                  Mitarbeiter werden Teams zugewiesen. Abteilung und Bereich werden automatisch vom Team vererbt.
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="form-field">
-            <label class="form-field__label" for="employee-team">Team</label>
-            <input type="hidden" id="employee-team" name="teamId" />
-            <!-- Custom Dropdown -->
-            <div class="dropdown" id="team-dropdown">
-              <div class="dropdown__trigger" id="team-trigger">
-                <span>Kein Team</span>
-                <i class="fas fa-chevron-down"></i>
-              </div>
-              <div class="dropdown__menu" id="team-menu">
-                <div class="dropdown__option" data-value="">Kein Team</div>
+            <!-- Team Multi-Select (ONLY for Employees) -->
+            <div class="form-field" id="team-select-container">
+              <label class="form-field__label" for="employee-teams">
+                <i class="fas fa-users mr-1"></i>
+                Teams
+                <span class="text-red-500">*</span>
+              </label>
+              <select id="employee-teams" name="teamIds" multiple class="form-field__control min-h-[120px]">
                 <!-- Will be populated dynamically -->
-              </div>
+              </select>
+              <span class="form-field__message text-[var(--color-text-secondary)]">
+                <i class="fas fa-info-circle mr-1"></i>
+                Strg/Cmd + Klick fuer Mehrfachauswahl. Mitarbeiter kann mehreren Teams zugewiesen werden.
+              </span>
             </div>
           </div>
 
@@ -360,28 +367,36 @@
             </div>
           </div>
 
-          <div class="form-field">
+          <!-- Status Field: Hidden for CREATE, Visible for EDIT -->
+          <div class="form-field u-hidden" id="status-field-group">
             <label class="form-field__label" for="employee-status">
               Account Status
               <span class="text-red-500">*</span>
             </label>
-            <!-- Hidden input to store the selected value -->
-            <input type="hidden" id="employee-status" name="isActive" value="1" />
-            <!-- Custom Dropdown -->
+            <!-- Hidden inputs for DB fields (is_active + is_archived) -->
+            <input type="hidden" id="employee-is-active" name="isActive" value="1" />
+            <input type="hidden" id="employee-is-archived" name="isArchived" value="0" />
+            <!-- Custom Dropdown (UI maps: active→1/0, inactive→0/0, archived→0/1) -->
             <div class="dropdown" id="status-dropdown">
               <div class="dropdown__trigger" id="status-trigger">
                 <span>Aktiv</span>
                 <i class="fas fa-chevron-down"></i>
               </div>
               <div class="dropdown__menu" id="status-menu">
-                <div class="dropdown__option" data-value="1">
+                <div class="dropdown__option" data-value="active">
                   <span class="badge badge--success">Aktiv</span>
                 </div>
-                <div class="dropdown__option" data-value="0">
+                <div class="dropdown__option" data-value="inactive">
                   <span class="badge badge--warning">Inaktiv</span>
+                </div>
+                <div class="dropdown__option" data-value="archived">
+                  <span class="badge badge--error">Archiviert</span>
                 </div>
               </div>
             </div>
+            <span class="form-field__message text-[var(--color-text-secondary)] mt-1 block">
+              Inaktive/Archivierte Mitarbeiter können sich nicht anmelden
+            </span>
           </div>
         </div>
 
@@ -392,23 +407,48 @@
       </form>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Modal Step 1: Initial Confirmation (ds-modal) -->
     <div id="delete-employee-modal" class="modal-overlay">
       <div class="ds-modal ds-modal--sm">
         <div class="ds-modal__header">
-          <h3 class="ds-modal__title">Mitarbeiter löschen</h3>
-          <button class="ds-modal__close" id="close-delete-modal">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-trash-alt text-red-500 mr-2"></i>
+            Mitarbeiter löschen
+          </h3>
+          <button type="button" class="ds-modal__close" id="close-delete-modal">
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body">
-          <p class="mb-3">Möchten Sie diesen Mitarbeiter wirklich löschen?</p>
-          <p class="text-[var(--color-text-secondary)]">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+          <p class="text-[var(--color-text-secondary)]">Möchten Sie diesen Mitarbeiter wirklich löschen?</p>
           <input type="hidden" id="delete-employee-id" />
         </div>
         <div class="ds-modal__footer">
           <button type="button" class="btn btn-cancel" id="cancel-delete-modal">Abbrechen</button>
-          <button type="button" class="btn btn-danger" id="confirm-delete-employee">Löschen</button>
+          <button type="button" class="btn btn-danger" id="proceed-delete-employee">Löschen</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Modal Step 2: Final Dangerous Confirmation (confirm-modal--danger) -->
+    <div id="delete-employee-confirm-modal" class="modal-overlay">
+      <div class="confirm-modal confirm-modal--danger">
+        <div class="confirm-modal__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="confirm-modal__title">Endgültig löschen?</h3>
+        <p class="confirm-modal__message">
+          <strong>ACHTUNG:</strong>
+          Diese Aktion kann nicht rückgängig gemacht werden!
+          <br />
+          <br />
+          Der Mitarbeiter wird unwiderruflich aus dem System entfernt.
+        </p>
+        <div class="confirm-modal__actions">
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--cancel" id="cancel-delete-confirm">Abbrechen</button>
+          <button type="button" class="confirm-modal__btn confirm-modal__btn--danger" id="confirm-delete-employee-final">
+            Endgültig löschen
+          </button>
         </div>
       </div>
     </div>

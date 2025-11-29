@@ -67,9 +67,10 @@ export interface TeamCreateInput {
 export interface TeamUpdateInput {
   name?: string;
   description?: string;
-  departmentId?: number;
-  leaderId?: number;
+  departmentId?: number | null;
+  leaderId?: number | null;
   status?: 'active' | 'inactive';
+  isArchived?: boolean;
 }
 
 /**
@@ -120,13 +121,14 @@ class TeamsService {
           delete apiTeam['teamLeadName'];
         }
 
-        // Map isActive (boolean) to status (string)
-        if ('isActive' in apiTeam) {
-          const isActive = apiTeam['isActive'];
-          apiTeam['status'] = isActive === true ? 'active' : 'inactive';
-        } else {
-          apiTeam['status'] = 'active'; // Default fallback
-        }
+        // Convert isActive/isArchived to boolean early (like departments.service.ts)
+        const isActive = Boolean(apiTeam['isActive'] ?? 1);
+        const isArchived = Boolean(apiTeam['isArchived'] ?? 0);
+        apiTeam['isActive'] = isActive;
+        apiTeam['isArchived'] = isArchived;
+
+        // Derive status from boolean isActive
+        apiTeam['status'] = isActive ? 'active' : 'inactive';
 
         // Convert empty strings to null for optional fields
         if (apiTeam['description'] === '') {
@@ -158,16 +160,18 @@ class TeamsService {
   }
 
   /**
-   * Map isActive boolean to status string and normalize optional fields
+   * Convert isActive/isArchived to boolean and derive status
+   * Follows same pattern as departments.service.ts
    */
   private normalizeTeamFields(apiTeam: Record<string, unknown>): void {
-    // Map isActive (boolean) to status (string)
-    if ('isActive' in apiTeam) {
-      const isActive = apiTeam['isActive'];
-      apiTeam['status'] = isActive === true ? 'active' : 'inactive';
-    } else {
-      apiTeam['status'] = 'active'; // Default fallback
-    }
+    // Convert isActive/isArchived to boolean early (like departments.service.ts)
+    const isActive = Boolean(apiTeam['isActive'] ?? 1);
+    const isArchived = Boolean(apiTeam['isArchived'] ?? 0);
+    apiTeam['isActive'] = isActive;
+    apiTeam['isArchived'] = isArchived;
+
+    // Derive status from boolean isActive
+    apiTeam['status'] = isActive ? 'active' : 'inactive';
 
     // Convert empty strings to null for optional fields
     if (apiTeam['description'] === '') {
@@ -292,10 +296,12 @@ class TeamsService {
   }
 
   private async validateDepartment(
-    departmentId: number | undefined,
+    departmentId: number | null | undefined,
     tenantId: number,
   ): Promise<void> {
-    if (departmentId === undefined) return;
+    // null means "clear department" - valid, no check needed
+    // undefined means "not provided" - also valid, no check needed
+    if (departmentId == null) return;
 
     const dept = await Department.findById(departmentId, tenantId);
     if (!dept) {
@@ -303,12 +309,21 @@ class TeamsService {
     }
   }
 
-  private async validateLeader(leaderId: number | undefined, tenantId: number): Promise<void> {
-    if (leaderId === undefined) return;
+  private async validateLeader(
+    leaderId: number | null | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    // null means "clear leader" - valid, no check needed
+    if (leaderId == null) return;
 
     const leader = await User.findById(leaderId, tenantId);
     if (!leader) {
       throw new ServiceError('BAD_REQUEST', 'Invalid leader ID', 400);
+    }
+
+    // Team lead must be root or admin (enforced by DB trigger, but validate here too)
+    if (leader.role !== 'root' && leader.role !== 'admin') {
+      throw new ServiceError('BAD_REQUEST', 'Team leader must be a root user or admin', 400);
     }
   }
 
@@ -342,6 +357,9 @@ class TeamsService {
       logger.info(
         `[DEBUG] Setting is_active to ${updateData.is_active} from status: ${data.status}`,
       );
+    }
+    if (data.isArchived !== undefined) {
+      updateData.is_archived = data.isArchived ? 1 : 0;
     }
 
     logger.info(`[DEBUG] buildUpdateData result: ${JSON.stringify(updateData)}`);

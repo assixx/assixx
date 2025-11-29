@@ -41,10 +41,10 @@ bash scripts/quick-backup.sh "before_uuid_migration"
 
 # Copy and execute
 docker cp database/migrations/2025-11-13_add_uuid_to_tables.sql assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/2025-11-13_add_uuid_to_tables.sql'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/2025-11-13_add_uuid_to_tables.sql'
 
 # Verify
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT id, uuid, title FROM kvp_suggestions LIMIT 3;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SELECT id, uuid, title FROM kvp_suggestions LIMIT 3;"'
 ```
 
 ### Verification

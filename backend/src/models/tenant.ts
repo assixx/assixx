@@ -90,9 +90,10 @@ async function createRootUser(
   const hashedPassword = await bcrypt.hash(tenantData.admin_password, 10);
   const employeeNumber = generateTemporaryEmployeeNumber();
 
+  // Root users always get has_full_access = 1 for full tenant access
   const [userResult] = await connection.query<ResultSetHeader>(
-    `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number)
-       VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?)`,
+    `INSERT INTO users (username, email, password, role, first_name, last_name, tenant_id, phone, employee_number, has_full_access)
+       VALUES (?, ?, ?, 'root', ?, ?, ?, ?, ?, 1)`,
     [
       tenantData.admin_email,
       tenantData.admin_email,
@@ -113,10 +114,7 @@ async function createRootUser(
 
   await connection.query('UPDATE users SET employee_id = ? WHERE id = ?', [employeeId, userId]);
 
-  await connection.query(
-    'INSERT INTO tenant_admins (tenant_id, user_id, is_primary) VALUES (?, ?, TRUE)',
-    [tenantId, userId],
-  );
+  // NOTE: tenant_admins table removed (redundant) - users.tenant_id + users.role is the source of truth
 
   return userId;
 }
@@ -489,7 +487,7 @@ async function deleteOtherTenantData(
   // Teams and departments
   await safeDelete(connection, 'DELETE FROM teams WHERE tenant_id = ?', [tenantId]);
   await safeDelete(connection, 'DELETE FROM departments WHERE tenant_id = ?', [tenantId]);
-  await safeDelete(connection, 'DELETE FROM tenant_admins WHERE tenant_id = ?', [tenantId]);
+  // NOTE: tenant_admins table removed (redundant) - no cleanup needed
 }
 
 // Tenant komplett löschen - ACHTUNG: Löscht ALLE Daten unwiderruflich!

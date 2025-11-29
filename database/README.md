@@ -36,7 +36,7 @@ database/
 ### Fresh Installation
 
 ```bash
-docker exec assixx-mysql sh -c 'mysql -h localhost -u root -p"StrongP@ssw0rd!123" < /docker-entrypoint-initdb.d/01-schema.sql'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u root -p"YOUR_ROOT_PASSWORD" < /docker-entrypoint-initdb.d/01-schema.sql'
 ```
 
 ### Apply Migration
@@ -44,7 +44,7 @@ docker exec assixx-mysql sh -c 'mysql -h localhost -u root -p"StrongP@ssw0rd!123
 ```bash
 MIGRATION_FILE="database/migrations/XXX-your-migration.sql"
 docker cp $MIGRATION_FILE assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! assixx < /tmp/'$(basename $MIGRATION_FILE)
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD assixx < /tmp/'$(basename $MIGRATION_FILE)
 ```
 
 ### Backup Current State

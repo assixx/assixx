@@ -211,7 +211,7 @@ router.get(
   '/manage-departments',
   rateLimiter.admin,
   authenticateV2,
-  requireRoleV2('admin') as RequestHandler,
+  requireRoleV2('root') as RequestHandler,
   servePage('manage-departments'),
 );
 router.get(
@@ -225,7 +225,7 @@ router.get(
   '/manage-areas',
   rateLimiter.admin,
   authenticateV2,
-  requireRoleV2('admin') as RequestHandler,
+  requireRoleV2('root') as RequestHandler,
   servePage('manage-areas'),
 );
 router.get(
@@ -256,13 +256,7 @@ router.get(
   requireRoleV2('admin') as RequestHandler,
   servePage('manage-admins'),
 );
-router.get(
-  '/manage-department-groups',
-  rateLimiter.admin,
-  authenticateV2,
-  requireRoleV2('admin') as RequestHandler,
-  servePage('manage-department-groups'),
-);
+// NOTE: /manage-department-groups route REMOVED - department_groups deprecated, use Areas instead
 router.get(
   '/storage-upgrade',
   rateLimiter.admin,

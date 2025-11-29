@@ -139,13 +139,13 @@ Cannot add or update a child row: a foreign key constraint fails (`main`.`users`
 3. **Check for leftover test data** before running tests:
 
    ```bash
-   docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT COUNT(*) FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
+   docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SELECT COUNT(*) FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
    ```
 
 4. **Clean test data manually if needed**:
 
    ```bash
-   docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DELETE FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
+   docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "DELETE FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
    ```
 
 ### Common Test Patterns

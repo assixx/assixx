@@ -43,6 +43,7 @@ class BlackboardState {
   // User info
   private currentUserId: number | null = null;
   private isAdmin: boolean = false;
+  private userRole: string = 'employee';
 
   // Filter state
   private filterState: FilterState = {
@@ -70,12 +71,17 @@ class BlackboardState {
 
   /**
    * Initialize state with API client
+   * @param apiClient - API client instance
+   * @param userId - Current user ID
+   * @param isAdminUser - Whether user is admin or root
+   * @param role - User's actual role (root, admin, employee)
    */
-  public initialize(apiClient: ApiClient, userId: number, isAdminUser: boolean): void {
+  public initialize(apiClient: ApiClient, userId: number, isAdminUser: boolean, role: string): void {
     this.api = new BlackboardAPI(apiClient);
     this.currentUserId = userId;
     this.isAdmin = isAdminUser;
-    console.info('[BlackboardState] Initialized');
+    this.userRole = role;
+    console.info('[BlackboardState] Initialized with role:', role);
   }
 
   // ============================================================================
@@ -256,19 +262,35 @@ class BlackboardState {
   }
 
   /**
+   * Get current user role
+   */
+  public getCurrentUserRole(): string {
+    return this.userRole;
+  }
+
+  /**
+   * Check if user can modify entry (edit or delete)
+   * Only ROOT role or the entry author can modify
+   */
+  private canModifyEntry(entry: BlackboardEntry): boolean {
+    // Root can modify any entry
+    if (this.userRole === 'root') return true;
+    // Author can modify their own entry
+    return entry.authorId === this.currentUserId;
+  }
+
+  /**
    * Check if user can edit entry
    */
   public canEditEntry(entry: BlackboardEntry): boolean {
-    if (this.isAdmin) return true;
-    return entry.authorId === this.currentUserId;
+    return this.canModifyEntry(entry);
   }
 
   /**
    * Check if user can delete entry
    */
-  public canDeleteEntry(_entry: BlackboardEntry): boolean {
-    // Only admins can delete
-    return this.isAdmin;
+  public canDeleteEntry(entry: BlackboardEntry): boolean {
+    return this.canModifyEntry(entry);
   }
 
   // ============================================================================

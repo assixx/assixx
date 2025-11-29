@@ -374,6 +374,38 @@ router.post(
 
 /**
 
+ * /api/v2/blackboard/entries/\{id\}/confirm:
+ *   delete:
+ *     summary: Remove confirmation (mark as unread)
+ *     tags: [Blackboard v2]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Entry ID or UUID
+ *     responses:
+ *       200:
+ *         description: Entry marked as unread successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/SuccessResponseV2'
+ *       400:
+ *         $ref: '#/components/responses/BadRequestV2'
+ */
+router.delete(
+  '/entries/:id/confirm',
+  authenticateV2,
+  blackboardValidationZod.confirm,
+  typed.auth(blackboardController.unconfirmEntry),
+);
+
+/**
+
  * /api/v2/blackboard/entries/\{id\}/confirmations:
  *   get:
  *     summary: Get confirmation status for an entry

@@ -4,23 +4,31 @@
  * UI and form handling for admin management
  */
 
-import { $, $$, $all, setHTML, setSafeHTML, $$id } from '../../../utils/dom-utils';
+import { $, $$, setHTML, setSafeHTML, $$id } from '../../../utils/dom-utils';
 import { resetPasswordToggles, resetAndReinitializePasswordToggles } from '../../../utils/password-toggle';
 import { setupPasswordStrength, resetPasswordStrengthUI } from '../../../utils/password-strength-integration';
 import { showSuccessAlert, showErrorAlert } from '../../utils/alerts';
 // Import from types
-import type { Admin, AdminFormData, Department } from './types';
+import type { Admin, AdminFormData } from './types';
 // Import from data layer
 import {
   admins,
   tenants,
   currentAdminId,
   setCurrentAdminId,
-  loadDepartments,
-  loadDepartmentGroups,
-  loadAdminPermissions,
   saveAdmin as saveAdminAPI,
   updateAdminPermissions,
+  updateUserAreaPermissions,
+  setUserFullAccess,
+  // N:M REFACTORING: New helpers for form multi-selects
+  getMultiSelectValues,
+  setMultiSelectValues,
+  loadAreasForAdminForm,
+  loadDepartmentsForAdminForm,
+  // NOTE: loadTeamsForAdminForm removed - Admins get teams via inheritance
+  // Area → Department filter
+  filterDepartmentsBySelectedAreas,
+  // NOTE: filterTeamsBySelectedDepartmentsAndAreas removed - not needed anymore
 } from './data';
 
 // ===== CONSTANTS =====
@@ -38,12 +46,9 @@ export const SELECTORS = {
   ADMIN_PASSWORD: '#admin-password',
   ADMIN_PASSWORD_CONFIRM: '#admin-password-confirm',
   ADMIN_POSITION: '#admin-position',
-  ADMIN_STATUS: '#admin-status',
+  ADMIN_IS_ACTIVE: '#admin-is-active',
+  ADMIN_IS_ARCHIVED: '#admin-is-archived',
   ADMIN_EMPLOYEE_NUMBER: '#admin-employee-number',
-  DEPARTMENT_SELECT: '#department-select',
-  DEPARTMENT_SELECT_CONTAINER: '#department-select-container',
-  PERMISSION_TYPE_RADIO: 'input[name="permission-type"]',
-  PERMISSION_TYPE_CHECKED: 'input[name="permission-type"]:checked',
   EMAIL_ERROR: '#email-error',
   PASSWORD_ERROR: '#password-error',
 } as const;
@@ -112,15 +117,22 @@ export function initPositionDropdown(): void {
 /**
  * Initialize status custom dropdown
  * Sets up event listeners for the custom dropdown functionality with badge support
+ * Maps UI values (active/inactive/archived) to DB fields (isActive + isArchived)
  */
 export function initStatusDropdown(): void {
   const trigger = $$('#status-trigger');
   const menu = $$('#status-menu');
   const dropdown = $$('#status-dropdown');
-  const hiddenInput = $$(SELECTORS.ADMIN_STATUS) as HTMLInputElement | null;
+  const isActiveInput = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
+  const isArchivedInput = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
 
   if (trigger === null || menu === null || dropdown === null) {
     console.error('Status dropdown elements not found');
+    return;
+  }
+
+  if (isActiveInput === null || isArchivedInput === null) {
+    console.error('Status hidden inputs not found');
     return;
   }
 
@@ -144,9 +156,20 @@ export function initStatusDropdown(): void {
     // Get badge element from option
     const badge = option.querySelector('.badge');
 
-    // Update hidden input
-    if (hiddenInput !== null) {
-      hiddenInput.value = value;
+    // Map UI value to DB fields (isActive + isArchived)
+    switch (value) {
+      case 'active':
+        isActiveInput.value = '1';
+        isArchivedInput.value = '0';
+        break;
+      case 'inactive':
+        isActiveInput.value = '0';
+        isArchivedInput.value = '0';
+        break;
+      case 'archived':
+        isActiveInput.value = '0';
+        isArchivedInput.value = '1';
+        break;
     }
 
     // Update trigger with badge
@@ -222,76 +245,115 @@ export function getStatusValue(admin: Admin): string {
   return 'inactive';
 }
 
-// Helper function to display departments badge with tooltip
+/** Check if admin has full access (helper to reduce complexity) */
+function checkFullAccess(admin: Admin): boolean {
+  return admin.hasFullAccess === true || admin.hasFullAccess === 1;
+}
+
+/** Get department label based on count */
+function getDeptLabel(count: number, short: boolean): string {
+  if (short) return count === 1 ? 'Abtlg.' : 'Abtlgn.';
+  return count === 1 ? 'Abteilung' : 'Abteilungen';
+}
+
+/** Get area label based on count */
+function getAreaLabel(count: number): string {
+  return count === 1 ? 'Bereich' : 'Bereiche';
+}
+
+/**
+ * Get departments badge HTML for admin table
+ * BADGE-INHERITANCE-DISPLAY: Shows inherited departments when admin has area permissions
+ */
 export function getDepartmentsBadge(admin: Admin): string {
-  console.info(`Getting badge for admin ${String(admin.id)}:`, {
-    hasAllAccess: admin.hasAllAccess,
-    departments: admin.departments,
-    departmentCount: admin.departments ? admin.departments.length : 0,
-  });
+  const deptCount = admin.departments?.length ?? 0;
+  const areaCount = admin.areas?.length ?? 0;
 
-  if (admin.hasAllAccess === true) {
-    return '<span class="badge badge--success">Alle Abteilungen</span>';
+  if (checkFullAccess(admin)) {
+    return '<span class="badge badge--primary" title="Voller Zugriff auf alle Abteilungen"><i class="fas fa-globe mr-1"></i>Alle</span>';
   }
 
-  if (!admin.departments || admin.departments.length === 0) {
-    return '<span class="badge badge--danger">Keine Abteilungen</span>';
+  // Has direct departments AND areas (direct + inherited)
+  if (deptCount > 0 && areaCount > 0) {
+    const deptNames = admin.departments?.map((d) => d.name).join(', ') ?? '';
+    return `<span class="badge badge--info" title="Direkt: ${deptNames} + Vererbt von ${areaCount} ${getAreaLabel(areaCount)}">${deptCount} ${getDeptLabel(deptCount, true)} + Vererbt</span>`;
   }
 
-  const count = admin.departments.length;
-  const label = count === 1 ? 'Abteilung' : 'Abteilungen';
+  // Has only direct departments
+  if (deptCount > 0) {
+    const deptNames = admin.departments?.map((d) => d.name).join(', ') ?? '';
+    return `<span class="badge badge--info" title="${deptNames}">${deptCount} ${getDeptLabel(deptCount, false)}</span>`;
+  }
 
-  // Build department names list for tooltip (newline separated)
-  const departmentNames = admin.departments.map((dept) => dept.name).join('\n');
+  // Has areas but no direct departments (inherited via area)
+  if (areaCount > 0) {
+    const areaNames = admin.areas?.map((a) => a.name).join(', ') ?? '';
+    return `<span class="badge badge--info" title="Abteilungen werden vererbt von: ${areaNames}"><i class="fas fa-sitemap mr-1"></i>Vererbt</span>`;
+  }
 
-  // Return badge with data-tooltip attribute for auto-initialization
-  return `<span class="badge badge--info" data-tooltip="${departmentNames}">${String(count)} ${label}</span>`;
+  return '<span class="badge badge--secondary" title="Keine Abteilung zugewiesen">Keine</span>';
 }
 
-// Load and populate departments in select
-export async function loadAndPopulateDepartments(): Promise<void> {
-  const departments = await loadDepartments();
-  const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
+/**
+ * Get areas badge HTML for admin table
+ * Shows count with tooltip listing area names
+ */
+export function getAreasBadge(admin: Admin): string {
+  const hasFullAccess = admin.hasFullAccess === true || admin.hasFullAccess === 1;
 
-  if (deptSelect !== null && departments.length > 0) {
-    deptSelect.innerHTML = '';
-    departments.forEach((dept) => {
-      const option = document.createElement('option');
-      option.value = dept.id.toString();
-      option.textContent = dept.name;
-      deptSelect.appendChild(option);
-    });
+  // Full access = "Alle" badge
+  if (hasFullAccess) {
+    return '<span class="badge badge--primary" title="Voller Zugriff auf alle Bereiche"><i class="fas fa-globe mr-1"></i>Alle</span>';
   }
+
+  // No areas assigned
+  if (!admin.areas || admin.areas.length === 0) {
+    return '<span class="badge badge--secondary" title="Keine Bereiche zugewiesen">Keine</span>';
+  }
+
+  // Show area count with tooltip
+  const count = admin.areas.length;
+  const label = count === 1 ? 'Bereich' : 'Bereiche';
+  const areaNames = admin.areas.map((area) => area.name).join(', ');
+
+  return `<span class="badge badge--info" title="${areaNames}">${String(count)} ${label}</span>`;
 }
 
-// Load and populate department groups
-export async function loadAndPopulateDepartmentGroups(): Promise<void> {
-  const groups: { id: number; name: string; departments?: Department[] }[] = await loadDepartmentGroups();
-  const groupContainer = $$('#group-select-container');
+/**
+ * Get teams badge HTML for admin table
+ * NOTE: Admin teams are inherited via Area/Department, not directly assigned
+ * This function shows inheritance info based on area/department permissions
+ * INHERITANCE-FIX: Now shows actual area/department names in tooltip
+ */
+export function getTeamsBadge(admin: Admin): string {
+  const hasFullAccess = admin.hasFullAccess === true || admin.hasFullAccess === 1;
 
-  if (groupContainer !== null && groups.length > 0) {
-    // Clear existing content
-    groupContainer.innerHTML = '';
-
-    // Create checkboxes for each group
-    groups.forEach((group: { id: number; name: string; departments?: Department[] }) => {
-      const label = document.createElement('label');
-      label.className = 'checkbox-label';
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.name = 'groupSelect';
-      checkbox.value = group.id.toString();
-      checkbox.className = 'checkbox-input';
-
-      const span = document.createElement('span');
-      span.textContent = group.name;
-
-      label.appendChild(checkbox);
-      label.appendChild(span);
-      groupContainer.appendChild(label);
-    });
+  // Full access = "Alle" badge
+  if (hasFullAccess) {
+    return '<span class="badge badge--primary" title="Voller Zugriff auf alle Teams"><i class="fas fa-globe mr-1"></i>Alle</span>';
   }
+
+  // Check if admin has area or department permissions (teams inherited from these)
+  const hasAreas = (admin.areas?.length ?? 0) > 0;
+  const hasDepts = (admin.departments?.length ?? 0) > 0;
+
+  if (hasAreas || hasDepts) {
+    // INHERITANCE-FIX: Build detailed tooltip with actual names
+    const parts: string[] = [];
+    if (hasAreas) {
+      const areaNames = admin.areas?.map((a) => a.name).join(', ') ?? '';
+      parts.push(`Bereiche: ${areaNames}`);
+    }
+    if (hasDepts) {
+      const deptNames = admin.departments?.map((d) => d.name).join(', ') ?? '';
+      parts.push(`Abteilungen: ${deptNames}`);
+    }
+    const tooltip = `Teams vererbt von: ${parts.join(' | ')}`;
+    return `<span class="badge badge--info" title="${tooltip}"><i class="fas fa-sitemap mr-1"></i>Vererbt</span>`;
+  }
+
+  // No areas or departments = no team access
+  return '<span class="badge badge--secondary" title="Keine Teams zugewiesen">Keine</span>';
 }
 
 // Update tenant dropdown
@@ -406,103 +468,112 @@ export function validatePosition(): boolean {
 // ===== FORM DATA HANDLING =====
 
 /**
- * Generate a valid username from an email address
- * - Takes the part before @
- * - Replaces invalid characters with underscores
- * - Only allows letters, numbers, underscores, and hyphens
- * @param email - Email address to convert
- * @returns Valid username
+ * Get username from email
+ * IMPORTANT: Backend sets username = email (lowercase) always
+ * This function just returns the lowercase email for consistency
+ * The backend ignores any username sent and uses the email instead
+ * @param email - Email address
+ * @returns Lowercase email (used as username in backend)
  */
-function generateUsernameFromEmail(email: string): string {
-  // Take the part before @ (local part of email)
-  const localPart = email.split('@')[0] ?? email;
+function getUsernameFromEmail(email: string): string {
+  // Backend ALWAYS sets username = email (lowercase)
+  // We send email as username for consistency, but it's ignored anyway
+  return email.toLowerCase().trim();
+}
 
-  // Replace any character that's not a letter, number, underscore, or hyphen with underscore
-  // This ensures the username matches the backend regex: /^[\w-]+$/
-  return localPart.replace(/[^\w-]/g, '_');
+/**
+ * Get input value with null safety
+ */
+function getInputValue(selector: string): string {
+  const el = $$(selector) as HTMLInputElement | null;
+  return el?.value ?? '';
+}
+
+/**
+ * Get organization assignment data from form
+ * N:M REFACTORING: Extracted to reduce cognitive complexity
+ */
+function getOrganizationFormData(): {
+  hasFullAccess: boolean;
+  areaIds: number[];
+  departmentIds: number[];
+} {
+  const fullAccessToggle = $$id('admin-full-access') as HTMLInputElement | null;
+  const hasFullAccess = fullAccessToggle?.checked ?? false;
+
+  // If full access, send empty arrays (full access = all)
+  // NOTE: teamIds removed - Admins get teams via inheritance (Area → Dept → Team)
+  const areaIds = hasFullAccess ? [] : getMultiSelectValues('admin-areas');
+  const departmentIds = hasFullAccess ? [] : getMultiSelectValues('admin-departments');
+
+  console.info('[getOrganizationFormData] N:M data:', { hasFullAccess, areaIds, departmentIds });
+  return { hasFullAccess, areaIds, departmentIds };
 }
 
 export function getFormData(): AdminFormData {
-  const firstNameEl = $$('#admin-first-name') as HTMLInputElement | null;
-  const lastNameEl = $$('#admin-last-name') as HTMLInputElement | null;
-  const emailEl = $$(SELECTORS.ADMIN_EMAIL) as HTMLInputElement | null;
-  const email = emailEl !== null ? emailEl.value : '';
-  const passwordEl = $$(SELECTORS.ADMIN_PASSWORD) as HTMLInputElement | null;
-  const positionEl = $$(SELECTORS.ADMIN_POSITION) as HTMLInputElement | null;
-  const employeeNumberEl = $$(SELECTORS.ADMIN_EMPLOYEE_NUMBER) as HTMLInputElement | null;
-  const statusEl = $$(SELECTORS.ADMIN_STATUS) as HTMLInputElement | null;
+  const email = getInputValue(SELECTORS.ADMIN_EMAIL);
+  // Read from hidden inputs (set by status dropdown)
+  const isActiveEl = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
+  const isArchivedEl = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
+  const isActiveValue = isActiveEl?.value ?? '1';
+  const isArchivedValue = isArchivedEl?.value ?? '0';
 
   const formData: AdminFormData = {
-    firstName: firstNameEl !== null ? firstNameEl.value : '',
-    lastName: lastNameEl !== null ? lastNameEl.value : '',
+    firstName: getInputValue('#admin-first-name'),
+    lastName: getInputValue('#admin-last-name'),
     email,
-    username: generateUsernameFromEmail(email),
-    password: passwordEl !== null ? passwordEl.value : '',
-    position: positionEl !== null ? positionEl.value : '',
+    // NOTE: username is optional and IGNORED by backend (username = email always)
+    // We send it for API compatibility but backend overwrites it
+    username: getUsernameFromEmail(email),
+    password: getInputValue(SELECTORS.ADMIN_PASSWORD),
+    position: getInputValue(SELECTORS.ADMIN_POSITION),
     notes: ($('#admin-notes') as HTMLTextAreaElement).value,
     role: 'admin',
-    employeeNumber: employeeNumberEl !== null ? employeeNumberEl.value : '',
+    employeeNumber: getInputValue(SELECTORS.ADMIN_EMPLOYEE_NUMBER),
+    isActive: isActiveValue === '1',
+    isArchived: isArchivedValue === '1',
   };
 
-  // Map status dropdown to isActive and isArchived
-  // 'active' → isActive = true, isArchived = false
-  // 'inactive' → isActive = false, isArchived = false
-  // 'archived' → isActive = false, isArchived = true
-  const statusValue = statusEl !== null ? statusEl.value : 'active';
-  console.info('Status dropdown value:', statusValue);
-  formData.isActive = statusValue === 'active';
-  formData.isArchived = statusValue === 'archived';
+  // N:M REFACTORING: Add organization assignment data
+  // NOTE: teamIds removed - Admins get teams via inheritance
+  const orgData = getOrganizationFormData();
+  formData.hasFullAccess = orgData.hasFullAccess;
+  formData.areaIds = orgData.areaIds;
+  formData.departmentIds = orgData.departmentIds;
 
   // Remove empty password for updates
-  if (
-    currentAdminId !== null &&
-    currentAdminId !== 0 &&
-    (formData.password === undefined || formData.password === '')
-  ) {
+  const isUpdate = currentAdminId !== null && currentAdminId !== 0;
+  if (isUpdate && (formData.password === undefined || formData.password === '')) {
     delete formData.password;
   }
 
   return formData;
 }
 
-export async function getPermissionData(
-  permissionType: string,
-): Promise<{ departmentIds: number[]; groupIds: number[] }> {
-  let departmentIds: number[] = [];
-  let groupIds: number[] = [];
-
-  if (permissionType === 'specific') {
-    const select = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
-    if (select !== null) {
-      departmentIds = [...select.selectedOptions].map((opt) => Number.parseInt(opt.value, 10));
-    }
-  } else if (permissionType === 'groups') {
-    const checkboxes = $all('input[name="groupSelect"]:checked');
-    groupIds = [...checkboxes].map((checkbox) => Number.parseInt((checkbox as HTMLInputElement).value, 10));
-  } else if (permissionType === 'all') {
-    const allDepts = await loadDepartments();
-    departmentIds = allDepts.map((d) => d.id);
-  }
-
-  return { departmentIds, groupIds };
-}
-
-export async function updatePermissions(adminId: number): Promise<void> {
-  const permissionTypeInput = document.querySelector(SELECTORS.PERMISSION_TYPE_CHECKED);
-  const permissionType = permissionTypeInput instanceof HTMLInputElement ? permissionTypeInput.value : undefined;
-  console.info('🔵 Permission type selected:', permissionType);
-
-  if (adminId === 0 || permissionType === undefined) return;
-
-  const { departmentIds, groupIds } = await getPermissionData(permissionType);
-
-  console.info('🔵 Setting department permissions for admin:', adminId);
-  console.info('Department IDs:', departmentIds);
-
-  await updateAdminPermissions(adminId, departmentIds, groupIds);
-}
-
 // ===== FORM UI HELPERS =====
+
+/**
+ * Initialize password strength validation for admin form
+ * Extracted to reduce duplication between edit and add modal functions
+ */
+function initAdminPasswordStrength(): void {
+  setupPasswordStrength({
+    passwordFieldId: 'admin-password',
+    strengthContainerId: 'admin-password-strength-container',
+    strengthBarId: 'admin-password-strength-bar',
+    strengthLabelId: 'admin-password-strength-label',
+    strengthTimeId: 'admin-password-strength-time',
+    feedbackContainerId: 'admin-password-feedback',
+    feedbackWarningId: 'admin-password-feedback-warning',
+    feedbackSuggestionsId: 'admin-password-feedback-suggestions',
+    getUserInputs: () => {
+      const firstName = ($$id('admin-first-name') as HTMLInputElement | null)?.value ?? '';
+      const lastName = ($$id('admin-last-name') as HTMLInputElement | null)?.value ?? '';
+      const email = ($$id('admin-email') as HTMLInputElement | null)?.value ?? '';
+      return [firstName, lastName, email].filter((v) => v !== '');
+    },
+  });
+}
 
 export function fillAdminFormFields(admin: Admin): void {
   ($('#admin-first-name') as HTMLInputElement).value = admin.firstName ?? '';
@@ -532,30 +603,63 @@ export function setPositionDropdown(positionValue: string): void {
 }
 
 /**
+ * Get status badge HTML by status value
+ */
+function getStatusBadgeHtml(statusValue: string): string {
+  switch (statusValue) {
+    case 'inactive':
+      return '<span class="badge badge--warning">Inaktiv</span>';
+    case 'archived':
+      return '<span class="badge badge--error">Archiviert</span>';
+    default:
+      return '<span class="badge badge--success">Aktiv</span>';
+  }
+}
+
+/**
+ * Update hidden inputs for status (isActive + isArchived)
+ */
+function updateStatusHiddenInputs(
+  statusValue: string,
+  isActiveInput: HTMLInputElement,
+  isArchivedInput: HTMLInputElement,
+): void {
+  switch (statusValue) {
+    case 'inactive':
+      isActiveInput.value = '0';
+      isArchivedInput.value = '0';
+      break;
+    case 'archived':
+      isActiveInput.value = '0';
+      isArchivedInput.value = '1';
+      break;
+    default: // active
+      isActiveInput.value = '1';
+      isArchivedInput.value = '0';
+  }
+}
+
+/**
  * Set status dropdown value and display
+ * Maps UI value to DB fields (isActive + isArchived)
  * @param statusValue - Status value ('active', 'inactive', 'archived')
  */
 export function setStatusDropdown(statusValue: string): void {
-  const statusInput = $$(SELECTORS.ADMIN_STATUS) as HTMLInputElement | null;
+  const isActiveInput = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
+  const isArchivedInput = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
   const statusTrigger = $$('#status-trigger');
 
-  if (statusInput !== null) {
-    statusInput.value = statusValue;
+  // Map UI value to DB fields
+  if (isActiveInput !== null && isArchivedInput !== null) {
+    updateStatusHiddenInputs(statusValue, isActiveInput, isArchivedInput);
   }
 
   // Update the display badge
-  if (statusTrigger !== null && statusValue !== '') {
-    const triggerSpan = statusTrigger.querySelector('span');
-    if (triggerSpan !== null) {
-      // Set badge HTML based on status value - safe controlled template strings
-      if (statusValue === 'active') {
-        setSafeHTML(triggerSpan, '<span class="badge badge--success">Aktiv</span>');
-      } else if (statusValue === 'inactive') {
-        setSafeHTML(triggerSpan, '<span class="badge badge--warning">Inaktiv</span>');
-      } else if (statusValue === 'archived') {
-        setSafeHTML(triggerSpan, '<span class="badge badge--error">Archiviert</span>');
-      }
-    }
+  if (statusTrigger === null || statusValue === '') return;
+
+  const triggerSpan = statusTrigger.querySelector('span');
+  if (triggerSpan !== null) {
+    setSafeHTML(triggerSpan, getStatusBadgeHtml(statusValue));
   }
 }
 
@@ -585,64 +689,6 @@ export function hideEditModeElements(): void {
   if (emailConfirmGroup) emailConfirmGroup.style.display = '';
   if (passwordGroup) passwordGroup.style.display = '';
   if (passwordConfirmGroup) passwordConfirmGroup.style.display = '';
-}
-
-export async function setPermissionType(admin: Admin): Promise<void> {
-  // Reset all permission type radio buttons
-  $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
-    (radio as HTMLInputElement).checked = false;
-  });
-
-  // Hide all containers first
-  const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-  const groupContainer = $$('#group-select-container');
-  if (deptContainer) deptContainer.style.display = 'none';
-  if (groupContainer) groupContainer.style.display = 'none';
-
-  if (admin.hasAllAccess === true) {
-    setRadioButton('all');
-  } else if (admin.departments !== undefined && admin.departments.length > 0) {
-    setRadioButton('specific');
-    await setupDepartmentSelection(admin, deptContainer);
-  } else {
-    setRadioButton('none');
-  }
-}
-
-export function setRadioButton(value: string): void {
-  const radio = document.querySelector(`input[name="permission-type"][value="${value}"]`);
-  if (radio) {
-    (radio as HTMLInputElement).checked = true;
-    console.info(`✅ Set permission type to: ${value}`);
-  } else {
-    console.error(`❌ Radio button not found for value: ${value}`);
-  }
-}
-
-export async function setupDepartmentSelection(admin: Admin, deptContainer: HTMLElement | null): Promise<void> {
-  if (!deptContainer) return;
-
-  // Remove hidden class and show container
-  deptContainer.classList.remove('hidden');
-  deptContainer.style.display = 'block';
-  await loadAndPopulateDepartments();
-
-  const deptSelect = $$(SELECTORS.DEPARTMENT_SELECT) as HTMLSelectElement | null;
-  if (!deptSelect) return;
-
-  // Clear all selections first
-  [...deptSelect.options].forEach((option) => (option.selected = false));
-
-  // Select assigned departments
-  if (admin.departments) {
-    admin.departments.forEach((dept) => {
-      const option = [...deptSelect.options].find((opt) => opt.value === dept.id.toString());
-      if (option) {
-        option.selected = true;
-        console.info('✅ Selected department:', dept.name);
-      }
-    });
-  }
 }
 
 export function setOptionalFields(): void {
@@ -727,11 +773,16 @@ export function resetPositionDropdown(): void {
  * Reset status dropdown to default (active)
  */
 export function resetStatusDropdown(): void {
-  const statusInput = $$(SELECTORS.ADMIN_STATUS) as HTMLInputElement | null;
+  const isActiveInput = $$(SELECTORS.ADMIN_IS_ACTIVE) as HTMLInputElement | null;
+  const isArchivedInput = $$(SELECTORS.ADMIN_IS_ARCHIVED) as HTMLInputElement | null;
   const statusTrigger = $$('#status-trigger');
 
-  if (statusInput !== null) {
-    statusInput.value = 'active';
+  // Reset to active state (isActive=1, isArchived=0)
+  if (isActiveInput !== null) {
+    isActiveInput.value = '1';
+  }
+  if (isArchivedInput !== null) {
+    isArchivedInput.value = '0';
   }
 
   // Reset display badge to active
@@ -763,27 +814,10 @@ export function resetErrorMessages(): void {
   if (passwordError) passwordError.classList.add('u-hidden');
 }
 
-export function resetPermissionSettings(): void {
-  $all(SELECTORS.PERMISSION_TYPE_RADIO).forEach((radio) => {
-    (radio as HTMLInputElement).checked = false;
-  });
-
-  const deptContainer = $$(SELECTORS.DEPARTMENT_SELECT_CONTAINER);
-  const groupContainer = $$('#group-select-container');
-  if (deptContainer) deptContainer.style.display = 'none';
-  if (groupContainer) groupContainer.style.display = 'none';
-
-  const noneRadio = document.querySelector('input[name="permission-type"][value="none"]');
-  if (noneRadio) {
-    (noneRadio as HTMLInputElement).checked = true;
-  }
-}
-
 export function resetModalUIElements(): void {
   resetPositionDropdown();
   resetFormVisibility();
   resetErrorMessages();
-  resetPermissionSettings();
 
   // Reset password strength UI to prevent cached validation state
   resetPasswordStrengthUI({
@@ -794,6 +828,82 @@ export function resetModalUIElements(): void {
 }
 
 // ===== MODAL HANDLERS =====
+
+// N:M REFACTORING: Constants and helper functions for organization selects
+const OPACITY_REDUCED_CLASS = 'opacity-50';
+
+/**
+ * Set disabled state for a select element
+ */
+function setSelectDisabled(selectId: string, disabled: boolean): void {
+  const select = $$id(selectId) as HTMLSelectElement | null;
+  if (select !== null) select.disabled = disabled;
+}
+
+/**
+ * Toggle opacity class on container element
+ */
+function setContainerOpacity(containerId: string, reduced: boolean): void {
+  const container = $$id(containerId);
+  if (reduced) {
+    container?.classList.add(OPACITY_REDUCED_CLASS);
+  } else {
+    container?.classList.remove(OPACITY_REDUCED_CLASS);
+  }
+}
+
+/**
+ * Apply visual state to organization selects based on full access mode
+ * N:M REFACTORING: Extracted to reduce duplication
+ */
+function applyOrganizationSelectsVisual(hasFullAccess: boolean): void {
+  // Update select disabled states
+  setSelectDisabled('admin-areas', hasFullAccess);
+  setSelectDisabled('admin-departments', hasFullAccess);
+  setSelectDisabled('admin-teams', hasFullAccess);
+
+  // Update container opacity states
+  setContainerOpacity('admin-area-select-container', hasFullAccess);
+  setContainerOpacity('admin-department-select-container', hasFullAccess);
+  setContainerOpacity('admin-team-select-container', hasFullAccess);
+}
+
+/**
+ * Load and restore organization selections for editing
+ * N:M REFACTORING: Extracted to reduce function size
+ *
+ * Order matters:
+ * 1. Load all data (areas, departments) - NOTE: teams removed (inherited)
+ * 2. Restore area selections
+ * 3. Filter departments (hide those covered by selected areas)
+ * 4. Restore department selections (only for remaining visible departments)
+ */
+async function loadAndRestoreOrganizationSelections(admin: Admin): Promise<void> {
+  await loadAreasForAdminForm();
+  await loadDepartmentsForAdminForm();
+  // NOTE: loadTeamsForAdminForm removed - Admins get teams via inheritance
+
+  const areaIds = admin.areaIds ?? admin.areas?.map((a) => a.id) ?? [];
+  const departmentIds = admin.departmentIds ?? admin.departments?.map((d) => d.id) ?? [];
+  const hasFullAccess = admin.hasFullAccess === true || admin.hasFullAccess === 1;
+
+  console.info('[loadAndRestoreOrganizationSelections] Restoring:', { areaIds, departmentIds, hasFullAccess });
+
+  // 1. Restore area selections FIRST
+  if (areaIds.length > 0) {
+    setMultiSelectValues('admin-areas', areaIds);
+  }
+
+  // 2. Filter departments based on selected areas
+  // This hides departments that are already covered by area inheritance
+  filterDepartmentsBySelectedAreas();
+
+  // 3. Restore department selections (only visible departments)
+  if (departmentIds.length > 0) {
+    setMultiSelectValues('admin-departments', departmentIds);
+  }
+  // NOTE: Team filtering/restoring removed - Admins get teams via inheritance
+}
 
 export async function editAdminHandler(adminId: number): Promise<void> {
   setCurrentAdminId(adminId);
@@ -807,12 +917,6 @@ export async function editAdminHandler(adminId: number): Promise<void> {
   setPositionDropdown(admin.position ?? '');
   setStatusDropdown(getStatusValue(admin));
   hideEditModeElements();
-
-  console.info('🔵 Loading department assignments for admin:', adminId);
-  console.info('Admin departments:', admin.departments);
-  console.info('Admin hasAllAccess:', admin.hasAllAccess);
-
-  await setPermissionType(admin);
   setOptionalFields();
 
   const adminModal = $$('#admin-modal');
@@ -828,22 +932,18 @@ export async function editAdminHandler(adminId: number): Promise<void> {
   );
 
   // Setup password strength validation
-  setupPasswordStrength({
-    passwordFieldId: 'admin-password',
-    strengthContainerId: 'admin-password-strength-container',
-    strengthBarId: 'admin-password-strength-bar',
-    strengthLabelId: 'admin-password-strength-label',
-    strengthTimeId: 'admin-password-strength-time',
-    feedbackContainerId: 'admin-password-feedback',
-    feedbackWarningId: 'admin-password-feedback-warning',
-    feedbackSuggestionsId: 'admin-password-feedback-suggestions',
-    getUserInputs: () => {
-      const firstName = ($$id('admin-first-name') as HTMLInputElement | null)?.value ?? '';
-      const lastName = ($$id('admin-last-name') as HTMLInputElement | null)?.value ?? '';
-      const email = ($$id('admin-email') as HTMLInputElement | null)?.value ?? '';
-      return [firstName, lastName, email].filter((v) => v !== '');
-    },
-  });
+  initAdminPasswordStrength();
+
+  // N:M REFACTORING: Set full access toggle and apply visual state
+  const fullAccessToggle = $$id('admin-full-access') as HTMLInputElement | null;
+  const hasFullAccess = admin.hasFullAccess === true || admin.hasFullAccess === 1;
+  if (fullAccessToggle !== null) {
+    fullAccessToggle.checked = hasFullAccess;
+  }
+  applyOrganizationSelectsVisual(hasFullAccess);
+
+  // Load areas and departments, then restore selections
+  await loadAndRestoreOrganizationSelections(admin);
 }
 
 export function showAddAdminModal(): void {
@@ -889,22 +989,23 @@ export function showAddAdminModal(): void {
   );
 
   // Setup password strength validation
-  setupPasswordStrength({
-    passwordFieldId: 'admin-password',
-    strengthContainerId: 'admin-password-strength-container',
-    strengthBarId: 'admin-password-strength-bar',
-    strengthLabelId: 'admin-password-strength-label',
-    strengthTimeId: 'admin-password-strength-time',
-    feedbackContainerId: 'admin-password-feedback',
-    feedbackWarningId: 'admin-password-feedback-warning',
-    feedbackSuggestionsId: 'admin-password-feedback-suggestions',
-    getUserInputs: () => {
-      const firstName = ($$id('admin-first-name') as HTMLInputElement | null)?.value ?? '';
-      const lastName = ($$id('admin-last-name') as HTMLInputElement | null)?.value ?? '';
-      const email = ($$id('admin-email') as HTMLInputElement | null)?.value ?? '';
-      return [firstName, lastName, email].filter((v) => v !== '');
-    },
-  });
+  initAdminPasswordStrength();
+
+  // N:M REFACTORING: Reset and load organization selects
+  const fullAccessToggle = $$id('admin-full-access') as HTMLInputElement | null;
+  if (fullAccessToggle !== null) {
+    fullAccessToggle.checked = false;
+  }
+  applyOrganizationSelectsVisual(false); // Reset to enabled state
+
+  // Load organization data and apply filters after all data is loaded
+  // NOTE: Teams removed - Admins get teams via inheritance
+  void (async () => {
+    await loadAreasForAdminForm();
+    await loadDepartmentsForAdminForm();
+    // Filter departments: hide those that belong to selected areas (none selected in add mode)
+    filterDepartmentsBySelectedAreas();
+  })();
 }
 
 export function closeAdminModal(): void {
@@ -922,80 +1023,6 @@ export function closeAdminModal(): void {
   // Cleanup password toggle event listeners to prevent memory leak
   passwordToggleCleanup?.abort();
   passwordToggleCleanup = null;
-}
-
-export function closePermissionsModal(): void {
-  const modal = $$('#permissions-modal');
-  if (modal) {
-    modal.classList.remove(MODAL_ACTIVE_CLASS);
-  }
-}
-
-// Show permissions modal
-export async function showPermissionsModal(adminId: number): Promise<void> {
-  console.info('showPermissionsModal called with admin ID:', adminId);
-
-  const admin = admins.find((a) => a.id === adminId);
-  if (!admin) {
-    console.error('Admin not found:', adminId);
-    return;
-  }
-
-  console.info('Found admin:', admin);
-
-  // Update modal info
-  const adminNameSpan = $$('#perm-admin-name');
-  const adminEmailSpan = $$('#perm-admin-email');
-  if (adminNameSpan) {
-    adminNameSpan.textContent = `${admin.firstName ?? ''} ${admin.lastName ?? ''}`.trim();
-  }
-  if (adminEmailSpan) {
-    adminEmailSpan.textContent = admin.email;
-  }
-
-  // Store admin ID for save handler
-  setCurrentAdminId(adminId);
-
-  // Load current permissions
-  const permissionsResponse = await loadAdminPermissions(adminId);
-  console.info('Current permissions:', permissionsResponse);
-
-  // Update admin object with loaded permissions
-  admin.departments = permissionsResponse.departments;
-  admin.hasAllAccess = permissionsResponse.hasAllAccess;
-
-  // Set permission type and load department list if needed
-  await setPermissionType(admin);
-
-  // Show modal
-  const modal = $$('#permissions-modal');
-  if (modal) {
-    modal.classList.add(MODAL_ACTIVE_CLASS);
-  }
-}
-
-// Save permissions handler - updated for radio button based permissions
-export async function savePermissionsHandler(): Promise<void> {
-  if (currentAdminId === null) {
-    console.error('No admin ID set');
-    return;
-  }
-
-  try {
-    // Update permissions based on selected type (radio buttons and department select)
-    await updatePermissions(currentAdminId);
-    showSuccessAlert('Berechtigungen aktualisiert');
-    closePermissionsModal();
-
-    // Reload admin list to update badge display - window function is set by index.ts
-    const manageWindow = window as unknown as import('./types').ManageAdminsWindow;
-    if (typeof manageWindow.reloadAdminsTable === 'function') {
-      await manageWindow.reloadAdminsTable();
-    }
-  } catch (error) {
-    console.error('Error saving permissions:', error);
-    showErrorAlert('Netzwerkfehler beim Speichern');
-  }
 }
 
 // Form submit handling
@@ -1067,6 +1094,34 @@ function handleSaveError(error: unknown): void {
   showErrorAlert('Fehler beim Speichern: ' + (errorMessage !== '' ? errorMessage : 'Netzwerkfehler'));
 }
 
+/**
+ * Update N:M organization permissions for an admin
+ * N:M REFACTORING: Extracted to reduce cognitive complexity
+ */
+async function updateOrganizationPermissions(adminId: number, formData: AdminFormData): Promise<void> {
+  // 1. Update has_full_access flag
+  await setUserFullAccess(adminId, formData.hasFullAccess ?? false);
+
+  // 2. Update area permissions (only if not full access)
+  if (formData.hasFullAccess !== true) {
+    const areaIds = formData.areaIds ?? [];
+    await updateUserAreaPermissions(adminId, areaIds);
+  }
+
+  // 3. Update department permissions (only if not full access)
+  if (formData.hasFullAccess !== true) {
+    const departmentIds = formData.departmentIds ?? [];
+    await updateAdminPermissions(adminId, departmentIds, []);
+  }
+
+  console.info('[updateOrganizationPermissions] N:M permissions updated:', {
+    adminId,
+    hasFullAccess: formData.hasFullAccess,
+    areaIds: formData.areaIds,
+    departmentIds: formData.departmentIds,
+  });
+}
+
 export async function handleFormSubmit(e: Event): Promise<void> {
   e.preventDefault();
 
@@ -1085,12 +1140,15 @@ export async function handleFormSubmit(e: Event): Promise<void> {
     // Save admin
     const adminId = await saveAdminAPI(formData);
 
-    // Update permissions
-    await updatePermissions(adminId);
+    // N:M REFACTORING: Update organization permissions
+    // This handles has_full_access, areas, and departments
+    await updateOrganizationPermissions(adminId, formData);
 
-    showSuccessAlert(
-      currentAdminId !== null && currentAdminId !== 0 ? 'Administrator aktualisiert' : 'Administrator hinzugefügt',
-    );
+    // NOTE: Legacy updatePermissions() removed - it was overwriting N:M permissions
+    // with empty arrays because it reads from radio buttons that no longer exist
+
+    const isUpdate = currentAdminId !== null && currentAdminId !== 0;
+    showSuccessAlert(isUpdate ? 'Administrator aktualisiert' : 'Administrator hinzugefügt');
     closeAdminModal();
   } catch (error) {
     handleSaveError(error);

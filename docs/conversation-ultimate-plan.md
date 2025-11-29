@@ -258,7 +258,7 @@ const messages = await query(
 ### 1. Security Fix (KRITISCH!)
 
 ```bash
-docker exec -it assixx-mysql mysql -u assixx_user -pAssixxP@ss2025! main
+docker exec -it assixx-mysql mysql -u assixx_user -pYOUR_PASSWORD main
 ```
 
 Dann SQL von oben ausführen für `conversation_participants.tenant_id`

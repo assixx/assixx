@@ -35,12 +35,7 @@ export async function loadRootUsers(): Promise<RootUser[]> {
   return allRootUsers;
 }
 
-/**
- * Load departments for dropdown
- */
-export async function loadDepartments(): Promise<{ id: number; name: string }[]> {
-  return await apiClient.request<{ id: number; name: string }[]>('/departments', { method: 'GET' }, { version: 'v2' });
-}
+// N:M REFACTORING: loadDepartments removed - Root users have has_full_access=1, no department assignment needed
 
 /**
  * Delete root user by ID

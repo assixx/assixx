@@ -9,6 +9,7 @@ import blackboard, {
   EntryQueryOptions,
   EntryUpdateData,
 } from '../../../models/blackboard.js';
+import { hierarchyPermissionService } from '../../../services/hierarchyPermission.service.js';
 import { ServiceError } from '../../../utils/ServiceError.js';
 import { query as executeQuery } from '../../../utils/db.js';
 import { dbToApi } from '../../../utils/fieldMapping.js';
@@ -95,6 +96,7 @@ export interface BlackboardComment {
   firstName?: string;
   lastName?: string;
   role?: string;
+  profilePicture?: string | null;
 }
 
 /**
@@ -184,6 +186,59 @@ class BlackboardService {
   }
 
   /**
+   * Validate that user has permission to assign entry to specified organizations
+   * SECURITY: Prevents users from creating/updating entries for orgs they can't access
+   *
+   * @param userId - The user ID
+   * @param tenantId - The tenant ID
+   * @param areaIds - Areas to assign
+   * @param departmentIds - Departments to assign
+   * @param teamIds - Teams to assign
+   */
+  private async validateOrgPermissions(
+    userId: number,
+    tenantId: number,
+    areaIds: number[] = [],
+    departmentIds: number[] = [],
+    teamIds: number[] = [],
+  ): Promise<void> {
+    // Get user's accessible orgs
+    const [accessibleAreas, accessibleDepts, accessibleTeams] = await Promise.all([
+      hierarchyPermissionService.getAccessibleAreaIds(userId, tenantId),
+      hierarchyPermissionService.getAccessibleDepartmentIds(userId, tenantId),
+      hierarchyPermissionService.getAccessibleTeamIds(userId, tenantId),
+    ]);
+
+    const accessibleAreaSet = new Set(accessibleAreas);
+    const accessibleDeptSet = new Set(accessibleDepts);
+    const accessibleTeamSet = new Set(accessibleTeams);
+
+    // Check areas
+    for (const areaId of areaIds) {
+      if (!accessibleAreaSet.has(areaId)) {
+        throw new ServiceError('FORBIDDEN', `No permission to create entries for area ${areaId}`);
+      }
+    }
+
+    // Check departments
+    for (const deptId of departmentIds) {
+      if (!accessibleDeptSet.has(deptId)) {
+        throw new ServiceError(
+          'FORBIDDEN',
+          `No permission to create entries for department ${deptId}`,
+        );
+      }
+    }
+
+    // Check teams
+    for (const teamId of teamIds) {
+      if (!accessibleTeamSet.has(teamId)) {
+        throw new ServiceError('FORBIDDEN', `No permission to create entries for team ${teamId}`);
+      }
+    }
+  }
+
+  /**
    * Sync entry organizations in mapping table
    * Deletes existing and inserts new mappings
    * @param entryId - The entry ID
@@ -227,6 +282,49 @@ class BlackboardService {
     }
   }
 
+  /** Check if data uses multi-org assignment (N:M arrays) */
+  private hasMultiOrgAssignment(data: BlackboardCreateData | BlackboardUpdateData): boolean {
+    return (
+      (data.departmentIds?.length ?? 0) > 0 ||
+      (data.teamIds?.length ?? 0) > 0 ||
+      (data.areaIds?.length ?? 0) > 0
+    );
+  }
+
+  /** Build entry create data from BlackboardCreateData */
+  private buildEntryCreateData(
+    data: BlackboardCreateData,
+    tenantId: number,
+    authorId: number,
+  ): EntryCreateData {
+    const entryData: EntryCreateData = {
+      tenant_id: tenantId,
+      title: data.title,
+      content: data.content,
+      org_level: data.orgLevel ?? 'company',
+      org_id: data.orgId ?? null,
+      author_id: authorId,
+    };
+
+    // Map N:M arrays to main table columns for backwards compatibility
+    if ((data.areaIds?.length ?? 0) > 0) {
+      entryData.org_level = 'area';
+      entryData.area_id = data.areaIds?.[0] ?? null;
+    } else if ((data.departmentIds?.length ?? 0) > 0) {
+      entryData.org_level = 'department';
+      entryData.org_id = data.departmentIds?.[0] ?? null;
+    } else if ((data.teamIds?.length ?? 0) > 0) {
+      entryData.org_level = 'team';
+      entryData.org_id = data.teamIds?.[0] ?? null;
+    }
+
+    if (data.expiresAt !== undefined) entryData.expires_at = data.expiresAt;
+    if (data.priority !== undefined) entryData.priority = data.priority;
+    if (data.color !== undefined) entryData.color = data.color;
+
+    return entryData;
+  }
+
   /**
    * Create a new blackboard entry
    * @param data - The data object
@@ -238,15 +336,20 @@ class BlackboardService {
     tenantId: number,
     authorId: number,
   ): Promise<BlackboardEntry> {
-    // Determine if using multi-org or legacy single-org
-    const hasMultiOrg =
-      (data.departmentIds?.length ?? 0) > 0 ||
-      (data.teamIds?.length ?? 0) > 0 ||
-      (data.areaIds?.length ?? 0) > 0;
+    const hasMultiOrg = this.hasMultiOrgAssignment(data);
+
+    // SECURITY: Validate user has permission to assign to these orgs
+    if (hasMultiOrg) {
+      await this.validateOrgPermissions(
+        authorId,
+        tenantId,
+        data.areaIds ?? [],
+        data.departmentIds ?? [],
+        data.teamIds ?? [],
+      );
+    }
 
     // Backwards compatibility: validate legacy org_level/org_id
-    // Note: If orgLevel is undefined/null AND no multi-org selections, treat as company-wide (valid)
-    // Only error if orgLevel is explicitly set to non-company value without orgId
     if (
       !hasMultiOrg &&
       data.orgLevel !== undefined &&
@@ -259,27 +362,13 @@ class BlackboardService {
       );
     }
 
-    // For multi-org entries, always set org_level to 'company' (company-wide with specific org mappings)
-    // Build entryData conditionally to satisfy exactOptionalPropertyTypes
-    const entryData: EntryCreateData = {
-      tenant_id: tenantId,
-      title: data.title,
-      content: data.content,
-      org_level: hasMultiOrg ? 'company' : (data.orgLevel ?? 'company'),
-      org_id: hasMultiOrg ? null : (data.orgId ?? null),
-      author_id: authorId,
-    };
-
-    if (data.expiresAt !== undefined) entryData.expires_at = data.expiresAt;
-    if (data.priority !== undefined) entryData.priority = data.priority;
-    if (data.color !== undefined) entryData.color = data.color;
-
+    const entryData = this.buildEntryCreateData(data, tenantId, authorId);
     const entry = await blackboard.createEntry(entryData);
     if (!entry) {
       throw new ServiceError('SERVER_ERROR', 'Failed to create entry');
     }
 
-    // Sync multi-organization mappings if provided
+    // Sync multi-organization mappings if provided (N:M table)
     if (hasMultiOrg) {
       await this.syncEntryOrganizations(
         entry.id,
@@ -292,17 +381,59 @@ class BlackboardService {
     return this.transformEntry(entry);
   }
 
-  /** Build update data object from BlackboardUpdateData */
-  private buildEntryUpdateData(data: BlackboardUpdateData, userId: number): EntryUpdateData {
-    const updateData: EntryUpdateData = { author_id: userId };
+  /** Apply basic fields (title, content, etc.) to update data */
+  private applyBasicFields(updateData: EntryUpdateData, data: BlackboardUpdateData): void {
     if (data.title !== undefined) updateData.title = data.title;
     if (data.content !== undefined) updateData.content = data.content;
-    if (data.orgLevel !== undefined) updateData.org_level = data.orgLevel;
-    if (data.orgId !== undefined && data.orgId !== null) updateData.org_id = data.orgId;
     if (data.expiresAt !== undefined) updateData.expires_at = data.expiresAt;
     if (data.priority !== undefined) updateData.priority = data.priority;
     if (data.color !== undefined) updateData.color = data.color;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.orgLevel !== undefined) updateData.org_level = data.orgLevel;
+    if (data.orgId !== undefined && data.orgId !== null) updateData.org_id = data.orgId;
+  }
+
+  /** Apply org assignments from N:M arrays to main table columns */
+  private applyOrgAssignments(updateData: EntryUpdateData, data: BlackboardUpdateData): void {
+    const firstAreaId = data.areaIds?.[0];
+    const firstDeptId = data.departmentIds?.[0];
+    const firstTeamId = data.teamIds?.[0];
+
+    // Priority: area > department > team
+    if (firstAreaId !== undefined) {
+      updateData.area_id = firstAreaId;
+      updateData.org_level = 'area';
+    } else if (data.areaIds !== undefined) {
+      updateData.area_id = null;
+    }
+
+    if (firstDeptId !== undefined) {
+      updateData.org_level = 'department';
+      updateData.org_id = firstDeptId;
+    }
+
+    if (firstTeamId !== undefined) {
+      updateData.org_level = 'team';
+      updateData.org_id = firstTeamId;
+    }
+
+    // If no assignments but arrays were provided, set to company level
+    const hasNoAssignments =
+      firstAreaId === undefined && firstDeptId === undefined && firstTeamId === undefined;
+    const arraysProvided =
+      data.areaIds !== undefined || data.departmentIds !== undefined || data.teamIds !== undefined;
+    if (hasNoAssignments && arraysProvided) {
+      updateData.org_level = 'company';
+      updateData.org_id = null;
+      updateData.area_id = null;
+    }
+  }
+
+  /** Build update data object from BlackboardUpdateData */
+  private buildEntryUpdateData(data: BlackboardUpdateData, userId: number): EntryUpdateData {
+    const updateData: EntryUpdateData = { author_id: userId };
+    this.applyBasicFields(updateData, data);
+    this.applyOrgAssignments(updateData, data);
     return updateData;
   }
 
@@ -336,6 +467,20 @@ class BlackboardService {
     userId: number,
   ): Promise<BlackboardEntry> {
     await this.lookupEntry(id, tenantId, userId); // Verify access
+
+    // SECURITY: Validate user has permission to assign to these orgs
+    const hasMultiOrg =
+      data.departmentIds !== undefined || data.teamIds !== undefined || data.areaIds !== undefined;
+    if (hasMultiOrg) {
+      await this.validateOrgPermissions(
+        userId,
+        tenantId,
+        data.areaIds ?? [],
+        data.departmentIds ?? [],
+        data.teamIds ?? [],
+      );
+    }
+
     const updateData = this.buildEntryUpdateData(data, userId);
     const entry = await blackboard.updateEntry(id, updateData, tenantId);
     if (!entry) {
@@ -343,8 +488,6 @@ class BlackboardService {
     }
 
     // Sync multi-organization mappings if provided
-    const hasMultiOrg =
-      data.departmentIds !== undefined || data.teamIds !== undefined || data.areaIds !== undefined;
     if (hasMultiOrg) {
       await this.syncEntryOrganizations(
         entry.id,
@@ -359,25 +502,33 @@ class BlackboardService {
 
   /**
    * Delete a blackboard entry
+   * Only allowed for: root users OR the entry author
    * @param id - The resource ID (numeric or UUID)
    * @param tenantId - The tenant ID
    * @param userId - The user ID
+   * @param userRole - The user's role (root/admin/employee)
    */
   async deleteEntry(
     id: number | string,
     tenantId: number,
     userId: number,
+    userRole: string,
   ): Promise<{ message: string }> {
     // Check if entry exists and user has access (use dual-ID lookup)
-    let entry;
-    if (typeof id === 'string') {
-      entry = await blackboard.getEntryByUuid(id, tenantId, userId);
-    } else {
-      entry = await blackboard.getEntryById(id, tenantId, userId);
-    }
+    const entry =
+      typeof id === 'string' ?
+        await blackboard.getEntryByUuid(id, tenantId, userId)
+      : await blackboard.getEntryById(id, tenantId, userId);
 
     if (!entry) {
       throw new ServiceError('NOT_FOUND', ERROR_ENTRY_NOT_FOUND);
+    }
+
+    // SECURITY: Only root or author can delete
+    const isRoot = userRole === 'root';
+    const isAuthor = entry.author_id === userId;
+    if (!isRoot && !isAuthor) {
+      throw new ServiceError('FORBIDDEN', 'Only the author or root can delete this entry');
     }
 
     const success = await blackboard.deleteEntry(id, tenantId);
@@ -430,6 +581,19 @@ class BlackboardService {
       );
     }
     return { message: 'Entry confirmed successfully' };
+  }
+
+  /**
+   * Remove confirmation (mark as unread)
+   * @param entryId - The entry ID (numeric or UUID)
+   * @param userId - The user ID
+   */
+  async unconfirmEntry(entryId: number | string, userId: number): Promise<{ message: string }> {
+    const success = await blackboard.unconfirmEntry(entryId, userId);
+    if (!success) {
+      throw new ServiceError('BAD_REQUEST', 'Entry was not confirmed or does not exist');
+    }
+    return { message: 'Entry marked as unread successfully' };
   }
 
   /**
@@ -550,6 +714,8 @@ class BlackboardService {
     if (comment.user_first_name !== undefined) result.firstName = comment.user_first_name;
     if (comment.user_last_name !== undefined) result.lastName = comment.user_last_name;
     if (comment.user_role !== undefined) result.role = comment.user_role;
+    if (comment.user_profile_picture !== undefined)
+      result.profilePicture = comment.user_profile_picture;
 
     return result;
   }

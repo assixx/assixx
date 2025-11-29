@@ -14,6 +14,7 @@ interface DbTeam extends RowDataPacket {
   created_at?: Date;
   updated_at?: Date;
   is_active?: boolean;
+  is_archived?: boolean;
   // Extended fields from joins
   department_name?: string;
   team_lead_name?: string;
@@ -39,6 +40,8 @@ interface TeamCreateData {
   department_id?: number;
   team_lead_id?: number;
   tenant_id: number;
+  is_active?: number; // TINYINT(1) 0 or 1
+  is_archived?: number; // TINYINT(1) 0 or 1
 }
 
 interface TeamUpdateData {
@@ -47,6 +50,7 @@ interface TeamUpdateData {
   department_id?: number | null;
   team_lead_id?: number | null;
   is_active?: boolean | number;
+  is_archived?: boolean | number;
 }
 
 interface MysqlError extends Error {
@@ -56,12 +60,20 @@ interface MysqlError extends Error {
 }
 
 export async function createTeam(teamData: TeamCreateData): Promise<number> {
-  const { name, description, department_id, team_lead_id, tenant_id } = teamData;
+  const {
+    name,
+    description,
+    department_id,
+    team_lead_id,
+    tenant_id,
+    is_active = 1,
+    is_archived = 0,
+  } = teamData;
   logger.info(`Creating new team: ${name}`);
 
   const query = `
-      INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO teams (name, description, department_id, team_lead_id, tenant_id, is_active, is_archived)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
   try {
@@ -71,6 +83,8 @@ export async function createTeam(teamData: TeamCreateData): Promise<number> {
       department_id,
       team_lead_id,
       tenant_id,
+      is_active,
+      is_archived,
     ]);
     logger.info(`Team created successfully with ID ${String(result.insertId)}`);
     return result.insertId;
@@ -84,9 +98,10 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
   logger.info(
     `Fetching all teams${tenant_id != null && tenant_id !== 0 ? ` for tenant ${String(tenant_id)}` : ''}`,
   );
+  // NOTE: Returns ALL teams (active, inactive, archived) - filtering done in frontend
   const query = `
       SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id,
-             t.tenant_id, t.created_at, t.updated_at, t.is_active,
+             t.tenant_id, t.created_at, t.updated_at, t.is_active, t.is_archived,
              d.name AS department_name,
              CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name,
              (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) AS member_count,
@@ -102,7 +117,7 @@ export async function findAllTeams(tenant_id: number | null = null): Promise<DbT
       FROM teams t
       LEFT JOIN departments d ON t.department_id = d.id
       LEFT JOIN users u ON t.team_lead_id = u.id
-      ${tenant_id != null && tenant_id !== 0 ? 'WHERE t.tenant_id = ? AND t.is_active = 1' : 'WHERE t.is_active = 1'}
+      ${tenant_id != null && tenant_id !== 0 ? 'WHERE t.tenant_id = ?' : ''}
       ORDER BY t.name
     `;
 
@@ -124,7 +139,7 @@ export async function findTeamById(id: number, tenantId: number): Promise<DbTeam
   // SECURITY: Always include tenant_id in WHERE clause to prevent cross-tenant data access
   const query = `
       SELECT t.id, t.name, t.description, t.department_id, t.team_lead_id,
-             t.tenant_id, t.created_at, t.updated_at, t.is_active,
+             t.tenant_id, t.created_at, t.updated_at, t.is_active, t.is_archived,
              d.name AS department_name,
              CONCAT(u.first_name, ' ', u.last_name) AS team_lead_name
       FROM teams t
@@ -154,7 +169,7 @@ function buildUpdateQuery(teamData: TeamUpdateData): {
 } {
   const updateFields: string[] = [];
   const values: unknown[] = [];
-  const { name, description, department_id, team_lead_id, is_active } = teamData;
+  const { name, description, department_id, team_lead_id, is_active, is_archived } = teamData;
 
   if (name !== undefined) {
     updateFields.push('name = ?');
@@ -175,6 +190,10 @@ function buildUpdateQuery(teamData: TeamUpdateData): {
   if (is_active !== undefined) {
     updateFields.push('is_active = ?');
     values.push(is_active);
+  }
+  if (is_archived !== undefined) {
+    updateFields.push('is_archived = ?');
+    values.push(is_archived);
   }
 
   return { updateFields, values };

@@ -8,27 +8,6 @@
   margin-bottom: 32px;
 }
 
-/* Stat Card - Individual stat display
- * WHY: Dynamically created by root.ts (Line 262-264)
- * Shows metrics like Admin count, Employee count, etc. */
-#dashboard-data .stat-card {
-  padding: 24px;
-  border: 1px solid hsl(0deg 0% 100% / 10%);
-  border-radius: var(--radius-xl);
-
-  text-align: center;
-
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-backdrop);
-  box-shadow: var(--shadow-sm);
-}
-
-/* Stat Card Hover Effect
- * WHY: Visual feedback when hovering over stat cards */
-#dashboard-data .stat-card:hover {
-  border-color: rgb(33 150 243 / 50%);
-}
-
 /* Stat Value - Large number display
  * WHY: Dynamically created by root.ts (Line 263)
  * Displays the actual count/metric value */

@@ -42,6 +42,12 @@ export interface User {
   team?: string | undefined;
   teamId?: number | undefined;
   teamName?: string | undefined;
+  // INHERITANCE-FIX: Full inheritance chain from Team → Department → Area
+  teamDepartmentId?: number | undefined;
+  teamDepartmentName?: string | undefined;
+  teamAreaId?: number | undefined;
+  teamAreaName?: string | undefined;
+  hasFullAccess?: boolean | number | undefined;
   hireDate?: string | undefined;
   street?: string | undefined;
   houseNumber?: string | undefined;

@@ -45,7 +45,12 @@
 @import "../design-system/primitives/choice-cards/choice-card.feature.css";
 @import "../design-system/primitives/choice-cards/choice-card.plan.css";
 
-/* FontAwesome is loaded separately in HTML files */
+/* FontAwesome - loaded globally (91% of pages need it, browser caches it)
+   Previously loaded individually in each HTML file which caused:
+   - Forgotten imports (login.html bug)
+   - Duplicate imports (some pages loaded it 2x)
+   Now centralized here for consistency */
+@import "./lib/fontawesome.min.css";
 
 /* Theme and core styles */
 @import "./dashboard-theme.css";

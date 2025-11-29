@@ -71,60 +71,63 @@ export async function updateTemporaryEmployeeId(
 
 /**
  * Build query parameters for user creation
+ * N:M REFACTORING: department_id removed - departments assigned via user_departments table
+ * Root users automatically get has_full_access = 1 for full tenant access
+ * REMOVED: company and iban columns dropped (2025-11-27)
  */
 export function buildUserQueryParams(
   userData: UserCreateData,
   finalUsername: string,
   hashedPassword: string,
   finalEmployeeId: string | undefined,
-  iban: string,
 ): unknown[] {
   const {
     email,
     role,
-    company,
+    // REMOVED: company column dropped (2025-11-27)
     notes,
     first_name: firstName,
     last_name: lastName,
     age,
     employee_number: employeeNumber,
-    department_id: departmentId,
+    // N:M REFACTORING: department_id removed
     position,
     phone,
     address,
-    birthday,
+    date_of_birth: dateOfBirth,
     hire_date: hireDate,
     emergency_contact: emergencyContact,
     profile_picture: profilePicture,
-    status = 'active',
     is_archived: isArchived = 0,
     is_active: isActive = 1,
   } = userData;
 
+  // Root users get full tenant access, others don't
+  const hasFullAccess = role === 'root' ? 1 : 0;
+
+  // REMOVED: company and iban from INSERT (2025-11-27)
   return [
     finalUsername,
     email,
     hashedPassword,
     role,
-    company,
     notes,
     firstName,
     lastName,
     age,
     finalEmployeeId,
     employeeNumber ?? `EMP${Date.now()}`,
-    iban,
-    departmentId,
+    // N:M REFACTORING: department_id removed from INSERT
     position,
     phone,
     address,
-    birthday,
+    dateOfBirth,
     hireDate,
     emergencyContact,
     profilePicture,
-    status,
     isArchived,
     isActive,
+    hasFullAccess,
     userData.tenant_id,
   ];
 }
@@ -160,49 +163,62 @@ export function processUpdateField(
   }
 }
 
+/** Search columns for user queries */
+const USER_SEARCH_COLUMNS = ['username', 'email', 'first_name', 'last_name', 'employee_id'];
+
+/**
+ * Add search filter across multiple columns
+ */
+function addSearchFilter(conditions: string[], values: unknown[], search: string): void {
+  const searchCondition = USER_SEARCH_COLUMNS.map((col: string) => `u.${col} LIKE ?`).join(' OR ');
+  conditions.push(`(${searchCondition})`);
+  const searchTerm = `%${search}%`;
+  USER_SEARCH_COLUMNS.forEach(() => values.push(searchTerm));
+}
+
+/**
+ * Check if a filter value is valid (non-null and non-empty)
+ */
+function isValidFilter(value: unknown): boolean {
+  return value != null && value !== '' && value !== 0;
+}
+
 /**
  * Build filter conditions for user search query
+ * N:M REFACTORING: department_id filter now uses user_departments table
  */
 export function buildFilterConditions(filters: UserFilter, values: unknown[]): string {
-  let conditions = '';
+  const conditions: string[] = [];
 
-  // Filter für archivierte Benutzer
-  if (filters.is_archived !== undefined) {
-    conditions += ` AND u.is_archived = ?`;
-    values.push(filters.is_archived);
-  } else {
-    conditions += ` AND u.is_archived = 0`;
-  }
+  // Archived filter (default: not archived)
+  conditions.push('u.is_archived = ?');
+  values.push(filters.is_archived ?? false);
 
-  // Weitere Filter hinzufügen
-  if (filters.role != null && filters.role !== '') {
-    conditions += ` AND u.role = ?`;
+  // Simple equality filters
+  if (isValidFilter(filters.role)) {
+    conditions.push('u.role = ?');
     values.push(filters.role);
   }
 
-  if (filters.department_id != null && filters.department_id !== 0) {
-    conditions += ` AND u.department_id = ?`;
+  // N:M REFACTORING: Filter via user_departments table instead of users.department_id
+  if (isValidFilter(filters.department_id)) {
+    conditions.push(
+      'u.id IN (SELECT ud.user_id FROM user_departments ud WHERE ud.department_id = ? AND ud.tenant_id = u.tenant_id)',
+    );
     values.push(filters.department_id);
   }
 
-  if (filters.status != null && filters.status !== '') {
-    conditions += ` AND u.status = ?`;
-    values.push(filters.status);
+  if (isValidFilter(filters.status)) {
+    conditions.push('u.is_active = ?');
+    values.push(filters.status === 'active' ? 1 : 0);
   }
 
-  if (filters.search != null && filters.search !== '') {
-    conditions += ` AND (
-          u.username LIKE ? OR
-          u.email LIKE ? OR
-          u.first_name LIKE ? OR
-          u.last_name LIKE ? OR
-          u.employee_id LIKE ?
-        )`;
-    const searchTerm = `%${filters.search}%`;
-    values.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+  // Search filter
+  if (isValidFilter(filters.search)) {
+    addSearchFilter(conditions, values, filters.search as string);
   }
 
-  return conditions;
+  return ` AND ${conditions.join(' AND ')}`;
 }
 
 /**

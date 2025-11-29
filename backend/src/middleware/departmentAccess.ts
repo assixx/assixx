@@ -4,7 +4,7 @@
  */
 import { NextFunction, Response } from 'express';
 
-import adminPermissionService from '../services/adminPermission.service.js';
+import { hierarchyPermissionService } from '../services/hierarchyPermission.service.js';
 import type { AuthenticatedRequest } from '../types/request.types.js';
 import { logger } from '../utils/logger.js';
 
@@ -85,38 +85,13 @@ function handleUnauthorizedAccess(
 }
 
 /**
- * Validate department access for admin
- */
-async function validateAdminDepartmentAccess(
-  req: DepartmentAccessRequest,
-  res: Response,
-  user: NonNullable<DepartmentAccessRequest['user']>,
-): Promise<boolean> {
-  const departmentId = extractDepartmentId(req);
-
-  // If no department ID or invalid, allow through
-  if (departmentId == null || Number.isNaN(departmentId) || departmentId === 0) {
-    return true;
-  }
-
-  const requiredPermission = getRequiredPermission(req.method);
-  const hasAccess = await adminPermissionService.hasAccess(
-    user.id,
-    departmentId,
-    user.tenant_id,
-    requiredPermission,
-  );
-
-  if (!hasAccess) {
-    handleUnauthorizedAccess(res, user.id, departmentId, requiredPermission);
-    return false;
-  }
-
-  return true;
-}
-
-/**
- * Middleware to check department access for admin users
+ * Middleware to check department access for ALL users (admin + employee)
+ *
+ * Permission Flow (hierarchyPermissionService):
+ * 1. Root → always pass
+ * 2. has_full_access flag → pass
+ * 3. Direct department permission
+ * 4. Inherited from Area permission
  */
 export const checkDepartmentAccess = async (
   req: DepartmentAccessRequest,
@@ -125,15 +100,32 @@ export const checkDepartmentAccess = async (
 ): Promise<void> => {
   const { user } = req;
 
-  // Root and employees bypass department checks
-  if (user.role === 'root' || user.role === 'employee') {
+  // Root always bypasses (code-level guarantee)
+  if (user.role === 'root') {
     next();
     return;
   }
 
-  // For admin users (only remaining role), check department permissions
-  const hasAccess = await validateAdminDepartmentAccess(req, res, user);
+  // Extract department ID - if none, allow through
+  const departmentId = extractDepartmentId(req);
+  if (departmentId == null || Number.isNaN(departmentId) || departmentId === 0) {
+    next();
+    return;
+  }
+
+  // Use hierarchyPermissionService for ALL other roles (admin + employee)
+  // This handles: has_full_access flag, direct permissions, area inheritance
+  const requiredPermission = getRequiredPermission(req.method);
+  const hasAccess = await hierarchyPermissionService.hasAccess(
+    user.id,
+    user.tenant_id,
+    'department',
+    departmentId,
+    requiredPermission,
+  );
+
   if (!hasAccess) {
+    handleUnauthorizedAccess(res, user.id, departmentId, requiredPermission);
     return;
   }
 
@@ -141,8 +133,12 @@ export const checkDepartmentAccess = async (
 };
 
 /**
- * Middleware to filter department-related results based on admin permissions
+ * Middleware to filter department-related results based on user permissions
  * This should be used in list endpoints to filter results
+ *
+ * Works for ALL roles using hierarchyPermissionService:
+ * - Root / has_full_access → no filtering
+ * - Admin / Employee → filter by accessible departments (direct + area inheritance)
  */
 export const filterDepartmentResults = async (
   req: DepartmentAccessRequest,
@@ -152,7 +148,8 @@ export const filterDepartmentResults = async (
   const authReq = req;
   const { user } = authReq;
 
-  if (user.role !== 'admin') {
+  // Root bypasses filtering
+  if (user.role === 'root') {
     next();
     return;
   }
@@ -163,37 +160,51 @@ export const filterDepartmentResults = async (
     return;
   }
 
-  // Get departments upfront for the admin
-  const { departments } = await adminPermissionService.getAdminDepartments(user.id, user.tenant_id);
-  const allowedDeptIds = new Set(departments.map((d: { id: number }) => d.id));
+  // Get accessible departments using hierarchyPermissionService
+  // This handles: has_full_access, direct permissions, area inheritance
+  const accessibleDeptIds = await hierarchyPermissionService.getAccessibleDepartmentIds(
+    user.id,
+    user.tenant_id,
+  );
+  const allowedDeptIds = new Set(accessibleDeptIds);
 
   // Store the original json method
   const originalJson = res.json.bind(res);
+
+  // Helper to filter array by department access
+  const filterByDepartment = (items: unknown[]): unknown[] => {
+    return items.filter((item: unknown) => {
+      if (typeof item === 'object' && item !== null) {
+        const deptItem = item as Record<string, unknown>;
+        // Use bracket notation for index signature access
+        if ('department_id' in deptItem && typeof deptItem['department_id'] === 'number') {
+          return allowedDeptIds.has(deptItem['department_id']);
+        }
+        if ('departmentId' in deptItem && typeof deptItem['departmentId'] === 'number') {
+          return allowedDeptIds.has(deptItem['departmentId']);
+        }
+      }
+      // If no department field, include the item
+      return true;
+    });
+  };
 
   // Override the json method to filter results - type cast required for complex override
   (res as Response & { json: (data: unknown) => Response }).json = function (
     data: unknown,
   ): Response {
-    // If data is an array of items with department_id
+    // Case 1: Direct array response
     if (Array.isArray(data)) {
-      // Filter items based on department access
-      const filteredData = data.filter((item: unknown) => {
-        if (typeof item === 'object' && item !== null) {
-          const deptItem = item as Record<string, unknown>;
-          // Use bracket notation for index signature access
-          if ('department_id' in deptItem && typeof deptItem['department_id'] === 'number') {
-            return allowedDeptIds.has(deptItem['department_id']);
-          }
-          if ('departmentId' in deptItem && typeof deptItem['departmentId'] === 'number') {
-            return allowedDeptIds.has(deptItem['departmentId']);
-          }
-        }
-        // If no department field, include the item
-        return true;
-      });
+      return originalJson(filterByDepartment(data));
+    }
 
-      // Call the original json method with filtered data
-      return originalJson(filteredData);
+    // Case 2: Paginated response with data array { data: [...], pagination: {...} }
+    if (typeof data === 'object' && data !== null && 'data' in data) {
+      const responseObj = data as Record<string, unknown>;
+      if (Array.isArray(responseObj['data'])) {
+        const filteredData = filterByDepartment(responseObj['data'] as unknown[]);
+        return originalJson({ ...responseObj, data: filteredData });
+      }
     }
 
     // Call the original json method with original data
@@ -204,13 +215,141 @@ export const filterDepartmentResults = async (
 };
 
 /**
- * Helper function to get allowed department IDs for an admin
+ * Helper function to get allowed department IDs for any user
+ * Uses hierarchyPermissionService for proper inheritance support
  */
 export const getAllowedDepartmentIds = async (
   userId: number,
   tenantId: number,
 ): Promise<number[]> => {
-  const { departments } = await adminPermissionService.getAdminDepartments(userId, tenantId);
+  return await hierarchyPermissionService.getAccessibleDepartmentIds(userId, tenantId);
+};
 
-  return departments.map((d: { id: number }) => d.id);
+/**
+ * Factory function to create department filter middleware with configurable field
+ * @param fieldName - The field to filter on ('department_id', 'departmentId', or 'id')
+ */
+export const createDepartmentFilter = (fieldName: 'department_id' | 'departmentId' | 'id') => {
+  return async (req: DepartmentAccessRequest, res: Response, next: NextFunction): Promise<void> => {
+    const { user } = req;
+
+    // Root bypasses filtering
+    if (user.role === 'root') {
+      next();
+      return;
+    }
+
+    if (typeof user.id !== 'number' || user.id === 0 || typeof user.tenant_id !== 'number') {
+      next();
+      return;
+    }
+
+    // Get accessible departments using hierarchyPermissionService
+    const accessibleDeptIds = await hierarchyPermissionService.getAccessibleDepartmentIds(
+      user.id,
+      user.tenant_id,
+    );
+    const allowedDeptIds = new Set(accessibleDeptIds);
+
+    const originalJson = res.json.bind(res);
+
+    const filterByField = (items: unknown[]): unknown[] => {
+      return items.filter((item: unknown) => {
+        if (typeof item === 'object' && item !== null) {
+          const obj = item as Record<string, unknown>;
+          // eslint-disable-next-line security/detect-object-injection -- fieldName is a compile-time constant from type union ('department_id' | 'departmentId' | 'id'), not user input
+          const fieldValue = obj[fieldName];
+          if (typeof fieldValue === 'number') {
+            return allowedDeptIds.has(fieldValue);
+          }
+        }
+        return true;
+      });
+    };
+
+    (res as Response & { json: (data: unknown) => Response }).json = function (
+      data: unknown,
+    ): Response {
+      if (Array.isArray(data)) {
+        return originalJson(filterByField(data));
+      }
+      if (typeof data === 'object' && data !== null && 'data' in data) {
+        const responseObj = data as Record<string, unknown>;
+        if (Array.isArray(responseObj['data'])) {
+          const filteredData = filterByField(responseObj['data'] as unknown[]);
+          return originalJson({ ...responseObj, data: filteredData });
+        }
+      }
+      return originalJson(data);
+    };
+
+    next();
+  };
+};
+
+// Pre-configured filters for common use cases
+export const filterDepartmentsByAccess = createDepartmentFilter('id');
+// NOTE: Use camelCase 'departmentId' because dbToApi() converts snake_case to camelCase
+export const filterTeamsByDepartment = createDepartmentFilter('departmentId');
+
+/**
+ * Filter areas by user's accessible area IDs
+ * Uses hierarchyPermissionService.getAccessibleAreaIds()
+ */
+export const filterAreasByAccess = async (
+  req: DepartmentAccessRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  const { user } = req;
+
+  // Root bypasses filtering
+  if (user.role === 'root') {
+    next();
+    return;
+  }
+
+  if (typeof user.id !== 'number' || user.id === 0 || typeof user.tenant_id !== 'number') {
+    next();
+    return;
+  }
+
+  // Get accessible areas using hierarchyPermissionService
+  const accessibleAreaIds = await hierarchyPermissionService.getAccessibleAreaIds(
+    user.id,
+    user.tenant_id,
+  );
+  const allowedAreaIds = new Set(accessibleAreaIds);
+
+  const originalJson = res.json.bind(res);
+
+  const filterByAreaId = (items: unknown[]): unknown[] => {
+    return items.filter((item: unknown) => {
+      if (typeof item === 'object' && item !== null) {
+        const obj = item as Record<string, unknown>;
+        if ('id' in obj && typeof obj['id'] === 'number') {
+          return allowedAreaIds.has(obj['id']);
+        }
+      }
+      return true;
+    });
+  };
+
+  (res as Response & { json: (data: unknown) => Response }).json = function (
+    data: unknown,
+  ): Response {
+    if (Array.isArray(data)) {
+      return originalJson(filterByAreaId(data));
+    }
+    if (typeof data === 'object' && data !== null && 'data' in data) {
+      const responseObj = data as Record<string, unknown>;
+      if (Array.isArray(responseObj['data'])) {
+        const filteredData = filterByAreaId(responseObj['data'] as unknown[]);
+        return originalJson({ ...responseObj, data: filteredData });
+      }
+    }
+    return originalJson(data);
+  };
+
+  next();
 };

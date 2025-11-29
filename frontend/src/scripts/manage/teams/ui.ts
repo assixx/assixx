@@ -27,40 +27,77 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Helper: Create count badge with tooltip (like manage-departments)
+ * Update status hidden inputs based on status value
+ */
+function updateTeamStatusInputs(value: string): void {
+  const isActiveInput = document.querySelector<HTMLInputElement>('#team-is-active');
+  const isArchivedInput = document.querySelector<HTMLInputElement>('#team-is-archived');
+
+  if (isActiveInput === null || isArchivedInput === null) return;
+
+  switch (value) {
+    case 'inactive':
+      isActiveInput.value = '0';
+      isArchivedInput.value = '0';
+      break;
+    case 'archived':
+      isActiveInput.value = '0';
+      isArchivedInput.value = '1';
+      break;
+    default: // active
+      isActiveInput.value = '1';
+      isArchivedInput.value = '0';
+  }
+}
+
+/**
+ * Handle status dropdown option click
+ */
+function handleStatusOptionClick(option: HTMLElement): void {
+  const value = option.dataset['value'] ?? '';
+  const badgeHTML = option.innerHTML;
+  const trigger = document.querySelector<HTMLElement>('#status-trigger span');
+
+  updateTeamStatusInputs(value);
+
+  if (trigger !== null) {
+    setSafeHTML(trigger, badgeHTML);
+  }
+
+  // Close dropdown
+  document.querySelector('#status-dropdown .dropdown__menu')?.classList.remove('active');
+}
+
+/**
+ * Helper: Create count badge with native title tooltip
  */
 function createCountBadge(count: number, names: string, singular: string, plural?: string): string {
   if (count === 0) {
-    return '0';
+    return '<span class="badge badge--secondary" title="Keine zugewiesen">0</span>';
   }
 
   const label = count === 1 ? singular : (plural ?? `${singular}s`);
 
-  // If no names available, just show count
+  // If no names available, just show count without tooltip
   if (names === '' || names.trim() === '') {
-    return `<span class="badge badge-info">${String(count)} ${label}</span>`;
+    return `<span class="badge badge--info">${String(count)} ${label}</span>`;
   }
 
-  // Return badge with data-tooltip attribute for auto-initialization
-  return `<span class="badge badge-info" data-tooltip="${escapeHtml(names)}">${String(count)} ${label}</span>`;
-}
-
-/**
- * Check if add button should be hidden for current filter
- */
-export function shouldHideAddButton(statusFilter: 'all' | 'active' | 'inactive'): boolean {
-  return statusFilter === 'inactive';
+  // Return badge with native title tooltip
+  return `<span class="badge badge--info" title="${escapeHtml(names)}">${String(count)} ${label}</span>`;
 }
 
 /**
  * Get empty state title based on filter
  */
-function getEmptyStateTitle(statusFilter: 'all' | 'active' | 'inactive'): string {
+function getEmptyStateTitle(statusFilter: 'all' | 'active' | 'inactive' | 'archived'): string {
   switch (statusFilter) {
     case 'inactive':
       return 'Keine inaktiven Teams gefunden';
     case 'active':
       return 'Keine aktiven Teams gefunden';
+    case 'archived':
+      return 'Keine archivierten Teams gefunden';
     default:
       return 'Keine Teams gefunden';
   }
@@ -69,20 +106,26 @@ function getEmptyStateTitle(statusFilter: 'all' | 'active' | 'inactive'): string
 /**
  * Get empty state description based on filter
  */
-function getEmptyStateDescription(statusFilter: 'all' | 'active' | 'inactive'): string {
-  return statusFilter === 'inactive' ? 'Es gibt derzeit keine inaktiven Teams' : 'Fügen Sie Ihr erstes Team hinzu';
+function getEmptyStateDescription(statusFilter: 'all' | 'active' | 'inactive' | 'archived'): string {
+  switch (statusFilter) {
+    case 'inactive':
+      return 'Es gibt derzeit keine inaktiven Teams';
+    case 'archived':
+      return 'Es gibt derzeit keine archivierten Teams';
+    default:
+      return 'Fügen Sie Ihr erstes Team hinzu';
+  }
 }
 
 /**
  * Update empty state content based on current filter
  */
-export function updateEmptyStateContent(statusFilter: 'all' | 'active' | 'inactive'): void {
+export function updateEmptyStateContent(statusFilter: 'all' | 'active' | 'inactive' | 'archived'): void {
   const emptyDiv = document.querySelector('#teams-empty');
   if (emptyDiv === null) return;
 
   const emptyStateTitle = emptyDiv.querySelector<HTMLElement>('.empty-state__title');
   const emptyStateDesc = emptyDiv.querySelector<HTMLElement>('.empty-state__description');
-  const emptyStateAddBtn = emptyDiv.querySelector<HTMLButtonElement>('#empty-state-add-btn');
 
   // Update title and description based on filter
   if (emptyStateTitle) {
@@ -92,17 +135,15 @@ export function updateEmptyStateContent(statusFilter: 'all' | 'active' | 'inacti
   if (emptyStateDesc) {
     emptyStateDesc.textContent = getEmptyStateDescription(statusFilter);
   }
-
-  // Hide/show add button based on filter
-  if (emptyStateAddBtn) {
-    emptyStateAddBtn.classList.toggle('u-hidden', shouldHideAddButton(statusFilter));
-  }
 }
 
 /**
  * Toggle table visibility based on team data
  */
-export function toggleTableVisibility(show: boolean, statusFilter: 'all' | 'active' | 'inactive' = 'all'): void {
+export function toggleTableVisibility(
+  show: boolean,
+  statusFilter: 'all' | 'active' | 'inactive' | 'archived' = 'all',
+): void {
   const teamsEmpty = document.querySelector('#teams-empty');
 
   if (show) {
@@ -320,43 +361,71 @@ export function parseIdsFromString(value: string): number[] {
 }
 
 /**
+ * Parse nullable ID field - returns null for empty string, number otherwise
+ */
+function parseNullableId(value: string): number | null {
+  return value.length > 0 ? Number.parseInt(value, 10) : null;
+}
+
+/**
+ * Process a single team form field
+ * Returns true if field was processed, false if unknown
+ */
+function processTeamField(teamData: Record<string, string | number | null>, key: string, value: string): boolean {
+  // Nullable ID fields (can be cleared to null)
+  if (key === 'teamLeadId') {
+    teamData['leaderId'] = parseNullableId(value);
+    return true;
+  }
+  if (key === 'departmentId') {
+    teamData['departmentId'] = parseNullableId(value);
+    return true;
+  }
+
+  // Required/optional string fields (only set if non-empty)
+  if (key === 'id' && value.length > 0) {
+    teamData['id'] = Number.parseInt(value, 10);
+    return true;
+  }
+  if (key === 'name' && value.length > 0) {
+    teamData['name'] = value;
+    return true;
+  }
+  if (key === 'description') {
+    teamData['description'] = value;
+    return true;
+  }
+  if (key === 'status' && value.length > 0) {
+    teamData['status'] = value;
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Process form data for team save
  */
 export function processTeamFormData(formData: FormData): ProcessedFormData {
-  const teamData: Record<string, string | number> = {};
+  const teamData: Record<string, string | number | null> = {};
   let machineIds: number[] = [];
   let userIds: number[] = [];
 
   formData.forEach((value, key) => {
-    if (key === 'machineIds' && typeof value === 'string' && value.length > 0) {
+    if (typeof value !== 'string') return;
+
+    if (key === 'machineIds' && value.length > 0) {
       machineIds = parseIdsFromString(value);
-    } else if (key === 'userIds' && typeof value === 'string' && value.length > 0) {
+      return;
+    }
+    if (key === 'userIds' && value.length > 0) {
       userIds = parseIdsFromString(value);
-    } else if (typeof value === 'string' && value.length > 0) {
-      // Whitelist of allowed form field keys to prevent object injection
-      switch (key) {
-        case 'teamLeadId':
-          teamData['leaderId'] = Number.parseInt(value, 10);
-          break;
-        case 'id':
-          teamData['id'] = Number.parseInt(value, 10);
-          break;
-        case 'name':
-          teamData['name'] = value;
-          break;
-        case 'description':
-          teamData['description'] = value;
-          break;
-        case 'departmentId':
-          teamData['departmentId'] = Number.parseInt(value, 10);
-          break;
-        case 'status':
-          teamData['status'] = value;
-          break;
-        // Ignore unknown keys for security
-        default:
-          console.warn(`Ignoring unknown form field: ${key}`);
-      }
+      return;
+    }
+
+    const processed = processTeamField(teamData, key, value);
+    if (!processed) {
+      console.warn(`Ignoring unknown form field: ${key}`);
     }
   });
 
@@ -441,10 +510,13 @@ export async function loadAdminsForDropdown(apiClient: ApiClient, selectedId?: n
   if (!menu) return;
 
   try {
-    // Backend already returns camelCase via fieldMapping
-    const admins = await apiClient.request<User[]>('/users?role=admin', {
-      method: 'GET',
-    });
+    // Fetch both root AND admin users - both can be team leads
+    // Team lead must be root or admin (enforced by DB trigger)
+    const [roots, admins] = await Promise.all([
+      apiClient.request<User[]>('/users?role=root', { method: 'GET' }),
+      apiClient.request<User[]>('/users?role=admin', { method: 'GET' }),
+    ]);
+    const allLeaders = [...roots, ...admins];
 
     // Clear existing options except the first one (None)
     setSafeHTML(
@@ -452,19 +524,20 @@ export async function loadAdminsForDropdown(apiClient: ApiClient, selectedId?: n
       '<div class="dropdown__option" data-value=""><i class="fas fa-user-slash"></i> Kein Team-Leiter</div>',
     );
 
-    admins.forEach((admin) => {
-      const displayName = getAdminDisplayName(admin);
+    allLeaders.forEach((leader) => {
+      const displayName = getAdminDisplayName(leader);
+      const roleIcon = leader.role === 'root' ? 'fa-crown' : 'fa-user-tie';
 
       const option = document.createElement('div');
       option.className = 'dropdown__option';
-      option.dataset['value'] = admin.id.toString();
-      setSafeHTML(option, `<i class="fas fa-user-tie"></i> ${displayName}`);
+      option.dataset['value'] = leader.id.toString();
+      setSafeHTML(option, `<i class="fas ${roleIcon}"></i> ${displayName}`);
       menu.append(option);
     });
 
     // Select the option if selectedId is provided
     if (selectedId !== null && selectedId !== undefined && selectedId !== 0) {
-      selectAdminInDropdown(admins, selectedId);
+      selectAdminInDropdown(allLeaders, selectedId);
     }
   } catch (error) {
     console.error('Error loading admins:', error);
@@ -517,14 +590,16 @@ export async function loadMachinesForDropdown(apiClient: ApiClient, team?: Team)
 
 /**
  * Load users for dropdown with checkboxes (Design System)
+ * NOTE: Only loads employees - team membership is for employees only
+ * (enforced by DB trigger: trg_user_teams_role_check)
  */
 export async function loadUsersForDropdown(apiClient: ApiClient, team?: Team): Promise<void> {
   const menu = document.querySelector<HTMLElement>('#team-members-menu');
   if (!menu) return;
 
   try {
-    // Backend already returns camelCase via fieldMapping
-    const users = await apiClient.request<User[]>('/users', {
+    // Only load employees - admins/root cannot be team members (they get access via permissions)
+    const users = await apiClient.request<User[]>('/users?role=employee', {
       method: 'GET',
     });
 
@@ -599,19 +674,10 @@ export function setupDropdownListeners(): void {
     });
   });
 
-  // Status dropdown
+  // Status dropdown - Maps UI values to DB fields (isActive + isArchived)
   document.querySelectorAll('#status-menu .dropdown__option').forEach((option) => {
     option.addEventListener('click', () => {
-      const value = (option as HTMLElement).dataset['value'] ?? '';
-      const badgeHTML = option.innerHTML;
-      const input = document.querySelector<HTMLInputElement>('#team-status');
-      const trigger = document.querySelector<HTMLElement>('#status-trigger span');
-
-      if (input) input.value = value;
-      if (trigger) setSafeHTML(trigger, badgeHTML);
-
-      // Close dropdown
-      document.querySelector('#status-dropdown .dropdown__menu')?.classList.remove('active');
+      handleStatusOptionClick(option as HTMLElement);
     });
   });
 

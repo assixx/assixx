@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
  * Blackboard Detail UI Utilities
  * Contains types, rendering methods and utilities for blackboard detail page
@@ -50,6 +51,7 @@ export interface BlackboardComment {
   firstName?: string;
   lastName?: string;
   role?: string;
+  profilePicture?: string | null;
 }
 
 export interface BlackboardAttachment {
@@ -175,6 +177,35 @@ export function getVisibilityBadgeClass(orgLevel: string): string {
 // Rendering Functions
 // ============================================================================
 
+/**
+ * Create avatar HTML - with profile picture if available, otherwise initials
+ */
+function createAvatarHtml(
+  profilePicture: string | null | undefined,
+  firstName: string,
+  lastName: string,
+  avatarColor: number,
+): string {
+  const fullName = `${firstName} ${lastName}`;
+
+  // If profile picture exists, show image
+  if (profilePicture !== null && profilePicture !== undefined && profilePicture !== '') {
+    return `
+      <div class="avatar avatar--sm">
+        <img src="${escapeHtml(profilePicture)}" alt="${escapeHtml(fullName)}" class="avatar__image">
+      </div>
+    `;
+  }
+
+  // Otherwise show initials
+  const initials = `${firstName[0] ?? 'U'}${lastName[0] ?? 'N'}`.toUpperCase();
+  return `
+    <div class="avatar avatar--sm avatar--color-${avatarColor}">
+      <span class="avatar__initials">${initials}</span>
+    </div>
+  `;
+}
+
 export function renderComments(comments: BlackboardComment[], container: HTMLElement): void {
   if (comments.length === 0) {
     setHTML(container, '<p class="text-muted">Keine Kommentare vorhanden.</p>');
@@ -187,17 +218,15 @@ export function renderComments(comments: BlackboardComment[], container: HTMLEle
       .map((comment) => {
         const firstName = comment.firstName ?? 'U';
         const lastName = comment.lastName ?? 'N';
-        const initials = `${firstName[0] ?? 'U'}${lastName[0] ?? 'N'}`.toUpperCase();
         const avatarColor = comment.id % 10; // Design System: 10 color variants
         const commentClass = comment.isInternal ? 'comment-item comment-internal' : 'comment-item';
+        const avatarHtml = createAvatarHtml(comment.profilePicture, firstName, lastName, avatarColor);
 
         return `
       <div class="${commentClass}">
         <div class="comment-header">
           <div class="comment-author">
-            <div class="avatar avatar--sm avatar--color-${avatarColor}">
-              <span class="avatar__initials">${initials}</span>
-            </div>
+            ${avatarHtml}
             <div>
               <strong>${escapeHtml(firstName)} ${escapeHtml(lastName)}</strong>
               ${comment.isInternal ? '<span class="internal-badge">Intern</span>' : ''}

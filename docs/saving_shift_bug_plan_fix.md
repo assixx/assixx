@@ -518,10 +518,10 @@ EOF
 
 # 3. Migration ausführen
 docker cp database/migrations/004-shift-plans-fix.sql assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/004-shift-plans-fix.sql'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main < /tmp/004-shift-plans-fix.sql'
 
 # 4. Verifizieren
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DESCRIBE shift_plans;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "DESCRIBE shift_plans;"'
 ```
 
 ## 🚀 NÄCHSTE SCHRITTE

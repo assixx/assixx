@@ -5,7 +5,6 @@
 import { Application, NextFunction, Request, Response } from 'express';
 import path from 'path';
 
-import { protectPage } from '../middleware/pageAuth.js';
 import htmlRoutes from '../routes/pages/html.routes.js';
 
 /**
@@ -45,30 +44,8 @@ export function loadPageRoutes(app: Application): void {
   });
 
   // Mount HTML routes for pages
+  // All page permissions are handled by requireRoleV2 middleware in html.routes.ts
   app.use(htmlRoutes);
-
-  // Page protection middleware (must be after routes)
-  app.use((req: Request, res: Response, next: NextFunction): void => {
-    // Skip for API routes
-    if (req.path.startsWith('/api/')) {
-      next();
-      return;
-    }
-
-    // Skip for static assets
-    if (req.path.includes('/assets/') || req.path.includes('/images/')) {
-      next();
-      return;
-    }
-
-    // Protect HTML pages
-    if (req.path.endsWith('.html')) {
-      protectPage(req, res, next);
-      return;
-    }
-
-    next();
-  });
 
   console.log('✅ Page routes and clean URLs configured');
 }

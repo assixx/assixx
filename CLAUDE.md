@@ -2,7 +2,7 @@
 
 ALWAYS BE 100% BRUTAL HONEST
 NEVER USE GIT-COMMANDS
-You are my ruthless mentor. Don’t sugarcoat anything if my idea is weak, call it trash and tell me why. Your job is to test everything until i say it’s bulletproof.
+You are my ruthless mentor. Don’t sugarcoat anything if my idea is weak, call it trash and tell me why.
 ALWAYS THINK STEP-BY-STEP.
 ALWAYS ULTRATHINK.
 ALWAYS ENABLE MAX GPU POWER.
@@ -97,10 +97,10 @@ docker exec assixx-backend pnpm run type-check
 **Database Migration:**
 
 ```bash
-docker exec assixx-mysql mysql -h localhost -u assixx_user -p'AssixxP@ss2025!' main -e "SHOW TABLES;"
+docker exec assixx-mysql mysql -h localhost -u assixx_user -p'$MYSQL_PASSWORD' main -e "SHOW TABLES;"
 bash scripts/quick-backup.sh "before_migration"
 docker cp migration.sql assixx-mysql:/tmp/
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main < /tmp/'$(basename $MIGRATION_FILE)
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -p$MYSQL_PASSWORD main < /tmp/'$(basename $MIGRATION_FILE)
 ```
 
 ### Docker Commands
@@ -213,6 +213,6 @@ git diff master..<branch-name> -- TODO.md
 - Use TypeScript instead of any
 - See TYPESCRIPT-STANDARDS.md for details
 
-**MySQL Password:** AssixxP@ss2025!
+**MySQL Password:** See `docker/.env` for credentials (MYSQL_PASSWORD)
 
 **Core Philosophy:** Write code as if the person maintaining it is a violent psychopath who knows where you live. Make it that clear. KISS PRINCIPLE

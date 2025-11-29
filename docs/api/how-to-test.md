@@ -225,10 +225,10 @@ Always create data in the correct order:
 
 ```typescript
 // Check for leftover test data
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT COUNT(*) FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SELECT COUNT(*) FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
 
 // Manual cleanup if needed
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DELETE FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "DELETE FROM users WHERE email LIKE \"%__AUTOTEST__%\";"'
 ```
 
 ## Debugging Tips
@@ -257,10 +257,10 @@ docker exec assixx-backend npm test -- --testNamePattern="should return all acti
 
 ```bash
 # Check what's in the database
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "SELECT * FROM plans;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "SELECT * FROM plans;"'
 
 # Check table structure
-docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pAssixxP@ss2025! main -e "DESCRIBE tenant_plans;"'
+docker exec assixx-mysql sh -c 'mysql -h localhost -u assixx_user -pYOUR_PASSWORD main -e "DESCRIBE tenant_plans;"'
 ```
 
 ## Known Issues and Solutions

@@ -58,6 +58,26 @@ export function getStatusBadgeClass(status: string): string {
 }
 
 /**
+ * Create departments badge HTML
+ * Shows count with tooltip listing all department names
+ */
+function createDepartmentsBadge(
+  departmentCount: number | undefined,
+  departmentNames: string | null | undefined,
+): string {
+  const count = departmentCount ?? 0;
+
+  if (count === 0) {
+    return '<span class="badge badge--secondary" title="Keine Abteilungen zugeordnet">Keine</span>';
+  }
+
+  const tooltip = departmentNames ?? '';
+  const label = count === 1 ? '1 Abteilung' : `${String(count)} Abteilungen`;
+
+  return `<span class="badge badge--info" title="${escapeHtml(tooltip)}">${label}</span>`;
+}
+
+/**
  * Create action buttons HTML for area row
  */
 function createAreaActionButtons(area: Area): string {
@@ -92,21 +112,27 @@ export function createAreaRow(area: Area): string {
   const statusBadge = getStatusBadgeClass(area.is_active === 1 ? 'active' : 'inactive');
   const statusLabel = getStatusLabel(area.is_active === 1 ? 'active' : 'inactive');
 
+  // NOTE: parent_id display removed (2025-11-29) - areas are now flat (non-hierarchical)
+  const areaLeadDisplay =
+    area.area_lead_name !== null && area.area_lead_name !== undefined && area.area_lead_name.trim() !== ''
+      ? escapeHtml(area.area_lead_name)
+      : '-';
+
   return `
     <tr data-area-id="${area.id}">
       <td>
         <div class="font-medium text-[var(--color-text-primary)]">
           ${escapeHtml(area.name)}
         </div>
-        ${
-          area.parent_id !== undefined && area.parent_id !== null
-            ? `<div class="text-sm text-[var(--color-text-secondary)]">↳ Parent ID: ${area.parent_id}</div>`
-            : ''
-        }
       </td>
       <td>
         <div class="text-[var(--color-text-secondary)] text-sm">
           ${area.description ?? '-'}
+        </div>
+      </td>
+      <td>
+        <div class="text-[var(--color-text-secondary)]">
+          ${areaLeadDisplay}
         </div>
       </td>
       <td>
@@ -119,6 +145,9 @@ export function createAreaRow(area: Area): string {
         <div class="text-sm">
           ${area.address ?? '-'}
         </div>
+      </td>
+      <td>
+        ${createDepartmentsBadge(area.department_count, area.department_names)}
       </td>
       <td>
         <span class="badge ${statusBadge}">${statusLabel}</span>
@@ -149,9 +178,11 @@ export function renderAreasTable(areas: Area[]): void {
           <tr>
             <th>Name</th>
             <th>Beschreibung</th>
+            <th>Bereichsleiter</th>
             <th>Typ</th>
             <th class="text-center">Kapazität</th>
             <th>Adresse</th>
+            <th>Abteilungen</th>
             <th>Status</th>
             <th>Aktionen</th>
           </tr>
@@ -168,12 +199,10 @@ export function renderAreasTable(areas: Area[]): void {
 
 /**
  * Toggle table/empty state visibility
- * Note: Empty state button is hidden when "inactive" filter is active
  */
 export function toggleTableVisibility(show: boolean): void {
   const areasEmpty = document.querySelector('#areas-empty');
   const tableContent = document.querySelector('#areas-table-content');
-  const emptyStateButton = document.querySelector('#empty-state-add-btn');
 
   if (show) {
     areasEmpty?.classList.add('u-hidden');
@@ -181,16 +210,6 @@ export function toggleTableVisibility(show: boolean): void {
   } else {
     areasEmpty?.classList.remove('u-hidden');
     tableContent?.classList.add('u-hidden');
-
-    // Hide button if "inactive" filter is active
-    const activeButton = document.querySelector('#area-status-toggle .toggle-group__btn.active');
-    const currentStatus = activeButton?.getAttribute('data-status') ?? 'active';
-
-    if (currentStatus === 'inactive') {
-      emptyStateButton?.classList.add('u-hidden');
-    } else {
-      emptyStateButton?.classList.remove('u-hidden');
-    }
   }
 }
 
@@ -241,8 +260,7 @@ export function populateAreaForm(area: Area): void {
     typeTrigger.textContent = getTypeLabel(area.type);
   }
 
-  // Parent dropdown (custom) - will be set by loadParentAreas
-  setInputValue('area-parent', area.parent_id ?? '');
+  // NOTE: parent_id removed (2025-11-29) - areas are now flat (non-hierarchical)
 
   // Status dropdown (custom)
   const statusValue = area.is_active === 1 ? 'active' : 'inactive';
@@ -287,16 +305,7 @@ export function resetAreaForm(): void {
     typeTrigger.textContent = 'Sonstiges';
   }
 
-  // Reset parent dropdown to "Kein übergeordneter Bereich"
-  const parentHiddenInput = document.querySelector<HTMLInputElement>('#area-parent');
-  if (parentHiddenInput !== null) {
-    parentHiddenInput.value = '';
-  }
-
-  const parentTrigger = document.querySelector('#parent-trigger span');
-  if (parentTrigger !== null) {
-    parentTrigger.textContent = 'Kein übergeordneter Bereich';
-  }
+  // NOTE: parent dropdown reset removed (2025-11-29) - areas are now flat (non-hierarchical)
 
   // Reset status dropdown to "Aktiv"
   const statusHiddenInput = document.querySelector<HTMLInputElement>('#area-status');
@@ -316,44 +325,7 @@ export function resetAreaForm(): void {
   }
 }
 
-/**
- * Load parent areas for custom dropdown
- */
-export function loadParentAreas(areas: Area[], excludeId?: number, currentParentId?: number): void {
-  const parentMenu = document.querySelector<HTMLElement>('#parent-menu');
-  const parentTrigger = document.querySelector('#parent-trigger span');
-  const parentHiddenInput = document.querySelector<HTMLInputElement>('#area-parent');
-
-  if (parentMenu === null || parentTrigger === null || parentHiddenInput === null) return;
-
-  // Clear existing options (keep "Kein übergeordneter Bereich" as first)
-  const firstOption = '<div class="dropdown__option" data-value="">Kein übergeordneter Bereich</div>';
-
-  // Build options HTML for all areas except the one being edited
-  const optionsHTML = areas
-    .filter((area) => area.id !== excludeId)
-    .map((area) => {
-      return `<div class="dropdown__option" data-value="${area.id}">${escapeHtml(area.name)}</div>`;
-    })
-    .join('');
-
-  setSafeHTML(parentMenu, firstOption + optionsHTML);
-
-  // Update trigger text based on current parent
-  if (currentParentId !== undefined) {
-    const currentParent = areas.find((a) => a.id === currentParentId);
-    if (currentParent !== undefined) {
-      parentTrigger.textContent = currentParent.name;
-      parentHiddenInput.value = currentParentId.toString();
-    } else {
-      parentTrigger.textContent = 'Kein übergeordneter Bereich';
-      parentHiddenInput.value = '';
-    }
-  } else {
-    parentTrigger.textContent = 'Kein übergeordneter Bereich';
-    parentHiddenInput.value = '';
-  }
-}
+// NOTE: loadParentAreas removed (2025-11-29) - areas are now flat (non-hierarchical)
 
 /**
  * Escape regex special characters
